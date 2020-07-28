@@ -15,7 +15,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer func() {
-		log.Fatal(closeDb())
+		log.Println("Close database")
+		err := closeDb()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 	log.Println("Loaded database")
 	log.Println("Start server")
