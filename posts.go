@@ -24,7 +24,11 @@ func servePost(c echo.Context) error {
 	} else if err != nil {
 		return err
 	}
-	return c.String(http.StatusOK, post.content)
+	htmlContent, err := renderMarkdown(post.content)
+	if err != nil {
+		return err
+	}
+	return c.HTML(http.StatusOK, htmlContent)
 }
 
 func getPost(path string) (*post, error) {
