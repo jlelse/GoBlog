@@ -1,0 +1,23 @@
+package main
+
+import "log"
+
+func main() {
+	log.Println("Initializing configuration")
+	err := initConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Completed configuration")
+	log.Println("Initializing database")
+	err = initDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		log.Fatal(closeDb())
+	}()
+	log.Println("Loaded database")
+	log.Println("Start server")
+	startServer()
+}

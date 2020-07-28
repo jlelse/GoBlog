@@ -1,0 +1,5 @@
+server:
+  logging: false
+  port: 8080
+database:
+  file: data/db.sqlite
