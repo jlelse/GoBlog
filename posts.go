@@ -10,10 +10,11 @@ import (
 var postNotFound = errors.New("post not found")
 
 type post struct {
-	path      string
-	content   string
-	published string
-	updated   string
+	path       string
+	content    string
+	published  string
+	updated    string
+	parameters map[string]string
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,26 @@ func getPost(path string, context context.Context) (*post, error) {
 	} else if err != nil {
 		return nil, err
 	}
+	err = queriedPost.fetchParameters(context)
+	if err != nil {
+		return nil, err
+	}
 	return queriedPost, nil
+}
+
+func (p *post) fetchParameters(context context.Context) error {
+	rows, err := appDb.QueryContext(context, "select parameter, COALESCE(value, '') from post_parameters where path=?", p.path)
+	if err != nil {
+		return err
+	}
+	p.parameters = make(map[string]string)
+	for rows.Next() {
+		var parameter string
+		var value string
+		_ = rows.Scan(&parameter, &value)
+		p.parameters[parameter] = value
+	}
+	return nil
 }
 
 func allPostPaths() ([]string, error) {

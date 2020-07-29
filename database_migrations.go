@@ -24,6 +24,13 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00003",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create table post_parameters (path text not null, parameter text not null, value text, primary key (path, parameter));")
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
