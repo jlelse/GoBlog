@@ -23,5 +23,8 @@ func main() {
 	}()
 	log.Println("Loaded database")
 	log.Println("Start server")
-	startServer()
+	err = startServer()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

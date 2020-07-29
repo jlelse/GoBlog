@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -17,7 +18,7 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	post, err := getPost(strings.TrimSuffix(strings.TrimPrefix(r.RequestURI, "/"), "/"))
+	post, err := getPost(strings.TrimSuffix(strings.TrimPrefix(r.RequestURI, "/"), "/"), r.Context())
 	if err == postNotFound {
 		http.NotFound(w, r)
 		return
@@ -34,9 +35,9 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(htmlContent)
 }
 
-func getPost(path string) (*post, error) {
+func getPost(path string, context context.Context) (*post, error) {
 	queriedPost := &post{}
-	row := appDb.QueryRow("select path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, '') from posts where path=?", path)
+	row := appDb.QueryRowContext(context, "select path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, '') from posts where path=?", path)
 	err := row.Scan(&queriedPost.path, &queriedPost.content, &queriedPost.published, &queriedPost.updated)
 	if err == sql.ErrNoRows {
 		return nil, postNotFound
@@ -44,4 +45,18 @@ func getPost(path string) (*post, error) {
 		return nil, err
 	}
 	return queriedPost, nil
+}
+
+func allPostPaths() ([]string, error) {
+	var postPaths []string
+	rows, err := appDb.Query("select path from posts")
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var path string
+		_ = rows.Scan(&path)
+		postPaths = append(postPaths, path)
+	}
+	return postPaths, nil
 }
