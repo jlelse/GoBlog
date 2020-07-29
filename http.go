@@ -56,24 +56,18 @@ func buildHandler() (http.Handler, error) {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 
-	r.Get("/", hello)
-
 	allPostPaths, err := allPostPaths()
 	if err != nil {
 		return nil, err
 	} else {
 		for _, path := range allPostPaths {
 			if path != "" {
-				r.Get("/"+path, servePost)
+				r.Get(path, servePost)
 			}
 		}
 	}
 
 	return r, nil
-}
-
-func hello(w http.ResponseWriter, _ *http.Request) {
-	_, _ = w.Write([]byte("Hello World!"))
 }
 
 type dynamicHandler struct {

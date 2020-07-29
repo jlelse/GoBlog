@@ -18,7 +18,11 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	post, err := getPost(strings.TrimSuffix(strings.TrimPrefix(r.RequestURI, "/"), "/"), r.Context())
+	path := r.RequestURI
+	if len(path) > 1 {
+		path = strings.TrimSuffix(path, "/")
+	}
+	post, err := getPost(path, r.Context())
 	if err == postNotFound {
 		http.NotFound(w, r)
 		return
