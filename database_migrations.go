@@ -17,6 +17,13 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00002",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create table redirects (fromPath text not null, toPath text not null, primary key (fromPath, toPath));")
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

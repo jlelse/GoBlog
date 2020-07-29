@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -62,7 +63,18 @@ func buildHandler() (http.Handler, error) {
 	} else {
 		for _, path := range allPostPaths {
 			if path != "" {
-				r.Get(path, servePost)
+				r.With(TrimSlash).Get(path, servePost)
+			}
+		}
+	}
+
+	allRedirectPaths, err := allRedirectPaths()
+	if err != nil {
+		return nil, err
+	} else {
+		for _, path := range allRedirectPaths {
+			if path != "" {
+				r.With(TrimSlash).Get(path, serveRedirect)
 			}
 		}
 	}
@@ -89,4 +101,13 @@ func (d *dynamicHandler) swapHandler(h http.Handler) {
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.realHandler.ServeHTTP(w, r)
+}
+
+func TrimSlash(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(r.RequestURI) > 1 {
+			r.RequestURI = strings.TrimSuffix(r.RequestURI, "/")
+		}
+		next.ServeHTTP(w, r)
+	})
 }

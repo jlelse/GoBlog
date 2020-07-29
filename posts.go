@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strings"
 )
 
 var postNotFound = errors.New("post not found")
@@ -18,11 +17,7 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	path := r.RequestURI
-	if len(path) > 1 {
-		path = strings.TrimSuffix(path, "/")
-	}
-	post, err := getPost(path, r.Context())
+	post, err := getPost(r.RequestURI, r.Context())
 	if err == postNotFound {
 		http.NotFound(w, r)
 		return
