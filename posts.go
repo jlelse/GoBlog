@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
 )
@@ -17,18 +16,22 @@ type post struct {
 	updated   string
 }
 
-func servePost(c echo.Context) error {
-	post, err := getPost(strings.TrimSuffix(strings.TrimPrefix(c.Request().RequestURI, "/"), "/"))
+func servePost(w http.ResponseWriter, r *http.Request) {
+	post, err := getPost(strings.TrimSuffix(strings.TrimPrefix(r.RequestURI, "/"), "/"))
 	if err == postNotFound {
-		return echo.ErrNotFound
+		http.NotFound(w, r)
+		return
 	} else if err != nil {
-		return err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	htmlContent, err := renderMarkdown(post.content)
 	if err != nil {
-		return err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return c.HTML(http.StatusOK, htmlContent)
+	w.Header().Set("Content-Type", "text/html")
+	_, _ = w.Write(htmlContent)
 }
 
 func getPost(path string) (*post, error) {

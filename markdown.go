@@ -27,10 +27,10 @@ func init() {
 	)
 }
 
-func renderMarkdown(source string) (content string, err error) {
+func renderMarkdown(source string) (content []byte, err error) {
 	context := parser.NewContext()
 	var buffer bytes.Buffer
 	err = markdown.Convert([]byte(source), &buffer, parser.WithContext(context))
-	content = string(emojify(buffer.Bytes()))
+	content = emojify(buffer.Bytes())
 	return
 }

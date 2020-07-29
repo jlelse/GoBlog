@@ -2,45 +2,53 @@ package main
 
 import (
 	"context"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
 func startServer() {
-	e := echo.New()
+	r := chi.NewRouter()
 
 	if appConfig.server.logging {
-		e.Use(middleware.Logger())
+		r.Use(middleware.RealIP)
+		r.Use(middleware.Logger)
 	}
-	e.Use(middleware.Recover(), middleware.Gzip())
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.StripSlashes)
 
-	e.GET("/", hello)
-	e.GET("/*", servePost)
+	r.Get("/", hello)
+	r.Get("/*", servePost)
 
 	address := ":" + strconv.Itoa(appConfig.server.port)
+	srv := &http.Server{
+		Addr:    address,
+		Handler: r,
+	}
+
 	go func() {
-		if err := e.Start(address); err != nil {
+		if err := srv.ListenAndServe(); err != nil {
 			log.Println("Shutting down the server")
 		}
 	}()
 
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal(err)
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func hello(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
+func hello(w http.ResponseWriter, _ *http.Request) {
+	_, _ = w.Write([]byte("Hello World!"))
 }
