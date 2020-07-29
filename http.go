@@ -63,7 +63,7 @@ func buildHandler() (http.Handler, error) {
 	} else {
 		for _, path := range allPostPaths {
 			if path != "" {
-				r.Get(path, servePost)
+				r.With(CacheMiddleware).Get(path, servePost)
 			}
 		}
 	}

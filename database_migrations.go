@@ -31,6 +31,13 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00004",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create table cache (path text not null primary key, time integer, mime text, value blob);")
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

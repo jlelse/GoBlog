@@ -18,7 +18,8 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	post, err := getPost(SlashTrimmedPath(r), r.Context())
+	path := SlashTrimmedPath(r)
+	post, err := getPost(path, r.Context())
 	if err == postNotFound {
 		http.NotFound(w, r)
 		return
@@ -31,7 +32,11 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html")
+	mime := "text/html"
+	if appConfig.cache.enable {
+		saveCache(path, mime, htmlContent)
+	}
+	w.Header().Set("Content-Type", mime)
 	_, _ = w.Write(htmlContent)
 }
 
