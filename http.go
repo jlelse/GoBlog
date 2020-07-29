@@ -63,7 +63,7 @@ func buildHandler() (http.Handler, error) {
 	} else {
 		for _, path := range allPostPaths {
 			if path != "" {
-				r.With(TrimSlash).Get(path, servePost)
+				r.Get(path, servePost)
 			}
 		}
 	}
@@ -74,7 +74,7 @@ func buildHandler() (http.Handler, error) {
 	} else {
 		for _, path := range allRedirectPaths {
 			if path != "" {
-				r.With(TrimSlash).Get(path, serveRedirect)
+				r.Get(path, serveRedirect)
 			}
 		}
 	}
@@ -103,11 +103,10 @@ func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.realHandler.ServeHTTP(w, r)
 }
 
-func TrimSlash(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(r.RequestURI) > 1 {
-			r.RequestURI = strings.TrimSuffix(r.RequestURI, "/")
-		}
-		next.ServeHTTP(w, r)
-	})
+func SlashTrimmedPath(r *http.Request) string {
+	path := r.URL.Path
+	if len(path) > 1 {
+		path = strings.TrimSuffix(path, "/")
+	}
+	return path
 }

@@ -9,13 +9,8 @@ import (
 
 var redirectNotFound = errors.New("redirect not found")
 
-type redirect struct {
-	fromPath string
-	toPath   string
-}
-
 func serveRedirect(w http.ResponseWriter, r *http.Request) {
-	redirect, err := getRedirect(r.RequestURI, r.Context())
+	redirect, err := getRedirect(SlashTrimmedPath(r), r.Context())
 	if err == redirectNotFound {
 		http.NotFound(w, r)
 		return

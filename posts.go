@@ -17,7 +17,7 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	post, err := getPost(r.RequestURI, r.Context())
+	post, err := getPost(SlashTrimmedPath(r), r.Context())
 	if err == postNotFound {
 		http.NotFound(w, r)
 		return
