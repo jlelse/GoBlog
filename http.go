@@ -56,6 +56,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
+	r.Use(middleware.GetHead)
 
 	allPostPaths, err := allPostPaths()
 	if err != nil {
