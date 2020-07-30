@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-func CacheMiddleware(next http.Handler) http.Handler {
+func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestUrl, _ := url.ParseRequestURI(r.RequestURI)
-		path := SlashTrimmedPath(r)
+		path := slashTrimmedPath(r)
 		if appConfig.cache.enable &&
 			// check bypass query
 			!(requestUrl != nil && requestUrl.Query().Get("cache") == "0") {
-			cacheTime, header, body := getCache(path, r.Context())
+			cacheTime, header, body := getCache(r.Context(), path)
 			if cacheTime == 0 {
 				recorder := httptest.NewRecorder()
 				next.ServeHTTP(recorder, r)
@@ -36,31 +36,29 @@ func CacheMiddleware(next http.Handler) http.Handler {
 					saveCache(path, now, recorder.Header(), recorder.Body.Bytes())
 				}
 				return
-			} else {
-				cacheTimeString := time.Unix(cacheTime, 0).Format(time.RFC1123)
-				expiresTimeString := time.Unix(cacheTime+appConfig.cache.expiration, 0).Format(time.RFC1123)
-				// check conditional request
-				ifModifiedSinceHeader := r.Header.Get("If-Modified-Since")
-				if ifModifiedSinceHeader != "" && ifModifiedSinceHeader == cacheTimeString {
-					setCacheHeaders(w, cacheTimeString, expiresTimeString)
-					// send 304
-					w.WriteHeader(http.StatusNotModified)
-					return
-				}
-				// copy cached headers
-				for k, v := range header {
-					w.Header()[k] = v
-				}
+			}
+			cacheTimeString := time.Unix(cacheTime, 0).Format(time.RFC1123)
+			expiresTimeString := time.Unix(cacheTime+appConfig.cache.expiration, 0).Format(time.RFC1123)
+			// check conditional request
+			ifModifiedSinceHeader := r.Header.Get("If-Modified-Since")
+			if ifModifiedSinceHeader != "" && ifModifiedSinceHeader == cacheTimeString {
 				setCacheHeaders(w, cacheTimeString, expiresTimeString)
-				w.Header().Set("GoBlog-Cache", "HIT")
-				// write cached body
-				_, _ = w.Write(body)
+				// send 304
+				w.WriteHeader(http.StatusNotModified)
 				return
 			}
-		} else {
-			next.ServeHTTP(w, r)
+			// copy cached headers
+			for k, v := range header {
+				w.Header()[k] = v
+			}
+			setCacheHeaders(w, cacheTimeString, expiresTimeString)
+			w.Header().Set("GoBlog-Cache", "HIT")
+			// write cached body
+			_, _ = w.Write(body)
 			return
 		}
+		next.ServeHTTP(w, r)
+		return
 	})
 }
 
@@ -70,7 +68,7 @@ func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeS
 	w.Header().Set("Expires", expiresTimeString)
 }
 
-func getCache(path string, context context.Context) (creationTime int64, header map[string][]string, body []byte) {
+func getCache(context context.Context, path string) (creationTime int64, header map[string][]string, body []byte) {
 	var headerBytes []byte
 	allowedTime := time.Now().Unix() - appConfig.cache.expiration
 	row := appDb.QueryRowContext(context, "select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)

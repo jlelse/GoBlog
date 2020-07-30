@@ -30,7 +30,7 @@ func closeDb() error {
 	return appDb.Close()
 }
 
-func vacuumDb()  {
+func vacuumDb() {
 	startWritingToDb()
 	_, _ = appDb.Exec("VACUUM;")
 	finishWritingToDb()

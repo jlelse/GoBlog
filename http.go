@@ -61,22 +61,20 @@ func buildHandler() (http.Handler, error) {
 	allPostPaths, err := allPostPaths()
 	if err != nil {
 		return nil, err
-	} else {
-		for _, path := range allPostPaths {
-			if path != "" {
-				r.With(CacheMiddleware).Get(path, servePost)
-			}
+	}
+	for _, path := range allPostPaths {
+		if path != "" {
+			r.With(cacheMiddleware).Get(path, servePost)
 		}
 	}
 
 	allRedirectPaths, err := allRedirectPaths()
 	if err != nil {
 		return nil, err
-	} else {
-		for _, path := range allRedirectPaths {
-			if path != "" {
-				r.Get(path, serveRedirect)
-			}
+	}
+	for _, path := range allRedirectPaths {
+		if path != "" {
+			r.Get(path, serveRedirect)
 		}
 	}
 
@@ -104,7 +102,7 @@ func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.realHandler.ServeHTTP(w, r)
 }
 
-func SlashTrimmedPath(r *http.Request) string {
+func slashTrimmedPath(r *http.Request) string {
 	path := r.URL.Path
 	if len(path) > 1 {
 		path = strings.TrimSuffix(path, "/")

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-var postNotFound = errors.New("post not found")
+var errPostNotFound = errors.New("post not found")
 
 type post struct {
 	path       string
@@ -18,9 +18,9 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	path := SlashTrimmedPath(r)
-	post, err := getPost(path, r.Context())
-	if err == postNotFound {
+	path := slashTrimmedPath(r)
+	post, err := getPost(r.Context(), path)
+	if err == errPostNotFound {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
@@ -36,12 +36,12 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(htmlContent)
 }
 
-func getPost(path string, context context.Context) (*post, error) {
+func getPost(context context.Context, path string) (*post, error) {
 	queriedPost := &post{}
 	row := appDb.QueryRowContext(context, "select path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, '') from posts where path=?", path)
 	err := row.Scan(&queriedPost.path, &queriedPost.content, &queriedPost.published, &queriedPost.updated)
 	if err == sql.ErrNoRows {
-		return nil, postNotFound
+		return nil, errPostNotFound
 	} else if err != nil {
 		return nil, err
 	}

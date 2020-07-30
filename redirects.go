@@ -7,27 +7,26 @@ import (
 	"net/http"
 )
 
-var redirectNotFound = errors.New("redirect not found")
+var errRedirectNotFound = errors.New("redirect not found")
 
 func serveRedirect(w http.ResponseWriter, r *http.Request) {
-	redirect, err := getRedirect(SlashTrimmedPath(r), r.Context())
-	if err == redirectNotFound {
+	redirect, err := getRedirect(r.Context(), slashTrimmedPath(r))
+	if err == errRedirectNotFound {
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// TODO: Change status code
-	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirect, http.StatusFound)
 }
 
-func getRedirect(fromPath string, context context.Context) (string, error) {
+func getRedirect(context context.Context, fromPath string) (string, error) {
 	var toPath string
 	row := appDb.QueryRowContext(context, "select toPath from redirects where fromPath=?", fromPath)
 	err := row.Scan(&toPath)
 	if err == sql.ErrNoRows {
-		return "", redirectNotFound
+		return "", errRedirectNotFound
 	} else if err != nil {
 		return "", err
 	}
