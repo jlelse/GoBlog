@@ -26,5 +26,12 @@ func finishWritingToDb() {
 }
 
 func closeDb() error {
+	vacuumDb()
 	return appDb.Close()
+}
+
+func vacuumDb()  {
+	startWritingToDb()
+	_, _ = appDb.Exec("VACUUM;")
+	finishWritingToDb()
 }
