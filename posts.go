@@ -32,11 +32,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	mime := "text/html"
-	if appConfig.cache.enable {
-		saveCache(path, mime, htmlContent)
-	}
-	w.Header().Set("Content-Type", mime)
+	w.Header().Set("Content-Type", "text/html")
 	_, _ = w.Write(htmlContent)
 }
 
