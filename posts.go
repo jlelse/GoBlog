@@ -5,16 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strings"
 )
 
 var errPostNotFound = errors.New("post not found")
 
 type Post struct {
-	Path       string
-	Content    string
-	Published  string
-	Updated    string
-	Parameters map[string]string
+	Path       string            `json:"path"`
+	Content    string            `json:"content"`
+	Published  string            `json:"published"`
+	Updated    string            `json:"updated"`
+	Parameters map[string]string `json:"parameters"`
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
@@ -73,4 +74,36 @@ func allPostPaths() ([]string, error) {
 		postPaths = append(postPaths, path)
 	}
 	return postPaths, nil
+}
+
+func createPost(post *Post) error {
+	if post == nil {
+		return nil
+	}
+	if post.Path == "" || !strings.HasPrefix(post.Path, "/") {
+		return errors.New("wrong path")
+	}
+	startWritingToDb()
+	tx, err := appDb.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("insert into posts (path, content, published, updated) values (?, ?, ?, ?)", post.Path, post.Content, post.Published, post.Updated)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	for param, value := range post.Parameters {
+		_, err = tx.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", post.Path, param, value)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	finishWritingToDb()
+	return reloadRouter()
 }

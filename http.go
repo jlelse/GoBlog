@@ -17,8 +17,10 @@ import (
 
 const contentTypeHTML = "text/html"
 
+var d *dynamicHandler
+
 func startServer() error {
-	d := newDynamicHandler()
+	d = newDynamicHandler()
 	h, err := buildHandler()
 	if err != nil {
 		return err
@@ -49,6 +51,15 @@ func startServer() error {
 	return nil
 }
 
+func reloadRouter() error {
+	h, err := buildHandler()
+	if err != nil {
+		return err
+	}
+	d.swapHandler(h)
+	return nil
+}
+
 func buildHandler() (http.Handler, error) {
 	r := chi.NewRouter()
 
@@ -59,6 +70,11 @@ func buildHandler() (http.Handler, error) {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.GetHead)
+
+	r.Route("/api", func(apiRouter chi.Router) {
+		// TODO: Auth
+		apiRouter.Post("/post", apiPostCreate)
+	})
 
 	allPostPaths, err := allPostPaths()
 	if err != nil {
