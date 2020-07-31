@@ -1,14 +1,18 @@
-{{ template "base" . }}
-
 {{ define "title" }}
-  <title>{{ with title . }}{{ . }} - {{end}}{{ blog.Title }}</title>
+  <title>{{ with p . "title" }}{{ . }} - {{end}}{{ blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main class=h-entry>
     <article>
-        {{ with title . }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-      <div class=e-content>{{ md .Content }}</div>
+        {{ with p . "title" }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+        {{ with .Content }}
+          <div class=e-content>{{ md . }}</div>
+        {{ end }}
     </article>
   </main>
+{{ end }}
+
+{{ define "post"}}
+    {{ template "base" . }}
 {{ end }}

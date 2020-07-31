@@ -2,18 +2,21 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 )
 
-const templatePostName = "post.gohtml"
-const templateRedirectName = "redirect.gohtml"
+const templatePost = "post"
+const templateError = "error"
+const templateRedirect = "redirect"
 
-var templates *template.Template
+var templates map[string]*template.Template
+var templateFunctions template.FuncMap
 
 func initRendering() {
-	templateFunctions := template.FuncMap{
+	templateFunctions = template.FuncMap{
 		"blog": func() *configBlog {
 			return appConfig.blog
 		},
@@ -25,23 +28,25 @@ func initRendering() {
 			}
 			return template.HTML(htmlContent)
 		},
-		"title": func(post Post) string {
-			return post.Parameters["title"]
+		"p": func(post Post, parameter string) string {
+			return post.Parameters[parameter]
 		},
 	}
 
-	var err error
-
-	templates, err = template.New("templates").Funcs(templateFunctions).ParseGlob("templates/*.gohtml")
-	if err != nil {
-		log.Fatal(err)
+	templates = make(map[string]*template.Template)
+	for _, name := range []string{templatePost, templateError, templateRedirect} {
+		templates[name] = loadTemplate(name)
 	}
+}
+
+func loadTemplate(name string) *template.Template {
+	return template.Must(template.New(name).Funcs(templateFunctions).ParseFiles("templates/base.gohtml", fmt.Sprintf("templates/%s.gohtml", name)))
 }
 
 func render(w http.ResponseWriter, template string, data interface{}) {
 	// We need to use a buffer here to enable minification
 	var buffer bytes.Buffer
-	err := templates.ExecuteTemplate(&buffer, template, data)
+	err := templates[template].ExecuteTemplate(&buffer, template, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

@@ -21,13 +21,13 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	path := slashTrimmedPath(r)
 	post, err := getPost(r.Context(), path)
 	if err == errPostNotFound {
-		http.NotFound(w, r)
+		serve404(w, r)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	render(w, templatePostName, post)
+	render(w, templatePost, post)
 }
 
 func getPost(context context.Context, path string) (*Post, error) {

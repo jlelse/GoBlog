@@ -76,9 +76,11 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range allRedirectPaths {
 		if path != "" {
-			r.Get(path, serveRedirect)
+			r.With(minifier.Middleware).Get(path, serveRedirect)
 		}
 	}
+
+	r.With(minifier.Middleware).NotFound(serve404)
 
 	return r, nil
 }
@@ -105,9 +107,12 @@ func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func slashTrimmedPath(r *http.Request) string {
-	path := r.URL.Path
-	if len(path) > 1 {
-		path = strings.TrimSuffix(path, "/")
+	return trimSlash(r.URL.Path)
+}
+
+func trimSlash(s string) string {
+	if len(s) > 1 {
+		s = strings.TrimSuffix(s, "/")
 	}
-	return path
+	return s
 }

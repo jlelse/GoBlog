@@ -1,7 +1,9 @@
-<!doctype html>
-<html lang={{ blog.Lang }}>
-<meta charset="utf-8"/>
-<meta name="robots" content="noindex">
-<title>{{ .Permalink }}</title>
-<link rel="canonical" href="{{ .Permalink }}"/>
-<meta http-equiv="refresh" content="0; url={{ .Permalink }}"/>
+{{ define "redirect" }}
+  <!doctype html>
+  <html lang={{ blog.Lang }}>
+  <meta charset="utf-8"/>
+  <meta name="robots" content="noindex">
+  <title>{{ .Permalink }}</title>
+  <link rel="canonical" href="{{ .Permalink }}"/>
+  <meta http-equiv="refresh" content="0; url={{ .Permalink }}"/>
+{{ end }}

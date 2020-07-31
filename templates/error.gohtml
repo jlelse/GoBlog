@@ -1,0 +1,14 @@
+{{ define "title" }}
+  <title>{{ with .Title }}{{ . }} - {{end}}{{ blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+      {{ with .Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Message }}{{ md . }}{{ end }}
+  </main>
+{{ end }}
+
+{{ define "error" }}
+    {{ template "base" . }}
+{{ end }}

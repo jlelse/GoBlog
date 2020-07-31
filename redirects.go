@@ -10,32 +10,41 @@ import (
 var errRedirectNotFound = errors.New("redirect not found")
 
 func serveRedirect(w http.ResponseWriter, r *http.Request) {
-	redirect, err := getRedirect(r.Context(), slashTrimmedPath(r))
+	redirect, more, err := getRedirect(r.Context(), slashTrimmedPath(r))
 	if err == errRedirectNotFound {
-		http.NotFound(w, r)
+		serve404(w, r)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusFound)
-	_ = templates.ExecuteTemplate(w, templateRedirectName, struct {
+	// Flatten redirects
+	if more {
+		for more == true {
+			redirect, more, _ = getRedirect(r.Context(), trimSlash(redirect))
+		}
+	}
+	// Send redirect
+	w.Header().Set("Location", redirect)
+	render(w, templateRedirect, struct {
 		Permalink string
 	}{
 		Permalink: redirect,
 	})
+	w.WriteHeader(http.StatusFound)
 }
 
-func getRedirect(context context.Context, fromPath string) (string, error) {
+func getRedirect(context context.Context, fromPath string) (string, bool, error) {
 	var toPath string
-	row := appDb.QueryRowContext(context, "select toPath from redirects where fromPath=?", fromPath)
-	err := row.Scan(&toPath)
+	var moreRedirects int
+	row := appDb.QueryRowContext(context, "select toPath, (select count(*) from redirects where fromPath=(select toPath from redirects where fromPath=?)) as more from redirects where fromPath=?", fromPath, fromPath)
+	err := row.Scan(&toPath, &moreRedirects)
 	if err == sql.ErrNoRows {
-		return "", errRedirectNotFound
+		return "", false, errRedirectNotFound
 	} else if err != nil {
-		return "", err
+		return "", false, err
 	}
-	return toPath, nil
+	return toPath, moreRedirects > 0, nil
 }
 
 func allRedirectPaths() ([]string, error) {
