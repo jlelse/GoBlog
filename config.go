@@ -9,6 +9,7 @@ type config struct {
 	server *configServer
 	db     *configDb
 	cache  *configCache
+	blog   *configBlog
 }
 
 type configServer struct {
@@ -25,10 +26,19 @@ type configCache struct {
 	expiration int64
 }
 
+// exposed to templates via function "blog"
+type configBlog struct {
+	// Language of the blog, e.g. "en" or "de"
+	Lang  string
+	// Title of the blog, e.g. "My blog"
+	Title string
+}
+
 var appConfig = &config{
 	server: &configServer{},
 	db:     &configDb{},
 	cache:  &configCache{},
+	blog:   &configBlog{},
 }
 
 func initConfig() error {
@@ -61,6 +71,15 @@ func initConfig() error {
 	viper.SetDefault(cacheExpiration, 600)
 	appConfig.cache.expiration = viper.GetInt64(cacheExpiration)
 	logConfig(cacheExpiration, appConfig.cache.expiration)
+	// Blog meta
+	blogLang := "blog.lang"
+	viper.SetDefault(blogLang, "en")
+	appConfig.blog.Lang = viper.GetString(blogLang)
+	logConfig(blogLang, appConfig.blog.Lang)
+	blogTitle := "blog.title"
+	viper.SetDefault(blogTitle, "My blog")
+	appConfig.blog.Title = viper.GetString(blogTitle)
+	logConfig(blogTitle, appConfig.blog.Title)
 	return nil
 }
 

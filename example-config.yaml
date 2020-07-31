@@ -3,3 +3,9 @@ server:
   port: 8080
 database:
   file: data/db.sqlite
+cache:
+  enable: true
+  expiration: 600
+blog:
+  lang: en
+  title: My blog

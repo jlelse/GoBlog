@@ -9,12 +9,12 @@ import (
 
 var errPostNotFound = errors.New("post not found")
 
-type post struct {
-	path       string
-	content    string
-	published  string
-	updated    string
-	parameters map[string]string
+type Post struct {
+	Path       string
+	Content    string
+	Published  string
+	Updated    string
+	Parameters map[string]string
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
@@ -27,19 +27,16 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	htmlContent, err := renderMarkdown(post.content)
+	err = templates.ExecuteTemplate(w, templatePostName, post)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-	w.Header().Set("Content-Type", "text/html")
-	_, _ = w.Write(htmlContent)
 }
 
-func getPost(context context.Context, path string) (*post, error) {
-	queriedPost := &post{}
+func getPost(context context.Context, path string) (*Post, error) {
+	queriedPost := &Post{}
 	row := appDb.QueryRowContext(context, "select path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, '') from posts where path=?", path)
-	err := row.Scan(&queriedPost.path, &queriedPost.content, &queriedPost.published, &queriedPost.updated)
+	err := row.Scan(&queriedPost.Path, &queriedPost.Content, &queriedPost.Published, &queriedPost.Updated)
 	if err == sql.ErrNoRows {
 		return nil, errPostNotFound
 	} else if err != nil {
@@ -52,17 +49,17 @@ func getPost(context context.Context, path string) (*post, error) {
 	return queriedPost, nil
 }
 
-func (p *post) fetchParameters(context context.Context) error {
-	rows, err := appDb.QueryContext(context, "select parameter, COALESCE(value, '') from post_parameters where path=?", p.path)
+func (p *Post) fetchParameters(context context.Context) error {
+	rows, err := appDb.QueryContext(context, "select parameter, COALESCE(value, '') from post_parameters where path=?", p.Path)
 	if err != nil {
 		return err
 	}
-	p.parameters = make(map[string]string)
+	p.Parameters = make(map[string]string)
 	for rows.Next() {
 		var parameter string
 		var value string
 		_ = rows.Scan(&parameter, &value)
-		p.parameters[parameter] = value
+		p.Parameters[parameter] = value
 	}
 	return nil
 }

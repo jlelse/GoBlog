@@ -22,6 +22,9 @@ func main() {
 		}
 	}()
 	log.Println("Loaded database")
+	log.Println("Initializing template rendering")
+	initEmoji()
+	initRendering()
 	log.Println("Start server")
 	err = startServer()
 	if err != nil {

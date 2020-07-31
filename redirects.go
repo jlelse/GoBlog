@@ -18,7 +18,12 @@ func serveRedirect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, redirect, http.StatusFound)
+	w.WriteHeader(http.StatusFound)
+	_ = templates.ExecuteTemplate(w, templateRedirectName, struct {
+		Permalink string
+	}{
+		Permalink: redirect,
+	})
 }
 
 func getRedirect(context context.Context, fromPath string) (string, error) {
