@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"log"
+	"net/http"
 )
 
 const templatePostName = "post.gohtml"
@@ -34,4 +36,17 @@ func initRendering() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func render(w http.ResponseWriter, template string, data interface{}) {
+	// We need to use a buffer here to enable minification
+	var buffer bytes.Buffer
+	err := templates.ExecuteTemplate(&buffer, template, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	// Set content type (needed for minification middleware
+	w.Header().Set("Content-Type", contentTypeHTML)
+	// Write buffered response
+	_, _ = w.Write(buffer.Bytes())
 }
