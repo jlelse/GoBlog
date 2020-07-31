@@ -25,6 +25,7 @@ func main() {
 	log.Println("Initializing template rendering")
 	initEmoji()
 	initRendering()
+	initMinify() // should happen before server
 	log.Println("Start server")
 	err = startServer()
 	if err != nil {

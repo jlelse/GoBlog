@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const contentTypeHTML = "text/html"
+
 func startServer() error {
 	d := newDynamicHandler()
 	h, err := buildHandler()
@@ -64,7 +66,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range allPostPaths {
 		if path != "" {
-			r.With(cacheMiddleware).Get(path, servePost)
+			r.With(cacheMiddleware, minifier.Middleware).Get(path, servePost)
 		}
 	}
 

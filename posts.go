@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -27,10 +28,16 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = templates.ExecuteTemplate(w, templatePostName, post)
+	// We need to use a buffer here to enable minification
+	var buffer bytes.Buffer
+	err = templates.ExecuteTemplate(&buffer, templatePostName, post)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	// Set content type (needed for minification middleware
+	w.Header().Set("Content-Type", contentTypeHTML)
+	// Write buffered response
+	_, _ = w.Write(buffer.Bytes())
 }
 
 func getPost(context context.Context, path string) (*Post, error) {
