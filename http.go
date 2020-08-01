@@ -72,8 +72,11 @@ func buildHandler() (http.Handler, error) {
 	r.Use(middleware.GetHead)
 
 	r.Route("/api", func(apiRouter chi.Router) {
-		// TODO: Auth
+		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
+			appConfig.user.nick: appConfig.user.password,
+		}))
 		apiRouter.Post("/post", apiPostCreate)
+		apiRouter.Delete("/post", apiPostDelete)
 	})
 
 	allPostPaths, err := allPostPaths()

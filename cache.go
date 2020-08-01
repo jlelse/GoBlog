@@ -90,3 +90,14 @@ func saveCache(path string, now time.Time, header map[string][]string, body []by
 	_ = tx.Commit()
 	finishWritingToDb()
 }
+
+func purgeCache(path string) {
+	startWritingToDb()
+	tx, err := appDb.Begin()
+	if err != nil {
+		return
+	}
+	_, _ = tx.Exec("delete from cache where path=?", path)
+	_ = tx.Commit()
+	finishWritingToDb()
+}

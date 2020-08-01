@@ -23,3 +23,21 @@ func apiPostCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", post.Path)
 	w.WriteHeader(http.StatusCreated)
 }
+
+func apiPostDelete(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		_ = r.Body.Close()
+	}()
+	post := &Post{}
+	err := json.NewDecoder(r.Body).Decode(post)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = deletePost(post)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

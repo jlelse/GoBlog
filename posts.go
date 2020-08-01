@@ -76,12 +76,20 @@ func allPostPaths() ([]string, error) {
 	return postPaths, nil
 }
 
-func createPost(post *Post) error {
+func checkPost(post *Post) error {
 	if post == nil {
-		return nil
+		return errors.New("no post")
 	}
 	if post.Path == "" || !strings.HasPrefix(post.Path, "/") {
 		return errors.New("wrong path")
+	}
+	return nil
+}
+
+func createPost(post *Post) error {
+	err := checkPost(post)
+	if err != nil {
+		return err
 	}
 	startWritingToDb()
 	tx, err := appDb.Begin()
@@ -105,5 +113,35 @@ func createPost(post *Post) error {
 		return err
 	}
 	finishWritingToDb()
+	go purgeCache(post.Path)
+	return reloadRouter()
+}
+
+func deletePost(post *Post) error {
+	err := checkPost(post)
+	if err != nil {
+		return err
+	}
+	startWritingToDb()
+	tx, err := appDb.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("delete from posts where path=?", post.Path)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec("delete from post_parameters where path=?", post.Path)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	finishWritingToDb()
+	go purgeCache(post.Path)
 	return reloadRouter()
 }

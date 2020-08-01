@@ -9,3 +9,7 @@ cache:
 blog:
   lang: en
   title: My blog
+user:
+  nick: admin
+  name: Admin
+  password: secret

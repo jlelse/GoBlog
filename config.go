@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/spf13/viper"
-	"log"
 )
 
 type config struct {
@@ -10,6 +9,7 @@ type config struct {
 	db     *configDb
 	cache  *configCache
 	blog   *configBlog
+	user   *configUser
 }
 
 type configServer struct {
@@ -29,9 +29,15 @@ type configCache struct {
 // exposed to templates via function "blog"
 type configBlog struct {
 	// Language of the blog, e.g. "en" or "de"
-	Lang  string
+	Lang string
 	// Title of the blog, e.g. "My blog"
 	Title string
+}
+
+type configUser struct {
+	nick     string
+	name     string
+	password string
 }
 
 var appConfig = &config{
@@ -39,6 +45,7 @@ var appConfig = &config{
 	db:     &configDb{},
 	cache:  &configCache{},
 	blog:   &configBlog{},
+	user:   &configUser{},
 }
 
 func initConfig() error {
@@ -52,37 +59,36 @@ func initConfig() error {
 	serverLogging := "server.logging"
 	viper.SetDefault(serverLogging, false)
 	appConfig.server.logging = viper.GetBool(serverLogging)
-	logConfig(serverLogging, appConfig.server.logging)
 	serverPort := "server.port"
 	viper.SetDefault(serverPort, 8080)
 	appConfig.server.port = viper.GetInt(serverPort)
-	logConfig(serverPort, appConfig.server.port)
 	// Database
 	databaseFile := "database.file"
 	viper.SetDefault(databaseFile, "data/db.sqlite")
 	appConfig.db.file = viper.GetString(databaseFile)
-	logConfig(databaseFile, appConfig.db.file)
 	// Caching
 	cacheEnable := "cache.enable"
 	viper.SetDefault(cacheEnable, true)
 	appConfig.cache.enable = viper.GetBool(cacheEnable)
-	logConfig(cacheEnable, appConfig.cache.enable)
 	cacheExpiration := "cache.expiration"
 	viper.SetDefault(cacheExpiration, 600)
 	appConfig.cache.expiration = viper.GetInt64(cacheExpiration)
-	logConfig(cacheExpiration, appConfig.cache.expiration)
 	// Blog meta
 	blogLang := "blog.lang"
 	viper.SetDefault(blogLang, "en")
 	appConfig.blog.Lang = viper.GetString(blogLang)
-	logConfig(blogLang, appConfig.blog.Lang)
 	blogTitle := "blog.title"
 	viper.SetDefault(blogTitle, "My blog")
 	appConfig.blog.Title = viper.GetString(blogTitle)
-	logConfig(blogTitle, appConfig.blog.Title)
+	// User
+	userNick := "user.nick"
+	viper.SetDefault(userNick, "admin")
+	appConfig.user.nick = viper.GetString(userNick)
+	userName := "user.name"
+	viper.SetDefault(userName, "Admin")
+	appConfig.user.name = viper.GetString(userName)
+	userPassword := "user.password"
+	viper.SetDefault(userPassword, "secret")
+	appConfig.user.password = viper.GetString(userPassword)
 	return nil
-}
-
-func logConfig(key string, value interface{}) {
-	log.Println(key+":", value)
 }
