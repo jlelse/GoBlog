@@ -1,54 +1,43 @@
 package main
 
 import (
-	"context"
+	"github.com/caddyserver/certmagic"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
-	"time"
 )
 
 const contentTypeHTML = "text/html"
 
 var d *dynamicHandler
 
-func startServer() error {
+func startServer() (err error) {
 	d = newDynamicHandler()
 	h, err := buildHandler()
 	if err != nil {
-		return err
+		return
 	}
 	d.swapHandler(h)
-
-	address := ":" + strconv.Itoa(appConfig.server.port)
-	srv := &http.Server{
-		Addr:    address,
-		Handler: d,
+	localAddress := ":" + strconv.Itoa(appConfig.server.port)
+	if appConfig.server.publicHttps {
+		initPublicHTTPS()
+		err = certmagic.HTTPS([]string{appConfig.server.domain}, d)
+	} else if appConfig.server.localHttps {
+		err = http.ListenAndServeTLS(localAddress, "https/server.crt", "https/server.key", d)
+	} else {
+		err = http.ListenAndServe(localAddress, d)
 	}
+	return
+}
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Println("Shutting down the server")
-		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		return err
-	}
-	return nil
+func initPublicHTTPS() {
+	certmagic.Default.Storage = &certmagic.FileStorage{Path: "certmagic"}
+	certmagic.DefaultACME.Agreed = true
+	certmagic.DefaultACME.Email = appConfig.server.letsEncryptMail
+	certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
 }
 
 func reloadRouter() error {

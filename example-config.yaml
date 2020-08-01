@@ -1,6 +1,10 @@
 server:
   logging: false
   port: 8080
+  domain: example.com
+  publicHttps: false
+  letsEncryptMail: mail@example.com
+  localHttps: false
 database:
   file: data/db.sqlite
 cache:

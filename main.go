@@ -1,34 +1,50 @@
 package main
 
-import "log"
+import (
+	"log"
+	"os"
+	"os/signal"
+)
 
 func main() {
-	log.Println("Initializing configuration")
+	// Initialize all things
+	log.Println("Initializing...")
 	err := initConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Completed configuration")
-	log.Println("Initializing database")
 	err = initDatabase()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
-	defer func() {
-		log.Println("Close database")
-		err := closeDb()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-	log.Println("Loaded database")
-	log.Println("Initializing template rendering")
 	initEmoji()
 	initRendering()
-	initMinify() // should happen before server
-	log.Println("Start server")
-	err = startServer()
+	initMinify()
+
+	// Prepare graceful shutdown
+	quit := make(chan os.Signal, 1)
+
+	// Start the server
+	go func() {
+		log.Println("Starting...")
+		err = startServer()
+		if err != nil {
+			log.Println("Failed to start server:")
+			log.Println(err)
+		}
+		quit <- os.Interrupt
+	}()
+
+	// Graceful shutdown
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Stopping...")
+
+	// Close DB
+	err = closeDb()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 }

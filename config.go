@@ -13,8 +13,12 @@ type config struct {
 }
 
 type configServer struct {
-	logging bool
-	port    int
+	logging         bool
+	port            int
+	domain          string
+	publicHttps     bool
+	letsEncryptMail string
+	localHttps      bool
 }
 
 type configDb struct {
@@ -62,6 +66,18 @@ func initConfig() error {
 	serverPort := "server.port"
 	viper.SetDefault(serverPort, 8080)
 	appConfig.server.port = viper.GetInt(serverPort)
+	serverDomain := "server.domain"
+	viper.SetDefault(serverDomain, "example.com")
+	appConfig.server.domain = viper.GetString(serverDomain)
+	serverPublicHttps := "server.publicHttps"
+	viper.SetDefault(serverPublicHttps, false)
+	appConfig.server.publicHttps = viper.GetBool(serverPublicHttps)
+	serverLetsEncryptMail := "server.letsEncryptMail"
+	viper.SetDefault(serverLetsEncryptMail, "mail@example.com")
+	appConfig.server.letsEncryptMail = viper.GetString(serverLetsEncryptMail)
+	serverLocalHttps := "server.localHttps"
+	viper.SetDefault(serverLocalHttps, false)
+	appConfig.server.localHttps = viper.GetBool(serverLocalHttps)
 	// Database
 	databaseFile := "database.file"
 	viper.SetDefault(databaseFile, "data/db.sqlite")
