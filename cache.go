@@ -13,7 +13,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestUrl, _ := url.ParseRequestURI(r.RequestURI)
 		path := slashTrimmedPath(r)
-		if appConfig.cache.enable &&
+		if appConfig.Cache.Enable &&
 			// check bypass query
 			!(requestUrl != nil && requestUrl.Query().Get("cache") == "0") {
 			cacheTime, header, body := getCache(r.Context(), path)
@@ -27,7 +27,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 					w.Header()[k] = v
 				}
 				now := time.Now()
-				setCacheHeaders(w, now.Format(time.RFC1123), time.Unix(now.Unix()+appConfig.cache.expiration, 0).Format(time.RFC1123))
+				setCacheHeaders(w, now.Format(time.RFC1123), time.Unix(now.Unix()+appConfig.Cache.Expiration, 0).Format(time.RFC1123))
 				w.Header().Set("GoBlog-Cache", "MISS")
 				w.WriteHeader(code)
 				_, _ = w.Write(recorder.Body.Bytes())
@@ -38,7 +38,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			cacheTimeString := time.Unix(cacheTime, 0).Format(time.RFC1123)
-			expiresTimeString := time.Unix(cacheTime+appConfig.cache.expiration, 0).Format(time.RFC1123)
+			expiresTimeString := time.Unix(cacheTime+appConfig.Cache.Expiration, 0).Format(time.RFC1123)
 			// check conditional request
 			ifModifiedSinceHeader := r.Header.Get("If-Modified-Since")
 			if ifModifiedSinceHeader != "" && ifModifiedSinceHeader == cacheTimeString {
@@ -70,7 +70,7 @@ func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeS
 
 func getCache(context context.Context, path string) (creationTime int64, header map[string][]string, body []byte) {
 	var headerBytes []byte
-	allowedTime := time.Now().Unix() - appConfig.cache.expiration
+	allowedTime := time.Now().Unix() - appConfig.Cache.Expiration
 	row := appDb.QueryRowContext(context, "select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)
 	_ = row.Scan(&creationTime, &headerBytes, &body)
 	header = make(map[string][]string)
@@ -85,7 +85,7 @@ func saveCache(path string, now time.Time, header map[string][]string, body []by
 	if err != nil {
 		return
 	}
-	_, _ = tx.Exec("delete from cache where time<?;", now.Unix()-appConfig.cache.expiration)
+	_, _ = tx.Exec("delete from cache where time<?;", now.Unix()-appConfig.Cache.Expiration)
 	_, _ = tx.Exec("insert or replace into cache (path, time, header, body) values (?, ?, ?, ?);", path, now.Unix(), headerBytes, body)
 	_ = tx.Commit()
 	finishWritingToDb()

@@ -5,52 +5,46 @@ import (
 )
 
 type config struct {
-	server *configServer
-	db     *configDb
-	cache  *configCache
-	blog   *configBlog
-	user   *configUser
+	Server *configServer `mapstructure:"server"`
+	Db     *configDb     `mapstructure:"database"`
+	Cache  *configCache  `mapstructure:"cache"`
+	Blog   *configBlog   `mapstructure:"blog"`
+	User   *configUser   `mapstructure:"user"`
 }
 
 type configServer struct {
-	logging         bool
-	port            int
-	domain          string
-	publicHttps     bool
-	letsEncryptMail string
-	localHttps      bool
+	Logging         bool   `mapstructure:"logging"`
+	Port            int    `mapstructure:"port"`
+	Domain          string `mapstructure:"domain"`
+	PublicHttps     bool   `mapstructure:"publicHttps"`
+	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
+	LocalHttps      bool   `mapstructure:"localHttps"`
 }
 
 type configDb struct {
-	file string
+	File string `mapstructure:"file"`
 }
 
 type configCache struct {
-	enable     bool
-	expiration int64
+	Enable     bool  `mapstructure:"enable"`
+	Expiration int64 `mapstructure:"expiration"`
 }
 
 // exposed to templates via function "blog"
 type configBlog struct {
 	// Language of the blog, e.g. "en" or "de"
-	Lang string
+	Lang string `mapstructure:"lang"`
 	// Title of the blog, e.g. "My blog"
-	Title string
+	Title string `mapstructure:"title"`
 }
 
 type configUser struct {
-	nick     string
-	name     string
-	password string
+	Nick     string `mapstructure:"nick"`
+	Name     string `mapstructure:"name"`
+	Password string `mapstructure:"password"`
 }
 
-var appConfig = &config{
-	server: &configServer{},
-	db:     &configDb{},
-	cache:  &configCache{},
-	blog:   &configBlog{},
-	user:   &configUser{},
-}
+var appConfig = &config{}
 
 func initConfig() error {
 	viper.SetConfigName("config")
@@ -59,52 +53,25 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
-	// Server
-	serverLogging := "server.logging"
-	viper.SetDefault(serverLogging, false)
-	appConfig.server.logging = viper.GetBool(serverLogging)
-	serverPort := "server.port"
-	viper.SetDefault(serverPort, 8080)
-	appConfig.server.port = viper.GetInt(serverPort)
-	serverDomain := "server.domain"
-	viper.SetDefault(serverDomain, "example.com")
-	appConfig.server.domain = viper.GetString(serverDomain)
-	serverPublicHttps := "server.publicHttps"
-	viper.SetDefault(serverPublicHttps, false)
-	appConfig.server.publicHttps = viper.GetBool(serverPublicHttps)
-	serverLetsEncryptMail := "server.letsEncryptMail"
-	viper.SetDefault(serverLetsEncryptMail, "mail@example.com")
-	appConfig.server.letsEncryptMail = viper.GetString(serverLetsEncryptMail)
-	serverLocalHttps := "server.localHttps"
-	viper.SetDefault(serverLocalHttps, false)
-	appConfig.server.localHttps = viper.GetBool(serverLocalHttps)
-	// Database
-	databaseFile := "database.file"
-	viper.SetDefault(databaseFile, "data/db.sqlite")
-	appConfig.db.file = viper.GetString(databaseFile)
-	// Caching
-	cacheEnable := "cache.enable"
-	viper.SetDefault(cacheEnable, true)
-	appConfig.cache.enable = viper.GetBool(cacheEnable)
-	cacheExpiration := "cache.expiration"
-	viper.SetDefault(cacheExpiration, 600)
-	appConfig.cache.expiration = viper.GetInt64(cacheExpiration)
-	// Blog meta
-	blogLang := "blog.lang"
-	viper.SetDefault(blogLang, "en")
-	appConfig.blog.Lang = viper.GetString(blogLang)
-	blogTitle := "blog.title"
-	viper.SetDefault(blogTitle, "My blog")
-	appConfig.blog.Title = viper.GetString(blogTitle)
-	// User
-	userNick := "user.nick"
-	viper.SetDefault(userNick, "admin")
-	appConfig.user.nick = viper.GetString(userNick)
-	userName := "user.name"
-	viper.SetDefault(userName, "Admin")
-	appConfig.user.name = viper.GetString(userName)
-	userPassword := "user.password"
-	viper.SetDefault(userPassword, "secret")
-	appConfig.user.password = viper.GetString(userPassword)
+	// Defaults
+	viper.SetDefault("server.logging", false)
+	viper.SetDefault("server.port", 8080)
+	viper.SetDefault("server.domain", "example.com")
+	viper.SetDefault("server.publicHttps", false)
+	viper.SetDefault("server.letsEncryptMail", "mail@example.com")
+	viper.SetDefault("server.localHttps", false)
+	viper.SetDefault("database.file", "data/db.sqlite")
+	viper.SetDefault("cache.enable", true)
+	viper.SetDefault("cache.expiration", 600)
+	viper.SetDefault("blog.lang", "en")
+	viper.SetDefault("blog.title", "My blog")
+	viper.SetDefault("user.nick", "admin")
+	viper.SetDefault("user.name", "Admin")
+	viper.SetDefault("user.password", "secret")
+	// Unmarshal config
+	err = viper.Unmarshal(appConfig)
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -21,11 +21,11 @@ func startServer() (err error) {
 		return
 	}
 	d.swapHandler(h)
-	localAddress := ":" + strconv.Itoa(appConfig.server.port)
-	if appConfig.server.publicHttps {
+	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
+	if appConfig.Server.PublicHttps {
 		initPublicHTTPS()
-		err = certmagic.HTTPS([]string{appConfig.server.domain}, d)
-	} else if appConfig.server.localHttps {
+		err = certmagic.HTTPS([]string{appConfig.Server.Domain}, d)
+	} else if appConfig.Server.LocalHttps {
 		err = http.ListenAndServeTLS(localAddress, "https/server.crt", "https/server.key", d)
 	} else {
 		err = http.ListenAndServe(localAddress, d)
@@ -36,7 +36,7 @@ func startServer() (err error) {
 func initPublicHTTPS() {
 	certmagic.Default.Storage = &certmagic.FileStorage{Path: "certmagic"}
 	certmagic.DefaultACME.Agreed = true
-	certmagic.DefaultACME.Email = appConfig.server.letsEncryptMail
+	certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
 	certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
 }
 
@@ -52,7 +52,7 @@ func reloadRouter() error {
 func buildHandler() (http.Handler, error) {
 	r := chi.NewRouter()
 
-	if appConfig.server.logging {
+	if appConfig.Server.Logging {
 		r.Use(middleware.RealIP)
 		r.Use(middleware.Logger)
 	}
@@ -62,7 +62,7 @@ func buildHandler() (http.Handler, error) {
 
 	r.Route("/api", func(apiRouter chi.Router) {
 		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
-			appConfig.user.nick: appConfig.user.password,
+			appConfig.User.Nick: appConfig.User.Password,
 		}))
 		apiRouter.Post("/post", apiPostCreate)
 		apiRouter.Delete("/post", apiPostDelete)

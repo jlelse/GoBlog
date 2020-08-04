@@ -18,7 +18,7 @@ var templateFunctions template.FuncMap
 func initRendering() {
 	templateFunctions = template.FuncMap{
 		"blog": func() *configBlog {
-			return appConfig.blog
+			return appConfig.Blog
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)

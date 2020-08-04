@@ -10,7 +10,7 @@ var appDb *sql.DB
 var appDbWriteMutex = &sync.Mutex{}
 
 func initDatabase() (err error) {
-	appDb, err = sql.Open("sqlite3", appConfig.db.file+"?cache=shared&mode=rwc&_journal_mode=WAL")
+	appDb, err = sql.Open("sqlite3", appConfig.Db.File+"?cache=shared&mode=rwc&_journal_mode=WAL")
 	if err != nil {
 		return err
 	}
