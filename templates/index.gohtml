@@ -4,9 +4,15 @@
 
 {{ define "main" }}
   <main>
-    {{ range $i, $post := . }}
-        {{ include "summary" . }}
-    {{ end }}
+      {{ range $i, $post := .Posts }}
+          {{ include "summary" . }}
+      {{ end }}
+      {{ if .HasPrev }}
+        <p><a href="{{ .Prev }}">Prev</a></p>
+      {{ end }}
+      {{ if .HasNext }}
+        <p><a href="{{ .Next }}">Next</a></p>
+      {{ end }}
   </main>
 {{ end }}
 

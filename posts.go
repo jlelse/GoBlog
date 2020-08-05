@@ -4,7 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/go-chi/chi"
+	"github.com/vcraescu/go-paginator"
+	"github.com/vcraescu/go-paginator/adapter"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -31,13 +36,42 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	render(w, templatePost, post)
 }
 
-func serveIndex(w http.ResponseWriter, r *http.Request) {
-	posts, err := getAllPosts(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+type indexTemplateDate struct {
+	Posts   []*Post
+	HasPrev bool
+	HasNext bool
+	Prev    string
+	Next    string
+}
+
+func serveIndex(path string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		pageNoString := chi.URLParam(r, "page")
+		pageNo, _ := strconv.Atoi(pageNoString)
+		posts, err := getAllPosts(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		p := paginator.New(adapter.NewSliceAdapter(posts), appConfig.Blog.Pagination)
+		p.SetPage(pageNo)
+		_ = p.Results(&posts)
+		prevPage, err := p.PrevPage()
+		if err == paginator.ErrNoPrevPage {
+			prevPage = p.Page()
+		}
+		nextPage, err := p.NextPage()
+		if err == paginator.ErrNoNextPage {
+			nextPage = p.Page()
+		}
+		render(w, templateIndex, &indexTemplateDate{
+			Posts:   posts,
+			HasPrev: p.HasPrev(),
+			HasNext: p.HasNext(),
+			Prev:    fmt.Sprintf("%s/page/%d", path, prevPage),
+			Next:    fmt.Sprintf("%s/page/%d", path, nextPage),
+		})
 	}
-	render(w, templateIndex, posts)
 }
 
 func getPost(context context.Context, path string) (*Post, error) {

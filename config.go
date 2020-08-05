@@ -36,6 +36,8 @@ type configBlog struct {
 	Lang string `mapstructure:"lang"`
 	// Title of the blog, e.g. "My blog"
 	Title string `mapstructure:"title"`
+	// Number of posts per page
+	Pagination int `mapstructure:"pagination"`
 }
 
 type configUser struct {
@@ -65,6 +67,7 @@ func initConfig() error {
 	viper.SetDefault("cache.expiration", 600)
 	viper.SetDefault("blog.lang", "en")
 	viper.SetDefault("blog.title", "My blog")
+	viper.SetDefault("blog.pagination", 10)
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")

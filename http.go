@@ -87,9 +87,11 @@ func buildHandler() (http.Handler, error) {
 
 	routePatterns := routesToStringSlice(r.Routes())
 	if !routePatterns.has("/") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveIndex)
+		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveIndex("/"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/page/{page}", serveIndex("/"))
 	} else if !routePatterns.has("/blog") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveIndex)
+		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveIndex("/blog"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/blog/page/{page}", serveIndex("/blog"))
 	}
 
 	r.With(minifier.Middleware).NotFound(serve404)
