@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-const contentTypeHTML = "text/html"
+const contentTypeHTML = "text/html; charset=utf-8"
 
 var d *dynamicHandler
 
@@ -53,12 +53,9 @@ func buildHandler() (http.Handler, error) {
 	r := chi.NewRouter()
 
 	if appConfig.Server.Logging {
-		r.Use(middleware.RealIP)
-		r.Use(middleware.Logger)
+		r.Use(middleware.RealIP, middleware.Logger)
 	}
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.StripSlashes)
-	r.Use(middleware.GetHead)
+	r.Use(middleware.Recoverer, middleware.StripSlashes, middleware.GetHead)
 
 	r.Route("/api", func(apiRouter chi.Router) {
 		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
@@ -88,9 +85,23 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	routePatterns := routesToStringSlice(r.Routes())
+	if !routePatterns.has("/") {
+		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveIndex)
+	} else if !routePatterns.has("/blog") {
+		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveIndex)
+	}
+
 	r.With(minifier.Middleware).NotFound(serve404)
 
 	return r, nil
+}
+
+func routesToStringSlice(routes []chi.Route) (ss stringSlice) {
+	for _, r := range routes {
+		ss = append(ss, r.Pattern)
+	}
+	return
 }
 
 type dynamicHandler struct {

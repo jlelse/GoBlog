@@ -11,6 +11,8 @@ import (
 const templatePost = "post"
 const templateError = "error"
 const templateRedirect = "redirect"
+const templateIndex = "index"
+const templateSummary = "summary"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -31,10 +33,15 @@ func initRendering() {
 		"p": func(post Post, parameter string) string {
 			return post.Parameters[parameter]
 		},
+		"include": func(templateName string, data interface{}) (template.HTML, error) {
+			buf := new(bytes.Buffer)
+			err := templates[templateName].ExecuteTemplate(buf, templateName, data)
+			return template.HTML(buf.String()), err
+		},
 	}
 
 	templates = make(map[string]*template.Template)
-	for _, name := range []string{templatePost, templateError, templateRedirect} {
+	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary} {
 		templates[name] = loadTemplate(name)
 	}
 }

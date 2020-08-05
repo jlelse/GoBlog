@@ -12,7 +12,7 @@ var minifier *minify.M
 
 func initMinify() {
 	minifier = minify.New()
-	minifier.AddFunc(contentTypeHTML, html.Minify)
+	minifier.AddFunc("text/html", html.Minify)
 	minifier.AddFunc("text/css", css.Minify)
 	minifier.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 }

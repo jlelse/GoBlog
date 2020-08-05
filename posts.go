@@ -31,6 +31,15 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	render(w, templatePost, post)
 }
 
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	posts, err := getAllPosts(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	render(w, templateIndex, posts)
+}
+
 func getPost(context context.Context, path string) (*Post, error) {
 	posts, err := getPosts(context, path)
 	if err != nil {

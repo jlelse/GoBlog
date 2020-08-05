@@ -1,0 +1,15 @@
+{{ define "title" }}
+  <title>{{ blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    {{ range $i, $post := . }}
+        {{ include "summary" . }}
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "index" }}
+    {{ template "base" . }}
+{{ end }}
