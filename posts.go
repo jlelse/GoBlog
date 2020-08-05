@@ -32,34 +32,51 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(context context.Context, path string) (*Post, error) {
-	queriedPost := &Post{}
-	row := appDb.QueryRowContext(context, "select path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, '') from posts where path=?", path)
-	err := row.Scan(&queriedPost.Path, &queriedPost.Content, &queriedPost.Published, &queriedPost.Updated)
-	if err == sql.ErrNoRows {
-		return nil, errPostNotFound
-	} else if err != nil {
-		return nil, err
-	}
-	err = queriedPost.fetchParameters(context)
+	posts, err := getPosts(context, path)
 	if err != nil {
 		return nil, err
+	} else if len(posts) == 0 {
+		return nil, errPostNotFound
 	}
-	return queriedPost, nil
+	return posts[0], nil
 }
 
-func (p *Post) fetchParameters(context context.Context) error {
-	rows, err := appDb.QueryContext(context, "select parameter, COALESCE(value, '') from post_parameters where path=?", p.Path)
+func getAllPosts(context context.Context) (posts []*Post, err error) {
+	return getPosts(context, "")
+}
+
+func getPosts(context context.Context, path string) (posts []*Post, err error) {
+	paths := make(map[string]int)
+	var rows *sql.Rows
+	if path != "" {
+		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", path)
+	} else {
+		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path")
+	}
 	if err != nil {
-		return err
+		return nil, err
 	}
-	p.Parameters = make(map[string]string)
+	defer func() {
+		_ = rows.Close()
+	}()
 	for rows.Next() {
-		var parameter string
-		var value string
-		_ = rows.Scan(&parameter, &value)
-		p.Parameters[parameter] = value
+		post := &Post{}
+		var parameterName, parameterValue string
+		err = rows.Scan(&post.Path, &post.Content, &post.Published, &post.Updated, &parameterName, &parameterValue)
+		if err != nil {
+			return nil, err
+		}
+		if paths[post.Path] == 0 {
+			index := len(posts)
+			paths[post.Path] = index + 1
+			post.Parameters = make(map[string]string)
+			posts = append(posts, post)
+		}
+		if parameterName != "" && posts != nil {
+			posts[paths[post.Path]-1].Parameters[parameterName] = parameterValue
+		}
 	}
-	return nil
+	return posts, nil
 }
 
 func allPostPaths() ([]string, error) {
