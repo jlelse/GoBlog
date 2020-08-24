@@ -119,11 +119,11 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 	paths := make(map[string]int)
 	var rows *sql.Rows
 	if config.path != "" {
-		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", config.path)
+		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", config.path)
 	} else if config.limit != 0 || config.offset != 0 {
-		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path limit ? offset ?", config.limit, config.offset)
+		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path limit ? offset ?", config.limit, config.offset)
 	} else {
-		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path")
+		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path")
 	}
 	if err != nil {
 		return nil, err
