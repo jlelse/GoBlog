@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/vcraescu/go-paginator"
-	"github.com/vcraescu/go-paginator/adapter"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -44,18 +44,43 @@ type indexTemplateDate struct {
 	Next    string
 }
 
+type postPaginationAdapter struct {
+	context context.Context
+	nums    int
+}
+
+func (p *postPaginationAdapter) Nums() int {
+	if p.nums == 0 {
+		p.nums, _ = getPostsNum(p.context, &postsRequestConfig{})
+	}
+	return p.nums
+}
+
+func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) error {
+	if reflect.TypeOf(data).Kind() != reflect.Ptr {
+		panic("data has to be a pointer")
+	}
+
+	posts, err := getPosts(p.context, &postsRequestConfig{
+		offset: offset,
+		limit:  length,
+	})
+	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&posts).Elem())
+	return err
+}
+
 func serveIndex(path string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageNoString := chi.URLParam(r, "page")
 		pageNo, _ := strconv.Atoi(pageNoString)
-		posts, err := getAllPosts(r.Context())
+		p := paginator.New(&postPaginationAdapter{context: r.Context()}, appConfig.Blog.Pagination)
+		p.SetPage(pageNo)
+		var posts []*Post
+		err := p.Results(&posts)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		p := paginator.New(adapter.NewSliceAdapter(posts), appConfig.Blog.Pagination)
-		p.SetPage(pageNo)
-		_ = p.Results(&posts)
 		prevPage, err := p.PrevPage()
 		if err == paginator.ErrNoPrevPage {
 			prevPage = p.Page()
@@ -75,7 +100,7 @@ func serveIndex(path string) func(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(context context.Context, path string) (*Post, error) {
-	posts, err := getPosts(context, path)
+	posts, err := getPosts(context, &postsRequestConfig{path: path})
 	if err != nil {
 		return nil, err
 	} else if len(posts) == 0 {
@@ -84,15 +109,19 @@ func getPost(context context.Context, path string) (*Post, error) {
 	return posts[0], nil
 }
 
-func getAllPosts(context context.Context) (posts []*Post, err error) {
-	return getPosts(context, "")
+type postsRequestConfig struct {
+	path   string
+	limit  int
+	offset int
 }
 
-func getPosts(context context.Context, path string) (posts []*Post, err error) {
+func getPosts(context context.Context, config *postsRequestConfig) (posts []*Post, err error) {
 	paths := make(map[string]int)
 	var rows *sql.Rows
-	if path != "" {
-		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", path)
+	if config.path != "" {
+		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", config.path)
+	} else if config.limit != 0 || config.offset != 0 {
+		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path limit ? offset ?", config.limit, config.offset)
 	} else {
 		rows, err = appDb.QueryContext(context, "select p.path, COALESCE(content, ''), COALESCE(published, ''), COALESCE(updated, ''), COALESCE(parameter, ''), COALESCE(value, '') from posts p left outer join post_parameters pp on p.path = pp.path")
 	}
@@ -120,6 +149,11 @@ func getPosts(context context.Context, path string) (posts []*Post, err error) {
 		}
 	}
 	return posts, nil
+}
+
+func getPostsNum(context context.Context, _ *postsRequestConfig) (num int, err error) {
+	err = appDb.QueryRowContext(context, "select count(*) from posts").Scan(&num)
+	return
 }
 
 func allPostPaths() ([]string, error) {
