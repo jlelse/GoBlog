@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	_ "bytes"
+	"github.com/kyokomi/emoji"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -11,7 +11,7 @@ import (
 
 var markdown goldmark.Markdown
 
-func init() {
+func initMarkdown() {
 	markdown = goldmark.New(
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
@@ -28,9 +28,8 @@ func init() {
 }
 
 func renderMarkdown(source string) (content []byte, err error) {
-	context := parser.NewContext()
 	var buffer bytes.Buffer
-	err = markdown.Convert([]byte(source), &buffer, parser.WithContext(context))
-	content = emojify(buffer.Bytes())
+	err = markdown.Convert([]byte(emoji.Sprint(source)), &buffer)
+	content = buffer.Bytes()
 	return
 }

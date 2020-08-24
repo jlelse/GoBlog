@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	initEmoji()
+	initMarkdown()
 	initRendering()
 	initMinify()
 
