@@ -51,7 +51,7 @@ type postPaginationAdapter struct {
 
 func (p *postPaginationAdapter) Nums() int {
 	if p.nums == 0 {
-		p.nums, _ = getPostsNum(p.context, &postsRequestConfig{})
+		p.nums, _ = countPosts(p.context, &postsRequestConfig{})
 	}
 	return p.nums
 }
@@ -151,8 +151,8 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 	return posts, nil
 }
 
-func getPostsNum(context context.Context, _ *postsRequestConfig) (num int, err error) {
-	err = appDb.QueryRowContext(context, "select count(*) from posts").Scan(&num)
+func countPosts(context context.Context, _ *postsRequestConfig) (count int, err error) {
+	err = appDb.QueryRowContext(context, "select count(*) from posts").Scan(&count)
 	return
 }
 
