@@ -118,12 +118,18 @@ type postsRequestConfig struct {
 func getPosts(context context.Context, config *postsRequestConfig) (posts []*Post, err error) {
 	paths := make(map[string]int)
 	var rows *sql.Rows
+	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') "
+	defaultTables := " from posts p left outer join post_parameters pp on p.path = pp.path "
+	defaultSorting := " order by p.updated desc "
 	if config.path != "" {
-		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path where p.path=?", config.path)
+		query := defaultSelection + defaultTables + " where p.path=?" + defaultSorting
+		rows, err = appDb.QueryContext(context, query, config.path)
 	} else if config.limit != 0 || config.offset != 0 {
-		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path limit ? offset ?", config.limit, config.offset)
+		query := defaultSelection + " from (select * from posts p " + defaultSorting + " limit ? offset ?) p left outer join post_parameters pp on p.path = pp.path "
+		rows, err = appDb.QueryContext(context, query, config.limit, config.offset)
 	} else {
-		rows, err = appDb.QueryContext(context, "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') from posts p left outer join post_parameters pp on p.path = pp.path")
+		query := defaultSelection + defaultTables + defaultSorting
+		rows, err = appDb.QueryContext(context, query)
 	}
 	if err != nil {
 		return nil, err
