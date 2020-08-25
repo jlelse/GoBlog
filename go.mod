@@ -1,22 +1,21 @@
 module git.jlel.se/jlelse/GoBlog
 
-go 1.14
+go 1.15
 
 require (
 	github.com/caddyserver/certmagic v0.11.2
 	github.com/cenkalti/backoff/v4 v4.0.2 // indirect
-	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec // indirect
 	github.com/go-acme/lego/v3 v3.8.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/google/go-cmp v0.5.1 // indirect
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
-	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/lopezator/migrator v0.3.0
+	github.com/magiconair/properties v1.8.2 // indirect
 	github.com/mattn/go-sqlite3 v1.14.1
 	github.com/miekg/dns v1.1.31 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
