@@ -85,13 +85,20 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	for _, section := range appConfig.Blog.Sections {
+		if section != "" {
+			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section, serveSection("/"+section, section))
+			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section+"/page/{page}", serveSection("/"+section, section))
+		}
+	}
+
 	routePatterns := routesToStringSlice(r.Routes())
 	if !routePatterns.has("/") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveIndex("/"))
-		r.With(cacheMiddleware, minifier.Middleware).Get("/page/{page}", serveIndex("/"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveHome("/"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/page/{page}", serveHome("/"))
 	} else if !routePatterns.has("/blog") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveIndex("/blog"))
-		r.With(cacheMiddleware, minifier.Middleware).Get("/blog/page/{page}", serveIndex("/blog"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveHome("/blog"))
+		r.With(cacheMiddleware, minifier.Middleware).Get("/blog/page/{page}", serveHome("/blog"))
 	}
 
 	r.With(minifier.Middleware).NotFound(serve404)

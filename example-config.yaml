@@ -13,6 +13,8 @@ cache:
 blog:
   lang: en
   title: My blog
+  sections:
+    - posts
 user:
   nick: admin
   name: Admin
