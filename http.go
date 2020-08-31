@@ -85,20 +85,39 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	paginationPath := "/page/{page}"
+
 	for _, section := range appConfig.Blog.Sections {
 		if section != "" {
 			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section, serveSection("/"+section, section))
-			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section+"/page/{page}", serveSection("/"+section, section))
+			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section+paginationPath, serveSection("/"+section, section))
+		}
+	}
+
+	for _, taxonomy := range appConfig.Blog.Taxonomies {
+		if taxonomy != "" {
+			r.With(cacheMiddleware, minifier.Middleware).Get("/"+taxonomy, serveTaxonomy(taxonomy))
+			values, err := allTaxonomyValues(taxonomy)
+			if err != nil {
+				return nil, err
+			}
+			for _, tv := range values {
+				path := "/" + taxonomy + "/" + tv
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv))
+			}
 		}
 	}
 
 	routePatterns := routesToStringSlice(r.Routes())
-	if !routePatterns.has("/") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/", serveHome("/"))
-		r.With(cacheMiddleware, minifier.Middleware).Get("/page/{page}", serveHome("/"))
-	} else if !routePatterns.has("/blog") {
-		r.With(cacheMiddleware, minifier.Middleware).Get("/blog", serveHome("/blog"))
-		r.With(cacheMiddleware, minifier.Middleware).Get("/blog/page/{page}", serveHome("/blog"))
+	rootPath := "/"
+	blogPath := "/blog"
+	if !routePatterns.has(rootPath) {
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome(rootPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome(rootPath))
+	} else if !routePatterns.has(blogPath) {
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blogPath))
 	}
 
 	r.With(minifier.Middleware).NotFound(serve404)

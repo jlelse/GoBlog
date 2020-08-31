@@ -38,6 +38,13 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00005",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create table pp_tmp(id integer primary key autoincrement, path text not null, parameter text not null, value text); insert into pp_tmp(path, parameter, value) select path, parameter, value from post_parameters; drop table post_parameters; alter table pp_tmp rename to post_parameters;")
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

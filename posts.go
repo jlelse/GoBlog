@@ -16,11 +16,11 @@ import (
 var errPostNotFound = errors.New("post not found")
 
 type Post struct {
-	Path       string            `json:"path"`
-	Content    string            `json:"content"`
-	Published  string            `json:"published"`
-	Updated    string            `json:"updated"`
-	Parameters map[string]string `json:"parameters"`
+	Path       string              `json:"path"`
+	Content    string              `json:"content"`
+	Published  string              `json:"published"`
+	Updated    string              `json:"updated"`
+	Parameters map[string][]string `json:"parameters"`
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
@@ -62,24 +62,45 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 		panic("data has to be a pointer")
 	}
 
-	posts, err := getPosts(p.context, &postsRequestConfig{
-		sections: p.config.sections,
-		offset:   offset,
-		limit:    length,
-	})
+	modifiedConfig := *p.config
+	modifiedConfig.offset = offset
+	modifiedConfig.limit = length
+
+	posts, err := getPosts(p.context, &modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&posts).Elem())
 	return err
 }
 
 func serveHome(path string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, "")
+	return serveIndex(path, "", "", "")
 }
 
 func serveSection(path, section string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, section)
+	return serveIndex(path, section, "", "")
 }
 
-func serveIndex(path string, section string) func(w http.ResponseWriter, r *http.Request) {
+func serveTaxonomy(taxonomy string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		allValues, err := allTaxonomyValues(taxonomy)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		render(w, templateTaxonomy, struct {
+			Taxonomy       string
+			TaxonomyValues []string
+		}{
+			Taxonomy:       taxonomy,
+			TaxonomyValues: allValues,
+		})
+	}
+}
+
+func serveTaxonomyValue(path, taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, "", taxonomy, value)
+}
+
+func serveIndex(path, section, taxonomy, taxonomyValue string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageNoString := chi.URLParam(r, "page")
 		pageNo, _ := strconv.Atoi(pageNoString)
@@ -87,7 +108,11 @@ func serveIndex(path string, section string) func(w http.ResponseWriter, r *http
 		if len(section) > 0 {
 			sections = []string{section}
 		}
-		p := paginator.New(&postPaginationAdapter{context: r.Context(), config: &postsRequestConfig{sections: sections}}, appConfig.Blog.Pagination)
+		p := paginator.New(&postPaginationAdapter{context: r.Context(), config: &postsRequestConfig{
+			sections:      sections,
+			taxonomy:      taxonomy,
+			taxonomyValue: taxonomyValue,
+		}}, appConfig.Blog.Pagination)
 		p.SetPage(pageNo)
 		var posts []*Post
 		err := p.Results(&posts)
@@ -124,10 +149,12 @@ func getPost(context context.Context, path string) (*Post, error) {
 }
 
 type postsRequestConfig struct {
-	path     string
-	limit    int
-	offset   int
-	sections []string
+	path          string
+	limit         int
+	offset        int
+	sections      []string
+	taxonomy      string
+	taxonomyValue string
 }
 
 func getPosts(context context.Context, config *postsRequestConfig) (posts []*Post, err error) {
@@ -135,8 +162,11 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 	var rows *sql.Rows
 	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') "
 	postsTable := "posts"
-	if len(config.sections) != 0 {
-		postsTable = "(select * from posts where"
+	if len(config.taxonomy) > 0 && len(config.taxonomyValue) > 0 {
+		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy + "' and pp.value = '" + config.taxonomyValue + "')"
+	}
+	if len(config.sections) > 0 {
+		postsTable = "(select * from " + postsTable + " where"
 		for i, section := range config.sections {
 			if i > 0 {
 				postsTable += " or"
@@ -173,11 +203,11 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 		if paths[post.Path] == 0 {
 			index := len(posts)
 			paths[post.Path] = index + 1
-			post.Parameters = make(map[string]string)
+			post.Parameters = make(map[string][]string)
 			posts = append(posts, post)
 		}
 		if parameterName != "" && posts != nil {
-			posts[paths[post.Path]-1].Parameters[parameterName] = parameterValue
+			posts[paths[post.Path]-1].Parameters[parameterName] = append(posts[paths[post.Path]-1].Parameters[parameterName], parameterValue)
 		}
 	}
 	return posts, nil
@@ -200,6 +230,20 @@ func allPostPaths() ([]string, error) {
 		postPaths = append(postPaths, path)
 	}
 	return postPaths, nil
+}
+
+func allTaxonomyValues(taxonomy string) ([]string, error) {
+	var values []string
+	rows, err := appDb.Query("select distinct value from post_parameters where parameter = ? and value not null and value != ''", taxonomy)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var value string
+		_ = rows.Scan(&value)
+		values = append(values, value)
+	}
+	return values, nil
 }
 
 func checkPost(post *Post) error {

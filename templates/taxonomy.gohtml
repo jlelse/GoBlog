@@ -1,0 +1,16 @@
+{{ define "title" }}
+  <title>{{ blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+      <ul>
+          {{ $taxonomy := .Taxonomy }}
+          {{ range $i, $value := .TaxonomyValues }}<li><a href="/{{ $taxonomy }}/{{ . }}">{{ . }}</a></li>{{ end }}
+      </ul>
+  </main>
+{{ end }}
+
+{{ define "taxonomy" }}
+    {{ template "base" . }}
+{{ end }}

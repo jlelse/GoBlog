@@ -13,6 +13,7 @@ const templateError = "error"
 const templateRedirect = "redirect"
 const templateIndex = "index"
 const templateSummary = "summary"
+const templateTaxonomy = "taxonomy"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -30,7 +31,16 @@ func initRendering() {
 			}
 			return template.HTML(htmlContent)
 		},
+		// First parameter value
 		"p": func(post Post, parameter string) string {
+			if len(post.Parameters[parameter]) > 0 {
+				return post.Parameters[parameter][0]
+			} else {
+				return ""
+			}
+		},
+		// All parameter values
+		"ps": func(post Post, parameter string) []string {
 			return post.Parameters[parameter]
 		},
 		"include": func(templateName string, data interface{}) (template.HTML, error) {
@@ -41,7 +51,7 @@ func initRendering() {
 	}
 
 	templates = make(map[string]*template.Template)
-	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary} {
+	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary, templateTaxonomy} {
 		templates[name] = loadTemplate(name)
 	}
 }

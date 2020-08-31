@@ -40,6 +40,8 @@ type configBlog struct {
 	Pagination int `mapstructure:"pagination"`
 	// Sections
 	Sections []string `mapstructure:"sections"`
+	// Taxonomies
+	Taxonomies []string `mapstructure:"taxonomies"`
 }
 
 type configUser struct {
@@ -71,6 +73,7 @@ func initConfig() error {
 	viper.SetDefault("blog.title", "My blog")
 	viper.SetDefault("blog.pagination", 10)
 	viper.SetDefault("blog.sections", []string{"posts"})
+	viper.SetDefault("blog.taxonomies", []string{"tags"})
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")
