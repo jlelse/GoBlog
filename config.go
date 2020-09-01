@@ -36,12 +36,26 @@ type configBlog struct {
 	Lang string `mapstructure:"lang"`
 	// Title of the blog, e.g. "My blog"
 	Title string `mapstructure:"title"`
+	// Description of the blog
+	Description string `mapstructure:"description"`
 	// Number of posts per page
 	Pagination int `mapstructure:"pagination"`
 	// Sections
-	Sections []string `mapstructure:"sections"`
+	Sections []*section `mapstructure:"sections"`
 	// Taxonomies
-	Taxonomies []string `mapstructure:"taxonomies"`
+	Taxonomies []*taxonomy `mapstructure:"taxonomies"`
+}
+
+type section struct {
+	Name        string `mapstructure:"name"`
+	Title       string `mapstructure:"title"`
+	Description string `mapstructure:"description"`
+}
+
+type taxonomy struct {
+	Name        string `mapstructure:"name"`
+	Title       string `mapstructure:"title"`
+	Description string `mapstructure:"description"`
 }
 
 type configUser struct {
@@ -71,9 +85,10 @@ func initConfig() error {
 	viper.SetDefault("cache.expiration", 600)
 	viper.SetDefault("blog.lang", "en")
 	viper.SetDefault("blog.title", "My blog")
+	viper.SetDefault("blog.description", "This is my blog")
 	viper.SetDefault("blog.pagination", 10)
-	viper.SetDefault("blog.sections", []string{"posts"})
-	viper.SetDefault("blog.taxonomies", []string{"tags"})
+	viper.SetDefault("blog.sections", []*section{{Name: "posts", Title: "Posts", Description: "**Posts** on this blog"}})
+	viper.SetDefault("blog.taxonomies", []*taxonomy{{Name: "tags", Title: "Tags", Description: "**Tags** on this blog"}})
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")

@@ -88,21 +88,22 @@ func buildHandler() (http.Handler, error) {
 	paginationPath := "/page/{page}"
 
 	for _, section := range appConfig.Blog.Sections {
-		if section != "" {
-			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section, serveSection("/"+section, section))
-			r.With(cacheMiddleware, minifier.Middleware).Get("/"+section+paginationPath, serveSection("/"+section, section))
+		if section.Name != "" {
+			path := "/"+section.Name
+			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(path, section))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(path, section))
 		}
 	}
 
 	for _, taxonomy := range appConfig.Blog.Taxonomies {
-		if taxonomy != "" {
-			r.With(cacheMiddleware, minifier.Middleware).Get("/"+taxonomy, serveTaxonomy(taxonomy))
-			values, err := allTaxonomyValues(taxonomy)
+		if taxonomy.Name != "" {
+			r.With(cacheMiddleware, minifier.Middleware).Get("/"+taxonomy.Name, serveTaxonomy(taxonomy))
+			values, err := allTaxonomyValues(taxonomy.Name)
 			if err != nil {
 				return nil, err
 			}
 			for _, tv := range values {
-				path := "/" + taxonomy + "/" + tv
+				path := "/" + taxonomy.Name + "/" + tv
 				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv))
 				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv))
 			}

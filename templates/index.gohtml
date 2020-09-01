@@ -4,6 +4,9 @@
 
 {{ define "main" }}
   <main>
+      {{ with .Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Description }}{{ md . }}{{ end }}
+      {{ if (or .Title .Description) }}<hr>{{ end }}
       {{ range $i, $post := .Posts }}
           {{ include "summary" . }}
       {{ end }}

@@ -1,13 +1,16 @@
 {{ define "title" }}
-  <title>{{ blog.Title }}</title>
+  <title>{{ .Taxonomy.Title }} - {{ blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
-      <ul>
-          {{ $taxonomy := .Taxonomy }}
-          {{ range $i, $value := .TaxonomyValues }}<li><a href="/{{ $taxonomy }}/{{ . }}">{{ . }}</a></li>{{ end }}
-      </ul>
+      {{ with .Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Taxonomy.Description }}{{ md . }}{{ end }}
+    <ul>
+        {{ $taxonomy := .Taxonomy.Name }}
+        {{ range $i, $value := .TaxonomyValues }}
+          <li><a href="/{{ $taxonomy }}/{{ . }}">{{ . }}</a></li>{{ end }}
+    </ul>
   </main>
 {{ end }}
 

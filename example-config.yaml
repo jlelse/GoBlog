@@ -13,10 +13,15 @@ cache:
 blog:
   lang: en
   title: My blog
+  description: This is my blog
   sections:
-    - posts
+    - name: posts
+      title: Posts
+      description: "**Posts** on this blog"
   taxonomies:
-    - tags
+    - name: tags
+      title: Tags
+      description: "**Tags** on this blog"
 user:
   nick: admin
   name: Admin

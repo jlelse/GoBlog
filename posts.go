@@ -36,12 +36,14 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	render(w, templatePost, post)
 }
 
-type indexTemplateDate struct {
-	Posts   []*Post
-	HasPrev bool
-	HasNext bool
-	Prev    string
-	Next    string
+type indexTemplateData struct {
+	Title       string
+	Description string
+	Posts       []*Post
+	HasPrev     bool
+	HasNext     bool
+	Prev        string
+	Next        string
 }
 
 type postPaginationAdapter struct {
@@ -72,45 +74,45 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 }
 
 func serveHome(path string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, "", "", "")
+	return serveIndex(path, nil, nil, "")
 }
 
-func serveSection(path, section string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, section, "", "")
+func serveSection(path string, section *section) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, section, nil, "")
 }
 
-func serveTaxonomy(taxonomy string) func(w http.ResponseWriter, r *http.Request) {
+func serveTaxonomy(tax *taxonomy) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		allValues, err := allTaxonomyValues(taxonomy)
+		allValues, err := allTaxonomyValues(tax.Name)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		render(w, templateTaxonomy, struct {
-			Taxonomy       string
+			Taxonomy       *taxonomy
 			TaxonomyValues []string
 		}{
-			Taxonomy:       taxonomy,
+			Taxonomy:       tax,
 			TaxonomyValues: allValues,
 		})
 	}
 }
 
-func serveTaxonomyValue(path, taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, "", taxonomy, value)
+func serveTaxonomyValue(path string, tax *taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, nil, tax, value)
 }
 
-func serveIndex(path, section, taxonomy, taxonomyValue string) func(w http.ResponseWriter, r *http.Request) {
+func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageNoString := chi.URLParam(r, "page")
 		pageNo, _ := strconv.Atoi(pageNoString)
 		sections := appConfig.Blog.Sections
-		if len(section) > 0 {
-			sections = []string{section}
+		if sec != nil {
+			sections = []*section{sec}
 		}
 		p := paginator.New(&postPaginationAdapter{context: r.Context(), config: &postsRequestConfig{
 			sections:      sections,
-			taxonomy:      taxonomy,
+			taxonomy:      tax,
 			taxonomyValue: taxonomyValue,
 		}}, appConfig.Blog.Pagination)
 		p.SetPage(pageNo)
@@ -128,12 +130,24 @@ func serveIndex(path, section, taxonomy, taxonomyValue string) func(w http.Respo
 		if err == paginator.ErrNoNextPage {
 			nextPage = p.Page()
 		}
-		render(w, templateIndex, &indexTemplateDate{
-			Posts:   posts,
-			HasPrev: p.HasPrev(),
-			HasNext: p.HasNext(),
-			Prev:    fmt.Sprintf("%s/page/%d", path, prevPage),
-			Next:    fmt.Sprintf("%s/page/%d", path, nextPage),
+		var title, description string
+		if tax != nil {
+			title = fmt.Sprintf("%s: %s", tax.Title, taxonomyValue)
+		} else if sec != nil {
+			title = sec.Title
+			description = sec.Description
+		} else if tax == nil && sec == nil {
+			title = appConfig.Blog.Title
+			description = appConfig.Blog.Description
+		}
+		render(w, templateIndex, &indexTemplateData{
+			Title:       title,
+			Description: description,
+			Posts:       posts,
+			HasPrev:     p.HasPrev(),
+			HasNext:     p.HasNext(),
+			Prev:        fmt.Sprintf("%s/page/%d", path, prevPage),
+			Next:        fmt.Sprintf("%s/page/%d", path, nextPage),
 		})
 	}
 }
@@ -152,8 +166,8 @@ type postsRequestConfig struct {
 	path          string
 	limit         int
 	offset        int
-	sections      []string
-	taxonomy      string
+	sections      []*section
+	taxonomy      *taxonomy
 	taxonomyValue string
 }
 
@@ -162,8 +176,8 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 	var rows *sql.Rows
 	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') "
 	postsTable := "posts"
-	if len(config.taxonomy) > 0 && len(config.taxonomyValue) > 0 {
-		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy + "' and pp.value = '" + config.taxonomyValue + "')"
+	if config.taxonomy != nil && len(config.taxonomyValue) > 0 {
+		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy.Name + "' and pp.value = '" + config.taxonomyValue + "')"
 	}
 	if len(config.sections) > 0 {
 		postsTable = "(select * from " + postsTable + " where"
@@ -171,7 +185,7 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 			if i > 0 {
 				postsTable += " or"
 			}
-			postsTable += " path like '/" + section + "/%'"
+			postsTable += " path like '/" + section.Name + "/%'"
 		}
 		postsTable += ")"
 	}
