@@ -89,7 +89,7 @@ func buildHandler() (http.Handler, error) {
 
 	for _, section := range appConfig.Blog.Sections {
 		if section.Name != "" {
-			path := "/"+section.Name
+			path := "/" + section.Name
 			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(path, section))
 			r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(path, section))
 		}
@@ -103,7 +103,7 @@ func buildHandler() (http.Handler, error) {
 				return nil, err
 			}
 			for _, tv := range values {
-				path := "/" + taxonomy.Name + "/" + tv
+				path := "/" + taxonomy.Name + "/" + urlize(tv)
 				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv))
 				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv))
 			}

@@ -9,7 +9,8 @@
     <ul>
         {{ $taxonomy := .Taxonomy.Name }}
         {{ range $i, $value := .TaxonomyValues }}
-          <li><a href="/{{ $taxonomy }}/{{ . }}">{{ . }}</a></li>{{ end }}
+          <li><a href="/{{ $taxonomy }}/{{ urlize . }}">{{ . }}</a></li>
+        {{ end }}
     </ul>
   </main>
 {{ end }}

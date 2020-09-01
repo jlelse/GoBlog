@@ -48,6 +48,7 @@ func initRendering() {
 			err := templates[templateName].ExecuteTemplate(buf, templateName, data)
 			return template.HTML(buf.String()), err
 		},
+		"urlize": urlize,
 	}
 
 	templates = make(map[string]*template.Template)
