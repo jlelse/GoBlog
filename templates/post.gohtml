@@ -5,7 +5,7 @@
 {{ define "main" }}
   <main class=h-entry>
     <article>
-        {{ with p . "title" }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+        {{ with title . }}<h1 class=p-name>{{ . }}</h1>{{ end }}
         {{ with .Content }}
           <div class=e-content>{{ md . }}</div>
         {{ end }}

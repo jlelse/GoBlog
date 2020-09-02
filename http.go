@@ -110,10 +110,9 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
-	routePatterns := routesToStringSlice(r.Routes())
 	rootPath := "/"
 	blogPath := "/blog"
-	if !routePatterns.has(rootPath) {
+	if routePatterns := routesToStringSlice(r.Routes()); !routePatterns.has(rootPath) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome(rootPath))
 		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome(rootPath))
 	} else if !routePatterns.has(blogPath) {

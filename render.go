@@ -32,16 +32,15 @@ func initRendering() {
 			return template.HTML(htmlContent)
 		},
 		// First parameter value
-		"p": func(post Post, parameter string) string {
-			if len(post.Parameters[parameter]) > 0 {
-				return post.Parameters[parameter][0]
-			} else {
-				return ""
-			}
+		"p": func(post *Post, parameter string) string {
+			return post.firstParameter(parameter)
 		},
 		// All parameter values
-		"ps": func(post Post, parameter string) []string {
+		"ps": func(post *Post, parameter string) []string {
 			return post.Parameters[parameter]
+		},
+		"title": func(post *Post) string {
+			return post.title()
 		},
 		"include": func(templateName string, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)

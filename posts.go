@@ -23,6 +23,17 @@ type Post struct {
 	Parameters map[string][]string `json:"parameters"`
 }
 
+func (p *Post) firstParameter(parameter string) (result string) {
+	if pp := p.Parameters[parameter]; len(pp) > 0 {
+		result = pp[0]
+	}
+	return
+}
+
+func (p *Post) title() string {
+	return p.firstParameter("title")
+}
+
 func servePost(w http.ResponseWriter, r *http.Request) {
 	path := slashTrimmedPath(r)
 	post, err := getPost(r.Context(), path)
@@ -139,6 +150,11 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) 
 		} else if tax == nil && sec == nil {
 			title = appConfig.Blog.Title
 			description = appConfig.Blog.Description
+		}
+		f := feedType(r.URL.Query().Get("feed"))
+		if f != "" {
+			generateFeed(f, w, posts, title, description)
+			return
 		}
 		render(w, templateIndex, &indexTemplateData{
 			Title:       title,
