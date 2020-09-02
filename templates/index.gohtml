@@ -1,12 +1,26 @@
 {{ define "title" }}
   <title>{{ blog.Title }}</title>
+  <link rel="alternate"
+        type="application/rss+xml"
+        title="RSS"
+        href="{{ .First }}?feed=rss"/>
+  <link rel="alternate"
+        type="application/atom+xml"
+        title="Atom"
+        href="{{ .First }}?feed=atom"/>
+  <link rel="alternate"
+        type="application/feed+json"
+        title="JSON Feed"
+        href="{{ .First }}?feed=json"/>
 {{ end }}
 
 {{ define "main" }}
   <main>
       {{ with .Title }}<h1>{{ . }}</h1>{{ end }}
       {{ with .Description }}{{ md . }}{{ end }}
-      {{ if (or .Title .Description) }}<hr>{{ end }}
+      {{ if (or .Title .Description) }}
+        <hr>
+      {{ end }}
       {{ range $i, $post := .Posts }}
           {{ include "summary" . }}
       {{ end }}

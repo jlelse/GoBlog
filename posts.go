@@ -53,6 +53,7 @@ type indexTemplateData struct {
 	Posts       []*Post
 	HasPrev     bool
 	HasNext     bool
+	First       string
 	Prev        string
 	Next        string
 }
@@ -162,6 +163,7 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) 
 			Posts:       posts,
 			HasPrev:     p.HasPrev(),
 			HasNext:     p.HasNext(),
+			First:       path,
 			Prev:        fmt.Sprintf("%s/page/%d", path, prevPage),
 			Next:        fmt.Sprintf("%s/page/%d", path, nextPage),
 		})
