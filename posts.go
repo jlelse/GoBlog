@@ -85,12 +85,12 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 	return err
 }
 
-func serveHome(path string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, nil, nil, "")
+func serveHome(path string, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, nil, nil, "", ft)
 }
 
-func serveSection(path string, section *section) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, section, nil, "")
+func serveSection(path string, section *section, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, section, nil, "", ft)
 }
 
 func serveTaxonomy(tax *taxonomy) func(w http.ResponseWriter, r *http.Request) {
@@ -110,11 +110,11 @@ func serveTaxonomy(tax *taxonomy) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func serveTaxonomyValue(path string, tax *taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(path, nil, tax, value)
+func serveTaxonomyValue(path string, tax *taxonomy, value string, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(path, nil, tax, value, ft)
 }
 
-func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) func(w http.ResponseWriter, r *http.Request) {
+func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string, ft feedType) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pageNoString := chi.URLParam(r, "page")
 		pageNo, _ := strconv.Atoi(pageNoString)
@@ -134,14 +134,7 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		prevPage, err := p.PrevPage()
-		if err == paginator.ErrNoPrevPage {
-			prevPage = p.Page()
-		}
-		nextPage, err := p.NextPage()
-		if err == paginator.ErrNoNextPage {
-			nextPage = p.Page()
-		}
+		// Meta
 		var title, description string
 		if tax != nil {
 			title = fmt.Sprintf("%s: %s", tax.Title, taxonomyValue)
@@ -152,10 +145,19 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string) 
 			title = appConfig.Blog.Title
 			description = appConfig.Blog.Description
 		}
-		f := feedType(r.URL.Query().Get("feed"))
-		if f != "" {
-			generateFeed(f, w, posts, title, description)
+		// Check if feed
+		if ft != NONE {
+			generateFeed(ft, w, posts, title, description)
 			return
+		}
+		// Navigation
+		prevPage, err := p.PrevPage()
+		if err == paginator.ErrNoPrevPage {
+			prevPage = p.Page()
+		}
+		nextPage, err := p.NextPage()
+		if err == paginator.ErrNoNextPage {
+			nextPage = p.Page()
 		}
 		render(w, templateIndex, &indexTemplateData{
 			Title:       title,

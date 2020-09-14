@@ -86,12 +86,18 @@ func buildHandler() (http.Handler, error) {
 	}
 
 	paginationPath := "/page/{page}"
+	rssPath := ".rss"
+	jsonPath := ".json"
+	atomPath := ".atom"
 
 	for _, section := range appConfig.Blog.Sections {
 		if section.Name != "" {
 			path := "/" + section.Name
-			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(path, section))
-			r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(path, section))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(path, section, NONE))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveSection(path, section, RSS))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveSection(path, section, JSON))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveSection(path, section, ATOM))
+			r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(path, section, NONE))
 		}
 	}
 
@@ -104,8 +110,11 @@ func buildHandler() (http.Handler, error) {
 			}
 			for _, tv := range values {
 				path := "/" + taxonomy.Name + "/" + urlize(tv)
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv, NONE))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveTaxonomyValue(path, taxonomy, tv, RSS))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveTaxonomyValue(path, taxonomy, tv, JSON))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveTaxonomyValue(path, taxonomy, tv, ATOM))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv, NONE))
 			}
 		}
 	}
@@ -113,11 +122,17 @@ func buildHandler() (http.Handler, error) {
 	rootPath := "/"
 	blogPath := "/blog"
 	if routePatterns := routesToStringSlice(r.Routes()); !routePatterns.has(rootPath) {
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome(rootPath))
-		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome(rootPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome(rootPath, NONE))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+rssPath, serveHome(rootPath, RSS))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+jsonPath, serveHome(rootPath, JSON))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+atomPath, serveHome(rootPath, ATOM))
+		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome(rootPath, NONE))
 	} else if !routePatterns.has(blogPath) {
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blogPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath, NONE))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+rssPath, serveHome(blogPath, RSS))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+jsonPath, serveHome(blogPath, JSON))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+atomPath, serveHome(blogPath, ATOM))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blogPath, NONE))
 	}
 
 	r.With(minifier.Middleware).NotFound(serve404)

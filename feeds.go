@@ -9,6 +9,7 @@ import (
 type feedType string
 
 const (
+	NONE feedType = ""
 	RSS  feedType = "rss"
 	ATOM feedType = "atom"
 	JSON feedType = "json"
@@ -41,6 +42,8 @@ func generateFeed(f feedType, w http.ResponseWriter, posts []*Post, title string
 		feedStr, err = feed.ToAtom()
 	case JSON:
 		feedStr, err = feed.ToJSON()
+	default:
+		return
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
