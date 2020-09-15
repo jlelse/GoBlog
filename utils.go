@@ -26,3 +26,15 @@ func urlize(str string) string {
 	}
 	return newStr
 }
+
+func firstSentences(value string, count int) string {
+	for i := range value {
+		if value[i] == '.' || value[i] == '!' || value[i] == '?' {
+			count -= 1
+			if count == 0 && i < len(value) {
+				return value[0 : i+1]
+			}
+		}
+	}
+	return value
+}

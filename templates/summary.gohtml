@@ -1,7 +1,7 @@
 {{ define "summary" }}
   <article>
       {{ with p . "title" }}<h2>{{ . }}</h2>{{ end }}
-    <p>{{ md .Content }}</p>
+    <p>{{ summary . }}</p>
     <a href="{{ .Path }}">View</a>
   </article>
   <hr>

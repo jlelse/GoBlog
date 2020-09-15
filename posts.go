@@ -23,17 +23,6 @@ type Post struct {
 	Parameters map[string][]string `json:"parameters"`
 }
 
-func (p *Post) firstParameter(parameter string) (result string) {
-	if pp := p.Parameters[parameter]; len(pp) > 0 {
-		result = pp[0]
-	}
-	return
-}
-
-func (p *Post) title() string {
-	return p.firstParameter("title")
-}
-
 func servePost(w http.ResponseWriter, r *http.Request) {
 	path := slashTrimmedPath(r)
 	post, err := getPost(r.Context(), path)
@@ -147,7 +136,7 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string, 
 		}
 		// Check if feed
 		if ft != NONE {
-			generateFeed(ft, w, posts, title, description)
+			generateFeed(ft, w, r, posts, title, description)
 			return
 		}
 		// Navigation

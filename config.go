@@ -16,6 +16,7 @@ type configServer struct {
 	Logging         bool   `mapstructure:"logging"`
 	Port            int    `mapstructure:"port"`
 	Domain          string `mapstructure:"domain"`
+	PublicAddress   string `mapstructure:"publicAddress"`
 	PublicHttps     bool   `mapstructure:"publicHttps"`
 	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
 	LocalHttps      bool   `mapstructure:"localHttps"`
@@ -77,6 +78,7 @@ func initConfig() error {
 	viper.SetDefault("server.logging", false)
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.domain", "example.com")
+	viper.SetDefault("server.publicAddress", "http://localhost:8080")
 	viper.SetDefault("server.publicHttps", false)
 	viper.SetDefault("server.letsEncryptMail", "mail@example.com")
 	viper.SetDefault("server.localHttps", false)

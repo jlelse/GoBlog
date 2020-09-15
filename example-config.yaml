@@ -2,6 +2,7 @@ server:
   logging: false
   port: 8080
   domain: example.com
+  publicAdress: http://localhost:8080
   publicHttps: false
   letsEncryptMail: mail@example.com
   localHttps: false

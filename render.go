@@ -42,6 +42,9 @@ func initRendering() {
 		"title": func(post *Post) string {
 			return post.title()
 		},
+		"summary": func(post *Post) string {
+			return post.summary()
+		},
 		"include": func(templateName string, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)
 			err := templates[templateName].ExecuteTemplate(buf, templateName, data)

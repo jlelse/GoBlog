@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gorilla/feeds"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -15,20 +16,20 @@ const (
 	JSON feedType = "json"
 )
 
-func generateFeed(f feedType, w http.ResponseWriter, posts []*Post, title string, description string) {
+func generateFeed(f feedType, w http.ResponseWriter, r *http.Request, posts []*Post, title string, description string) {
 	now := time.Now()
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
-		Link:        &feeds.Link{},
+		Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
 		Created:     now,
 	}
 	for _, postItem := range posts {
 		htmlContent, _ := renderMarkdown(postItem.Content)
 		feed.Add(&feeds.Item{
 			Title:       postItem.title(),
-			Link:        &feeds.Link{Href: postItem.Path},
-			Description: string(htmlContent),
+			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + postItem.Path},
+			Description: postItem.summary(),
 			Id:          postItem.Path,
 			Content:     string(htmlContent),
 		})
