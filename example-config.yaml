@@ -27,3 +27,9 @@ user:
   nick: admin
   name: Admin
   password: secret
+hugo:
+  frontmatter:
+    - meta: title
+      parameter: title
+    - meta: tags
+      parameter: tags

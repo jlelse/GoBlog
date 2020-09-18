@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strings"
 )
 
 var errRedirectNotFound = errors.New("redirect not found")
@@ -52,4 +53,27 @@ func allRedirectPaths() ([]string, error) {
 		redirectPaths = append(redirectPaths, path)
 	}
 	return redirectPaths, nil
+}
+
+func createRedirect(from, to string) error {
+	if from == "" || to == "" {
+		return errors.New("empty path")
+	}
+	from = strings.TrimSuffix(from, "/")
+	startWritingToDb()
+	tx, err := appDb.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("insert into redirects (fromPath, toPath) values (?, ?)", from, to)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	finishWritingToDb()
+	return reloadRouter()
 }

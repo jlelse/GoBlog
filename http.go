@@ -11,6 +11,7 @@ import (
 )
 
 const contentTypeHTML = "text/html; charset=utf-8"
+const contentTypeJSON = "application/json; charset=utf-8"
 
 var d *dynamicHandler
 
@@ -62,7 +63,9 @@ func buildHandler() (http.Handler, error) {
 			appConfig.User.Nick: appConfig.User.Password,
 		}))
 		apiRouter.Post("/post", apiPostCreate)
+		apiRouter.Get("/post", apiPostRead)
 		apiRouter.Delete("/post", apiPostDelete)
+		apiRouter.Post("/hugo", apiPostCreateHugo)
 	})
 
 	allPostPaths, err := allPostPaths()

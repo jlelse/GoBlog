@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/araddon/dateparse"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 )
 
 const templatePost = "post"
@@ -44,6 +46,13 @@ func initRendering() {
 		},
 		"summary": func(post *Post) string {
 			return post.summary()
+		},
+		"dateformat": func(date string, format string) string {
+			d, err := dateparse.ParseIn(date, time.Local)
+			if err != nil {
+				return ""
+			}
+			return d.Format(format)
 		},
 		"include": func(templateName string, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)

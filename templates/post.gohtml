@@ -6,6 +6,8 @@
   <main class=h-entry>
     <article>
         {{ with title . }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+        {{ with .Published }}<p>Published on {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
+        {{ with .Updated }}<p>Updated on {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
         {{ with .Content }}
           <div class=e-content>{{ md . }}</div>
         {{ end }}
