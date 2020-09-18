@@ -15,6 +15,7 @@ require (
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/lopezator/migrator v0.3.0
 	github.com/magiconair/properties v1.8.3 // indirect
