@@ -1,9 +1,10 @@
 {{ define "base" }}
-<!doctype html>
-<html lang={{ blog.Lang }}>
-<meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<meta http-equiv=x-ua-compatible content="IE=edge">
-{{ template "title" . }}
-{{ template "main" . }}
+  <!doctype html>
+  <html lang={{ blog.Lang }}>
+  <meta charset=utf-8>
+  <meta name=viewport content="width=device-width,initial-scale=1">
+  <meta http-equiv=x-ua-compatible content="IE=edge">
+  <link rel="stylesheet" href="{{ asset "css/style.scss" }}">
+  {{ template "title" . }}
+  {{ template "main" . }}
 {{ end }}

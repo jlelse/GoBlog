@@ -1,0 +1,187 @@
+$colors: (
+    background: #fff,
+    background-dark: #000,
+    primary: #000,
+    primary-dark: #fff
+);
+
+@mixin color($property, $varName) {
+  #{$property}: map-get($colors, $varName);
+  #{$property}: var(--#{$varName}, map-get($colors, $varName));
+}
+
+@mixin color-border($property, $val1, $val2, $varName) {
+  #{$property}: #{$val1} #{$val2} map-get($colors, $varName);
+  #{$property}: #{$val1} #{$val2} var(--#{$varName}, map-get($colors, $varName));
+}
+
+@mixin lightmode {
+  --background: #{map-get($colors, background)};
+  --primary: #{map-get($colors, primary)};
+  color: #000;
+}
+
+@mixin darkmode {
+  --background: #{map-get($colors, background-dark)};
+  --primary: #{map-get($colors, primary-dark)};
+  color: #fff;
+}
+
+.sans-serif {
+  font-family: sans-serif;
+}
+
+html {
+  @include lightmode;
+  @media (prefers-color-scheme: dark) {
+    @include darkmode;
+  }
+  scrollbar-color: var(--primary) transparent;
+}
+
+body {
+  @extend .sans-serif;
+  @include color(background, background);
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 700px;
+  padding: 10px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+
+  * {
+    @include color(color, primary);
+    max-width: 100%;
+  }
+}
+
+header {
+  @extend .border-bottom;
+  padding: 10px 0;
+
+  * {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+h1 a, h2 a {
+  text-decoration: none;
+}
+
+img {
+  width: 100%;
+}
+
+input, textarea, button, .button {
+  @include color-border(border, 1px, solid, primary);
+  @include color(background, background);
+  @include color(color, primary);
+  @extend .sans-serif;
+  padding: 5px 10px;
+  border-radius: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.fw-form {
+  @extend .fw;
+
+  input[type="text"], input[type="email"], textarea {
+    @extend .fw;
+  }
+}
+
+blockquote {
+  @include color-border(border-left, 5px, solid, primary);
+  padding-left: 20px;
+  margin-left: 0;
+}
+
+pre {
+  padding: 10px;
+  @include color-border(border, 1px, solid, primary);
+  white-space: pre-wrap;
+}
+
+:not(pre) > code {
+  @extend .invert;
+  font-size: 1rem;
+}
+
+code {
+  font-family: monospace;
+}
+
+footer {
+  @extend .border-top;
+  padding: 10px 0;
+
+  * {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+.border-top {
+  @include color-border(border-top, 1px, solid, primary);
+}
+
+.border-bottom {
+  @include color-border(border-bottom, 1px, solid, primary);
+}
+
+.invert {
+  @include color(color, background);
+  @include color(background, primary);
+}
+
+.p {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.flex {
+  display: flex;
+}
+
+.hide {
+  display: none;
+}
+
+.fw {
+  width: 100%;
+}
+
+.ct {
+  text-align: center;
+}
+
+/* Twemoji */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 .05em 0 .1em;
+  vertical-align: -0.1em;
+}
+
+/* Print */
+@media print {
+  html {
+    @include lightmode;
+  }
+
+  body {
+    font-family: serif;
+    max-width: inherit;
+  }
+
+  nav,
+  #post-actions,
+  #related,
+  #interactions {
+    display: none;
+  }
+}

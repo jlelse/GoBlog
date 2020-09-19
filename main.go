@@ -18,14 +18,14 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	initMarkdown()
-	initRendering()
 	initMinify()
-	err = initTemplateAssets()
+	err = initTemplateAssets() // Needs minify
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
+	initMarkdown()
+	initRendering() // Needs assets
 
 	// Prepare graceful shutdown
 	quit := make(chan os.Signal, 1)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 const assetsFolder = "templates/assets"
@@ -30,7 +31,7 @@ func initTemplateAssets() error {
 				return err
 			}
 			if compiled != "" {
-				assetFiles[path] = compiled
+				assetFiles[strings.TrimPrefix(path, assetsFolder+"/")] = compiled
 			}
 		}
 		return nil
@@ -91,7 +92,7 @@ func compileAssets(name string) (compiledFileName string, err error) {
 
 // Function for templates
 func assetFile(fileName string) string {
-	return appConfig.Server.PublicAddress + "/" + assetFiles[fileName]
+	return "/" + assetFiles[fileName]
 }
 
 func allAssetPaths() []string {
