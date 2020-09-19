@@ -58,6 +58,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	r.Use(middleware.Recoverer, middleware.StripSlashes, middleware.GetHead)
 
+	// API
 	r.Route("/api", func(apiRouter chi.Router) {
 		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
 			appConfig.User.Nick: appConfig.User.Password,
@@ -68,6 +69,7 @@ func buildHandler() (http.Handler, error) {
 		apiRouter.Post("/hugo", apiPostCreateHugo)
 	})
 
+	// Posts
 	allPostPaths, err := allPostPaths()
 	if err != nil {
 		return nil, err
@@ -78,6 +80,7 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	// Redirects
 	allRedirectPaths, err := allRedirectPaths()
 	if err != nil {
 		return nil, err
@@ -88,11 +91,19 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	// Assets
+	for _, path := range allAssetPaths() {
+		if path != "" {
+			r.Get(path, serveAsset(path))
+		}
+	}
+
 	paginationPath := "/page/{page}"
 	rssPath := ".rss"
 	jsonPath := ".json"
 	atomPath := ".atom"
 
+	// Indexes, Feeds
 	for _, section := range appConfig.Blog.Sections {
 		if section.Name != "" {
 			path := "/" + section.Name
@@ -122,6 +133,7 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	// Blog
 	rootPath := "/"
 	blogPath := "/blog"
 	if routePatterns := routesToStringSlice(r.Routes()); !routePatterns.has(rootPath) {

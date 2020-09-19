@@ -54,6 +54,7 @@ func initRendering() {
 			}
 			return d.Format(format)
 		},
+		"asset": assetFile,
 		"include": func(templateName string, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)
 			err := templates[templateName].ExecuteTemplate(buf, templateName, data)

@@ -6,14 +6,15 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
+	github.com/bep/golibsass v0.7.0
 	github.com/caddyserver/certmagic v0.12.0
+	github.com/frankban/quicktest v1.11.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/gorilla/feeds v1.1.1
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/lib/pq v1.8.0 // indirect
@@ -40,8 +41,8 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
-	golang.org/x/tools v0.0.0-20200917221617-d56e4e40bc9d // indirect
+	golang.org/x/sys v0.0.0-20200918174421-af09f7315aff // indirect
+	golang.org/x/tools v0.0.0-20200918232735-d647fc253266 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect

@@ -21,6 +21,11 @@ func main() {
 	initMarkdown()
 	initRendering()
 	initMinify()
+	err = initTemplateAssets()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	// Prepare graceful shutdown
 	quit := make(chan os.Signal, 1)
