@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/jeremywohl/flatten"
+	"github.com/spf13/cast"
 	"gopkg.in/yaml.v3"
 	"strconv"
 	"strings"
@@ -33,12 +34,8 @@ func parseHugoFile(fileContent string, path string) (*Post, error) {
 		return nil, err
 	}
 	// Read dates
-	if flat["date"] != nil {
-		post.Published = flat["date"].(string)
-	}
-	if flat["lastmod"] != nil {
-		post.Updated = flat["lastmod"].(string)
-	}
+	post.Published = cast.ToString(flat["date"])
+	post.Updated = cast.ToString(flat["lastmod"])
 	// Read parameters
 	for _, fm := range appConfig.Hugo.Frontmatter {
 		var values []string
@@ -46,11 +43,11 @@ func parseHugoFile(fileContent string, path string) (*Post, error) {
 			if strings.HasPrefix(fk, fm.Meta) {
 				trimmed := strings.TrimPrefix(fk, fm.Meta)
 				if len(trimmed) == 0 {
-					values = append(values, value.(string))
+					values = append(values, cast.ToString(value))
 				} else {
 					trimmed = strings.TrimPrefix(trimmed, ".")
 					if _, e := strconv.Atoi(trimmed); e == nil {
-						values = append(values, value.(string))
+						values = append(values, cast.ToString(value))
 					}
 				}
 			}
@@ -65,11 +62,11 @@ func parseHugoFile(fileContent string, path string) (*Post, error) {
 		if strings.HasPrefix(fk, "aliases") {
 			trimmed := strings.TrimPrefix(fk, "aliases")
 			if len(trimmed) == 0 {
-				aliases = append(aliases, value.(string))
+				aliases = append(aliases, cast.ToString(value))
 			} else {
 				trimmed = strings.TrimPrefix(trimmed, ".")
 				if _, e := strconv.Atoi(trimmed); e == nil {
-					aliases = append(aliases, value.(string))
+					aliases = append(aliases, cast.ToString(value))
 				}
 			}
 		}
