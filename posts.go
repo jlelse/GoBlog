@@ -186,7 +186,7 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(parameter, ''), coalesce(value, '') "
 	postsTable := "posts"
 	if config.taxonomy != nil && len(config.taxonomyValue) > 0 {
-		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy.Name + "' and pp.value = '" + config.taxonomyValue + "')"
+		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy.Name + "' and lower(pp.value) = lower('" + config.taxonomyValue + "'))"
 	}
 	if len(config.sections) > 0 {
 		postsTable = "(select * from " + postsTable + " where"
@@ -199,7 +199,7 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 		postsTable += ")"
 	}
 	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
-	defaultSorting := " order by coalesce(p.updated, p.published) desc "
+	defaultSorting := " order by p.published desc "
 	if config.path != "" {
 		query := defaultSelection + defaultTables + " where p.path=?" + defaultSorting
 		rows, err = appDb.QueryContext(context, query, config.path)

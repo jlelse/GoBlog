@@ -70,6 +70,7 @@ func initRendering() {
 			return template.HTML(buf.String()), err
 		},
 		"urlize": urlize,
+		"sort":   sortedStrings,
 	}
 
 	templates = make(map[string]*template.Template)
