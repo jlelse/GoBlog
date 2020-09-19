@@ -1,0 +1,11 @@
+{{ define "menu" }}
+  <nav>
+      {{ with menu "main" }}
+          {{ $first := true }}
+          {{ range $i, $item := .Items }}
+              {{ if ne $first true }} &bull; {{ end }}<a
+              href="{{ $item.Link }}">{{ $item.Title }}</a>{{ $first = false }}
+          {{ end }}
+      {{ end }}
+  </nav>
+{{ end }}

@@ -23,6 +23,13 @@ blog:
     - name: tags
       title: Tags
       description: "**Tags** on this blog"
+  menus:
+    - id: main
+      items:
+        - title: Home
+          link: /
+        - title: Posts
+          link: /posts
 user:
   nick: admin
   name: Admin

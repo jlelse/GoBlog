@@ -16,6 +16,7 @@ const templateRedirect = "redirect"
 const templateIndex = "index"
 const templateSummary = "summary"
 const templateTaxonomy = "taxonomy"
+const templateMenu = "menu"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -24,6 +25,14 @@ func initRendering() {
 	templateFunctions = template.FuncMap{
 		"blog": func() *configBlog {
 			return appConfig.Blog
+		},
+		"menu": func(id string) *menu {
+			for _, m := range appConfig.Blog.Menus {
+				if m.Id == id {
+					return m
+				}
+			}
+			return nil
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)
@@ -64,7 +73,7 @@ func initRendering() {
 	}
 
 	templates = make(map[string]*template.Template)
-	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary, templateTaxonomy} {
+	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary, templateTaxonomy, templateMenu} {
 		templates[name] = loadTemplate(name)
 	}
 }
