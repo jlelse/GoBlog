@@ -194,7 +194,7 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 			if i > 0 {
 				postsTable += " or"
 			}
-			postsTable += " path like '/" + section.Name + "/%'"
+			postsTable += " section='" + section.Name + "'"
 		}
 		postsTable += ")"
 	}

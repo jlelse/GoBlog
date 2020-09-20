@@ -45,6 +45,34 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00006",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create index pp_path_index on post_parameters (path);")
+					return err
+				},
+			},
+			&migrator.Migration{
+				Name: "00007",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("alter table posts add column section text; create trigger add_section after update on posts begin update posts set section = (select substr(path, 2, len) from (select path, instr(substr(path, 2),'/')-1 as len from (select new.path as path))) where path = new.path; end;")
+					return err
+				},
+			},
+			&migrator.Migration{
+				Name: "00008",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create index p_section_index on posts (section);")
+					return err
+				},
+			},
+			&migrator.Migration{
+				Name: "00009",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec("create trigger add_section_insert after insert on posts begin update posts set section = (select substr(path, 2, len) from (select path, instr(substr(path, 2),'/')-1 as len from (select new.path as path))) where path = new.path; end;")
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
