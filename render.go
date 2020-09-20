@@ -2,26 +2,31 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/araddon/dateparse"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
+const templatesDir = "templates"
+const templatesExt = ".gohtml"
+
+const templateBase = "base"
 const templatePost = "post"
 const templateError = "error"
 const templateRedirect = "redirect"
 const templateIndex = "index"
-const templateSummary = "summary"
 const templateTaxonomy = "taxonomy"
-const templateMenu = "menu"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
 
-func initRendering() {
+func initRendering() error {
 	templateFunctions = template.FuncMap{
 		"blog": func() *configBlog {
 			return appConfig.Blog
@@ -69,13 +74,24 @@ func initRendering() {
 	}
 
 	templates = make(map[string]*template.Template)
-	for _, name := range []string{templatePost, templateError, templateRedirect, templateIndex, templateSummary, templateTaxonomy, templateMenu} {
-		templates[name] = loadTemplate(name)
-	}
-}
 
-func loadTemplate(name string) *template.Template {
-	return template.Must(template.New(name).Funcs(templateFunctions).ParseFiles("templates/base.gohtml", fmt.Sprintf("templates/%s.gohtml", name)))
+	baseTemplatePath := path.Join(templatesDir, templateBase+templatesExt)
+	err := filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
+		if info.Mode().IsRegular() && path.Ext(p) == templatesExt {
+			name := strings.TrimSuffix(path.Base(p), templatesExt)
+			if name != templateBase {
+				templates[name], err = template.New(name).Funcs(templateFunctions).ParseFiles(baseTemplatePath, p)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func render(w http.ResponseWriter, template string, data interface{}) {

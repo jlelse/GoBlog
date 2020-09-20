@@ -25,7 +25,11 @@ func main() {
 		return
 	}
 	initMarkdown()
-	initRendering() // Needs assets
+	err = initRendering() // Needs assets
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	// Prepare graceful shutdown
 	quit := make(chan os.Signal, 1)
