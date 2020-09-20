@@ -137,11 +137,11 @@ func buildHandler() (http.Handler, error) {
 	rootPath := "/"
 	blogPath := "/blog"
 	if routePatterns := routesToStringSlice(r.Routes()); !routePatterns.has(rootPath) {
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome(rootPath, NONE))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+rssPath, serveHome(rootPath, RSS))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+jsonPath, serveHome(rootPath, JSON))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+atomPath, serveHome(rootPath, ATOM))
-		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome(rootPath, NONE))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome("", NONE))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+rssPath, serveHome("", RSS))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+jsonPath, serveHome("", JSON))
+		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+atomPath, serveHome("", ATOM))
+		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome("", NONE))
 	} else if !routePatterns.has(blogPath) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath, NONE))
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+rssPath, serveHome(blogPath, RSS))

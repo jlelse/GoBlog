@@ -129,10 +129,6 @@ func serveIndex(path string, sec *section, tax *taxonomy, taxonomyValue string, 
 		} else if sec != nil {
 			title = sec.Title
 			description = sec.Description
-		} else if tax == nil && sec == nil {
-			// Show no title or description on home
-			// title = appConfig.Blog.Title
-			// description = appConfig.Blog.Description
 		}
 		// Check if feed
 		if ft != NONE {

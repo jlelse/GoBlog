@@ -18,6 +18,12 @@ const (
 
 func generateFeed(f feedType, w http.ResponseWriter, r *http.Request, posts []*Post, title string, description string) {
 	now := time.Now()
+	if title == "" {
+		title = appConfig.Blog.Title
+	}
+	if description == "" {
+		description = appConfig.Blog.Description
+	}
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
