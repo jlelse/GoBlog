@@ -24,12 +24,17 @@ func main() {
 	}
 	log.Println("Initialize server components...")
 	initMinify()
+	initMarkdown()
 	err = initTemplateAssets() // Needs minify
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	initMarkdown()
+	err = initTemplateStrings()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	err = initRendering() // Needs assets
 	if err != nil {
 		log.Fatal(err)
