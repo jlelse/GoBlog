@@ -7,17 +7,22 @@ import (
 )
 
 func main() {
-	// Initialize all things
-	log.Println("Initializing...")
+	// Initialize config
+	log.Println("Initialize configuration...")
 	err := initConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Execute pre-start hooks
+	preStartHooks()
+	// Initialize everything else
+	log.Println("Initialize database...")
 	err = initDatabase()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
+	log.Println("Initialize server components...")
 	initMinify()
 	err = initTemplateAssets() // Needs minify
 	if err != nil {
@@ -36,7 +41,7 @@ func main() {
 
 	// Start the server
 	go func() {
-		log.Println("Starting...")
+		log.Println("Starting server...")
 		err = startServer()
 		if err != nil {
 			log.Println("Failed to start server:")

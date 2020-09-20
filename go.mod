@@ -6,15 +6,14 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
-	github.com/bep/golibsass v0.7.0
 	github.com/caddyserver/certmagic v0.12.0
-	github.com/frankban/quicktest v1.11.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/gorilla/feeds v1.1.1
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/lib/pq v1.8.0 // indirect

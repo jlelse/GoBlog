@@ -4,12 +4,8 @@
   <meta charset=utf-8>
   <meta name=viewport content="width=device-width,initial-scale=1">
   <meta http-equiv=x-ua-compatible content="IE=edge">
-  <link rel="stylesheet" href="{{ asset "css/style.scss" }}">
+  <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
   {{ template "title" . }}
-  <header>
-    <h1><a href="/" rel="home" title="{{ blog.Title }}">{{ blog.Title }}</a></h1>
-      {{ with blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
-      {{ include "menu" . }}
-  </header>
+  {{ include "header" . }}
   {{ template "main" . }}
 {{ end }}

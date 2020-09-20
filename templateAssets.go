@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
-	"github.com/bep/golibsass/libsass"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -61,20 +60,6 @@ func compileAssets(name string) (compiledFileName string, err error) {
 		if err != nil {
 			return
 		}
-	case ".scss":
-		transpiler, err := libsass.New(libsass.Options{OutputStyle: libsass.CompressedStyle})
-		if err != nil {
-			return "", err
-		}
-		result, err := transpiler.Execute(string(originalContent))
-		if err != nil {
-			return "", err
-		}
-		compiledContent, err = minifier.Bytes("text/css", []byte(result.CSS))
-		if err != nil {
-			return "", err
-		}
-		compiledExt = ".css"
 	default:
 		// Just copy the file
 		compiledContent = originalContent

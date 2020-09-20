@@ -1,0 +1,7 @@
+{{ define "header" }}
+  <header>
+    <h1><a href="/" rel="home" title="{{ blog.Title }}">{{ blog.Title }}</a></h1>
+      {{ with blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
+      {{ include "menu" . }}
+  </header>
+{{ end }}

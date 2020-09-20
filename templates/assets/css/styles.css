@@ -1,0 +1,165 @@
+.sans-serif, input, textarea, button, .button, body {
+  font-family: sans-serif;
+}
+
+html {
+  --background: #fff;
+  --primary: #000;
+  color: #000;
+  scrollbar-color: var(--primary) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --background: #000;
+    --primary: #fff;
+    color: #fff;
+  }
+}
+
+body {
+  background: #fff;
+  background: var(--background, #fff);
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 700px;
+  padding: 10px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+body * {
+  color: #000;
+  color: var(--primary, #000);
+  max-width: 100%;
+}
+
+header {
+  padding: 10px 0;
+}
+
+header * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+h1 a, h2 a {
+  text-decoration: none;
+}
+
+img {
+  width: 100%;
+}
+
+input, textarea, button, .button {
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+  background: #fff;
+  background: var(--background, #fff);
+  color: #000;
+  color: var(--primary, #000);
+  padding: 5px 10px;
+  border-radius: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+blockquote {
+  border-left: 5px solid #000;
+  border-left: 5px solid var(--primary, #000);
+  padding-left: 20px;
+  margin-left: 0;
+}
+
+pre {
+  padding: 10px;
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+  white-space: pre-wrap;
+}
+
+:not(pre) > code {
+  font-size: 1rem;
+}
+
+code {
+  font-family: monospace;
+}
+
+footer {
+  padding: 10px 0;
+}
+
+footer * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.border-top, footer {
+  border-top: 1px solid #000;
+  border-top: 1px solid var(--primary, #000);
+}
+
+.border-bottom, header {
+  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--primary, #000);
+}
+
+.invert, :not(pre) > code {
+  color: #fff;
+  color: var(--background, #fff);
+  background: #000;
+  background: var(--primary, #000);
+}
+
+.p {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.flex {
+  display: flex;
+}
+
+.hide {
+  display: none;
+}
+
+.fw, .fw-form, .fw-form input[type=text], .fw-form input[type=email], .fw-form textarea {
+  width: 100%;
+}
+
+.ct {
+  text-align: center;
+}
+
+/* Twemoji */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.1em;
+}
+
+/* Print */
+@media print {
+  html {
+    --background: #fff;
+    --primary: #000;
+    color: #000;
+  }
+
+  body {
+    font-family: serif;
+    max-width: inherit;
+  }
+
+  nav,
+  #post-actions,
+  #related,
+  #interactions {
+    display: none;
+  }
+}

@@ -10,6 +10,7 @@ type config struct {
 	Cache  *configCache  `mapstructure:"cache"`
 	Blog   *configBlog   `mapstructure:"blog"`
 	User   *configUser   `mapstructure:"user"`
+	Hooks  *configHooks  `mapstructure:"hooks"`
 	Hugo   *configHugo   `mapstructure:"hugo"`
 }
 
@@ -77,6 +78,11 @@ type configUser struct {
 	Password string `mapstructure:"password"`
 }
 
+type configHooks struct {
+	Shell    string   `mapstructure:"shell"`
+	PreStart []string `mapstructure:"prestart"`
+}
+
 type configHugo struct {
 	Frontmatter []*frontmatter `mapstructure:"frontmatter"`
 }
@@ -116,6 +122,7 @@ func initConfig() error {
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")
+	viper.SetDefault("hooks.shell", "/bin/bash")
 	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
 	// Unmarshal config
 	err = viper.Unmarshal(appConfig)
