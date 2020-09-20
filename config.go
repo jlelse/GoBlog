@@ -47,7 +47,7 @@ type configBlog struct {
 	// Taxonomies
 	Taxonomies []*taxonomy `mapstructure:"taxonomies"`
 	// Menus
-	Menus []*menu `mapstructure:"menus"`
+	Menus map[string]*menu `mapstructure:"menus"`
 }
 
 type section struct {
@@ -63,7 +63,6 @@ type taxonomy struct {
 }
 
 type menu struct {
-	Id    string      `mapstructure:"id"`
 	Items []*menuItem `mapstructure:"items"`
 }
 
@@ -113,7 +112,7 @@ func initConfig() error {
 	viper.SetDefault("blog.pagination", 10)
 	viper.SetDefault("blog.sections", []*section{{Name: "posts", Title: "Posts", Description: "**Posts** on this blog"}})
 	viper.SetDefault("blog.taxonomies", []*taxonomy{{Name: "tags", Title: "Tags", Description: "**Tags** on this blog"}})
-	viper.SetDefault("blog.menus", []*menu{{Id: "main", Items: []*menuItem{{Title: "Home", Link: "/"}, {Title: "Post", Link: "Posts"}}}})
+	viper.SetDefault("blog.menus", map[string]*menu{"main": {Items: []*menuItem{{Title: "Home", Link: "/"}, {Title: "Post", Link: "Posts"}}}})
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")

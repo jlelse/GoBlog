@@ -24,7 +24,7 @@ blog:
       title: Tags
       description: "**Tags** on this blog"
   menus:
-    - id: main
+    main:
       items:
         - title: Home
           link: /

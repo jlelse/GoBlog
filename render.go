@@ -27,12 +27,7 @@ func initRendering() {
 			return appConfig.Blog
 		},
 		"menu": func(id string) *menu {
-			for _, m := range appConfig.Blog.Menus {
-				if m.Id == id {
-					return m
-				}
-			}
-			return nil
+			return appConfig.Blog.Menus[id]
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)
