@@ -44,16 +44,19 @@ func (p *Post) createOrReplace() error {
 	startWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
 	_, err = tx.Exec("insert or replace into posts (path, content, published, updated) values (?, ?, ?, ?)", p.Path, p.Content, p.Published, p.Updated)
 	if err != nil {
 		_ = tx.Rollback()
+		finishWritingToDb()
 		return err
 	}
 	_, err = tx.Exec("delete from post_parameters where path=?", p.Path)
 	if err != nil {
 		_ = tx.Rollback()
+		finishWritingToDb()
 		return err
 	}
 	for param, value := range p.Parameters {
@@ -62,6 +65,7 @@ func (p *Post) createOrReplace() error {
 				_, err = tx.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", p.Path, param, value)
 				if err != nil {
 					_ = tx.Rollback()
+					finishWritingToDb()
 					return err
 				}
 			}
@@ -69,6 +73,7 @@ func (p *Post) createOrReplace() error {
 	}
 	err = tx.Commit()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
 	finishWritingToDb()
@@ -84,20 +89,24 @@ func (p *Post) delete() error {
 	startWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
 	_, err = tx.Exec("delete from posts where path=?", p.Path)
 	if err != nil {
 		_ = tx.Rollback()
+		finishWritingToDb()
 		return err
 	}
 	_, err = tx.Exec("delete from post_parameters where path=?", p.Path)
 	if err != nil {
 		_ = tx.Rollback()
+		finishWritingToDb()
 		return err
 	}
 	err = tx.Commit()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
 	finishWritingToDb()

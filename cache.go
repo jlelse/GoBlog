@@ -81,6 +81,7 @@ func getCache(context context.Context, path string) (creationTime int64, header 
 func saveCache(path string, now time.Time, header map[string][]string, body []byte) {
 	headerBytes, _ := json.Marshal(header)
 	startWritingToDb()
+	defer finishWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
 		return
@@ -88,16 +89,15 @@ func saveCache(path string, now time.Time, header map[string][]string, body []by
 	_, _ = tx.Exec("delete from cache where time<?;", now.Unix()-appConfig.Cache.Expiration)
 	_, _ = tx.Exec("insert or replace into cache (path, time, header, body) values (?, ?, ?, ?);", path, now.Unix(), headerBytes, body)
 	_ = tx.Commit()
-	finishWritingToDb()
 }
 
 func purgeCache(path string) {
 	startWritingToDb()
+	defer finishWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
 		return
 	}
 	_, _ = tx.Exec("delete from cache where path=?", path)
 	_ = tx.Commit()
-	finishWritingToDb()
 }

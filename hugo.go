@@ -77,7 +77,7 @@ func parseHugoFile(fileContent string, path string) (*Post, error) {
 			splittedPostPath := strings.Split(post.Path, "/")
 			alias = strings.TrimSuffix(post.Path, splittedPostPath[len(splittedPostPath)-1]) + alias
 		}
-		_ = createRedirect(alias, post.Path)
+		_ = createOrReplaceRedirect(alias, post.Path)
 	}
 	// Return post
 	return post, nil

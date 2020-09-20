@@ -32,6 +32,6 @@ func closeDb() error {
 
 func vacuumDb() {
 	startWritingToDb()
+	defer finishWritingToDb()
 	_, _ = appDb.Exec("VACUUM;")
-	finishWritingToDb()
 }

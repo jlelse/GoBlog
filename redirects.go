@@ -55,7 +55,7 @@ func allRedirectPaths() ([]string, error) {
 	return redirectPaths, nil
 }
 
-func createRedirect(from, to string) error {
+func createOrReplaceRedirect(from, to string) error {
 	if from == "" || to == "" {
 		return errors.New("empty path")
 	}
@@ -63,15 +63,18 @@ func createRedirect(from, to string) error {
 	startWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("insert into redirects (fromPath, toPath) values (?, ?)", from, to)
+	_, err = tx.Exec("insert or replace into redirects (fromPath, toPath) values (?, ?)", from, to)
 	if err != nil {
 		_ = tx.Rollback()
+		finishWritingToDb()
 		return err
 	}
 	err = tx.Commit()
 	if err != nil {
+		finishWritingToDb()
 		return err
 	}
 	finishWritingToDb()
