@@ -133,6 +133,11 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
+	if appConfig.Blog.Photos.Enabled {
+		r.With(cacheMiddleware, minifier.Middleware).Get(appConfig.Blog.Photos.Path, servePhotos(appConfig.Blog.Photos.Path))
+		r.With(cacheMiddleware, minifier.Middleware).Get(appConfig.Blog.Photos.Path+paginationPath, servePhotos(appConfig.Blog.Photos.Path))
+	}
+
 	// Blog
 	rootPath := "/"
 	blogPath := "/blog"

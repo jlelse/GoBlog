@@ -49,6 +49,8 @@ type configBlog struct {
 	Taxonomies []*taxonomy `mapstructure:"taxonomies"`
 	// Menus
 	Menus map[string]*menu `mapstructure:"menus"`
+	// Photos
+	Photos *photos `mapstructure:"photos"`
 }
 
 type section struct {
@@ -70,6 +72,14 @@ type menu struct {
 type menuItem struct {
 	Title string `mapstructure:"title"`
 	Link  string `mapstructure:"link"`
+}
+
+type photos struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Parameter   string `mapstructure:"parameter"`
+	Path        string `mapstructure:"path"`
+	Title       string `mapstructure:"title"`
+	Description string `mapstructure:"description"`
 }
 
 type configUser struct {
@@ -119,6 +129,11 @@ func initConfig() error {
 	viper.SetDefault("blog.sections", []*section{{Name: "posts", Title: "Posts", Description: "**Posts** on this blog"}})
 	viper.SetDefault("blog.taxonomies", []*taxonomy{{Name: "tags", Title: "Tags", Description: "**Tags** on this blog"}})
 	viper.SetDefault("blog.menus", map[string]*menu{"main": {Items: []*menuItem{{Title: "Home", Link: "/"}, {Title: "Post", Link: "Posts"}}}})
+	viper.SetDefault("blog.photos.enabled", true)
+	viper.SetDefault("blog.photos.parameter", "images")
+	viper.SetDefault("blog.photos.path", "/photos")
+	viper.SetDefault("blog.photos.title", "Photos")
+	viper.SetDefault("blog.photos.description", "Photos on this blog")
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")

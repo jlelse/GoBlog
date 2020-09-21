@@ -1,17 +1,21 @@
 {{ define "title" }}
-  <title>{{ blog.Title }}</title>
-  <link rel="alternate"
-        type="application/rss+xml"
-        title="RSS"
-        href="{{ .First }}.rss"/>
-  <link rel="alternate"
-        type="application/atom+xml"
-        title="Atom"
-        href="{{ .First }}.atom"/>
-  <link rel="alternate"
-        type="application/feed+json"
-        title="JSON Feed"
-        href="{{ .First }}.json"/>
+    {{ if .Title }}
+      <title>{{ .Title }} - {{ blog.Title }}</title>
+    {{ else }}
+      <title>{{ blog.Title }}</title>
+    {{ end }}
+    <link rel="alternate"
+          type="application/rss+xml"
+          title="RSS"
+          href="{{ .First }}.rss"/>
+    <link rel="alternate"
+          type="application/atom+xml"
+          title="Atom"
+          href="{{ .First }}.atom"/>
+    <link rel="alternate"
+          type="application/feed+json"
+          title="JSON Feed"
+          href="{{ .First }}.json"/>
 {{ end }}
 
 {{ define "main" }}

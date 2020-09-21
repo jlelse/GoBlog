@@ -30,6 +30,12 @@ blog:
           link: /
         - title: Posts
           link: /posts
+  photos:
+    enable: true
+    parameter: images
+    path: /photos
+    title: Photos
+    description: "Photos on this blog"
 user:
   nick: admin
   name: Admin

@@ -22,6 +22,7 @@ const templateError = "error"
 const templateRedirect = "redirect"
 const templateIndex = "index"
 const templateTaxonomy = "taxonomy"
+const templatePhotos = "photos"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap

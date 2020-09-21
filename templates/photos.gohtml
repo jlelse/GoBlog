@@ -1,0 +1,30 @@
+{{ define "title" }}
+    {{ if blog.Photos.Title }}
+      <title>{{ blog.Photos.Title }} - {{ blog.Title }}</title>
+    {{ else }}
+      <title>{{ blog.Title }}</title>
+    {{ end }}
+{{ end }}
+
+{{ define "main" }}
+  <main>
+      {{ with blog.Photos.Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with blog.Photos.Description }}{{ md . }}{{ end }}
+      {{ if (or blog.Photos.Title blog.Photos.Description) }}
+        <hr>
+      {{ end }}
+      {{ range $i, $post := .Posts }}
+          {{ include "photosummary" . }}
+      {{ end }}
+      {{ if .HasPrev }}
+        <p><a href="{{ .Prev }}">Prev</a></p>
+      {{ end }}
+      {{ if .HasNext }}
+        <p><a href="{{ .Next }}">Next</a></p>
+      {{ end }}
+  </main>
+{{ end }}
+
+{{ define "photos" }}
+    {{ template "base" . }}
+{{ end }}

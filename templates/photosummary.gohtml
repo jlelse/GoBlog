@@ -1,0 +1,12 @@
+{{ define "photosummary" }}
+  <article>
+      {{ with p . "title" }}<h2>{{ . }}</h2>{{ end }}
+      {{ with .Published }}<p>{{ dateformat . "02. Jan 2006" }}</p>{{ end }}
+      {{ range $i, $photo := ( ps . blog.Photos.Parameter ) }}
+          {{ md ( printf "![](%s)" $photo ) }}
+      {{ end }}
+    <p>{{ summary . }}</p>
+    <a href="{{ .Path }}">View</a>
+  </article>
+  <hr>
+{{ end }}
