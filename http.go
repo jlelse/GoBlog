@@ -136,13 +136,13 @@ func buildHandler() (http.Handler, error) {
 	// Blog
 	rootPath := "/"
 	blogPath := "/blog"
-	if routePatterns := routesToStringSlice(r.Routes()); !routePatterns.has(rootPath) {
+	if !r.Match(chi.NewRouteContext(), http.MethodGet, rootPath) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome("", NONE))
 		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+rssPath, serveHome("", RSS))
 		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+jsonPath, serveHome("", JSON))
 		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+atomPath, serveHome("", ATOM))
 		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome("", NONE))
-	} else if !routePatterns.has(blogPath) {
+	} else if !r.Match(chi.NewRouteContext(), http.MethodGet, blogPath) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath, NONE))
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+rssPath, serveHome(blogPath, RSS))
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+jsonPath, serveHome(blogPath, JSON))
@@ -153,13 +153,6 @@ func buildHandler() (http.Handler, error) {
 	r.With(minifier.Middleware).NotFound(serve404)
 
 	return r, nil
-}
-
-func routesToStringSlice(routes []chi.Route) (ss stringSlice) {
-	for _, r := range routes {
-		ss = append(ss, r.Pattern)
-	}
-	return
 }
 
 type dynamicHandler struct {
