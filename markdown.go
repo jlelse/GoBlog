@@ -38,7 +38,7 @@ func initMarkdown() {
 				emoji.WithEmojis(emojiGoLib()),
 			),
 			// Links
-			newLinkExtension(),
+			newCustomExtension(),
 		),
 	)
 }
@@ -65,25 +65,26 @@ func emojiGoLib() definition.Emojis {
 }
 
 // Links
-type linkExtension struct{}
+type customExtension struct{}
 
-func newLinkExtension() goldmark.Extender {
-	return &linkExtension{}
+func newCustomExtension() goldmark.Extender {
+	return &customExtension{}
 }
 
-func (l *linkExtension) Extend(m goldmark.Markdown) {
+func (l *customExtension) Extend(m goldmark.Markdown) {
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(newLinkRenderer(), 500),
 	))
 }
 
-type linkRenderer struct{}
+type customRenderer struct{}
 
-func (l *linkRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
-	r.Register(ast.KindLink, l.renderLink)
+func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
+	r.Register(ast.KindLink, c.renderLink)
+	r.Register(ast.KindImage, c.renderImage)
 }
 
-func (l *linkRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	n := node.(*ast.Link)
 	if entering {
 		// Make URL absolute if it's relative
@@ -112,6 +113,34 @@ func (l *linkRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, ent
 	return ast.WalkContinue, nil
 }
 
+func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	n := node.(*ast.Image)
+	// Make URL absolute if it's relative
+	destination := string(util.URLEscape(n.Destination, true))
+	if strings.HasPrefix(destination, "/") {
+		destination = appConfig.Server.PublicAddress + destination
+	}
+	_, _ = w.WriteString("<a href=\"")
+	_, _ = w.Write(util.EscapeHTML([]byte(destination)))
+	_, _ = w.WriteString("\">")
+	_, _ = w.WriteString("<img src=\"")
+	_, _ = w.Write(util.EscapeHTML([]byte(destination)))
+	_, _ = w.WriteString(`" alt="`)
+	_, _ = w.Write(util.EscapeHTML(n.Text(source)))
+	_ = w.WriteByte('"')
+	_, _ = w.WriteString(" loading=\"lazy\"")
+	if n.Title != nil {
+		_, _ = w.WriteString(` title="`)
+		_, _ = w.Write(n.Title)
+		_ = w.WriteByte('"')
+	}
+	_, _ = w.WriteString("></a>")
+	return ast.WalkSkipChildren, nil
+}
+
 func newLinkRenderer() renderer.NodeRenderer {
-	return &linkRenderer{}
+	return &customRenderer{}
 }
