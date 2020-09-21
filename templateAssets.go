@@ -18,6 +18,9 @@ var assetFiles map[string]string
 
 func initTemplateAssets() error {
 	err := os.RemoveAll(compiledAssetsFolder)
+	if err != nil {
+		return err
+	}
 	err = os.MkdirAll(compiledAssetsFolder, 0755)
 	if err != nil {
 		return err

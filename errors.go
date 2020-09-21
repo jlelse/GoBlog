@@ -6,11 +6,11 @@ import (
 )
 
 type errorData struct {
-	Title string
+	Title   string
 	Message string
 }
 
-func serve404(w http.ResponseWriter, r *http.Request)  {
+func serve404(w http.ResponseWriter, r *http.Request) {
 	render(w, templateError, &errorData{
 		Title:   "404 Not Found",
 		Message: fmt.Sprintf("`%s` was not found", r.RequestURI),
