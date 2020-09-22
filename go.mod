@@ -26,6 +26,7 @@ require (
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
+	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/afero v1.4.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -40,8 +41,8 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200918174421-af09f7315aff // indirect
-	golang.org/x/tools v0.0.0-20200918232735-d647fc253266 // indirect
+	golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 // indirect
+	golang.org/x/tools v0.0.0-20200921210052-fa0125251cc4 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect

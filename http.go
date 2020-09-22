@@ -155,6 +155,9 @@ func buildHandler() (http.Handler, error) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blogPath, NONE))
 	}
 
+	// Sitemap
+	r.With(cacheMiddleware).Get("/sitemap.xml", serveSitemap())
+
 	r.With(minifier.Middleware).NotFound(serve404)
 
 	return r, nil
