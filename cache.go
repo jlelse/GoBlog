@@ -6,8 +6,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"time"
 )
+
+var cacheMutexes map[string]*sync.Mutex
+
+func initCache() {
+	cacheMutexes = map[string]*sync.Mutex{}
+}
 
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -16,8 +23,16 @@ func cacheMiddleware(next http.Handler) http.Handler {
 		if appConfig.Cache.Enable &&
 			// check bypass query
 			!(requestUrl != nil && requestUrl.Query().Get("cache") == "0") {
+			// Check cache mutex
+			if cacheMutexes[path] == nil {
+				cacheMutexes[path] = &sync.Mutex{}
+			}
+			// Lock mutex - prevents multiple new renderings
+			cacheMutexes[path].Lock()
+			// Get cache
 			cacheTime, header, body := getCache(r.Context(), path)
 			if cacheTime == 0 {
+				// No cache available
 				recorder := httptest.NewRecorder()
 				next.ServeHTTP(recorder, r)
 				// copy values from recorder
@@ -35,8 +50,10 @@ func cacheMiddleware(next http.Handler) http.Handler {
 				if code == http.StatusOK {
 					saveCache(path, now, recorder.Header(), recorder.Body.Bytes())
 				}
+				cacheMutexes[path].Unlock()
 				return
 			}
+			cacheMutexes[path].Unlock()
 			cacheTimeString := time.Unix(cacheTime, 0).Format(time.RFC1123)
 			expiresTimeString := time.Unix(cacheTime+appConfig.Cache.Expiration, 0).Format(time.RFC1123)
 			// check conditional request
