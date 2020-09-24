@@ -1,0 +1,20 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: publish
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      repo: quay.io/jlelse/goblog
+      registry: quay.io
+      tags: latest
+    when:
+      branch:
+        - master
+      event:
+        exclude:
+          - pull_request
