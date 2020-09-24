@@ -36,6 +36,10 @@ blog:
     path: /photos
     title: Photos
     description: "Photos on this blog"
+  activitystreams:
+    enable: true
+    replyParameter: replylink
+    imagesParameter: images
 user:
   nick: admin
   name: Admin

@@ -76,7 +76,14 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range allPostPaths {
 		if path != "" {
-			r.With(cacheMiddleware, minifier.Middleware).Get(path, servePost)
+			r.With(cacheWithCheckMiddleware(func(r *http.Request) bool {
+				if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, "application/activity+json") || strings.Contains(lowerAccept, "application/ld+json")) &&
+					!strings.Contains(lowerAccept, "text/html") {
+					// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
+					r.URL.Path += ".as"
+				}
+				return true
+			}), minifier.Middleware).Get(path, servePost)
 		}
 	}
 

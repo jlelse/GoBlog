@@ -51,6 +51,8 @@ type configBlog struct {
 	Menus map[string]*menu `mapstructure:"menus"`
 	// Photos
 	Photos *photos `mapstructure:"photos"`
+	// ActivityStreams
+	ActivityStreams *activityStreams `mapstructure:"activitystreams"`
 }
 
 type section struct {
@@ -80,6 +82,12 @@ type photos struct {
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
+}
+
+type activityStreams struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	ReplyParameter  string `mapstructure:"replyParameter"`
+	ImagesParameter string `mapstructure:"imagesParameter"`
 }
 
 type configUser struct {
@@ -134,6 +142,9 @@ func initConfig() error {
 	viper.SetDefault("blog.photos.path", "/photos")
 	viper.SetDefault("blog.photos.title", "Photos")
 	viper.SetDefault("blog.photos.description", "Photos on this blog")
+	viper.SetDefault("blog.activitystreams.enabled", false)
+	viper.SetDefault("blog.activitystreams.replyParameter", "replylink")
+	viper.SetDefault("blog.activitystreams.imagesParameter", "images")
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")

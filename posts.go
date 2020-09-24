@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 var errPostNotFound = errors.New("post not found")
@@ -23,6 +24,10 @@ type Post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, ".as") {
+		servePostActivityStreams(w, r)
+		return
+	}
 	path := slashTrimmedPath(r)
 	post, err := getPost(r.Context(), path)
 	if err == errPostNotFound {

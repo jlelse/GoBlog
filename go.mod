@@ -18,7 +18,7 @@ require (
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/lopezator/migrator v0.3.0
-	github.com/magiconair/properties v1.8.3 // indirect
+	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mattn/go-sqlite3 v1.14.3
 	github.com/miekg/dns v1.1.31 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
@@ -32,17 +32,17 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1 // indirect
-	github.com/tdewolff/minify/v2 v2.9.4
-	github.com/vcraescu/go-paginator v0.0.0-20200304054438-86d84f27c0b3
+	github.com/tdewolff/minify/v2 v2.9.5
+	github.com/vcraescu/go-paginator v0.0.0-20200923074551-426b20f3ae8a
 	github.com/yuin/goldmark v1.2.1
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 // indirect
-	golang.org/x/tools v0.0.0-20200921210052-fa0125251cc4 // indirect
+	golang.org/x/net v0.0.0-20200923182212-328152dc79b1 // indirect
+	golang.org/x/sys v0.0.0-20200923182605-d9f96fdee20d // indirect
+	golang.org/x/tools v0.0.0-20200923182640-463111b69878 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
