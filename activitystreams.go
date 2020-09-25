@@ -2,11 +2,22 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/araddon/dateparse"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
+
+func manipulateAsPath(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, "application/activity+json") || strings.Contains(lowerAccept, "application/ld+json")) && !strings.Contains(lowerAccept, "text/html") {
+			// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
+			r.URL.Path += ".as"
+		}
+		next.ServeHTTP(rw, r)
+	})
+}
 
 type asPost struct {
 	Context      []string        `json:"@context"`
@@ -19,14 +30,14 @@ type asPost struct {
 	Attachment   []*asAttachment `json:"attachment,omitempty"`
 	Published    string          `json:"published"`
 	Updated      string          `json:"updated,omitempty"`
-	Id           string          `json:"id"`
-	Url          string          `json:"url"`
+	ID           string          `json:"id"`
+	URL          string          `json:"url"`
 	AttributedTo string          `json:"attributedTo"`
 }
 
 type asAttachment struct {
 	Type string `json:"type"`
-	Url  string `json:"url"`
+	URL  string `json:"url"`
 }
 
 func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
@@ -46,8 +57,8 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		Context:      []string{"https://www.w3.org/ns/activitystreams"},
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
 		MediaType:    "text/html",
-		Id:           appConfig.Server.PublicAddress + post.Path,
-		Url:          appConfig.Server.PublicAddress + post.Path,
+		ID:           appConfig.Server.PublicAddress + post.Path,
+		URL:          appConfig.Server.PublicAddress + post.Path,
 		AttributedTo: appConfig.Server.PublicAddress,
 	}
 	// Name and Type
@@ -69,7 +80,7 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		for _, image := range images {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
-				Url:  image,
+				URL:  image,
 			})
 		}
 	}

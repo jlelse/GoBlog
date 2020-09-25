@@ -16,25 +16,13 @@ func initCache() {
 	cacheMutexes = map[string]*sync.Mutex{}
 }
 
-func cacheWithCheckMiddleware(cache func(r *http.Request) bool) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if cache(request) {
-				cacheMiddleware(next).ServeHTTP(writer, request)
-			} else {
-				next.ServeHTTP(writer, request)
-			}
-		})
-	}
-}
-
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestUrl, _ := url.ParseRequestURI(r.RequestURI)
+		requestURL, _ := url.ParseRequestURI(r.RequestURI)
 		path := slashTrimmedPath(r)
 		if appConfig.Cache.Enable &&
 			// check bypass query
-			!(requestUrl != nil && requestUrl.Query().Get("cache") == "0") {
+			!(requestURL != nil && requestURL.Query().Get("cache") == "0") {
 			// Check cache mutex
 			if cacheMutexes[path] == nil {
 				cacheMutexes[path] = &sync.Mutex{}

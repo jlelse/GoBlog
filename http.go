@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/caddyserver/certmagic"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/caddyserver/certmagic"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 const contentTypeHTML = "text/html; charset=utf-8"
@@ -76,14 +77,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range allPostPaths {
 		if path != "" {
-			r.With(cacheWithCheckMiddleware(func(r *http.Request) bool {
-				if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, "application/activity+json") || strings.Contains(lowerAccept, "application/ld+json")) &&
-					!strings.Contains(lowerAccept, "text/html") {
-					// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
-					r.URL.Path += ".as"
-				}
-				return true
-			}), minifier.Middleware).Get(path, servePost)
+			r.With(manipulateAsPath, cacheMiddleware, minifier.Middleware).Get(path, servePost)
 		}
 	}
 
