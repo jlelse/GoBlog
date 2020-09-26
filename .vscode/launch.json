@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Executable",
+            "type": "go",
+            "request": "launch",
+            "mode": "exec",
+            "program": "${workspaceRoot}/GoBlog",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "Build"
+        }
+    ]
+}
