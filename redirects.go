@@ -61,6 +61,10 @@ func createOrReplaceRedirect(from, to string) error {
 	if from == "" || to == "" {
 		return errors.New("empty path")
 	}
+	if from == to {
+		// Don't need a redirect
+		return nil
+	}
 	from = strings.TrimSuffix(from, "/")
 	startWritingToDb()
 	tx, err := appDb.Begin()

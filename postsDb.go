@@ -51,16 +51,19 @@ func (p *Post) checkPost(new bool) error {
 			random := generateRandomString(now, 5)
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
+		published, _ := dateparse.ParseIn(p.Published, time.Local)
 		pathVars := struct {
 			BlogPath string
 			Year     int
 			Month    int
+			Day      int
 			Slug     string
 			Section  string
 		}{
 			BlogPath: appConfig.Blogs[p.Blog].Path,
-			Year:     now.Year(),
-			Month:    int(now.Month()),
+			Year:     published.Year(),
+			Month:    int(published.Month()),
+			Day:      published.Day(),
 			Slug:     p.Slug,
 			Section:  p.Section,
 		}
