@@ -1,17 +1,21 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	Server *configServer `mapstructure:"server"`
-	Db     *configDb     `mapstructure:"database"`
-	Cache  *configCache  `mapstructure:"cache"`
-	Blog   *configBlog   `mapstructure:"blog"`
-	User   *configUser   `mapstructure:"user"`
-	Hooks  *configHooks  `mapstructure:"hooks"`
-	Hugo   *configHugo   `mapstructure:"hugo"`
+	Server      *configServer          `mapstructure:"server"`
+	Db          *configDb              `mapstructure:"database"`
+	Cache       *configCache           `mapstructure:"cache"`
+	DefaultBlog string                 `mapstructure:"defaultblog"`
+	Blogs       map[string]*configBlog `mapstructure:"blogs"`
+	User        *configUser            `mapstructure:"user"`
+	Hooks       *configHooks           `mapstructure:"hooks"`
+	Hugo        *configHugo            `mapstructure:"hugo"`
+	Micropub    *configMicropub        `mapstructure:"micropub"`
 }
 
 type configServer struct {
@@ -19,9 +23,9 @@ type configServer struct {
 	Port            int    `mapstructure:"port"`
 	Domain          string `mapstructure:"domain"`
 	PublicAddress   string `mapstructure:"publicAddress"`
-	PublicHttps     bool   `mapstructure:"publicHttps"`
+	PublicHTTPS     bool   `mapstructure:"publicHttps"`
 	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
-	LocalHttps      bool   `mapstructure:"localHttps"`
+	LocalHTTPS      bool   `mapstructure:"localHttps"`
 }
 
 type configDb struct {
@@ -33,32 +37,25 @@ type configCache struct {
 	Expiration int64 `mapstructure:"expiration"`
 }
 
-// exposed to templates via function "blog"
 type configBlog struct {
-	// Language of the blog, e.g. "en" or "de"
-	Lang string `mapstructure:"lang"`
-	// Title of the blog, e.g. "My blog"
-	Title string `mapstructure:"title"`
-	// Description of the blog
-	Description string `mapstructure:"description"`
-	// Number of posts per page
-	Pagination int `mapstructure:"pagination"`
-	// Sections
-	Sections []*section `mapstructure:"sections"`
-	// Taxonomies
-	Taxonomies []*taxonomy `mapstructure:"taxonomies"`
-	// Menus
-	Menus map[string]*menu `mapstructure:"menus"`
-	// Photos
-	Photos *photos `mapstructure:"photos"`
-	// ActivityStreams
-	ActivityStreams *activityStreams `mapstructure:"activitystreams"`
+	Path            string              `mapstructure:"path"`
+	Lang            string              `mapstructure:"lang"`
+	Title           string              `mapstructure:"title"`
+	Description     string              `mapstructure:"description"`
+	Pagination      int                 `mapstructure:"pagination"`
+	Sections        map[string]*section `mapstructure:"sections"`
+	Taxonomies      []*taxonomy         `mapstructure:"taxonomies"`
+	Menus           map[string]*menu    `mapstructure:"menus"`
+	Photos          *photos             `mapstructure:"photos"`
+	ActivityStreams *activityStreams    `mapstructure:"activitystreams"`
+	DefaultSection  string              `mapstructure:"defaultsection"`
 }
 
 type section struct {
-	Name        string `mapstructure:"name"`
-	Title       string `mapstructure:"title"`
-	Description string `mapstructure:"description"`
+	Name         string `mapstructure:"name"`
+	Title        string `mapstructure:"title"`
+	Description  string `mapstructure:"description"`
+	PathTemplate string `mapstructure:"pathtemplate"`
 }
 
 type taxonomy struct {
@@ -110,6 +107,22 @@ type frontmatter struct {
 	Parameter string `mapstructure:"parameter"`
 }
 
+type configMicropub struct {
+	Enabled               bool     `mapstructure:"enabled"`
+	Path                  string   `mapstructure:"path"`
+	AuthAllowed           []string `mapstructure:"authAllowed"`
+	TokenEndpoint         string   `mapstructure:"tokenEndpoint"`
+	AuthEndpoint          string   `mapstructure:"authEndpoint"`
+	Authn                 string   `mapstructure:"authn"`
+	CategoryParam         string   `mapstructure:"categoryParam"`
+	ReplyParam            string   `mapstructure:"replyParam"`
+	LikeParam             string   `mapstructure:"likeParam"`
+	BookmarkParam         string   `mapstructure:"bookmarkParam"`
+	AudioParam            string   `mapstructure:"audioParam"`
+	PhotoParam            string   `mapstructure:"photoParam"`
+	PhotoDescriptionParam string   `mapstructure:"photoDescriptionParam"`
+}
+
 var appConfig = &config{}
 
 func initConfig() error {
@@ -119,41 +132,42 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
-	// Defaults
 	viper.SetDefault("server.logging", false)
 	viper.SetDefault("server.port", 8080)
-	viper.SetDefault("server.domain", "example.com")
 	viper.SetDefault("server.publicAddress", "http://localhost:8080")
 	viper.SetDefault("server.publicHttps", false)
-	viper.SetDefault("server.letsEncryptMail", "mail@example.com")
 	viper.SetDefault("server.localHttps", false)
 	viper.SetDefault("database.file", "data/db.sqlite")
 	viper.SetDefault("cache.enable", true)
 	viper.SetDefault("cache.expiration", 600)
-	viper.SetDefault("blog.lang", "en")
-	viper.SetDefault("blog.title", "My blog")
-	viper.SetDefault("blog.description", "This is my blog")
-	viper.SetDefault("blog.pagination", 10)
-	viper.SetDefault("blog.sections", []*section{{Name: "posts", Title: "Posts", Description: "**Posts** on this blog"}})
-	viper.SetDefault("blog.taxonomies", []*taxonomy{{Name: "tags", Title: "Tags", Description: "**Tags** on this blog"}})
-	viper.SetDefault("blog.menus", map[string]*menu{"main": {Items: []*menuItem{{Title: "Home", Link: "/"}, {Title: "Post", Link: "Posts"}}}})
-	viper.SetDefault("blog.photos.enabled", true)
-	viper.SetDefault("blog.photos.parameter", "images")
-	viper.SetDefault("blog.photos.path", "/photos")
-	viper.SetDefault("blog.photos.title", "Photos")
-	viper.SetDefault("blog.photos.description", "Photos on this blog")
-	viper.SetDefault("blog.activitystreams.enabled", false)
-	viper.SetDefault("blog.activitystreams.replyParameter", "replylink")
-	viper.SetDefault("blog.activitystreams.imagesParameter", "images")
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")
 	viper.SetDefault("hooks.shell", "/bin/bash")
 	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
+	viper.SetDefault("micropub.enabled", true)
+	viper.SetDefault("micropub.path", "/micropub")
+	viper.SetDefault("micropub.authAllowed", []string{})
+	viper.SetDefault("micropub.tokenEndpoint", "https://tokens.indieauth.com/token")
+	viper.SetDefault("micropub.authEndpoint", "https://indieauth.com/auth")
+	viper.SetDefault("micropub.categoryParam", "tags")
+	viper.SetDefault("micropub.replyParam", "replylink")
+	viper.SetDefault("micropub.likeParam", "likelink")
+	viper.SetDefault("micropub.bookmarkParam", "link")
+	viper.SetDefault("micropub.audioParam", "audio")
+	viper.SetDefault("micropub.photoParam", "images")
+	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
 	// Unmarshal config
 	err = viper.Unmarshal(appConfig)
 	if err != nil {
 		return err
+	}
+	// Check config
+	if len(appConfig.Blogs) == 0 {
+		return errors.New("no blog configured")
+	}
+	if len(appConfig.DefaultBlog) == 0 || appConfig.Blogs[appConfig.DefaultBlog] == nil {
+		return errors.New("no default blog or default blog not present")
 	}
 	return nil
 }

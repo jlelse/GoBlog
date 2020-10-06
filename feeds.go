@@ -1,28 +1,29 @@
 package main
 
 import (
-	"github.com/gorilla/feeds"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/feeds"
 )
 
 type feedType string
 
 const (
-	NONE feedType = ""
-	RSS  feedType = "rss"
-	ATOM feedType = "atom"
-	JSON feedType = "json"
+	noFeed   feedType = ""
+	rssFeed  feedType = "rss"
+	atomFeed feedType = "atom"
+	jsonFeed feedType = "json"
 )
 
-func generateFeed(f feedType, w http.ResponseWriter, r *http.Request, posts []*Post, title string, description string) {
+func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*Post, title string, description string) {
 	now := time.Now()
 	if title == "" {
-		title = appConfig.Blog.Title
+		title = appConfig.Blogs[blog].Title
 	}
 	if description == "" {
-		description = appConfig.Blog.Description
+		description = appConfig.Blogs[blog].Description
 	}
 	feed := &feeds.Feed{
 		Title:       title,
@@ -43,11 +44,11 @@ func generateFeed(f feedType, w http.ResponseWriter, r *http.Request, posts []*P
 	var feedStr string
 	var err error
 	switch f {
-	case RSS:
+	case rssFeed:
 		feedStr, err = feed.ToRss()
-	case ATOM:
+	case atomFeed:
 		feedStr, err = feed.ToAtom()
-	case JSON:
+	case jsonFeed:
 		feedStr, err = feed.ToJSON()
 	default:
 		return
@@ -57,12 +58,12 @@ func generateFeed(f feedType, w http.ResponseWriter, r *http.Request, posts []*P
 		return
 	}
 	switch f {
-	case RSS:
-		w.Header().Add("Content-Type", "application/rss+xml; charset=utf-8")
-	case ATOM:
-		w.Header().Add("Content-Type", "application/atom+xml; charset=utf-8")
-	case JSON:
-		w.Header().Add("Content-Type", "application/feed+json; charset=utf-8")
+	case rssFeed:
+		w.Header().Add(contentType, "application/rss+xml; charset=utf-8")
+	case atomFeed:
+		w.Header().Add(contentType, "application/atom+xml; charset=utf-8")
+	case jsonFeed:
+		w.Header().Add(contentType, "application/feed+json; charset=utf-8")
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(feedStr))

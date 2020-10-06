@@ -1,8 +1,8 @@
 {{ define "title" }}
     {{ if .Title }}
-      <title>{{ .Title }} - {{ blog.Title }}</title>
+      <title>{{ .Title }} - {{ (blog .Blog).Title }}</title>
     {{ else }}
-      <title>{{ blog.Title }}</title>
+      <title>{{ (blog .Blog).Title }}</title>
     {{ end }}
     <link rel="alternate"
           type="application/rss+xml"

@@ -1,11 +1,14 @@
 {{ define "base" }}
   <!doctype html>
-  <html lang={{ blog.Lang }}>
+  <html lang={{ (blog .Blog).Lang }}>
   <meta charset=utf-8>
   <meta name=viewport content="width=device-width,initial-scale=1">
   <meta http-equiv=x-ua-compatible content="IE=edge">
   <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
   {{ template "title" . }}
+  {{ if micropub.Enabled }}
+    {{ include "micropub" . }}
+  {{ end }}
   {{ include "header" . }}
   {{ template "main" . }}
 {{ end }}

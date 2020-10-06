@@ -2,7 +2,7 @@ server:
   logging: false
   port: 8080
   domain: example.com
-  publicAdress: http://localhost:8080
+  publicAddress: http://localhost:8080
   publicHttps: false
   letsEncryptMail: mail@example.com
   localHttps: false
@@ -11,35 +11,37 @@ database:
 cache:
   enable: true
   expiration: 600
-blog:
-  lang: en
-  title: My blog
-  description: This is my blog
-  sections:
-    - name: posts
-      title: Posts
-      description: "**Posts** on this blog"
-  taxonomies:
-    - name: tags
-      title: Tags
-      description: "**Tags** on this blog"
-  menus:
-    main:
-      items:
-        - title: Home
-          link: /
-        - title: Posts
-          link: /posts
-  photos:
-    enable: true
-    parameter: images
-    path: /photos
-    title: Photos
-    description: "Photos on this blog"
-  activitystreams:
-    enable: true
-    replyParameter: replylink
-    imagesParameter: images
+blogs:
+  main:
+    path: /
+    lang: en
+    title: My blog
+    description: This is my blog
+    sections:
+      - name: posts
+        title: Posts
+        description: "**Posts** on this blog"
+    taxonomies:
+      - name: tags
+        title: Tags
+        description: "**Tags** on this blog"
+    menus:
+      main:
+        items:
+          - title: Home
+            link: /
+          - title: Posts
+            link: /posts
+    photos:
+      enable: true
+      parameter: images
+      path: /photos
+      title: Photos
+      description: "Photos on this blog"
+    activitystreams:
+      enable: true
+      replyParameter: replylink
+      imagesParameter: images
 user:
   nick: admin
   name: Admin
@@ -50,3 +52,18 @@ hugo:
       parameter: title
     - meta: tags
       parameter: tags
+micropub:
+  enabled: true
+  path: /micropub
+  authAllowed:
+    - example.com
+  tokenEndpoint: https://tokens.indieauth.com/token
+  authEndpoint: https://indieauth.com/auth
+  authn: login@example.com
+  categoryParam: tags
+  replyParam: replylink
+  likeParam: likelink
+  bookmarkParam: link
+  audioParam: audio
+  photoParam: images
+  photoDescriptionParam: imagealts

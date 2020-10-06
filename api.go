@@ -16,7 +16,7 @@ func apiPostCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = post.createOrReplace()
+	err = post.createOrReplace(false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -44,7 +44,7 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = post.createOrReplace()
+	err = post.createOrReplace(false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,7 +64,7 @@ func apiPostRead(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", contentTypeJSON)
+	w.Header().Set(contentType, contentTypeJSONUTF8)
 	err = json.NewEncoder(w).Encode(post)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

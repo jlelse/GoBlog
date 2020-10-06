@@ -2,14 +2,16 @@ package main
 
 import (
 	"errors"
+	"strconv"
+	"strings"
+
 	"github.com/jeremywohl/flatten"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v3"
-	"strconv"
-	"strings"
 )
 
 func parseHugoFile(fileContent string, path string) (*Post, error) {
+	// TODO: Add option to set blog, slug
 	if path == "" {
 		return nil, errors.New("empty path")
 	}
@@ -57,6 +59,7 @@ func parseHugoFile(fileContent string, path string) (*Post, error) {
 		}
 	}
 	// Create redirects
+	// TODO: Move redirect creation after post creation
 	var aliases []string
 	for fk, value := range flat {
 		if strings.HasPrefix(fk, "aliases") {

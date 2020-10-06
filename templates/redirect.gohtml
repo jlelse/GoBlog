@@ -1,6 +1,6 @@
 {{ define "redirect" }}
   <!doctype html>
-  <html lang={{ blog.Lang }}>
+  <html lang={{ (blog .Blog).Lang }}>
   <meta charset="utf-8"/>
   <meta name="robots" content="noindex">
   <title>{{ .Permalink }}</title>

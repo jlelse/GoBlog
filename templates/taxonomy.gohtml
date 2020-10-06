@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ .Taxonomy.Title }} - {{ blog.Title }}</title>
+  <title>{{ .Taxonomy.Title }} - {{ (blog .Blog).Title }}</title>
 {{ end }}
 
 {{ define "main" }}

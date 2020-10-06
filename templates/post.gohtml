@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ with p . "title" }}{{ . }} - {{end}}{{ blog.Title }}</title>
+  <title>{{ with p . "title" }}{{ . }} - {{end}}{{ (blog .Blog).Title }}</title>
 {{ end }}
 
 {{ define "main" }}
@@ -14,7 +14,7 @@
           <div class=e-content>{{ md . }}</div>
         {{ end }}
     </article>
-      {{ $taxonomies := blog.Taxonomies }}
+      {{ $taxonomies := (blog .Blog).Taxonomies }}
       {{ $post := . }}
       {{ range $i, $tax := $taxonomies }}
           {{ $tvs := ps $post $tax.Name }}

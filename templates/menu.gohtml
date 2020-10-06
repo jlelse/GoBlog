@@ -1,6 +1,6 @@
 {{ define "menu" }}
   <nav>
-      {{ with menu "main" }}
+      {{ with menu .Blog "main" }}
           {{ $first := true }}
           {{ range $i, $item := .Items }}
               {{ if ne $first true }} &bull; {{ end }}<a

@@ -11,8 +11,12 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
-const contentTypeHTML = "text/html; charset=utf-8"
-const contentTypeJSON = "application/json; charset=utf-8"
+const contentType = "Content-Type"
+const contentTypeHTMLUTF8 = "text/html; charset=utf-8"
+const contentTypeJSONUTF8 = "application/json; charset=utf-8"
+const contentTypeJSON = "application/json"
+const contentTypeWWWForm = "application/x-www-form-urlencoded"
+const contentTypeMultipartForm = "multipart/form-data"
 
 var d *dynamicHandler
 
@@ -24,10 +28,10 @@ func startServer() (err error) {
 	}
 	d.swapHandler(h)
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
-	if appConfig.Server.PublicHttps {
+	if appConfig.Server.PublicHTTPS {
 		initPublicHTTPS()
 		err = certmagic.HTTPS([]string{appConfig.Server.Domain}, d)
-	} else if appConfig.Server.LocalHttps {
+	} else if appConfig.Server.LocalHTTPS {
 		err = http.ListenAndServeTLS(localAddress, "https/server.crt", "https/server.key", d)
 	} else {
 		err = http.ListenAndServe(localAddress, d)
@@ -70,6 +74,13 @@ func buildHandler() (http.Handler, error) {
 		apiRouter.Post("/hugo", apiPostCreateHugo)
 	})
 
+	// Micropub
+	if appConfig.Micropub.Enabled {
+		r.Get(appConfig.Micropub.Path, serveMicropubQuery)
+		r.With(checkIndieAuth).Post(appConfig.Micropub.Path, serveMicropubPost)
+		r.With(checkIndieAuth).Post(appConfig.Micropub.Path+micropubMediaSubPath, serveMicropubMedia)
+	}
+
 	// Posts
 	allPostPaths, err := allPostPaths()
 	if err != nil {
@@ -104,56 +115,56 @@ func buildHandler() (http.Handler, error) {
 	jsonPath := ".json"
 	atomPath := ".atom"
 
-	// Indexes, Feeds
-	for _, section := range appConfig.Blog.Sections {
-		if section.Name != "" {
-			path := "/" + section.Name
-			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(path, section, NONE))
-			r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveSection(path, section, RSS))
-			r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveSection(path, section, JSON))
-			r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveSection(path, section, ATOM))
-			r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(path, section, NONE))
-		}
-	}
+	for blog, blogConfig := range appConfig.Blogs {
 
-	for _, taxonomy := range appConfig.Blog.Taxonomies {
-		if taxonomy.Name != "" {
-			r.With(cacheMiddleware, minifier.Middleware).Get("/"+taxonomy.Name, serveTaxonomy(taxonomy))
-			values, err := allTaxonomyValues(taxonomy.Name)
-			if err != nil {
-				return nil, err
-			}
-			for _, tv := range values {
-				path := "/" + taxonomy.Name + "/" + urlize(tv)
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(path, taxonomy, tv, NONE))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveTaxonomyValue(path, taxonomy, tv, RSS))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveTaxonomyValue(path, taxonomy, tv, JSON))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveTaxonomyValue(path, taxonomy, tv, ATOM))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(path, taxonomy, tv, NONE))
+		blogPath := blogConfig.Path
+		if blogPath == "/" {
+			blogPath = ""
+		}
+
+		// Indexes, Feeds
+		for _, section := range blogConfig.Sections {
+			if section.Name != "" {
+				path := blogPath + "/" + section.Name
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(blog, path, section, noFeed))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveSection(blog, path, section, rssFeed))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveSection(blog, path, section, jsonFeed))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveSection(blog, path, section, atomFeed))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(blog, path, section, noFeed))
 			}
 		}
-	}
 
-	if appConfig.Blog.Photos.Enabled {
-		r.With(cacheMiddleware, minifier.Middleware).Get(appConfig.Blog.Photos.Path, servePhotos(appConfig.Blog.Photos.Path))
-		r.With(cacheMiddleware, minifier.Middleware).Get(appConfig.Blog.Photos.Path+paginationPath, servePhotos(appConfig.Blog.Photos.Path))
-	}
+		for _, taxonomy := range blogConfig.Taxonomies {
+			if taxonomy.Name != "" {
+				path := blogPath + "/" + taxonomy.Name
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomy(blog, taxonomy))
+				values, err := allTaxonomyValues(blog, taxonomy.Name)
+				if err != nil {
+					return nil, err
+				}
+				for _, tv := range values {
+					path = path + "/" + urlize(tv)
+					r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(blog, path, taxonomy, tv, noFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveTaxonomyValue(blog, path, taxonomy, tv, rssFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveTaxonomyValue(blog, path, taxonomy, tv, jsonFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveTaxonomyValue(blog, path, taxonomy, tv, atomFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(blog, path, taxonomy, tv, noFeed))
+				}
+			}
+		}
 
-	// Blog
-	rootPath := "/"
-	blogPath := "/blog"
-	if !r.Match(chi.NewRouteContext(), http.MethodGet, rootPath) {
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath, serveHome("", NONE))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+rssPath, serveHome("", RSS))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+jsonPath, serveHome("", JSON))
-		r.With(cacheMiddleware, minifier.Middleware).Get(rootPath+atomPath, serveHome("", ATOM))
-		r.With(cacheMiddleware, minifier.Middleware).Get(paginationPath, serveHome("", NONE))
-	} else if !r.Match(chi.NewRouteContext(), http.MethodGet, blogPath) {
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath, serveHome(blogPath, NONE))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+rssPath, serveHome(blogPath, RSS))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+jsonPath, serveHome(blogPath, JSON))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+atomPath, serveHome(blogPath, ATOM))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blogPath, NONE))
+		// Photos
+		if blogConfig.Photos.Enabled {
+			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path, servePhotos(blog))
+			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path+paginationPath, servePhotos(blog))
+		}
+
+		// Blog
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path, serveHome(blog, blogPath, noFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+rssPath, serveHome(blog, blogPath, rssFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+jsonPath, serveHome(blog, blogPath, jsonFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+atomPath, serveHome(blog, blogPath, atomFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+paginationPath, serveHome(blog, blogPath, noFeed))
 	}
 
 	// Sitemap

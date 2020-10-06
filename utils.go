@@ -1,8 +1,10 @@
 package main
 
 import (
+	"math/rand"
 	"sort"
 	"strings"
+	"time"
 )
 
 func urlize(str string) string {
@@ -20,7 +22,7 @@ func urlize(str string) string {
 func firstSentences(value string, count int) string {
 	for i := range value {
 		if value[i] == '.' || value[i] == '!' || value[i] == '?' {
-			count -= 1
+			count--
 			if count == 0 && i < len(value) {
 				return value[0 : i+1]
 			}
@@ -34,4 +36,14 @@ func sortedStrings(s []string) []string {
 		return strings.ToLower(s[i]) < strings.ToLower(s[j])
 	})
 	return s
+}
+
+func generateRandomString(now time.Time, n int) string {
+	rand.Seed(now.UnixNano())
+	letters := []rune("abcdefghijklmnopqrstuvwxyz")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

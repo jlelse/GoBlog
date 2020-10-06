@@ -1,21 +1,22 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"errors"
-	"github.com/araddon/dateparse"
+	"fmt"
 	"strings"
+	"text/template"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
 
-func (p *Post) checkPost() error {
+func (p *Post) checkPost(new bool) error {
 	if p == nil {
 		return errors.New("no post")
 	}
-	if p.Path == "" || !strings.HasPrefix(p.Path, "/") {
-		return errors.New("wrong path")
-	}
-	// Fix path
-	p.Path = strings.TrimSuffix(p.Path, "/")
+	now := time.Now()
 	// Fix content
 	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
 	// Fix date strings
@@ -26,6 +27,9 @@ func (p *Post) checkPost() error {
 		}
 		p.Published = d.String()
 	}
+	if p.Published == "" {
+		p.Published = now.String()
+	}
 	if p.Updated != "" {
 		d, err := dateparse.ParseIn(p.Updated, time.Local)
 		if err != nil {
@@ -33,11 +37,63 @@ func (p *Post) checkPost() error {
 		}
 		p.Updated = d.String()
 	}
+	// Check blog
+	if p.Blog == "" {
+		p.Blog = appConfig.DefaultBlog
+	}
+	// Check path
+	p.Path = strings.TrimSuffix(p.Path, "/")
+	if p.Path == "" {
+		if p.Section == "" {
+			p.Section = appConfig.Blogs[p.Blog].DefaultSection
+		}
+		if p.Slug == "" {
+			random := generateRandomString(now, 5)
+			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
+		}
+		pathVars := struct {
+			BlogPath string
+			Year     int
+			Month    int
+			Slug     string
+			Section  string
+		}{
+			BlogPath: appConfig.Blogs[p.Blog].Path,
+			Year:     now.Year(),
+			Month:    int(now.Month()),
+			Slug:     p.Slug,
+			Section:  p.Section,
+		}
+		pathTmplString := appConfig.Blogs[p.Blog].Sections[p.Section].PathTemplate
+		if pathTmplString == "" {
+			return errors.New("path template empty")
+		}
+		pathTmpl, err := template.New("location").Parse(pathTmplString)
+		if err != nil {
+			return errors.New("failed to parse location template")
+		}
+		var pathBuffer bytes.Buffer
+		err = pathTmpl.Execute(&pathBuffer, pathVars)
+		if err != nil {
+			return errors.New("failed to execute location template")
+		}
+		p.Path = pathBuffer.String()
+	}
+	if p.Path != "" && !strings.HasPrefix(p.Path, "/") {
+		return errors.New("wrong path")
+	}
+	// Check if post with path already exists
+	if new {
+		post, _ := getPost(context.Background(), p.Path)
+		if post != nil {
+			return errors.New("path already exists")
+		}
+	}
 	return nil
 }
 
-func (p *Post) createOrReplace() error {
-	err := p.checkPost()
+func (p *Post) createOrReplace(new bool) error {
+	err := p.checkPost(new)
 	if err != nil {
 		return err
 	}
@@ -47,7 +103,7 @@ func (p *Post) createOrReplace() error {
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("insert or replace into posts (path, content, published, updated) values (?, ?, ?, ?)", p.Path, p.Content, p.Published, p.Updated)
+	_, err = tx.Exec("insert or replace into posts (path, content, published, updated, blog, section) values (?, ?, ?, ?, ?, ?)", p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
@@ -77,12 +133,13 @@ func (p *Post) createOrReplace() error {
 		return err
 	}
 	finishWritingToDb()
-	go purgeCache(p.Path)
+	go purgeCache()
 	return reloadRouter()
 }
 
 func (p *Post) delete() error {
-	err := p.checkPost()
+	// TODO
+	err := p.checkPost(false)
 	if err != nil {
 		return err
 	}
@@ -110,6 +167,6 @@ func (p *Post) delete() error {
 		return err
 	}
 	finishWritingToDb()
-	go purgeCache(p.Path)
+	go purgeCache()
 	return reloadRouter()
 }

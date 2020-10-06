@@ -40,6 +40,8 @@ type asAttachment struct {
 	URL  string `json:"url"`
 }
 
+// TODO: Serve index
+
 func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 	// Remove ".as" from path again
 	r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
@@ -69,14 +71,14 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		as.Type = "Note"
 	}
 	// Content
-	if rendered, err := renderMarkdown(post.Content); err != nil {
+	if rendered, err := renderMarkdown(post.Content); err == nil {
+		as.Content = string(rendered)
+	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else {
-		as.Content = string(rendered)
 	}
 	// Attachments
-	if images := post.Parameters[appConfig.Blog.ActivityStreams.ImagesParameter]; len(images) > 0 {
+	if images := post.Parameters[appConfig.Blogs[post.Blog].ActivityStreams.ImagesParameter]; len(images) > 0 {
 		for _, image := range images {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
@@ -97,10 +99,10 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Reply
-	if replyLink := post.firstParameter(appConfig.Blog.ActivityStreams.ReplyParameter); replyLink != "" {
+	if replyLink := post.firstParameter(appConfig.Blogs[post.Blog].ActivityStreams.ReplyParameter); replyLink != "" {
 		as.InReplyTo = replyLink
 	}
 	// Send JSON
-	w.Header().Add("Content-Type", contentTypeJSON)
+	w.Header().Add(contentType, contentTypeJSONUTF8)
 	_ = json.NewEncoder(w).Encode(as)
 }

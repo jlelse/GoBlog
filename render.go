@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/araddon/dateparse"
 	"html/template"
 	"log"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
 
 const templatesDir = "templates"
@@ -29,11 +30,17 @@ var templateFunctions template.FuncMap
 
 func initRendering() error {
 	templateFunctions = template.FuncMap{
-		"blog": func() *configBlog {
-			return appConfig.Blog
+		"blogs": func() map[string]*configBlog {
+			return appConfig.Blogs
 		},
-		"menu": func(id string) *menu {
-			return appConfig.Blog.Menus[id]
+		"blog": func(blog string) *configBlog {
+			return appConfig.Blogs[blog]
+		},
+		"micropub": func() *configMicropub {
+			return appConfig.Micropub
+		},
+		"menu": func(blog, id string) *menu {
+			return appConfig.Blogs[blog].Menus[id]
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)
@@ -104,7 +111,7 @@ func render(w http.ResponseWriter, template string, data interface{}) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	// Set content type (needed for minification middleware
-	w.Header().Set("Content-Type", contentTypeHTML)
+	w.Header().Set(contentType, contentTypeHTMLUTF8)
 	// Write buffered response
 	_, _ = w.Write(buffer.Bytes())
 }
