@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,9 +12,36 @@ import (
 )
 
 var cacheMutexes map[string]*sync.Mutex
+var cacheDb *sql.DB
+var cacheDbWriteMutex = &sync.Mutex{}
 
-func initCache() {
+func initCache() (err error) {
 	cacheMutexes = map[string]*sync.Mutex{}
+	cacheDb, err = sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		return err
+	}
+	tx, err := cacheDb.Begin()
+	if err != nil {
+		return
+	}
+	_, err = tx.Exec("CREATE TABLE cache (path text not null primary key, time integer, header blob, body blob);")
+	if err != nil {
+		return
+	}
+	err = tx.Commit()
+	if err != nil {
+		return
+	}
+	return
+}
+
+func startWritingToCacheDb() {
+	cacheDbWriteMutex.Lock()
+}
+
+func finishWritingToCacheDb() {
+	cacheDbWriteMutex.Unlock()
 }
 
 func cacheMiddleware(next http.Handler) http.Handler {
@@ -88,7 +116,7 @@ func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeS
 func getCache(context context.Context, path string) (creationTime int64, header map[string][]string, body []byte) {
 	var headerBytes []byte
 	allowedTime := time.Now().Unix() - appConfig.Cache.Expiration
-	row := appDb.QueryRowContext(context, "select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)
+	row := cacheDb.QueryRowContext(context, "select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)
 	_ = row.Scan(&creationTime, &headerBytes, &body)
 	header = make(map[string][]string)
 	_ = json.Unmarshal(headerBytes, &header)
@@ -97,21 +125,20 @@ func getCache(context context.Context, path string) (creationTime int64, header 
 
 func saveCache(path string, now time.Time, header map[string][]string, body []byte) {
 	headerBytes, _ := json.Marshal(header)
-	startWritingToDb()
-	defer finishWritingToDb()
-	tx, err := appDb.Begin()
+	startWritingToCacheDb()
+	defer finishWritingToCacheDb()
+	tx, err := cacheDb.Begin()
 	if err != nil {
 		return
 	}
-	_, _ = tx.Exec("delete from cache where time<?;", now.Unix()-appConfig.Cache.Expiration)
 	_, _ = tx.Exec("insert or replace into cache (path, time, header, body) values (?, ?, ?, ?);", path, now.Unix(), headerBytes, body)
 	_ = tx.Commit()
 }
 
 func purgeCache() {
-	startWritingToDb()
-	defer finishWritingToDb()
-	tx, err := appDb.Begin()
+	startWritingToCacheDb()
+	defer finishWritingToCacheDb()
+	tx, err := cacheDb.Begin()
 	if err != nil {
 		return
 	}

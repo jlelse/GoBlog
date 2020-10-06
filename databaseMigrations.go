@@ -19,7 +19,6 @@ func migrateDb() error {
 					CREATE TABLE post_parameters (id integer primary key autoincrement, path text not null, parameter text not null, value text);
 					CREATE INDEX index_pp_path on post_parameters (path);
 					CREATE TABLE redirects (fromPath text not null, toPath text not null, primary key (fromPath, toPath));
-					CREATE TABLE cache (path text not null primary key, time integer, header blob, body blob);
 					`)
 					return err
 				},
