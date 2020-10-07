@@ -4,7 +4,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
+
+	jsoniter "github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func main() {
 	// Initialize config

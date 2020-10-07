@@ -12,6 +12,7 @@ require (
 	github.com/gorilla/feeds v1.1.1
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/gorm v1.9.16 // indirect
+	github.com/json-iterator/go v1.1.10
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -41,8 +42,8 @@ require (
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0 // indirect
 	golang.org/x/sync v0.0.0-20200930132711-30421366ff76 // indirect
-	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf // indirect
-	golang.org/x/tools v0.0.0-20201005185003-576e169c3de7 // indirect
+	golang.org/x/sys v0.0.0-20201007082116-8445cc04cbdf // indirect
+	golang.org/x/tools v0.0.0-20201007032633-0806396f153e // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
