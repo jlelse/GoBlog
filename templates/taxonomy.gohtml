@@ -7,9 +7,10 @@
       {{ with .Data.Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
       {{ with .Data.Taxonomy.Description }}{{ md . }}{{ end }}
     <ul>
+        {{ $blog := .Blog }}
         {{ $taxonomy := .Data.Taxonomy.Name }}
         {{ range $i, $value := (sort .Data.TaxonomyValues) }}
-          <li><a href="/{{ $taxonomy }}/{{ urlize . }}">{{ . }}</a></li>
+          <li><a href="{{ blogRelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a></li>
         {{ end }}
     </ul>
   </main>

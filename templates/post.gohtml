@@ -15,12 +15,13 @@
         {{ end }}
     </article>
       {{ $post := .Data }}
-      {{ range $i, $tax := .Blog.Taxonomies }}
+      {{ $blog := .Blog }}
+      {{ range $i, $tax := $blog.Taxonomies }}
           {{ $tvs := ps $post $tax.Name }}
           {{ if gt (len $tvs) 0 }}
             <p>In <b>{{ $tax.Title }}</b>:
                 {{ range $j, $tv := $tvs }}
-                  <a href="/{{ $tax.Name }}/{{ urlize $tv }}">{{ $tv }}</a>
+                  <a href="{{ blogRelative $blog ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ $tv }}</a>
                 {{ end }}
             </p>
           {{ end }}

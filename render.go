@@ -77,6 +77,12 @@ func initRendering() error {
 		},
 		"urlize": urlize,
 		"sort":   sortedStrings,
+		"blogRelative": func(blog *configBlog, path string) string {
+			if blog.Path != "/" {
+				return blog.Path + path
+			}
+			return path
+		},
 	}
 
 	templates = make(map[string]*template.Template)

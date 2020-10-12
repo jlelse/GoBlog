@@ -1,6 +1,6 @@
 {{ define "header" }}
   <header>
-    <h1><a href="/" rel="home" title="{{ .Blog.Title }}">{{ .Blog.Title }}</a></h1>
+    <h1><a href="{{ blogRelative .Blog "/" }}" rel="home" title="{{ .Blog.Title }}">{{ .Blog.Title }}</a></h1>
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
       {{ include "menu" .Blog .Data }}
   </header>
