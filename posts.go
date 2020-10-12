@@ -42,7 +42,10 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	render(w, templatePost, post)
+	render(w, templatePost, &renderData{
+		blogString: post.Blog,
+		Data:       post,
+	})
 }
 
 type indexTemplateData struct {
@@ -108,14 +111,15 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		render(w, templateTaxonomy, struct {
-			Taxonomy       *taxonomy
-			TaxonomyValues []string
-			Blog           string
-		}{
-			Taxonomy:       tax,
-			TaxonomyValues: allValues,
-			Blog:           blog,
+		render(w, templateTaxonomy, &renderData{
+			blogString: blog,
+			Data: struct {
+				Taxonomy       *taxonomy
+				TaxonomyValues []string
+			}{
+				Taxonomy:       tax,
+				TaxonomyValues: allValues,
+			},
 		})
 	}
 }
@@ -202,16 +206,18 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		if len(template) == 0 {
 			template = templateIndex
 		}
-		render(w, template, &indexTemplateData{
-			Blog:        ic.blog,
-			Title:       title,
-			Description: description,
-			Posts:       posts,
-			HasPrev:     p.HasPrev(),
-			HasNext:     p.HasNext(),
-			First:       ic.path,
-			Prev:        fmt.Sprintf("%s/page/%d", ic.path, prevPage),
-			Next:        fmt.Sprintf("%s/page/%d", ic.path, nextPage),
+		render(w, template, &renderData{
+			blogString: ic.blog,
+			Data: &indexTemplateData{
+				Title:       title,
+				Description: description,
+				Posts:       posts,
+				HasPrev:     p.HasPrev(),
+				HasNext:     p.HasNext(),
+				First:       ic.path,
+				Prev:        fmt.Sprintf("%s/page/%d", ic.path, prevPage),
+				Next:        fmt.Sprintf("%s/page/%d", ic.path, nextPage),
+			},
 		})
 	}
 }

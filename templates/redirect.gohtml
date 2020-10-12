@@ -1,9 +1,9 @@
 {{ define "redirect" }}
   <!doctype html>
-  <html lang={{ (blog .Blog).Lang }}>
+  <html lang={{ .Blog.Lang }}>
   <meta charset="utf-8"/>
   <meta name="robots" content="noindex">
-  <title>{{ .Permalink }}</title>
-  <link rel="canonical" href="{{ .Permalink }}"/>
-  <meta http-equiv="refresh" content="0; url={{ .Permalink }}"/>
+  <title>{{ .Data }}</title>
+  <link rel="canonical" href="{{ .Data }}"/>
+  <meta http-equiv="refresh" content="0; url={{ .Data }}"/>
 {{ end }}

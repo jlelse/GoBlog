@@ -1,28 +1,27 @@
 {{ define "title" }}
-    {{ $blog := (blog .Blog) }}
-    {{ if $blog.Photos.Title }}
-      <title>{{ $blog.Photos.Title }} - {{ $blog.Title }}</title>
+    {{ if .Blog.Photos.Title }}
+      <title>{{ .Blog.Photos.Title }} - {{ .Blog.Title }}</title>
     {{ else }}
-      <title>{{ $blog.Title }}</title>
+      <title>{{ .Blog.Title }}</title>
     {{ end }}
 {{ end }}
 
 {{ define "main" }}
   <main>
-      {{ $blog := (blog .Blog) }}
-      {{ with $blog.Photos.Title }}<h1>{{ . }}</h1>{{ end }}
-      {{ with $blog.Photos.Description }}{{ md . }}{{ end }}
-      {{ if (or $blog.Photos.Title $blog.Photos.Description) }}
+      {{ with .Blog.Photos.Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Blog.Photos.Description }}{{ md . }}{{ end }}
+      {{ if (or .Blog.Photos.Title .Blog.Photos.Description) }}
         <hr>
       {{ end }}
-      {{ range $i, $post := .Posts }}
-          {{ include "photosummary" . }}
+      {{ $blog := .Blog }}
+      {{ range $i, $post := .Data.Posts }}
+          {{ include "photosummary" $blog $post }}
       {{ end }}
-      {{ if .HasPrev }}
-        <p><a href="{{ .Prev }}">Prev</a></p>
+      {{ if .Data.HasPrev }}
+        <p><a href="{{ .Data.Prev }}">Prev</a></p>
       {{ end }}
-      {{ if .HasNext }}
-        <p><a href="{{ .Next }}">Next</a></p>
+      {{ if .Data.HasNext }}
+        <p><a href="{{ .Data.Next }}">Next</a></p>
       {{ end }}
   </main>
 {{ end }}

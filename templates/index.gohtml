@@ -1,38 +1,39 @@
 {{ define "title" }}
-    {{ if .Title }}
-      <title>{{ .Title }} - {{ (blog .Blog).Title }}</title>
+    {{ if .Data.Title }}
+      <title>{{ .Data.Title }} - {{ .Blog.Title }}</title>
     {{ else }}
-      <title>{{ (blog .Blog).Title }}</title>
+      <title>{{ .Blog.Title }}</title>
     {{ end }}
     <link rel="alternate"
           type="application/rss+xml"
           title="RSS"
-          href="{{ .First }}.rss"/>
+          href="{{ .Data.First }}.rss"/>
     <link rel="alternate"
           type="application/atom+xml"
           title="Atom"
-          href="{{ .First }}.atom"/>
+          href="{{ .Data.First }}.atom"/>
     <link rel="alternate"
           type="application/feed+json"
           title="JSON Feed"
-          href="{{ .First }}.json"/>
+          href="{{ .Data.First }}.json"/>
 {{ end }}
 
 {{ define "main" }}
   <main>
-      {{ with .Title }}<h1>{{ . }}</h1>{{ end }}
-      {{ with .Description }}{{ md . }}{{ end }}
-      {{ if (or .Title .Description) }}
+      {{ with .Data.Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Data.Description }}{{ md . }}{{ end }}
+      {{ if (or .Data.Title .Data.Description) }}
         <hr>
       {{ end }}
-      {{ range $i, $post := .Posts }}
-          {{ include "summary" . }}
+      {{ $blog := .Blog }}
+      {{ range $i, $post := .Data.Posts }}
+          {{ include "summary" $blog $post }}
       {{ end }}
-      {{ if .HasPrev }}
-        <p><a href="{{ .Prev }}">Prev</a></p>
+      {{ if .Data.HasPrev }}
+        <p><a href="{{ .Data.Prev }}">Prev</a></p>
       {{ end }}
-      {{ if .HasNext }}
-        <p><a href="{{ .Next }}">Next</a></p>
+      {{ if .Data.HasNext }}
+        <p><a href="{{ .Data.Next }}">Next</a></p>
       {{ end }}
   </main>
 {{ end }}

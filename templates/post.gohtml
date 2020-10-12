@@ -1,22 +1,21 @@
 {{ define "title" }}
-  <title>{{ with p . "title" }}{{ . }} - {{end}}{{ (blog .Blog).Title }}</title>
+  <title>{{ with p .Data "title" }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main class=h-entry>
     <article>
-        {{ with title . }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-        {{ with .Published }}
+        {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+        {{ with .Data.Published }}
         <p>{{ string "publishedon" }} {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
-        {{ with .Updated }}
+        {{ with .Data.Updated }}
         <p>{{ string "updatedon" }} {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
-        {{ with .Content }}
+        {{ with .Data.Content }}
           <div class=e-content>{{ md . }}</div>
         {{ end }}
     </article>
-      {{ $taxonomies := (blog .Blog).Taxonomies }}
-      {{ $post := . }}
-      {{ range $i, $tax := $taxonomies }}
+      {{ $post := .Data }}
+      {{ range $i, $tax := .Blog.Taxonomies }}
           {{ $tvs := ps $post $tax.Name }}
           {{ if gt (len $tvs) 0 }}
             <p>In <b>{{ $tax.Title }}</b>:

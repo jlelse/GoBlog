@@ -21,12 +21,8 @@ func serveRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	// Send redirect
 	w.Header().Set("Location", redirect)
-	render(w, templateRedirect, struct {
-		Blog      string
-		Permalink string
-	}{
-		Blog:      appConfig.DefaultBlog,
-		Permalink: redirect,
+	render(w, templateRedirect, &renderData{
+		Data: redirect,
 	})
 	w.WriteHeader(http.StatusFound)
 }

@@ -1,8 +1,7 @@
 {{ define "header" }}
   <header>
-    {{ $blog := (blog .Blog) }}
-    <h1><a href="/" rel="home" title="{{ $blog.Title }}">{{ $blog.Title }}</a></h1>
-      {{ with $blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
-      {{ include "menu" . }}
+    <h1><a href="/" rel="home" title="{{ .Blog.Title }}">{{ .Blog.Title }}</a></h1>
+      {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
+      {{ include "menu" .Blog .Data }}
   </header>
 {{ end }}

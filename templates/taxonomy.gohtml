@@ -1,14 +1,14 @@
 {{ define "title" }}
-  <title>{{ .Taxonomy.Title }} - {{ (blog .Blog).Title }}</title>
+  <title>{{ .Data.Taxonomy.Title }} - {{ .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
-      {{ with .Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
-      {{ with .Taxonomy.Description }}{{ md . }}{{ end }}
+      {{ with .Data.Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
+      {{ with .Data.Taxonomy.Description }}{{ md . }}{{ end }}
     <ul>
-        {{ $taxonomy := .Taxonomy.Name }}
-        {{ range $i, $value := (sort .TaxonomyValues) }}
+        {{ $taxonomy := .Data.Taxonomy.Name }}
+        {{ range $i, $value := (sort .Data.TaxonomyValues) }}
           <li><a href="/{{ $taxonomy }}/{{ urlize . }}">{{ . }}</a></li>
         {{ end }}
     </ul>

@@ -1,9 +1,9 @@
 {{ define "summary" }}
   <article>
-      {{ with p . "title" }}<h2>{{ . }}</h2>{{ end }}
-      {{ with .Published }}<p>{{ dateformat . "02. Jan 2006" }}</p>{{ end }}
-    <p>{{ summary . }}</p>
-    <a href="{{ .Path }}">View</a>
+      {{ with p .Data "title" }}<h2>{{ . }}</h2>{{ end }}
+      {{ with .Data.Published }}<p>{{ dateformat . "02. Jan 2006" }}</p>{{ end }}
+    <p>{{ summary .Data }}</p>
+    <a href="{{ .Data.Path }}">View</a>
   </article>
   <hr>
 {{ end }}

@@ -30,17 +30,11 @@ var templateFunctions template.FuncMap
 
 func initRendering() error {
 	templateFunctions = template.FuncMap{
-		"blogs": func() map[string]*configBlog {
-			return appConfig.Blogs
-		},
-		"blog": func(blog string) *configBlog {
-			return appConfig.Blogs[blog]
-		},
 		"micropub": func() *configMicropub {
 			return appConfig.Micropub
 		},
-		"menu": func(blog, id string) *menu {
-			return appConfig.Blogs[blog].Menus[id]
+		"menu": func(blog *configBlog, id string) *menu {
+			return blog.Menus[id]
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)
@@ -73,9 +67,12 @@ func initRendering() error {
 		},
 		"asset":  assetFile,
 		"string": getDefaultTemplateString,
-		"include": func(templateName string, data interface{}) (template.HTML, error) {
+		"include": func(templateName string, blog *configBlog, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)
-			err := templates[templateName].ExecuteTemplate(buf, templateName, data)
+			err := templates[templateName].ExecuteTemplate(buf, templateName, &renderData{
+				Blog: blog,
+				Data: data,
+			})
 			return template.HTML(buf.String()), err
 		},
 		"urlize": urlize,
@@ -103,7 +100,20 @@ func initRendering() error {
 	return nil
 }
 
-func render(w http.ResponseWriter, template string, data interface{}) {
+type renderData struct {
+	blogString string
+	Blog       *configBlog
+	Data       interface{}
+}
+
+func render(w http.ResponseWriter, template string, data *renderData) {
+	// Check render data
+	if data.Blog == nil {
+		if len(data.blogString) == 0 {
+			data.blogString = appConfig.DefaultBlog
+		}
+		data.Blog = appConfig.Blogs[data.blogString]
+	}
 	// We need to use a buffer here to enable minification
 	var buffer bytes.Buffer
 	err := templates[template].ExecuteTemplate(&buffer, template, data)
