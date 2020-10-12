@@ -91,6 +91,12 @@ func convertMPValueMapToPost(values map[string][]string) (*Post, error) {
 	if content, ok := values["content"]; ok {
 		entry.Content = content[0]
 	}
+	if published, ok := values["published"]; ok {
+		entry.Published = published[0]
+	}
+	if updated, ok := values["updated"]; ok {
+		entry.Updated = updated[0]
+	}
 	// Parameter
 	if name, ok := values["name"]; ok {
 		entry.Parameters["title"] = name
@@ -162,6 +168,12 @@ func convertMPMfToPost(mf *microformatItem) (*Post, error) {
 	// Content
 	if mf.Properties != nil && len(mf.Properties.Content) == 1 && len(mf.Properties.Content[0]) > 0 {
 		entry.Content = mf.Properties.Content[0]
+	}
+	if len(mf.Properties.Published) == 1 {
+		entry.Published = mf.Properties.Published[0]
+	}
+	if len(mf.Properties.Updated) == 1 {
+		entry.Updated = mf.Properties.Updated[0]
 	}
 	// Parameter
 	if len(mf.Properties.Name) == 1 {
