@@ -1,5 +1,6 @@
 server:
   logging: false
+  debug: false
   port: 8080
   domain: example.com
   publicAddress: http://localhost:8080

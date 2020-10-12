@@ -20,6 +20,7 @@ type config struct {
 
 type configServer struct {
 	Logging         bool   `mapstructure:"logging"`
+	Debug           bool   `mapstructure:"Debug"`
 	Port            int    `mapstructure:"port"`
 	Domain          string `mapstructure:"domain"`
 	PublicAddress   string `mapstructure:"publicAddress"`
@@ -133,6 +134,7 @@ func initConfig() error {
 		return err
 	}
 	viper.SetDefault("server.logging", false)
+	viper.SetDefault("server.debug", false)
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.publicAddress", "http://localhost:8080")
 	viper.SetDefault("server.publicHttps", false)

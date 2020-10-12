@@ -63,6 +63,11 @@ func buildHandler() (http.Handler, error) {
 	}
 	r.Use(middleware.Recoverer, middleware.StripSlashes, middleware.GetHead)
 
+	// Profiler
+	if appConfig.Server.Debug {
+		r.Mount("/debug", middleware.Profiler())
+	}
+
 	// API
 	r.Route("/api", func(apiRouter chi.Router) {
 		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
