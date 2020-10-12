@@ -117,7 +117,8 @@ func buildHandler() (http.Handler, error) {
 
 	for blog, blogConfig := range appConfig.Blogs {
 
-		blogPath := blogConfig.Path
+		fullBlogPath := blogConfig.Path
+		blogPath := fullBlogPath
 		if blogPath == "/" {
 			blogPath = ""
 		}
@@ -160,11 +161,11 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Blog
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path, serveHome(blog, blogPath, noFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+rssPath, serveHome(blog, blogPath, rssFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+jsonPath, serveHome(blog, blogPath, jsonFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+atomPath, serveHome(blog, blogPath, atomFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogConfig.Path+paginationPath, serveHome(blog, blogPath, noFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath, serveHome(blog, blogPath, noFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+rssPath, serveHome(blog, blogPath, rssFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+jsonPath, serveHome(blog, blogPath, jsonFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+atomPath, serveHome(blog, blogPath, atomFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath, noFeed))
 	}
 
 	// Sitemap
