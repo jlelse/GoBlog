@@ -7,9 +7,9 @@
     <article>
         {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
         {{ if .Data.Published }}
-        <p>{{ string .Blog.Lang "publishedon" }} {{ dateformat .Data.Published "02. Jan 2006" }}</p>{{ end }}
+        <p>{{ string .Blog.Lang "publishedon" }} {{ longDate .Data.Published .Blog.Lang }}</p>{{ end }}
         {{ if .Data.Updated }}
-        <p>{{ string .Blog.Lang "updatedon" }} {{ dateformat .Data.Updated "02. Jan 2006" }}</p>{{ end }}
+        <p>{{ string .Blog.Lang "updatedon" }} {{ longDate .Data.Updated .Blog.Lang }}</p>{{ end }}
         {{ with .Data.Content }}
           <div class=e-content>{{ md . }}</div>
         {{ end }}

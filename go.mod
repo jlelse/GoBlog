@@ -8,6 +8,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/goodsign/monday v1.0.1-0.20201007115131-c065b60ec611
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/gorilla/feeds v1.1.1
 	github.com/jeremywohl/flatten v1.0.1

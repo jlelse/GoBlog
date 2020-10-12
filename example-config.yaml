@@ -14,7 +14,7 @@ cache:
 blogs:
   main:
     path: /
-    lang: en
+    lang: en_US
     title: My blog
     description: This is my blog
     sections:

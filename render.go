@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"github.com/goodsign/monday"
 )
 
 const templatesDir = "templates"
@@ -64,6 +65,14 @@ func initRendering() error {
 				return ""
 			}
 			return d.Format(format)
+		},
+		"longDate": func(date string, localeString string) string {
+			d, err := dateparse.ParseIn(date, time.Local)
+			if err != nil {
+				return ""
+			}
+			ml := monday.Locale(localeString)
+			return monday.Format(d, monday.LongFormatsByLocale[ml], ml)
 		},
 		"asset":  assetFile,
 		"string": getTemplateStringVariant,

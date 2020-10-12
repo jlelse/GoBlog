@@ -1,7 +1,7 @@
 {{ define "photosummary" }}
   <article>
       {{ with p .Data "title" }}<h2>{{ . }}</h2>{{ end }}
-      {{ with .Data.Published }}<p>{{ dateformat . "02. Jan 2006" }}</p>{{ end }}
+      {{ if .Data.Published }}<p>{{ longDate .Data.Published .Blog.Lang }}</p>{{ end }}
       {{ range $i, $photo := ( ps .Data .Blog.Photos.Parameter ) }}
           {{ md ( printf "![](%s)" $photo ) }}
       {{ end }}
