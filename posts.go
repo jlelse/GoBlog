@@ -134,7 +134,7 @@ func servePhotos(blog string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog:              blog,
 		path:              appConfig.Blogs[blog].Photos.Path,
-		onlyWithParameter: appConfig.Blogs[blog].Photos.Path,
+		onlyWithParameter: appConfig.Blogs[blog].Photos.Parameter,
 		template:          templatePhotos,
 	})
 }
