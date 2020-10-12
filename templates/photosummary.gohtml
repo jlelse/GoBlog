@@ -6,7 +6,7 @@
           {{ md ( printf "![](%s)" $photo ) }}
       {{ end }}
     <p>{{ summary .Data }}</p>
-    <a href="{{ .Data.Path }}">View</a>
+    <a href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a>
   </article>
   <hr>
 {{ end }}

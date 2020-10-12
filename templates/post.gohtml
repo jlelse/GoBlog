@@ -6,10 +6,10 @@
   <main class=h-entry>
     <article>
         {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-        {{ with .Data.Published }}
-        <p>{{ string "publishedon" }} {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
-        {{ with .Data.Updated }}
-        <p>{{ string "updatedon" }} {{ dateformat . "02. Jan 2006" }}</p>{{ end }}
+        {{ if .Data.Published }}
+        <p>{{ string .Blog.Lang "publishedon" }} {{ dateformat .Data.Published "02. Jan 2006" }}</p>{{ end }}
+        {{ if .Data.Updated }}
+        <p>{{ string .Blog.Lang "updatedon" }} {{ dateformat .Data.Updated "02. Jan 2006" }}</p>{{ end }}
         {{ with .Data.Content }}
           <div class=e-content>{{ md . }}</div>
         {{ end }}

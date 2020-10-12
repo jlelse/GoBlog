@@ -30,10 +30,10 @@
           {{ include "summary" $blog $post }}
       {{ end }}
       {{ if .Data.HasPrev }}
-        <p><a href="{{ .Data.Prev }}">Prev</a></p>
+        <p><a href="{{ .Data.Prev }}">{{ string .Blog.Lang "prev" }}</a></p>
       {{ end }}
       {{ if .Data.HasNext }}
-        <p><a href="{{ .Data.Next }}">Next</a></p>
+        <p><a href="{{ .Data.Next }}">{{ string .Blog.Lang "next" }}</a></p>
       {{ end }}
   </main>
 {{ end }}

@@ -66,7 +66,7 @@ func initRendering() error {
 			return d.Format(format)
 		},
 		"asset":  assetFile,
-		"string": getDefaultTemplateString,
+		"string": getTemplateStringVariant,
 		"include": func(templateName string, blog *configBlog, data interface{}) (template.HTML, error) {
 			buf := new(bytes.Buffer)
 			err := templates[templateName].ExecuteTemplate(buf, templateName, &renderData{

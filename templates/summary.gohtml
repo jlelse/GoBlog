@@ -3,7 +3,7 @@
       {{ with p .Data "title" }}<h2>{{ . }}</h2>{{ end }}
       {{ with .Data.Published }}<p>{{ dateformat . "02. Jan 2006" }}</p>{{ end }}
     <p>{{ summary .Data }}</p>
-    <a href="{{ .Data.Path }}">View</a>
+    <a href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a>
   </article>
   <hr>
 {{ end }}
