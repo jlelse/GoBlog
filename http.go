@@ -143,12 +143,12 @@ func buildHandler() (http.Handler, error) {
 					return nil, err
 				}
 				for _, tv := range values {
-					path = path + "/" + urlize(tv)
-					r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomyValue(blog, path, taxonomy, tv, noFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveTaxonomyValue(blog, path, taxonomy, tv, rssFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveTaxonomyValue(blog, path, taxonomy, tv, jsonFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveTaxonomyValue(blog, path, taxonomy, tv, atomFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveTaxonomyValue(blog, path, taxonomy, tv, noFeed))
+					vPath := path + "/" + urlize(tv)
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, noFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+rssPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, rssFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+jsonPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, jsonFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+atomPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, atomFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, noFeed))
 				}
 			}
 		}
