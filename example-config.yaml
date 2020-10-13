@@ -58,9 +58,6 @@ micropub:
   path: /micropub
   authAllowed:
     - example.com
-  tokenEndpoint: https://tokens.indieauth.com/token
-  authEndpoint: https://indieauth.com/auth
-  authn: login@example.com
   categoryParam: tags
   replyParam: replylink
   likeParam: likelink

@@ -2,13 +2,6 @@
     {{ with micropub.Path }}
         <link rel="micropub" href="{{ . }}" />
     {{ end }}
-    {{ with micropub.AuthEndpoint }}
-        <link rel="authorization_endpoint" href="{{ . }}" />
-    {{ end }}
-    {{ with micropub.TokenEndpoint }}
-        <link rel="token_endpoint" href="{{ . }}" />
-    {{ end }}
-    {{ with micropub.Authn }}
-        <link href="{{ . }}" rel="me authn">
-    {{ end }}
+    <link rel="authorization_endpoint" href="/indieauth" />
+    <link rel="token_endpoint" href="/indieauth/token" />
 {{ end }}

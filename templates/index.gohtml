@@ -4,18 +4,9 @@
     {{ else }}
       <title>{{ .Blog.Title }}</title>
     {{ end }}
-    <link rel="alternate"
-          type="application/rss+xml"
-          title="RSS"
-          href="{{ .Data.First }}.rss"/>
-    <link rel="alternate"
-          type="application/atom+xml"
-          title="Atom"
-          href="{{ .Data.First }}.atom"/>
-    <link rel="alternate"
-          type="application/feed+json"
-          title="JSON Feed"
-          href="{{ .Data.First }}.json"/>
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ .Data.First }}.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom" href="{{ .Data.First }}.atom"/>
+    <link rel="alternate" type="application/feed+json" title="JSONFeed" href="{{ .Data.First }}.json"/>
 {{ end }}
 
 {{ define "main" }}

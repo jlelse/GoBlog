@@ -120,9 +120,6 @@ type configMicropub struct {
 	Enabled               bool     `mapstructure:"enabled"`
 	Path                  string   `mapstructure:"path"`
 	AuthAllowed           []string `mapstructure:"authAllowed"`
-	TokenEndpoint         string   `mapstructure:"tokenEndpoint"`
-	AuthEndpoint          string   `mapstructure:"authEndpoint"`
-	Authn                 string   `mapstructure:"authn"`
 	CategoryParam         string   `mapstructure:"categoryParam"`
 	ReplyParam            string   `mapstructure:"replyParam"`
 	LikeParam             string   `mapstructure:"likeParam"`
@@ -157,9 +154,6 @@ func initConfig() error {
 	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
 	viper.SetDefault("micropub.enabled", true)
 	viper.SetDefault("micropub.path", "/micropub")
-	viper.SetDefault("micropub.authAllowed", []string{})
-	viper.SetDefault("micropub.tokenEndpoint", "https://tokens.indieauth.com/token")
-	viper.SetDefault("micropub.authEndpoint", "https://indieauth.com/auth")
 	viper.SetDefault("micropub.categoryParam", "tags")
 	viper.SetDefault("micropub.replyParam", "replylink")
 	viper.SetDefault("micropub.likeParam", "likelink")
@@ -178,6 +172,9 @@ func initConfig() error {
 	}
 	if len(appConfig.DefaultBlog) == 0 || appConfig.Blogs[appConfig.DefaultBlog] == nil {
 		return errors.New("no default blog or default blog not present")
+	}
+	if len(appConfig.Micropub.AuthAllowed) == 0 {
+		appConfig.Micropub.AuthAllowed = []string{appConfig.Server.Domain}
 	}
 	return nil
 }

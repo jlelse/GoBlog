@@ -1,0 +1,32 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "indieauth" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "indieauth" }}</h1>
+    <form method="post" action="/indieauth/accept">
+        {{ if .Data.Scopes }}
+            <h3>{{ string .Blog.Lang "scopes" }}</h3>
+            <ul>
+            {{ range $i, $scope := .Data.Scopes }}
+                <li><input type="checkbox" name="scopes" value="{{ $scope }}" id="scope-{{ $scope }}" checked><label for="scope-{{ $scope }}">{{ $scope }}</label></li>
+            {{ end }}
+            </ul>
+        {{ end }}
+        <p><strong>me:</strong> {{ .Data.Me }}</p>
+        <p><strong>client_id:</strong> {{ .Data.ClientID }}</p>
+        <p><strong>redirect_uri:</strong> {{ .Data.RedirectURI }}</p>
+        <input type="hidden" name="redirect_uri" value="{{ .Data.RedirectURI }}">
+        <input type="hidden" name="state" value="{{ .Data.State }}">
+        <input type="hidden" id="client_id" name="client_id" value="{{ .Data.ClientID }}">
+        <input type="hidden" name="me" value="{{ .Data.Me }}">
+        <input type="hidden" name="response_type" value="{{ .Data.ResponseType }}">
+        <input type="submit" value="{{ string .Blog.Lang "authenticate" }}">
+    </form>
+  </main>
+{{ end }}
+
+{{ define "indieauthflow" }}
+    {{ template "base" . }}
+{{ end }}

@@ -70,11 +70,13 @@ func buildHandler() (http.Handler, error) {
 		r.Mount("/debug", middleware.Profiler())
 	}
 
+	authMiddleware := middleware.BasicAuth("API", map[string]string{
+		appConfig.User.Nick: appConfig.User.Password,
+	})
+
 	// API
 	r.Route("/api", func(apiRouter chi.Router) {
-		apiRouter.Use(middleware.BasicAuth("API", map[string]string{
-			appConfig.User.Nick: appConfig.User.Password,
-		}))
+		apiRouter.Use(authMiddleware)
 		apiRouter.Post("/post", apiPostCreate)
 		apiRouter.Get("/post", apiPostRead)
 		apiRouter.Delete("/post", apiPostDelete)
@@ -87,6 +89,15 @@ func buildHandler() (http.Handler, error) {
 		r.With(checkIndieAuth).Post(appConfig.Micropub.Path, serveMicropubPost)
 		r.With(checkIndieAuth).Post(appConfig.Micropub.Path+micropubMediaSubPath, serveMicropubMedia)
 	}
+
+	// IndieAuth
+	r.Route("/indieauth", func(indieauthRouter chi.Router) {
+		indieauthRouter.With(authMiddleware).Get("/", indieAuthAuth)
+		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
+		indieauthRouter.Post("/", indieAuthAuth)
+		indieauthRouter.Get("/token", indieAuthToken)
+		indieauthRouter.Post("/token", indieAuthToken)
+	})
 
 	// Posts
 	allPostPaths, err := allPostPaths()
