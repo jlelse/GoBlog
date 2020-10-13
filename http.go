@@ -12,9 +12,11 @@ import (
 )
 
 const contentType = "Content-Type"
-const contentTypeHTMLUTF8 = "text/html; charset=utf-8"
-const contentTypeJSONUTF8 = "application/json; charset=utf-8"
+const charsetUtf8Suffix = "; charset=utf-8"
+const contentTypeHTML = "text/html"
+const contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
 const contentTypeJSON = "application/json"
+const contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
 const contentTypeWWWForm = "application/x-www-form-urlencoded"
 const contentTypeMultipartForm = "multipart/form-data"
 
@@ -171,6 +173,16 @@ func buildHandler() (http.Handler, error) {
 		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+jsonPath, serveHome(blog, blogPath, jsonFeed))
 		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+atomPath, serveHome(blog, blogPath, atomFeed))
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath, noFeed))
+
+		// Custom pages
+		for _, cp := range blogConfig.CustomPages {
+			serveFunc := serveCustomPage(blogConfig, cp)
+			if cp.Cache {
+				r.With(cacheMiddleware, minifier.Middleware).Get(cp.Path, serveFunc)
+			} else {
+				r.With(minifier.Middleware).Get(cp.Path, serveFunc)
+			}
+		}
 	}
 
 	// Sitemap

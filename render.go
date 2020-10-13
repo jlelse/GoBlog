@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -91,6 +93,20 @@ func initRendering() error {
 				return blog.Path + path
 			}
 			return path
+		},
+		"jsonFile": func(filename string) *interface{} {
+			parsed := []*interface{}{}
+			content, err := ioutil.ReadFile(filename)
+			if err != nil {
+				return nil
+			}
+			contentString := "[" + string(content) + "]"
+			err = json.Unmarshal([]byte(contentString), &parsed)
+			if err != nil {
+				fmt.Println(err.Error())
+				return nil
+			}
+			return parsed[0]
 		},
 	}
 

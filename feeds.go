@@ -45,25 +45,21 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 	var err error
 	switch f {
 	case rssFeed:
+		w.Header().Add(contentType, "application/rss+xml; charset=utf-8")
 		feedStr, err = feed.ToRss()
 	case atomFeed:
+		w.Header().Add(contentType, "application/atom+xml; charset=utf-8")
 		feedStr, err = feed.ToAtom()
 	case jsonFeed:
+		w.Header().Add(contentType, "application/feed+json; charset=utf-8")
 		feedStr, err = feed.ToJSON()
 	default:
 		return
 	}
 	if err != nil {
+		w.Header().Del(contentType)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	switch f {
-	case rssFeed:
-		w.Header().Add(contentType, "application/rss+xml; charset=utf-8")
-	case atomFeed:
-		w.Header().Add(contentType, "application/atom+xml; charset=utf-8")
-	case jsonFeed:
-		w.Header().Add(contentType, "application/feed+json; charset=utf-8")
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(feedStr))

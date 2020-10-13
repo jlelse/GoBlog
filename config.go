@@ -50,6 +50,7 @@ type configBlog struct {
 	Photos          *photos             `mapstructure:"photos"`
 	ActivityStreams *activityStreams    `mapstructure:"activitystreams"`
 	DefaultSection  string              `mapstructure:"defaultsection"`
+	CustomPages     []*customPage       `mapstructure:"custompages"`
 }
 
 type section struct {
@@ -86,6 +87,13 @@ type activityStreams struct {
 	Enabled         bool   `mapstructure:"enabled"`
 	ReplyParameter  string `mapstructure:"replyParameter"`
 	ImagesParameter string `mapstructure:"imagesParameter"`
+}
+
+type customPage struct {
+	Path     string       `mapstructure:"path"`
+	Template string       `mapstructure:"template"`
+	Cache    bool         `mapstructure:"cache"`
+	Data     *interface{} `mapstructure:"data"`
 }
 
 type configUser struct {

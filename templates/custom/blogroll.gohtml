@@ -1,0 +1,21 @@
+{{ define "title" }}
+    <title>Blogroll - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    {{ $opmlJson := index ( jsonFile "data/opml.json" ) "outline" }}
+    {{ range $opmlJson }}
+        {{ md (printf "%s %s" "##" ._text) }}
+        <ul>
+            {{ range (index . "outline") }}
+                <li><a href="{{ ._htmlUrl }}" target="_blank">{{ ._title }}</a> (<a href="{{ ._xmlUrl }}" target="_blank">Feed</a>)</li>
+            {{ end }}
+        </ul>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "blogroll" }}
+    {{ template "base" . }}
+{{ end }}
