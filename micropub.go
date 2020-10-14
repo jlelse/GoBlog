@@ -15,7 +15,6 @@ import (
 )
 
 const micropubPath = "/micropub"
-const micropubMediaSubPath = "/media"
 
 type micropubConfig struct {
 	MediaEndpoint string `json:"media-endpoint,omitempty"`
@@ -26,10 +25,11 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	case "config":
 		w.Header().Add(contentType, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(&micropubConfig{
-			// TODO: Uncomment when media endpoint implemented
-			// MediaEndpoint: appConfig.Server.PublicAddress + micropubMediaPath,
-		})
+		mc := &micropubConfig{}
+		if appConfig.Micropub.MediaStorage != nil {
+			mc.MediaEndpoint = appConfig.Server.PublicAddress + micropubPath + micropubMediaSubPath
+		}
+		_ = json.NewEncoder(w).Encode(mc)
 	case "source":
 		var mf interface{}
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
@@ -515,8 +515,4 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement media server
 }

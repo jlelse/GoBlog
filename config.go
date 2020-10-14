@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -117,13 +118,21 @@ type frontmatter struct {
 }
 
 type configMicropub struct {
-	CategoryParam         string `mapstructure:"categoryParam"`
-	ReplyParam            string `mapstructure:"replyParam"`
-	LikeParam             string `mapstructure:"likeParam"`
-	BookmarkParam         string `mapstructure:"bookmarkParam"`
-	AudioParam            string `mapstructure:"audioParam"`
-	PhotoParam            string `mapstructure:"photoParam"`
-	PhotoDescriptionParam string `mapstructure:"photoDescriptionParam"`
+	CategoryParam         string               `mapstructure:"categoryParam"`
+	ReplyParam            string               `mapstructure:"replyParam"`
+	LikeParam             string               `mapstructure:"likeParam"`
+	BookmarkParam         string               `mapstructure:"bookmarkParam"`
+	AudioParam            string               `mapstructure:"audioParam"`
+	PhotoParam            string               `mapstructure:"photoParam"`
+	PhotoDescriptionParam string               `mapstructure:"photoDescriptionParam"`
+	MediaStorage          *configMicropubMedia `mapstructure:"mediaStorage"`
+}
+
+type configMicropubMedia struct {
+	MediaURL         string `mapstructure:"mediaUrl"`
+	BunnyStorageKey  string `mapstructure:"bunnyStorageKey"`
+	BunnyStorageName string `mapstructure:"bunnyStorageName"`
+	TinifyKey        string `mapstructure:"tinifyKey"`
 }
 
 var appConfig = &config{}
@@ -171,6 +180,15 @@ func initConfig() error {
 	}
 	if len(appConfig.DefaultBlog) == 0 || appConfig.Blogs[appConfig.DefaultBlog] == nil {
 		return errors.New("no default blog or default blog not present")
+	}
+	if appConfig.Micropub.MediaStorage != nil {
+		if appConfig.Micropub.MediaStorage.MediaURL == "" ||
+			appConfig.Micropub.MediaStorage.BunnyStorageKey == "" ||
+			appConfig.Micropub.MediaStorage.BunnyStorageName == "" {
+			appConfig.Micropub.MediaStorage = nil
+		} else {
+			appConfig.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(appConfig.Micropub.MediaStorage.MediaURL, "/")
+		}
 	}
 	return nil
 }

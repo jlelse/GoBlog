@@ -85,7 +85,9 @@ func buildHandler() (http.Handler, error) {
 		mpRouter.Use(middleware.NoCache, checkIndieAuth)
 		mpRouter.Get("/", serveMicropubQuery)
 		mpRouter.Post("/", serveMicropubPost)
-		mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
+		if appConfig.Micropub.MediaStorage != nil {
+			mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
+		}
 	})
 
 	// IndieAuth
