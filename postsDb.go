@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,7 +11,7 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func (p *Post) checkPost(new bool) error {
+func (p *Post) checkPost() error {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -26,9 +25,6 @@ func (p *Post) checkPost(new bool) error {
 			return err
 		}
 		p.Published = d.String()
-	}
-	if p.Published == "" {
-		p.Published = now.String()
 	}
 	if p.Updated != "" {
 		d, err := dateparse.ParseIn(p.Updated, time.Local)
@@ -85,18 +81,19 @@ func (p *Post) checkPost(new bool) error {
 	if p.Path != "" && !strings.HasPrefix(p.Path, "/") {
 		return errors.New("wrong path")
 	}
-	// Check if post with path already exists
-	if new {
-		post, _ := getPost(context.Background(), p.Path)
-		if post != nil {
-			return errors.New("path already exists")
-		}
-	}
 	return nil
 }
 
+func (p *Post) create() error {
+	return p.createOrReplace(true)
+}
+
+func (p *Post) replace() error {
+	return p.createOrReplace(false)
+}
+
 func (p *Post) createOrReplace(new bool) error {
-	err := p.checkPost(new)
+	err := p.checkPost()
 	if err != nil {
 		return err
 	}
@@ -106,7 +103,11 @@ func (p *Post) createOrReplace(new bool) error {
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("insert or replace into posts (path, content, published, updated, blog, section) values (?, ?, ?, ?, ?, ?)", p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section)
+	sqlCommand := "insert"
+	if !new {
+		sqlCommand = "insert or replace"
+	}
+	_, err = tx.Exec(sqlCommand+" into posts (path, content, published, updated, blog, section) values (?, ?, ?, ?, ?, ?)", p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
@@ -140,11 +141,9 @@ func (p *Post) createOrReplace(new bool) error {
 	return reloadRouter()
 }
 
-func (p *Post) delete() error {
-	// TODO
-	err := p.checkPost(false)
-	if err != nil {
-		return err
+func deletePost(path string) error {
+	if path == "" {
+		return nil
 	}
 	startWritingToDb()
 	tx, err := appDb.Begin()
@@ -152,13 +151,13 @@ func (p *Post) delete() error {
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("delete from posts where path=?", p.Path)
+	_, err = tx.Exec("delete from posts where path=?", path)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("delete from post_parameters where path=?", p.Path)
+	_, err = tx.Exec("delete from post_parameters where path=?", path)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()

@@ -6,9 +6,7 @@
   <meta http-equiv=x-ua-compatible content="IE=edge">
   <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
   {{ template "title" . }}
-  {{ if micropub.Enabled }}
-    {{ include "micropub" .Blog .Data }}
-  {{ end }}
+  {{ include "micropub" .Blog .Data }}
   {{ include "header" .Blog .Data }}
   {{ template "main" . }}
 {{ end }}

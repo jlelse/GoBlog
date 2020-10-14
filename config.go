@@ -117,16 +117,13 @@ type frontmatter struct {
 }
 
 type configMicropub struct {
-	Enabled               bool     `mapstructure:"enabled"`
-	Path                  string   `mapstructure:"path"`
-	AuthAllowed           []string `mapstructure:"authAllowed"`
-	CategoryParam         string   `mapstructure:"categoryParam"`
-	ReplyParam            string   `mapstructure:"replyParam"`
-	LikeParam             string   `mapstructure:"likeParam"`
-	BookmarkParam         string   `mapstructure:"bookmarkParam"`
-	AudioParam            string   `mapstructure:"audioParam"`
-	PhotoParam            string   `mapstructure:"photoParam"`
-	PhotoDescriptionParam string   `mapstructure:"photoDescriptionParam"`
+	CategoryParam         string `mapstructure:"categoryParam"`
+	ReplyParam            string `mapstructure:"replyParam"`
+	LikeParam             string `mapstructure:"likeParam"`
+	BookmarkParam         string `mapstructure:"bookmarkParam"`
+	AudioParam            string `mapstructure:"audioParam"`
+	PhotoParam            string `mapstructure:"photoParam"`
+	PhotoDescriptionParam string `mapstructure:"photoDescriptionParam"`
 }
 
 var appConfig = &config{}
@@ -138,6 +135,7 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
+	// Defaults
 	viper.SetDefault("server.logging", false)
 	viper.SetDefault("server.debug", false)
 	viper.SetDefault("server.port", 8080)
@@ -152,8 +150,6 @@ func initConfig() error {
 	viper.SetDefault("user.password", "secret")
 	viper.SetDefault("hooks.shell", "/bin/bash")
 	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
-	viper.SetDefault("micropub.enabled", true)
-	viper.SetDefault("micropub.path", "/micropub")
 	viper.SetDefault("micropub.categoryParam", "tags")
 	viper.SetDefault("micropub.replyParam", "replylink")
 	viper.SetDefault("micropub.likeParam", "likelink")
@@ -167,14 +163,14 @@ func initConfig() error {
 		return err
 	}
 	// Check config
+	if appConfig.Server.Domain == "" {
+		return errors.New("no domain configured")
+	}
 	if len(appConfig.Blogs) == 0 {
 		return errors.New("no blog configured")
 	}
 	if len(appConfig.DefaultBlog) == 0 || appConfig.Blogs[appConfig.DefaultBlog] == nil {
 		return errors.New("no default blog or default blog not present")
-	}
-	if len(appConfig.Micropub.AuthAllowed) == 0 {
-		appConfig.Micropub.AuthAllowed = []string{appConfig.Server.Domain}
 	}
 	return nil
 }

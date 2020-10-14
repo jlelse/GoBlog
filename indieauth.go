@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -18,18 +19,12 @@ func checkIndieAuth(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		authorized := false
-		for _, allowed := range appConfig.Micropub.AuthAllowed {
-			if err := compareHostnames(tokenData.Me, allowed); err == nil {
-				authorized = true
-				break
-			}
-		}
-		if !authorized {
+		if err := compareHostnames(tokenData.Me, appConfig.Server.Domain); err != nil {
 			http.Error(w, "Forbidden", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), "scope", strings.Join(tokenData.Scopes, " "))
+		next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	})
 }

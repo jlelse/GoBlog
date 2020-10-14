@@ -33,9 +33,6 @@ var templateFunctions template.FuncMap
 
 func initRendering() error {
 	templateFunctions = template.FuncMap{
-		"micropub": func() *configMicropub {
-			return appConfig.Micropub
-		},
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
 		},
@@ -94,19 +91,18 @@ func initRendering() error {
 			}
 			return path
 		},
-		"jsonFile": func(filename string) *interface{} {
-			parsed := []*interface{}{}
+		"jsonFile": func(filename string) *map[string]interface{} {
+			parsed := &map[string]interface{}{}
 			content, err := ioutil.ReadFile(filename)
 			if err != nil {
 				return nil
 			}
-			contentString := "[" + string(content) + "]"
-			err = json.Unmarshal([]byte(contentString), &parsed)
+			err = json.Unmarshal(content, parsed)
 			if err != nil {
 				fmt.Println(err.Error())
 				return nil
 			}
-			return parsed[0]
+			return parsed
 		},
 	}
 

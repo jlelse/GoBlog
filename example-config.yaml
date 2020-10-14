@@ -54,10 +54,6 @@ hugo:
     - meta: tags
       parameter: tags
 micropub:
-  enabled: true
-  path: /micropub
-  authAllowed:
-    - example.com
   categoryParam: tags
   replyParam: replylink
   likeParam: likelink

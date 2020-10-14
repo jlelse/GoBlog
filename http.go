@@ -76,22 +76,21 @@ func buildHandler() (http.Handler, error) {
 
 	// API
 	r.Route("/api", func(apiRouter chi.Router) {
-		apiRouter.Use(authMiddleware)
-		apiRouter.Post("/post", apiPostCreate)
-		apiRouter.Get("/post", apiPostRead)
-		apiRouter.Delete("/post", apiPostDelete)
+		apiRouter.Use(middleware.NoCache, authMiddleware)
 		apiRouter.Post("/hugo", apiPostCreateHugo)
 	})
 
 	// Micropub
-	if appConfig.Micropub.Enabled {
-		r.Get(appConfig.Micropub.Path, serveMicropubQuery)
-		r.With(checkIndieAuth).Post(appConfig.Micropub.Path, serveMicropubPost)
-		r.With(checkIndieAuth).Post(appConfig.Micropub.Path+micropubMediaSubPath, serveMicropubMedia)
-	}
+	r.Route(micropubPath, func(mpRouter chi.Router) {
+		mpRouter.Use(middleware.NoCache, checkIndieAuth)
+		mpRouter.Get("/", serveMicropubQuery)
+		mpRouter.Post("/", serveMicropubPost)
+		mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
+	})
 
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
+		indieauthRouter.Use(middleware.NoCache)
 		indieauthRouter.With(authMiddleware).Get("/", indieAuthAuth)
 		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
 		indieauthRouter.Post("/", indieAuthAuth)
