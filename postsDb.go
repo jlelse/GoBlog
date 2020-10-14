@@ -33,6 +33,24 @@ func (p *Post) checkPost() error {
 		}
 		p.Updated = d.String()
 	}
+	// Cleanup params
+	for key, value := range p.Parameters {
+		if value == nil {
+			delete(p.Parameters, key)
+			continue
+		}
+		allValues := []string{}
+		for _, v := range value {
+			if v != "" {
+				allValues = append(allValues, v)
+			}
+		}
+		if len(allValues) >= 1 {
+			p.Parameters[key] = allValues
+		} else {
+			delete(p.Parameters, key)
+		}
+	}
 	// Check blog
 	if p.Blog == "" {
 		p.Blog = appConfig.DefaultBlog
