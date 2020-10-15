@@ -45,7 +45,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	err = initRedirects()
+	err = initRegexRedirects()
 	if err != nil {
 		log.Fatal(err)
 		return

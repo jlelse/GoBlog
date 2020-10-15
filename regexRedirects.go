@@ -12,7 +12,7 @@ type regexRedirect struct {
 	To   string
 }
 
-func initRedirects() error {
+func initRegexRedirects() error {
 	for _, cr := range appConfig.PathRedirects {
 		re, err := regexp.Compile(cr.From)
 		if err != nil {
