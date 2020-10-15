@@ -26,6 +26,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00002",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					CREATE TABLE autocert (key text not null primary key, data blob not null, created text not null);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

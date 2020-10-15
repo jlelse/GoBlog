@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -103,7 +102,6 @@ func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeS
 }
 
 func renderCache(path string, next http.Handler, w http.ResponseWriter, r *http.Request) {
-	log.Println("Render")
 	// No cache available
 	recorder := httptest.NewRecorder()
 	next.ServeHTTP(recorder, r)

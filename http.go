@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/caddyserver/certmagic"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 const contentType = "Content-Type"
@@ -31,21 +31,30 @@ func startServer() (err error) {
 	d.swapHandler(h)
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
 	if appConfig.Server.PublicHTTPS {
-		initPublicHTTPS()
-		err = certmagic.HTTPS([]string{appConfig.Server.Domain}, d)
+		cache, err := newAutocertCache()
+		if err != nil {
+			return err
+		}
+		certManager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(appConfig.Server.Domain),
+			Cache:      cache,
+			Email:      appConfig.Server.LetsEncryptMail,
+		}
+		tlsConfig := certManager.TLSConfig()
+		server := http.Server{
+			Addr:      ":https",
+			Handler:   d,
+			TLSConfig: tlsConfig,
+		}
+		go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
+		err = server.ListenAndServeTLS("", "")
 	} else if appConfig.Server.LocalHTTPS {
 		err = http.ListenAndServeTLS(localAddress, "https/server.crt", "https/server.key", d)
 	} else {
 		err = http.ListenAndServe(localAddress, d)
 	}
 	return
-}
-
-func initPublicHTTPS() {
-	certmagic.Default.Storage = &certmagic.FileStorage{Path: "certmagic"}
-	certmagic.DefaultACME.Agreed = true
-	certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
-	certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
 }
 
 func reloadRouter() error {
