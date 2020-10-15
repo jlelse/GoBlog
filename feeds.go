@@ -17,7 +17,7 @@ const (
 	jsonFeed feedType = "json"
 )
 
-func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*Post, title string, description string) {
+func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
 	now := time.Now()
 	if title == "" {
 		title = appConfig.Blogs[blog].Title
@@ -31,13 +31,13 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
 		Created:     now,
 	}
-	for _, postItem := range posts {
-		htmlContent, _ := renderMarkdown(postItem.Content)
+	for _, p := range posts {
+		htmlContent, _ := renderMarkdown(p.Content)
 		feed.Add(&feeds.Item{
-			Title:       postItem.title(),
-			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + postItem.Path},
-			Description: postItem.summary(),
-			Id:          postItem.Path,
+			Title:       p.title(),
+			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + p.Path},
+			Description: p.summary(),
+			Id:          p.Path,
 			Content:     string(htmlContent),
 		})
 	}

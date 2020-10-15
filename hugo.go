@@ -9,13 +9,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func parseHugoFile(fileContent string) (post *Post, aliases []string, e error) {
+func parseHugoFile(fileContent string) (p *post, aliases []string, e error) {
 	frontmatterSep := "---\n"
 	frontmatter := ""
 	if split := strings.Split(fileContent, frontmatterSep); len(split) > 2 {
 		frontmatter = split[1]
 	}
-	post = &Post{
+	p = &post{
 		Content:    strings.TrimPrefix(fileContent, frontmatterSep+frontmatter+frontmatterSep),
 		Parameters: map[string][]string{},
 	}
@@ -30,8 +30,8 @@ func parseHugoFile(fileContent string) (post *Post, aliases []string, e error) {
 		return nil, nil, err
 	}
 	// Read dates
-	post.Published = cast.ToString(flat["date"])
-	post.Updated = cast.ToString(flat["lastmod"])
+	p.Published = cast.ToString(flat["date"])
+	p.Updated = cast.ToString(flat["lastmod"])
 	// Read parameters
 	for _, fm := range appConfig.Hugo.Frontmatter {
 		var values []string
@@ -49,7 +49,7 @@ func parseHugoFile(fileContent string) (post *Post, aliases []string, e error) {
 			}
 		}
 		if len(values) > 0 {
-			post.Parameters[fm.Parameter] = values
+			p.Parameters[fm.Parameter] = values
 		}
 	}
 	// Parse redirects
@@ -67,5 +67,5 @@ func parseHugoFile(fileContent string) (post *Post, aliases []string, e error) {
 		}
 	}
 	// Return post
-	return post, aliases, nil
+	return p, aliases, nil
 }

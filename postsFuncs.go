@@ -1,22 +1,23 @@
 package main
 
 import (
-	"github.com/PuerkitoBio/goquery"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
-func (p *Post) firstParameter(parameter string) (result string) {
+func (p *post) firstParameter(parameter string) (result string) {
 	if pp := p.Parameters[parameter]; len(pp) > 0 {
 		result = pp[0]
 	}
 	return
 }
 
-func (p *Post) title() string {
+func (p *post) title() string {
 	return p.firstParameter("title")
 }
 
-func (p *Post) summary() (summary string) {
+func (p *post) summary() (summary string) {
 	summary = p.firstParameter("summary")
 	if summary != "" {
 		return

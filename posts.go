@@ -16,7 +16,7 @@ import (
 
 var errPostNotFound = errors.New("post not found")
 
-type Post struct {
+type post struct {
 	Path       string              `json:"path"`
 	Content    string              `json:"content"`
 	Published  string              `json:"published"`
@@ -34,7 +34,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := slashTrimmedPath(r)
-	post, err := getPost(r.Context(), path)
+	p, err := getPost(r.Context(), path)
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
@@ -43,8 +43,8 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render(w, templatePost, &renderData{
-		blogString: post.Blog,
-		Data:       post,
+		blogString: p.Blog,
+		Data:       p,
 	})
 }
 
@@ -52,7 +52,7 @@ type indexTemplateData struct {
 	Blog        string
 	Title       string
 	Description string
-	Posts       []*Post
+	Posts       []*post
 	HasPrev     bool
 	HasNext     bool
 	First       string
@@ -174,7 +174,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			onlyWithParameter: ic.onlyWithParameter,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
-		var posts []*Post
+		var posts []*post
 		err := p.Results(&posts)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -222,7 +222,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getPost(context context.Context, path string) (*Post, error) {
+func getPost(context context.Context, path string) (*post, error) {
 	posts, err := getPosts(context, &postsRequestConfig{path: path})
 	if err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ type postsRequestConfig struct {
 	onlyWithParameter string
 }
 
-func getPosts(context context.Context, config *postsRequestConfig) (posts []*Post, err error) {
+func getPosts(context context.Context, config *postsRequestConfig) (posts []*post, err error) {
 	paths := make(map[string]int)
 	var rows *sql.Rows
 	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(blog, ''), coalesce(section, ''), coalesce(parameter, ''), coalesce(value, '') "
@@ -286,20 +286,20 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*Pos
 		_ = rows.Close()
 	}()
 	for rows.Next() {
-		post := &Post{}
+		p := &post{}
 		var parameterName, parameterValue string
-		err = rows.Scan(&post.Path, &post.Content, &post.Published, &post.Updated, &post.Blog, &post.Section, &parameterName, &parameterValue)
+		err = rows.Scan(&p.Path, &p.Content, &p.Published, &p.Updated, &p.Blog, &p.Section, &parameterName, &parameterValue)
 		if err != nil {
 			return nil, err
 		}
-		if paths[post.Path] == 0 {
+		if paths[p.Path] == 0 {
 			index := len(posts)
-			paths[post.Path] = index + 1
-			post.Parameters = make(map[string][]string)
-			posts = append(posts, post)
+			paths[p.Path] = index + 1
+			p.Parameters = make(map[string][]string)
+			posts = append(posts, p)
 		}
 		if parameterName != "" && posts != nil {
-			posts[paths[post.Path]-1].Parameters[parameterName] = append(posts[paths[post.Path]-1].Parameters[parameterName], parameterValue)
+			posts[paths[p.Path]-1].Parameters[parameterName] = append(posts[paths[p.Path]-1].Parameters[parameterName], parameterValue)
 		}
 	}
 	return posts, nil

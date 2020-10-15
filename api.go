@@ -20,17 +20,17 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	post, aliases, err := parseHugoFile(string(bodyContent))
+	p, aliases, err := parseHugoFile(string(bodyContent))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	post.Blog = blog
-	post.Path = path
-	post.Section = section
-	post.Slug = slug
+	p.Blog = blog
+	p.Path = path
+	p.Section = section
+	p.Slug = slug
 	aliases = append(aliases, alias)
-	err = post.replace()
+	err = p.replace()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -38,13 +38,13 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	for _, alias := range aliases {
 		// Fix relativ paths
 		if !strings.HasPrefix(alias, "/") {
-			splittedPostPath := strings.Split(post.Path, "/")
-			alias = strings.TrimSuffix(post.Path, splittedPostPath[len(splittedPostPath)-1]) + alias
+			splittedPostPath := strings.Split(p.Path, "/")
+			alias = strings.TrimSuffix(p.Path, splittedPostPath[len(splittedPostPath)-1]) + alias
 		}
 		if alias != "" {
-			_ = createOrReplaceRedirect(alias, post.Path)
+			_ = createOrReplaceRedirect(alias, p.Path)
 		}
 	}
-	w.Header().Set("Location", appConfig.Server.PublicAddress+post.Path)
+	w.Header().Set("Location", appConfig.Server.PublicAddress+p.Path)
 	w.WriteHeader(http.StatusCreated)
 }

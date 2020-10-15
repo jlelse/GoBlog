@@ -39,13 +39,11 @@ type asAttachment struct {
 	URL  string `json:"url"`
 }
 
-// TODO: Serve index
-
 func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 	// Remove ".as" from path again
 	r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
 	// Fetch post from db
-	post, err := getPost(r.Context(), slashTrimmedPath(r))
+	p, err := getPost(r.Context(), slashTrimmedPath(r))
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
@@ -58,26 +56,26 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		Context:      []string{"https://www.w3.org/ns/activitystreams"},
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
 		MediaType:    "text/html",
-		ID:           appConfig.Server.PublicAddress + post.Path,
-		URL:          appConfig.Server.PublicAddress + post.Path,
+		ID:           appConfig.Server.PublicAddress + p.Path,
+		URL:          appConfig.Server.PublicAddress + p.Path,
 		AttributedTo: appConfig.Server.PublicAddress,
 	}
 	// Name and Type
-	if title := post.title(); title != "" {
+	if title := p.title(); title != "" {
 		as.Name = title
 		as.Type = "Article"
 	} else {
 		as.Type = "Note"
 	}
 	// Content
-	if rendered, err := renderMarkdown(post.Content); err == nil {
+	if rendered, err := renderMarkdown(p.Content); err == nil {
 		as.Content = string(rendered)
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Attachments
-	if images := post.Parameters[appConfig.Blogs[post.Blog].ActivityStreams.ImagesParameter]; len(images) > 0 {
+	if images := p.Parameters[appConfig.Blogs[p.Blog].ActivityStreams.ImagesParameter]; len(images) > 0 {
 		for _, image := range images {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
@@ -87,21 +85,45 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 	}
 	// Dates
 	dateFormat := "2006-01-02T15:04:05-07:00"
-	if post.Published != "" {
-		if t, err := dateparse.ParseIn(post.Published, time.Local); err == nil {
+	if p.Published != "" {
+		if t, err := dateparse.ParseIn(p.Published, time.Local); err == nil {
 			as.Published = t.Format(dateFormat)
 		}
 	}
-	if post.Updated != "" {
-		if t, err := dateparse.ParseIn(post.Updated, time.Local); err == nil {
+	if p.Updated != "" {
+		if t, err := dateparse.ParseIn(p.Updated, time.Local); err == nil {
 			as.Published = t.Format(dateFormat)
 		}
 	}
 	// Reply
-	if replyLink := post.firstParameter(appConfig.Blogs[post.Blog].ActivityStreams.ReplyParameter); replyLink != "" {
+	if replyLink := p.firstParameter(appConfig.Blogs[p.Blog].ActivityStreams.ReplyParameter); replyLink != "" {
 		as.InReplyTo = replyLink
 	}
 	// Send JSON
 	w.Header().Add(contentType, contentTypeJSONUTF8)
 	_ = json.NewEncoder(w).Encode(as)
+}
+
+type asPerson struct {
+	Context    []string `json:"@context"`
+	ID         string   `json:"id"`
+	Type       string   `json:"type"`
+	Name       string   `json:"name"`
+	Summary    string   `json:"summary"`
+	Attachment []struct {
+		Type  string `json:"type"`
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"attachment"`
+	PreferredUsername string `json:"preferredUsername"`
+	Icon              struct {
+		Type string `json:"type"`
+		URL  string `json:"url"`
+	} `json:"icon"`
+	Inbox     string `json:"inbox"`
+	PublicKey struct {
+		ID           string `json:"id"`
+		Owner        string `json:"owner"`
+		PublicKeyPem string `json:"publicKeyPem"`
+	} `json:"publicKey"`
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func (p *Post) checkPost() error {
+func (p *post) checkPost() error {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -102,15 +102,15 @@ func (p *Post) checkPost() error {
 	return nil
 }
 
-func (p *Post) create() error {
+func (p *post) create() error {
 	return p.createOrReplace(true)
 }
 
-func (p *Post) replace() error {
+func (p *post) replace() error {
 	return p.createOrReplace(false)
 }
 
-func (p *Post) createOrReplace(new bool) error {
+func (p *post) createOrReplace(new bool) error {
 	err := p.checkPost()
 	if err != nil {
 		return err

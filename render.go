@@ -45,18 +45,18 @@ func initRendering() error {
 			return template.HTML(htmlContent)
 		},
 		// First parameter value
-		"p": func(post *Post, parameter string) string {
-			return post.firstParameter(parameter)
+		"p": func(p *post, parameter string) string {
+			return p.firstParameter(parameter)
 		},
 		// All parameter values
-		"ps": func(post *Post, parameter string) []string {
-			return post.Parameters[parameter]
+		"ps": func(p *post, parameter string) []string {
+			return p.Parameters[parameter]
 		},
-		"title": func(post *Post) string {
-			return post.title()
+		"title": func(p *post) string {
+			return p.title()
 		},
-		"summary": func(post *Post) string {
-			return post.summary()
+		"summary": func(p *post) string {
+			return p.summary()
 		},
 		"dateformat": func(date string, format string) string {
 			d, err := dateparse.ParseIn(date, time.Local)

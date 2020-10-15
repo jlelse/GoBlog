@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/araddon/dateparse"
-	"github.com/snabb/sitemap"
 	"net/http"
 	"time"
+
+	"github.com/araddon/dateparse"
+	"github.com/snabb/sitemap"
 )
 
 func serveSitemap() func(w http.ResponseWriter, r *http.Request) {
@@ -16,19 +17,19 @@ func serveSitemap() func(w http.ResponseWriter, r *http.Request) {
 		sm := sitemap.New()
 		sm.Minify = true
 		for _, p := range posts {
+			item := &sitemap.URL{
+				Loc: appConfig.Server.PublicAddress + p.Path}
 			var lastMod time.Time
 			if p.Updated != "" {
 				lastMod, _ = dateparse.ParseIn(p.Updated, time.Local)
-			} else if p.Published != "" {
+			}
+			if p.Published != "" && lastMod.IsZero() {
 				lastMod, _ = dateparse.ParseIn(p.Published, time.Local)
 			}
-			if lastMod.IsZero() {
-				lastMod = time.Now()
+			if !lastMod.IsZero() {
+				item.LastMod = &lastMod
 			}
-			sm.Add(&sitemap.URL{
-				Loc:     appConfig.Server.PublicAddress + p.Path,
-				LastMod: &lastMod,
-			})
+			sm.Add(item)
 		}
 		_, _ = sm.WriteTo(w)
 	}
