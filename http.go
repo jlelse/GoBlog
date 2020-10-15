@@ -133,15 +133,11 @@ func buildHandler() (http.Handler, error) {
 
 	// Assets
 	for _, path := range allAssetPaths() {
-		if path != "" {
-			r.Get(path, serveAsset(path))
-		}
+		r.Get(path, serveAsset)
 	}
 
 	paginationPath := "/page/{page}"
-	rssPath := ".rss"
-	jsonPath := ".json"
-	atomPath := ".atom"
+	feedPath := ".{feed:rss|json|atom}"
 
 	for blog, blogConfig := range appConfig.Blogs {
 
@@ -155,11 +151,9 @@ func buildHandler() (http.Handler, error) {
 		for _, section := range blogConfig.Sections {
 			if section.Name != "" {
 				path := blogPath + "/" + section.Name
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(blog, path, section, noFeed))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+rssPath, serveSection(blog, path, section, rssFeed))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+jsonPath, serveSection(blog, path, section, jsonFeed))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+atomPath, serveSection(blog, path, section, atomFeed))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(blog, path, section, noFeed))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(blog, path, section))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+feedPath, serveSection(blog, path, section))
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(blog, path, section))
 			}
 		}
 
@@ -173,11 +167,9 @@ func buildHandler() (http.Handler, error) {
 				}
 				for _, tv := range values {
 					vPath := path + "/" + urlize(tv)
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, noFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+rssPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, rssFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+jsonPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, jsonFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+atomPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, atomFeed))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, serveTaxonomyValue(blog, vPath, taxonomy, tv, noFeed))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+feedPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
 				}
 			}
 		}
@@ -189,11 +181,9 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Blog
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath, serveHome(blog, blogPath, noFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+rssPath, serveHome(blog, blogPath, rssFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+jsonPath, serveHome(blog, blogPath, jsonFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+atomPath, serveHome(blog, blogPath, atomFeed))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath, noFeed))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath, serveHome(blog, blogPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, serveHome(blog, blogPath))
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath))
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
@@ -207,7 +197,7 @@ func buildHandler() (http.Handler, error) {
 	}
 
 	// Sitemap
-	r.With(cacheMiddleware).Get("/sitemap.xml", serveSitemap())
+	r.With(cacheMiddleware).Get(sitemapPath, serveSitemap)
 
 	r.With(minifier.Middleware).NotFound(serve404)
 

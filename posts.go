@@ -87,20 +87,18 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 	return err
 }
 
-func serveHome(blog string, path string, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+func serveHome(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog: blog,
 		path: path,
-		feed: ft,
 	})
 }
 
-func serveSection(blog string, path string, section *section, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+func serveSection(blog string, path string, section *section) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog:    blog,
 		path:    path,
 		section: section,
-		feed:    ft,
 	})
 }
 
@@ -124,13 +122,12 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 	}
 }
 
-func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string, ft feedType) func(w http.ResponseWriter, r *http.Request) {
+func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog:     blog,
 		path:     path,
 		tax:      tax,
 		taxValue: value,
-		feed:     ft,
 	})
 }
 
@@ -149,7 +146,6 @@ type indexConfig struct {
 	section           *section
 	tax               *taxonomy
 	taxValue          string
-	feed              feedType
 	onlyWithParameter string
 	template          string
 }
@@ -189,8 +185,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			description = ic.section.Description
 		}
 		// Check if feed
-		if ic.feed != noFeed {
-			generateFeed(ic.blog, ic.feed, w, r, posts, title, description)
+		if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
+			generateFeed(ic.blog, ft, w, r, posts, title, description)
 			return
 		}
 		// Navigation

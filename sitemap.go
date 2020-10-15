@@ -8,29 +8,29 @@ import (
 	"github.com/snabb/sitemap"
 )
 
-func serveSitemap() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		posts, err := getPosts(r.Context(), &postsRequestConfig{})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		sm := sitemap.New()
-		sm.Minify = true
-		for _, p := range posts {
-			item := &sitemap.URL{
-				Loc: appConfig.Server.PublicAddress + p.Path}
-			var lastMod time.Time
-			if p.Updated != "" {
-				lastMod, _ = dateparse.ParseIn(p.Updated, time.Local)
-			}
-			if p.Published != "" && lastMod.IsZero() {
-				lastMod, _ = dateparse.ParseIn(p.Published, time.Local)
-			}
-			if !lastMod.IsZero() {
-				item.LastMod = &lastMod
-			}
-			sm.Add(item)
-		}
-		_, _ = sm.WriteTo(w)
+const sitemapPath = "/sitemap.xml"
+
+func serveSitemap(w http.ResponseWriter, r *http.Request) {
+	posts, err := getPosts(r.Context(), &postsRequestConfig{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	sm := sitemap.New()
+	sm.Minify = true
+	for _, p := range posts {
+		item := &sitemap.URL{
+			Loc: appConfig.Server.PublicAddress + p.Path}
+		var lastMod time.Time
+		if p.Updated != "" {
+			lastMod, _ = dateparse.ParseIn(p.Updated, time.Local)
+		}
+		if p.Published != "" && lastMod.IsZero() {
+			lastMod, _ = dateparse.ParseIn(p.Published, time.Local)
+		}
+		if !lastMod.IsZero() {
+			item.LastMod = &lastMod
+		}
+		sm.Add(item)
+	}
+	_, _ = sm.WriteTo(w)
 }
