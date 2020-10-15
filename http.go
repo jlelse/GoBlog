@@ -136,7 +136,7 @@ func buildHandler() (http.Handler, error) {
 		r.Get(path, serveAsset)
 	}
 
-	paginationPath := "/page/{page}"
+	paginationPath := "/page/{page:[0-9-]+}"
 	feedPath := ".{feed:rss|json|atom}"
 
 	for blog, blogConfig := range appConfig.Blogs {
@@ -199,7 +199,8 @@ func buildHandler() (http.Handler, error) {
 	// Sitemap
 	r.With(cacheMiddleware).Get(sitemapPath, serveSitemap)
 
-	r.With(minifier.Middleware).NotFound(serve404)
+	// Check redirects, then serve 404
+	r.With(checkRegexRedirects, minifier.Middleware).NotFound(serve404)
 
 	return r, nil
 }

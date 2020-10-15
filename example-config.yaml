@@ -61,3 +61,10 @@ micropub:
   audioParam: audio
   photoParam: images
   photoDescriptionParam: imagealts
+pathRedirects:
+  - from: "\\/index\\.xml"
+    to: ".rss"
+  - from: "\\/feed\\.json"
+    to: ".json"
+  - from: "\\/(feed|rss)\\/?$"
+    to: ".rss"

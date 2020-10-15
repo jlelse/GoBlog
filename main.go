@@ -45,6 +45,11 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	err = initRedirects()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	// Prepare graceful shutdown
 	quit := make(chan os.Signal, 1)

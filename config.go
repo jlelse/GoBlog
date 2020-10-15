@@ -8,15 +8,16 @@ import (
 )
 
 type config struct {
-	Server      *configServer          `mapstructure:"server"`
-	Db          *configDb              `mapstructure:"database"`
-	Cache       *configCache           `mapstructure:"cache"`
-	DefaultBlog string                 `mapstructure:"defaultblog"`
-	Blogs       map[string]*configBlog `mapstructure:"blogs"`
-	User        *configUser            `mapstructure:"user"`
-	Hooks       *configHooks           `mapstructure:"hooks"`
-	Hugo        *configHugo            `mapstructure:"hugo"`
-	Micropub    *configMicropub        `mapstructure:"micropub"`
+	Server        *configServer          `mapstructure:"server"`
+	Db            *configDb              `mapstructure:"database"`
+	Cache         *configCache           `mapstructure:"cache"`
+	DefaultBlog   string                 `mapstructure:"defaultblog"`
+	Blogs         map[string]*configBlog `mapstructure:"blogs"`
+	User          *configUser            `mapstructure:"user"`
+	Hooks         *configHooks           `mapstructure:"hooks"`
+	Hugo          *configHugo            `mapstructure:"hugo"`
+	Micropub      *configMicropub        `mapstructure:"micropub"`
+	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 }
 
 type configServer struct {
@@ -133,6 +134,11 @@ type configMicropubMedia struct {
 	BunnyStorageKey  string `mapstructure:"bunnyStorageKey"`
 	BunnyStorageName string `mapstructure:"bunnyStorageName"`
 	TinifyKey        string `mapstructure:"tinifyKey"`
+}
+
+type configRegexRedirect struct {
+	From string `mapstructure:"from"`
+	To   string `mapstructure:"to"`
 }
 
 var appConfig = &config{}
