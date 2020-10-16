@@ -44,7 +44,7 @@ func startServer() (err error) {
 		tlsConfig := certManager.TLSConfig()
 		server := http.Server{
 			Addr:      ":https",
-			Handler:   d,
+			Handler:   securityHeaders(d),
 			TLSConfig: tlsConfig,
 		}
 		go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
@@ -203,6 +203,18 @@ func buildHandler() (http.Handler, error) {
 	r.With(checkRegexRedirects, minifier.Middleware).NotFound(serve404)
 
 	return r, nil
+}
+
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Strict-Transport-Security", "max-age=31536000;")
+		w.Header().Add("Referrer-Policy", "no-referrer")
+		w.Header().Add("X-Content-Type-Options", "nosniff")
+		w.Header().Add("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Add("X-Xss-Protection", "1; mode=block")
+		// TODO: Add CSP
+		next.ServeHTTP(w, r)
+	})
 }
 
 type dynamicHandler struct {

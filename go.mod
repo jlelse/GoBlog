@@ -30,7 +30,8 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/tdewolff/minify/v2 v2.9.7
+	github.com/tdewolff/minify/v2 v2.9.8
+	github.com/tdewolff/parse/v2 v2.5.5 // indirect
 	github.com/vcraescu/go-paginator v0.0.0-20200923074551-426b20f3ae8a
 	github.com/yuin/goldmark v1.2.1
 	github.com/yuin/goldmark-emoji v1.0.1
