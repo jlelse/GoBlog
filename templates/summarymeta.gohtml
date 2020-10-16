@@ -1,0 +1,11 @@
+{{ define "summarymeta" }}
+    <div class="p">
+        {{ $section := (index .Blog.Sections .Data.Section) }}
+    	{{ if .Data.Published }}
+    	<div><time class="dt-published" datetime="{{ dateformat .Data.Published "2006-01-02T15:04:05Z07:00" }}">{{ longDate .Data.Published .Blog.Lang }}</time>{{ if $section }} in <a href="{{ blogRelative .Blog $section.Name }}">{{ $section.Title }}</a>{{ end }}</div>
+    	{{ end }}
+    	{{ if .Data.Updated }}
+    	<div>{{ string .Blog.Lang "updatedon" }} <time class="dt-updated" datetime="{{ dateformat .Data.Updated "2006-01-02T15:04:05Z07:00" }}">{{ longDate .Data.Updated .Blog.Lang }}</time></div>
+    	{{ end }}
+    </div>
+{{ end }}

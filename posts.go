@@ -133,21 +133,21 @@ func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string) f
 
 func servePhotos(blog string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
-		blog:              blog,
-		path:              appConfig.Blogs[blog].Photos.Path,
-		onlyWithParameter: appConfig.Blogs[blog].Photos.Parameter,
-		template:          templatePhotos,
+		blog:      blog,
+		path:      appConfig.Blogs[blog].Photos.Path,
+		parameter: appConfig.Blogs[blog].Photos.Parameter,
+		template:  templatePhotos,
 	})
 }
 
 type indexConfig struct {
-	blog              string
-	path              string
-	section           *section
-	tax               *taxonomy
-	taxValue          string
-	onlyWithParameter string
-	template          string
+	blog      string
+	path      string
+	section   *section
+	tax       *taxonomy
+	taxValue  string
+	parameter string
+	template  string
 }
 
 func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
@@ -163,11 +163,11 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		p := paginator.New(&postPaginationAdapter{context: r.Context(), config: &postsRequestConfig{
-			blog:              ic.blog,
-			sections:          sections,
-			taxonomy:          ic.tax,
-			taxonomyValue:     ic.taxValue,
-			onlyWithParameter: ic.onlyWithParameter,
+			blog:          ic.blog,
+			sections:      sections,
+			taxonomy:      ic.tax,
+			taxonomyValue: ic.taxValue,
+			parameter:     ic.parameter,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post
@@ -229,14 +229,15 @@ func getPost(context context.Context, path string) (*post, error) {
 }
 
 type postsRequestConfig struct {
-	blog              string
-	path              string
-	limit             int
-	offset            int
-	sections          []string
-	taxonomy          *taxonomy
-	taxonomyValue     string
-	onlyWithParameter string
+	blog           string
+	path           string
+	limit          int
+	offset         int
+	sections       []string
+	taxonomy       *taxonomy
+	taxonomyValue  string
+	parameter      string
+	parameterValue string
 }
 
 func getPosts(context context.Context, config *postsRequestConfig) (posts []*post, err error) {
@@ -247,8 +248,12 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*pos
 	if config.blog != "" {
 		postsTable = "(select * from " + postsTable + " where blog = '" + config.blog + "')"
 	}
-	if config.onlyWithParameter != "" {
-		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.onlyWithParameter + "' and length(coalesce(pp.value, '')) > 1)"
+	if config.parameter != "" {
+		if config.parameterValue != "" {
+			postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.parameter + "' and pp.value = '" + config.parameterValue + "')"
+		} else {
+			postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.parameter + "' and length(coalesce(pp.value, '')) > 1)"
+		}
 	}
 	if config.taxonomy != nil && len(config.taxonomyValue) > 0 {
 		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = '" + config.taxonomy.Name + "' and lower(pp.value) = lower('" + config.taxonomyValue + "'))"

@@ -1,9 +1,14 @@
 {{ define "summary" }}
-  <article>
-      {{ with p .Data "title" }}<h2>{{ . }}</h2>{{ end }}
-      {{ if .Data.Published }}<p>{{ longDate .Data.Published .Blog.Lang }}</p>{{ end }}
-    <p>{{ summary .Data }}</p>
-    <a href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a>
+  <article class="h-entry border-bottom">
+      {{ if p .Data "title" }}
+      <h2 class="p-name">
+        <a class="u-url" href="{{ .Data.Path }}">
+          {{ p .Data "title" }}
+        </a>
+      </h2>
+      {{ end }}
+      {{ include "summarymeta" .Blog .Data }}
+    <p class="p-summary">{{ summary .Data }}</p>
+    <p>{{ if (hasp .Data "images") }}🖼️ {{ end }}<a class="u-url" href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a></p>
   </article>
-  <hr>
 {{ end }}

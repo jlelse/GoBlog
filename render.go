@@ -33,6 +33,9 @@ var templateFunctions template.FuncMap
 
 func initRendering() error {
 	templateFunctions = template.FuncMap{
+		"blog": func(blog string) *configBlog {
+			return appConfig.Blogs[blog]
+		},
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
 		},
@@ -48,9 +51,12 @@ func initRendering() error {
 		"p": func(p *post, parameter string) string {
 			return p.firstParameter(parameter)
 		},
-		// All parameter values
+		// Post specific
 		"ps": func(p *post, parameter string) []string {
 			return p.Parameters[parameter]
+		},
+		"hasp": func(p *post, parameter string) bool {
+			return len(p.Parameters[parameter]) > 0
 		},
 		"title": func(p *post) string {
 			return p.title()
@@ -58,6 +64,10 @@ func initRendering() error {
 		"summary": func(p *post) string {
 			return p.summary()
 		},
+		"translations": func(p *post) []*post {
+			return p.translations()
+		},
+		// Others
 		"dateformat": func(date string, format string) string {
 			d, err := dateparse.ParseIn(date, time.Local)
 			if err != nil {
@@ -86,6 +96,9 @@ func initRendering() error {
 		"urlize": urlize,
 		"sort":   sortedStrings,
 		"blogRelative": func(blog *configBlog, path string) string {
+			if !strings.HasPrefix(path, "/") {
+				path = "/" + path
+			}
 			if blog.Path != "/" {
 				return blog.Path + path
 			}

@@ -26,6 +26,9 @@
             </p>
           {{ end }}
       {{ end }}
+      {{ range $i, $t := (translations .Data) }}
+        <p><a href="{{ $t.Path }}">{{ (blog $t.Blog).Title }}</a></p>
+      {{ end }}
   </main>
 {{ end }}
 
