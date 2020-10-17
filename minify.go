@@ -15,6 +15,7 @@ func initMinify() {
 	minifier = minify.New()
 	minifier.AddFunc(contentTypeHTML, mHtml.Minify)
 	minifier.AddFunc("text/css", mCss.Minify)
+	minifier.AddFunc("text/xml", mXml.Minify)
 	minifier.AddFunc("application/javascript", mJs.Minify)
 	minifier.AddFunc("application/rss+xml", mXml.Minify)
 	minifier.AddFunc("application/atom+xml", mXml.Minify)

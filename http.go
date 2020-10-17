@@ -197,7 +197,7 @@ func buildHandler() (http.Handler, error) {
 	}
 
 	// Sitemap
-	r.With(cacheMiddleware).Get(sitemapPath, serveSitemap)
+	r.With(cacheMiddleware, minifier.Middleware).Get(sitemapPath, serveSitemap)
 
 	// Check redirects, then serve 404
 	r.With(checkRegexRedirects, minifier.Middleware).NotFound(serve404)
