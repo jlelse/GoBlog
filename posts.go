@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -240,10 +239,8 @@ type postsRequestConfig struct {
 	parameterValue string
 }
 
-func getPosts(context context.Context, config *postsRequestConfig) (posts []*post, err error) {
-	paths := make(map[string]int)
-	var rows *sql.Rows
-	defaultSelection := "select p.path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(blog, ''), coalesce(section, ''), coalesce(parameter, ''), coalesce(value, '') "
+func buildQuery(config *postsRequestConfig) (query string, params []interface{}) {
+	defaultSelection := "select p.path as path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(blog, ''), coalesce(section, ''), coalesce(parameter, ''), coalesce(value, '') "
 	postsTable := "posts"
 	if config.blog != "" {
 		postsTable = "(select * from " + postsTable + " where blog = '" + config.blog + "')"
@@ -271,21 +268,27 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*pos
 	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
 	defaultSorting := " order by p.published desc "
 	if config.path != "" {
-		query := defaultSelection + defaultTables + " where p.path=?" + defaultSorting
-		rows, err = appDb.QueryContext(context, query, config.path)
+		query = defaultSelection + defaultTables + " where p.path=?" + defaultSorting
+		params = []interface{}{config.path}
 	} else if config.limit != 0 || config.offset != 0 {
-		query := defaultSelection + " from (select * from " + postsTable + " p " + defaultSorting + " limit ? offset ?) p left outer join post_parameters pp on p.path = pp.path "
-		rows, err = appDb.QueryContext(context, query, config.limit, config.offset)
+		query = defaultSelection + " from (select * from " + postsTable + " p " + defaultSorting + " limit ? offset ?) p left outer join post_parameters pp on p.path = pp.path "
+		params = []interface{}{config.limit, config.offset}
 	} else {
-		query := defaultSelection + defaultTables + defaultSorting
-		rows, err = appDb.QueryContext(context, query)
+		query = defaultSelection + defaultTables + defaultSorting
 	}
+	return
+}
+
+func getPosts(context context.Context, config *postsRequestConfig) (posts []*post, err error) {
+	query, queryParams := buildQuery(config)
+	rows, err := appDb.QueryContext(context, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		_ = rows.Close()
 	}()
+	paths := make(map[string]int)
 	for rows.Next() {
 		p := &post{}
 		var parameterName, parameterValue string
@@ -306,9 +309,12 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*pos
 	return posts, nil
 }
 
-func countPosts(context context.Context, config *postsRequestConfig) (int, error) {
-	posts, err := getPosts(context, config)
-	return len(posts), err
+func countPosts(context context.Context, config *postsRequestConfig) (count int, err error) {
+	query, params := buildQuery(config)
+	query = "select count(distinct path) from (" + query + ")"
+	row := appDb.QueryRowContext(context, query, params...)
+	err = row.Scan(&count)
+	return
 }
 
 func allPostPaths() ([]string, error) {
