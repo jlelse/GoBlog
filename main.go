@@ -51,6 +51,9 @@ func main() {
 		return
 	}
 
+	// Start cron hooks
+	startHourlyHooks()
+
 	// Prepare graceful shutdown
 	quit := make(chan os.Signal, 1)
 

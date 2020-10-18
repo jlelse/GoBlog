@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"log"
 	"os/exec"
+	"time"
 )
 
 func preStartHooks() {
@@ -14,22 +13,29 @@ func preStartHooks() {
 	}
 }
 
+func startHourlyHooks() {
+	for _, cmd := range appConfig.Hooks.Hourly {
+		go func(cmd string) {
+			run := func() {
+				log.Println("Executing hourly hook:", cmd)
+				executeCommand(cmd)
+			}
+			// Execute once
+			run()
+			// Start ticker and execute regularly
+			ticker := time.NewTicker(1 * time.Hour)
+			for range ticker.C {
+				run()
+			}
+		}(cmd)
+	}
+}
+
 func executeCommand(cmd string) {
-	var stdout, stderr bytes.Buffer
-	parsed := exec.Command(appConfig.Hooks.Shell, "-c", cmd)
-	parsed.Stdout = &stdout
-	parsed.Stderr = &stderr
-	cmdErr := parsed.Run()
-	if cmdErr != nil {
-		fmt.Println("Executing command failed:")
-		fmt.Println(cmdErr.Error())
+	out, err := exec.Command(appConfig.Hooks.Shell, "-c", cmd).CombinedOutput()
+	if err != nil {
+		log.Println("Failed to execute command:", err.Error())
 	}
-	if stdout.Len() > 0 {
-		log.Println("Output:")
-		log.Print(stdout.String())
-	}
-	if stderr.Len() > 0 {
-		log.Println("Error:")
-		log.Print(stderr.String())
-	}
+	log.Println("Output:")
+	log.Print(string(out))
 }
