@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"strings"
+	"sync"
+
 	kemoji "github.com/kyokomi/emoji"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark-emoji"
+	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark-emoji/definition"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -12,8 +15,6 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
-	"strings"
-	"sync"
 )
 
 var emojilib definition.Emojis
@@ -30,7 +31,8 @@ func initMarkdown() {
 			parser.WithAutoHeadingID(),
 		),
 		goldmark.WithExtensions(
-			extension.GFM,
+			extension.Table,
+			extension.Strikethrough,
 			extension.Footnote,
 			extension.Typographer,
 			// Emojis
