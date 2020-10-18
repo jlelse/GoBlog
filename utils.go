@@ -19,18 +19,6 @@ func urlize(str string) string {
 	return newStr
 }
 
-func firstSentences(value string, count int) string {
-	for i := range value {
-		if value[i] == '.' || value[i] == '!' || value[i] == '?' {
-			count--
-			if count == 0 && i < len(value) {
-				return value[0 : i+1]
-			}
-		}
-	}
-	return value
-}
-
 func sortedStrings(s []string) []string {
 	sort.Slice(s, func(i, j int) bool {
 		return strings.ToLower(s[i]) < strings.ToLower(s[j])

@@ -32,13 +32,12 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		Created:     now,
 	}
 	for _, p := range posts {
-		htmlContent, _ := renderMarkdown(p.Content)
 		feed.Add(&feeds.Item{
 			Title:       p.title(),
 			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + p.Path},
 			Description: p.summary(),
 			Id:          p.Path,
-			Content:     string(htmlContent),
+			Content:     string(p.html()),
 		})
 	}
 	var feedStr string

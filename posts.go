@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -24,7 +25,8 @@ type post struct {
 	Blog       string              `json:"blog"`
 	Section    string              `json:"section"`
 	// Not persisted
-	Slug string `json:"slug"`
+	Slug     string `json:"slug"`
+	rendered template.HTML
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {

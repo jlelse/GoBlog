@@ -10,8 +10,8 @@
         <p>{{ string .Blog.Lang "publishedon" }} {{ longDate .Data.Published .Blog.Lang }}</p>{{ end }}
         {{ if .Data.Updated }}
         <p>{{ string .Blog.Lang "updatedon" }} {{ longDate .Data.Updated .Blog.Lang }}</p>{{ end }}
-        {{ with .Data.Content }}
-          <div class=e-content>{{ md . }}</div>
+        {{ if .Data.Content }}
+          <div class=e-content>{{ content .Data }}</div>
         {{ end }}
     </article>
       {{ $post := .Data }}

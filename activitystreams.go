@@ -68,12 +68,7 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 		as.Type = "Note"
 	}
 	// Content
-	if rendered, err := renderMarkdown(p.Content); err == nil {
-		as.Content = string(rendered)
-	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	as.Content = string(p.html())
 	// Attachments
 	if images := p.Parameters[appConfig.Blogs[p.Blog].ActivityStreams.ImagesParameter]; len(images) > 0 {
 		for _, image := range images {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"html/template"
+	"log"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -18,20 +20,34 @@ func (p *post) title() string {
 	return p.firstParameter("title")
 }
 
+func (p *post) html() template.HTML {
+	if p.rendered != "" {
+		return p.rendered
+	}
+	htmlContent, err := renderMarkdown(p.Content)
+	if err != nil {
+		log.Fatal(err)
+		return ""
+	}
+	p.rendered = template.HTML(htmlContent)
+	return p.rendered
+}
+
+const summaryDivider = "<!--more-->"
+
 func (p *post) summary() (summary string) {
 	summary = p.firstParameter("summary")
 	if summary != "" {
 		return
 	}
-	summaryDivider := "<!--more-->"
-	rendered, _ := renderMarkdown(p.Content)
-	if strings.Contains(string(rendered), summaryDivider) {
-		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(strings.Split(string(rendered), summaryDivider)[0]))
+	html := string(p.html())
+	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
+		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(splitted[0]))
 		summary = doc.Text()
-		return
+	} else {
+		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
+		summary = doc.Find("p").First().Text()
 	}
-	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(string(rendered)))
-	summary = firstSentences(doc.Text(), 3)
 	return
 }
 

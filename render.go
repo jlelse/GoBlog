@@ -47,11 +47,10 @@ func initRendering() error {
 			}
 			return template.HTML(htmlContent)
 		},
-		// First parameter value
+		// Post specific
 		"p": func(p *post, parameter string) string {
 			return p.firstParameter(parameter)
 		},
-		// Post specific
 		"ps": func(p *post, parameter string) []string {
 			return p.Parameters[parameter]
 		},
@@ -60,6 +59,9 @@ func initRendering() error {
 		},
 		"title": func(p *post) string {
 			return p.title()
+		},
+		"content": func(p *post) template.HTML {
+			return p.html()
 		},
 		"summary": func(p *post) string {
 			return p.summary()
