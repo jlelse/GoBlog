@@ -137,7 +137,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range allRedirectPaths {
 		if path != "" {
-			r.With(minifier.Middleware).Get(path, serveRedirect)
+			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveRedirect)
 		}
 	}
 

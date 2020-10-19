@@ -49,6 +49,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	initCache()
 
 	// Start cron hooks
 	startHourlyHooks()

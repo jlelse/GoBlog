@@ -9,10 +9,27 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-var cacheMap = map[string]*cacheItem{}
-var cacheMutex = &sync.RWMutex{}
+var (
+	cacheGroup singleflight.Group
+	cacheMap   = map[string]*cacheItem{}
+	cacheMutex = &sync.RWMutex{}
+)
 
-var requestGroup singleflight.Group
+func initCache() {
+	go func() {
+		for {
+			// GC the entries every 60 seconds
+			time.Sleep(60 * time.Second)
+			cacheMutex.Lock()
+			for key, item := range cacheMap {
+				if item.expired() {
+					delete(cacheMap, key)
+				}
+			}
+			cacheMutex.Unlock()
+		}
+	}()
+}
 
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -21,11 +38,10 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			!(r.URL.Query().Get("cache") == "0") &&
 			// check method
 			(r.Method == http.MethodGet || r.Method == http.MethodHead) {
-			// Fix path
-			path := slashTrimmedPath(r)
+			key := cacheKey(r)
 			// Get cache or render it
-			cacheInterface, _, _ := requestGroup.Do(path, func() (interface{}, error) {
-				return getCache(path, next, r), nil
+			cacheInterface, _, _ := cacheGroup.Do(key, func() (interface{}, error) {
+				return getCache(key, next, r), nil
 			})
 			cache := cacheInterface.(*cacheItem)
 			// log.Println(string(cache.body))
@@ -55,6 +71,10 @@ func cacheMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func cacheKey(r *http.Request) string {
+	return slashTrimmedPath(r)
+}
+
 func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeString string) {
 	w.Header().Set("Cache-Control", "public")
 	w.Header().Set("Last-Modified", cacheTimeString)
@@ -68,16 +88,21 @@ type cacheItem struct {
 	body         []byte
 }
 
-func getCache(path string, next http.Handler, r *http.Request) *cacheItem {
+func (c *cacheItem) expired() bool {
+	return c.creationTime < time.Now().Unix()-appConfig.Cache.Expiration
+}
+
+func getCache(key string, next http.Handler, r *http.Request) *cacheItem {
 	cacheMutex.RLock()
-	item, ok := cacheMap[path]
+	item, ok := cacheMap[key]
 	cacheMutex.RUnlock()
-	if !ok || item.creationTime < time.Now().Unix()-appConfig.Cache.Expiration {
-		item = &cacheItem{}
+	if !ok || item.expired() {
 		// No cache available
+		item = &cacheItem{}
+		// Record request
 		recorder := httptest.NewRecorder()
 		next.ServeHTTP(recorder, r)
-		// copy values from recorder
+		// Cache values from recorder
 		now := time.Now()
 		item.creationTime = now.Unix()
 		item.code = recorder.Code
@@ -85,7 +110,7 @@ func getCache(path string, next http.Handler, r *http.Request) *cacheItem {
 		item.body = recorder.Body.Bytes()
 		// Save cache
 		cacheMutex.Lock()
-		cacheMap[path] = item
+		cacheMap[key] = item
 		cacheMutex.Unlock()
 	}
 	return item
