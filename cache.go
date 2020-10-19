@@ -135,21 +135,11 @@ func saveCache(path string, now time.Time, header map[string][]string, body []by
 	headerBytes, _ := json.Marshal(header)
 	startWritingToCacheDb()
 	defer finishWritingToCacheDb()
-	tx, err := cacheDb.Begin()
-	if err != nil {
-		return
-	}
-	_, _ = tx.Exec("insert or replace into cache (path, time, header, body) values (?, ?, ?, ?);", path, now.Unix(), headerBytes, body)
-	_ = tx.Commit()
+	_, _ = cacheDb.Exec("insert or replace into cache (path, time, header, body) values (?, ?, ?, ?);", path, now.Unix(), headerBytes, body)
 }
 
 func purgeCache() {
 	startWritingToCacheDb()
 	defer finishWritingToCacheDb()
-	tx, err := cacheDb.Begin()
-	if err != nil {
-		return
-	}
-	_, _ = tx.Exec("delete from cache; vacuum;")
-	_ = tx.Commit()
+	_, _ = cacheDb.Exec("delete from cache; vacuum;")
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/flate"
 	"net/http"
 	"strconv"
 	"strings"
@@ -69,10 +70,14 @@ func reloadRouter() error {
 func buildHandler() (http.Handler, error) {
 	r := chi.NewRouter()
 
+	r.Use(middleware.Recoverer)
 	if appConfig.Server.Logging {
-		r.Use(middleware.RealIP, middleware.Logger)
+		r.Use(middleware.RealIP)
+		r.Use(middleware.Logger)
 	}
-	r.Use(middleware.Recoverer, middleware.StripSlashes, middleware.GetHead)
+	r.Use(middleware.Compress(flate.DefaultCompression))
+	r.Use(middleware.StripSlashes)
+	r.Use(middleware.GetHead)
 
 	// Profiler
 	if appConfig.Server.Debug {
