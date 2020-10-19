@@ -2,7 +2,9 @@ package main
 
 import (
 	"compress/flate"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -73,7 +75,10 @@ func buildHandler() (http.Handler, error) {
 	r.Use(middleware.Recoverer)
 	if appConfig.Server.Logging {
 		r.Use(middleware.RealIP)
-		r.Use(middleware.Logger)
+		r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
+			Logger:  log.New(os.Stdout, "", log.LstdFlags),
+			NoColor: true,
+		}))
 	}
 	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(middleware.StripSlashes)
@@ -205,7 +210,7 @@ func buildHandler() (http.Handler, error) {
 	r.With(cacheMiddleware, minifier.Middleware).Get(sitemapPath, serveSitemap)
 
 	// Check redirects, then serve 404
-	r.With(checkRegexRedirects, minifier.Middleware).NotFound(serve404)
+	r.With(checkRegexRedirects, cacheMiddleware, minifier.Middleware).NotFound(serve404)
 
 	return r, nil
 }

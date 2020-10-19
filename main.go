@@ -29,7 +29,6 @@ func main() {
 	log.Println("Initialize server components...")
 	initMinify()
 	initMarkdown()
-	initCache()
 	err = initTemplateAssets() // Needs minify
 	if err != nil {
 		log.Fatal(err)
