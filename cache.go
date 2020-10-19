@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +60,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			// Get cache
 			cm := cacheMutexes[path]
 			cm.Lock()
-			cacheTime, header, body := getCache(r.Context(), path)
+			cacheTime, header, body := getCache(path)
 			cm.Unlock()
 			if cacheTime == 0 {
 				cm.Lock()
@@ -122,10 +121,10 @@ func renderCache(path string, next http.Handler, w http.ResponseWriter, r *http.
 	}
 }
 
-func getCache(context context.Context, path string) (creationTime int64, header map[string][]string, body []byte) {
+func getCache(path string) (creationTime int64, header map[string][]string, body []byte) {
 	var headerBytes []byte
 	allowedTime := time.Now().Unix() - appConfig.Cache.Expiration
-	row := cacheDb.QueryRowContext(context, "select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)
+	row := cacheDb.QueryRow("select COALESCE(time, 0), header, body from cache where path=? and time>=?", path, allowedTime)
 	_ = row.Scan(&creationTime, &headerBytes, &body)
 	header = make(map[string][]string)
 	_ = json.Unmarshal(headerBytes, &header)

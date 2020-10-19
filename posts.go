@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -35,7 +34,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := slashTrimmedPath(r)
-	p, err := getPost(r.Context(), path)
+	p, err := getPost(path)
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
@@ -62,14 +61,13 @@ type indexTemplateData struct {
 }
 
 type postPaginationAdapter struct {
-	context context.Context
-	config  *postsRequestConfig
-	nums    int
+	config *postsRequestConfig
+	nums   int
 }
 
 func (p *postPaginationAdapter) Nums() int {
 	if p.nums == 0 {
-		p.nums, _ = countPosts(p.context, p.config)
+		p.nums, _ = countPosts(p.config)
 	}
 	return p.nums
 }
@@ -83,7 +81,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length
 
-	posts, err := getPosts(p.context, &modifiedConfig)
+	posts, err := getPosts(&modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&posts).Elem())
 	return err
 }
@@ -163,7 +161,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 				sections = append(sections, sectionKey)
 			}
 		}
-		p := paginator.New(&postPaginationAdapter{context: r.Context(), config: &postsRequestConfig{
+		p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
 			blog:          ic.blog,
 			sections:      sections,
 			taxonomy:      ic.tax,
@@ -219,8 +217,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getPost(context context.Context, path string) (*post, error) {
-	posts, err := getPosts(context, &postsRequestConfig{path: path})
+func getPost(path string) (*post, error) {
+	posts, err := getPosts(&postsRequestConfig{path: path})
 	if err != nil {
 		return nil, err
 	} else if len(posts) == 0 {
@@ -281,9 +279,9 @@ func buildQuery(config *postsRequestConfig) (query string, params []interface{})
 	return
 }
 
-func getPosts(context context.Context, config *postsRequestConfig) (posts []*post, err error) {
+func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	query, queryParams := buildQuery(config)
-	rows, err := appDb.QueryContext(context, query, queryParams...)
+	rows, err := appDb.Query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -311,10 +309,10 @@ func getPosts(context context.Context, config *postsRequestConfig) (posts []*pos
 	return posts, nil
 }
 
-func countPosts(context context.Context, config *postsRequestConfig) (count int, err error) {
+func countPosts(config *postsRequestConfig) (count int, err error) {
 	query, params := buildQuery(config)
 	query = "select count(distinct path) from (" + query + ")"
-	row := appDb.QueryRowContext(context, query, params...)
+	row := appDb.QueryRow(query, params...)
 	err = row.Scan(&count)
 	return
 }

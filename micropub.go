@@ -38,14 +38,14 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			p, err := getPost(r.Context(), u.Path)
+			p, err := getPost(u.Path)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			mf = p.toMfItem()
 		} else {
-			posts, err := getPosts(r.Context(), &postsRequestConfig{})
+			posts, err := getPosts(&postsRequestConfig{})
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -391,7 +391,7 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 	if !strings.Contains(r.Context().Value("scope").(string), "update") {
 		http.Error(w, "update scope missing", http.StatusForbidden)
 	}
-	p, err := getPost(r.Context(), u.Path)
+	p, err := getPost(u.Path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

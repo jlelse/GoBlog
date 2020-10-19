@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 var errRedirectNotFound = errors.New("redirect not found")
 
 func serveRedirect(w http.ResponseWriter, r *http.Request) {
-	redirect, err := getRedirect(r.Context(), slashTrimmedPath(r))
+	redirect, err := getRedirect(slashTrimmedPath(r))
 	if err == errRedirectNotFound {
 		serve404(w, r)
 		return
@@ -27,9 +26,9 @@ func serveRedirect(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound)
 }
 
-func getRedirect(context context.Context, fromPath string) (string, error) {
+func getRedirect(fromPath string) (string, error) {
 	var toPath string
-	row := appDb.QueryRowContext(context, "with recursive f (i, fp, tp) as (select 1, fromPath, toPath from redirects where fromPath = ? union all select f.i + 1, r.fromPath, r.toPath from redirects as r join f on f.tp = r.fromPath) select tp from f order by i desc limit 1", fromPath)
+	row := appDb.QueryRow("with recursive f (i, fp, tp) as (select 1, fromPath, toPath from redirects where fromPath = ? union all select f.i + 1, r.fromPath, r.toPath from redirects as r join f on f.tp = r.fromPath) select tp from f order by i desc limit 1", fromPath)
 	err := row.Scan(&toPath)
 	if err == sql.ErrNoRows {
 		return "", errRedirectNotFound

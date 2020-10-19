@@ -108,6 +108,9 @@ type configHooks struct {
 	Shell    string   `mapstructure:"shell"`
 	Hourly   []string `mapstructure:"hourly"`
 	PreStart []string `mapstructure:"prestart"`
+	// Can use template
+	PostPost   []string `mapstructure:"postpost"`
+	PostDelete []string `mapstructure:"postdelete"`
 }
 
 type configHugo struct {

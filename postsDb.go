@@ -156,6 +156,7 @@ func (p *post) createOrReplace(new bool) error {
 	}
 	finishWritingToDb()
 	go purgeCache()
+	defer postPostHooks(p.Path)
 	return reloadRouter()
 }
 
@@ -188,5 +189,6 @@ func deletePost(path string) error {
 	}
 	finishWritingToDb()
 	go purgeCache()
+	defer postDeleteHooks(path)
 	return reloadRouter()
 }

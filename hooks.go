@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"html/template"
 	"log"
 	"os/exec"
 	"time"
@@ -8,9 +10,48 @@ import (
 
 func preStartHooks() {
 	for _, cmd := range appConfig.Hooks.PreStart {
-		log.Println("Executing pre-start hook:", cmd)
-		executeCommand(cmd)
+		go func(cmd string) {
+			log.Println("Executing pre-start hook:", cmd)
+			executeCommand(cmd)
+		}(cmd)
 	}
+}
+
+func postPostHooks(path string) {
+	for _, cmdTmplString := range appConfig.Hooks.PostPost {
+		go func(path, cmdTmplString string) {
+			executeTemplateCommand("post-post", cmdTmplString, &hookTemplateData{
+				URL: appConfig.Server.PublicAddress + path,
+			})
+		}(path, cmdTmplString)
+	}
+}
+
+func postDeleteHooks(path string) {
+	for _, cmdTmplString := range appConfig.Hooks.PostDelete {
+		go func(path, cmdTmplString string) {
+			executeTemplateCommand("post-delete", cmdTmplString, &hookTemplateData{
+				URL: appConfig.Server.PublicAddress + path,
+			})
+		}(path, cmdTmplString)
+	}
+}
+
+type hookTemplateData struct {
+	URL string
+}
+
+func executeTemplateCommand(hookType string, tmpl string, data *hookTemplateData) {
+	cmdTmpl, err := template.New("cmd").Parse(tmpl)
+	if err != nil {
+		log.Println("Failed to parse cmd template:", err.Error())
+		return
+	}
+	var cmdBuf bytes.Buffer
+	cmdTmpl.Execute(&cmdBuf, data)
+	cmd := cmdBuf.String()
+	log.Println("Executing "+hookType+" hook:", cmd)
+	executeCommand(cmd)
 }
 
 func startHourlyHooks() {
@@ -21,11 +62,11 @@ func startHourlyHooks() {
 				executeCommand(cmd)
 			}
 			// Execute once
-			run()
+			go run()
 			// Start ticker and execute regularly
 			ticker := time.NewTicker(1 * time.Hour)
 			for range ticker.C {
-				run()
+				go run()
 			}
 		}(cmd)
 	}

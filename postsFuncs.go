@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"html/template"
 	"log"
 	"strings"
@@ -56,7 +55,7 @@ func (p *post) translations() []*post {
 	if translationkey == "" {
 		return nil
 	}
-	posts, err := getPosts(context.Background(), &postsRequestConfig{
+	posts, err := getPosts(&postsRequestConfig{
 		parameter:      "translationkey",
 		parameterValue: translationkey,
 	})

@@ -43,7 +43,7 @@ func servePostActivityStreams(w http.ResponseWriter, r *http.Request) {
 	// Remove ".as" from path again
 	r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
 	// Fetch post from db
-	p, err := getPost(r.Context(), slashTrimmedPath(r))
+	p, err := getPost(slashTrimmedPath(r))
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
