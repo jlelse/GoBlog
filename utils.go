@@ -26,10 +26,10 @@ func sortedStrings(s []string) []string {
 	return s
 }
 
-func generateRandomString(now time.Time, n int) string {
-	rand.Seed(now.UnixNano())
+func generateRandomString(chars int) string {
+	rand.Seed(time.Now().UnixNano())
 	letters := []rune("abcdefghijklmnopqrstuvwxyz")
-	b := make([]rune, n)
+	b := make([]rune, chars)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
 	}

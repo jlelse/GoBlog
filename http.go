@@ -7,31 +7,39 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
+	"sync/atomic"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"golang.org/x/crypto/acme/autocert"
 )
 
-const contentType = "Content-Type"
-const charsetUtf8Suffix = "; charset=utf-8"
-const contentTypeHTML = "text/html"
-const contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
-const contentTypeJSON = "application/json"
-const contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
-const contentTypeWWWForm = "application/x-www-form-urlencoded"
-const contentTypeMultipartForm = "multipart/form-data"
+const (
+	contentType = "Content-Type"
 
-var d *dynamicHandler
+	charsetUtf8Suffix = "; charset=utf-8"
+
+	contentTypeHTML          = "text/html"
+	contentTypeJSON          = "application/json"
+	contentTypeWWWForm       = "application/x-www-form-urlencoded"
+	contentTypeMultipartForm = "multipart/form-data"
+	contentTypeAS            = "application/activity+json"
+
+	contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
+	contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
+	contentTypeASUTF8   = contentTypeAS + charsetUtf8Suffix
+)
+
+var (
+	d *dynamicHandler
+)
 
 func startServer() (err error) {
-	d = newDynamicHandler()
-	h, err := buildHandler()
+	d = &dynamicHandler{}
+	err = reloadRouter()
 	if err != nil {
 		return
 	}
-	d.swapHandler(h)
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
 	if appConfig.Server.PublicHTTPS {
 		cache, err := newAutocertCache()
@@ -83,6 +91,9 @@ func buildHandler() (http.Handler, error) {
 	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.GetHead)
+	if !appConfig.Cache.Enable {
+		r.Use(middleware.NoCache)
+	}
 
 	// Profiler
 	if appConfig.Server.Debug {
@@ -119,14 +130,27 @@ func buildHandler() (http.Handler, error) {
 		indieauthRouter.Post("/token", indieAuthToken)
 	})
 
+	// ActivityPub and stuff
+	if appConfig.ActivityPub.Enabled {
+		r.Post("/activitypub/inbox/{blog}", apHandleInbox)
+		r.Get("/.well-known/webfinger", apHandleWebfinger)
+		r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
+	}
+
 	// Posts
 	allPostPaths, err := allPostPaths()
 	if err != nil {
 		return nil, err
 	}
+	var postMW []func(http.Handler) http.Handler
+	if appConfig.ActivityPub.Enabled {
+		postMW = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
+	} else {
+		postMW = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
+	}
 	for _, path := range allPostPaths {
 		if path != "" {
-			r.With(manipulateAsPath, cacheMiddleware, minifier.Middleware).Get(path, servePost)
+			r.With(postMW...).Get(path, servePost)
 		}
 	}
 
@@ -191,7 +215,13 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Blog
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath, serveHome(blog, blogPath))
+		var mw []func(http.Handler) http.Handler
+		if appConfig.ActivityPub.Enabled {
+			mw = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
+		} else {
+			mw = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
+		}
+		r.With(mw...).Get(fullBlogPath, serveHome(blog, blogPath))
 		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, serveHome(blog, blogPath))
 		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath))
 
@@ -228,24 +258,15 @@ func securityHeaders(next http.Handler) http.Handler {
 }
 
 type dynamicHandler struct {
-	realHandler http.Handler
-	changeMutex *sync.Mutex
-}
-
-func newDynamicHandler() *dynamicHandler {
-	return &dynamicHandler{
-		changeMutex: &sync.Mutex{},
-	}
+	realHandler atomic.Value
 }
 
 func (d *dynamicHandler) swapHandler(h http.Handler) {
-	d.changeMutex.Lock()
-	d.realHandler = h
-	d.changeMutex.Unlock()
+	d.realHandler.Store(h)
 }
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	d.realHandler.ServeHTTP(w, r)
+	d.realHandler.Load().(http.Handler).ServeHTTP(w, r)
 }
 
 func slashTrimmedPath(r *http.Request) string {

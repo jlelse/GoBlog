@@ -98,13 +98,7 @@ func initRendering() error {
 		"urlize": urlize,
 		"sort":   sortedStrings,
 		"blogRelative": func(blog *configBlog, path string) string {
-			if !strings.HasPrefix(path, "/") {
-				path = "/" + path
-			}
-			if blog.Path != "/" {
-				return blog.Path + path
-			}
-			return path
+			return blog.getRelativePath(path)
 		},
 		"jsonFile": func(filename string) *map[string]interface{} {
 			parsed := &map[string]interface{}{}

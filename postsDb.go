@@ -62,7 +62,7 @@ func (p *post) checkPost() error {
 			p.Section = appConfig.Blogs[p.Blog].DefaultSection
 		}
 		if p.Slug == "" {
-			random := generateRandomString(now, 5)
+			random := generateRandomString(5)
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
 		published, _ := dateparse.ParseIn(p.Published, time.Local)

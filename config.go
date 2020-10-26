@@ -18,6 +18,7 @@ type config struct {
 	Hugo          *configHugo            `mapstructure:"hugo"`
 	Micropub      *configMicropub        `mapstructure:"micropub"`
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
+	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
 }
 
 type configServer struct {
@@ -102,6 +103,7 @@ type configUser struct {
 	Nick     string `mapstructure:"nick"`
 	Name     string `mapstructure:"name"`
 	Password string `mapstructure:"password"`
+	Picture  string `mapstructure:"picture"`
 }
 
 type configHooks struct {
@@ -145,6 +147,11 @@ type configRegexRedirect struct {
 	To   string `mapstructure:"to"`
 }
 
+type configActivityPub struct {
+	Enabled bool   `mapstructure:"enabled"`
+	KeyPath string `mapstructure:"keyPath"`
+}
+
 var appConfig = &config{}
 
 func initConfig() error {
@@ -176,6 +183,7 @@ func initConfig() error {
 	viper.SetDefault("micropub.audioParam", "audio")
 	viper.SetDefault("micropub.photoParam", "images")
 	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
+	viper.SetDefault("activityPub.keyPath", "data/private.pem")
 	// Unmarshal config
 	err = viper.Unmarshal(appConfig)
 	if err != nil {

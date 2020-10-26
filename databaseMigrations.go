@@ -22,15 +22,8 @@ func migrateDb() error {
 					CREATE TABLE indieauthauth (time text not null, code text not null, me text not null, client text not null, redirect text not null, scope text not null);
 					CREATE TABLE indieauthtoken (time text not null, token text not null, me text not null, client text not null, scope text not null);
 					CREATE INDEX index_iat_token on indieauthtoken (token);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00002",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
 					CREATE TABLE autocert (key text not null primary key, data blob not null, created text not null);
+					CREATE TABLE activitypub_followers (blog text not null, follower text not null, inbox text not null, primary key (blog, follower));
 					`)
 					return err
 				},

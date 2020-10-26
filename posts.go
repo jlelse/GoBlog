@@ -29,9 +29,9 @@ type post struct {
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, ".as") {
-		servePostActivityStreams(w, r)
-		return
+	as := strings.HasSuffix(r.URL.Path, ".as")
+	if as {
+		r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
 	}
 	path := slashTrimmedPath(r)
 	p, err := getPost(path)
@@ -40,6 +40,10 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if as {
+		p.serveActivityStreams(w)
 		return
 	}
 	render(w, templatePost, &renderData{
@@ -87,10 +91,17 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 }
 
 func serveHome(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
-	return serveIndex(&indexConfig{
-		blog: blog,
-		path: path,
-	})
+	return func(w http.ResponseWriter, r *http.Request) {
+		as := strings.HasSuffix(r.URL.Path, ".as")
+		if as {
+			appConfig.Blogs[blog].serveActivityStreams(blog, w)
+			return
+		}
+		serveIndex(&indexConfig{
+			blog: blog,
+			path: path,
+		})(w, r)
+	}
 }
 
 func serveSection(blog string, path string, section *section) func(w http.ResponseWriter, r *http.Request) {
