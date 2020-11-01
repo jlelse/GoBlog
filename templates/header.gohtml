@@ -2,6 +2,14 @@
   <header>
     <h1><a href="{{ blogRelative .Blog "/" }}" rel="home" title="{{ .Blog.Title }}">{{ .Blog.Title }}</a></h1>
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
-      {{ include "menu" .Blog .Data }}
+      <nav>
+        {{ with menu .Blog "main" }}
+            {{ $first := true }}
+            {{ range $i, $item := .Items }}
+                {{ if ne $first true }} &bull; {{ end }}<a
+                href="{{ $item.Link }}">{{ $item.Title }}</a>{{ $first = false }}
+            {{ end }}
+        {{ end }}
+      </nav>
   </header>
 {{ end }}

@@ -5,8 +5,11 @@
   <meta name=viewport content="width=device-width,initial-scale=1">
   <meta http-equiv=x-ua-compatible content="IE=edge">
   <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
+  {{ with user.Picture }}<link rel="shortcut icon" href="{{ . }}">{{ end }}
+  {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
   {{ template "title" . }}
-  {{ include "micropub" .Blog .Data }}
-  {{ include "header" .Blog .Data }}
+  {{ include "micropub" . }}
+  {{ include "header" . }}
   {{ template "main" . }}
+  {{ include "footer" . }}
 {{ end }}

@@ -46,8 +46,13 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		p.serveActivityStreams(w)
 		return
 	}
+	canonical := p.firstParameter("original")
+	if canonical == "" {
+		canonical = appConfig.Server.PublicAddress + p.Path
+	}
 	render(w, templatePost, &renderData{
 		blogString: p.Blog,
+		Canonical:  canonical,
 		Data:       p,
 	})
 }
@@ -121,6 +126,7 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 		}
 		render(w, templateTaxonomy, &renderData{
 			blogString: blog,
+			Canonical:  appConfig.Server.PublicAddress + slashTrimmedPath(r),
 			Data: struct {
 				Taxonomy       *taxonomy
 				TaxonomyValues []string
@@ -214,6 +220,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		}
 		render(w, template, &renderData{
 			blogString: ic.blog,
+			Canonical:  appConfig.Server.PublicAddress + slashTrimmedPath(r),
 			Data: &indexTemplateData{
 				Title:       title,
 				Description: description,

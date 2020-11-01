@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -34,4 +35,15 @@ func generateRandomString(chars int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func slashTrimmedPath(r *http.Request) string {
+	return trimSlash(r.URL.Path)
+}
+
+func trimSlash(s string) string {
+	if len(s) > 1 {
+		s = strings.TrimSuffix(s, "/")
+	}
+	return s
 }

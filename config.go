@@ -44,6 +44,7 @@ type configCache struct {
 type configBlog struct {
 	Path            string              `mapstructure:"path"`
 	Lang            string              `mapstructure:"lang"`
+	TimeLang        string              `mapstructure:"timelang"`
 	Title           string              `mapstructure:"title"`
 	Description     string              `mapstructure:"description"`
 	Pagination      int                 `mapstructure:"pagination"`
@@ -104,6 +105,7 @@ type configUser struct {
 	Name     string `mapstructure:"name"`
 	Password string `mapstructure:"password"`
 	Picture  string `mapstructure:"picture"`
+	Link     string `mapstructure:"link"`
 }
 
 type configHooks struct {

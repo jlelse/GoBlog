@@ -1,0 +1,12 @@
+{{ define "footer" }}
+    <footer>
+        {{ with menu .Blog "footer" }}
+            {{ $first := true }}
+            {{ range $i, $item := .Items }}
+                {{ if ne $first true }} &bull; {{ end }}<a
+                href="{{ $item.Link }}">{{ $item.Title }}</a>{{ $first = false }}
+            {{ end }}
+        {{ end }}
+        <p>&copy; {{ dateformat now "2006" }} {{ .Blog.Title }}</p>
+    </footer>
+{{ end }}

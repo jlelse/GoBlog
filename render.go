@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -38,6 +40,9 @@ func initRendering() error {
 		},
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
+		},
+		"user": func() *configUser {
+			return appConfig.User
 		},
 		"md": func(content string) template.HTML {
 			htmlContent, err := renderMarkdown(content)
@@ -85,18 +90,61 @@ func initRendering() error {
 			ml := monday.Locale(localeString)
 			return monday.Format(d, monday.LongFormatsByLocale[ml], ml)
 		},
+		"now": func() string {
+			return time.Now().String()
+		},
 		"asset":  assetFile,
 		"string": getTemplateStringVariant,
-		"include": func(templateName string, blog *configBlog, data interface{}) (template.HTML, error) {
-			buf := new(bytes.Buffer)
-			err := templates[templateName].ExecuteTemplate(buf, templateName, &renderData{
-				Blog: blog,
-				Data: data,
-			})
-			return template.HTML(buf.String()), err
+		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
+			if len(data) == 1 {
+				if rd, ok := data[0].(*renderData); ok {
+					buf := new(bytes.Buffer)
+					err := templates[templateName].ExecuteTemplate(buf, templateName, rd)
+					return template.HTML(buf.String()), err
+				}
+				return "", errors.New("wrong argument")
+			} else if len(data) == 2 {
+				if blog, ok := data[0].(*configBlog); ok {
+					buf := new(bytes.Buffer)
+					err := templates[templateName].ExecuteTemplate(buf, templateName, &renderData{
+						Blog: blog,
+						Data: data[1],
+					})
+					return template.HTML(buf.String()), err
+				}
+				return "", errors.New("wrong arguments")
+			}
+			return "", errors.New("wrong argument count")
+		},
+		"default": func(dflt interface{}, given ...interface{}) interface{} {
+			if len(given) == 0 {
+				return dflt
+			}
+			g := reflect.ValueOf(given[0])
+			if !g.IsValid() {
+				return dflt
+			}
+			set := false
+			switch g.Kind() {
+			case reflect.Bool:
+				set = true
+			case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
+				set = g.Len() != 0
+			case reflect.Int:
+				set = g.Int() != 0
+			default:
+				set = !g.IsNil()
+			}
+			if set {
+				return given[0]
+			}
+			return dflt
 		},
 		"urlize": urlize,
 		"sort":   sortedStrings,
+		"absolute": func(path string) string {
+			return appConfig.Server.PublicAddress + path
+		},
 		"blogRelative": func(blog *configBlog, path string) string {
 			return blog.getRelativePath(path)
 		},
@@ -138,6 +186,7 @@ func initRendering() error {
 
 type renderData struct {
 	blogString string
+	Canonical  string
 	Blog       *configBlog
 	Data       interface{}
 }

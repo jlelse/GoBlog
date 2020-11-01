@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/araddon/dateparse"
 	"github.com/gorilla/feeds"
 )
 
@@ -15,6 +16,10 @@ const (
 	rssFeed  feedType = "rss"
 	atomFeed feedType = "atom"
 	jsonFeed feedType = "json"
+
+	feedAudioURL    = "audio"
+	feedAudioType   = "audiomime"
+	feedAudioLength = "audiolength"
 )
 
 func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
@@ -30,14 +35,33 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		Description: description,
 		Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
 		Created:     now,
+		Author: &feeds.Author{
+			Name: appConfig.User.Name,
+		},
+		Image: &feeds.Image{
+			Url: appConfig.User.Picture,
+		},
 	}
 	for _, p := range posts {
+		created, _ := dateparse.ParseIn(p.Published, time.Local)
+		updated, _ := dateparse.ParseIn(p.Updated, time.Local)
+		var enc *feeds.Enclosure
+		if p.firstParameter(feedAudioURL) != "" {
+			enc = &feeds.Enclosure{
+				Url:    p.firstParameter(feedAudioURL),
+				Type:   p.firstParameter(feedAudioType),
+				Length: p.firstParameter(feedAudioLength),
+			}
+		}
 		feed.Add(&feeds.Item{
 			Title:       p.title(),
 			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + p.Path},
 			Description: p.summary(),
 			Id:          p.Path,
 			Content:     string(p.html()),
+			Created:     created,
+			Updated:     updated,
+			Enclosure:   enc,
 		})
 	}
 	var feedStr string

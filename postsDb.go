@@ -66,21 +66,6 @@ func (p *post) checkPost() error {
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
 		published, _ := dateparse.ParseIn(p.Published, time.Local)
-		pathVars := struct {
-			BlogPath string
-			Year     int
-			Month    int
-			Day      int
-			Slug     string
-			Section  string
-		}{
-			BlogPath: appConfig.Blogs[p.Blog].Path,
-			Year:     published.Year(),
-			Month:    int(published.Month()),
-			Day:      published.Day(),
-			Slug:     p.Slug,
-			Section:  p.Section,
-		}
 		pathTmplString := appConfig.Blogs[p.Blog].Sections[p.Section].PathTemplate
 		if pathTmplString == "" {
 			return errors.New("path template empty")
@@ -90,7 +75,14 @@ func (p *post) checkPost() error {
 			return errors.New("failed to parse location template")
 		}
 		var pathBuffer bytes.Buffer
-		err = pathTmpl.Execute(&pathBuffer, pathVars)
+		err = pathTmpl.Execute(&pathBuffer, map[string]interface{}{
+			"BlogPath": appConfig.Blogs[p.Blog].Path,
+			"Year":     published.Year(),
+			"Month":    int(published.Month()),
+			"Day":      published.Day(),
+			"Slug":     p.Slug,
+			"Section":  p.Section,
+		})
 		if err != nil {
 			return errors.New("failed to execute location template")
 		}

@@ -1,34 +1,29 @@
 {{ define "title" }}
   <title>{{ with p .Data "title" }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
+  {{ include "postheadmeta" . }}
 {{ end }}
 
 {{ define "main" }}
   <main class=h-entry>
     <article>
-        {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-        {{ if .Data.Published }}
-        <p>{{ string .Blog.Lang "publishedon" }} {{ longDate .Data.Published .Blog.Lang }}</p>{{ end }}
-        {{ if .Data.Updated }}
-        <p>{{ string .Blog.Lang "updatedon" }} {{ longDate .Data.Updated .Blog.Lang }}</p>{{ end }}
-        {{ if .Data.Content }}
-          <div class=e-content>{{ content .Data }}</div>
-        {{ end }}
-    </article>
-      {{ $post := .Data }}
-      {{ $blog := .Blog }}
-      {{ range $i, $tax := $blog.Taxonomies }}
-          {{ $tvs := ps $post $tax.Name }}
-          {{ if gt (len $tvs) 0 }}
-            <p>In <b>{{ $tax.Title }}</b>:
-                {{ range $j, $tv := $tvs }}
-                  <a href="{{ blogRelative $blog ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ $tv }}</a>
-                {{ end }}
-            </p>
+      <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
+      {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+      {{ include "postmeta" . }}
+      {{ include "postactions" . }}
+      {{ if .Data.Content }}
+        <div class=e-content>
+          {{ with p .Data "audio" }}
+            <audio controls preload="metadata" class="fw"><source src="{{ . }}"/></audio>
           {{ end }}
+          {{ content .Data }}
+          {{ with p .Data "link" }}
+            <p><a class="u-bookmark-of" href="{{ . }}" target="_blank" rel="noopener">{{ . }}</a></p>
+          {{ end }}
+        </div>
       {{ end }}
-      {{ range $i, $t := (translations .Data) }}
-        <p><a href="{{ $t.Path }}">{{ (blog $t.Blog).Title }}</a></p>
-      {{ end }}
+      {{ include "posttax" . }}
+    </article>
+    {{ include "author" . }}
   </main>
 {{ end }}
 

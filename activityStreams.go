@@ -150,5 +150,4 @@ func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter) {
 		}
 	}
 	_ = json.NewEncoder(w).Encode(asBlog)
-
 }

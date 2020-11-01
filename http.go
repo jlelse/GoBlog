@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"github.com/go-chi/chi"
@@ -185,9 +184,10 @@ func buildHandler() (http.Handler, error) {
 		for _, section := range blogConfig.Sections {
 			if section.Name != "" {
 				path := blogPath + "/" + section.Name
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveSection(blog, path, section))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+feedPath, serveSection(blog, path, section))
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, serveSection(blog, path, section))
+				handler := serveSection(blog, path, section)
+				r.With(cacheMiddleware, minifier.Middleware).Get(path, handler)
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+feedPath, handler)
+				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, handler)
 			}
 		}
 
@@ -201,17 +201,19 @@ func buildHandler() (http.Handler, error) {
 				}
 				for _, tv := range values {
 					vPath := path + "/" + urlize(tv)
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+feedPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, serveTaxonomyValue(blog, vPath, taxonomy, tv))
+					handler := serveTaxonomyValue(blog, vPath, taxonomy, tv)
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, handler)
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+feedPath, handler)
+					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, handler)
 				}
 			}
 		}
 
 		// Photos
 		if blogConfig.Photos.Enabled {
-			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path, servePhotos(blog))
-			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path+paginationPath, servePhotos(blog))
+			handler := servePhotos(blog)
+			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path, handler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path+paginationPath, handler)
 		}
 
 		// Blog
@@ -221,17 +223,18 @@ func buildHandler() (http.Handler, error) {
 		} else {
 			mw = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
 		}
-		r.With(mw...).Get(fullBlogPath, serveHome(blog, blogPath))
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, serveHome(blog, blogPath))
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, serveHome(blog, blogPath))
+		handler := serveHome(blog, blogPath)
+		r.With(mw...).Get(fullBlogPath, handler)
+		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, handler)
+		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, handler)
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
-			serveFunc := serveCustomPage(blogConfig, cp)
+			handler := serveCustomPage(blogConfig, cp)
 			if cp.Cache {
-				r.With(cacheMiddleware, minifier.Middleware).Get(cp.Path, serveFunc)
+				r.With(cacheMiddleware, minifier.Middleware).Get(cp.Path, handler)
 			} else {
-				r.With(minifier.Middleware).Get(cp.Path, serveFunc)
+				r.With(minifier.Middleware).Get(cp.Path, handler)
 			}
 		}
 	}
@@ -267,15 +270,4 @@ func (d *dynamicHandler) swapHandler(h http.Handler) {
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.realHandler.Load().(http.Handler).ServeHTTP(w, r)
-}
-
-func slashTrimmedPath(r *http.Request) string {
-	return trimSlash(r.URL.Path)
-}
-
-func trimSlash(s string) string {
-	if len(s) > 1 {
-		s = strings.TrimSuffix(s, "/")
-	}
-	return s
 }
