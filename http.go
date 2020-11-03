@@ -2,7 +2,6 @@ package main
 
 import (
 	"compress/flate"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/gorilla/handlers"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -30,10 +30,32 @@ const (
 )
 
 var (
-	d *dynamicHandler
+	d              *dynamicHandler
+	logMiddleware  func(next http.Handler) http.Handler
+	authMiddleware func(next http.Handler) http.Handler
 )
 
 func startServer() (err error) {
+	// Init
+	if appConfig.Server.Logging {
+		f, err := os.OpenFile(appConfig.Server.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		logMiddleware = func(next http.Handler) http.Handler {
+			lh := handlers.CombinedLoggingHandler(f, next)
+			return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				// Remove remote address for privacy
+				r.RemoteAddr = "127.0.0.1"
+				lh.ServeHTTP(rw, r)
+			})
+		}
+	}
+	authMiddleware = middleware.BasicAuth("", map[string]string{
+		appConfig.User.Nick: appConfig.User.Password,
+	})
+	// Start
 	d = &dynamicHandler{}
 	err = reloadRouter()
 	if err != nil {
@@ -79,14 +101,10 @@ func reloadRouter() error {
 func buildHandler() (http.Handler, error) {
 	r := chi.NewRouter()
 
-	r.Use(middleware.Recoverer)
 	if appConfig.Server.Logging {
-		r.Use(middleware.RealIP)
-		r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
-			Logger:  log.New(os.Stdout, "", log.LstdFlags),
-			NoColor: true,
-		}))
+		r.Use(logMiddleware)
 	}
+	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.GetHead)
@@ -98,10 +116,6 @@ func buildHandler() (http.Handler, error) {
 	if appConfig.Server.Debug {
 		r.Mount("/debug", middleware.Profiler())
 	}
-
-	authMiddleware := middleware.BasicAuth("API", map[string]string{
-		appConfig.User.Nick: appConfig.User.Password,
-	})
 
 	// API
 	r.Route("/api", func(apiRouter chi.Router) {

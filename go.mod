@@ -12,6 +12,7 @@ require (
 	github.com/goodsign/monday v1.0.1-0.20201007115131-c065b60ec611
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/gorilla/feeds v1.1.1
+	github.com/gorilla/handlers v1.5.1
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/json-iterator/go v1.1.10
