@@ -82,7 +82,7 @@ func initRendering() error {
 			}
 			return d.Format(format)
 		},
-		"longDate": func(date string, localeString string) string {
+		"longdate": func(date string, localeString string) string {
 			d, err := dateparse.ParseIn(date, time.Local)
 			if err != nil {
 				return ""
@@ -92,6 +92,24 @@ func initRendering() error {
 		},
 		"now": func() string {
 			return time.Now().String()
+		},
+		"dateadd": func(date string, years, months, days int) string {
+			d, err := dateparse.ParseIn(date, time.Local)
+			if err != nil {
+				return ""
+			}
+			return d.AddDate(years, months, days).String()
+		},
+		"datebefore": func(date string, before string) bool {
+			d, err := dateparse.ParseIn(date, time.Local)
+			if err != nil {
+				return false
+			}
+			b, err := dateparse.ParseIn(before, time.Local)
+			if err != nil {
+				return false
+			}
+			return d.Before(b)
 		},
 		"asset":  assetFile,
 		"string": getTemplateStringVariant,
@@ -145,7 +163,7 @@ func initRendering() error {
 		"absolute": func(path string) string {
 			return appConfig.Server.PublicAddress + path
 		},
-		"blogRelative": func(blog *configBlog, path string) string {
+		"blogrelative": func(blog *configBlog, path string) string {
 			return blog.getRelativePath(path)
 		},
 		"jsonFile": func(filename string) *map[string]interface{} {

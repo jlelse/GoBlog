@@ -6,7 +6,7 @@
         {{ if gt (len $tvs) 0 }}
             <p><b>{{ $tax.Title }}</b>:
                 {{ range $j, $tv := $tvs }}
-                    <a class="p-category" rel="tag" href="{{ blogRelative $blog ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ $tv }}</a>
+                    <a class="p-category" rel="tag" href="{{ blogrelative $blog ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ $tv }}</a>
                 {{ end }}
             </p>
         {{ end }}

@@ -10,7 +10,7 @@
         {{ $blog := .Blog }}
         {{ $taxonomy := .Data.Taxonomy.Name }}
         {{ range $i, $value := (sort .Data.TaxonomyValues) }}
-          <li><a href="{{ blogRelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a></li>
+          <li><a href="{{ blogrelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a></li>
         {{ end }}
     </ul>
   </main>

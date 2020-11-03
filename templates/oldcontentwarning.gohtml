@@ -1,0 +1,7 @@
+{{ define "oldcontentwarning" }}
+    {{ if .Data.Published }}
+        {{ if (datebefore (dateadd .Data.Published 1 0 0) now) }}
+            <strong class="p border-top border-bottom">{{ string .Blog.Lang "oldcontent" }}</strong>
+        {{ end }}
+    {{ end }}
+{{ end }}
