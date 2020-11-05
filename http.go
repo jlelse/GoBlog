@@ -106,7 +106,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(flate.DefaultCompression))
-	r.Use(middleware.StripSlashes)
+	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.GetHead)
 	if !appConfig.Cache.Enable {
 		r.Use(middleware.NoCache)
