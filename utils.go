@@ -37,13 +37,21 @@ func generateRandomString(chars int) string {
 	return string(b)
 }
 
-func slashTrimmedPath(r *http.Request) string {
-	return trimSlash(r.URL.Path)
-}
-
-func trimSlash(s string) string {
-	if len(s) > 1 {
-		s = strings.TrimSuffix(s, "/")
+func isAllowedHost(r *http.Request, hosts ...string) bool {
+	if r.URL == nil {
+		return false
 	}
-	return s
+	rh := r.URL.Host
+	switch r.URL.Scheme {
+	case "http":
+		rh = strings.TrimSuffix(rh, ":80")
+	case "https":
+		rh = strings.TrimSuffix(rh, ":443")
+	}
+	for _, host := range hosts {
+		if rh == host {
+			return true
+		}
+	}
+	return false
 }

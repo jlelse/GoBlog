@@ -19,6 +19,7 @@ type config struct {
 	Micropub      *configMicropub        `mapstructure:"micropub"`
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
+	Notifications *configNotifications   `mapstructure:"notifications"`
 }
 
 type configServer struct {
@@ -153,6 +154,16 @@ type configRegexRedirect struct {
 type configActivityPub struct {
 	Enabled bool   `mapstructure:"enabled"`
 	KeyPath string `mapstructure:"keyPath"`
+}
+
+type configNotifications struct {
+	Telegram *configTelegram `mapstructure:"telegram"`
+}
+
+type configTelegram struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	ChatID   string `mapstructure:"chatId"`
+	BotToken string `mapstructure:"botToken"`
 }
 
 var appConfig = &config{}

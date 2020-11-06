@@ -27,69 +27,69 @@ type indieAuthData struct {
 	time         time.Time
 }
 
-func indieAuthAuth(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		// Authentication / authorization request
-		r.ParseForm()
-		data := &indieAuthData{
-			Me:           r.Form.Get("me"),
-			ClientID:     r.Form.Get("client_id"),
-			RedirectURI:  r.Form.Get("redirect_uri"),
-			State:        r.Form.Get("state"),
-			ResponseType: r.Form.Get("response_type"),
-		}
-		if data.ResponseType == "" {
-			data.ResponseType = "id"
-		}
-		if scope := r.Form.Get("scope"); scope != "" {
-			data.Scopes = strings.Split(scope, " ")
-		}
-		if !isValidProfileURL(data.Me) || !isValidProfileURL(data.ClientID) || !isValidProfileURL(data.RedirectURI) {
-			http.Error(w, "me, client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
-			return
-		}
-		if data.State == "" {
-			http.Error(w, "state must not be empty", http.StatusBadRequest)
-			return
-		}
-		if data.ResponseType != "id" && data.ResponseType != "code" {
-			http.Error(w, "response_type must be empty or id or code", http.StatusBadRequest)
-			return
-		}
-		if data.ResponseType == "code" && len(data.Scopes) < 1 {
-			http.Error(w, "scope is missing or empty", http.StatusBadRequest)
-			return
-		}
-		render(w, "indieauthflow", &renderData{
-			Data: data,
-		})
-	} else if r.Method == http.MethodPost {
-		// Authentication verification
-		r.ParseForm()
-		data := &indieAuthData{
-			code:        r.Form.Get("code"),
-			ClientID:    r.Form.Get("client_id"),
-			RedirectURI: r.Form.Get("redirect_uri"),
-		}
-		valid, err := data.verifyAuthorization(true)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if !valid {
-			http.Error(w, "Authentication not valid", http.StatusForbidden)
-			return
-		}
-		res := &tokenResponse{
-			Me: data.Me,
-		}
-		w.Header().Add(contentType, contentTypeJSONUTF8)
-		err = json.NewEncoder(w).Encode(res)
-		if err != nil {
-			w.Header().Del(contentType)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+func indieAuthAuthGet(w http.ResponseWriter, r *http.Request) {
+	// Authentication / authorization request
+	r.ParseForm()
+	data := &indieAuthData{
+		Me:           r.Form.Get("me"),
+		ClientID:     r.Form.Get("client_id"),
+		RedirectURI:  r.Form.Get("redirect_uri"),
+		State:        r.Form.Get("state"),
+		ResponseType: r.Form.Get("response_type"),
+	}
+	if data.ResponseType == "" {
+		data.ResponseType = "id"
+	}
+	if scope := r.Form.Get("scope"); scope != "" {
+		data.Scopes = strings.Split(scope, " ")
+	}
+	if !isValidProfileURL(data.Me) || !isValidProfileURL(data.ClientID) || !isValidProfileURL(data.RedirectURI) {
+		http.Error(w, "me, client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
+		return
+	}
+	if data.State == "" {
+		http.Error(w, "state must not be empty", http.StatusBadRequest)
+		return
+	}
+	if data.ResponseType != "id" && data.ResponseType != "code" {
+		http.Error(w, "response_type must be empty or id or code", http.StatusBadRequest)
+		return
+	}
+	if data.ResponseType == "code" && len(data.Scopes) < 1 {
+		http.Error(w, "scope is missing or empty", http.StatusBadRequest)
+		return
+	}
+	render(w, "indieauth", &renderData{
+		Data: data,
+	})
+}
+
+func indieAuthAuthPost(w http.ResponseWriter, r *http.Request) {
+	// Authentication verification
+	r.ParseForm()
+	data := &indieAuthData{
+		code:        r.Form.Get("code"),
+		ClientID:    r.Form.Get("client_id"),
+		RedirectURI: r.Form.Get("redirect_uri"),
+	}
+	valid, err := data.verifyAuthorization(true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !valid {
+		http.Error(w, "Authentication not valid", http.StatusForbidden)
+		return
+	}
+	res := &tokenResponse{
+		Me: data.Me,
+	}
+	w.Header().Add(contentType, contentTypeJSONUTF8)
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.Header().Del(contentType)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 

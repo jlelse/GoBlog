@@ -1,0 +1,33 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "webmentions" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "webmentions" }}</h1>
+    <h2>{{ string .Blog.Lang "verified" }}</h2>
+    {{ $blog := .Blog }}
+    {{ range $i, $mention := .Data.Verified }}
+      <div class="p">
+        <p>From: {{ $mention.Source }}<br/>To: {{ $mention.Target }}<br/>Created: {{ unixtodate $mention.Created }}</p>
+        <form method="post">
+          <input type="submit" formaction="/webmention/admin/approve/{{ $mention.ID }}" value="{{ string $blog.Lang "approve" }}">
+          <input type="submit" formaction="/webmention/admin/delete/{{ $mention.ID }}" value="{{ string $blog.Lang "delete" }}">
+        </form>
+      </div>
+    {{ end }}
+    <h2>{{ string .Blog.Lang "approved" }}</h2>
+    {{ range $i, $mention := .Data.Approved }}
+      <div class="p">
+        <p>From: {{ $mention.Source }}<br/>To: {{ $mention.Target }}<br/>Created: {{ unixtodate $mention.Created }}</p>
+        <form method="post">
+          <input type="submit" formaction="/webmention/admin/delete/{{ $mention.ID }}" value="{{ string $blog.Lang "delete" }}">
+        </form>
+      </div>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "webmentionadmin" }}
+    {{ template "base" . }}
+{{ end }}

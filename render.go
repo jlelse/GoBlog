@@ -74,6 +74,13 @@ func initRendering() error {
 		"translations": func(p *post) []*post {
 			return p.translations()
 		},
+		"postmentions": func(p *post) []*mention {
+			mentions, _ := getWebmentions(&webmentionsRequestConfig{
+				target: appConfig.Server.PublicAddress + p.Path,
+				status: webmentionStatusApproved,
+			})
+			return mentions
+		},
 		// Others
 		"dateformat": func(date string, format string) string {
 			d, err := dateparse.ParseIn(date, time.Local)
@@ -89,6 +96,9 @@ func initRendering() error {
 			}
 			ml := monday.Locale(localeString)
 			return monday.Format(d, monday.LongFormatsByLocale[ml], ml)
+		},
+		"unixtodate": func(unix int64) string {
+			return time.Unix(unix, 0).String()
 		},
 		"now": func() string {
 			return time.Now().String()

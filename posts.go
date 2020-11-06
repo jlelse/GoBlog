@@ -33,8 +33,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	if as {
 		r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
 	}
-	path := slashTrimmedPath(r)
-	p, err := getPost(path)
+	p, err := getPost(r.URL.Path)
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
@@ -126,7 +125,7 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 		}
 		render(w, templateTaxonomy, &renderData{
 			blogString: blog,
-			Canonical:  appConfig.Server.PublicAddress + slashTrimmedPath(r),
+			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
 			Data: struct {
 				Taxonomy       *taxonomy
 				TaxonomyValues []string
@@ -220,7 +219,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		}
 		render(w, template, &renderData{
 			blogString: ic.blog,
-			Canonical:  appConfig.Server.PublicAddress + slashTrimmedPath(r),
+			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
 			Data: &indexTemplateData{
 				Title:       title,
 				Description: description,

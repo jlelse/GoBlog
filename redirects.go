@@ -10,7 +10,7 @@ import (
 var errRedirectNotFound = errors.New("redirect not found")
 
 func serveRedirect(w http.ResponseWriter, r *http.Request) {
-	redirect, err := getRedirect(slashTrimmedPath(r))
+	redirect, err := getRedirect(r.URL.Path)
 	if err == errRedirectNotFound {
 		serve404(w, r)
 		return

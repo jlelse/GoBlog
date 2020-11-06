@@ -8,7 +8,10 @@
   {{ with user.Picture }}<link rel="shortcut icon" href="{{ . }}">{{ end }}
   {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
   {{ template "title" . }}
-  {{ include "micropub" . }}
+  <link rel="webmention" href="/webmention" />
+  <link rel="micropub" href="/micropub" />
+  <link rel="authorization_endpoint" href="/indieauth" />
+  <link rel="token_endpoint" href="/indieauth/token" />
   {{ include "header" . }}
   {{ template "main" . }}
   {{ include "footer" . }}

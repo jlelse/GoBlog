@@ -24,6 +24,8 @@ func migrateDb() error {
 					CREATE INDEX index_iat_token on indieauthtoken (token);
 					CREATE TABLE autocert (key text not null primary key, data blob not null, created text not null);
 					CREATE TABLE activitypub_followers (blog text not null, follower text not null, inbox text not null, primary key (blog, follower));
+					CREATE TABLE webmentions (id integer primary key autoincrement, source text not null, target text not null, created integer not null, status text not null default "new", title text, content text, author text, type text, UNIQUE(source, target));
+					CREATE INDEX index_wm_target on webmentions (target);
 					`)
 					return err
 				},

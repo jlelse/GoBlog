@@ -148,7 +148,10 @@ func (p *post) createOrReplace(new bool) error {
 	}
 	finishWritingToDb()
 	go purgeCache()
-	defer postPostHooks(p.Path)
+	defer func(p *post) {
+		postPostHooks(p.Path)
+		go apPost(p)
+	}(p)
 	return reloadRouter()
 }
 

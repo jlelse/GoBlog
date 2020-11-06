@@ -49,7 +49,6 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	initCache()
 	if appConfig.ActivityPub.Enabled {
 		err = initActivityPub()
 		if err != nil {
@@ -57,6 +56,8 @@ func main() {
 			return
 		}
 	}
+	initWebmention()
+	initCache()
 
 	// Start cron hooks
 	startHourlyHooks()

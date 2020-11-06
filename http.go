@@ -136,9 +136,9 @@ func buildHandler() (http.Handler, error) {
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
 		indieauthRouter.Use(middleware.NoCache)
-		indieauthRouter.With(authMiddleware).Get("/", indieAuthAuth)
+		indieauthRouter.With(authMiddleware, minifier.Middleware).Get("/", indieAuthAuthGet)
 		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
-		indieauthRouter.Post("/", indieAuthAuth)
+		indieauthRouter.Post("/", indieAuthAuthPost)
 		indieauthRouter.Get("/token", indieAuthToken)
 		indieauthRouter.Post("/token", indieAuthToken)
 	})
@@ -149,6 +149,15 @@ func buildHandler() (http.Handler, error) {
 		r.Get("/.well-known/webfinger", apHandleWebfinger)
 		r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
 	}
+
+	// Webmentions
+	r.Route("/webmention", func(webmentionRouter chi.Router) {
+		webmentionRouter.Use(middleware.NoCache)
+		webmentionRouter.Post("/", handleWebmention)
+		webmentionRouter.With(authMiddleware, minifier.Middleware).Get("/admin", webmentionAdmin)
+		webmentionRouter.With(authMiddleware).Post("/admin/delete/{id:\\d+}", webmentionAdminDelete)
+		webmentionRouter.With(authMiddleware).Post("/admin/approve/{id:\\d+}", webmentionAdminApprove)
+	})
 
 	// Posts
 	allPostPaths, err := allPostPaths()

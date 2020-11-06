@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-fed/httpsig"
+	"github.com/zerok/webmentiond/pkg/webmention"
 )
 
 var (
@@ -82,6 +83,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Inbox not found", http.StatusNotFound)
 		return
 	}
+	blogIri := blog.apIri()
 	activity := make(map[string]interface{})
 	err := json.NewDecoder(r.Body).Decode(&activity)
 	_ = r.Body.Close()
@@ -106,26 +108,44 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		{
 			if object, ok := activity["object"].(map[string]interface{}); ok {
 				inReplyTo, hasReplyToString := object["inReplyTo"].(string)
-				id, hadID := object["id"].(string)
-				if hasReplyToString && hadID && len(inReplyTo) > 0 && len(id) > 0 && strings.Contains(inReplyTo, blog.apIri()) {
-					// It's an ActivityPub reply
-					// TODO: Save reply to database
-				} else if hadID && len(id) > 0 {
-					// May be a mention
-					// TODO: Save to database
+				id, hasID := object["id"].(string)
+				if hasReplyToString && hasID && len(inReplyTo) > 0 && len(id) > 0 && strings.Contains(inReplyTo, blogIri) {
+					// It's an ActivityPub reply; save reply as webmention
+					createWebmention(id, inReplyTo)
+				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
+					// May be a mention; find links to blog and save them as webmentions
+					if doc, err := webmention.DocumentFromReader(r.Context(), strings.NewReader(content), id); err != nil {
+						for _, link := range doc.ExternalLinks() {
+							if strings.Contains(link, blogIri) {
+								createWebmention(id, link)
+							}
+						}
+					}
 				}
 			}
 		}
 	case "Delete":
+	case "Block":
 		{
 			if object, ok := activity["object"].(string); ok && len(object) > 0 && activity["actor"] == object {
 				_ = apRemoveFollower(blogName, object)
 			}
 		}
 	case "Like":
+		{
+			likeActor, likeActorOk := activity["actor"].(string)
+			likeObject, likeObjectOk := activity["object"].(string)
+			if likeActorOk && likeObjectOk && len(likeActor) > 0 && len(likeObject) > 0 && strings.Contains(likeObject, blogIri) {
+				sendNotification(fmt.Sprintf("%s liked %s", likeActor, likeObject))
+			}
+		}
 	case "Announce":
 		{
-			// TODO: Save to database
+			announceActor, announceActorOk := activity["actor"].(string)
+			announceObject, announceObjectOk := activity["object"].(string)
+			if announceActorOk && announceObjectOk && len(announceActor) > 0 && len(announceObject) > 0 && strings.Contains(announceObject, blogIri) {
+				sendNotification(fmt.Sprintf("%s announced %s", announceActor, announceObject))
+			}
 		}
 	}
 	// Return 201
@@ -175,7 +195,7 @@ func apGetAllFollowers(blog string) (map[string]string, error) {
 		}
 		followers[follower] = inbox
 	}
-	return nil, nil
+	return followers, nil
 }
 
 func apAddFollower(blog, follower, inbox string) error {

@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
+	"net/http/httptest"
 	"strings"
 )
 
@@ -19,7 +18,7 @@ func checkIndieAuth(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		if err := compareHostnames(tokenData.Me, appConfig.Server.Domain); err != nil {
+		if !isAllowedHost(httptest.NewRequest(http.MethodGet, tokenData.Me, nil), appConfig.Server.Domain) {
 			http.Error(w, "Forbidden", http.StatusUnauthorized)
 			return
 		}
@@ -27,15 +26,4 @@ func checkIndieAuth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	})
-}
-
-func compareHostnames(a string, allowed string) error {
-	h1, err := url.Parse(a)
-	if err != nil {
-		return err
-	}
-	if strings.ToLower(h1.Hostname()) != strings.ToLower(allowed) {
-		return fmt.Errorf("hostnames do not match, %s is not %s", h1, allowed)
-	}
-	return nil
 }
