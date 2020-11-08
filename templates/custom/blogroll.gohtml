@@ -1,9 +1,11 @@
 {{ define "title" }}
-    <title>Blogroll - {{ .Blog.Title }}</title>
+    <title>{{ .Data.Title }} - {{ .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
+    <h1>{{ .Data.Title }}</h1>
+    {{ md .Data.Description }}
     {{ $opmlJson := index ( jsonFile "data/opml.json" ) "outline" }}
     {{ range $opmlJson }}
         {{ md (printf "%s %s" "##" ._text) }}
