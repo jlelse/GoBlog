@@ -219,15 +219,18 @@ func apRemoveFollower(blog, follower string) error {
 }
 
 func apPost(p *post) {
+	if !appConfig.ActivityPub.Enabled {
+		return
+	}
 	n := p.toASNote()
-	create := make(map[string]interface{})
-	create["@context"] = asContext
-	create["actor"] = appConfig.Blogs[p.Blog].apIri()
-	create["id"] = appConfig.Server.PublicAddress + p.Path
-	create["published"] = n.Published
-	create["type"] = "Create"
-	create["object"] = n
-	apSendToAllFollowers(p.Blog, create)
+	createActivity := make(map[string]interface{})
+	createActivity["@context"] = asContext
+	createActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
+	createActivity["id"] = appConfig.Server.PublicAddress + p.Path
+	createActivity["published"] = n.Published
+	createActivity["type"] = "Create"
+	createActivity["object"] = n
+	apSendToAllFollowers(p.Blog, createActivity)
 }
 
 func apUpdate(p *post) {
@@ -235,7 +238,19 @@ func apUpdate(p *post) {
 }
 
 func apDelete(p *post) {
-	// TODO
+	if !appConfig.ActivityPub.Enabled {
+		return
+	}
+	deleteActivity := make(map[string]interface{})
+	deleteActivity["@context"] = asContext
+	deleteActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
+	deleteActivity["id"] = appConfig.Server.PublicAddress + p.Path + "#delete"
+	deleteActivity["type"] = "Delete"
+	deleteActivity["object"] = map[string]string{
+		"id":   appConfig.Server.PublicAddress + p.Path,
+		"type": "Tombstone",
+	}
+	apSendToAllFollowers(p.Blog, deleteActivity)
 }
 
 func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) {

@@ -147,7 +147,7 @@ func (p *post) createOrReplace(new bool) error {
 		return err
 	}
 	finishWritingToDb()
-	go purgeCache()
+	purgeCache()
 	defer func(p *post) {
 		postPostHooks(p.Path)
 		go apPost(p)
@@ -159,19 +159,23 @@ func deletePost(path string) error {
 	if path == "" {
 		return nil
 	}
+	p, err := getPost(path)
+	if err != nil {
+		return err
+	}
 	startWritingToDb()
 	tx, err := appDb.Begin()
 	if err != nil {
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("delete from posts where path=?", path)
+	_, err = tx.Exec("delete from posts where path=?", p.Path)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("delete from post_parameters where path=?", path)
+	_, err = tx.Exec("delete from post_parameters where path=?", p.Path)
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
@@ -183,7 +187,10 @@ func deletePost(path string) error {
 		return err
 	}
 	finishWritingToDb()
-	go purgeCache()
-	defer postDeleteHooks(path)
+	purgeCache()
+	defer func(p *post) {
+		postDeleteHooks(p.Path)
+		apDelete(p)
+	}(p)
 	return reloadRouter()
 }
