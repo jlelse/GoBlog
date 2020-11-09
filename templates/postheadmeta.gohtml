@@ -1,13 +1,27 @@
 {{ define "postheadmeta" }}
-    <meta name="description" content="{{ with summary .Data }}{{ . }}{{ end }}">
-    {{ $ISO8601 := "2006-01-02T15:04:05-07:00" }}
-    {{ if .Data.Published }}
-        <meta itemprop="datePublished" content="{{ dateformat .Data.Published $ISO8601 }}">
+    {{ with .Canonical }}
+        <meta property="og:url" content="{{ . }}">
+        <meta property="twitter:url" content="{{ . }}">
     {{ end }}
-    {{ if .Data.Updated }}
-        <meta itemprop="dateModified" content="{{ dateformat .Data.Updated $ISO8601 }}">
+    {{ with title .Data }}
+        <meta property="og:title" content="{{ . }}">
+        <meta property="twitter:title" content="{{ . }}">
+    {{ end }}
+    {{ with summary .Data }}
+        <meta name="description" content="{{ . }}">
+        <meta property="og:description" content="{{ . }}">
+        <meta property="twitter:description" content="{{ . }}">
+    {{ end }}
+    {{ $ISO8601 := "2006-01-02T15:04:05-07:00" }}
+    {{ with .Data.Published }}
+        <meta itemprop="datePublished" content="{{ dateformat . $ISO8601 }}">
+    {{ end }}
+    {{ with .Data.Updated }}
+        <meta itemprop="dateModified" content="{{ dateformat . $ISO8601 }}">
     {{ end }}
     {{ range $key, $image := ps .Data "images" }}
         <meta itemprop="image" content="{{ $image }}">
+        <meta property="og:image" content="{{ $image }}">
+        <meta property="twitter:image" content="{{ $image }}">
     {{ end }}
 {{ end }}

@@ -7,6 +7,6 @@
                 href="{{ $item.Link }}">{{ $item.Title }}</a>{{ $first = false }}
             {{ end }}
         {{ end }}
-        <p>&copy; {{ dateformat now "2006" }} {{ .Blog.Title }}</p>
+        <p>&copy; {{ dateformat now "2006" }} {{ with user.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
     </footer>
 {{ end }}

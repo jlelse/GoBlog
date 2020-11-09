@@ -188,7 +188,6 @@ func initConfig() error {
 	viper.SetDefault("cache.enable", true)
 	viper.SetDefault("cache.expiration", 600)
 	viper.SetDefault("user.nick", "admin")
-	viper.SetDefault("user.name", "Admin")
 	viper.SetDefault("user.password", "secret")
 	viper.SetDefault("hooks.shell", "/bin/bash")
 	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
