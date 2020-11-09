@@ -157,7 +157,12 @@ func verifyNextWebmention() error {
 	if len(wmm.Content) > 500 {
 		wmm.Content = wmm.Content[0:497] + "…"
 	}
-	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", webmentionStatusVerified, wmm.Title, wmm.Type, wmm.Content, wmm.AuthorName, m.ID)
+	newStatus := webmentionStatusVerified
+	if strings.HasPrefix(wmm.Source, appConfig.Server.PublicAddress) {
+		// Approve if it's server-intern
+		newStatus = webmentionStatusApproved
+	}
+	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", newStatus, wmm.Title, wmm.Type, wmm.Content, wmm.AuthorName, m.ID)
 	if oldStatus == string(webmentionStatusNew) {
 		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
