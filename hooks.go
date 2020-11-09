@@ -27,6 +27,7 @@ func (p *post) postPostHooks() {
 		}(p, cmdTmplString)
 	}
 	go p.apPost()
+	go p.tgPost()
 	go p.sendWebmentions()
 }
 

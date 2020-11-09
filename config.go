@@ -56,6 +56,7 @@ type configBlog struct {
 	Photos         *photos             `mapstructure:"photos"`
 	DefaultSection string              `mapstructure:"defaultsection"`
 	CustomPages    []*customPage       `mapstructure:"custompages"`
+	Telegram       *configTelegram     `mapstructure:"telegram"`
 }
 
 type section struct {
