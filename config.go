@@ -44,19 +44,18 @@ type configCache struct {
 }
 
 type configBlog struct {
-	Path            string              `mapstructure:"path"`
-	Lang            string              `mapstructure:"lang"`
-	TimeLang        string              `mapstructure:"timelang"`
-	Title           string              `mapstructure:"title"`
-	Description     string              `mapstructure:"description"`
-	Pagination      int                 `mapstructure:"pagination"`
-	Sections        map[string]*section `mapstructure:"sections"`
-	Taxonomies      []*taxonomy         `mapstructure:"taxonomies"`
-	Menus           map[string]*menu    `mapstructure:"menus"`
-	Photos          *photos             `mapstructure:"photos"`
-	ActivityStreams *activityStreams    `mapstructure:"activitystreams"`
-	DefaultSection  string              `mapstructure:"defaultsection"`
-	CustomPages     []*customPage       `mapstructure:"custompages"`
+	Path           string              `mapstructure:"path"`
+	Lang           string              `mapstructure:"lang"`
+	TimeLang       string              `mapstructure:"timelang"`
+	Title          string              `mapstructure:"title"`
+	Description    string              `mapstructure:"description"`
+	Pagination     int                 `mapstructure:"pagination"`
+	Sections       map[string]*section `mapstructure:"sections"`
+	Taxonomies     []*taxonomy         `mapstructure:"taxonomies"`
+	Menus          map[string]*menu    `mapstructure:"menus"`
+	Photos         *photos             `mapstructure:"photos"`
+	DefaultSection string              `mapstructure:"defaultsection"`
+	CustomPages    []*customPage       `mapstructure:"custompages"`
 }
 
 type section struct {
@@ -87,12 +86,6 @@ type photos struct {
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
-}
-
-type activityStreams struct {
-	Enabled         bool   `mapstructure:"enabled"`
-	ReplyParameter  string `mapstructure:"replyParameter"`
-	ImagesParameter string `mapstructure:"imagesParameter"`
 }
 
 type customPage struct {
