@@ -10,7 +10,7 @@ import (
 const telegramBaseURL = "https://api.telegram.org/bot"
 
 func (p *post) tgPost() {
-	if !appConfig.Blogs[p.Blog].Telegram.Enabled {
+	if appConfig.Blogs[p.Blog].Telegram == nil || !appConfig.Blogs[p.Blog].Telegram.Enabled {
 		return
 	}
 	var message bytes.Buffer
