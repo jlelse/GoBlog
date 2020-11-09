@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"database/sql"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -182,7 +183,7 @@ func apGetRemoteActor(iri string) (*asPerson, error) {
 }
 
 func apGetAllFollowers(blog string) (map[string]string, error) {
-	rows, err := appDb.Query("select follower, inbox from activitypub_followers where blog = ?", blog)
+	rows, err := appDbQuery("select follower, inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
@@ -199,27 +200,21 @@ func apGetAllFollowers(blog string) (map[string]string, error) {
 }
 
 func apAddFollower(blog, follower, inbox string) error {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err := appDb.Exec("insert or replace into activitypub_followers (blog, follower, inbox) values (?, ?, ?)", blog, follower, inbox)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := appDbExec("insert or replace into activitypub_followers (blog, follower, inbox) values (@blog, @follower, @inbox)", sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox))
+	return err
 }
 
 func apRemoveFollower(blog, follower string) error {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err := appDb.Exec("delete from activitypub_followers where blog = ? and follower = ?", blog, follower)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := appDbExec("delete from activitypub_followers where blog = @blog and follower = @follower", sql.Named("blog", blog), sql.Named("follower", follower))
+	return err
 }
 
-func apPost(p *post) {
+func (p *post) apPost() {
 	if !appConfig.ActivityPub.Enabled {
+		return
+	}
+	if p.Published == "" || p.firstParameter("section") == "" {
+		// No section, don't post
 		return
 	}
 	n := p.toASNote()
@@ -233,11 +228,25 @@ func apPost(p *post) {
 	apSendToAllFollowers(p.Blog, createActivity)
 }
 
-func apUpdate(p *post) {
-	// TODO
+func (p *post) apUpdate() {
+	if !appConfig.ActivityPub.Enabled {
+		return
+	}
+	if p.Published == "" || p.firstParameter("section") == "" {
+		// No section, don't post
+		return
+	}
+	n := p.toASNote()
+	updateActivity := make(map[string]interface{})
+	updateActivity["@context"] = asContext
+	updateActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
+	updateActivity["id"] = appConfig.Server.PublicAddress + p.Path
+	updateActivity["type"] = "Update"
+	updateActivity["object"] = n
+	apSendToAllFollowers(p.Blog, updateActivity)
 }
 
-func apDelete(p *post) {
+func (p *post) apDelete() {
 	if !appConfig.ActivityPub.Enabled {
 		return
 	}

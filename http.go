@@ -63,14 +63,10 @@ func startServer() (err error) {
 	}
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
 	if appConfig.Server.PublicHTTPS {
-		cache, err := newAutocertCache()
-		if err != nil {
-			return err
-		}
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(appConfig.Server.Domain),
-			Cache:      cache,
+			Cache:      &autocertCache{},
 			Email:      appConfig.Server.LetsEncryptMail,
 		}
 		tlsConfig := certManager.TLSConfig()
@@ -94,6 +90,7 @@ func reloadRouter() error {
 	if err != nil {
 		return err
 	}
+	purgeCache()
 	d.swapHandler(h)
 	return nil
 }
@@ -104,6 +101,7 @@ func buildHandler() (http.Handler, error) {
 	if appConfig.Server.Logging {
 		r.Use(logMiddleware)
 	}
+	// r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(middleware.RedirectSlashes)
@@ -264,6 +262,9 @@ func buildHandler() (http.Handler, error) {
 
 	// Sitemap
 	r.With(cacheMiddleware, minifier.Middleware).Get(sitemapPath, serveSitemap)
+
+	// Robots.txt - doesn't need cache, because it's too simple
+	r.Get("/robots.txt", serveRobotsTXT)
 
 	// Check redirects, then serve 404
 	r.With(checkRegexRedirects, cacheMiddleware, minifier.Middleware).NotFound(serve404)

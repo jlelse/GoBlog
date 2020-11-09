@@ -28,8 +28,11 @@ func serveRedirect(w http.ResponseWriter, r *http.Request) {
 
 func getRedirect(fromPath string) (string, error) {
 	var toPath string
-	row := appDb.QueryRow("with recursive f (i, fp, tp) as (select 1, fromPath, toPath from redirects where fromPath = ? union all select f.i + 1, r.fromPath, r.toPath from redirects as r join f on f.tp = r.fromPath) select tp from f order by i desc limit 1", fromPath)
-	err := row.Scan(&toPath)
+	row, err := appDbQueryRow("with recursive f (i, fp, tp) as (select 1, fromPath, toPath from redirects where fromPath = ? union all select f.i + 1, r.fromPath, r.toPath from redirects as r join f on f.tp = r.fromPath) select tp from f order by i desc limit 1", fromPath)
+	if err != nil {
+		return "", err
+	}
+	err = row.Scan(&toPath)
 	if err == sql.ErrNoRows {
 		return "", errRedirectNotFound
 	} else if err != nil {
@@ -40,7 +43,7 @@ func getRedirect(fromPath string) (string, error) {
 
 func allRedirectPaths() ([]string, error) {
 	var redirectPaths []string
-	rows, err := appDb.Query("select fromPath from redirects")
+	rows, err := appDbQuery("select fromPath from redirects")
 	if err != nil {
 		return nil, err
 	}
@@ -61,23 +64,9 @@ func createOrReplaceRedirect(from, to string) error {
 		return nil
 	}
 	from = strings.TrimSuffix(from, "/")
-	startWritingToDb()
-	tx, err := appDb.Begin()
+	_, err := appDbExec("insert or replace into redirects (fromPath, toPath) values (?, ?)", from, to)
 	if err != nil {
-		finishWritingToDb()
 		return err
 	}
-	_, err = tx.Exec("insert or replace into redirects (fromPath, toPath) values (?, ?)", from, to)
-	if err != nil {
-		_ = tx.Rollback()
-		finishWritingToDb()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		finishWritingToDb()
-		return err
-	}
-	finishWritingToDb()
 	return reloadRouter()
 }

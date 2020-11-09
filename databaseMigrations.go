@@ -18,6 +18,7 @@ func migrateDb() error {
 					CREATE TABLE posts (path text not null primary key, content text, published text, updated text, blog text not null, section text);
 					CREATE TABLE post_parameters (id integer primary key autoincrement, path text not null, parameter text not null, value text);
 					CREATE INDEX index_pp_path on post_parameters (path);
+					CREATE TRIGGER AFTER DELETE on posts BEGIN delete from post_parameters where path = old.path; END;
 					CREATE TABLE redirects (fromPath text not null, toPath text not null, primary key (fromPath, toPath));
 					CREATE TABLE indieauthauth (time text not null, code text not null, me text not null, client text not null, redirect text not null, scope text not null);
 					CREATE TABLE indieauthtoken (time text not null, token text not null, me text not null, client text not null, scope text not null);

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -102,11 +103,13 @@ func getCache(key string, next http.Handler, r *http.Request) *cacheItem {
 		recorder := httptest.NewRecorder()
 		next.ServeHTTP(recorder, r)
 		// Cache values from recorder
+		result := recorder.Result()
+		body, _ := ioutil.ReadAll(result.Body)
 		item = &cacheItem{
 			creationTime: time.Now().Unix(),
-			code:         recorder.Code,
-			header:       recorder.Header(),
-			body:         recorder.Body.Bytes(),
+			code:         result.StatusCode,
+			header:       result.Header,
+			body:         body,
 		}
 		// Save cache
 		cacheMutex.Lock()

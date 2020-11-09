@@ -116,6 +116,7 @@ type configHooks struct {
 	PreStart []string `mapstructure:"prestart"`
 	// Can use template
 	PostPost   []string `mapstructure:"postpost"`
+	PostUpdate []string `mapstructure:"postupdate"`
 	PostDelete []string `mapstructure:"postdelete"`
 }
 

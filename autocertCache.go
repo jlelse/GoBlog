@@ -8,25 +8,15 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-type autocertCache struct {
-	db          *sql.DB
-	getQuery    string
-	putQuery    string
-	deleteQuery string
-}
-
-func newAutocertCache() (*autocertCache, error) {
-	return &autocertCache{
-		db:          appDb,
-		getQuery:    "select data from autocert where key = ?",
-		putQuery:    "insert or replace into autocert (key, data, created) values (?, ?, ?)",
-		deleteQuery: "delete from autocert where key = ?",
-	}, nil
-}
+type autocertCache struct{}
 
 func (c *autocertCache) Get(ctx context.Context, key string) ([]byte, error) {
 	var data []byte
-	err := c.db.QueryRowContext(ctx, c.getQuery, key).Scan(&data)
+	row, err := appDbQueryRow("select data from autocert where key = @key", sql.Named("key", key))
+	if err != nil {
+		return nil, err
+	}
+	err = row.Scan(&data)
 	if err == sql.ErrNoRows {
 		return nil, autocert.ErrCacheMiss
 	}
@@ -36,13 +26,13 @@ func (c *autocertCache) Get(ctx context.Context, key string) ([]byte, error) {
 func (c *autocertCache) Put(ctx context.Context, key string, data []byte) error {
 	startWritingToDb()
 	defer finishWritingToDb()
-	_, err := c.db.ExecContext(ctx, c.putQuery, key, data, time.Now().String())
+	_, err := appDbExec("insert or replace into autocert (key, data, created) values (@key, @data, @created)", sql.Named("key", key), sql.Named("data", data), sql.Named("created", time.Now().String()))
 	return err
 }
 
 func (c *autocertCache) Delete(ctx context.Context, key string) error {
 	startWritingToDb()
 	defer finishWritingToDb()
-	_, err := c.db.ExecContext(ctx, c.deleteQuery, key)
+	_, err := appDbExec("delete from autocert where key = @key", sql.Named("key", key))
 	return err
 }

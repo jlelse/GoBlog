@@ -222,16 +222,17 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (data *indieAuthData) saveAuthorization() (err error) {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err = appDb.Exec("insert into indieauthauth (time, code, me, client, redirect, scope) values (?, ?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.Me, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
+	_, err = appDbExec("insert into indieauthauth (time, code, me, client, redirect, scope) values (?, ?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.Me, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
 	return
 }
 
 func (data *indieAuthData) verifyAuthorization(authentication bool) (valid bool, err error) {
 	// code valid for 600 seconds
 	if !authentication {
-		row := appDb.QueryRow("select code, me, client, redirect, scope from indieauthauth where time >= ? and code = ? and me = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.Me, data.ClientID, data.RedirectURI)
+		row, err := appDbQueryRow("select code, me, client, redirect, scope from indieauthauth where time >= ? and code = ? and me = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.Me, data.ClientID, data.RedirectURI)
+		if err != nil {
+			return false, err
+		}
 		scope := ""
 		err = row.Scan(&data.code, &data.Me, &data.ClientID, &data.RedirectURI, &scope)
 		if err == sql.ErrNoRows {
@@ -243,7 +244,10 @@ func (data *indieAuthData) verifyAuthorization(authentication bool) (valid bool,
 			data.Scopes = strings.Split(scope, " ")
 		}
 	} else {
-		row := appDb.QueryRow("select code, me, client, redirect from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
+		row, err := appDbQueryRow("select code, me, client, redirect from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
+		if err != nil {
+			return false, err
+		}
 		err = row.Scan(&data.code, &data.Me, &data.ClientID, &data.RedirectURI)
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -252,24 +256,23 @@ func (data *indieAuthData) verifyAuthorization(authentication bool) (valid bool,
 		}
 	}
 	valid = true
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err = appDb.Exec("delete from indieauthauth where code = ? or time < ?", data.code, time.Now().Unix()-600)
+	_, err = appDbExec("delete from indieauthauth where code = ? or time < ?", data.code, time.Now().Unix()-600)
 	data.code = ""
 	return
 }
 
 func (data *indieAuthData) saveToken() (err error) {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err = appDb.Exec("insert into indieauthtoken (time, token, me, client, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.token, data.Me, data.ClientID, strings.Join(data.Scopes, " "))
+	_, err = appDbExec("insert into indieauthtoken (time, token, me, client, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.token, data.Me, data.ClientID, strings.Join(data.Scopes, " "))
 	return
 }
 
 func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 	token = strings.ReplaceAll(token, "Bearer ", "")
 	data = &indieAuthData{}
-	row := appDb.QueryRow("select time, token, me, client, scope from indieauthtoken where token = ?", token)
+	row, err := appDbQueryRow("select time, token, me, client, scope from indieauthtoken where token = ?", token)
+	if err != nil {
+		return nil, err
+	}
 	timeString := ""
 	scope := ""
 	err = row.Scan(&timeString, &data.token, &data.Me, &data.ClientID, &scope)
@@ -289,8 +292,6 @@ func revokeIndieAuthToken(token string) {
 	if token == "" {
 		return
 	}
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, _ = appDb.Exec("delete from indieauthtoken where token=?", token)
+	_, _ = appDbExec("delete from indieauthtoken where token=?", token)
 	return
 }

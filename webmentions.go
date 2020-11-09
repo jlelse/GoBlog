@@ -122,7 +122,11 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 
 func webmentionExists(source, target string) bool {
 	result := 0
-	if err := appDb.QueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target).Scan(&result); err != nil {
+	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
+	if err != nil {
+		return false
+	}
+	if err = row.Scan(&result); err != nil {
 		return false
 	}
 	return result == 1
@@ -131,10 +135,13 @@ func webmentionExists(source, target string) bool {
 func verifyNextWebmention() error {
 	m := &mention{}
 	oldStatus := ""
-	if err := appDb.QueryRow("select id, source, target, status from webmentions where (status = ? or status = ?) limit 1", webmentionStatusNew, webmentionStatusRenew).Scan(&m.ID, &m.Source, &m.Target, &oldStatus); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
+	row, err := appDbQueryRow("select id, source, target, status from webmentions where (status = ? or status = ?) limit 1", webmentionStatusNew, webmentionStatusRenew)
+	if err != nil {
+		return err
+	}
+	if err := row.Scan(&m.ID, &m.Source, &m.Target, &oldStatus); err == sql.ErrNoRows {
+		return nil
+	} else if err != nil {
 		return err
 	}
 	wmm := &wmd.Mention{
@@ -150,9 +157,7 @@ func verifyNextWebmention() error {
 	if len(wmm.Content) > 500 {
 		wmm.Content = wmm.Content[0:497] + "…"
 	}
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err := appDb.Exec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", webmentionStatusVerified, wmm.Title, wmm.Type, wmm.Content, wmm.AuthorName, m.ID)
+	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", webmentionStatusVerified, wmm.Title, wmm.Type, wmm.Content, wmm.AuthorName, m.ID)
 	if oldStatus == string(webmentionStatusNew) {
 		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
@@ -161,28 +166,20 @@ func verifyNextWebmention() error {
 
 func createWebmention(source, target string) (err error) {
 	if webmentionExists(source, target) {
-		startWritingToDb()
-		defer finishWritingToDb()
-		_, err = appDb.Exec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, target)
+		_, err = appDbExec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, target)
 	} else {
-		startWritingToDb()
-		defer finishWritingToDb()
-		_, err = appDb.Exec("insert into webmentions (source, target, created) values (?, ?, ?)", source, target, time.Now().Unix())
+		_, err = appDbExec("insert into webmentions (source, target, created) values (?, ?, ?)", source, target, time.Now().Unix())
 	}
 	return err
 }
 
 func deleteWebmention(id int) error {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err := appDb.Exec("delete from webmentions where id = ?", id)
+	_, err := appDbExec("delete from webmentions where id = ?", id)
 	return err
 }
 
 func approveWebmention(id int) error {
-	startWritingToDb()
-	defer finishWritingToDb()
-	_, err := appDb.Exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
+	_, err := appDbExec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
@@ -195,19 +192,21 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	mentions := []*mention{}
 	var rows *sql.Rows
 	var err error
-	filter := "where 1 = 1 "
 	args := []interface{}{}
+	filter := ""
 	if config != nil {
-		if config.target != "" {
-			filter += "and target = ? "
-			args = append(args, config.target)
-		}
-		if config.status != "" {
-			filter += "and status = ? "
-			args = append(args, config.status)
+		if config.target != "" && config.status != "" {
+			filter = "where target = @target and status = @status"
+			args = append(args, sql.Named("target", config.target), sql.Named("status", config.status))
+		} else if config.target != "" {
+			filter = "where target = @target"
+			args = append(args, sql.Named("target", config.target))
+		} else if config.status != "" {
+			filter = "where status = @status"
+			args = append(args, sql.Named("status", config.status))
 		}
 	}
-	rows, err = appDb.Query("select id, source, target, created, title, content, author, type from webmentions "+filter+"order by created desc", args...)
+	rows, err = appDbQuery("select id, source, target, created, title, content, author, type from webmentions "+filter+" order by created desc", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -222,37 +221,25 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	return mentions, nil
 }
 
-// TODO: Integrate
-func sendWebmentions(url string, prefixBlocks ...string) error {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (p *post) sendWebmentions() error {
+	url := appConfig.Server.PublicAddress + p.Path
+	recorder := httptest.NewRecorder()
+	// Render basic post data
+	render(recorder, "postbasic", &renderData{
+		blogString: p.Blog,
+		Data:       p,
+	})
+	discovered, err := webmention.DiscoverLinksFromReader(recorder.Result().Body, url, ".h-entry")
 	if err != nil {
 		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	discovered, err := webmention.DiscoverLinksFromReader(resp.Body, url, ".h-entry")
-	_ = resp.Body.Close()
-	if err != nil {
-		return err
-	}
-	var filtered []string
-	allowed := func(link string) bool {
-		for _, block := range prefixBlocks {
-			if strings.HasPrefix(link, block) {
-				return false
-			}
-		}
-		return true
-	}
-	for _, link := range discovered {
-		if allowed(link) {
-			filtered = append(filtered, link)
-		}
 	}
 	client := webmention.New(nil)
-	for _, link := range filtered {
+	for _, link := range discovered {
+		if strings.HasPrefix(link, appConfig.Server.PublicAddress) {
+			// Save mention directly
+			createWebmention(url, link)
+			continue
+		}
 		endpoint, err := client.DiscoverEndpoint(link)
 		if err != nil || len(endpoint) < 1 {
 			continue

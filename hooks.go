@@ -17,31 +17,50 @@ func preStartHooks() {
 	}
 }
 
-func postPostHooks(path string) {
+func (p *post) postPostHooks() {
 	for _, cmdTmplString := range appConfig.Hooks.PostPost {
-		go func(path, cmdTmplString string) {
-			executeTemplateCommand("post-post", cmdTmplString, &hookTemplateData{
-				URL: appConfig.Server.PublicAddress + path,
+		go func(p *post, cmdTmplString string) {
+			executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
+				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"Post": p,
 			})
-		}(path, cmdTmplString)
+		}(p, cmdTmplString)
 	}
+	go p.apPost()
+	go p.sendWebmentions()
 }
 
-func postDeleteHooks(path string) {
-	for _, cmdTmplString := range appConfig.Hooks.PostDelete {
-		go func(path, cmdTmplString string) {
-			executeTemplateCommand("post-delete", cmdTmplString, &hookTemplateData{
-				URL: appConfig.Server.PublicAddress + path,
+func (p *post) postUpdateHooks() {
+	for _, cmdTmplString := range appConfig.Hooks.PostUpdate {
+		go func(p *post, cmdTmplString string) {
+			executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
+				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"Post": p,
 			})
-		}(path, cmdTmplString)
+		}(p, cmdTmplString)
 	}
+	go p.apUpdate()
+	go p.sendWebmentions()
+}
+
+func (p *post) postDeleteHooks() {
+	for _, cmdTmplString := range appConfig.Hooks.PostDelete {
+		go func(p *post, cmdTmplString string) {
+			executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
+				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"Post": p,
+			})
+		}(p, cmdTmplString)
+	}
+	go p.apDelete()
+	go p.sendWebmentions()
 }
 
 type hookTemplateData struct {
 	URL string
 }
 
-func executeTemplateCommand(hookType string, tmpl string, data *hookTemplateData) {
+func executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {
 		log.Println("Failed to parse cmd template:", err.Error())
