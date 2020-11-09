@@ -29,20 +29,30 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	p.Path = path
 	p.Section = section
 	p.Slug = slug
-	aliases = append(aliases, alias)
 	err = p.replace()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	for _, alias := range aliases {
+	aliases = append(aliases, alias)
+	for i, alias := range aliases {
 		// Fix relativ paths
 		if !strings.HasPrefix(alias, "/") {
 			splittedPostPath := strings.Split(p.Path, "/")
 			alias = strings.TrimSuffix(p.Path, splittedPostPath[len(splittedPostPath)-1]) + alias
 		}
-		if alias != "" {
-			_ = createOrReplaceRedirect(alias, p.Path)
+		alias = strings.TrimSuffix(alias, "/")
+		if alias == p.Path {
+			alias = ""
+		}
+		aliases[i] = alias
+	}
+	if len(aliases) > 0 {
+		p.Parameters["aliases"] = aliases
+		err = p.replace()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 	}
 	w.Header().Set("Location", appConfig.Server.PublicAddress+p.Path)

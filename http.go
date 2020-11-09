@@ -174,14 +174,14 @@ func buildHandler() (http.Handler, error) {
 		}
 	}
 
-	// Redirects
-	allRedirectPaths, err := allRedirectPaths()
+	// Post aliases
+	allPostAliases, err := allPostAliases()
 	if err != nil {
 		return nil, err
 	}
-	for _, path := range allRedirectPaths {
+	for _, path := range allPostAliases {
 		if path != "" {
-			r.With(cacheMiddleware, minifier.Middleware).Get(path, serveRedirect)
+			r.With(cacheMiddleware).Get(path, servePostAlias)
 		}
 	}
 
