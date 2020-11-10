@@ -10,6 +10,7 @@ var regexRedirects []*regexRedirect
 type regexRedirect struct {
 	From *regexp.Regexp
 	To   string
+	Type int
 }
 
 func initRegexRedirects() error {
@@ -21,6 +22,7 @@ func initRegexRedirects() error {
 		regexRedirects = append(regexRedirects, &regexRedirect{
 			From: re,
 			To:   cr.To,
+			Type: cr.Type,
 		})
 	}
 	return nil
@@ -33,7 +35,11 @@ func checkRegexRedirects(next http.Handler) http.Handler {
 			newPath := re.From.ReplaceAllString(oldPath, re.To)
 			if oldPath != newPath {
 				r.URL.Path = newPath
-				http.Redirect(w, r, r.URL.String(), http.StatusFound)
+				code := re.Type
+				if code == 0 {
+					code = http.StatusFound
+				}
+				http.Redirect(w, r, r.URL.String(), code)
 				return
 			}
 		}

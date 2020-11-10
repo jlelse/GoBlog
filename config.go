@@ -144,6 +144,7 @@ type configMicropubMedia struct {
 type configRegexRedirect struct {
 	From string `mapstructure:"from"`
 	To   string `mapstructure:"to"`
+	Type int    `mapstructure:"type"`
 }
 
 type configActivityPub struct {
