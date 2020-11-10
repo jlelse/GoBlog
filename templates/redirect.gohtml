@@ -1,9 +1,0 @@
-{{ define "redirect" }}
-  <!doctype html>
-  <html lang={{ .Blog.Lang }}>
-  <meta charset="utf-8"/>
-  <meta name="robots" content="noindex">
-  <title>{{ .Data }}</title>
-  <link rel="canonical" href="{{ .Data }}"/>
-  <meta http-equiv="refresh" content="0; url={{ .Data }}"/>
-{{ end }}
