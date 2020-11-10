@@ -268,8 +268,10 @@ func (data *indieAuthData) saveToken() (err error) {
 
 func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 	token = strings.ReplaceAll(token, "Bearer ", "")
-	data = &indieAuthData{}
-	row, err := appDbQueryRow("select time, token, me, client, scope from indieauthtoken where token = ?", token)
+	data = &indieAuthData{
+		Scopes: []string{},
+	}
+	row, err := appDbQueryRow("select time, token, me, client, scope from indieauthtoken where token = @token", sql.Named("token", token))
 	if err != nil {
 		return nil, err
 	}

@@ -144,6 +144,7 @@ func buildHandler() (http.Handler, error) {
 	// ActivityPub and stuff
 	if appConfig.ActivityPub.Enabled {
 		r.Post("/activitypub/inbox/{blog}", apHandleInbox)
+		r.Post("/activitypub/{blog}/inbox", apHandleInbox)
 		r.Get("/.well-known/webfinger", apHandleWebfinger)
 		r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
 	}
