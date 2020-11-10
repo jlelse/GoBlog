@@ -294,5 +294,8 @@ func (d *dynamicHandler) swapHandler(h http.Handler) {
 }
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Fix to use Path routing instead of RawPath routing in Chi
+	r.URL.RawPath = ""
+	// Serve request
 	d.realHandler.Load().(http.Handler).ServeHTTP(w, r)
 }
