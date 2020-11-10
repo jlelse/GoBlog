@@ -350,6 +350,14 @@ func (p *post) computeExtraPostParameters() error {
 		p.Slug = slug[0]
 		delete(p.Parameters, "slug")
 	}
+	if published := p.Parameters["published"]; len(published) == 1 && published[0] != "" {
+		p.Published = published[0]
+		delete(p.Parameters, "published")
+	}
+	if updated := p.Parameters["updated"]; len(updated) == 1 && updated[0] != "" {
+		p.Updated = updated[0]
+		delete(p.Parameters, "updated")
+	}
 	if p.Path == "" && p.Section == "" {
 		// Has no path or section -> default section
 		p.Section = appConfig.Blogs[p.Blog].DefaultSection
