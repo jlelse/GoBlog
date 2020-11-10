@@ -146,10 +146,10 @@ func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string) f
 	})
 }
 
-func servePhotos(blog string) func(w http.ResponseWriter, r *http.Request) {
+func servePhotos(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog:      blog,
-		path:      appConfig.Blogs[blog].Photos.Path,
+		path:      path,
 		parameter: appConfig.Blogs[blog].Photos.Parameter,
 		template:  templatePhotos,
 	})

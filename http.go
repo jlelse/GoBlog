@@ -233,9 +233,10 @@ func buildHandler() (http.Handler, error) {
 
 		// Photos
 		if blogConfig.Photos.Enabled {
-			handler := servePhotos(blog)
-			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path, handler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+blogConfig.Photos.Path+paginationPath, handler)
+			photoPath := blogPath + blogConfig.Photos.Path
+			handler := servePhotos(blog, photoPath)
+			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath, handler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath+paginationPath, handler)
 		}
 
 		// Blog
