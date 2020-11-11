@@ -213,7 +213,7 @@ func (p *post) apPost() {
 	if !appConfig.ActivityPub.Enabled {
 		return
 	}
-	if p.Published == "" || p.firstParameter("section") == "" {
+	if p.Published == "" || p.Section == "" {
 		// No section, don't post
 		return
 	}
