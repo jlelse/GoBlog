@@ -153,6 +153,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		data, err := verifyIndieAuthToken(r.Header.Get("Authorization"))
 		if err != nil {
 			http.Error(w, "Invalid token or token not found", http.StatusUnauthorized)
+			return
 		}
 		res := &tokenResponse{
 			Scope:    strings.Join(data.Scopes, " "),
@@ -166,6 +167,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		return
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		// Token Revocation
@@ -217,7 +219,10 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			return
 		}
+		http.Error(w, "", http.StatusBadRequest)
+		return
 	}
 }
 

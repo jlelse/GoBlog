@@ -350,12 +350,15 @@ func apSendSigned(blog *configBlog, activity interface{}, to string) error {
 	}
 	// Do request
 	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		return err
+	}
 	if !apRequestIsSuccess(resp.StatusCode) {
 		body, _ := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
 	}
-	return err
+	return nil
 }
 
 func apNewID(blog *configBlog) (hash string, url string) {
