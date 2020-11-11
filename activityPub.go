@@ -213,10 +213,6 @@ func (p *post) apPost() {
 	if !appConfig.ActivityPub.Enabled {
 		return
 	}
-	if p.Published == "" || p.Section == "" {
-		// No section, don't post
-		return
-	}
 	n := p.toASNote()
 	createActivity := make(map[string]interface{})
 	createActivity["@context"] = asContext
@@ -230,10 +226,6 @@ func (p *post) apPost() {
 
 func (p *post) apUpdate() {
 	if !appConfig.ActivityPub.Enabled {
-		return
-	}
-	if p.Published == "" || p.firstParameter("section") == "" {
-		// No section, don't post
 		return
 	}
 	n := p.toASNote()

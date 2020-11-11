@@ -26,8 +26,11 @@ func (p *post) postPostHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	go p.apPost()
-	go p.tgPost()
+	if p.Published != "" && p.Section != "" {
+		// It's a published post
+		go p.apPost()
+		go p.tgPost()
+	}
 	go p.sendWebmentions()
 }
 
@@ -40,7 +43,10 @@ func (p *post) postUpdateHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	go p.apUpdate()
+	if p.Published != "" && p.Section != "" {
+		// It's a published post
+		go p.apUpdate()
+	}
 	go p.sendWebmentions()
 }
 
