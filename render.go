@@ -77,6 +77,7 @@ func initRendering() error {
 			mentions, _ := getWebmentions(&webmentionsRequestConfig{
 				target: appConfig.Server.PublicAddress + p.Path,
 				status: webmentionStatusApproved,
+				asc:    true,
 			})
 			return mentions
 		},

@@ -31,7 +31,6 @@ type configServer struct {
 	PublicAddress   string `mapstructure:"publicAddress"`
 	PublicHTTPS     bool   `mapstructure:"publicHttps"`
 	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
-	LocalHTTPS      bool   `mapstructure:"localHttps"`
 }
 
 type configDb struct {
@@ -178,7 +177,6 @@ func initConfig() error {
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.publicAddress", "http://localhost:8080")
 	viper.SetDefault("server.publicHttps", false)
-	viper.SetDefault("server.localHttps", false)
 	viper.SetDefault("database.file", "data/db.sqlite")
 	viper.SetDefault("cache.enable", true)
 	viper.SetDefault("cache.expiration", 600)

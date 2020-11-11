@@ -191,6 +191,7 @@ func approveWebmention(id int) error {
 type webmentionsRequestConfig struct {
 	target string
 	status webmentionStatus
+	asc    bool
 }
 
 func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
@@ -211,7 +212,11 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 			args = append(args, sql.Named("status", config.status))
 		}
 	}
-	rows, err = appDbQuery("select id, source, target, created, title, content, author, type from webmentions "+filter+" order by created desc", args...)
+	order := "desc"
+	if config.asc {
+		order = "asc"
+	}
+	rows, err = appDbQuery("select id, source, target, created, title, content, author, type from webmentions "+filter+" order by created "+order, args...)
 	if err != nil {
 		return nil, err
 	}

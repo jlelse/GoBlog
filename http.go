@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/caddyserver/certmagic"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/handlers"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 const (
@@ -63,22 +63,11 @@ func startServer() (err error) {
 	}
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
 	if appConfig.Server.PublicHTTPS {
-		certManager := autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(appConfig.Server.Domain),
-			Cache:      &autocertCache{},
-			Email:      appConfig.Server.LetsEncryptMail,
-		}
-		tlsConfig := certManager.TLSConfig()
-		server := http.Server{
-			Addr:      ":https",
-			Handler:   securityHeaders(d),
-			TLSConfig: tlsConfig,
-		}
-		go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
-		err = server.ListenAndServeTLS("", "")
-	} else if appConfig.Server.LocalHTTPS {
-		err = http.ListenAndServeTLS(localAddress, "https/server.crt", "https/server.key", d)
+		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
+		certmagic.DefaultACME.Agreed = true
+		certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
+		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
+		err = certmagic.HTTPS([]string{appConfig.Server.Domain}, securityHeaders(d))
 	} else {
 		err = http.ListenAndServe(localAddress, d)
 	}

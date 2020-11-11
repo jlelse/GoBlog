@@ -12,18 +12,15 @@ import (
 )
 
 const assetsFolder = "templates/assets"
-const compiledAssetsFolder = "tmp_assets"
 
+var compiledAssetsFolder string
 var assetFiles map[string]string
 
-func initTemplateAssets() error {
-	err := os.RemoveAll(compiledAssetsFolder)
+func initTemplateAssets() (err error) {
+	compiledAssetsFolder, err = ioutil.TempDir("", "goblog-assets-*")
+	// err = os.MkdirAll(compiledAssetsFolder, 0755)
 	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(compiledAssetsFolder, 0755)
-	if err != nil {
-		return err
+		return
 	}
 	assetFiles = map[string]string{}
 	err = filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {

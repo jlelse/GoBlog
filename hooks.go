@@ -97,6 +97,8 @@ func executeCommand(cmd string) {
 	if err != nil {
 		log.Println("Failed to execute command:", err.Error())
 	}
-	log.Println("Output:")
-	log.Print(string(out))
+	if len(out) > 0 {
+		log.Println("Output:")
+		log.Print(string(out))
+	}
 }
