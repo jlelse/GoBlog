@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ type micropubConfig struct {
 func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Query().Get("q") {
 	case "config":
-		w.Header().Add(contentType, contentTypeJSON)
+		w.Header().Add(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		mc := &micropubConfig{}
 		if appConfig.Micropub.MediaStorage != nil {
@@ -45,7 +46,12 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			mf = p.toMfItem()
 		} else {
-			posts, err := getPosts(&postsRequestConfig{})
+			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+			posts, err := getPosts(&postsRequestConfig{
+				limit:  limit,
+				offset: offset,
+			})
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -56,7 +62,7 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			mf = list
 		}
-		w.Header().Add(contentType, contentTypeJSON)
+		w.Header().Add(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(mf)
 	default:
@@ -74,12 +80,18 @@ func (p *post) toMfItem() *microformatItem {
 	return &microformatItem{
 		Type: []string{"h-entry"},
 		Properties: &microformatProperties{
-			Name:      p.Parameters["title"],
-			Published: []string{p.Published},
-			Updated:   []string{p.Updated},
-			Content:   []string{content},
-			MpSlug:    []string{p.Slug},
-			Category:  p.Parameters[appConfig.Micropub.CategoryParam],
+			Name:       p.Parameters["title"],
+			Published:  []string{p.Published},
+			Updated:    []string{p.Updated},
+			Category:   p.Parameters[appConfig.Micropub.CategoryParam],
+			Content:    []string{content},
+			URL:        []string{appConfig.Server.PublicAddress + p.Path},
+			InReplyTo:  p.Parameters[appConfig.Micropub.ReplyParam],
+			LikeOf:     p.Parameters[appConfig.Micropub.LikeParam],
+			BookmarkOf: p.Parameters[appConfig.Micropub.BookmarkParam],
+			MpSlug:     []string{p.Slug},
+			Audio:      p.Parameters[appConfig.Micropub.AudioParam],
+			// TODO: Photos
 		},
 	}
 }
