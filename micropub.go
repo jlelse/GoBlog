@@ -65,6 +65,21 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(mf)
+	case "category":
+		allCategories := []string{}
+		for blog := range appConfig.Blogs {
+			values, err := allTaxonomyValues(blog, appConfig.Micropub.CategoryParam)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			allCategories = append(allCategories, values...)
+		}
+		w.Header().Add(contentType, contentTypeJSONUTF8)
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"categories": allCategories,
+		})
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
