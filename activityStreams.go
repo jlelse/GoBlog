@@ -88,7 +88,7 @@ func (p *post) toASNote() *asNote {
 	// Content
 	as.Content = string(p.html())
 	// Attachments
-	if images := p.Parameters["images"]; len(images) > 0 {
+	if images := p.Parameters[appConfig.Micropub.PhotoParam]; len(images) > 0 {
 		for _, image := range images {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
@@ -109,7 +109,7 @@ func (p *post) toASNote() *asNote {
 		}
 	}
 	// Reply
-	if replyLink := p.firstParameter("replylink"); replyLink != "" {
+	if replyLink := p.firstParameter(appConfig.Micropub.ReplyParam); replyLink != "" {
 		as.InReplyTo = replyLink
 	}
 	return as

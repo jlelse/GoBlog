@@ -85,13 +85,31 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	blogIri := blog.apIri()
+	// Verify request
+	requestActor, err := apVerifySignature(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Parse activity
 	activity := make(map[string]interface{})
-	err := json.NewDecoder(r.Body).Decode(&activity)
+	err = json.NewDecoder(r.Body).Decode(&activity)
 	_ = r.Body.Close()
 	if err != nil {
 		http.Error(w, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
+	// Get and check activity actor
+	activityActor, ok := activity["actor"].(string)
+	if !ok {
+		http.Error(w, "actor in activity is no string", http.StatusBadRequest)
+		return
+	}
+	if activityActor != requestActor.ID {
+		http.Error(w, "Request actor isn't activity actor", http.StatusForbidden)
+		return
+	}
+	// Do
 	switch activity["type"] {
 	case "Follow":
 		apAccept(blogName, blog, activity)
@@ -99,8 +117,8 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		{
 			if object, ok := activity["object"].(map[string]interface{}); ok {
 				if objectType, ok := object["type"].(string); ok && objectType == "Follow" {
-					if iri, ok := object["actor"].(string); ok && iri == activity["actor"] {
-						_ = apRemoveFollower(blogName, iri)
+					if iri, ok := object["actor"].(string); ok && iri == activityActor {
+						_ = apRemoveFollower(blogName, activityActor)
 					}
 				}
 			}
@@ -128,30 +146,54 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case "Delete":
 	case "Block":
 		{
-			if object, ok := activity["object"].(string); ok && len(object) > 0 && activity["actor"] == object {
-				_ = apRemoveFollower(blogName, object)
+			if object, ok := activity["object"].(string); ok && len(object) > 0 && object == activityActor {
+				_ = apRemoveFollower(blogName, activityActor)
 			}
 		}
 	case "Like":
 		{
-			likeActor, likeActorOk := activity["actor"].(string)
 			likeObject, likeObjectOk := activity["object"].(string)
-			if likeActorOk && likeObjectOk && len(likeActor) > 0 && len(likeObject) > 0 && strings.Contains(likeObject, blogIri) {
-				sendNotification(fmt.Sprintf("%s liked %s", likeActor, likeObject))
+			if likeObjectOk && len(likeObject) > 0 && strings.Contains(likeObject, blogIri) {
+				sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeObject))
 			}
 		}
 	case "Announce":
 		{
-			announceActor, announceActorOk := activity["actor"].(string)
 			announceObject, announceObjectOk := activity["object"].(string)
-			if announceActorOk && announceObjectOk && len(announceActor) > 0 && len(announceObject) > 0 && strings.Contains(announceObject, blogIri) {
-				sendNotification(fmt.Sprintf("%s announced %s", announceActor, announceObject))
+			if announceObjectOk && len(announceObject) > 0 && strings.Contains(announceObject, blogIri) {
+				sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceObject))
 			}
 		}
 	}
 	// Return 201
 	w.WriteHeader(http.StatusCreated)
+}
 
+func apVerifySignature(r *http.Request) (*asPerson, error) {
+	verifier, err := httpsig.NewVerifier(r)
+	if err != nil {
+		// Error with signature header etc.
+		return nil, err
+	}
+	keyID := verifier.KeyId()
+	actor, err := apGetRemoteActor(keyID)
+	if err != nil {
+		// Actor not found or something else bad
+		return nil, err
+	}
+	if actor.PublicKey == nil {
+		return nil, errors.New("Actor has no public key")
+	}
+	block, _ := pem.Decode([]byte(actor.PublicKey.PublicKeyPem))
+	if block == nil {
+		return nil, errors.New("Public key invalid")
+	}
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		// Unable to parse public key
+		return nil, err
+	}
+	return actor, verifier.Verify(pubKey, httpsig.RSA_SHA256)
 }
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
@@ -222,6 +264,11 @@ func (p *post) apPost() {
 	createActivity["type"] = "Create"
 	createActivity["object"] = n
 	apSendToAllFollowers(p.Blog, createActivity)
+	if n.InReplyTo != "" {
+		// Is reply, so announce it
+		time.Sleep(30 * time.Second)
+		p.apAnnounce()
+	}
 }
 
 func (p *post) apUpdate() {
@@ -233,9 +280,24 @@ func (p *post) apUpdate() {
 	updateActivity["@context"] = asContext
 	updateActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
 	updateActivity["id"] = appConfig.Server.PublicAddress + p.Path
+	updateActivity["published"] = time.Now().Format("2006-01-02T15:04:05-07:00")
 	updateActivity["type"] = "Update"
 	updateActivity["object"] = n
 	apSendToAllFollowers(p.Blog, updateActivity)
+}
+
+func (p *post) apAnnounce() {
+	if !appConfig.ActivityPub.Enabled {
+		return
+	}
+	announceActivity := make(map[string]interface{})
+	announceActivity["@context"] = asContext
+	announceActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
+	announceActivity["id"] = appConfig.Server.PublicAddress + p.Path + "#announce"
+	announceActivity["published"] = p.toASNote().Published
+	announceActivity["type"] = "Announce"
+	announceActivity["object"] = appConfig.Server.PublicAddress + p.Path
+	apSendToAllFollowers(p.Blog, announceActivity)
 }
 
 func (p *post) apDelete() {
