@@ -148,7 +148,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 					createWebmention(id, inReplyTo)
 				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
 					// May be a mention; find links to blog and save them as webmentions
-					if doc, err := webmention.DocumentFromReader(r.Context(), strings.NewReader(content), id); err != nil {
+					if doc, err := webmention.DocumentFromReader(context.Background(), strings.NewReader(content), id); err == nil && doc != nil {
 						for _, link := range doc.ExternalLinks() {
 							if strings.Contains(link, blogIri) {
 								createWebmention(id, link)
