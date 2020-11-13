@@ -181,7 +181,7 @@ func apVerifySignature(r *http.Request) (*asPerson, error) {
 		// Actor not found or something else bad
 		return nil, err
 	}
-	if actor.PublicKey == nil {
+	if actor == nil || actor.PublicKey == nil || actor.PublicKey.PublicKeyPem == "" {
 		return nil, errors.New("Actor has no public key")
 	}
 	block, _ := pem.Decode([]byte(actor.PublicKey.PublicKeyPem))
