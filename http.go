@@ -112,8 +112,8 @@ func buildHandler() (http.Handler, error) {
 
 	// Micropub
 	r.Route(micropubPath, func(mpRouter chi.Router) {
-		mpRouter.Use(middleware.NoCache, checkIndieAuth)
-		mpRouter.Get("/", serveMicropubQuery)
+		mpRouter.Use(checkIndieAuth)
+		mpRouter.With(middleware.NoCache).Get("/", serveMicropubQuery)
 		mpRouter.Post("/", serveMicropubPost)
 		if appConfig.Micropub.MediaStorage != nil {
 			mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)

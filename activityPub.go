@@ -88,7 +88,8 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	// Verify request
 	requestActor, requestKey, requestActorStatus, err := apVerifySignature(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		// Send 401 because signature could not be verified
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	if requestActorStatus != 0 {
@@ -98,7 +99,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 				u.Fragment = ""
 				u.RawFragment = ""
 				apRemoveFollower(blogName, u.String())
-				w.WriteHeader(http.StatusAccepted)
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 		}
@@ -179,8 +180,8 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	// Return 201
-	w.WriteHeader(http.StatusCreated)
+	// Return 200
+	w.WriteHeader(http.StatusOK)
 }
 
 func apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
