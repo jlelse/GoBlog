@@ -86,9 +86,23 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	blogIri := blog.apIri()
 	// Verify request
-	requestActor, err := apVerifySignature(r)
+	requestActor, requestKey, requestActorStatus, err := apVerifySignature(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if requestActorStatus != 0 {
+		if requestActorStatus == http.StatusGone || requestActorStatus == http.StatusNotFound {
+			u, err := url.Parse(requestKey)
+			if err == nil {
+				u.Fragment = ""
+				u.RawFragment = ""
+				apRemoveFollower(blogName, u.String())
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+		}
+		http.Error(w, "Error when trying to get request actor", http.StatusBadRequest)
 		return
 	}
 	// Parse activity
@@ -169,31 +183,31 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func apVerifySignature(r *http.Request) (*asPerson, error) {
+func apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
 	verifier, err := httpsig.NewVerifier(r)
 	if err != nil {
 		// Error with signature header etc.
-		return nil, err
+		return nil, "", 0, err
 	}
 	keyID := verifier.KeyId()
-	actor, err := apGetRemoteActor(keyID)
-	if err != nil {
+	actor, statusCode, err := apGetRemoteActor(keyID)
+	if err != nil || actor == nil || statusCode != 0 {
 		// Actor not found or something else bad
-		return nil, err
+		return nil, keyID, statusCode, err
 	}
-	if actor == nil || actor.PublicKey == nil || actor.PublicKey.PublicKeyPem == "" {
-		return nil, errors.New("Actor has no public key")
+	if actor.PublicKey == nil || actor.PublicKey.PublicKeyPem == "" {
+		return nil, keyID, 0, errors.New("Actor has no public key")
 	}
 	block, _ := pem.Decode([]byte(actor.PublicKey.PublicKeyPem))
 	if block == nil {
-		return nil, errors.New("Public key invalid")
+		return nil, keyID, 0, errors.New("Public key invalid")
 	}
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		// Unable to parse public key
-		return nil, err
+		return nil, keyID, 0, err
 	}
-	return actor, verifier.Verify(pubKey, httpsig.RSA_SHA256)
+	return actor, keyID, 0, verifier.Verify(pubKey, httpsig.RSA_SHA256)
 }
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
@@ -201,27 +215,27 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
 }
 
-func apGetRemoteActor(iri string) (*asPerson, error) {
+func apGetRemoteActor(iri string) (*asPerson, int, error) {
 	req, err := http.NewRequest(http.MethodGet, iri, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Add("Accept", contentTypeAS)
 	req.Header.Add("User-Agent", "GoBlog")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if !apRequestIsSuccess(resp.StatusCode) {
-		return nil, err
+		return nil, resp.StatusCode, nil
 	}
 	actor := &asPerson{}
 	err = json.NewDecoder(resp.Body).Decode(actor)
 	defer resp.Body.Close()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return actor, nil
+	return actor, 0, nil
 }
 
 func apGetAllFollowers(blog string) (map[string]string, error) {
@@ -325,8 +339,8 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 		// actor and object are equal
 		return
 	}
-	follower, err := apGetRemoteActor(newFollower)
-	if err != nil {
+	follower, status, err := apGetRemoteActor(newFollower)
+	if err != nil || status != 0 {
 		// Couldn't retrieve remote actor info
 		log.Println("Failed to retrieve remote actor info:", newFollower)
 		return
