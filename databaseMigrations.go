@@ -39,6 +39,16 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00003",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					DROP TRIGGER AFTER;
+					CREATE TRIGGER trigger_posts_delete_pp AFTER DELETE on posts BEGIN delete from post_parameters where path = old.path; END;
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
