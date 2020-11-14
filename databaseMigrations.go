@@ -30,6 +30,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00002",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					DROP TABLE autocert;
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
