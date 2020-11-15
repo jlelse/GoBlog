@@ -1,12 +1,8 @@
 {{ define "title" }}
-    {{ if .Data.Title }}
-      <title>{{ .Data.Title }} - {{ .Blog.Title }}</title>
-    {{ else }}
-      <title>{{ .Blog.Title }}</title>
-    {{ end }}
-    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ .Data.First }}.rss"/>
-    <link rel="alternate" type="application/atom+xml" title="Atom" href="{{ .Data.First }}.atom"/>
-    <link rel="alternate" type="application/feed+json" title="JSON Feed" href="{{ .Data.First }}.json"/>
+    <title>{{ with .Data.Title }}{{ . }} - {{ end }}{{ .Blog.Title }}</title>
+    <link rel="alternate" type="application/rss+xml" title="RSS{{ with .Data.Title }} ({{ . }}){{ end }}" href="{{ .Data.First }}.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom{{ with .Data.Title }} ({{ . }}){{ end }}" href="{{ .Data.First }}.atom"/>
+    <link rel="alternate" type="application/feed+json" title="JSON Feed{{ with .Data.Title }} ({{ . }}){{ end }}" href="{{ .Data.First }}.json"/>
 {{ end }}
 
 {{ define "main" }}

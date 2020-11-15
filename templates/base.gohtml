@@ -8,6 +8,9 @@
   {{ with user.Picture }}<link rel="shortcut icon" href="{{ . }}">{{ end }}
   {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
   {{ template "title" . }}
+  <link rel="alternate" type="application/rss+xml" title="RSS ({{ .Blog.Title }})" href="{{ .Blog.Path }}.rss"/>
+  <link rel="alternate" type="application/atom+xml" title="Atom ({{ .Blog.Title }})" href="{{ .Blog.Path }}.atom"/>
+  <link rel="alternate" type="application/feed+json" title="JSON Feed ({{ .Blog.Title }})" href="{{ .Blog.Path }}.json"/>
   <link rel="webmention" href="/webmention" />
   <link rel="micropub" href="/micropub" />
   <link rel="authorization_endpoint" href="/indieauth" />
