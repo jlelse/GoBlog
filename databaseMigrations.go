@@ -60,6 +60,17 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00005",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					drop view view_posts_with_title;
+					create view view_posts_with_title as select id, path, title, content, published, updated, blog, section from (select p.rowid as id, p.path as path, pp.value as title, content, published, updated, blog, section from posts p left outer join (select * from post_parameters where parameter = 'title') pp on p.path = pp.path);
+					insert into posts_fts(posts_fts) values ('rebuild');
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
