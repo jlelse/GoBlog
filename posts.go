@@ -219,35 +219,41 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			generateFeed(ic.blog, ft, w, r, posts, title, description)
 			return
 		}
+		// Path
+		path := ic.path
+		if strings.Contains(path, searchPlaceholder) {
+			path = strings.ReplaceAll(path, searchPlaceholder, searchEncode(search))
+		}
 		// Navigation
 		prevPage, err := p.PrevPage()
 		if err == paginator.ErrNoPrevPage {
 			prevPage = p.Page()
 		}
+		prevPath := fmt.Sprintf("%s/page/%d", path, prevPage)
+		if prevPage < 2 {
+			prevPath = path
+		}
 		nextPage, err := p.NextPage()
 		if err == paginator.ErrNoNextPage {
 			nextPage = p.Page()
 		}
+		nextPath := fmt.Sprintf("%s/page/%d", path, nextPage)
 		template := ic.template
 		if len(template) == 0 {
 			template = templateIndex
 		}
-		path := ic.path
-		if strings.Contains(path, searchPlaceholder) {
-			path = strings.ReplaceAll(path, searchPlaceholder, searchEncode(search))
-		}
 		render(w, template, &renderData{
 			blogString: ic.blog,
-			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
+			Canonical:  appConfig.Server.PublicAddress + getBlogRelativePath(ic.blog, path),
 			Data: &indexTemplateData{
 				Title:       title,
 				Description: description,
 				Posts:       posts,
 				HasPrev:     p.HasPrev(),
 				HasNext:     p.HasNext(),
-				First:       ic.path,
-				Prev:        fmt.Sprintf("%s/page/%d", path, prevPage),
-				Next:        fmt.Sprintf("%s/page/%d", path, nextPage),
+				First:       getBlogRelativePath(ic.blog, path),
+				Prev:        getBlogRelativePath(ic.blog, prevPath),
+				Next:        getBlogRelativePath(ic.blog, nextPath),
 			},
 		})
 	}
