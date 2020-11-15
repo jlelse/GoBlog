@@ -1,0 +1,20 @@
+{{ define "title" }}
+  <title>{{ with .Blog.Search.Title }}{{ . }} - {{ end }}{{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    {{ with .Blog.Search.Title }}<h1>{{ . }}</h1>{{ end }}
+    {{ with .Blog.Search.Description }}{{ md . }}{{ end }}
+    {{ if (or .Blog.Search.Title .Blog.Search.Description) }}
+      <hr>
+    {{ end }}
+    <form class="fw-form p" method="post">
+    <input class="fw" type="text" style="margin-bottom: 5px" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ . }}"{{ end }} />
+    <input class="fw" type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
+  </main>
+{{ end }}
+
+{{ define "search" }}
+    {{ template "base" . }}
+{{ end }}

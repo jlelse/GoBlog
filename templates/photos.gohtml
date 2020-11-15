@@ -1,9 +1,5 @@
 {{ define "title" }}
-    {{ if .Blog.Photos.Title }}
-      <title>{{ .Blog.Photos.Title }} - {{ .Blog.Title }}</title>
-    {{ else }}
-      <title>{{ .Blog.Title }}</title>
-    {{ end }}
+  <title>{{ with .Blog.Photos.Title }}{{ . }} - {{ end }}{{ .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}

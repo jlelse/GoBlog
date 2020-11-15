@@ -159,6 +159,7 @@ func (p *post) createOrReplace(new bool) error {
 		return err
 	}
 	finishWritingToDb()
+	rebuildFTSIndex()
 	if !postExists {
 		defer p.postPostHooks()
 	} else {
@@ -176,8 +177,17 @@ func deletePost(path string) error {
 		return err
 	}
 	_, err = appDbExec("delete from posts where path = @path", sql.Named("path", p.Path))
+	if err != nil {
+		return err
+	}
+	rebuildFTSIndex()
 	defer p.postDeleteHooks()
 	return reloadRouter()
+}
+
+func rebuildFTSIndex() {
+	_, _ = appDbExec("insert into posts_fts(posts_fts) values ('rebuild')")
+	return
 }
 
 func postExists(path string) bool {
@@ -203,6 +213,7 @@ func getPost(path string) (*post, error) {
 }
 
 type postsRequestConfig struct {
+	search         string
 	blog           string
 	path           string
 	limit          int
@@ -218,6 +229,10 @@ func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
 	args = []interface{}{}
 	defaultSelection := "select p.path as path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(blog, ''), coalesce(section, ''), coalesce(parameter, ''), coalesce(value, '') "
 	postsTable := "posts"
+	if config.search != "" {
+		postsTable = "posts_fts(@search)"
+		args = append(args, sql.Named("search", config.search))
+	}
 	if config.blog != "" {
 		postsTable = "(select * from " + postsTable + " where blog = @blog)"
 		args = append(args, sql.Named("blog", config.blog))

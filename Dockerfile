@@ -4,7 +4,7 @@ ADD *.go /app/
 ADD go.mod /app/
 ADD go.sum /app/
 WORKDIR /app
-RUN go build --tags "libsqlite3 linux"
+RUN go build --tags "libsqlite3 linux sqlite_fts5"
 
 FROM alpine:3.12
 RUN apk add --no-cache sqlite-dev

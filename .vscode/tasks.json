@@ -4,7 +4,7 @@
       {
         "label": "Build",
         "type": "shell",
-        "command": "go build"
+        "command": "go build --tags \"libsqlite3 linux sqlite_fts5\""
       }
     ]
   }

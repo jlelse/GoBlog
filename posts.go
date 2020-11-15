@@ -155,6 +155,14 @@ func servePhotos(blog string, path string) func(w http.ResponseWriter, r *http.R
 	})
 }
 
+func serveSearchResults(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
+	return serveIndex(&indexConfig{
+		blog:     blog,
+		path:     path,
+		template: templateIndex,
+	})
+}
+
 type indexConfig struct {
 	blog      string
 	path      string
@@ -167,6 +175,10 @@ type indexConfig struct {
 
 func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		search := chi.URLParam(r, "search")
+		if search != "" {
+			search = searchDecode(search)
+		}
 		pageNoString := chi.URLParam(r, "page")
 		pageNo, _ := strconv.Atoi(pageNoString)
 		var sections []string
@@ -183,6 +195,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			taxonomy:      ic.tax,
 			taxonomyValue: ic.taxValue,
 			parameter:     ic.parameter,
+			search:        search,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post
@@ -198,6 +211,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		} else if ic.section != nil {
 			title = ic.section.Title
 			description = ic.section.Description
+		} else if search != "" {
+			title = fmt.Sprintf("%s: %s", appConfig.Blogs[ic.blog].Search.Title, search)
 		}
 		// Check if feed
 		if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
@@ -217,6 +232,10 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		if len(template) == 0 {
 			template = templateIndex
 		}
+		path := ic.path
+		if strings.Contains(path, searchPlaceholder) {
+			path = strings.ReplaceAll(path, searchPlaceholder, searchEncode(search))
+		}
 		render(w, template, &renderData{
 			blogString: ic.blog,
 			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
@@ -227,8 +246,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 				HasPrev:     p.HasPrev(),
 				HasNext:     p.HasNext(),
 				First:       ic.path,
-				Prev:        fmt.Sprintf("%s/page/%d", ic.path, prevPage),
-				Next:        fmt.Sprintf("%s/page/%d", ic.path, nextPage),
+				Prev:        fmt.Sprintf("%s/page/%d", path, prevPage),
+				Next:        fmt.Sprintf("%s/page/%d", path, nextPage),
 			},
 		})
 	}

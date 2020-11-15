@@ -49,11 +49,12 @@ type configBlog struct {
 	Title          string              `mapstructure:"title"`
 	Description    string              `mapstructure:"description"`
 	Pagination     int                 `mapstructure:"pagination"`
+	DefaultSection string              `mapstructure:"defaultsection"`
 	Sections       map[string]*section `mapstructure:"sections"`
 	Taxonomies     []*taxonomy         `mapstructure:"taxonomies"`
 	Menus          map[string]*menu    `mapstructure:"menus"`
 	Photos         *photos             `mapstructure:"photos"`
-	DefaultSection string              `mapstructure:"defaultsection"`
+	Search         *search             `mapstructure:"search"`
 	CustomPages    []*customPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram     `mapstructure:"telegram"`
 }
@@ -86,6 +87,14 @@ type photos struct {
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
+}
+
+type search struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Path        string `mapstructure:"path"`
+	Title       string `mapstructure:"title"`
+	Description string `mapstructure:"description"`
+	Placeholder string `mapstructure:"placeholder"`
 }
 
 type customPage struct {

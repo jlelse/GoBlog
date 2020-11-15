@@ -228,6 +228,19 @@ func buildHandler() (http.Handler, error) {
 			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath+paginationPath, handler)
 		}
 
+		// Search
+		if blogConfig.Search.Enabled {
+			searchPath := blogPath + blogConfig.Search.Path
+			handler := serveSearch(blog, searchPath)
+			r.With(cacheMiddleware, minifier.Middleware).Get(searchPath, handler)
+			r.With(cacheMiddleware, minifier.Middleware).Post(searchPath, handler)
+			searchResultPath := searchPath + "/" + searchPlaceholder
+			resultHandler := serveSearchResults(blog, searchResultPath)
+			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath, resultHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+feedPath, resultHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+paginationPath, resultHandler)
+		}
+
 		// Blog
 		var mw []func(http.Handler) http.Handler
 		if appConfig.ActivityPub.Enabled {

@@ -28,6 +28,7 @@ const templateError = "error"
 const templateIndex = "index"
 const templateTaxonomy = "taxonomy"
 const templatePhotos = "photos"
+const templateSearch = "search"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
