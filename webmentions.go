@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -43,8 +42,8 @@ func initWebmention() {
 func startWebmentionVerifier() {
 	go func() {
 		for {
-			verifyNextWebmention()
 			time.Sleep(30 * time.Second)
+			verifyNextWebmention()
 		}
 	}()
 }
@@ -148,9 +147,7 @@ func verifyNextWebmention() error {
 		Source: m.Source,
 		Target: m.Target,
 	}
-	if err := wmd.Verify(context.Background(), wmm, func(c *wmd.VerifyOptions) {
-		c.MaxRedirects = 15
-	}); err != nil {
+	if err := wmVerify(wmm); err != nil {
 		// Invalid
 		return deleteWebmention(m.ID)
 	}
