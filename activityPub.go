@@ -20,7 +20,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-fed/httpsig"
-	"github.com/zerok/webmentiond/pkg/webmention"
 )
 
 var (
@@ -148,8 +147,8 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 					createWebmention(id, inReplyTo)
 				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
 					// May be a mention; find links to blog and save them as webmentions
-					if doc, err := webmention.DocumentFromReader(context.Background(), strings.NewReader(content), id); err == nil && doc != nil {
-						for _, link := range doc.ExternalLinks() {
+					if links, err := allLinksFromHTML(strings.NewReader(content), id); err == nil {
+						for _, link := range links {
 							if strings.Contains(link, blogIri) {
 								createWebmention(id, link)
 							}
@@ -221,8 +220,8 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	req.Header.Add("Accept", contentTypeAS)
-	req.Header.Add("User-Agent", "GoBlog")
+	req.Header.Set("Accept", contentTypeAS)
+	req.Header.Set("User-Agent", "GoBlog")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -404,12 +403,12 @@ func apSendSigned(blog *configBlog, activity interface{}, to string) error {
 	if err != nil {
 		return err
 	}
-	r.Header.Add("Accept-Charset", "utf-8")
-	r.Header.Add("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
-	r.Header.Add("User-Agent", "GoBlog")
-	r.Header.Add("Accept", contentTypeASUTF8)
-	r.Header.Add(contentType, contentTypeASUTF8)
-	r.Header.Add("Host", iri.Host)
+	r.Header.Set("Accept-Charset", "utf-8")
+	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
+	r.Header.Set("User-Agent", "GoBlog")
+	r.Header.Set("Accept", contentTypeASUTF8)
+	r.Header.Set(contentType, contentTypeASUTF8)
+	r.Header.Set("Host", iri.Host)
 	// Sign request
 	apPostSignMutex.Lock()
 	err = apPostSigner.SignRequest(apPrivateKey, blog.apIri()+"#main-key", r, bodyCopy)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	wmd "github.com/zerok/webmentiond/pkg/webmention"
 	"willnorris.com/go/webmention"
 )
 
@@ -49,7 +49,7 @@ func startWebmentionVerifier() {
 }
 
 func handleWebmention(w http.ResponseWriter, r *http.Request) {
-	m, err := wmd.ExtractMention(r)
+	m, err := extractMention(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,6 +64,25 @@ func handleWebmention(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = fmt.Fprint(w, "Webmention accepted")
+}
+
+func extractMention(r *http.Request) (*mention, error) {
+	if !strings.Contains(r.Header.Get(contentType), contentTypeWWWForm) {
+		return nil, errors.New("Unsupported Content-Type")
+	}
+	err := r.ParseForm()
+	if err != nil {
+		return nil, err
+	}
+	source := r.Form.Get("source")
+	target := r.Form.Get("target")
+	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
+		return nil, errors.New("Invalid request")
+	}
+	return &mention{
+		Source: source,
+		Target: target,
+	}, nil
 }
 
 func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
@@ -143,23 +162,19 @@ func verifyNextWebmention() error {
 	} else if err != nil {
 		return err
 	}
-	wmm := &wmd.Mention{
-		Source: m.Source,
-		Target: m.Target,
-	}
-	if err := wmVerify(wmm); err != nil {
+	if err := wmVerify(m); err != nil {
 		// Invalid
 		return deleteWebmention(m.ID)
 	}
-	if len(wmm.Content) > 500 {
-		wmm.Content = wmm.Content[0:497] + "…"
+	if len(m.Content) > 500 {
+		m.Content = m.Content[0:497] + "…"
 	}
 	newStatus := webmentionStatusVerified
-	if strings.HasPrefix(wmm.Source, appConfig.Server.PublicAddress) {
+	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
 		// Approve if it's server-intern
 		newStatus = webmentionStatusApproved
 	}
-	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", newStatus, wmm.Title, wmm.Type, wmm.Content, wmm.AuthorName, m.ID)
+	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", newStatus, m.Title, m.Type, m.Content, m.Author, m.ID)
 	if oldStatus == string(webmentionStatusNew) {
 		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}

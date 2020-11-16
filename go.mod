@@ -30,7 +30,6 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rs/zerolog v1.20.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/afero v1.4.1 // indirect
@@ -41,12 +40,11 @@ require (
 	github.com/vcraescu/go-paginator v1.0.0
 	github.com/yuin/goldmark v1.2.1
 	github.com/yuin/goldmark-emoji v1.0.1
-	github.com/zerok/webmentiond v0.0.0-20201029170438-6357f334dd13
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba // indirect
 	golang.org/x/text v0.3.4 // indirect

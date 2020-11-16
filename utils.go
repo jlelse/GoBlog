@@ -1,11 +1,15 @@
 package main
 
 import (
+	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func urlize(str string) string {
@@ -54,4 +58,34 @@ func isAllowedHost(r *http.Request, hosts ...string) bool {
 		}
 	}
 	return false
+}
+
+func isAbsoluteURL(s string) bool {
+	if !strings.HasPrefix(s, "https://") && !strings.HasPrefix(s, "http://") {
+		return false
+	}
+	if _, err := url.Parse(s); err != nil {
+		return false
+	}
+	return true
+}
+
+func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
+	bu, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+	links := []string{}
+	doc.Find("a[href]").Each(func(_ int, item *goquery.Selection) {
+		if href, exists := item.Attr("href"); exists {
+			if ref, err := url.Parse(href); err == nil {
+				links = append(links, bu.ResolveReference(ref).String())
+			}
+		}
+	})
+	return links, nil
 }
