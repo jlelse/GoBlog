@@ -27,6 +27,9 @@ const (
 	contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
 	contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
 	contentTypeASUTF8   = contentTypeAS + charsetUtf8Suffix
+
+	userAgent    = "User-Agent"
+	appUserAgent = "GoBlog"
 )
 
 var (

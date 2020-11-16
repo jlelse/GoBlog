@@ -74,8 +74,8 @@ func (p *post) toASNote() *asNote {
 		Context:      asContext,
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
 		MediaType:    contentTypeHTML,
-		ID:           appConfig.Server.PublicAddress + p.Path,
-		URL:          appConfig.Server.PublicAddress + p.Path,
+		ID:           p.fullURL(),
+		URL:          p.fullURL(),
 		AttributedTo: appConfig.Blogs[p.Blog].apIri(),
 	}
 	// Name and Type
@@ -133,8 +133,8 @@ func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter) {
 		PreferredUsername: blog,
 		Inbox:             appConfig.Server.PublicAddress + "/activitypub/inbox/" + blog,
 		PublicKey: &asPublicKey{
-			Owner: appConfig.Server.PublicAddress + b.Path,
-			ID:    appConfig.Server.PublicAddress + b.Path + "#main-key",
+			Owner: b.apIri(),
+			ID:    b.apIri() + "#main-key",
 			PublicKeyPem: string(pem.EncodeToMemory(&pem.Block{
 				Type:    "PUBLIC KEY",
 				Headers: nil,

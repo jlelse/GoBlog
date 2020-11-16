@@ -2,29 +2,66 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"willnorris.com/go/microformats"
 )
 
-func wmVerify(m *mention) error {
-	client := &http.Client{}
-	client.CheckRedirect = func(r *http.Request, via []*http.Request) error {
-		if len(via) > 15 {
-			return errors.New("too many redirects")
+func startWebmentionVerifier() {
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			verifyNextWebmention()
 		}
-		return nil
+	}()
+}
+
+func verifyNextWebmention() error {
+	m := &mention{}
+	oldStatus := ""
+	row, err := appDbQueryRow("select id, source, target, status from webmentions where (status = ? or status = ?) limit 1", webmentionStatusNew, webmentionStatusRenew)
+	if err != nil {
+		return err
 	}
+	if err := row.Scan(&m.ID, &m.Source, &m.Target, &oldStatus); err == sql.ErrNoRows {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	if err := wmVerify(m); err != nil {
+		// Invalid
+		return deleteWebmention(m.ID)
+	}
+	if len(m.Content) > 500 {
+		m.Content = m.Content[0:497] + "…"
+	}
+	newStatus := webmentionStatusVerified
+	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
+		// Approve if it's server-intern
+		newStatus = webmentionStatusApproved
+	}
+	_, err = appDbExec("update webmentions set status = ?, title = ?, content = ?, author = ? where id = ?", newStatus, m.Title, m.Content, m.Author, m.ID)
+	if oldStatus == string(webmentionStatusNew) {
+		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
+	}
+	return err
+}
+
+func wmVerify(m *mention) error {
 	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "GoBlog")
-	resp, err := client.Do(req)
+	req.Header.Set(userAgent, appUserAgent)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}

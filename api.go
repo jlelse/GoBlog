@@ -55,6 +55,6 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.Header().Set("Location", appConfig.Server.PublicAddress+p.Path)
+	w.Header().Set("Location", p.fullURL())
 	w.WriteHeader(http.StatusCreated)
 }

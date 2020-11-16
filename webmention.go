@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"willnorris.com/go/webmention"
 )
 
 type webmentionStatus string
@@ -36,15 +34,6 @@ type mention struct {
 
 func initWebmention() {
 	startWebmentionVerifier()
-}
-
-func startWebmentionVerifier() {
-	go func() {
-		for {
-			time.Sleep(30 * time.Second)
-			verifyNextWebmention()
-		}
-	}()
 }
 
 func handleWebmention(w http.ResponseWriter, r *http.Request) {
@@ -149,37 +138,6 @@ func webmentionExists(source, target string) bool {
 	return result == 1
 }
 
-func verifyNextWebmention() error {
-	m := &mention{}
-	oldStatus := ""
-	row, err := appDbQueryRow("select id, source, target, status from webmentions where (status = ? or status = ?) limit 1", webmentionStatusNew, webmentionStatusRenew)
-	if err != nil {
-		return err
-	}
-	if err := row.Scan(&m.ID, &m.Source, &m.Target, &oldStatus); err == sql.ErrNoRows {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	if err := wmVerify(m); err != nil {
-		// Invalid
-		return deleteWebmention(m.ID)
-	}
-	if len(m.Content) > 500 {
-		m.Content = m.Content[0:497] + "…"
-	}
-	newStatus := webmentionStatusVerified
-	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
-		// Approve if it's server-intern
-		newStatus = webmentionStatusApproved
-	}
-	_, err = appDbExec("update webmentions set status = ?, title = ?, content = ?, author = ? where id = ?", newStatus, m.Title, m.Content, m.Author, m.ID)
-	if oldStatus == string(webmentionStatusNew) {
-		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
-	}
-	return err
-}
-
 func createWebmention(source, target string) (err error) {
 	if webmentionExists(source, target) {
 		_, err = appDbExec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, target)
@@ -240,37 +198,4 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 		mentions = append(mentions, m)
 	}
 	return mentions, nil
-}
-
-func (p *post) sendWebmentions() error {
-	url := appConfig.Server.PublicAddress + p.Path
-	recorder := httptest.NewRecorder()
-	// Render basic post data
-	render(recorder, "postbasic", &renderData{
-		blogString: p.Blog,
-		Data:       p,
-	})
-	discovered, err := webmention.DiscoverLinksFromReader(recorder.Result().Body, url, ".h-entry")
-	if err != nil {
-		return err
-	}
-	client := webmention.New(nil)
-	for _, link := range discovered {
-		if strings.HasPrefix(link, appConfig.Server.PublicAddress) {
-			// Save mention directly
-			createWebmention(url, link)
-			continue
-		}
-		endpoint, err := client.DiscoverEndpoint(link)
-		if err != nil || len(endpoint) < 1 {
-			continue
-		}
-		_, err = client.SendWebmention(endpoint, url, link)
-		if err != nil {
-			log.Println("Sending webmention to " + link + " failed")
-			continue
-		}
-		log.Println("Sent webmention to " + link)
-	}
-	return nil
 }

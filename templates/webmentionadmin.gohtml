@@ -9,7 +9,11 @@
     {{ $blog := .Blog }}
     {{ range $i, $mention := .Data.Verified }}
       <div class="p">
-        <p>From: {{ $mention.Source }}<br/>To: {{ $mention.Target }}<br/>Created: {{ unixtodate $mention.Created }}</p>
+        <p>
+          From: <a href="{{ $mention.Source }}" target="_blank" rel="noopener noreferrer">{{ $mention.Source }}</a><br/>
+          To: <a href="{{ $mention.Target }}" target="_blank">{{ $mention.Target }}</a><br/>
+          Created: {{ unixtodate $mention.Created }}
+        </p>
         <form method="post">
           <input type="submit" formaction="/webmention/admin/approve/{{ $mention.ID }}" value="{{ string $blog.Lang "approve" }}">
           <input type="submit" formaction="/webmention/admin/delete/{{ $mention.ID }}" value="{{ string $blog.Lang "delete" }}">

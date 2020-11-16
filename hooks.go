@@ -21,7 +21,7 @@ func (p *post) postPostHooks() {
 	for _, cmdTmplString := range appConfig.Hooks.PostPost {
 		go func(p *post, cmdTmplString string) {
 			executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
-				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"URL":  p.fullURL(),
 				"Post": p,
 			})
 		}(p, cmdTmplString)
@@ -38,7 +38,7 @@ func (p *post) postUpdateHooks() {
 	for _, cmdTmplString := range appConfig.Hooks.PostUpdate {
 		go func(p *post, cmdTmplString string) {
 			executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
-				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"URL":  p.fullURL(),
 				"Post": p,
 			})
 		}(p, cmdTmplString)
@@ -54,7 +54,7 @@ func (p *post) postDeleteHooks() {
 	for _, cmdTmplString := range appConfig.Hooks.PostDelete {
 		go func(p *post, cmdTmplString string) {
 			executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
-				"URL":  appConfig.Server.PublicAddress + p.Path,
+				"URL":  p.fullURL(),
 				"Post": p,
 			})
 		}(p, cmdTmplString)

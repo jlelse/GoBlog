@@ -71,10 +71,6 @@ func isAbsoluteURL(s string) bool {
 }
 
 func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
-	bu, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, err
-	}
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
 		return nil, err
@@ -82,10 +78,25 @@ func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 	links := []string{}
 	doc.Find("a[href]").Each(func(_ int, item *goquery.Selection) {
 		if href, exists := item.Attr("href"); exists {
-			if ref, err := url.Parse(href); err == nil {
-				links = append(links, bu.ResolveReference(ref).String())
-			}
+			links = append(links, href)
 		}
 	})
-	return links, nil
+	links, err = resolveURLReferences(baseURL, links...)
+	return links, err
+}
+
+func resolveURLReferences(base string, refs ...string) ([]string, error) {
+	b, err := url.Parse(base)
+	if err != nil {
+		return nil, err
+	}
+	var urls []string
+	for _, r := range refs {
+		u, err := url.Parse(r)
+		if err != nil {
+			continue
+		}
+		urls = append(urls, b.ResolveReference(u).String())
+	}
+	return urls, nil
 }

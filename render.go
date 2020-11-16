@@ -27,8 +27,9 @@ const templatePost = "post"
 const templateError = "error"
 const templateIndex = "index"
 const templateTaxonomy = "taxonomy"
-const templatePhotos = "photos"
 const templateSearch = "search"
+const templateSummary = "summary"
+const templatePhotosSummary = "photosummary"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -76,7 +77,7 @@ func initRendering() error {
 		},
 		"postmentions": func(p *post) []*mention {
 			mentions, _ := getWebmentions(&webmentionsRequestConfig{
-				target: appConfig.Server.PublicAddress + p.Path,
+				target: p.fullURL(),
 				status: webmentionStatusApproved,
 				asc:    true,
 			})

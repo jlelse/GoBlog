@@ -55,7 +55,7 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		}
 		feed.Add(&feeds.Item{
 			Title:       p.title(),
-			Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + p.Path},
+			Link:        &feeds.Link{Href: p.fullURL()},
 			Description: p.summary(),
 			Id:          p.Path,
 			Content:     string(p.html()),

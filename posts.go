@@ -47,25 +47,13 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	}
 	canonical := p.firstParameter("original")
 	if canonical == "" {
-		canonical = appConfig.Server.PublicAddress + p.Path
+		canonical = p.fullURL()
 	}
 	render(w, templatePost, &renderData{
 		blogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
 	})
-}
-
-type indexTemplateData struct {
-	Blog        string
-	Title       string
-	Description string
-	Posts       []*post
-	HasPrev     bool
-	HasNext     bool
-	First       string
-	Prev        string
-	Next        string
 }
 
 type postPaginationAdapter struct {
@@ -148,29 +136,32 @@ func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string) f
 
 func servePhotos(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
-		blog:      blog,
-		path:      path,
-		parameter: appConfig.Blogs[blog].Photos.Parameter,
-		template:  templatePhotos,
+		blog:            blog,
+		path:            path,
+		parameter:       appConfig.Blogs[blog].Photos.Parameter,
+		title:           appConfig.Blogs[blog].Photos.Title,
+		description:     appConfig.Blogs[blog].Photos.Description,
+		summaryTemplate: templatePhotosSummary,
 	})
 }
 
 func serveSearchResults(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
-		blog:     blog,
-		path:     path,
-		template: templateIndex,
+		blog: blog,
+		path: path,
 	})
 }
 
 type indexConfig struct {
-	blog      string
-	path      string
-	section   *section
-	tax       *taxonomy
-	taxValue  string
-	parameter string
-	template  string
+	blog            string
+	path            string
+	section         *section
+	tax             *taxonomy
+	taxValue        string
+	parameter       string
+	title           string
+	description     string
+	summaryTemplate string
 }
 
 func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +196,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Meta
-		var title, description string
+		title := ic.title
+		description := ic.description
 		if ic.tax != nil {
 			title = fmt.Sprintf("%s: %s", ic.tax.Title, ic.taxValue)
 		} else if ic.section != nil {
@@ -238,22 +230,23 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			nextPage = p.Page()
 		}
 		nextPath := fmt.Sprintf("%s/page/%d", path, nextPage)
-		template := ic.template
-		if len(template) == 0 {
-			template = templateIndex
+		summaryTemplate := ic.summaryTemplate
+		if summaryTemplate == "" {
+			summaryTemplate = templateSummary
 		}
-		render(w, template, &renderData{
+		render(w, templateIndex, &renderData{
 			blogString: ic.blog,
 			Canonical:  appConfig.Server.PublicAddress + getBlogRelativePath(ic.blog, path),
-			Data: &indexTemplateData{
-				Title:       title,
-				Description: description,
-				Posts:       posts,
-				HasPrev:     p.HasPrev(),
-				HasNext:     p.HasNext(),
-				First:       getBlogRelativePath(ic.blog, path),
-				Prev:        getBlogRelativePath(ic.blog, prevPath),
-				Next:        getBlogRelativePath(ic.blog, nextPath),
+			Data: map[string]interface{}{
+				"Title":           title,
+				"Description":     description,
+				"Posts":           posts,
+				"HasPrev":         p.HasPrev(),
+				"HasNext":         p.HasNext(),
+				"First":           getBlogRelativePath(ic.blog, path),
+				"Prev":            getBlogRelativePath(ic.blog, prevPath),
+				"Next":            getBlogRelativePath(ic.blog, nextPath),
+				"SummaryTemplate": summaryTemplate,
 			},
 		})
 	}

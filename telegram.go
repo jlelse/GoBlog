@@ -18,7 +18,7 @@ func (p *post) tgPost() {
 		message.WriteString(title)
 		message.WriteString("\n\n")
 	}
-	message.WriteString(appConfig.Server.PublicAddress + p.Path)
+	message.WriteString(p.fullURL())
 	sendTelegramMessage(message.String(), appConfig.Blogs[p.Blog].Telegram.BotToken, appConfig.Blogs[p.Blog].Telegram.ChatID)
 }
 

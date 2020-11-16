@@ -19,7 +19,7 @@ func serveSitemap(w http.ResponseWriter, r *http.Request) {
 	sm.Minify = true
 	for _, p := range posts {
 		item := &sitemap.URL{
-			Loc: appConfig.Server.PublicAddress + p.Path}
+			Loc: p.fullURL()}
 		var lastMod time.Time
 		if p.Updated != "" {
 			lastMod, _ = dateparse.ParseIn(p.Updated, time.Local)

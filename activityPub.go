@@ -221,7 +221,7 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 		return nil, 0, err
 	}
 	req.Header.Set("Accept", contentTypeAS)
-	req.Header.Set("User-Agent", "GoBlog")
+	req.Header.Set(userAgent, appUserAgent)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -273,7 +273,7 @@ func (p *post) apPost() {
 	createActivity := make(map[string]interface{})
 	createActivity["@context"] = asContext
 	createActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	createActivity["id"] = appConfig.Server.PublicAddress + p.Path
+	createActivity["id"] = p.fullURL()
 	createActivity["published"] = n.Published
 	createActivity["type"] = "Create"
 	createActivity["object"] = n
@@ -293,7 +293,7 @@ func (p *post) apUpdate() {
 	updateActivity := make(map[string]interface{})
 	updateActivity["@context"] = asContext
 	updateActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	updateActivity["id"] = appConfig.Server.PublicAddress + p.Path
+	updateActivity["id"] = p.fullURL()
 	updateActivity["published"] = time.Now().Format("2006-01-02T15:04:05-07:00")
 	updateActivity["type"] = "Update"
 	updateActivity["object"] = n
@@ -307,10 +307,10 @@ func (p *post) apAnnounce() {
 	announceActivity := make(map[string]interface{})
 	announceActivity["@context"] = asContext
 	announceActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	announceActivity["id"] = appConfig.Server.PublicAddress + p.Path + "#announce"
+	announceActivity["id"] = p.fullURL() + "#announce"
 	announceActivity["published"] = p.toASNote().Published
 	announceActivity["type"] = "Announce"
-	announceActivity["object"] = appConfig.Server.PublicAddress + p.Path
+	announceActivity["object"] = p.fullURL()
 	apSendToAllFollowers(p.Blog, announceActivity)
 }
 
@@ -321,10 +321,10 @@ func (p *post) apDelete() {
 	deleteActivity := make(map[string]interface{})
 	deleteActivity["@context"] = asContext
 	deleteActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	deleteActivity["id"] = appConfig.Server.PublicAddress + p.Path + "#delete"
+	deleteActivity["id"] = p.fullURL() + "#delete"
 	deleteActivity["type"] = "Delete"
 	deleteActivity["object"] = map[string]string{
-		"id":   appConfig.Server.PublicAddress + p.Path,
+		"id":   p.fullURL(),
 		"type": "Tombstone",
 	}
 	apSendToAllFollowers(p.Blog, deleteActivity)
@@ -405,7 +405,7 @@ func apSendSigned(blog *configBlog, activity interface{}, to string) error {
 	}
 	r.Header.Set("Accept-Charset", "utf-8")
 	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
-	r.Header.Set("User-Agent", "GoBlog")
+	r.Header.Set(userAgent, appUserAgent)
 	r.Header.Set("Accept", contentTypeASUTF8)
 	r.Header.Set(contentType, contentTypeASUTF8)
 	r.Header.Set("Host", iri.Host)

@@ -100,7 +100,7 @@ func (p *post) toMfItem() *microformatItem {
 			Updated:    []string{p.Updated},
 			Category:   p.Parameters[appConfig.Micropub.CategoryParam],
 			Content:    []string{content},
-			URL:        []string{appConfig.Server.PublicAddress + p.Path},
+			URL:        []string{p.fullURL()},
 			InReplyTo:  p.Parameters[appConfig.Micropub.ReplyParam],
 			LikeOf:     p.Parameters[appConfig.Micropub.LikeParam],
 			BookmarkOf: p.Parameters[appConfig.Micropub.BookmarkParam],
@@ -181,7 +181,7 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Add("Location", appConfig.Server.PublicAddress+p.Path)
+	w.Header().Add("Location", p.fullURL())
 	w.WriteHeader(http.StatusAccepted)
 	return
 }
