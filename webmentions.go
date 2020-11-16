@@ -32,7 +32,6 @@ type mention struct {
 	Title   string
 	Content string
 	Author  string
-	Type    string
 }
 
 func initWebmention() {
@@ -174,7 +173,7 @@ func verifyNextWebmention() error {
 		// Approve if it's server-intern
 		newStatus = webmentionStatusApproved
 	}
-	_, err = appDbExec("update webmentions set status = ?, title = ?, type = ?, content = ?, author = ? where id = ?", newStatus, m.Title, m.Type, m.Content, m.Author, m.ID)
+	_, err = appDbExec("update webmentions set status = ?, title = ?, content = ?, author = ? where id = ?", newStatus, m.Title, m.Content, m.Author, m.ID)
 	if oldStatus == string(webmentionStatusNew) {
 		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
@@ -228,13 +227,13 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	if config.asc {
 		order = "asc"
 	}
-	rows, err = appDbQuery("select id, source, target, created, title, content, author, type from webmentions "+filter+" order by created "+order, args...)
+	rows, err = appDbQuery("select id, source, target, created, title, content, author from webmentions "+filter+" order by created "+order, args...)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		m := &mention{}
-		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Created, &m.Title, &m.Content, &m.Author, &m.Type)
+		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Created, &m.Title, &m.Content, &m.Author)
 		if err != nil {
 			return nil, err
 		}

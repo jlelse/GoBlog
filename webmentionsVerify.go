@@ -80,22 +80,10 @@ func mfFillMention(m *mention, mf *microformats.Microformat) bool {
 				m.Title = title
 			}
 		}
-		if reply, ok := mf.Properties["in-reply-to"]; ok && len(reply) > 0 {
-			if replyLink, ok := reply[0].(string); ok && replyLink == m.Target {
-				m.Type = "comment"
-			}
-		}
-		if like, ok := mf.Properties["like-of"]; ok && len(like) > 0 {
-			if likeLink, ok := like[0].(string); ok && likeLink == m.Target {
-				m.Type = "like"
-			}
-		}
 		if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
-			if content, ok := contents[0].(map[string]interface{}); ok {
-				if rawContentValue, ok := content["value"]; ok {
-					if contentValue, ok := rawContentValue.(string); ok {
-						m.Content = contentValue
-					}
+			if content, ok := contents[0].(map[string]string); ok {
+				if contentValue, ok := content["value"]; ok {
+					m.Content = contentValue
 				}
 			}
 		}
