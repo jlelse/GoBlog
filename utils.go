@@ -100,3 +100,10 @@ func resolveURLReferences(base string, refs ...string) ([]string, error) {
 	}
 	return urls, nil
 }
+
+func slashIfEmpty(s string) string {
+	if s == "" {
+		return "/"
+	}
+	return s
+}

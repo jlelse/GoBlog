@@ -252,9 +252,9 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 				"Posts":           posts,
 				"HasPrev":         hasPrev,
 				"HasNext":         hasNext,
-				"First":           appConfig.Server.PublicAddress + path,
-				"Prev":            appConfig.Server.PublicAddress + prevPath,
-				"Next":            appConfig.Server.PublicAddress + nextPath,
+				"First":           slashIfEmpty(path),
+				"Prev":            slashIfEmpty(prevPath),
+				"Next":            slashIfEmpty(nextPath),
 				"SummaryTemplate": summaryTemplate,
 			},
 		})
