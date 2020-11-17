@@ -10,7 +10,7 @@ import (
 
 func preStartHooks() {
 	for _, cmd := range appConfig.Hooks.PreStart {
-		go func(cmd string) {
+		func(cmd string) {
 			log.Println("Executing pre-start hook:", cmd)
 			executeCommand(cmd)
 		}(cmd)
