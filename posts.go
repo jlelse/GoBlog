@@ -58,14 +58,15 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 
 type postPaginationAdapter struct {
 	config *postsRequestConfig
-	nums   int
+	nums   int64
 }
 
-func (p *postPaginationAdapter) Nums() int {
+func (p *postPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		p.nums, _ = countPosts(p.config)
+		nums, _ := countPosts(p.config)
+		p.nums = int64(nums)
 	}
-	return p.nums
+	return p.nums, nil
 }
 
 func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) error {
@@ -217,19 +218,27 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			path = strings.ReplaceAll(path, searchPlaceholder, searchEncode(search))
 		}
 		// Navigation
-		prevPage, err := p.PrevPage()
-		if err == paginator.ErrNoPrevPage {
-			prevPage = p.Page()
+		var hasPrev, hasNext bool
+		var prevPage, nextPage int
+		var prevPath, nextPath string
+		hasPrev, _ = p.HasPrev()
+		if hasPrev {
+			prevPage, _ = p.PrevPage()
+		} else {
+			prevPage, _ = p.Page()
 		}
-		prevPath := fmt.Sprintf("%s/page/%d", path, prevPage)
 		if prevPage < 2 {
 			prevPath = path
+		} else {
+			prevPath = fmt.Sprintf("%s/page/%d", path, prevPage)
 		}
-		nextPage, err := p.NextPage()
-		if err == paginator.ErrNoNextPage {
-			nextPage = p.Page()
+		hasNext, _ = p.HasNext()
+		if hasNext {
+			nextPage, _ = p.NextPage()
+		} else {
+			nextPage, _ = p.Page()
 		}
-		nextPath := fmt.Sprintf("%s/page/%d", path, nextPage)
+		nextPath = fmt.Sprintf("%s/page/%d", path, nextPage)
 		summaryTemplate := ic.summaryTemplate
 		if summaryTemplate == "" {
 			summaryTemplate = templateSummary
@@ -241,11 +250,11 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 				"Title":           title,
 				"Description":     description,
 				"Posts":           posts,
-				"HasPrev":         p.HasPrev(),
-				"HasNext":         p.HasNext(),
-				"First":           path,
-				"Prev":            prevPath,
-				"Next":            nextPath,
+				"HasPrev":         hasPrev,
+				"HasNext":         hasNext,
+				"First":           appConfig.Server.PublicAddress + path,
+				"Prev":            appConfig.Server.PublicAddress + prevPath,
+				"Next":            appConfig.Server.PublicAddress + nextPath,
 				"SummaryTemplate": summaryTemplate,
 			},
 		})
