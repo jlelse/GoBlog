@@ -29,6 +29,24 @@ var (
 )
 
 func initActivityPub() error {
+	if !appConfig.ActivityPub.Enabled {
+		return nil
+	}
+	// Add hooks
+	postHooks[postPostHook] = append(postHooks[postPostHook], func(p *post) {
+		if p.isPublishedSectionPost() {
+			p.apPost()
+		}
+	})
+	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], func(p *post) {
+		if p.isPublishedSectionPost() {
+			p.apUpdate()
+		}
+	})
+	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], func(p *post) {
+		p.apDelete()
+	})
+	// Read key and prepare signing
 	pkfile, err := ioutil.ReadFile(appConfig.ActivityPub.KeyPath)
 	if err != nil {
 		return err
@@ -266,9 +284,6 @@ func apRemoveFollower(blog, follower string) error {
 }
 
 func (p *post) apPost() {
-	if !appConfig.ActivityPub.Enabled {
-		return
-	}
 	n := p.toASNote()
 	createActivity := make(map[string]interface{})
 	createActivity["@context"] = asContext
@@ -286,9 +301,6 @@ func (p *post) apPost() {
 }
 
 func (p *post) apUpdate() {
-	if !appConfig.ActivityPub.Enabled {
-		return
-	}
 	n := p.toASNote()
 	updateActivity := make(map[string]interface{})
 	updateActivity["@context"] = asContext
@@ -301,9 +313,6 @@ func (p *post) apUpdate() {
 }
 
 func (p *post) apAnnounce() {
-	if !appConfig.ActivityPub.Enabled {
-		return
-	}
 	announceActivity := make(map[string]interface{})
 	announceActivity["@context"] = asContext
 	announceActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
@@ -315,9 +324,6 @@ func (p *post) apAnnounce() {
 }
 
 func (p *post) apDelete() {
-	if !appConfig.ActivityPub.Enabled {
-		return
-	}
 	deleteActivity := make(map[string]interface{})
 	deleteActivity["@context"] = asContext
 	deleteActivity["actor"] = appConfig.Blogs[p.Blog].apIri()

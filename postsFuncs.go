@@ -77,3 +77,7 @@ func (p *post) translations() []*post {
 	}
 	return translations
 }
+
+func (p *post) isPublishedSectionPost() bool {
+	return p.Published != "" && p.Section != ""
+}

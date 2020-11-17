@@ -9,8 +9,25 @@ import (
 
 const telegramBaseURL = "https://api.telegram.org/bot"
 
+func initTelegram() {
+	enable := false
+	for _, b := range appConfig.Blogs {
+		if tg := b.Telegram; tg != nil && tg.Enabled && tg.BotToken != "" && tg.ChatID != "" {
+			enable = true
+		}
+	}
+	if enable {
+		postHooks[postPostHook] = append(postHooks[postPostHook], func(p *post) {
+			if p.isPublishedSectionPost() {
+				p.tgPost()
+			}
+		})
+	}
+}
+
 func (p *post) tgPost() {
-	if appConfig.Blogs[p.Blog].Telegram == nil || !appConfig.Blogs[p.Blog].Telegram.Enabled {
+	tg := appConfig.Blogs[p.Blog].Telegram
+	if tg == nil || !tg.Enabled || tg.BotToken == "" || tg.ChatID == "" {
 		return
 	}
 	var message bytes.Buffer
@@ -19,7 +36,7 @@ func (p *post) tgPost() {
 		message.WriteString("\n\n")
 	}
 	message.WriteString(p.fullURL())
-	sendTelegramMessage(message.String(), appConfig.Blogs[p.Blog].Telegram.BotToken, appConfig.Blogs[p.Blog].Telegram.ChatID)
+	sendTelegramMessage(message.String(), tg.BotToken, tg.ChatID)
 }
 
 func sendTelegramMessage(text, bottoken, chatID string) error {

@@ -33,6 +33,14 @@ type mention struct {
 }
 
 func initWebmention() {
+	// Add hooks
+	hookFunc := func(p *post) {
+		p.sendWebmentions()
+	}
+	postHooks[postPostHook] = append(postHooks[postPostHook], hookFunc)
+	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], hookFunc)
+	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], hookFunc)
+	// Start verifier
 	startWebmentionVerifier()
 }
 

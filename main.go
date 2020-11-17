@@ -49,13 +49,12 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	if appConfig.ActivityPub.Enabled {
-		err = initActivityPub()
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
+	err = initActivityPub()
+	if err != nil {
+		log.Fatal(err)
+		return
 	}
+	initTelegram()
 	initWebmention()
 	initCache()
 	initNodeInfo()

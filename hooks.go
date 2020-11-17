@@ -17,6 +17,16 @@ func preStartHooks() {
 	}
 }
 
+type postHookType string
+
+const (
+	postPostHook   postHookType = "post"
+	postUpdateHook postHookType = "update"
+	postDeleteHook postHookType = "delete"
+)
+
+var postHooks = map[postHookType][]func(*post){}
+
 func (p *post) postPostHooks() {
 	for _, cmdTmplString := range appConfig.Hooks.PostPost {
 		go func(p *post, cmdTmplString string) {
@@ -26,12 +36,9 @@ func (p *post) postPostHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	if p.Published != "" && p.Section != "" {
-		// It's a published post
-		go p.apPost()
-		go p.tgPost()
+	for _, f := range postHooks[postPostHook] {
+		go f(p)
 	}
-	go p.sendWebmentions()
 }
 
 func (p *post) postUpdateHooks() {
@@ -43,11 +50,9 @@ func (p *post) postUpdateHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	if p.Published != "" && p.Section != "" {
-		// It's a published post
-		go p.apUpdate()
+	for _, f := range postHooks[postUpdateHook] {
+		go f(p)
 	}
-	go p.sendWebmentions()
 }
 
 func (p *post) postDeleteHooks() {
@@ -59,8 +64,9 @@ func (p *post) postDeleteHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	go p.apDelete()
-	go p.sendWebmentions()
+	for _, f := range postHooks[postDeleteHook] {
+		go f(p)
+	}
 }
 
 type hookTemplateData struct {
