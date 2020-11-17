@@ -58,6 +58,7 @@ func main() {
 	}
 	initWebmention()
 	initCache()
+	initNodeInfo()
 
 	// Start cron hooks
 	startHourlyHooks()

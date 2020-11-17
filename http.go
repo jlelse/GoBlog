@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/handlers"
+	"github.com/writeas/go-nodeinfo"
 )
 
 const (
@@ -138,7 +139,9 @@ func buildHandler() (http.Handler, error) {
 		r.Post("/activitypub/inbox/{blog}", apHandleInbox)
 		r.Post("/activitypub/{blog}/inbox", apHandleInbox)
 		r.Get("/.well-known/webfinger", apHandleWebfinger)
-		r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
+		r.With(cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
+		r.With(cacheMiddleware, minifier.Middleware).Get(nodeinfo.NodeInfoPath, nodeInfoService.NodeInfoDiscover)
+		r.With(cacheMiddleware, minifier.Middleware).Get(nodeInfoConfig.InfoURL, nodeInfoService.NodeInfo)
 	}
 
 	// Webmentions

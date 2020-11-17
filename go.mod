@@ -8,6 +8,7 @@ require (
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
 	github.com/caddyserver/certmagic v0.12.0
+	github.com/captncraig/cors v0.0.0-20190703115713-e80254a89df1 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-fed/httpsig v1.0.1-0.20200711113112-812070f75b67
 	github.com/goodsign/monday v1.0.1-0.20201007115131-c065b60ec611
@@ -39,17 +40,19 @@ require (
 	github.com/tdewolff/minify/v2 v2.9.10
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.0
+	github.com/writeas/go-nodeinfo v1.0.0
+	github.com/writeas/go-webfinger v1.1.0 // indirect
 	github.com/yuin/goldmark v1.2.1
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20201116153603-4be66e5b6582
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20201116161645-c061ba923fbb // indirect
+	golang.org/x/sys v0.0.0-20201116194326-cc9327a14d48 // indirect
 	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.0.0-20201116172350-d68bbb546781 // indirect
+	golang.org/x/tools v0.0.0-20201117152513-9036a0f9af11 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
