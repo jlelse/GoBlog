@@ -128,7 +128,7 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 
 func webmentionExists(source, target string) bool {
 	result := 0
-	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
+	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, unescapedPath(target))
 	if err != nil {
 		return false
 	}
@@ -140,9 +140,9 @@ func webmentionExists(source, target string) bool {
 
 func createWebmention(source, target string) (err error) {
 	if webmentionExists(source, target) {
-		_, err = appDbExec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, target)
+		_, err = appDbExec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, unescapedPath(target))
 	} else {
-		_, err = appDbExec("insert into webmentions (source, target, created) values (?, ?, ?)", source, target, time.Now().Unix())
+		_, err = appDbExec("insert into webmentions (source, target, created) values (?, ?, ?)", source, unescapedPath(target), time.Now().Unix())
 	}
 	return err
 }
@@ -172,7 +172,7 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	if config != nil {
 		if config.target != "" && config.status != "" {
 			filter = "where target = @target and status = @status"
-			args = append(args, sql.Named("target", config.target), sql.Named("status", config.status))
+			args = append(args, sql.Named("target", unescapedPath(config.target)), sql.Named("status", config.status))
 		} else if config.target != "" {
 			filter = "where target = @target"
 			args = append(args, sql.Named("target", config.target))

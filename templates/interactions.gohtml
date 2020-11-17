@@ -12,7 +12,7 @@
                     {{ else }}
                         {{ $mention.Source }}
                     {{ end }}
-                </a>{{ with $mention.Title }} <i>{{.}}</i>{{ end }}</li>
+                </a>{{ with $mention.Title }} <b>{{.}}</b>{{ end }}{{ with $mention.Content }} <i>{{.}}</i>{{ end }}</li>
             {{ end }}
             </ul>
         {{ end }}

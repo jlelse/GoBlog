@@ -101,6 +101,14 @@ func resolveURLReferences(base string, refs ...string) ([]string, error) {
 	return urls, nil
 }
 
+func unescapedPath(p string) string {
+	u, err := url.PathUnescape(p)
+	if err != nil {
+		return p
+	}
+	return u
+}
+
 func slashIfEmpty(s string) string {
 	if s == "" {
 		return "/"

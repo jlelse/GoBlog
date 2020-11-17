@@ -79,7 +79,7 @@ func wmVerifyReader(body io.Reader, m *mention) error {
 	}
 	hasLink := false
 	for _, link := range links {
-		if link == m.Target {
+		if unescapedPath(link) == unescapedPath(m.Target) {
 			hasLink = true
 			break
 		}
