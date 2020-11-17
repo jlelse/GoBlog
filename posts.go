@@ -236,16 +236,16 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		}
 		render(w, templateIndex, &renderData{
 			blogString: ic.blog,
-			Canonical:  appConfig.Server.PublicAddress + getBlogRelativePath(ic.blog, path),
+			Canonical:  appConfig.Server.PublicAddress + path,
 			Data: map[string]interface{}{
 				"Title":           title,
 				"Description":     description,
 				"Posts":           posts,
 				"HasPrev":         p.HasPrev(),
 				"HasNext":         p.HasNext(),
-				"First":           getBlogRelativePath(ic.blog, path),
-				"Prev":            getBlogRelativePath(ic.blog, prevPath),
-				"Next":            getBlogRelativePath(ic.blog, nextPath),
+				"First":           path,
+				"Prev":            prevPath,
+				"Next":            nextPath,
 				"SummaryTemplate": summaryTemplate,
 			},
 		})
