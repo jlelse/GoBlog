@@ -44,6 +44,11 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	err = initCache()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	err = initRegexRedirects()
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +61,6 @@ func main() {
 	}
 	initTelegram()
 	initWebmention()
-	initCache()
 	initNodeInfo()
 
 	// Start cron hooks

@@ -38,8 +38,8 @@ type configDb struct {
 }
 
 type configCache struct {
-	Enable     bool  `mapstructure:"enable"`
-	Expiration int64 `mapstructure:"expiration"`
+	Enable     bool `mapstructure:"enable"`
+	Expiration int  `mapstructure:"expiration"`
 }
 
 type configBlog struct {
@@ -98,10 +98,11 @@ type search struct {
 }
 
 type customPage struct {
-	Path     string       `mapstructure:"path"`
-	Template string       `mapstructure:"template"`
-	Cache    bool         `mapstructure:"cache"`
-	Data     *interface{} `mapstructure:"data"`
+	Path            string       `mapstructure:"path"`
+	Template        string       `mapstructure:"template"`
+	Cache           bool         `mapstructure:"cache"`
+	CacheExpiration int          `mapstructure:"cacheExpiration"`
+	Data            *interface{} `mapstructure:"data"`
 }
 
 type configUser struct {
