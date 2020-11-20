@@ -23,7 +23,7 @@ var (
 )
 
 func initCache() (err error) {
-	cacheLru, err = lru.New(200)
+	cacheLru, err = lru.New(500)
 	return
 }
 
