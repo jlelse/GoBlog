@@ -82,7 +82,7 @@ func setCacheHeaders(w http.ResponseWriter, cacheTimeString string, expiresTimeS
 		w.Header().Set("Cache-Control", "public")
 		w.Header().Set("Expires", expiresTimeString)
 	} else {
-		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d", appConfig.Cache.Expiration))
+		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3))
 	}
 }
 
