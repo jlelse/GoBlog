@@ -105,27 +105,6 @@ func serveSection(blog string, path string, section *section) func(w http.Respon
 	})
 }
 
-func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		allValues, err := allTaxonomyValues(blog, tax.Name)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		render(w, templateTaxonomy, &renderData{
-			blogString: blog,
-			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
-			Data: struct {
-				Taxonomy       *taxonomy
-				TaxonomyValues []string
-			}{
-				Taxonomy:       tax,
-				TaxonomyValues: allValues,
-			},
-		})
-	}
-}
-
 func serveTaxonomyValue(blog string, path string, tax *taxonomy, value string) func(w http.ResponseWriter, r *http.Request) {
 	return serveIndex(&indexConfig{
 		blog:     blog,

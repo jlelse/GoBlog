@@ -4,15 +4,18 @@
 
 {{ define "main" }}
   <main>
-      {{ with .Data.Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
-      {{ with .Data.Taxonomy.Description }}{{ md . }}{{ end }}
-    <ul>
-        {{ $blog := .Blog }}
-        {{ $taxonomy := .Data.Taxonomy.Name }}
-        {{ range $i, $value := (sort .Data.TaxonomyValues) }}
-          <li><a href="{{ blogrelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a></li>
+    {{ with .Data.Taxonomy.Title }}<h1>{{ . }}</h1>{{ end }}
+    {{ with .Data.Taxonomy.Description }}{{ md . }}{{ end }}
+    {{ $blog := .Blog }}
+    {{ $taxonomy := .Data.Taxonomy.Name }}
+    {{ range $i, $valueGroup := .Data.ValueGroups }}
+      <h2>{{ $valueGroup.Identifier }}</h2>
+      <p>
+        {{ range $i, $value := $valueGroup.Strings }}
+          {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ blogrelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a>
         {{ end }}
-    </ul>
+      </p>
+    {{ end }}
   </main>
 {{ end }}
 

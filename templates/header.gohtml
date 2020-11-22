@@ -4,10 +4,8 @@
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
       <nav>
         {{ with menu .Blog "main" }}
-            {{ $first := true }}
             {{ range $i, $item := .Items }}
-                {{ if ne $first true }} &bull; {{ end }}<a
-                href="{{ $item.Link }}">{{ $item.Title }}</a>{{ $first = false }}
+                {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>
             {{ end }}
         {{ end }}
       </nav>

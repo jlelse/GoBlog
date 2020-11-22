@@ -115,3 +115,27 @@ func slashIfEmpty(s string) string {
 	}
 	return s
 }
+
+type stringGroup struct {
+	Identifier string
+	Strings    []string
+}
+
+func groupStrings(toGroup []string) []stringGroup {
+	stringMap := map[string][]string{}
+	for _, s := range toGroup {
+		first := strings.ToUpper(s[:1])
+		stringMap[first] = append(stringMap[first], s)
+	}
+	stringGroups := []stringGroup{}
+	for key, sa := range stringMap {
+		stringGroups = append(stringGroups, stringGroup{
+			Identifier: key,
+			Strings:    sortedStrings(sa),
+		})
+	}
+	sort.Slice(stringGroups, func(i, j int) bool {
+		return strings.ToLower(stringGroups[i].Identifier) < strings.ToLower(stringGroups[j].Identifier)
+	})
+	return stringGroups
+}
