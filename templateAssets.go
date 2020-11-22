@@ -18,7 +18,6 @@ var assetFiles map[string]string
 
 func initTemplateAssets() (err error) {
 	compiledAssetsFolder, err = ioutil.TempDir("", "goblog-assets-*")
-	// err = os.MkdirAll(compiledAssetsFolder, 0755)
 	if err != nil {
 		return
 	}

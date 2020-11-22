@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"database/sql"
@@ -64,6 +62,10 @@ func initActivityPub() error {
 	headersToSign := []string{httpsig.RequestTarget, "date", "host", "digest"}
 	apPostSigner, _, err = httpsig.NewSigner(prefs, digestAlgorithm, headersToSign, httpsig.Signature, 0)
 	if err != nil {
+		return err
+	}
+	// Init send queue
+	if err = initAPSendQueue(); err != nil {
 		return err
 	}
 	return nil
@@ -362,12 +364,7 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 	accept["actor"] = blog.apIri()
 	accept["object"] = follow
 	accept["type"] = "Accept"
-	err = apSendSigned(blog, accept, follower.Inbox)
-	if err != nil {
-		log.Printf("Failed to accept: %s\n%s\n", follower.ID, err.Error())
-		return
-	}
-	log.Println("Follower accepted:", follower.ID)
+	apQueueSendSigned(blog.apIri(), follower.Inbox, accept)
 }
 
 func apSendToAllFollowers(blog string, activity interface{}) {
@@ -377,62 +374,15 @@ func apSendToAllFollowers(blog string, activity interface{}) {
 		return
 
 	}
-	apSendTo(appConfig.Blogs[blog], activity, followers)
+	apSendTo(appConfig.Blogs[blog].apIri(), activity, followers)
 }
 
-func apSendTo(blog *configBlog, activity interface{}, followers map[string]string) {
+func apSendTo(blogIri string, activity interface{}, followers map[string]string) {
 	for _, i := range followers {
 		go func(inbox string) {
-			_ = apSendSigned(blog, activity, inbox)
+			apQueueSendSigned(blogIri, inbox, activity)
 		}(i)
 	}
-}
-
-func apSendSigned(blog *configBlog, activity interface{}, to string) error {
-	// Marshal to json
-	body, err := json.Marshal(activity)
-	if err != nil {
-		return err
-	}
-	// Copy body to sign it
-	bodyCopy := make([]byte, len(body))
-	copy(bodyCopy, body)
-	// Create request context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	// Create request
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, to, bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-	iri, err := url.Parse(to)
-	if err != nil {
-		return err
-	}
-	r.Header.Set("Accept-Charset", "utf-8")
-	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
-	r.Header.Set(userAgent, appUserAgent)
-	r.Header.Set("Accept", contentTypeASUTF8)
-	r.Header.Set(contentType, contentTypeASUTF8)
-	r.Header.Set("Host", iri.Host)
-	// Sign request
-	apPostSignMutex.Lock()
-	err = apPostSigner.SignRequest(apPrivateKey, blog.apIri()+"#main-key", r, bodyCopy)
-	apPostSignMutex.Unlock()
-	if err != nil {
-		return err
-	}
-	// Do request
-	resp, err := http.DefaultClient.Do(r)
-	if err != nil {
-		return err
-	}
-	if !apRequestIsSuccess(resp.StatusCode) {
-		body, _ := ioutil.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-	return nil
 }
 
 func apNewID(blog *configBlog) (hash string, url string) {

@@ -12,6 +12,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-fed/httpsig v1.0.1-0.20200711113112-812070f75b67
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/gofrs/flock v0.8.0 // indirect
 	github.com/goodsign/monday v1.0.1-0.20201007115131-c065b60ec611
 	github.com/google/go-cmp v0.5.3 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
@@ -19,6 +20,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jeremywohl/flatten v1.0.1
+	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
 	github.com/json-iterator/go v1.1.10
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
@@ -32,7 +34,6 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/afero v1.4.1 // indirect
