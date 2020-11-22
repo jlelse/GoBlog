@@ -50,7 +50,7 @@ func startAPSendQueue() {
 					continue
 				}
 				if r, ok := rInterface.(*apRequest); ok {
-					if r.LastTry != 0 && time.Now().Unix()+r.LastTry < int64(r.Try*5*60) {
+					if r.LastTry != 0 && time.Now().Before(time.Unix(r.LastTry, 0).Add(time.Duration(r.Try)*5*time.Minute)) {
 						apQueue.Enqueue(r)
 					} else {
 						// Send request
@@ -60,7 +60,8 @@ func startAPSendQueue() {
 								r.LastTry = time.Now().Unix()
 								apQueue.Enqueue(r)
 							} else {
-								log.Println("Failed for the 3rd time:", err.Error())
+								log.Printf("Request to %s failed for the 3rd time", r.To)
+								log.Println()
 							}
 						}
 					}
