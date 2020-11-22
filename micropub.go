@@ -116,18 +116,20 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	var p *post
 	if ct := r.Header.Get(contentType); strings.Contains(ct, contentTypeWWWForm) || strings.Contains(ct, contentTypeMultipartForm) {
 		var err error
-		r.ParseForm()
 		if strings.Contains(ct, contentTypeMultipartForm) {
-			err := r.ParseMultipartForm(0)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			err = r.ParseMultipartForm(0)
+		} else {
+			err = r.ParseForm()
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 		if action := micropubAction(r.Form.Get("action")); action != "" {
 			u, err := url.Parse(r.Form.Get("url"))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			if action == actionDelete {
 				micropubDelete(w, r, u)
@@ -152,6 +154,7 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			u, err := url.Parse(parsedMfItem.URL)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 			if parsedMfItem.Action == actionDelete {
 				micropubDelete(w, r, u)
@@ -175,6 +178,7 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	}
 	if !strings.Contains(r.Context().Value("scope").(string), "create") {
 		http.Error(w, "create scope missing", http.StatusForbidden)
+		return
 	}
 	err := p.create()
 	if err != nil {
@@ -412,19 +416,20 @@ func (p *post) computeExtraPostParameters() error {
 func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 	if !strings.Contains(r.Context().Value("scope").(string), "delete") {
 		http.Error(w, "delete scope missing", http.StatusForbidden)
+		return
 	}
-	err := deletePost(u.Path)
-	if err != nil {
+	if err := deletePost(u.Path); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-	} else {
-		w.WriteHeader(http.StatusNoContent)
+		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 	return
 }
 
 func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
 	if !strings.Contains(r.Context().Value("scope").(string), "update") {
 		http.Error(w, "update scope missing", http.StatusForbidden)
+		return
 	}
 	p, err := getPost(u.Path)
 	if err != nil {

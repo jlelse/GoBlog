@@ -23,6 +23,7 @@ const micropubMediaSubPath = "/media"
 func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	if !strings.Contains(r.Context().Value("scope").(string), "media") {
 		http.Error(w, "media scope missing", http.StatusForbidden)
+		return
 	}
 	if appConfig.Micropub.MediaStorage == nil {
 		http.Error(w, "Not configured", http.StatusNotImplemented)

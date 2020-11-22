@@ -234,6 +234,7 @@ func render(w http.ResponseWriter, template string, data *renderData) {
 	err := templates[template].ExecuteTemplate(&buffer, template, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	// Set content type (needed for minification middleware
 	w.Header().Set(contentType, contentTypeHTMLUTF8)
