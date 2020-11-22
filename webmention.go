@@ -115,6 +115,7 @@ func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	purgeCache()
 	http.Redirect(w, r, "/webmention/admin", http.StatusFound)
 	return
 }
@@ -130,6 +131,7 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	purgeCache()
 	http.Redirect(w, r, "/webmention/admin", http.StatusFound)
 	return
 }
