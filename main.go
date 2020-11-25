@@ -59,8 +59,12 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	err = initWebmention()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	initTelegram()
-	initWebmention()
 	initNodeInfo()
 
 	// Start cron hooks

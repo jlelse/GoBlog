@@ -32,7 +32,7 @@ type mention struct {
 	Author  string
 }
 
-func initWebmention() {
+func initWebmention() error {
 	// Add hooks
 	hookFunc := func(p *post) {
 		p.sendWebmentions()
@@ -41,7 +41,7 @@ func initWebmention() {
 	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], hookFunc)
 	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], hookFunc)
 	// Start verifier
-	startWebmentionVerifier()
+	return initWebmentionQueue()
 }
 
 func handleWebmention(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func handleWebmention(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "target not allowed", http.StatusBadRequest)
 		return
 	}
-	if err = createWebmention(m.Source, m.Target); err != nil {
+	if err = queueMention(m); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -71,13 +71,14 @@ func extractMention(r *http.Request) (*mention, error) {
 		return nil, err
 	}
 	source := r.Form.Get("source")
-	target := r.Form.Get("target")
+	target := unescapedPath(r.Form.Get("target"))
 	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
 		return nil, errors.New("Invalid request")
 	}
 	return &mention{
-		Source: source,
-		Target: target,
+		Source:  source,
+		Target:  target,
+		Created: time.Now().Unix(),
 	}, nil
 }
 
@@ -138,7 +139,7 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 
 func webmentionExists(source, target string) bool {
 	result := 0
-	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, unescapedPath(target))
+	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
 	if err != nil {
 		return false
 	}
@@ -149,16 +150,15 @@ func webmentionExists(source, target string) bool {
 }
 
 func createWebmention(source, target string) (err error) {
-	if webmentionExists(source, target) {
-		_, err = appDbExec("update webmentions set status = ? where source = ? and target = ?", webmentionStatusRenew, source, unescapedPath(target))
-	} else {
-		_, err = appDbExec("insert into webmentions (source, target, created) values (?, ?, ?)", source, unescapedPath(target), time.Now().Unix())
-	}
-	return err
+	return queueMention(&mention{
+		Source:  source,
+		Target:  unescapedPath(target),
+		Created: time.Now().Unix(),
+	})
 }
 
 func deleteWebmention(id int) error {
-	_, err := appDbExec("delete from webmentions where id = ?", id)
+	_, err := appDbExec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 

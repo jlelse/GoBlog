@@ -83,12 +83,11 @@ func apQueueSendSigned(blogIri, to string, activity interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = apQueue.Enqueue(&apRequest{
+	return apQueue.Enqueue(&apRequest{
 		BlogIri:  blogIri,
 		To:       to,
 		Activity: body,
 	})
-	return err
 }
 
 func apSendSigned(blogIri, to string, activity []byte) error {
