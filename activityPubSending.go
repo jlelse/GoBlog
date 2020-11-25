@@ -32,7 +32,7 @@ func initAPSendQueue() (err error) {
 	if _, err := os.Stat(queuePath); os.IsNotExist(err) {
 		os.Mkdir(queuePath, 0755)
 	}
-	apQueue, err = dque.NewOrOpen("activitypub", queuePath, 5, apRequestBuilder)
+	apQueue, err = dque.NewOrOpen("activitypub", queuePath, 1000, apRequestBuilder)
 	if err != nil {
 		return err
 	}
@@ -50,18 +50,19 @@ func startAPSendQueue() {
 					continue
 				}
 				if r, ok := rInterface.(*apRequest); ok {
-					if r.LastTry != 0 && time.Now().Before(time.Unix(r.LastTry, 0).Add(time.Duration(r.Try)*5*time.Minute)) {
+					if r.LastTry != 0 && time.Now().Before(time.Unix(r.LastTry, 0).Add(time.Duration(r.Try)*10*time.Minute)) {
 						apQueue.Enqueue(r)
 					} else {
 						// Send request
 						if err := apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
-							if r.Try++; r.Try < 4 {
+							if r.Try++; r.Try < 21 {
 								// Try it again
 								r.LastTry = time.Now().Unix()
 								apQueue.Enqueue(r)
 							} else {
-								log.Printf("Request to %s failed for the 3rd time", r.To)
+								log.Printf("Request to %s failed for the 20th time", r.To)
 								log.Println()
+								apRemoveInbox(r.To)
 							}
 						}
 					}

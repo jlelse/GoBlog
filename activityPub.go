@@ -258,21 +258,21 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 	return actor, 0, nil
 }
 
-func apGetAllFollowers(blog string) (map[string]string, error) {
-	rows, err := appDbQuery("select follower, inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
+func apGetAllInboxes(blog string) ([]string, error) {
+	rows, err := appDbQuery("select distinct inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
-	followers := map[string]string{}
+	inboxes := []string{}
 	for rows.Next() {
-		var follower, inbox string
-		err = rows.Scan(&follower, &inbox)
+		var inbox string
+		err = rows.Scan(&inbox)
 		if err != nil {
 			return nil, err
 		}
-		followers[follower] = inbox
+		inboxes = append(inboxes, inbox)
 	}
-	return followers, nil
+	return inboxes, nil
 }
 
 func apAddFollower(blog, follower, inbox string) error {
@@ -282,6 +282,11 @@ func apAddFollower(blog, follower, inbox string) error {
 
 func apRemoveFollower(blog, follower string) error {
 	_, err := appDbExec("delete from activitypub_followers where blog = @blog and follower = @follower", sql.Named("blog", blog), sql.Named("follower", follower))
+	return err
+}
+
+func apRemoveInbox(inbox string) error {
+	_, err := appDbExec("delete from activitypub_followers where inbox = @inbox", sql.Named("inbox", inbox))
 	return err
 }
 
@@ -354,7 +359,11 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 		return
 	}
 	// Add or update follower
-	apAddFollower(blogName, follower.ID, follower.Inbox)
+	inbox := follower.Inbox
+	if endpoints := follower.Endpoints; endpoints != nil && endpoints.SharedInbox != "" {
+		inbox = endpoints.SharedInbox
+	}
+	apAddFollower(blogName, follower.ID, inbox)
 	// remove @context from the inner activity
 	delete(follow, "@context")
 	accept := make(map[string]interface{})
@@ -368,17 +377,16 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 }
 
 func apSendToAllFollowers(blog string, activity interface{}) {
-	followers, err := apGetAllFollowers(blog)
+	inboxes, err := apGetAllInboxes(blog)
 	if err != nil {
-		log.Println("Failed to retrieve followers:", err.Error())
+		log.Println("Failed to retrieve inboxes:", err.Error())
 		return
-
 	}
-	apSendTo(appConfig.Blogs[blog].apIri(), activity, followers)
+	apSendTo(appConfig.Blogs[blog].apIri(), activity, inboxes)
 }
 
-func apSendTo(blogIri string, activity interface{}, followers map[string]string) {
-	for _, i := range followers {
+func apSendTo(blogIri string, activity interface{}, inboxes []string) {
+	for _, i := range inboxes {
 		go func(inbox string) {
 			apQueueSendSigned(blogIri, inbox, activity)
 		}(i)

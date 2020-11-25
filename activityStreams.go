@@ -49,6 +49,7 @@ type asPerson struct {
 	Icon              *asAttachment `json:"icon,omitempty"`
 	Inbox             string        `json:"inbox,omitempty"`
 	PublicKey         *asPublicKey  `json:"publicKey,omitempty"`
+	Endpoints         *asEndpoints  `json:"endpoints,omitempty"`
 }
 
 type asAttachment struct {
@@ -60,6 +61,10 @@ type asPublicKey struct {
 	ID           string `json:"id,omitempty"`
 	Owner        string `json:"owner,omitempty"`
 	PublicKeyPem string `json:"publicKeyPem,omitempty"`
+}
+
+type asEndpoints struct {
+	SharedInbox string `json:"sharedInbox,omitempty"`
 }
 
 func (p *post) serveActivityStreams(w http.ResponseWriter) {
