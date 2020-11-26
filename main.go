@@ -54,6 +54,11 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	err = initHTTPLog()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 	err = initActivityPub()
 	if err != nil {
 		log.Fatal(err)

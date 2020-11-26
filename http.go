@@ -3,14 +3,12 @@ package main
 import (
 	"compress/flate"
 	"net/http"
-	"os"
 	"strconv"
 	"sync/atomic"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/gorilla/handlers"
 	"github.com/writeas/go-nodeinfo"
 )
 
@@ -35,27 +33,11 @@ const (
 
 var (
 	d              *dynamicHandler
-	logMiddleware  func(next http.Handler) http.Handler
 	authMiddleware func(next http.Handler) http.Handler
 )
 
 func startServer() (err error) {
 	// Init
-	if appConfig.Server.Logging {
-		f, err := os.OpenFile(appConfig.Server.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		logMiddleware = func(next http.Handler) http.Handler {
-			lh := handlers.CombinedLoggingHandler(f, next)
-			return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				// Remove remote address for privacy
-				r.RemoteAddr = "127.0.0.1"
-				lh.ServeHTTP(rw, r)
-			})
-		}
-	}
 	authMiddleware = middleware.BasicAuth("", map[string]string{
 		appConfig.User.Nick: appConfig.User.Password,
 	})
@@ -183,7 +165,7 @@ func buildHandler() (http.Handler, error) {
 
 	// Assets
 	for _, path := range allAssetPaths() {
-		r.Get(path, serveAsset)
+		r.With(cacheMiddleware).Get(path, serveAsset)
 	}
 
 	paginationPath := "/page/{page:[0-9-]+}"

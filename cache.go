@@ -81,12 +81,14 @@ func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	w.Header().Del(cacheInternalExpirationHeader)
 	w.Header().Set("ETag", cache.hash)
 	w.Header().Set("Last-Modified", time.Unix(cache.creationTime, 0).UTC().Format(http.TimeFormat))
-	if cache.expiration != 0 {
-		expiresIn := cache.creationTime + int64(cache.expiration) - time.Now().Unix()
-		// Set expires time
-		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", expiresIn, cache.expiration))
-	} else {
-		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3, appConfig.Cache.Expiration))
+	if w.Header().Get("Cache-Control") == "" {
+		if cache.expiration != 0 {
+			expiresIn := cache.creationTime + int64(cache.expiration) - time.Now().Unix()
+			// Set expires time
+			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", expiresIn, cache.expiration))
+		} else {
+			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3, appConfig.Cache.Expiration))
+		}
 	}
 }
 
