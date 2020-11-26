@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/araddon/dateparse"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sync/singleflight"
 )
@@ -42,20 +43,24 @@ func cacheMiddleware(next http.Handler) http.Handler {
 				return getCache(key, next, r), nil
 			})
 			cache := cacheInterface.(*cacheItem)
-			var expiresIn int64 = 0
-			if cache.expiration != 0 {
-				expiresIn = cache.creationTime + int64(cache.expiration) - time.Now().Unix()
-			}
 			// copy cached headers
 			for k, v := range cache.header {
 				w.Header()[k] = v
 			}
-			setCacheHeaders(w, cache.hash, expiresIn)
+			setCacheHeaders(w, cache)
 			// check conditional request
 			if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.hash {
 				// send 304
 				w.WriteHeader(http.StatusNotModified)
 				return
+			}
+			if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
+				t, err := dateparse.ParseAny(ifModifiedSinceHeader)
+				if err == nil && t.Unix() >= cache.creationTime {
+					// send 304
+					w.WriteHeader(http.StatusNotModified)
+					return
+				}
 			}
 			// set status code
 			w.WriteHeader(cache.code)
@@ -72,14 +77,16 @@ func cacheKey(r *http.Request) string {
 	return r.URL.String()
 }
 
-func setCacheHeaders(w http.ResponseWriter, hash string, expiresIn int64) {
+func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	w.Header().Del(cacheInternalExpirationHeader)
-	w.Header().Set("ETag", hash)
-	if expiresIn != 0 {
+	w.Header().Set("ETag", cache.hash)
+	w.Header().Set("Last-Modified", time.Unix(cache.creationTime, 0).UTC().Format(http.TimeFormat))
+	if cache.expiration != 0 {
+		expiresIn := cache.creationTime + int64(cache.expiration) - time.Now().Unix()
 		// Set expires time
-		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d", expiresIn))
+		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", expiresIn, cache.expiration))
 	} else {
-		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3))
+		w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3, appConfig.Cache.Expiration))
 	}
 }
 
