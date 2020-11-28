@@ -35,6 +35,7 @@ func initMarkdown() {
 			extension.Strikethrough,
 			extension.Footnote,
 			extension.Typographer,
+			extension.Linkify,
 			// Emojis
 			emoji.New(
 				emoji.WithEmojis(emojiGoLib()),
