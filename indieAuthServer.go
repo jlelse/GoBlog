@@ -55,10 +55,10 @@ func indieAuthAuthGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "response_type must be empty or id or code", http.StatusBadRequest)
 		return
 	}
-	if data.ResponseType == "code" && len(data.Scopes) < 1 {
-		http.Error(w, "scope is missing or empty", http.StatusBadRequest)
-		return
-	}
+	// if data.ResponseType == "code" && len(data.Scopes) < 1 {
+	// 	http.Error(w, "scope is missing or empty", http.StatusBadRequest)
+	// 	return
+	// }
 	render(w, "indieauth", &renderData{
 		Data: data,
 	})
