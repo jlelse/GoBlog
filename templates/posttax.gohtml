@@ -2,7 +2,7 @@
     {{ $post := .Data }}
     {{ $blog := .Blog }}
     {{ range $i, $tax := $blog.Taxonomies }}
-        {{ $tvs := ps $post $tax.Name }}
+        {{ $tvs := sort (ps $post $tax.Name) }}
         {{ if gt (len $tvs) 0 }}
             <p><b>{{ $tax.Title }}</b>:
                 {{ range $j, $tv := $tvs }}
