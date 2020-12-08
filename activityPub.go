@@ -126,7 +126,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Parse activity
-	activity := make(map[string]interface{})
+	activity := map[string]interface{}{}
 	err = json.NewDecoder(r.Body).Decode(&activity)
 	_ = r.Body.Close()
 	if err != nil {
@@ -292,14 +292,14 @@ func apRemoveInbox(inbox string) error {
 
 func (p *post) apPost() {
 	n := p.toASNote()
-	createActivity := make(map[string]interface{})
-	createActivity["@context"] = asContext
-	createActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	createActivity["id"] = p.fullURL()
-	createActivity["published"] = n.Published
-	createActivity["type"] = "Create"
-	createActivity["object"] = n
-	apSendToAllFollowers(p.Blog, createActivity)
+	apSendToAllFollowers(p.Blog, map[string]interface{}{
+		"@context":  asContext,
+		"actor":     appConfig.Blogs[p.Blog].apIri(),
+		"id":        p.fullURL(),
+		"published": n.Published,
+		"type":      "Create",
+		"object":    n,
+	})
 	if n.InReplyTo != "" {
 		// Is reply, so announce it
 		time.Sleep(30 * time.Second)
@@ -308,39 +308,38 @@ func (p *post) apPost() {
 }
 
 func (p *post) apUpdate() {
-	n := p.toASNote()
-	updateActivity := make(map[string]interface{})
-	updateActivity["@context"] = asContext
-	updateActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	updateActivity["id"] = p.fullURL()
-	updateActivity["published"] = time.Now().Format("2006-01-02T15:04:05-07:00")
-	updateActivity["type"] = "Update"
-	updateActivity["object"] = n
-	apSendToAllFollowers(p.Blog, updateActivity)
+	apSendToAllFollowers(p.Blog, map[string]interface{}{
+		"@context":  asContext,
+		"actor":     appConfig.Blogs[p.Blog].apIri(),
+		"id":        p.fullURL(),
+		"published": time.Now().Format("2006-01-02T15:04:05-07:00"),
+		"type":      "Update",
+		"object":    p.toASNote(),
+	})
 }
 
 func (p *post) apAnnounce() {
-	announceActivity := make(map[string]interface{})
-	announceActivity["@context"] = asContext
-	announceActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	announceActivity["id"] = p.fullURL() + "#announce"
-	announceActivity["published"] = p.toASNote().Published
-	announceActivity["type"] = "Announce"
-	announceActivity["object"] = p.fullURL()
-	apSendToAllFollowers(p.Blog, announceActivity)
+	apSendToAllFollowers(p.Blog, map[string]interface{}{
+		"@context":  asContext,
+		"actor":     appConfig.Blogs[p.Blog].apIri(),
+		"id":        p.fullURL() + "#announce",
+		"published": p.toASNote().Published,
+		"type":      "Announce",
+		"object":    p.fullURL(),
+	})
 }
 
 func (p *post) apDelete() {
-	deleteActivity := make(map[string]interface{})
-	deleteActivity["@context"] = asContext
-	deleteActivity["actor"] = appConfig.Blogs[p.Blog].apIri()
-	deleteActivity["id"] = p.fullURL() + "#delete"
-	deleteActivity["type"] = "Delete"
-	deleteActivity["object"] = map[string]string{
-		"id":   p.fullURL(),
-		"type": "Tombstone",
-	}
-	apSendToAllFollowers(p.Blog, deleteActivity)
+	apSendToAllFollowers(p.Blog, map[string]interface{}{
+		"@context": asContext,
+		"actor":    appConfig.Blogs[p.Blog].apIri(),
+		"id":       p.fullURL() + "#delete",
+		"type":     "Delete",
+		"object": map[string]string{
+			"id":   p.fullURL(),
+			"type": "Tombstone",
+		},
+	})
 }
 
 func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) {
@@ -366,13 +365,14 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 	apAddFollower(blogName, follower.ID, inbox)
 	// remove @context from the inner activity
 	delete(follow, "@context")
-	accept := make(map[string]interface{})
-	accept["@context"] = asContext
-	accept["to"] = follow["actor"]
+	accept := map[string]interface{}{
+		"@context": asContext,
+		"to":       follow["actor"],
+		"actor":    blog.apIri(),
+		"object":   follow,
+		"type":     "Accept",
+	}
 	_, accept["id"] = apNewID(blog)
-	accept["actor"] = blog.apIri()
-	accept["object"] = follow
-	accept["type"] = "Accept"
 	apQueueSendSigned(blog.apIri(), follower.Inbox, accept)
 }
 

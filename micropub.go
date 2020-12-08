@@ -285,7 +285,9 @@ func convertMPMfToPost(mf *microformatItem) (*post, error) {
 	if len(mf.Type) != 1 || mf.Type[0] != "h-entry" {
 		return nil, errors.New("only entry type is supported so far")
 	}
-	entry := &post{}
+	entry := &post{
+		Parameters: map[string][]string{},
+	}
 	// Content
 	if mf.Properties != nil && len(mf.Properties.Content) == 1 && len(mf.Properties.Content[0]) > 0 {
 		entry.Content = mf.Properties.Content[0]

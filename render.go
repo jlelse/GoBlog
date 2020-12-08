@@ -193,7 +193,7 @@ func initRendering() error {
 		},
 	}
 
-	templates = make(map[string]*template.Template)
+	templates = map[string]*template.Template{}
 
 	baseTemplatePath := path.Join(templatesDir, templateBase+templatesExt)
 	err := filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {

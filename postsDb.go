@@ -286,7 +286,7 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	defer func() {
 		_ = rows.Close()
 	}()
-	paths := make(map[string]int)
+	paths := map[string]int{}
 	for rows.Next() {
 		p := &post{}
 		var parameterName, parameterValue string
@@ -297,7 +297,7 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 		if paths[p.Path] == 0 {
 			index := len(posts)
 			paths[p.Path] = index + 1
-			p.Parameters = make(map[string][]string)
+			p.Parameters = map[string][]string{}
 			posts = append(posts, p)
 		}
 		if parameterName != "" && posts != nil {
