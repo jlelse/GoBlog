@@ -109,9 +109,9 @@ func buildHandler() (http.Handler, error) {
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
 		indieauthRouter.Use(middleware.NoCache)
-		indieauthRouter.With(authMiddleware, minifier.Middleware).Get("/", indieAuthAuthGet)
+		indieauthRouter.With(minifier.Middleware).Get("/", indieAuthRequest)
 		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
-		indieauthRouter.Post("/", indieAuthAuthPost)
+		indieauthRouter.Post("/", indieAuthVerification)
 		indieauthRouter.Get("/token", indieAuthToken)
 		indieauthRouter.Post("/token", indieAuthToken)
 	})

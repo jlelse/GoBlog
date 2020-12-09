@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 )
 
@@ -18,12 +17,7 @@ func checkIndieAuth(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		if !isAllowedHost(httptest.NewRequest(http.MethodGet, tokenData.Me, nil), appConfig.Server.Domain) {
-			http.Error(w, "Forbidden", http.StatusUnauthorized)
-			return
-		}
-		ctx := context.WithValue(r.Context(), "scope", strings.Join(tokenData.Scopes, " "))
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "scope", strings.Join(tokenData.Scopes, " "))))
 		return
 	})
 }

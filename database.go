@@ -56,7 +56,10 @@ func prepareAppDbStatement(query string) (*sql.Stmt, error) {
 		dbStatementCacheMutex.Unlock()
 		return stmt, nil
 	})
-	return stmt.(*sql.Stmt), err
+	if err != nil {
+		return nil, err
+	}
+	return stmt.(*sql.Stmt), nil
 }
 
 func appDbExec(query string, args ...interface{}) (sql.Result, error) {

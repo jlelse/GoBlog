@@ -14,83 +14,44 @@ import (
 )
 
 // https://www.w3.org/TR/indieauth/
+// https://indieauth.spec.indieweb.org/
 
 type indieAuthData struct {
-	Me           string
-	ClientID     string
-	RedirectURI  string
-	State        string
-	ResponseType string
-	Scopes       []string
-	code         string
-	token        string
-	time         time.Time
+	ClientID    string
+	RedirectURI string
+	State       string
+	Scopes      []string
+	code        string
+	token       string
+	time        time.Time
 }
 
-func indieAuthAuthGet(w http.ResponseWriter, r *http.Request) {
-	// Authentication / authorization request
+func indieAuthRequest(w http.ResponseWriter, r *http.Request) {
+	// Authorization request
 	r.ParseForm()
 	data := &indieAuthData{
-		Me:           r.Form.Get("me"),
-		ClientID:     r.Form.Get("client_id"),
-		RedirectURI:  r.Form.Get("redirect_uri"),
-		State:        r.Form.Get("state"),
-		ResponseType: r.Form.Get("response_type"),
+		ClientID:    r.Form.Get("client_id"),
+		RedirectURI: r.Form.Get("redirect_uri"),
+		State:       r.Form.Get("state"),
 	}
-	if data.ResponseType == "" {
-		data.ResponseType = "id"
+	if rt := r.Form.Get("response_type"); rt != "code" && rt != "id" && rt != "" {
+		http.Error(w, "response_type must be code", http.StatusBadRequest)
+		return
 	}
 	if scope := r.Form.Get("scope"); scope != "" {
 		data.Scopes = strings.Split(scope, " ")
 	}
-	if !isValidProfileURL(data.Me) || !isValidProfileURL(data.ClientID) || !isValidProfileURL(data.RedirectURI) {
-		http.Error(w, "me, client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
+	if !isValidProfileURL(data.ClientID) || !isValidProfileURL(data.RedirectURI) {
+		http.Error(w, "client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
 		return
 	}
 	if data.State == "" {
 		http.Error(w, "state must not be empty", http.StatusBadRequest)
 		return
 	}
-	if data.ResponseType != "id" && data.ResponseType != "code" {
-		http.Error(w, "response_type must be empty or id or code", http.StatusBadRequest)
-		return
-	}
-	// if data.ResponseType == "code" && len(data.Scopes) < 1 {
-	// 	http.Error(w, "scope is missing or empty", http.StatusBadRequest)
-	// 	return
-	// }
 	render(w, "indieauth", &renderData{
 		Data: data,
 	})
-}
-
-func indieAuthAuthPost(w http.ResponseWriter, r *http.Request) {
-	// Authentication verification
-	r.ParseForm()
-	data := &indieAuthData{
-		code:        r.Form.Get("code"),
-		ClientID:    r.Form.Get("client_id"),
-		RedirectURI: r.Form.Get("redirect_uri"),
-	}
-	valid, err := data.verifyAuthorization(true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !valid {
-		http.Error(w, "Authentication not valid", http.StatusForbidden)
-		return
-	}
-	res := &tokenResponse{
-		Me: data.Me,
-	}
-	w.Header().Add(contentType, contentTypeJSONUTF8)
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		w.Header().Del(contentType)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 func isValidProfileURL(profileURL string) bool {
@@ -101,8 +62,6 @@ func isValidProfileURL(profileURL string) bool {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return false
 	}
-	// Missing: Check path
-	// Missing: Check single/double dot path
 	if u.Fragment != "" {
 		return false
 	}
@@ -120,16 +79,14 @@ func indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 	// Authentication flow
 	r.ParseForm()
 	data := &indieAuthData{
-		Me:           r.Form.Get("me"),
-		ClientID:     r.Form.Get("client_id"),
-		RedirectURI:  r.Form.Get("redirect_uri"),
-		State:        r.Form.Get("state"),
-		ResponseType: r.Form.Get("response_type"),
-		Scopes:       r.Form["scopes"],
-		time:         time.Now(),
+		ClientID:    r.Form.Get("client_id"),
+		RedirectURI: r.Form.Get("redirect_uri"),
+		State:       r.Form.Get("state"),
+		Scopes:      r.Form["scopes"],
+		time:        time.Now(),
 	}
 	sha := sha1.New()
-	sha.Write([]byte(data.time.String() + data.Me + data.ClientID))
+	sha.Write([]byte(data.time.String() + data.ClientID))
 	data.code = fmt.Sprintf("%x", sha.Sum(nil))
 	err := data.saveAuthorization()
 	if err != nil {
@@ -147,6 +104,35 @@ type tokenResponse struct {
 	ClientID    string `json:"client_id,omitempty"`
 }
 
+func indieAuthVerification(w http.ResponseWriter, r *http.Request) {
+	// Authorization verification
+	r.ParseForm()
+	data := &indieAuthData{
+		code:        r.Form.Get("code"),
+		ClientID:    r.Form.Get("client_id"),
+		RedirectURI: r.Form.Get("redirect_uri"),
+	}
+	valid, err := data.verifyAuthorization()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !valid {
+		http.Error(w, "Authentication not valid", http.StatusForbidden)
+		return
+	}
+	res := &tokenResponse{
+		Me: appConfig.Server.PublicAddress,
+	}
+	w.Header().Add(contentType, contentTypeJSONUTF8)
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.Header().Del(contentType)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		// Token verification
@@ -157,7 +143,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		}
 		res := &tokenResponse{
 			Scope:    strings.Join(data.Scopes, " "),
-			Me:       data.Me,
+			Me:       appConfig.Server.PublicAddress,
 			ClientID: data.ClientID,
 		}
 		w.Header().Add(contentType, contentTypeJSONUTF8)
@@ -182,9 +168,8 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				code:        r.Form.Get("code"),
 				ClientID:    r.Form.Get("client_id"),
 				RedirectURI: r.Form.Get("redirect_uri"),
-				Me:          r.Form.Get("me"),
 			}
-			valid, err := data.verifyAuthorization(false)
+			valid, err := data.verifyAuthorization()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -199,7 +184,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			}
 			data.time = time.Now()
 			sha := sha1.New()
-			sha.Write([]byte(data.time.String() + data.Me + data.ClientID))
+			sha.Write([]byte(data.time.String() + data.ClientID))
 			data.token = fmt.Sprintf("%x", sha.Sum(nil))
 			err = data.saveToken()
 			if err != nil {
@@ -210,7 +195,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				TokenType:   "Bearer",
 				AccessToken: data.token,
 				Scope:       strings.Join(data.Scopes, " "),
-				Me:          data.Me,
+				Me:          appConfig.Server.PublicAddress,
 			}
 			w.Header().Add(contentType, contentTypeJSONUTF8)
 			err = json.NewEncoder(w).Encode(res)
@@ -227,38 +212,25 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (data *indieAuthData) saveAuthorization() (err error) {
-	_, err = appDbExec("insert into indieauthauth (time, code, me, client, redirect, scope) values (?, ?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.Me, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
+	_, err = appDbExec("insert into indieauthauth (time, code, client, redirect, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
 	return
 }
 
-func (data *indieAuthData) verifyAuthorization(authentication bool) (valid bool, err error) {
+func (data *indieAuthData) verifyAuthorization() (valid bool, err error) {
 	// code valid for 600 seconds
-	if !authentication {
-		row, err := appDbQueryRow("select code, me, client, redirect, scope from indieauthauth where time >= ? and code = ? and me = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.Me, data.ClientID, data.RedirectURI)
-		if err != nil {
-			return false, err
-		}
-		scope := ""
-		err = row.Scan(&data.code, &data.Me, &data.ClientID, &data.RedirectURI, &scope)
-		if err == sql.ErrNoRows {
-			return false, nil
-		} else if err != nil {
-			return false, err
-		}
-		if scope != "" {
-			data.Scopes = strings.Split(scope, " ")
-		}
-	} else {
-		row, err := appDbQueryRow("select code, me, client, redirect from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
-		if err != nil {
-			return false, err
-		}
-		err = row.Scan(&data.code, &data.Me, &data.ClientID, &data.RedirectURI)
-		if err == sql.ErrNoRows {
-			return false, nil
-		} else if err != nil {
-			return false, err
-		}
+	row, err := appDbQueryRow("select code, client, redirect, scope from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
+	if err != nil {
+		return false, err
+	}
+	scope := ""
+	err = row.Scan(&data.code, &data.ClientID, &data.RedirectURI, &scope)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	if scope != "" {
+		data.Scopes = strings.Split(scope, " ")
 	}
 	valid = true
 	_, err = appDbExec("delete from indieauthauth where code = ? or time < ?", data.code, time.Now().Unix()-600)
@@ -267,7 +239,7 @@ func (data *indieAuthData) verifyAuthorization(authentication bool) (valid bool,
 }
 
 func (data *indieAuthData) saveToken() (err error) {
-	_, err = appDbExec("insert into indieauthtoken (time, token, me, client, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.token, data.Me, data.ClientID, strings.Join(data.Scopes, " "))
+	_, err = appDbExec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", data.time.Unix(), data.token, data.ClientID, strings.Join(data.Scopes, " "))
 	return
 }
 
@@ -276,13 +248,13 @@ func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 	data = &indieAuthData{
 		Scopes: []string{},
 	}
-	row, err := appDbQueryRow("select time, token, me, client, scope from indieauthtoken where token = @token", sql.Named("token", token))
+	row, err := appDbQueryRow("select time, token, client, scope from indieauthtoken where token = @token", sql.Named("token", token))
 	if err != nil {
 		return nil, err
 	}
 	timeString := ""
 	scope := ""
-	err = row.Scan(&timeString, &data.token, &data.Me, &data.ClientID, &scope)
+	err = row.Scan(&timeString, &data.token, &data.ClientID, &scope)
 	if err == sql.ErrNoRows {
 		return nil, errors.New("token not found")
 	} else if err != nil {
