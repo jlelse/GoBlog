@@ -10,8 +10,9 @@
       <hr>
     {{ end }}
     <form class="fw-form p" method="post">
-    <input class="fw" type="text" style="margin-bottom: 5px" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ . }}"{{ end }} />
-    <input class="fw" type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
+      <input class="fw" type="text" style="margin-bottom: 5px" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ . }}"{{ end }} />
+      <input class="fw" type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
+    </form>
   </main>
 {{ end }}
 
