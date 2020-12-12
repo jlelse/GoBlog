@@ -56,6 +56,13 @@ func (p *post) checkPost() error {
 	if p.Blog == "" {
 		p.Blog = appConfig.DefaultBlog
 	}
+	if _, ok := appConfig.Blogs[p.Blog]; !ok {
+		return errors.New("blog doesn't exist")
+	}
+	// Check if section exists
+	if _, ok := appConfig.Blogs[p.Blog].Sections[p.Section]; p.Section != "" && !ok {
+		return errors.New("section doesn't exist")
+	}
 	// Check path
 	p.Path = strings.TrimSuffix(p.Path, "/")
 	if p.Path == "" {

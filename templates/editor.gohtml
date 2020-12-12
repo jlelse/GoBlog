@@ -1,0 +1,37 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "editor" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "editor" }}</h1>
+    <h2>{{ string .Blog.Lang "create" }}</h2>
+    <form class="fw-form p" method="post">
+      <input type="hidden" name="h" value="entry">
+      <textarea class="fw" name="content"></textarea>
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "create" }}">
+    </form>
+    <h2>{{ string .Blog.Lang "update" }}</h2>
+    <form class="fw-form p" method="post">
+      {{ if .Data.UpdatePostURL }}
+        <input type="hidden" name="editoraction" value="updatepost">
+        <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
+        <textarea class="fw" name="content">{{ .Data.UpdatePostContent }}</textarea>
+      {{ else }}
+        <input type="hidden" name="editoraction" value="loadupdate">
+        <input class="fw" type="text" style="margin-bottom: 5px" name="url" placeholder="URL">
+      {{ end }}
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">
+    </form>
+    <h2>{{ string .Blog.Lang "delete" }}</h2>
+    <form class="fw-form p" method="post">
+      <input type="hidden" name="action" value="delete">
+      <input class="fw" type="text" style="margin-bottom: 5px" name="url" placeholder="URL">
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "delete" }}">
+    </form>
+  </main>
+{{ end }}
+
+{{ define "editor" }}
+    {{ template "base" . }}
+{{ end }}

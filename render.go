@@ -30,6 +30,7 @@ const templateTaxonomy = "taxonomy"
 const templateSearch = "search"
 const templateSummary = "summary"
 const templatePhotosSummary = "photosummary"
+const templateEditor = "editor"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -228,6 +229,9 @@ func render(w http.ResponseWriter, template string, data *renderData) {
 			data.blogString = appConfig.DefaultBlog
 		}
 		data.Blog = appConfig.Blogs[data.blogString]
+	}
+	if data.Data == nil {
+		data.Data = map[string]interface{}{}
 	}
 	// We need to use a buffer here to enable minification
 	var buffer bytes.Buffer

@@ -106,6 +106,13 @@ func buildHandler() (http.Handler, error) {
 		}
 	})
 
+	// Editor
+	r.Route("/editor", func(mpRouter chi.Router) {
+		mpRouter.Use(authMiddleware)
+		mpRouter.Get("/", serveEditor)
+		mpRouter.Post("/", serveEditorPost)
+	})
+
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
 		indieauthRouter.Use(middleware.NoCache)

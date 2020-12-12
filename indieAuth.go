@@ -21,3 +21,10 @@ func checkIndieAuth(next http.Handler) http.Handler {
 		return
 	})
 }
+
+func addAllScopes(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), "scope", "create update delete media")))
+		return
+	})
+}

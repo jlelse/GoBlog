@@ -90,6 +90,8 @@ func (p *post) toMfItem() *microformatItem {
 	params["path"] = []string{p.Path}
 	params["section"] = []string{p.Section}
 	params["blog"] = []string{p.Blog}
+	params["published"] = []string{p.Published}
+	params["updated"] = []string{p.Updated}
 	pb, _ := yaml.Marshal(p.Parameters)
 	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
 	return &microformatItem{
@@ -185,8 +187,7 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Add("Location", p.fullURL())
-	w.WriteHeader(http.StatusAccepted)
+	http.Redirect(w, r, p.fullURL(), http.StatusAccepted)
 	return
 }
 
@@ -424,7 +425,7 @@ func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, u.String(), http.StatusNoContent)
 	return
 }
 
@@ -557,4 +558,5 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	http.Redirect(w, r, p.fullURL(), http.StatusNoContent)
 }
