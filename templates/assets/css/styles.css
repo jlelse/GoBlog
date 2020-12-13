@@ -8,7 +8,6 @@ html {
   color: #000;
   scrollbar-color: var(--primary) transparent;
 }
-
 @media (prefers-color-scheme: dark) {
   html {
     --background: #000;
@@ -27,7 +26,6 @@ body {
   word-break: break-word;
   overflow-wrap: break-word;
 }
-
 body * {
   color: #000;
   color: var(--primary, #000);
@@ -37,7 +35,6 @@ body * {
 header {
   padding: 10px 0;
 }
-
 header * {
   margin-top: 0;
   margin-bottom: 0;
@@ -65,6 +62,10 @@ input, textarea, button, .button {
   font-size: 1rem;
 }
 
+input:not([type]), input[type=text], input[type=email], input[type=url], textarea {
+  margin-bottom: 5px;
+}
+
 blockquote {
   border-left: 5px solid #000;
   border-left: 5px solid var(--primary, #000);
@@ -90,7 +91,6 @@ code {
 footer {
   padding: 10px 0;
 }
-
 footer * {
   margin-top: 0;
   margin-bottom: 0;
@@ -127,20 +127,12 @@ footer * {
   display: none;
 }
 
-.fw, .fw-form, .fw-form input[type=text], .fw-form input[type=email], .fw-form textarea {
+.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form textarea {
   width: 100%;
 }
 
 .ct {
   text-align: center;
-}
-
-/* Twemoji */
-img.emoji {
-  height: 1em;
-  width: 1em;
-  margin: 0 0.05em 0 0.1em;
-  vertical-align: -0.1em;
 }
 
 /* Print */
@@ -157,9 +149,9 @@ img.emoji {
   }
 
   nav,
-  #post-actions,
-  #related,
-  #interactions {
+#post-actions,
+#related,
+#interactions {
     display: none;
   }
 }

@@ -18,9 +18,9 @@
         {{ end }}
         <form method="post" action="/webmention">
             <label for="wm-source" class="p">{{ string .Blog.Lang "interactionslabel" }}</label>
-            <input id="wm-source" class="fw" type="url" name="source" placeholder="URL" style="margin-bottom: 5px;">
+            <input id="wm-source" type="url" name="source" placeholder="URL">
             <input type="hidden" name="target" value="{{ $postperma }}">
-            <input class="fw" type="submit" value="{{ string .Blog.Lang "send" }}" style="margin-bottom: 5px;">
+            <input class="fw" type="submit" value="{{ string .Blog.Lang "send" }}">
         </form>
         <a class="p button fw ct" href="https://quill.p3k.io/?dontask=1&me=https://commentpara.de&reply={{ $postperma }}">{{ string .Blog.Lang "anoncomment" }}</a>
     </details>

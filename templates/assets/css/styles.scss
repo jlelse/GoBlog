@@ -85,10 +85,14 @@ input, textarea, button, .button {
   font-size: 1rem;
 }
 
+input:not([type]), input[type="text"], input[type="email"], input[type="url"], textarea {
+  margin-bottom: 5px;
+}
+
 .fw-form {
   @extend .fw;
 
-  input[type="text"], input[type="email"], textarea {
+  input:not([type]), input[type="text"], input[type="email"], input[type="url"], textarea {
     @extend .fw;
   }
 }
@@ -157,14 +161,6 @@ footer {
 
 .ct {
   text-align: center;
-}
-
-/* Twemoji */
-img.emoji {
-  height: 1em;
-  width: 1em;
-  margin: 0 .05em 0 .1em;
-  vertical-align: -0.1em;
 }
 
 /* Print */
