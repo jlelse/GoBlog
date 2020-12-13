@@ -83,6 +83,9 @@ func (m *mention) verifyMention() error {
 	if len(m.Content) > 500 {
 		m.Content = m.Content[0:497] + "…"
 	}
+	if len(m.Title) > 60 {
+		m.Title = m.Title[0:57] + "…"
+	}
 	newStatus := webmentionStatusVerified
 	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
 		// Approve if it's server-intern
