@@ -16,7 +16,7 @@
             {{ end }}
             </ul>
         {{ end }}
-        <form method="post" action="/webmention">
+        <form class="fw-form" method="post" action="/webmention">
             <label for="wm-source" class="p">{{ string .Blog.Lang "interactionslabel" }}</label>
             <input id="wm-source" type="url" name="source" placeholder="URL">
             <input type="hidden" name="target" value="{{ $postperma }}">
