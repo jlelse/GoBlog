@@ -230,6 +230,8 @@ type postsRequestConfig struct {
 	taxonomyValue  string
 	parameter      string
 	parameterValue string
+	publishedYear  int
+	publishedMonth int
 }
 
 func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
@@ -269,6 +271,14 @@ func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
 			args = append(args, sql.Named(named, section))
 		}
 		postsTable += ")"
+	}
+	if config.publishedYear != 0 {
+		postsTable = "(select * from " + postsTable + " p where substr(p.published, 1, 4) = @publishedyear)"
+		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", config.publishedYear)))
+	}
+	if config.publishedMonth != 0 {
+		postsTable = "(select * from " + postsTable + " p where substr(p.published, 6, 2) = @publishedmonth)"
+		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", config.publishedMonth)))
 	}
 	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
 	defaultSorting := " order by p.published desc "
@@ -351,4 +361,21 @@ func allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+func allMonths(blog string) (months map[int][]int, err error) {
+	rows, err := appDbQuery("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month from posts where blog = @blog and year != '' and month != ''", sql.Named("blog", blog))
+	if err != nil {
+		return nil, err
+	}
+	months = map[int][]int{}
+	for rows.Next() {
+		var year, month int
+		err = rows.Scan(&year, &month)
+		if err != nil {
+			return nil, err
+		}
+		months[year] = append(months[year], month)
+	}
+	return
 }

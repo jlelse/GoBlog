@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/flate"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync/atomic"
@@ -234,6 +235,26 @@ func buildHandler() (http.Handler, error) {
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath, resultHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+feedPath, resultHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+paginationPath, resultHandler)
+		}
+
+		// Year / month archives
+		months, err := allMonths(blog)
+		if err != nil {
+			return nil, err
+		}
+		for y, ms := range months {
+			yearPath := blogPath + "/" + fmt.Sprintf("%0004d", y)
+			yearHandler := serveYearMonth(blog, yearPath, y, 0)
+			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath, yearHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+feedPath, yearHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+paginationPath, yearHandler)
+			for _, m := range ms {
+				monthPath := yearPath + "/" + fmt.Sprintf("%02d", m)
+				monthHandler := serveYearMonth(blog, monthPath, y, m)
+				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath, monthHandler)
+				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+feedPath, monthHandler)
+				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+paginationPath, monthHandler)
+			}
 		}
 
 		// Blog

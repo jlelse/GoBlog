@@ -8,8 +8,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/goodsign/monday"
 	"github.com/vcraescu/go-paginator"
 )
 
@@ -132,6 +134,24 @@ func serveSearchResults(blog string, path string) func(w http.ResponseWriter, r 
 	})
 }
 
+func serveYearMonth(blog string, path string, year, month int) func(w http.ResponseWriter, r *http.Request) {
+	var title string
+	if month == 0 {
+		title = fmt.Sprintf("%0004d", year)
+	} else {
+		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
+		date := time.Date(0, 0, 10, 0, 0, 0, 0, time.Local).AddDate(year, month, 0)
+		title = monday.Format(date, "January 2006", ml)
+	}
+	return serveIndex(&indexConfig{
+		blog:  blog,
+		path:  path,
+		year:  year,
+		month: month,
+		title: title,
+	})
+}
+
 type indexConfig struct {
 	blog            string
 	path            string
@@ -139,6 +159,8 @@ type indexConfig struct {
 	tax             *taxonomy
 	taxValue        string
 	parameter       string
+	year            int
+	month           int
 	title           string
 	description     string
 	summaryTemplate string
@@ -161,12 +183,14 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
-			blog:          ic.blog,
-			sections:      sections,
-			taxonomy:      ic.tax,
-			taxonomyValue: ic.taxValue,
-			parameter:     ic.parameter,
-			search:        search,
+			blog:           ic.blog,
+			sections:       sections,
+			taxonomy:       ic.tax,
+			taxonomyValue:  ic.taxValue,
+			parameter:      ic.parameter,
+			search:         search,
+			publishedYear:  ic.year,
+			publishedMonth: ic.month,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post
