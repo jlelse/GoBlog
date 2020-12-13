@@ -77,8 +77,7 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 			location = compressedLocation
 		}
 	}
-	w.Header().Add("Location", location)
-	w.WriteHeader(http.StatusCreated)
+	http.Redirect(w, r, location, http.StatusCreated)
 }
 
 func (mediaConf *configMicropubMedia) uploadToBunny(filename string, file multipart.File) (location string, err error) {

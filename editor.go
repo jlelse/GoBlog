@@ -16,7 +16,8 @@ func serveEditor(w http.ResponseWriter, r *http.Request) {
 
 func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	if action := r.FormValue("editoraction"); action != "" {
-		if action == "loadupdate" {
+		switch action {
+		case "loadupdate":
 			parsedURL, err := url.Parse(r.FormValue("url"))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -34,8 +35,7 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 					"UpdatePostContent": mf.Properties.Content[0],
 				},
 			})
-			return
-		} else if action == "updatepost" {
+		case "updatepost":
 			urlValue := r.FormValue("url")
 			content := r.FormValue("content")
 			mf := map[string]interface{}{
@@ -58,18 +58,24 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			req.Header.Set(contentType, contentTypeJSON)
-			editorMicropubPost(w, req)
-			return
+			editorMicropubPost(w, req, false)
+		case "upload":
+			editorMicropubPost(w, r, true)
+		default:
+			http.Error(w, "unknown editoraction", http.StatusBadRequest)
 		}
-		http.Error(w, "unknown editoraction", http.StatusBadRequest)
 		return
 	}
-	editorMicropubPost(w, r)
+	editorMicropubPost(w, r, false)
 }
 
-func editorMicropubPost(w http.ResponseWriter, r *http.Request) {
+func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 	recorder := httptest.NewRecorder()
-	addAllScopes(http.HandlerFunc(serveMicropubPost)).ServeHTTP(recorder, r)
+	if media {
+		addAllScopes(http.HandlerFunc(serveMicropubMedia)).ServeHTTP(recorder, r)
+	} else {
+		addAllScopes(http.HandlerFunc(serveMicropubPost)).ServeHTTP(recorder, r)
+	}
 	result := recorder.Result()
 	if location := result.Header.Get("Location"); location != "" {
 		http.Redirect(w, r, result.Header.Get("Location"), http.StatusFound)

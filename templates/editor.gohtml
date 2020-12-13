@@ -29,6 +29,12 @@
       <input type="url" name="url" placeholder="URL">
       <input class="fw" type="submit" value="{{ string .Blog.Lang "delete" }}">
     </form>
+    <h2>{{ string .Blog.Lang "upload" }}</h2>
+    <form class="fw-form p" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="editoraction" value="upload">
+      <input class="fw" type="file" name="file">
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "upload" }}">
+    </form>
   </main>
 {{ end }}
 
