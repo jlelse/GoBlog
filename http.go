@@ -98,8 +98,8 @@ func buildHandler() (http.Handler, error) {
 
 	// Micropub
 	r.Route(micropubPath, func(mpRouter chi.Router) {
-		mpRouter.Use(checkIndieAuth)
-		mpRouter.With(middleware.NoCache).Get("/", serveMicropubQuery)
+		mpRouter.Use(checkIndieAuth, middleware.NoCache, minifier.Middleware)
+		mpRouter.Get("/", serveMicropubQuery)
 		mpRouter.Post("/", serveMicropubPost)
 		if appConfig.Micropub.MediaStorage != nil {
 			mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
@@ -108,15 +108,15 @@ func buildHandler() (http.Handler, error) {
 
 	// Editor
 	r.Route("/editor", func(mpRouter chi.Router) {
-		mpRouter.Use(authMiddleware)
+		mpRouter.Use(authMiddleware, middleware.NoCache, minifier.Middleware)
 		mpRouter.Get("/", serveEditor)
 		mpRouter.Post("/", serveEditorPost)
 	})
 
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
-		indieauthRouter.Use(middleware.NoCache)
-		indieauthRouter.With(minifier.Middleware).Get("/", indieAuthRequest)
+		indieauthRouter.Use(middleware.NoCache, minifier.Middleware)
+		indieauthRouter.Get("/", indieAuthRequest)
 		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
 		indieauthRouter.Post("/", indieAuthVerification)
 		indieauthRouter.Get("/token", indieAuthToken)
