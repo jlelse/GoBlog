@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"strings"
-	"sync"
 
 	kemoji "github.com/kyokomi/emoji"
 	"github.com/yuin/goldmark"
@@ -18,7 +17,6 @@ import (
 )
 
 var emojilib definition.Emojis
-var emojiOnce sync.Once
 
 var markdown goldmark.Markdown
 
@@ -40,43 +38,38 @@ func initMarkdown() {
 			emoji.New(
 				emoji.WithEmojis(emojiGoLib()),
 			),
-			// Links
-			newCustomExtension(),
+			// Custom
+			&customExtension{},
 		),
 	)
 }
 
-func renderMarkdown(source string) (content []byte, err error) {
+func renderMarkdown(source string) ([]byte, error) {
 	var buffer bytes.Buffer
-	err = markdown.Convert([]byte(source), &buffer)
-	content = buffer.Bytes()
-	return
+	err := markdown.Convert([]byte(source), &buffer)
+	return buffer.Bytes(), err
 }
 
 // Extensions etc...
 
 // All emojis from emoji lib
 func emojiGoLib() definition.Emojis {
-	emojiOnce.Do(func() {
+	if emojilib == nil {
 		var emojis []definition.Emoji
 		for shotcode, e := range kemoji.CodeMap() {
 			emojis = append(emojis, definition.NewEmoji(e, []rune(e), strings.ReplaceAll(shotcode, ":", "")))
 		}
 		emojilib = definition.NewEmojis(emojis...)
-	})
+	}
 	return emojilib
 }
 
 // Links
 type customExtension struct{}
 
-func newCustomExtension() goldmark.Extender {
-	return &customExtension{}
-}
-
 func (l *customExtension) Extend(m goldmark.Markdown) {
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
-		util.Prioritized(newLinkRenderer(), 500),
+		util.Prioritized(&customRenderer{}, 500),
 	))
 }
 
@@ -88,28 +81,27 @@ func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
 }
 
 func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	n := node.(*ast.Link)
 	if entering {
-		// Make URL absolute if it's relative
-		newDestination := string(util.URLEscape(n.Destination, true))
-		if strings.HasPrefix(newDestination, "/") {
-			newDestination = appConfig.Server.PublicAddress + newDestination
-		}
-		// Write URL
+		n := node.(*ast.Link)
 		_, _ = w.WriteString("<a href=\"")
-		_, _ = w.Write(util.EscapeHTML([]byte(newDestination)))
-		_ = w.WriteByte('"')
+		// Make URL absolute if it's relative
+		newDestination := util.URLEscape(n.Destination, true)
+		if bytes.HasPrefix(newDestination, []byte("/")) {
+			_, _ = w.Write(util.EscapeHTML([]byte(appConfig.Server.PublicAddress)))
+		}
+		_, _ = w.Write(util.EscapeHTML(newDestination))
+		_, _ = w.WriteRune('"')
 		// Open external links (links that start with "http") in new tab
-		if strings.HasPrefix(string(n.Destination), "http") {
+		if bytes.HasPrefix(n.Destination, []byte("http")) {
 			_, _ = w.WriteString(` target="_blank" rel="noopener"`)
 		}
 		// Title
 		if n.Title != nil {
-			_, _ = w.WriteString(` title="`)
+			_, _ = w.WriteString(" title=\"")
 			_, _ = w.Write(n.Title)
-			_ = w.WriteByte('"')
+			_, _ = w.WriteRune('"')
 		}
-		_ = w.WriteByte('>')
+		_, _ = w.WriteRune('>')
 	} else {
 		_, _ = w.WriteString("</a>")
 	}
@@ -122,28 +114,26 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	}
 	n := node.(*ast.Image)
 	// Make URL absolute if it's relative
-	destination := string(util.URLEscape(n.Destination, true))
-	if strings.HasPrefix(destination, "/") {
-		destination = appConfig.Server.PublicAddress + destination
+	destination := util.URLEscape(n.Destination, true)
+	if bytes.HasPrefix(destination, []byte("/")) {
+		destination = util.EscapeHTML(append([]byte(appConfig.Server.PublicAddress), destination...))
+	} else {
+		destination = util.EscapeHTML(destination)
 	}
 	_, _ = w.WriteString("<a href=\"")
-	_, _ = w.Write(util.EscapeHTML([]byte(destination)))
+	_, _ = w.Write(destination)
 	_, _ = w.WriteString("\">")
 	_, _ = w.WriteString("<img src=\"")
-	_, _ = w.Write(util.EscapeHTML([]byte(destination)))
-	_, _ = w.WriteString(`" alt="`)
+	_, _ = w.Write(destination)
+	_, _ = w.WriteString("\" alt=\"")
 	_, _ = w.Write(util.EscapeHTML(n.Text(source)))
 	_ = w.WriteByte('"')
 	_, _ = w.WriteString(" loading=\"lazy\"")
 	if n.Title != nil {
-		_, _ = w.WriteString(` title="`)
+		_, _ = w.WriteString(" title=\"")
 		_, _ = w.Write(n.Title)
 		_ = w.WriteByte('"')
 	}
 	_, _ = w.WriteString("></a>")
 	return ast.WalkSkipChildren, nil
-}
-
-func newLinkRenderer() renderer.NodeRenderer {
-	return &customRenderer{}
 }
