@@ -1,0 +1,22 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "editor" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "login" }}</h1>
+    <form class="fw-form p" method="post">
+      <input type="hidden" name="loginaction" value="login">
+      <input type="hidden" name="loginmethod" value="{{ .Data.loginmethod }}">
+      <input type="hidden" name="loginheaders" value="{{ .Data.loginheaders }}">
+      <input type="hidden" name="loginbody" value="{{ .Data.loginbody }}">
+      <input type="text" name="username" placeholder="{{ string .Blog.Lang "username" }}">
+      <input type="password" name="password" placeholder="{{ string .Blog.Lang "password" }}">
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "login" }}">
+    </form>
+  </main>
+{{ end }}
+
+{{ define "login" }}
+    {{ template "base" . }}
+{{ end }}

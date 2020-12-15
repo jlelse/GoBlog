@@ -31,6 +31,7 @@ const templateSearch = "search"
 const templateSummary = "summary"
 const templatePhotosSummary = "photosummary"
 const templateEditor = "editor"
+const templateLogin = "login"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap

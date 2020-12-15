@@ -92,7 +92,7 @@ form input, form textarea {
 .fw-form {
   @extend .fw;
 
-  input:not([type]), input[type="text"], input[type="email"], input[type="url"], textarea {
+  input:not([type]), input[type="text"], input[type="email"], input[type="url"], input[type="password"], textarea {
     @extend .fw;
   }
 }

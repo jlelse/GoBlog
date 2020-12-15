@@ -31,6 +31,7 @@ type configServer struct {
 	PublicAddress   string `mapstructure:"publicAddress"`
 	PublicHTTPS     bool   `mapstructure:"publicHttps"`
 	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
+	JWTSecret       string `mapstructure:"jwtSecret"`
 }
 
 type configDb struct {
@@ -211,6 +212,9 @@ func initConfig() error {
 	// Check config
 	if appConfig.Server.Domain == "" {
 		return errors.New("no domain configured")
+	}
+	if appConfig.Server.JWTSecret == "" {
+		return errors.New("no JWT secret configured")
 	}
 	if len(appConfig.Blogs) == 0 {
 		return errors.New("no blog configured")

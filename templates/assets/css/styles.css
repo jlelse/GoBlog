@@ -127,7 +127,7 @@ footer * {
   display: none;
 }
 
-.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form textarea {
+.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form input[type=password], .fw-form textarea {
   width: 100%;
 }
 

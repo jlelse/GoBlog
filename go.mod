@@ -9,6 +9,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/captncraig/cors v0.0.0-20190703115713-e80254a89df1 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-fed/httpsig v1.0.1-0.20200711113112-812070f75b67
@@ -59,7 +60,7 @@ require (
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11 // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20201214095126-aec9a390925b // indirect
+	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.4 // indirect
 	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58 // indirect

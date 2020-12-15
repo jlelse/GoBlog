@@ -33,15 +33,10 @@ const (
 )
 
 var (
-	d              *dynamicHandler
-	authMiddleware func(next http.Handler) http.Handler
+	d *dynamicHandler
 )
 
 func startServer() (err error) {
-	// Init
-	authMiddleware = middleware.BasicAuth("", map[string]string{
-		appConfig.User.Nick: appConfig.User.Password,
-	})
 	// Start
 	d = &dynamicHandler{}
 	err = reloadRouter()
@@ -85,6 +80,7 @@ func buildHandler() (http.Handler, error) {
 	if !appConfig.Cache.Enable {
 		r.Use(middleware.NoCache)
 	}
+	r.Use(checkIsLogin)
 
 	// Profiler
 	if appConfig.Server.Debug {
