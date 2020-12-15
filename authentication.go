@@ -21,15 +21,10 @@ func jwtKey() []byte {
 
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		success := func() {
-			if acceptLogin(w) {
-				next.ServeHTTP(w, r)
-			}
-		}
 		// 1. Check basic auth
 		username, password, basicauth := r.BasicAuth()
 		if basicauth && checkCredentials(username, password) {
-			success()
+			next.ServeHTTP(w, r)
 			return
 		}
 		// 2. Check JWT
@@ -37,7 +32,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			if tkn, err := jwt.Parse(tokenCookie.Value, func(t *jwt.Token) (interface{}, error) {
 				return jwtKey(), nil
 			}); err == nil && tkn.Valid {
-				success()
+				next.ServeHTTP(w, r)
 				return
 			}
 		}
@@ -86,6 +81,8 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		}
 		// Set basic auth
 		req.SetBasicAuth(r.FormValue("username"), r.FormValue("password"))
+		// Send cookie
+		sendTokenCookie(w)
 		// Serve original request
 		d.ServeHTTP(w, req)
 		return true
@@ -93,12 +90,12 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
-func acceptLogin(w http.ResponseWriter) bool {
+func sendTokenCookie(w http.ResponseWriter) {
 	expiration := time.Now().Add(7 * 24 * time.Hour)
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.StandardClaims{ExpiresAt: expiration.Unix()}).SignedString(jwtKey())
 	if err != nil {
 		http.Error(w, "failed to sign JWT", http.StatusInternalServerError)
-		return false
+		return
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
@@ -106,6 +103,7 @@ func acceptLogin(w http.ResponseWriter) bool {
 		Expires:  expiration,
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	})
-	return true
+	return
 }
