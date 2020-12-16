@@ -23,10 +23,10 @@ func serveSitemap(w http.ResponseWriter, r *http.Request) {
 			Loc: p.fullURL()}
 		var lastMod time.Time
 		if p.Updated != "" {
-			lastMod, _ = dateparse.ParseIn(p.Updated, time.Local)
+			lastMod, _ = dateparse.ParseLocal(p.Updated)
 		}
 		if p.Published != "" && lastMod.IsZero() {
-			lastMod, _ = dateparse.ParseIn(p.Published, time.Local)
+			lastMod, _ = dateparse.ParseLocal(p.Published)
 		}
 		if !lastMod.IsZero() {
 			item.LastMod = &lastMod

@@ -7,7 +7,7 @@ WORKDIR /app
 RUN go build --tags "libsqlite3 linux sqlite_fts5"
 
 FROM alpine:3.12
-RUN apk add --no-cache sqlite-dev
+RUN apk add --no-cache sqlite-dev tzdata
 COPY templates/ /app/templates/
 COPY --from=build /app/GoBlog /bin/
 WORKDIR /app

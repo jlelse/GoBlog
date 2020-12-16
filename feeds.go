@@ -43,8 +43,8 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		},
 	}
 	for _, p := range posts {
-		created, _ := dateparse.ParseIn(p.Published, time.Local)
-		updated, _ := dateparse.ParseIn(p.Updated, time.Local)
+		created, _ := dateparse.ParseLocal(p.Published)
+		updated, _ := dateparse.ParseLocal(p.Updated)
 		var enc *feeds.Enclosure
 		if p.firstParameter(feedAudioURL) != "" {
 			enc = &feeds.Enclosure{

@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/araddon/dateparse"
 )
@@ -104,12 +103,12 @@ func (p *post) toASNote() *asNote {
 	// Dates
 	dateFormat := "2006-01-02T15:04:05-07:00"
 	if p.Published != "" {
-		if t, err := dateparse.ParseIn(p.Published, time.Local); err == nil {
+		if t, err := dateparse.ParseLocal(p.Published); err == nil {
 			as.Published = t.Format(dateFormat)
 		}
 	}
 	if p.Updated != "" {
-		if t, err := dateparse.ParseIn(p.Updated, time.Local); err == nil {
+		if t, err := dateparse.ParseLocal(p.Updated); err == nil {
 			as.Updated = t.Format(dateFormat)
 		}
 	}

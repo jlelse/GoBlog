@@ -87,14 +87,14 @@ func initRendering() error {
 		},
 		// Others
 		"dateformat": func(date string, format string) string {
-			d, err := dateparse.ParseIn(date, time.Local)
+			d, err := dateparse.ParseLocal(date)
 			if err != nil {
 				return ""
 			}
 			return d.Format(format)
 		},
 		"longdate": func(date string, localeString string) string {
-			d, err := dateparse.ParseIn(date, time.Local)
+			d, err := dateparse.ParseLocal(date)
 			if err != nil {
 				return ""
 			}
@@ -108,18 +108,18 @@ func initRendering() error {
 			return time.Now().String()
 		},
 		"dateadd": func(date string, years, months, days int) string {
-			d, err := dateparse.ParseIn(date, time.Local)
+			d, err := dateparse.ParseLocal(date)
 			if err != nil {
 				return ""
 			}
 			return d.AddDate(years, months, days).String()
 		},
 		"datebefore": func(date string, before string) bool {
-			d, err := dateparse.ParseIn(date, time.Local)
+			d, err := dateparse.ParseLocal(date)
 			if err != nil {
 				return false
 			}
-			b, err := dateparse.ParseIn(before, time.Local)
+			b, err := dateparse.ParseLocal(before)
 			if err != nil {
 				return false
 			}

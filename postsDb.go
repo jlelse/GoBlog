@@ -21,14 +21,14 @@ func (p *post) checkPost() error {
 	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
 	// Fix date strings
 	if p.Published != "" {
-		d, err := dateparse.ParseIn(p.Published, time.Local)
+		d, err := dateparse.ParseLocal(p.Published)
 		if err != nil {
 			return err
 		}
 		p.Published = d.String()
 	}
 	if p.Updated != "" {
-		d, err := dateparse.ParseIn(p.Updated, time.Local)
+		d, err := dateparse.ParseLocal(p.Updated)
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (p *post) checkPost() error {
 			random := generateRandomString(5)
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
-		published, _ := dateparse.ParseIn(p.Published, time.Local)
+		published, _ := dateparse.ParseLocal(p.Published)
 		pathTmplString := appConfig.Blogs[p.Blog].Sections[p.Section].PathTemplate
 		if pathTmplString == "" {
 			return errors.New("path template empty")
