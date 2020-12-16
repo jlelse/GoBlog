@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/araddon/dateparse"
 )
 
 func urlize(str string) string {
@@ -138,4 +139,20 @@ func groupStrings(toGroup []string) []stringGroup {
 		return strings.ToLower(stringGroups[i].Identifier) < strings.ToLower(stringGroups[j].Identifier)
 	})
 	return stringGroups
+}
+
+func toLocalSafe(s string) string {
+	d, _ := toLocal(s)
+	return d
+}
+
+func toLocal(s string) (string, error) {
+	if s == "" {
+		return "", nil
+	}
+	d, err := dateparse.ParseLocal(s)
+	if err != nil {
+		return "", err
+	}
+	return d.Local().String(), nil
 }

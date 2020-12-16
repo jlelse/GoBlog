@@ -87,6 +87,16 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00007",
+				Func: func(tx *sql.Tx) error {
+					// Change all dates to local
+					_, err := tx.Exec(`
+					update posts set published = tolocal(published), updated = tolocal(updated);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

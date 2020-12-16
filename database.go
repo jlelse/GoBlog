@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3"
+	sqlite "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -15,7 +15,15 @@ var (
 )
 
 func initDatabase() (err error) {
-	appDb, err = sql.Open("sqlite3", appConfig.Db.File+"?cache=shared&mode=rwc&_journal_mode=WAL")
+	sql.Register("goblog_db", &sqlite.SQLiteDriver{
+		ConnectHook: func(c *sqlite.SQLiteConn) error {
+			if err := c.RegisterFunc("tolocal", toLocalSafe, true); err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+	appDb, err = sql.Open("goblog_db", appConfig.Db.File+"?cache=shared&mode=rwc&_journal_mode=WAL")
 	if err != nil {
 		return err
 	}

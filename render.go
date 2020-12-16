@@ -91,7 +91,7 @@ func initRendering() error {
 			if err != nil {
 				return ""
 			}
-			return d.Format(format)
+			return d.Local().Format(format)
 		},
 		"longdate": func(date string, localeString string) string {
 			d, err := dateparse.ParseLocal(date)
@@ -99,20 +99,20 @@ func initRendering() error {
 				return ""
 			}
 			ml := monday.Locale(localeString)
-			return monday.Format(d, monday.LongFormatsByLocale[ml], ml)
+			return monday.Format(d.Local(), monday.LongFormatsByLocale[ml], ml)
 		},
 		"unixtodate": func(unix int64) string {
-			return time.Unix(unix, 0).String()
+			return time.Unix(unix, 0).Local().String()
 		},
 		"now": func() string {
-			return time.Now().String()
+			return time.Now().Local().String()
 		},
 		"dateadd": func(date string, years, months, days int) string {
 			d, err := dateparse.ParseLocal(date)
 			if err != nil {
 				return ""
 			}
-			return d.AddDate(years, months, days).String()
+			return d.AddDate(years, months, days).Local().String()
 		},
 		"datebefore": func(date string, before string) bool {
 			d, err := dateparse.ParseLocal(date)

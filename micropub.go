@@ -398,7 +398,7 @@ func (p *post) computeExtraPostParameters() error {
 	}
 	if p.Published == "" && p.Section != "" {
 		// Has no published date, but section -> published now
-		p.Published = time.Now().String()
+		p.Published = time.Now().Local().String()
 	}
 	// Add images not in content
 	images := p.Parameters[appConfig.Micropub.PhotoParam]

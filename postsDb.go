@@ -12,7 +12,7 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func (p *post) checkPost() error {
+func (p *post) checkPost() (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -21,18 +21,16 @@ func (p *post) checkPost() error {
 	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
 	// Fix date strings
 	if p.Published != "" {
-		d, err := dateparse.ParseLocal(p.Published)
+		p.Published, err = toLocal(p.Published)
 		if err != nil {
 			return err
 		}
-		p.Published = d.String()
 	}
 	if p.Updated != "" {
-		d, err := dateparse.ParseLocal(p.Updated)
+		p.Updated, err = toLocal(p.Updated)
 		if err != nil {
 			return err
 		}
-		p.Updated = d.String()
 	}
 	// Cleanup params
 	for key, value := range p.Parameters {
@@ -315,6 +313,10 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 			index := len(posts)
 			paths[p.Path] = index + 1
 			p.Parameters = map[string][]string{}
+			// Fix dates
+			p.Published = toLocalSafe(p.Published)
+			p.Updated = toLocalSafe(p.Updated)
+			// Append
 			posts = append(posts, p)
 		}
 		if parameterName != "" && posts != nil {
