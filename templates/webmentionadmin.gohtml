@@ -15,8 +15,9 @@
           Created: {{ unixtodate $mention.Created }}
         </p>
         <form method="post">
-          <input type="submit" formaction="/webmention/admin/approve/{{ $mention.ID }}" value="{{ string $blog.Lang "approve" }}">
-          <input type="submit" formaction="/webmention/admin/delete/{{ $mention.ID }}" value="{{ string $blog.Lang "delete" }}">
+          <input type="hidden" name="mentionid" value="{{ $mention.ID }}">
+          <input type="submit" formaction="/webmention/approve" value="{{ string $blog.Lang "approve" }}">
+          <input type="submit" formaction="/webmention/delete" value="{{ string $blog.Lang "delete" }}">
         </form>
       </div>
     {{ end }}
@@ -29,7 +30,8 @@
           Created: {{ unixtodate $mention.Created }}
         </p>
         <form method="post">
-          <input type="submit" formaction="/webmention/admin/delete/{{ $mention.ID }}" value="{{ string $blog.Lang "delete" }}">
+          <input type="hidden" name="mentionid" value="{{ $mention.ID }}">
+          <input type="submit" formaction="/webmention/delete" value="{{ string $blog.Lang "delete" }}">
         </form>
       </div>
     {{ end }}

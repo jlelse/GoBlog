@@ -134,9 +134,9 @@ func buildHandler() (http.Handler, error) {
 	r.Route("/webmention", func(webmentionRouter chi.Router) {
 		webmentionRouter.Use(middleware.NoCache)
 		webmentionRouter.Post("/", handleWebmention)
-		webmentionRouter.With(authMiddleware, minifier.Middleware).Get("/admin", webmentionAdmin)
-		webmentionRouter.With(authMiddleware).Post("/admin/delete/{id:\\d+}", webmentionAdminDelete)
-		webmentionRouter.With(authMiddleware).Post("/admin/approve/{id:\\d+}", webmentionAdminApprove)
+		webmentionRouter.With(authMiddleware, minifier.Middleware).Get("/", webmentionAdmin)
+		webmentionRouter.With(authMiddleware).Post("/delete", webmentionAdminDelete)
+		webmentionRouter.With(authMiddleware).Post("/approve", webmentionAdminApprove)
 	})
 
 	// Posts

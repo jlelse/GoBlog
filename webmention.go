@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/go-chi/chi"
 )
 
 type webmentionStatus string
@@ -106,7 +104,7 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -117,12 +115,12 @@ func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	purgeCache()
-	http.Redirect(w, r, "/webmention/admin", http.StatusFound)
+	http.Redirect(w, r, "/webmention", http.StatusFound)
 	return
 }
 
 func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -133,7 +131,7 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	purgeCache()
-	http.Redirect(w, r, "/webmention/admin", http.StatusFound)
+	http.Redirect(w, r, "/webmention", http.StatusFound)
 	return
 }
 
