@@ -2,6 +2,10 @@
   font-family: sans-serif;
 }
 
+.monospace {
+  font-family: monospace;
+}
+
 html {
   --background: #fff;
   --primary: #000;
@@ -133,6 +137,10 @@ footer * {
 
 .ct {
   text-align: center;
+}
+
+.h400p {
+  height: 400px;
 }
 
 /* Print */

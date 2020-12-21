@@ -31,6 +31,10 @@ $colors: (
   font-family: sans-serif;
 }
 
+.monospace {
+  font-family: monospace;
+}
+
 html {
   @include lightmode;
   @media (prefers-color-scheme: dark) {
@@ -161,6 +165,10 @@ footer {
 
 .ct {
   text-align: center;
+}
+
+.h400p {
+  height: 400px;
 }
 
 /* Print */

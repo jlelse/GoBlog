@@ -8,7 +8,13 @@
     <h2>{{ string .Blog.Lang "create" }}</h2>
     <form class="fw-form p" method="post">
       <input type="hidden" name="h" value="entry">
-      <textarea name="content"></textarea>
+      <textarea name="content" class="monospace h400p">---
+title: 
+section: 
+slug: 
+blog: 
+---
+</textarea>
       <input class="fw" type="submit" value="{{ string .Blog.Lang "create" }}">
     </form>
     <h2>{{ string .Blog.Lang "update" }}</h2>
@@ -16,7 +22,7 @@
       {{ if .Data.UpdatePostURL }}
         <input type="hidden" name="editoraction" value="updatepost">
         <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
-        <textarea name="content">{{ .Data.UpdatePostContent }}</textarea>
+        <textarea name="content" class="monospace h400p">{{ .Data.UpdatePostContent }}</textarea>
       {{ else }}
         <input type="hidden" name="editoraction" value="loadupdate">
         <input type="url" name="url" placeholder="URL">
