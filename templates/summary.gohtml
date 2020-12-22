@@ -7,7 +7,7 @@
         </a>
       </h2>
     {{ end }}
-    {{ include "postmeta" . }}
+    {{ include "summarymeta" . }}
     <p class="p-summary">{{ summary .Data }}</p>
     <p>{{ if (hasp .Data "images") }}🖼️ {{ end }}<a class="u-url" href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a></p>
   </article>

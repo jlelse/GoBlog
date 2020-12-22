@@ -60,5 +60,5 @@ func redirectToLongPath(rw http.ResponseWriter, r *http.Request) {
 		serve404(rw, r)
 		return
 	}
-	http.Redirect(rw, r, path, http.StatusFound)
+	http.Redirect(rw, r, path, http.StatusMovedPermanently)
 }

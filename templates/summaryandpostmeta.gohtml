@@ -1,0 +1,11 @@
+{{ define "summaryandpostmeta" }}
+    {{ $section := (index .Blog.Sections .Data.Section) }}
+    {{ if .Data.Published }}<div>{{ string .Blog.Lang "publishedon" }} <time class="dt-published" datetime="{{ dateformat .Data.Published "2006-01-02T15:04:05Z07:00"}}">{{ longdate .Data.Published .Blog.TimeLang }}</time>{{ if $section }} in <a href="{{ blogrelative .Blog $section.Name }}">{{ $section.Title }}</a>{{ end }}</div>{{ end }}
+    {{ if .Data.Updated }}<div>{{ string .Blog.Lang "updatedon" }} <time class="dt-updated" datetime="{{ dateformat .Data.Updated "2006-01-02T15:04:05Z07:00"}}">{{ longdate .Data.Updated .Blog.TimeLang }}</time></div>{{ end }}
+    {{ if p .Data "replylink" }}
+        <div>{{ string .Blog.Lang "replyto" }}: <a class="u-in-reply-to" href="{{ p .Data "replylink" }}" target="_blank" rel="noopener">{{ p .Data "replytitle" | default (p .Data "replylink") }}</a></div>
+    {{ end }}
+    {{ if p .Data "likelink" }}
+        <div>{{ string .Blog.Lang "likeof" }}: <a class="u-like-of" href="{{ p .Data "likelink" }}" target="_blank" rel="noopener">{{ p .Data "liketitle" | default (p .Data "likelink") }}</a></div>
+    {{ end }}
+{{ end }}
