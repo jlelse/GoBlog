@@ -35,7 +35,7 @@ func (p *post) tgPost() {
 		message.WriteString(title)
 		message.WriteString("\n\n")
 	}
-	message.WriteString(p.fullURL())
+	message.WriteString(p.shortURL())
 	sendTelegramMessage(message.String(), tg.BotToken, tg.ChatID)
 }
 

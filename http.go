@@ -173,6 +173,9 @@ func buildHandler() (http.Handler, error) {
 		r.With(cacheMiddleware).Get(path, serveAsset)
 	}
 
+	// Short paths
+	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
+
 	paginationPath := "/page/{page:[0-9-]+}"
 	feedPath := ".{feed:rss|json|atom}"
 

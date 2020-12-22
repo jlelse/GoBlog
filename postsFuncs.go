@@ -12,6 +12,14 @@ func (p *post) fullURL() string {
 	return appConfig.Server.PublicAddress + p.Path
 }
 
+func (p *post) shortURL() string {
+	s, err := shortenPath(p.Path)
+	if err != nil {
+		return ""
+	}
+	return appConfig.Server.PublicAddress + s
+}
+
 func (p *post) firstParameter(parameter string) (result string) {
 	if pp := p.Parameters[parameter]; len(pp) > 0 {
 		result = pp[0]

@@ -51,6 +51,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	if canonical == "" {
 		canonical = p.fullURL()
 	}
+	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", p.shortURL()))
 	render(w, templatePost, &renderData{
 		blogString: p.Blog,
 		Canonical:  canonical,

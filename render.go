@@ -85,6 +85,9 @@ func initRendering() error {
 			})
 			return mentions
 		},
+		"shorturl": func(p *post) string {
+			return p.shortURL()
+		},
 		// Others
 		"dateformat": func(date string, format string) string {
 			d, err := dateparse.ParseLocal(date)

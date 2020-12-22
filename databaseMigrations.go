@@ -97,6 +97,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00008",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create table shortpath (id integer primary key autoincrement, path text not null, unique(path));
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
