@@ -58,6 +58,7 @@ type configBlog struct {
 	Search         *search             `mapstructure:"search"`
 	CustomPages    []*customPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram     `mapstructure:"telegram"`
+	PostAsHome     bool                `mapstructure:"postAsHome"`
 }
 
 type section struct {

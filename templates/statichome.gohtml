@@ -1,0 +1,22 @@
+{{ define "title" }}
+  <title>{{ .Blog.Title }}</title>
+  {{ include "postheadmeta" . }}
+{{ end }}
+
+{{ define "main" }}
+  <main class=h-entry>
+    <article>
+      <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
+      {{ if .Data.Content }}
+        <div class=e-content>
+          {{ content .Data }}
+        </div>
+      {{ end }}
+    </article>
+    {{ include "author" . }}
+  </main>
+{{ end }}
+
+{{ define "statichome" }}
+    {{ template "base" . }}
+{{ end }}

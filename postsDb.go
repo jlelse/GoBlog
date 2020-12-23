@@ -62,7 +62,9 @@ func (p *post) checkPost() (err error) {
 		return errors.New("section doesn't exist")
 	}
 	// Check path
-	p.Path = strings.TrimSuffix(p.Path, "/")
+	if p.Path != "/" {
+		p.Path = strings.TrimSuffix(p.Path, "/")
+	}
 	if p.Path == "" {
 		if p.Section == "" {
 			p.Section = appConfig.Blogs[p.Blog].DefaultSection

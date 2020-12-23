@@ -263,16 +263,18 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Blog
-		var mw []func(http.Handler) http.Handler
-		if appConfig.ActivityPub.Enabled {
-			mw = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
-		} else {
-			mw = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
+		if !blogConfig.PostAsHome {
+			var mw []func(http.Handler) http.Handler
+			if appConfig.ActivityPub.Enabled {
+				mw = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
+			} else {
+				mw = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
+			}
+			handler := serveHome(blog, blogPath)
+			r.With(mw...).Get(fullBlogPath, handler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, handler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, handler)
 		}
-		handler := serveHome(blog, blogPath)
-		r.With(mw...).Get(fullBlogPath, handler)
-		r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, handler)
-		r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, handler)
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {

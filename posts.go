@@ -52,8 +52,12 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	if canonical == "" {
 		canonical = p.fullURL()
 	}
+	template := templatePost
+	if p.Path == appConfig.Blogs[p.Blog].Path {
+		template = templateStaticHome
+	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", p.shortURL()))
-	render(w, templatePost, &renderData{
+	render(w, template, &renderData{
 		blogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
