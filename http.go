@@ -173,6 +173,11 @@ func buildHandler() (http.Handler, error) {
 		r.With(cacheMiddleware).Get(path, serveAsset)
 	}
 
+	// Static files
+	for _, path := range allStaticPaths() {
+		r.With(cacheMiddleware).Get(path, serveStaticFile)
+	}
+
 	// Short paths
 	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
 
