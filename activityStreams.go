@@ -90,7 +90,7 @@ func (p *post) toASNote() *asNote {
 		as.Type = "Note"
 	}
 	// Content
-	as.Content = string(p.html())
+	as.Content = string(p.absoluteHTML())
 	// Attachments
 	if images := p.Parameters[appConfig.Micropub.PhotoParam]; len(images) > 0 {
 		for _, image := range images {

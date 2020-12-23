@@ -26,8 +26,9 @@ type post struct {
 	Blog       string              `json:"blog"`
 	Section    string              `json:"section"`
 	// Not persisted
-	Slug     string `json:"slug"`
-	rendered template.HTML
+	Slug             string `json:"slug"`
+	rendered         template.HTML
+	absoluteRendered template.HTML
 }
 
 func servePost(w http.ResponseWriter, r *http.Request) {

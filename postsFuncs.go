@@ -35,13 +35,26 @@ func (p *post) html() template.HTML {
 	if p.rendered != "" {
 		return p.rendered
 	}
-	htmlContent, err := renderMarkdown(p.Content)
+	htmlContent, err := renderMarkdown(p.Content, false)
 	if err != nil {
 		log.Fatal(err)
 		return ""
 	}
 	p.rendered = template.HTML(htmlContent)
 	return p.rendered
+}
+
+func (p *post) absoluteHTML() template.HTML {
+	if p.absoluteRendered != "" {
+		return p.absoluteRendered
+	}
+	htmlContent, err := renderMarkdown(p.Content, true)
+	if err != nil {
+		log.Fatal(err)
+		return ""
+	}
+	p.absoluteRendered = template.HTML(htmlContent)
+	return p.absoluteRendered
 }
 
 const summaryDivider = "<!--more-->"

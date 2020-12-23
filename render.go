@@ -48,7 +48,7 @@ func initRendering() error {
 			return appConfig.User
 		},
 		"md": func(content string) template.HTML {
-			htmlContent, err := renderMarkdown(content)
+			htmlContent, err := renderMarkdown(content, false)
 			if err != nil {
 				log.Fatal(err)
 				return ""

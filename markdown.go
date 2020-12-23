@@ -18,10 +18,10 @@ import (
 
 var emojilib definition.Emojis
 
-var markdown goldmark.Markdown
+var defaultMarkdown, absoluteMarkdown goldmark.Markdown
 
 func initMarkdown() {
-	markdown = goldmark.New(
+	defaultGoldmarkOptions := []goldmark.Option{
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
 		),
@@ -38,15 +38,19 @@ func initMarkdown() {
 			emoji.New(
 				emoji.WithEmojis(emojiGoLib()),
 			),
-			// Custom
-			&customExtension{},
 		),
-	)
+	}
+	defaultMarkdown = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{absoluteLinks: false}))...)
+	absoluteMarkdown = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{absoluteLinks: true}))...)
 }
 
-func renderMarkdown(source string) ([]byte, error) {
+func renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
 	var buffer bytes.Buffer
-	err := markdown.Convert([]byte(source), &buffer)
+	if absoluteLinks {
+		err = absoluteMarkdown.Convert([]byte(source), &buffer)
+	} else {
+		err = defaultMarkdown.Convert([]byte(source), &buffer)
+	}
 	return buffer.Bytes(), err
 }
 
@@ -65,15 +69,21 @@ func emojiGoLib() definition.Emojis {
 }
 
 // Links
-type customExtension struct{}
+type customExtension struct {
+	absoluteLinks bool
+}
 
 func (l *customExtension) Extend(m goldmark.Markdown) {
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
-		util.Prioritized(&customRenderer{}, 500),
+		util.Prioritized(&customRenderer{
+			absoluteLinks: l.absoluteLinks,
+		}, 500),
 	))
 }
 
-type customRenderer struct{}
+type customRenderer struct {
+	absoluteLinks bool
+}
 
 func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
 	r.Register(ast.KindLink, c.renderLink)
@@ -86,7 +96,7 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 		_, _ = w.WriteString("<a href=\"")
 		// Make URL absolute if it's relative
 		newDestination := util.URLEscape(n.Destination, true)
-		if bytes.HasPrefix(newDestination, []byte("/")) {
+		if c.absoluteLinks && bytes.HasPrefix(newDestination, []byte("/")) {
 			_, _ = w.Write(util.EscapeHTML([]byte(appConfig.Server.PublicAddress)))
 		}
 		_, _ = w.Write(util.EscapeHTML(newDestination))
