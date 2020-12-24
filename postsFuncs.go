@@ -17,6 +17,9 @@ func (p *post) shortURL() string {
 	if err != nil {
 		return ""
 	}
+	if appConfig.Server.ShortPublicAddress != "" {
+		return appConfig.Server.ShortPublicAddress + s
+	}
 	return appConfig.Server.PublicAddress + s
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -23,15 +24,17 @@ type config struct {
 }
 
 type configServer struct {
-	Logging         bool   `mapstructure:"logging"`
-	LogFile         string `mapstructure:"logFile"`
-	Debug           bool   `mapstructure:"Debug"`
-	Port            int    `mapstructure:"port"`
-	Domain          string `mapstructure:"domain"`
-	PublicAddress   string `mapstructure:"publicAddress"`
-	PublicHTTPS     bool   `mapstructure:"publicHttps"`
-	LetsEncryptMail string `mapstructure:"letsEncryptMail"`
-	JWTSecret       string `mapstructure:"jwtSecret"`
+	Logging             bool   `mapstructure:"logging"`
+	LogFile             string `mapstructure:"logFile"`
+	Debug               bool   `mapstructure:"Debug"`
+	Port                int    `mapstructure:"port"`
+	PublicAddress       string `mapstructure:"publicAddress"`
+	ShortPublicAddress  string `mapstructure:"shortPublicAddress"`
+	PublicHTTPS         bool   `mapstructure:"publicHttps"`
+	LetsEncryptMail     string `mapstructure:"letsEncryptMail"`
+	JWTSecret           string `mapstructure:"jwtSecret"`
+	publicHostname      string
+	shortPublicHostname string
 }
 
 type configDb struct {
@@ -211,8 +214,17 @@ func initConfig() error {
 		return err
 	}
 	// Check config
-	if appConfig.Server.Domain == "" {
-		return errors.New("no domain configured")
+	publicURL, err := url.Parse(appConfig.Server.PublicAddress)
+	if err != nil {
+		return err
+	}
+	appConfig.Server.publicHostname = publicURL.Hostname()
+	if appConfig.Server.ShortPublicAddress != "" {
+		shortPublicURL, err := url.Parse(appConfig.Server.ShortPublicAddress)
+		if err != nil {
+			return err
+		}
+		appConfig.Server.shortPublicHostname = shortPublicURL.Hostname()
 	}
 	if appConfig.Server.JWTSecret == "" {
 		return errors.New("no JWT secret configured")

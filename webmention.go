@@ -48,7 +48,7 @@ func handleWebmention(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), r.URL.Host, appConfig.Server.Domain) {
+	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), appConfig.Server.publicHostname) {
 		serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}

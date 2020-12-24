@@ -49,7 +49,11 @@ func startServer() (err error) {
 		certmagic.DefaultACME.Agreed = true
 		certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
-		err = certmagic.HTTPS([]string{appConfig.Server.Domain}, securityHeaders(d))
+		hosts := []string{appConfig.Server.publicHostname}
+		if appConfig.Server.shortPublicHostname != "" {
+			hosts = append(hosts, appConfig.Server.shortPublicHostname)
+		}
+		err = certmagic.HTTPS(hosts, securityHeaders(d))
 	} else {
 		err = http.ListenAndServe(localAddress, d)
 	}
@@ -72,9 +76,9 @@ func buildHandler() (http.Handler, error) {
 	if appConfig.Server.Logging {
 		r.Use(logMiddleware)
 	}
-	// r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(flate.DefaultCompression))
+	r.Use(redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.GetHead)

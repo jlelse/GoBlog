@@ -72,7 +72,7 @@ func initActivityPub() error {
 }
 
 func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
-	re, err := regexp.Compile(`^acct:(.*)@` + regexp.QuoteMeta(appConfig.Server.Domain) + `$`)
+	re, err := regexp.Compile(`^acct:(.*)@` + regexp.QuoteMeta(appConfig.Server.publicHostname) + `$`)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(contentType, "application/jrd+json"+charsetUtf8Suffix)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"subject": "acct:" + name + "@" + appConfig.Server.Domain,
+		"subject": "acct:" + name + "@" + appConfig.Server.publicHostname,
 		"links": []map[string]string{
 			{
 				"rel":  "self",
