@@ -14,7 +14,7 @@ func checkIndieAuth(next http.Handler) http.Handler {
 		}
 		tokenData, err := verifyIndieAuthToken(bearerToken)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			serveError(w, r, err.Error(), http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "scope", strings.Join(tokenData.Scopes, " "))))

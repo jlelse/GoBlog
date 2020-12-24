@@ -81,7 +81,7 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 	}
 	if err != nil {
 		w.Header().Del(contentType)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

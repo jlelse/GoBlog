@@ -45,15 +45,15 @@ func initWebmention() error {
 func handleWebmention(w http.ResponseWriter, r *http.Request) {
 	m, err := extractMention(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), r.URL.Host, appConfig.Server.Domain) {
-		http.Error(w, "target not allowed", http.StatusBadRequest)
+		serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
 	if err = queueMention(m); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
@@ -85,14 +85,14 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		status: webmentionStatusVerified,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	approved, err := getWebmentions(&webmentionsRequestConfig{
 		status: webmentionStatusApproved,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	render(w, "webmentionadmin", &renderData{
@@ -106,12 +106,12 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = deleteWebmention(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	purgeCache()
@@ -122,12 +122,12 @@ func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = approveWebmention(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	purgeCache()

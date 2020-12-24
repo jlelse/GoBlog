@@ -22,7 +22,7 @@ func allPostAliases() ([]string, error) {
 func servePostAlias(w http.ResponseWriter, r *http.Request) {
 	row, err := appDbQueryRow("select path from post_parameters where parameter = 'aliases' and value = @alias", sql.Named("alias", r.URL.Path))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var path string
@@ -31,7 +31,7 @@ func servePostAlias(w http.ResponseWriter, r *http.Request) {
 		serve404(w, r)
 		return
 	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, path, http.StatusFound)

@@ -82,7 +82,7 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		// Set basic auth
 		req.SetBasicAuth(r.FormValue("username"), r.FormValue("password"))
 		// Send cookie
-		sendTokenCookie(w)
+		sendTokenCookie(w, r)
 		// Serve original request
 		d.ServeHTTP(w, req)
 		return true
@@ -90,11 +90,11 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
-func sendTokenCookie(w http.ResponseWriter) {
+func sendTokenCookie(w http.ResponseWriter, r *http.Request) {
 	expiration := time.Now().Add(7 * 24 * time.Hour)
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.StandardClaims{ExpiresAt: expiration.Unix()}).SignedString(jwtKey())
 	if err != nil {
-		http.Error(w, "failed to sign JWT", http.StatusInternalServerError)
+		serveError(w, r, "Failed to sign JWT", http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{

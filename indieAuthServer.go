@@ -35,18 +35,18 @@ func indieAuthRequest(w http.ResponseWriter, r *http.Request) {
 		State:       r.Form.Get("state"),
 	}
 	if rt := r.Form.Get("response_type"); rt != "code" && rt != "id" && rt != "" {
-		http.Error(w, "response_type must be code", http.StatusBadRequest)
+		serveError(w, r, "response_type must be code", http.StatusBadRequest)
 		return
 	}
 	if scope := r.Form.Get("scope"); scope != "" {
 		data.Scopes = strings.Split(scope, " ")
 	}
 	if !isValidProfileURL(data.ClientID) || !isValidProfileURL(data.RedirectURI) {
-		http.Error(w, "client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
+		serveError(w, r, "client_id and redirect_uri need to by valid URLs", http.StatusBadRequest)
 		return
 	}
 	if data.State == "" {
-		http.Error(w, "state must not be empty", http.StatusBadRequest)
+		serveError(w, r, "state must not be empty", http.StatusBadRequest)
 		return
 	}
 	render(w, "indieauth", &renderData{
@@ -90,7 +90,7 @@ func indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 	data.code = fmt.Sprintf("%x", sha.Sum(nil))
 	err := data.saveAuthorization()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, data.RedirectURI+"?code="+data.code+"&state="+data.State, http.StatusFound)
@@ -114,11 +114,11 @@ func indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 	}
 	valid, err := data.verifyAuthorization()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if !valid {
-		http.Error(w, "Authentication not valid", http.StatusForbidden)
+		serveError(w, r, "Authentication not valid", http.StatusForbidden)
 		return
 	}
 	res := &tokenResponse{
@@ -128,7 +128,7 @@ func indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		w.Header().Del(contentType)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -138,7 +138,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		// Token verification
 		data, err := verifyIndieAuthToken(r.Header.Get("Authorization"))
 		if err != nil {
-			http.Error(w, "Invalid token or token not found", http.StatusUnauthorized)
+			serveError(w, r, "Invalid token or token not found", http.StatusUnauthorized)
 			return
 		}
 		res := &tokenResponse{
@@ -150,7 +150,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		err = json.NewEncoder(w).Encode(res)
 		if err != nil {
 			w.Header().Del(contentType)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		return
@@ -171,15 +171,15 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			}
 			valid, err := data.verifyAuthorization()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			if !valid {
-				http.Error(w, "Authentication not valid", http.StatusForbidden)
+				serveError(w, r, "Authentication not valid", http.StatusForbidden)
 				return
 			}
 			if len(data.Scopes) < 1 {
-				http.Error(w, "No scope", http.StatusBadRequest)
+				serveError(w, r, "No scope", http.StatusBadRequest)
 				return
 			}
 			data.time = time.Now()
@@ -188,7 +188,7 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			data.token = fmt.Sprintf("%x", sha.Sum(nil))
 			err = data.saveToken()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			res := &tokenResponse{
@@ -201,12 +201,12 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			err = json.NewEncoder(w).Encode(res)
 			if err != nil {
 				w.Header().Del(contentType)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			return
 		}
-		http.Error(w, "", http.StatusBadRequest)
+		serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
 }

@@ -41,7 +41,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		serve404(w, r)
 		return
 	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if as {
@@ -95,7 +95,7 @@ func serveHome(blog string, path string) func(w http.ResponseWriter, r *http.Req
 	return func(w http.ResponseWriter, r *http.Request) {
 		as := strings.HasSuffix(r.URL.Path, ".as")
 		if as {
-			appConfig.Blogs[blog].serveActivityStreams(blog, w)
+			appConfig.Blogs[blog].serveActivityStreams(blog, w, r)
 			return
 		}
 		serveIndex(&indexConfig{
@@ -202,7 +202,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		var posts []*post
 		err := p.Results(&posts)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// Meta

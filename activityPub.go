@@ -74,13 +74,13 @@ func initActivityPub() error {
 func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	re, err := regexp.Compile(`^acct:(.*)@` + regexp.QuoteMeta(appConfig.Server.Domain) + `$`)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	name := re.ReplaceAllString(r.URL.Query().Get("resource"), "$1")
 	blog := appConfig.Blogs[name]
 	if blog == nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		serveError(w, r, "Blog not found", http.StatusNotFound)
 		return
 	}
 	w.Header().Set(contentType, "application/jrd+json"+charsetUtf8Suffix)
@@ -100,7 +100,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	blogName := chi.URLParam(r, "blog")
 	blog := appConfig.Blogs[blogName]
 	if blog == nil {
-		http.Error(w, "Inbox not found", http.StatusNotFound)
+		serveError(w, r, "Inbox not found", http.StatusNotFound)
 		return
 	}
 	blogIri := blog.apIri()
@@ -108,7 +108,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	requestActor, requestKey, requestActorStatus, err := apVerifySignature(r)
 	if err != nil {
 		// Send 401 because signature could not be verified
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		serveError(w, r, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	if requestActorStatus != 0 {
@@ -122,7 +122,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		http.Error(w, "Error when trying to get request actor", http.StatusBadRequest)
+		serveError(w, r, "Error when trying to get request actor", http.StatusBadRequest)
 		return
 	}
 	// Parse activity
@@ -130,17 +130,17 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&activity)
 	_ = r.Body.Close()
 	if err != nil {
-		http.Error(w, "Failed to decode body", http.StatusBadRequest)
+		serveError(w, r, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
 	// Get and check activity actor
 	activityActor, ok := activity["actor"].(string)
 	if !ok {
-		http.Error(w, "actor in activity is no string", http.StatusBadRequest)
+		serveError(w, r, "actor in activity is no string", http.StatusBadRequest)
 		return
 	}
 	if activityActor != requestActor.ID {
-		http.Error(w, "Request actor isn't activity actor", http.StatusForbidden)
+		serveError(w, r, "Request actor isn't activity actor", http.StatusForbidden)
 		return
 	}
 	// Do

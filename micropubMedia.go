@@ -22,25 +22,25 @@ const micropubMediaSubPath = "/media"
 
 func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	if !strings.Contains(r.Context().Value("scope").(string), "media") {
-		http.Error(w, "media scope missing", http.StatusForbidden)
+		serveError(w, r, "media scope missing", http.StatusForbidden)
 		return
 	}
 	if appConfig.Micropub.MediaStorage == nil {
-		http.Error(w, "Not configured", http.StatusNotImplemented)
+		serveError(w, r, "Not configured", http.StatusNotImplemented)
 		return
 	}
 	if ct := r.Header.Get(contentType); !strings.Contains(ct, contentTypeMultipartForm) {
-		http.Error(w, "wrong content-type", http.StatusBadRequest)
+		serveError(w, r, "wrong content-type", http.StatusBadRequest)
 		return
 	}
 	err := r.ParseMultipartForm(0)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer func() { _ = file.Close() }()
@@ -48,7 +48,7 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = hashFile.Close() }()
 	fileName, err := getSHA256(hashFile)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	fileExtension := filepath.Ext(header.Filename)
@@ -65,13 +65,13 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	fileName += strings.ToLower(fileExtension)
 	location, err := appConfig.Micropub.MediaStorage.uploadToBunny(fileName, file)
 	if err != nil {
-		http.Error(w, "failed to upload original file: "+err.Error(), http.StatusInternalServerError)
+		serveError(w, r, "failed to upload original file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if appConfig.Micropub.MediaStorage.TinifyKey != "" {
 		compressedLocation, err := appConfig.Micropub.MediaStorage.tinify(location)
 		if err != nil {
-			http.Error(w, "failed to compress file: "+err.Error(), http.StatusInternalServerError)
+			serveError(w, r, "failed to compress file: "+err.Error(), http.StatusInternalServerError)
 			return
 		} else if compressedLocation != "" {
 			location = compressedLocation

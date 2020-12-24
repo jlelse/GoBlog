@@ -6,7 +6,7 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 		allValues, err := allTaxonomyValues(blog, tax.Name)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		render(w, templateTaxonomy, &renderData{

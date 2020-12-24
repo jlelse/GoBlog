@@ -36,12 +36,12 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
 			u, err := url.Parse(r.URL.Query().Get("url"))
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			p, err := getPost(u.Path)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			mf = p.toMfItem()
@@ -53,7 +53,7 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 				offset: offset,
 			})
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			list := map[string][]*microformatItem{}
@@ -70,7 +70,7 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		for blog := range appConfig.Blogs {
 			values, err := allTaxonomyValues(blog, appConfig.Micropub.CategoryParam)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			allCategories = append(allCategories, values...)
@@ -81,7 +81,7 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			"categories": allCategories,
 		})
 	default:
-		w.WriteHeader(http.StatusNotFound)
+		serve404(w, r)
 	}
 }
 
@@ -124,38 +124,38 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			err = r.ParseForm()
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if action := micropubAction(r.Form.Get("action")); action != "" {
 			u, err := url.Parse(r.Form.Get("url"))
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			if action == actionDelete {
 				micropubDelete(w, r, u)
 				return
 			}
-			http.Error(w, "Action not supported", http.StatusNotImplemented)
+			serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
 		p, err = convertMPValueMapToPost(r.Form)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else if strings.Contains(ct, contentTypeJSON) {
 		parsedMfItem := &microformatItem{}
 		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if parsedMfItem.Action != "" {
 			u, err := url.Parse(parsedMfItem.URL)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			if parsedMfItem.Action == actionDelete {
@@ -166,25 +166,25 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 				micropubUpdate(w, r, u, parsedMfItem)
 				return
 			}
-			http.Error(w, "Action not supported", http.StatusNotImplemented)
+			serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
 		p, err = convertMPMfToPost(parsedMfItem)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		http.Error(w, "wrong content type", http.StatusBadRequest)
+		serveError(w, r, "wrong content type", http.StatusBadRequest)
 		return
 	}
 	if !strings.Contains(r.Context().Value("scope").(string), "create") {
-		http.Error(w, "create scope missing", http.StatusForbidden)
+		serveError(w, r, "create scope missing", http.StatusForbidden)
 		return
 	}
 	err := p.create()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, p.fullURL(), http.StatusAccepted)
@@ -418,11 +418,11 @@ func (p *post) computeExtraPostParameters() error {
 
 func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 	if !strings.Contains(r.Context().Value("scope").(string), "delete") {
-		http.Error(w, "delete scope missing", http.StatusForbidden)
+		serveError(w, r, "delete scope missing", http.StatusForbidden)
 		return
 	}
 	if err := deletePost(u.Path); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	http.Redirect(w, r, u.String(), http.StatusNoContent)
@@ -431,12 +431,12 @@ func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 
 func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
 	if !strings.Contains(r.Context().Value("scope").(string), "update") {
-		http.Error(w, "update scope missing", http.StatusForbidden)
+		serveError(w, r, "update scope missing", http.StatusForbidden)
 		return
 	}
 	p, err := getPost(u.Path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if mf.Replace != nil {
@@ -550,12 +550,12 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 	}
 	err = p.computeExtraPostParameters()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = p.replace()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, p.fullURL(), http.StatusNoContent)

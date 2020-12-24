@@ -17,12 +17,12 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	}()
 	bodyContent, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	p, aliases, err := parseHugoFile(string(bodyContent))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	p.Blog = blog
@@ -31,7 +31,7 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	p.Slug = slug
 	err = p.replace()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	aliases = append(aliases, alias)
@@ -51,7 +51,7 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 		p.Parameters["aliases"] = aliases
 		err = p.replace()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}

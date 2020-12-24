@@ -13,7 +13,7 @@ func serveSearch(blog string, path string) func(w http.ResponseWriter, r *http.R
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if q := r.Form.Get("q"); q != "" {

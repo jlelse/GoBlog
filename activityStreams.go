@@ -119,10 +119,10 @@ func (p *post) toASNote() *asNote {
 	return as
 }
 
-func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter) {
+func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
 	publicKeyDer, err := x509.MarshalPKIXPublicKey(&apPrivateKey.PublicKey)
 	if err != nil {
-		http.Error(w, "Failed to marshal public key", http.StatusInternalServerError)
+		serveError(w, r, "Failed to marshal public key", http.StatusInternalServerError)
 		return
 	}
 	// Send JSON

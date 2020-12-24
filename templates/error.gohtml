@@ -5,7 +5,7 @@
 {{ define "main" }}
   <main>
       {{ with .Data.Title }}<h1>{{ . }}</h1>{{ end }}
-      {{ with .Data.Message }}{{ md . }}{{ end }}
+      {{ with .Data.Message }}<p class="monospace">{{ . }}</p>{{ end }}
   </main>
 {{ end }}
 

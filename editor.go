@@ -10,7 +10,7 @@ import (
 
 const editorPath = "/editor"
 
-func serveEditor(w http.ResponseWriter, r *http.Request) {
+func serveEditor(w http.ResponseWriter, _ *http.Request) {
 	render(w, templateEditor, &renderData{})
 }
 
@@ -20,12 +20,12 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		case "loadupdate":
 			parsedURL, err := url.Parse(r.FormValue("url"))
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			post, err := getPost(parsedURL.Path)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			mf := post.toMfItem()
@@ -49,12 +49,12 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			}
 			jsonBytes, err := json.Marshal(mf)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(jsonBytes))
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			req.Header.Set(contentType, contentTypeJSON)
@@ -62,7 +62,7 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		case "upload":
 			editorMicropubPost(w, r, true)
 		default:
-			http.Error(w, "unknown editoraction", http.StatusBadRequest)
+			serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}
 		return
 	}
