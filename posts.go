@@ -140,36 +140,51 @@ func serveSearchResults(blog string, path string) func(w http.ResponseWriter, r 
 	})
 }
 
-func serveYearMonth(blog string, path string, year, month int) func(w http.ResponseWriter, r *http.Request) {
+func serveDate(blog string, path string, year, month, day int) func(w http.ResponseWriter, r *http.Request) {
 	var title string
-	if month == 0 {
+	// Specific
+	if year != 0 && month == 0 && day == 0 {
 		title = fmt.Sprintf("%0004d", year)
-	} else {
+	} else if year != 0 && month != 0 && day == 0 {
 		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
-		date := time.Date(0, 0, 10, 0, 0, 0, 0, time.Local).AddDate(year, month, 0)
+		date := time.Date(year, time.Month(month), 1, 1, 0, 0, 0, time.Local)
 		title = monday.Format(date, "January 2006", ml)
+	} else if year != 0 && month != 0 && day != 0 {
+		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
+		date := time.Date(year, time.Month(month), day, 1, 0, 0, 0, time.Local)
+		title = monday.Format(date, "January 2, 2006", ml)
+	} else
+	// Generic
+	if year == 0 && month != 0 && day == 0 {
+		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
+		date := time.Date(0, time.Month(month), 1, 1, 0, 0, 0, time.Local)
+		title = monday.Format(date, "January", ml)
+	} else if year == 0 && month != 0 && day != 0 {
+		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
+		date := time.Date(0, time.Month(month), day, 1, 0, 0, 0, time.Local)
+		title = monday.Format(date, "January 2", ml)
 	}
 	return serveIndex(&indexConfig{
 		blog:  blog,
 		path:  path,
 		year:  year,
 		month: month,
+		day:   day,
 		title: title,
 	})
 }
 
 type indexConfig struct {
-	blog            string
-	path            string
-	section         *section
-	tax             *taxonomy
-	taxValue        string
-	parameter       string
-	year            int
-	month           int
-	title           string
-	description     string
-	summaryTemplate string
+	blog             string
+	path             string
+	section          *section
+	tax              *taxonomy
+	taxValue         string
+	parameter        string
+	year, month, day int
+	title            string
+	description      string
+	summaryTemplate  string
 }
 
 func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +212,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			search:         search,
 			publishedYear:  ic.year,
 			publishedMonth: ic.month,
+			publishedDay:   ic.day,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post

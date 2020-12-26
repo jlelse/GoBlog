@@ -247,23 +247,41 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Year / month archives
-		months, err := allMonths(blog)
+		dates, err := allPublishedDates(blog)
 		if err != nil {
 			return nil, err
 		}
-		for y, ms := range months {
-			yearPath := blogPath + "/" + fmt.Sprintf("%0004d", y)
-			yearHandler := serveYearMonth(blog, yearPath, y, 0)
+		for _, d := range dates {
+			// Year
+			yearPath := blogPath + "/" + fmt.Sprintf("%0004d", d.year)
+			yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
 			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath, yearHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+feedPath, yearHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+paginationPath, yearHandler)
-			for _, m := range ms {
-				monthPath := yearPath + "/" + fmt.Sprintf("%02d", m)
-				monthHandler := serveYearMonth(blog, monthPath, y, m)
-				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath, monthHandler)
-				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+feedPath, monthHandler)
-				r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+paginationPath, monthHandler)
-			}
+			// Specific month
+			monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
+			monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
+			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath, monthHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+feedPath, monthHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+paginationPath, monthHandler)
+			// Specific day
+			dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
+			dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
+			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath, dayHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath+feedPath, dayHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath+paginationPath, dayHandler)
+			// Generic month
+			genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
+			genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath, genericMonthHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath+feedPath, genericMonthHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath+paginationPath, genericMonthHandler)
+			// Specific day
+			genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
+			genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath, genericMonthDayHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
+			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
 		}
 
 		// Blog
