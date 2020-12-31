@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	kemoji "github.com/kyokomi/emoji"
+	kemoji "github.com/kyokomi/emoji/v2"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark-emoji/definition"
