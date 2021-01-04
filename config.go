@@ -59,6 +59,7 @@ type configBlog struct {
 	Menus          map[string]*menu    `mapstructure:"menus"`
 	Photos         *photos             `mapstructure:"photos"`
 	Search         *search             `mapstructure:"search"`
+	BlogStats      *blogStats          `mapstructure:"blogStats"`
 	CustomPages    []*customPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram     `mapstructure:"telegram"`
 	PostAsHome     bool                `mapstructure:"postAsHome"`
@@ -100,6 +101,13 @@ type search struct {
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
 	Placeholder string `mapstructure:"placeholder"`
+}
+
+type blogStats struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Path        string `mapstructure:"path"`
+	Title       string `mapstructure:"title"`
+	Description string `mapstructure:"description"`
 }
 
 type customPage struct {

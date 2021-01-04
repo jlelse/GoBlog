@@ -226,7 +226,7 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Photos
-		if blogConfig.Photos.Enabled {
+		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
 			photoPath := blogPath + blogConfig.Photos.Path
 			handler := servePhotos(blog, photoPath)
 			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath, handler)
@@ -234,7 +234,7 @@ func buildHandler() (http.Handler, error) {
 		}
 
 		// Search
-		if blogConfig.Search.Enabled {
+		if blogConfig.Search != nil && blogConfig.Search.Enabled {
 			searchPath := blogPath + blogConfig.Search.Path
 			handler := serveSearch(blog, searchPath)
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchPath, handler)
@@ -244,6 +244,12 @@ func buildHandler() (http.Handler, error) {
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath, resultHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+feedPath, resultHandler)
 			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+paginationPath, resultHandler)
+		}
+
+		// Stats
+		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
+			statsPath := blogPath + blogConfig.BlogStats.Path
+			r.With(cacheMiddleware, minifier.Middleware).Get(statsPath, serveBlogStats(blog, statsPath))
 		}
 
 		// Year / month archives
