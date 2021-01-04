@@ -1,20 +1,20 @@
 {{ define "base" }}
   <!doctype html>
-  <html lang={{ .Blog.Lang }}>
-  <meta charset=utf-8>
-  <meta name=viewport content="width=device-width,initial-scale=1">
-  <meta http-equiv=x-ua-compatible content="IE=edge">
-  <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
-  {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
-  {{ template "title" . }}
-  <link rel="alternate" type="application/rss+xml" title="RSS ({{ .Blog.Title }})" href="{{ .Blog.Path }}.rss"/>
-  <link rel="alternate" type="application/atom+xml" title="Atom ({{ .Blog.Title }})" href="{{ .Blog.Path }}.atom"/>
-  <link rel="alternate" type="application/feed+json" title="JSON Feed ({{ .Blog.Title }})" href="{{ .Blog.Path }}.json"/>
-  <link rel="webmention" href="/webmention" />
-  <link rel="micropub" href="/micropub" />
-  <link rel="authorization_endpoint" href="/indieauth" />
-  <link rel="token_endpoint" href="/indieauth/token" />
-  {{ include "header" . }}
-  {{ template "main" . }}
-  {{ include "footer" . }}
+  <html lang="{{ .Blog.Lang }}">
+    <meta charset="utf-8">
+    <meta name=viewport content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
+    {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
+    {{ template "title" . }}
+    <link rel="alternate" type="application/rss+xml" title="RSS ({{ .Blog.Title }})" href="{{ .Blog.Path }}.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom ({{ .Blog.Title }})" href="{{ .Blog.Path }}.atom"/>
+    <link rel="alternate" type="application/feed+json" title="JSON Feed ({{ .Blog.Title }})" href="{{ .Blog.Path }}.json"/>
+    <link rel="webmention" href="/webmention" />
+    <link rel="micropub" href="/micropub" />
+    <link rel="authorization_endpoint" href="/indieauth" />
+    <link rel="token_endpoint" href="/indieauth/token" />
+    {{ include "header" . }}
+    {{ template "main" . }}
+    {{ include "footer" . }}
+  </html>
 {{ end }}
