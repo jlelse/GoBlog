@@ -90,5 +90,5 @@ func allAssetPaths() []string {
 // Gets only called by registered paths
 func serveAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Cache-Control", "public,max-age=31536000,immutable")
-	http.ServeFile(w, r, path.Join(compiledAssetsFolder, r.URL.Path))
+	http.ServeFile(w, r, filepath.Join(compiledAssetsFolder, r.URL.Path))
 }

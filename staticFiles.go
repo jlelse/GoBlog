@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -29,5 +28,5 @@ func allStaticPaths() (paths []string) {
 
 // Gets only called by registered paths
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, path.Join(staticFolder, r.URL.Path))
+	http.ServeFile(w, r, filepath.Join(staticFolder, r.URL.Path))
 }
