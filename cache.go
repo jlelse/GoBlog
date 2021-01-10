@@ -112,6 +112,13 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 	}
 	if item == nil || item.expired() {
 		// No cache available
+		// Remove problematic headers
+		r.Header.Del("If-Modified-Since")
+		r.Header.Del("If-Unmodified-Since")
+		r.Header.Del("If-None-Match")
+		r.Header.Del("If-Match")
+		r.Header.Del("If-Range")
+		r.Header.Del("Range")
 		// Record request
 		recorder := httptest.NewRecorder()
 		next.ServeHTTP(recorder, r)
@@ -123,9 +130,13 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		_, _ = io.Copy(h, bytes.NewReader(body))
 		hash := fmt.Sprintf("%x", h.Sum(nil))
 		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
+		lastMod := time.Now()
+		if lm := result.Header.Get("Last-Modified"); lm != "" {
+			lastMod, _ = dateparse.ParseLocal(lm)
+		}
 		item = &cacheItem{
 			expiration:   exp,
-			creationTime: time.Now(),
+			creationTime: lastMod,
 			hash:         hash,
 			code:         result.StatusCode,
 			header:       result.Header,
