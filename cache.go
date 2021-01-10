@@ -132,7 +132,9 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
 		lastMod := time.Now()
 		if lm := result.Header.Get("Last-Modified"); lm != "" {
-			lastMod, _ = dateparse.ParseLocal(lm)
+			if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
+				lastMod = parsedTime
+			}
 		}
 		item = &cacheItem{
 			expiration:   exp,
