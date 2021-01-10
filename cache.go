@@ -56,7 +56,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			}
 			if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
 				t, err := dateparse.ParseAny(ifModifiedSinceHeader)
-				if err == nil && t.Unix() >= cache.creationTime {
+				if err == nil && t.After(cache.creationTime) {
 					// send 304
 					w.WriteHeader(http.StatusNotModified)
 					return
@@ -80,12 +80,10 @@ func cacheKey(r *http.Request) string {
 func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	w.Header().Del(cacheInternalExpirationHeader)
 	w.Header().Set("ETag", cache.hash)
-	w.Header().Set("Last-Modified", time.Unix(cache.creationTime, 0).UTC().Format(http.TimeFormat))
+	w.Header().Set("Last-Modified", cache.creationTime.UTC().Format(http.TimeFormat))
 	if w.Header().Get("Cache-Control") == "" {
 		if cache.expiration != 0 {
-			expiresIn := cache.creationTime + int64(cache.expiration) - time.Now().Unix()
-			// Set expires time
-			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", expiresIn, cache.expiration))
+			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
 		} else {
 			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3, appConfig.Cache.Expiration))
 		}
@@ -94,7 +92,7 @@ func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 
 type cacheItem struct {
 	expiration   int
-	creationTime int64
+	creationTime time.Time
 	hash         string
 	code         int
 	header       http.Header
@@ -103,7 +101,7 @@ type cacheItem struct {
 
 func (c *cacheItem) expired() bool {
 	if c.expiration != 0 {
-		return c.creationTime < time.Now().Unix()-int64(c.expiration)
+		return time.Now().After(c.creationTime.Add(time.Duration(c.expiration) * time.Second))
 	}
 	return false
 }
@@ -127,7 +125,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
 		item = &cacheItem{
 			expiration:   exp,
-			creationTime: time.Now().Unix(),
+			creationTime: time.Now(),
 			hash:         hash,
 			code:         result.StatusCode,
 			header:       result.Header,
