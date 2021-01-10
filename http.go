@@ -103,9 +103,7 @@ func buildHandler() (http.Handler, error) {
 		mpRouter.Use(checkIndieAuth, middleware.NoCache, minifier.Middleware)
 		mpRouter.Get("/", serveMicropubQuery)
 		mpRouter.Post("/", serveMicropubPost)
-		if appConfig.Micropub.MediaStorage != nil {
-			mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
-		}
+		mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
 	})
 
 	// Editor
@@ -181,6 +179,9 @@ func buildHandler() (http.Handler, error) {
 	for _, path := range allStaticPaths() {
 		r.With(cacheMiddleware).Get(path, serveStaticFile)
 	}
+
+	// Media files
+	r.With(cacheMiddleware).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
 
 	// Short paths
 	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)

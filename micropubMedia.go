@@ -63,34 +63,53 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fileName += strings.ToLower(fileExtension)
-	location, err := appConfig.Micropub.MediaStorage.uploadToBunny(fileName, file)
+	// Save file
+	location, err := uploadFile(fileName, file)
 	if err != nil {
-		serveError(w, r, "failed to upload original file: "+err.Error(), http.StatusInternalServerError)
+		serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if appConfig.Micropub.MediaStorage.TinifyKey != "" {
-		compressedLocation, err := appConfig.Micropub.MediaStorage.tinify(location)
+	// Try to compress file
+	if ms := appConfig.Micropub.MediaStorage; ms != nil && ms.TinifyKey != "" {
+		compressedLocation, err := tinify(location, ms)
 		if err != nil {
 			serveError(w, r, "failed to compress file: "+err.Error(), http.StatusInternalServerError)
 			return
 		} else if compressedLocation != "" {
 			location = compressedLocation
+		} else {
+			serveError(w, r, "No compressed location", http.StatusInternalServerError)
 		}
 	}
 	http.Redirect(w, r, location, http.StatusCreated)
 }
 
-func (mediaConf *configMicropubMedia) uploadToBunny(filename string, file multipart.File) (location string, err error) {
-	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("https://storage.bunnycdn.com/%s/%s", url.PathEscape(mediaConf.BunnyStorageName), url.PathEscape(filename)), file)
-	req.Header.Add("AccessKey", mediaConf.BunnyStorageKey)
+func uploadFile(filename string, f io.Reader) (string, error) {
+	ms := appConfig.Micropub.MediaStorage
+	if ms != nil && ms.BunnyStorageKey != "" && ms.BunnyStorageName != "" {
+		return uploadToBunny(filename, f, ms)
+	}
+	loc, err := saveMediaFile(filename, f)
+	if err != nil {
+		return "", err
+	}
+	if ms != nil && ms.MediaURL != "" {
+		return ms.MediaURL + loc, nil
+	}
+	return loc, nil
+}
+
+func uploadToBunny(filename string, f io.Reader, config *configMicropubMedia) (location string, err error) {
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("https://storage.bunnycdn.com/%s/%s", url.PathEscape(config.BunnyStorageName), url.PathEscape(filename)), f)
+	req.Header.Add("AccessKey", config.BunnyStorageKey)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusCreated {
 		return "", errors.New("failed to upload file to BunnyCDN")
 	}
-	return mediaConf.MediaURL + "/" + filename, nil
+	return config.MediaURL + "/" + filename, nil
 }
 
-func (mediaConf *configMicropubMedia) tinify(url string) (location string, err error) {
+func tinify(url string, config *configMicropubMedia) (location string, err error) {
 	fileExtension := func() string {
 		spliced := strings.Split(url, ".")
 		return spliced[len(spliced)-1]
@@ -101,7 +120,7 @@ func (mediaConf *configMicropubMedia) tinify(url string) (location string, err e
 	if !(i < len(supportedTypes) && supportedTypes[i] == strings.ToLower(fileExtension)) {
 		return "", nil
 	}
-	tfgo.SetKey(mediaConf.TinifyKey)
+	tfgo.SetKey(config.TinifyKey)
 	s, err := tfgo.FromUrl(url)
 	if err != nil {
 		return "", err
@@ -134,7 +153,7 @@ func (mediaConf *configMicropubMedia) tinify(url string) (location string, err e
 	if err != nil {
 		return "", err
 	}
-	location, err = mediaConf.uploadToBunny(fileName+"."+fileExtension, file)
+	location, err = uploadFile(fileName+"."+fileExtension, file)
 	return
 }
 

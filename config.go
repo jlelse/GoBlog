@@ -247,10 +247,10 @@ func initConfig() error {
 		if appConfig.Micropub.MediaStorage.MediaURL == "" ||
 			appConfig.Micropub.MediaStorage.BunnyStorageKey == "" ||
 			appConfig.Micropub.MediaStorage.BunnyStorageName == "" {
-			appConfig.Micropub.MediaStorage = nil
-		} else {
-			appConfig.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(appConfig.Micropub.MediaStorage.MediaURL, "/")
+			appConfig.Micropub.MediaStorage.BunnyStorageKey = ""
+			appConfig.Micropub.MediaStorage.BunnyStorageName = ""
 		}
+		appConfig.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(appConfig.Micropub.MediaStorage.MediaURL, "/")
 	}
 	return nil
 }

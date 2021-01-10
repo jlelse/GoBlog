@@ -26,11 +26,9 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	case "config":
 		w.Header().Add(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
-		mc := &micropubConfig{}
-		if appConfig.Micropub.MediaStorage != nil {
-			mc.MediaEndpoint = appConfig.Server.PublicAddress + micropubPath + micropubMediaSubPath
-		}
-		_ = json.NewEncoder(w).Encode(mc)
+		_ = json.NewEncoder(w).Encode(&micropubConfig{
+			MediaEndpoint: appConfig.Server.PublicAddress + micropubPath + micropubMediaSubPath,
+		})
 	case "source":
 		var mf interface{}
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
