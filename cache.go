@@ -49,7 +49,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			}
 			setCacheHeaders(w, cache)
 			// check conditional request
-			if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.hash {
+			if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.eTag {
 				// send 304
 				w.WriteHeader(http.StatusNotModified)
 				return
@@ -78,8 +78,7 @@ func cacheKey(r *http.Request) string {
 }
 
 func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
-	w.Header().Del(cacheInternalExpirationHeader)
-	w.Header().Set("ETag", cache.hash)
+	w.Header().Set("ETag", cache.eTag)
 	w.Header().Set("Last-Modified", cache.creationTime.UTC().Format(http.TimeFormat))
 	if w.Header().Get("Cache-Control") == "" {
 		if cache.expiration != 0 {
@@ -93,7 +92,7 @@ func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 type cacheItem struct {
 	expiration   int
 	creationTime time.Time
-	hash         string
+	eTag         string
 	code         int
 	header       http.Header
 	body         []byte
@@ -126,20 +125,29 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		result := recorder.Result()
 		body, _ := ioutil.ReadAll(result.Body)
 		_ = result.Body.Close()
-		h := sha256.New()
-		_, _ = io.Copy(h, bytes.NewReader(body))
-		hash := fmt.Sprintf("%x", h.Sum(nil))
-		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
+		eTag := result.Header.Get("ETag")
+		if eTag == "" {
+			h := sha256.New()
+			_, _ = io.Copy(h, bytes.NewReader(body))
+			eTag = fmt.Sprintf("%x", h.Sum(nil))
+		}
 		lastMod := time.Now()
 		if lm := result.Header.Get("Last-Modified"); lm != "" {
 			if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
 				lastMod = parsedTime
 			}
 		}
+		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
+		// Remove problematic headers
+		result.Header.Del(cacheInternalExpirationHeader)
+		result.Header.Del("Accept-Ranges")
+		result.Header.Del("ETag")
+		result.Header.Del("Last-Modified")
+		// Create cache item
 		item = &cacheItem{
 			expiration:   exp,
 			creationTime: lastMod,
-			hash:         hash,
+			eTag:         eTag,
 			code:         result.StatusCode,
 			header:       result.Header,
 			body:         body,

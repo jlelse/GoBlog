@@ -172,16 +172,16 @@ func buildHandler() (http.Handler, error) {
 
 	// Assets
 	for _, path := range allAssetPaths() {
-		r.With(cacheMiddleware).Get(path, serveAsset)
+		r.Get(path, serveAsset)
 	}
 
 	// Static files
 	for _, path := range allStaticPaths() {
-		r.With(cacheMiddleware).Get(path, serveStaticFile)
+		r.Get(path, serveStaticFile)
 	}
 
 	// Media files
-	r.With(cacheMiddleware).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
+	r.Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
 
 	// Short paths
 	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)

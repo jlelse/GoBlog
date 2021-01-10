@@ -130,7 +130,7 @@ func initRendering() error {
 			}
 			return d.Before(b)
 		},
-		"asset":  assetFile,
+		"asset":  assetFileName,
 		"string": getTemplateStringVariant,
 		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
 			if len(data) == 1 {
