@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -90,7 +91,7 @@ func main() {
 	}()
 
 	// Graceful shutdown
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Stopping...")
 
