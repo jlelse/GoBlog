@@ -90,6 +90,7 @@ func (p *post) toMfItem() *microformatItem {
 	params["blog"] = []string{p.Blog}
 	params["published"] = []string{p.Published}
 	params["updated"] = []string{p.Updated}
+	params["status"] = []string{string(p.Status)}
 	pb, _ := yaml.Marshal(p.Parameters)
 	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
 	return &microformatItem{
@@ -98,6 +99,7 @@ func (p *post) toMfItem() *microformatItem {
 			Name:       p.Parameters["title"],
 			Published:  []string{p.Published},
 			Updated:    []string{p.Updated},
+			PostStatus: []string{string(p.Status)},
 			Category:   p.Parameters[appConfig.Micropub.CategoryParam],
 			Content:    []string{content},
 			URL:        []string{p.fullURL()},
@@ -205,6 +207,9 @@ func convertMPValueMapToPost(values map[string][]string) (*post, error) {
 	if updated, ok := values["updated"]; ok {
 		entry.Updated = updated[0]
 	}
+	if status, ok := values["post-status"]; ok {
+		entry.Status = postStatus(status[0])
+	}
 	// Parameter
 	if name, ok := values["name"]; ok {
 		entry.Parameters["title"] = name
@@ -269,6 +274,7 @@ type microformatProperties struct {
 	Name       []string      `json:"name,omitempty"`
 	Published  []string      `json:"published,omitempty"`
 	Updated    []string      `json:"updated,omitempty"`
+	PostStatus []string      `json:"post-status,omitempty"`
 	Category   []string      `json:"category,omitempty"`
 	Content    []string      `json:"content,omitempty"`
 	URL        []string      `json:"url,omitempty"`
@@ -296,6 +302,9 @@ func convertMPMfToPost(mf *microformatItem) (*post, error) {
 	}
 	if len(mf.Properties.Updated) == 1 {
 		entry.Updated = mf.Properties.Updated[0]
+	}
+	if len(mf.Properties.PostStatus) == 1 {
+		entry.Status = postStatus(mf.Properties.PostStatus[0])
 	}
 	// Parameter
 	if len(mf.Properties.Name) == 1 {
@@ -370,25 +379,29 @@ func (p *post) computeExtraPostParameters() error {
 	} else {
 		p.Blog = appConfig.DefaultBlog
 	}
-	if path := p.Parameters["path"]; len(path) == 1 && path[0] != "" {
+	if path := p.Parameters["path"]; len(path) == 1 {
 		p.Path = path[0]
 		delete(p.Parameters, "path")
 	}
-	if section := p.Parameters["section"]; len(section) == 1 && section[0] != "" {
+	if section := p.Parameters["section"]; len(section) == 1 {
 		p.Section = section[0]
 		delete(p.Parameters, "section")
 	}
-	if slug := p.Parameters["slug"]; len(slug) == 1 && slug[0] != "" {
+	if slug := p.Parameters["slug"]; len(slug) == 1 {
 		p.Slug = slug[0]
 		delete(p.Parameters, "slug")
 	}
-	if published := p.Parameters["published"]; len(published) == 1 && published[0] != "" {
+	if published := p.Parameters["published"]; len(published) == 1 {
 		p.Published = published[0]
 		delete(p.Parameters, "published")
 	}
-	if updated := p.Parameters["updated"]; len(updated) == 1 && updated[0] != "" {
+	if updated := p.Parameters["updated"]; len(updated) == 1 {
 		p.Updated = updated[0]
 		delete(p.Parameters, "updated")
+	}
+	if status := p.Parameters["status"]; len(status) == 1 {
+		p.Status = postStatus(status[0])
+		delete(p.Parameters, "status")
 	}
 	if p.Path == "" && p.Section == "" {
 		// Has no path or section -> default section
@@ -437,6 +450,8 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
+	oldPath := p.Path
+	oldStatus := p.Status
 	if mf.Replace != nil {
 		for key, value := range mf.Replace {
 			switch key {
@@ -551,7 +566,7 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = p.replace()
+	err = p.replace(oldPath, oldStatus)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return

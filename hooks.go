@@ -28,6 +28,7 @@ const (
 var postHooks = map[postHookType][]func(*post){}
 
 func (p *post) postPostHooks() {
+	// Hooks after post published
 	for _, cmdTmplString := range appConfig.Hooks.PostPost {
 		go func(p *post, cmdTmplString string) {
 			executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
@@ -42,6 +43,7 @@ func (p *post) postPostHooks() {
 }
 
 func (p *post) postUpdateHooks() {
+	// Hooks after post updated
 	for _, cmdTmplString := range appConfig.Hooks.PostUpdate {
 		go func(p *post, cmdTmplString string) {
 			executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{

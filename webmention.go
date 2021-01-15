@@ -33,7 +33,9 @@ type mention struct {
 func initWebmention() error {
 	// Add hooks
 	hookFunc := func(p *post) {
-		p.sendWebmentions()
+		if p.Status == statusPublished {
+			p.sendWebmentions()
+		}
 	}
 	postHooks[postPostHook] = append(postHooks[postPostHook], hookFunc)
 	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], hookFunc)

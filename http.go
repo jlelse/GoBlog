@@ -108,7 +108,7 @@ func buildHandler() (http.Handler, error) {
 
 	// Editor
 	r.Route("/editor", func(mpRouter chi.Router) {
-		mpRouter.Use(authMiddleware, middleware.NoCache, minifier.Middleware)
+		mpRouter.Use(middleware.NoCache, minifier.Middleware, authMiddleware)
 		mpRouter.Get("/", serveEditor)
 		mpRouter.Post("/", serveEditorPost)
 	})
@@ -137,13 +137,13 @@ func buildHandler() (http.Handler, error) {
 	r.Route("/webmention", func(webmentionRouter chi.Router) {
 		webmentionRouter.Use(middleware.NoCache)
 		webmentionRouter.Post("/", handleWebmention)
-		webmentionRouter.With(authMiddleware, minifier.Middleware).Get("/", webmentionAdmin)
+		webmentionRouter.With(minifier.Middleware, authMiddleware).Get("/", webmentionAdmin)
 		webmentionRouter.With(authMiddleware).Post("/delete", webmentionAdminDelete)
 		webmentionRouter.With(authMiddleware).Post("/approve", webmentionAdminApprove)
 	})
 
 	// Posts
-	allPostPaths, err := allPostPaths()
+	pp, err := allPostPaths(statusPublished)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +153,20 @@ func buildHandler() (http.Handler, error) {
 	} else {
 		postMW = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
 	}
-	for _, path := range allPostPaths {
+	for _, path := range pp {
 		if path != "" {
 			r.With(postMW...).Get(path, servePost)
+		}
+	}
+
+	// Drafts
+	dp, err := allPostPaths(statusDraft)
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range dp {
+		if path != "" {
+			r.With(cacheMiddleware, minifier.Middleware, authMiddleware).Get(path, servePost)
 		}
 	}
 

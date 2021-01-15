@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// Not tested anymore
+
 func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	blog := r.URL.Query().Get("blog")
 	path := r.URL.Query().Get("path")
@@ -29,7 +31,7 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	p.Path = path
 	p.Section = section
 	p.Slug = slug
-	err = p.replace()
+	err = p.create()
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
@@ -49,12 +51,11 @@ func apiPostCreateHugo(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(aliases) > 0 {
 		p.Parameters["aliases"] = aliases
-		err = p.replace()
+		err = p.replace(p.Path, p.Status)
 		if err != nil {
 			serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
-	w.Header().Set("Location", p.fullURL())
-	w.WriteHeader(http.StatusCreated)
+	http.Redirect(w, r, p.fullURL(), http.StatusCreated)
 }

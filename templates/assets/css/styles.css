@@ -1,4 +1,4 @@
-.sans-serif, input, textarea, button, .button, body {
+.sans-serif, input, textarea, select, button, .button, body {
   font-family: sans-serif;
 }
 
@@ -52,7 +52,7 @@ img {
   width: 100%;
 }
 
-input, textarea, button, .button {
+input, textarea, select, button, .button {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
   background: #fff;
@@ -66,7 +66,7 @@ input, textarea, button, .button {
   font-size: 1rem;
 }
 
-form input, form textarea {
+form input, form textarea, form select {
   margin-bottom: 5px;
 }
 

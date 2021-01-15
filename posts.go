@@ -25,11 +25,20 @@ type post struct {
 	Parameters map[string][]string `json:"parameters"`
 	Blog       string              `json:"blog"`
 	Section    string              `json:"section"`
+	Status     postStatus          `json:"status"`
 	// Not persisted
 	Slug             string `json:"slug"`
 	rendered         template.HTML
 	absoluteRendered template.HTML
 }
+
+type postStatus string
+
+const (
+	statusNil       postStatus = ""
+	statusPublished postStatus = "published"
+	statusDraft     postStatus = "draft"
+)
 
 func servePost(w http.ResponseWriter, r *http.Request) {
 	as := strings.HasSuffix(r.URL.Path, ".as")
@@ -213,6 +222,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			publishedYear:  ic.year,
 			publishedMonth: ic.month,
 			publishedDay:   ic.day,
+			status:         statusPublished,
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post

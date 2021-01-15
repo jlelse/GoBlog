@@ -103,5 +103,5 @@ func (p *post) translations() []*post {
 }
 
 func (p *post) isPublishedSectionPost() bool {
-	return p.Published != "" && p.Section != ""
+	return p.Published != "" && p.Section != "" && p.Status == statusPublished
 }

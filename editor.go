@@ -11,7 +11,11 @@ import (
 const editorPath = "/editor"
 
 func serveEditor(w http.ResponseWriter, _ *http.Request) {
-	render(w, templateEditor, &renderData{})
+	render(w, templateEditor, &renderData{
+		Data: map[string]interface{}{
+			"Drafts": loadDrafts(),
+		},
+	})
 }
 
 func serveEditorPost(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +37,7 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				Data: map[string]interface{}{
 					"UpdatePostURL":     parsedURL.String(),
 					"UpdatePostContent": mf.Properties.Content[0],
+					"Drafts":            loadDrafts(),
 				},
 			})
 		case "updatepost":
@@ -69,6 +74,11 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	editorMicropubPost(w, r, false)
 }
 
+func loadDrafts() []*post {
+	ps, _ := getPosts(&postsRequestConfig{status: statusDraft})
+	return ps
+}
+
 func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 	recorder := httptest.NewRecorder()
 	if media {
@@ -78,7 +88,7 @@ func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 	}
 	result := recorder.Result()
 	if location := result.Header.Get("Location"); location != "" {
-		http.Redirect(w, r, result.Header.Get("Location"), http.StatusFound)
+		http.Redirect(w, r, location, http.StatusFound)
 		return
 	}
 	if result.StatusCode >= 200 && result.StatusCode <= 400 {

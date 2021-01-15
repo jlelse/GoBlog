@@ -77,7 +77,7 @@ img {
   width: 100%;
 }
 
-input, textarea, button, .button {
+input, textarea, select, button, .button {
   @include color-border(border, 1px, solid, primary);
   @include color(background, background);
   @include color(color, primary);
@@ -89,7 +89,7 @@ input, textarea, button, .button {
   font-size: 1rem;
 }
 
-form input, form textarea {
+form input, form textarea, form select {
   margin-bottom: 5px;
 }
 

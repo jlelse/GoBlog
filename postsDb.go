@@ -32,6 +32,10 @@ func (p *post) checkPost() (err error) {
 			return err
 		}
 	}
+	// Check status
+	if p.Status == "" {
+		p.Status = statusPublished
+	}
 	// Cleanup params
 	for key, value := range p.Parameters {
 		if value == nil {
@@ -103,45 +107,75 @@ func (p *post) checkPost() (err error) {
 }
 
 func (p *post) create() error {
-	return p.createOrReplace(true)
+	return p.createOrReplace(&postCreationOptions{new: true})
 }
 
-func (p *post) replace() error {
-	return p.createOrReplace(false)
+func (p *post) replace(oldPath string, oldStatus postStatus) error {
+	return p.createOrReplace(&postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus})
 }
 
-func (p *post) createOrReplace(new bool) error {
+type postCreationOptions struct {
+	new       bool
+	oldPath   string
+	oldStatus postStatus
+}
+
+func (p *post) createOrReplace(o *postCreationOptions) error {
 	err := p.checkPost()
 	if err != nil {
 		return err
 	}
 	startWritingToDb()
-	postExists := postExists(p.Path)
-	if postExists && new {
-		finishWritingToDb()
-		return errors.New("post already exists at given path")
-	}
+	// Create transaction
 	tx, err := appDb.Begin()
 	if err != nil {
 		finishWritingToDb()
 		return err
 	}
-	if postExists {
-		_, err := tx.Exec("delete from posts where path = @path", sql.Named("path", p.Path))
+	if !o.new {
+		// Remove old post
+		path := p.Path
+		if o.oldPath != "" {
+			path = o.oldPath
+		}
+		_, err := tx.Exec("delete from posts where path = @path", sql.Named("path", path))
 		if err != nil {
 			_ = tx.Rollback()
 			finishWritingToDb()
 			return err
 		}
 	}
+	// Check if new path exists
+	postExists := func(path string) (bool, error) {
+		result := 0
+		row := tx.QueryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", path))
+		if err = row.Scan(&result); err != nil {
+			return false, err
+		}
+		return result == 1, nil
+	}
+	if exists, err := postExists(p.Path); err != nil {
+		_ = tx.Rollback()
+		finishWritingToDb()
+		return err
+	} else if exists {
+		_ = tx.Rollback()
+		finishWritingToDb()
+		return errors.New("post already exists at given path")
+	}
+	// Create new post
 	_, err = tx.Exec(
-		"insert into posts (path, content, published, updated, blog, section) values (@path, @content, @published, @updated, @blog, @section)",
-		sql.Named("path", p.Path), sql.Named("content", p.Content), sql.Named("published", p.Published), sql.Named("updated", p.Updated), sql.Named("blog", p.Blog), sql.Named("section", p.Section))
+		`insert into posts (path, content, published, updated, blog, section, status) 
+		values (@path, @content, @published, @updated, @blog, @section, @status)`,
+		sql.Named("path", p.Path), sql.Named("content", p.Content), sql.Named("published", p.Published),
+		sql.Named("updated", p.Updated), sql.Named("blog", p.Blog), sql.Named("section", p.Section),
+		sql.Named("status", p.Status))
 	if err != nil {
 		_ = tx.Rollback()
 		finishWritingToDb()
 		return err
 	}
+	// Create parameters
 	ppStmt, err := tx.Prepare("insert into post_parameters (path, parameter, value) values (@path, @parameter, @value)")
 	if err != nil {
 		_ = tx.Rollback()
@@ -160,17 +194,18 @@ func (p *post) createOrReplace(new bool) error {
 			}
 		}
 	}
-	err = tx.Commit()
-	if err != nil {
+	if tx.Commit() != nil {
 		finishWritingToDb()
 		return err
 	}
 	finishWritingToDb()
 	rebuildFTSIndex()
-	if !postExists {
-		defer p.postPostHooks()
-	} else {
-		defer p.postUpdateHooks()
+	if p.Status == statusPublished {
+		if o.new || o.oldStatus == statusDraft {
+			defer p.postPostHooks()
+		} else {
+			defer p.postUpdateHooks()
+		}
 	}
 	return reloadRouter()
 }
@@ -197,18 +232,6 @@ func rebuildFTSIndex() {
 	return
 }
 
-func postExists(path string) bool {
-	result := 0
-	row, err := appDbQueryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", path))
-	if err != nil {
-		return false
-	}
-	if err = row.Scan(&result); err != nil {
-		return false
-	}
-	return result == 1
-}
-
 func getPost(path string) (*post, error) {
 	posts, err := getPosts(&postsRequestConfig{path: path})
 	if err != nil {
@@ -226,6 +249,7 @@ type postsRequestConfig struct {
 	limit                                       int
 	offset                                      int
 	sections                                    []string
+	status                                      postStatus
 	taxonomy                                    *taxonomy
 	taxonomyValue                               string
 	parameter                                   string
@@ -235,11 +259,15 @@ type postsRequestConfig struct {
 
 func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
 	args = []interface{}{}
-	defaultSelection := "select p.path as path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), coalesce(blog, ''), coalesce(section, ''), coalesce(parameter, ''), coalesce(value, '') "
+	defaultSelection := "select p.path as path, coalesce(content, '') as content, coalesce(published, '') as published, coalesce(updated, '') as updated, coalesce(blog, '') as blog, coalesce(section, '') as section, coalesce(status, '') as status, coalesce(parameter, '') as parameter, coalesce(value, '') as value "
 	postsTable := "posts"
 	if config.search != "" {
 		postsTable = "posts_fts(@search)"
 		args = append(args, sql.Named("search", config.search))
+	}
+	if config.status != "" && config.status != statusNil {
+		postsTable = "(select * from " + postsTable + " where status = @status)"
+		args = append(args, sql.Named("status", config.status))
 	}
 	if config.blog != "" {
 		postsTable = "(select * from " + postsTable + " where blog = @blog)"
@@ -310,7 +338,7 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	for rows.Next() {
 		p := &post{}
 		var parameterName, parameterValue string
-		err = rows.Scan(&p.Path, &p.Content, &p.Published, &p.Updated, &p.Blog, &p.Section, &parameterName, &parameterValue)
+		err = rows.Scan(&p.Path, &p.Content, &p.Published, &p.Updated, &p.Blog, &p.Section, &p.Status, &parameterName, &parameterValue)
 		if err != nil {
 			return nil, err
 		}
@@ -342,9 +370,9 @@ func countPosts(config *postsRequestConfig) (count int, err error) {
 	return
 }
 
-func allPostPaths() ([]string, error) {
+func allPostPaths(status postStatus) ([]string, error) {
 	var postPaths []string
-	rows, err := appDbQuery("select path from posts")
+	rows, err := appDbQuery("select path from posts where status = @status", sql.Named("status", status))
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +403,7 @@ type publishedDate struct {
 }
 
 func allPublishedDates(blog string) (dates []publishedDate, err error) {
-	rows, err := appDbQuery("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month, substr(published, 9, 2) as day from posts where blog = @blog and year != '' and month != '' and day != ''", sql.Named("blog", blog))
+	rows, err := appDbQuery("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month, substr(published, 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}

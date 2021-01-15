@@ -44,7 +44,9 @@ func (r *nodeInfoResolver) IsOpenRegistration() (bool, error) {
 }
 
 func (r *nodeInfoResolver) Usage() (nodeinfo.Usage, error) {
-	postCount, _ := countPosts(&postsRequestConfig{})
+	postCount, _ := countPosts(&postsRequestConfig{
+		status: statusPublished,
+	})
 	u := nodeinfo.Usage{
 		Users: nodeinfo.UsageUsers{
 			Total: len(appConfig.Blogs),

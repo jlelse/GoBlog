@@ -11,7 +11,9 @@ import (
 const sitemapPath = "/sitemap.xml"
 
 func serveSitemap(w http.ResponseWriter, r *http.Request) {
-	posts, err := getPosts(&postsRequestConfig{})
+	posts, err := getPosts(&postsRequestConfig{
+		status: statusPublished,
+	})
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
