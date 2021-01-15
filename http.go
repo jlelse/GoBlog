@@ -166,7 +166,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	for _, path := range dp {
 		if path != "" {
-			r.With(cacheMiddleware, minifier.Middleware, authMiddleware).Get(path, servePost)
+			r.With(middleware.NoCache, minifier.Middleware, authMiddleware).Get(path, servePost)
 		}
 	}
 
