@@ -106,13 +106,6 @@ func buildHandler() (http.Handler, error) {
 		mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
 	})
 
-	// Editor
-	r.Route("/editor", func(mpRouter chi.Router) {
-		mpRouter.Use(middleware.NoCache, minifier.Middleware, authMiddleware)
-		mpRouter.Get("/", serveEditor)
-		mpRouter.Post("/", serveEditorPost)
-	})
-
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
 		indieauthRouter.Use(middleware.NoCache, minifier.Middleware)
@@ -325,6 +318,13 @@ func buildHandler() (http.Handler, error) {
 				r.With(minifier.Middleware).Get(cp.Path, handler)
 			}
 		}
+
+		// Editor
+		r.Route(blogPath+"/editor", func(mpRouter chi.Router) {
+			mpRouter.Use(middleware.NoCache, minifier.Middleware, authMiddleware)
+			mpRouter.Get("/", serveEditor(blog))
+			mpRouter.Post("/", serveEditorPost(blog))
+		})
 	}
 
 	// Sitemap

@@ -67,7 +67,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", p.shortURL()))
 	render(w, template, &renderData{
-		blogString: p.Blog,
+		BlogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
 	})
@@ -279,7 +279,7 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 			summaryTemplate = templateSummary
 		}
 		render(w, templateIndex, &renderData{
-			blogString: ic.blog,
+			BlogString: ic.blog,
 			Canonical:  appConfig.Server.PublicAddress + path,
 			Data: map[string]interface{}{
 				"Title":           title,

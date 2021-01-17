@@ -9,10 +9,13 @@
     <form class="fw-form p" method="post">
       <input type="hidden" name="h" value="entry">
       <textarea name="content" class="monospace h400p">---
-title: 
+status: draft
+blog: {{ .BlogString }}
 section: 
 slug: 
-blog: 
+title: 
+tags:
+- 
 ---
 </textarea>
       <input class="fw" type="submit" value="{{ string .Blog.Lang "create" }}">

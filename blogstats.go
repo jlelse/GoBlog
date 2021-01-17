@@ -38,7 +38,7 @@ func serveBlogStats(blog, statsPath string) func(w http.ResponseWriter, r *http.
 			counts = append(counts, count)
 		}
 		render(w, templateBlogStats, &renderData{
-			blogString: blog,
+			BlogString: blog,
 			Canonical:  statsPath,
 			Data: map[string]interface{}{
 				"total":  totalCount,

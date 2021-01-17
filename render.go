@@ -222,7 +222,7 @@ func initRendering() error {
 }
 
 type renderData struct {
-	blogString string
+	BlogString string
 	Canonical  string
 	Blog       *configBlog
 	Data       interface{}
@@ -231,10 +231,18 @@ type renderData struct {
 func render(w http.ResponseWriter, template string, data *renderData) {
 	// Check render data
 	if data.Blog == nil {
-		if len(data.blogString) == 0 {
-			data.blogString = appConfig.DefaultBlog
+		if len(data.BlogString) == 0 {
+			data.BlogString = appConfig.DefaultBlog
 		}
-		data.Blog = appConfig.Blogs[data.blogString]
+		data.Blog = appConfig.Blogs[data.BlogString]
+	}
+	if data.BlogString == "" {
+		for s, b := range appConfig.Blogs {
+			if b == data.Blog {
+				data.BlogString = s
+				break
+			}
+		}
 	}
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}

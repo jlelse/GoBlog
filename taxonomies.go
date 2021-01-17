@@ -10,7 +10,7 @@ func serveTaxonomy(blog string, tax *taxonomy) func(w http.ResponseWriter, r *ht
 			return
 		}
 		render(w, templateTaxonomy, &renderData{
-			blogString: blog,
+			BlogString: blog,
 			Canonical:  appConfig.Server.PublicAddress + r.URL.Path,
 			Data: map[string]interface{}{
 				"Taxonomy":    tax,
