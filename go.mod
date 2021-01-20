@@ -57,12 +57,11 @@ require (
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
-	golang.org/x/tools v0.0.0-20210115202250-e0d201561e39 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

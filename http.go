@@ -319,6 +319,15 @@ func buildHandler() (http.Handler, error) {
 			}
 		}
 
+		// Random post
+		if rp := blogConfig.RandomPost; rp != nil && rp.Enabled {
+			randomPath := rp.Path
+			if randomPath == "" {
+				randomPath = "/random"
+			}
+			r.Get(blogPath+randomPath, redirectToRandomPost(blog))
+		}
+
 		// Editor
 		r.Route(blogPath+"/editor", func(mpRouter chi.Router) {
 			mpRouter.Use(middleware.NoCache, minifier.Middleware, authMiddleware)

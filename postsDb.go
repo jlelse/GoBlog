@@ -242,6 +242,20 @@ func getPost(path string) (*post, error) {
 	return posts[0], nil
 }
 
+func getRandomPostPath(blog string) (string, error) {
+	var sections []string
+	for sectionKey := range appConfig.Blogs[blog].Sections {
+		sections = append(sections, sectionKey)
+	}
+	posts, err := getPosts(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections})
+	if err != nil {
+		return "", err
+	} else if len(posts) == 0 {
+		return "", errPostNotFound
+	}
+	return posts[0].Path, nil
+}
+
 type postsRequestConfig struct {
 	search                                      string
 	blog                                        string
@@ -255,6 +269,7 @@ type postsRequestConfig struct {
 	parameter                                   string
 	parameterValue                              string
 	publishedYear, publishedMonth, publishedDay int
+	randomOrder                                 bool
 }
 
 func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
@@ -313,6 +328,9 @@ func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
 	}
 	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
 	defaultSorting := " order by p.published desc "
+	if config.randomOrder {
+		defaultSorting = " order by random() "
+	}
 	if config.path != "" {
 		query = defaultSelection + defaultTables + " where p.path = @path" + defaultSorting
 		args = append(args, sql.Named("path", config.path))

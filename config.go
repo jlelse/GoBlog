@@ -63,6 +63,7 @@ type configBlog struct {
 	CustomPages    []*customPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram     `mapstructure:"telegram"`
 	PostAsHome     bool                `mapstructure:"postAsHome"`
+	RandomPost     *randomPost         `mapstructure:"randomPost"`
 }
 
 type section struct {
@@ -116,6 +117,11 @@ type customPage struct {
 	Cache           bool         `mapstructure:"cache"`
 	CacheExpiration int          `mapstructure:"cacheExpiration"`
 	Data            *interface{} `mapstructure:"data"`
+}
+
+type randomPost struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"`
 }
 
 type configUser struct {

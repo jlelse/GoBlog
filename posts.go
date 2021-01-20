@@ -73,6 +73,17 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func redirectToRandomPost(blog string) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		randomPath, err := getRandomPostPath(blog)
+		if err != nil {
+			serveError(rw, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(rw, r, randomPath, http.StatusFound)
+	}
+}
+
 type postPaginationAdapter struct {
 	config *postsRequestConfig
 	nums   int64
