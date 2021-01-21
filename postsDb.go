@@ -404,7 +404,7 @@ func allPostPaths(status postStatus) ([]string, error) {
 
 func allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
 	var values []string
-	rows, err := appDbQuery("select distinct pp.value from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @tax and length(coalesce(pp.value, '')) > 1 and blog = @blog", sql.Named("tax", taxonomy), sql.Named("blog", blog))
+	rows, err := appDbQuery("select distinct pp.value from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @tax and length(coalesce(pp.value, '')) > 1 and blog = @blog and status = @status", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}
