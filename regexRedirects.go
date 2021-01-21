@@ -19,27 +19,25 @@ func initRegexRedirects() error {
 		if err != nil {
 			return err
 		}
-		regexRedirects = append(regexRedirects, &regexRedirect{
+		r := &regexRedirect{
 			From: re,
 			To:   cr.To,
 			Type: cr.Type,
-		})
+		}
+		if r.Type == 0 {
+			r.Type = http.StatusFound
+		}
+		regexRedirects = append(regexRedirects, r)
 	}
 	return nil
 }
 
 func checkRegexRedirects(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		oldPath := r.URL.Path
 		for _, re := range regexRedirects {
-			newPath := re.From.ReplaceAllString(oldPath, re.To)
-			if oldPath != newPath {
+			if newPath := re.From.ReplaceAllString(r.URL.Path, re.To); r.URL.Path != newPath {
 				r.URL.Path = newPath
-				code := re.Type
-				if code == 0 {
-					code = http.StatusFound
-				}
-				http.Redirect(w, r, r.URL.String(), code)
+				http.Redirect(w, r, r.URL.String(), re.Type)
 				return
 			}
 		}

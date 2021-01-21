@@ -343,7 +343,7 @@ func buildHandler() (http.Handler, error) {
 	r.Get("/robots.txt", serveRobotsTXT)
 
 	// Check redirects, then serve 404
-	r.With(checkRegexRedirects, cacheMiddleware, minifier.Middleware).NotFound(serve404)
+	r.With(cacheMiddleware, checkRegexRedirects, minifier.Middleware).NotFound(serve404)
 
 	r.With(minifier.Middleware).MethodNotAllowed(func(rw http.ResponseWriter, r *http.Request) {
 		serveError(rw, r, "", http.StatusMethodNotAllowed)
