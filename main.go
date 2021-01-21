@@ -5,11 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	jsoniter "github.com/json-iterator/go"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func main() {
 	// Initialize config
@@ -71,7 +67,6 @@ func main() {
 		return
 	}
 	initTelegram()
-	initNodeInfo()
 
 	// Start cron hooks
 	startHourlyHooks()

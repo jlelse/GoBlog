@@ -10,7 +10,6 @@ import (
 	"github.com/caddyserver/certmagic"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/writeas/go-nodeinfo"
 )
 
 const (
@@ -122,8 +121,8 @@ func buildHandler() (http.Handler, error) {
 		r.Post("/activitypub/{blog}/inbox", apHandleInbox)
 		r.Get("/.well-known/webfinger", apHandleWebfinger)
 		r.With(cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
-		r.With(cacheMiddleware, minifier.Middleware).Get(nodeinfo.NodeInfoPath, nodeInfoService.NodeInfoDiscover)
-		r.With(cacheMiddleware, minifier.Middleware).Get(nodeInfoConfig.InfoURL, nodeInfoService.NodeInfo)
+		r.With(cacheMiddleware, minifier.Middleware).Get("/.well-known/nodeinfo", serveNodeInfoDiscover)
+		r.With(cacheMiddleware, minifier.Middleware).Get("/nodeinfo", serveNodeInfo)
 	}
 
 	// Webmentions

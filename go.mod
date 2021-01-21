@@ -8,7 +8,6 @@ require (
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
 	github.com/caddyserver/certmagic v0.12.0
-	github.com/captncraig/cors v0.0.0-20190703115713-e80254a89df1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-chi/chi v1.5.1
 	github.com/go-fed/httpsig v1.1.0
@@ -23,7 +22,6 @@ require (
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
-	github.com/json-iterator/go v1.1.10
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.8
@@ -44,12 +42,9 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/tdewolff/minify/v2 v2.9.10
-	github.com/tdewolff/parse/v2 v2.5.7 // indirect
+	github.com/tdewolff/minify/v2 v2.9.11
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/writeas/go-nodeinfo v1.0.0
-	github.com/writeas/go-webfinger v1.1.0 // indirect
 	github.com/yuin/goldmark v1.3.1
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.6.0 // indirect
@@ -61,11 +56,10 @@ require (
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
-	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	honnef.co/go/tools v0.1.0 // indirect
+	honnef.co/go/tools v0.1.1 // indirect
 	willnorris.com/go/microformats v1.1.1
 )

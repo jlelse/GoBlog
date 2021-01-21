@@ -7,6 +7,7 @@ This repository contains the code for GoBlog, my own blogging system. I created 
 The goals of GoBlog are:
 
 - Minimalism
+- Performance
 - Flexibility
 - (IndieWeb)
 

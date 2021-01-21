@@ -1,57 +1,46 @@
 package main
 
-import "github.com/writeas/go-nodeinfo"
-
-var (
-	nodeInfoConfig  *nodeinfo.Config
-	nodeInfoService *nodeinfo.Service
+import (
+	"encoding/json"
+	"net/http"
 )
 
-func initNodeInfo() {
-	nodeInfoConfig = &nodeinfo.Config{
-		BaseURL: appConfig.Server.PublicAddress,
-		InfoURL: "/nodeinfo",
-		Metadata: nodeinfo.Metadata{
-			NodeName:        appConfig.Blogs[appConfig.DefaultBlog].Title,
-			NodeDescription: appConfig.Blogs[appConfig.DefaultBlog].Description,
+func serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(contentType, contentTypeJSONUTF8)
+	nid := map[string]interface{}{
+		"links": []map[string]interface{}{
+			{
+				"href": appConfig.Server.PublicAddress + "/nodeinfo",
+				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
+			},
 		},
-		Protocols: []nodeinfo.NodeProtocol{
-			nodeinfo.ProtocolActivityPub,
+	}
+	_ = json.NewEncoder(w).Encode(&nid)
+}
+
+func serveNodeInfo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(contentType, contentTypeJSONUTF8)
+	localPosts, _ := countPosts(&postsRequestConfig{
+		status: statusPublished,
+	})
+	nid := map[string]interface{}{
+		"version": "2.1",
+		"software": map[string]interface{}{
+			"name":       "goblog",
+			"repository": "https://git.jlel.se/jlelse/GoBlog",
+		},
+		"usage": map[string]interface{}{
+			"users": map[string]interface{}{
+				"total": len(appConfig.Blogs),
+			},
+			"localPosts": localPosts,
+		},
+		"protocols": []string{
+			"activitypub",
 			"micropub",
 			"webmention",
 		},
-		Services: nodeinfo.Services{
-			Inbound: []nodeinfo.NodeService{},
-			Outbound: []nodeinfo.NodeService{
-				nodeinfo.ServiceAtom,
-				nodeinfo.ServiceRSS,
-				"jsonfeed",
-				"activitystreams2.0",
-				"telegram",
-			},
-		},
-		Software: nodeinfo.SoftwareInfo{
-			Name: appUserAgent,
-		},
+		"metadata": map[string]interface{}{},
 	}
-	nodeInfoService = nodeinfo.NewService(*nodeInfoConfig, &nodeInfoResolver{})
-}
-
-type nodeInfoResolver struct{}
-
-func (r *nodeInfoResolver) IsOpenRegistration() (bool, error) {
-	return false, nil
-}
-
-func (r *nodeInfoResolver) Usage() (nodeinfo.Usage, error) {
-	postCount, _ := countPosts(&postsRequestConfig{
-		status: statusPublished,
-	})
-	u := nodeinfo.Usage{
-		Users: nodeinfo.UsageUsers{
-			Total: len(appConfig.Blogs),
-		},
-		LocalPosts: postCount,
-	}
-	return u, nil
+	_ = json.NewEncoder(w).Encode(&nid)
 }
