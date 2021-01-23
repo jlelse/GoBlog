@@ -27,7 +27,9 @@
     </article>
     {{ include "author" . }}
   </main>
-  {{ include "interactions" . }}
+  {{ if commentsenabled .Blog }}
+    {{ include "interactions" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "post" }}

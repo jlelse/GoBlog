@@ -64,6 +64,7 @@ type configBlog struct {
 	Telegram       *configTelegram     `mapstructure:"telegram"`
 	PostAsHome     bool                `mapstructure:"postAsHome"`
 	RandomPost     *randomPost         `mapstructure:"randomPost"`
+	Comments       *comments           `mapstructure:"comments"`
 }
 
 type section struct {
@@ -122,6 +123,10 @@ type customPage struct {
 type randomPost struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
+}
+
+type comments struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type configUser struct {

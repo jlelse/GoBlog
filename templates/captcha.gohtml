@@ -1,0 +1,23 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "captcha" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "captcha" }}</h1>
+    <img src="/captcha/{{ .Data.captchaid }}.png" class="captchaimg">
+    <form class="fw-form p" method="post">
+      <input type="hidden" name="captchaaction" value="captcha">
+      <input type="hidden" name="captchamethod" value="{{ .Data.captchamethod }}">
+      <input type="hidden" name="captchaheaders" value="{{ .Data.captchaheaders }}">
+      <input type="hidden" name="captchabody" value="{{ .Data.captchabody }}">
+      <input type="hidden" name="captchaid" value="{{ .Data.captchaid }}">
+      <input type="text" name="digits" placeholder="{{ string .Blog.Lang "captchainstructions" }}">
+      <input class="fw" type="submit" value="{{ string .Blog.Lang "submit" }}">
+    </form>
+  </main>
+{{ end }}
+
+{{ define "captcha" }}
+    {{ template "base" . }}
+{{ end }}

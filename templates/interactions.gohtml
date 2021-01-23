@@ -6,7 +6,7 @@
         {{ if $mentions }}
             <ul>
             {{ range $i, $mention := $mentions }}
-                <li><a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer">
+                <li><a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer ugc">
                     {{ if $mention.Author }}
                         {{ $mention.Author }}
                     {{ else }}
@@ -16,12 +16,18 @@
             {{ end }}
             </ul>
         {{ end }}
-        <form class="fw-form" method="post" action="/webmention">
+        <form class="fw-form p" method="post" action="/webmention">
             <label for="wm-source" class="p">{{ string .Blog.Lang "interactionslabel" }}</label>
-            <input id="wm-source" type="url" name="source" placeholder="URL">
+            <input id="wm-source" type="url" name="source" placeholder="URL" required>
             <input type="hidden" name="target" value="{{ $postperma }}">
             <input class="fw" type="submit" value="{{ string .Blog.Lang "send" }}">
         </form>
-        <a class="p button fw ct" href="https://quill.p3k.io/?dontask=1&me=https://commentpara.de&reply={{ $postperma }}">{{ string .Blog.Lang "anoncomment" }}</a>
+        <form class="fw-form p" method="post" action="{{ blogrelative .Blog "/comment" }}">
+            <input type="hidden" name="target" value="{{ .Data.Path }}">
+            <input type="text" name="name" placeholder="{{ string .Blog.Lang "nameopt" }}">
+            <input type="url" name="website" placeholder="{{ string .Blog.Lang "websiteopt" }}">
+            <textarea name="comment" required placeholder="{{ string .Blog.Lang "comment" }}"></textarea>
+            <input class="fw" type="submit" value="{{ string .Blog.Lang "docomment" }}">
+        </form>
     </details>
 {{ end }}

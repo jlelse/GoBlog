@@ -154,6 +154,10 @@ footer * {
   height: 400px;
 }
 
+.captchaimg {
+  background-color: white;
+}
+
 /* Print */
 @media print {
   html {

@@ -9,29 +9,25 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dchest/captcha"
 	"github.com/dgrijalva/jwt-go"
 )
 
-func checkCredentials(username, password string) bool {
-	return username == appConfig.User.Nick && password == appConfig.User.Password
+func initCaptcha() {
 }
 
-func jwtKey() []byte {
-	return []byte(appConfig.Server.JWTSecret)
-}
-
-func authMiddleware(next http.Handler) http.Handler {
+func captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check JWT
-		if tokenCookie, err := r.Cookie("token"); err == nil {
-			if tkn, err := jwt.Parse(tokenCookie.Value, func(t *jwt.Token) (interface{}, error) {
+		if captchaCookie, err := r.Cookie("captcha"); err == nil {
+			if tkn, err := jwt.Parse(captchaCookie.Value, func(t *jwt.Token) (interface{}, error) {
 				return jwtKey(), nil
 			}); err == nil && tkn.Valid {
 				next.ServeHTTP(w, r)
 				return
 			}
 		}
-		// 2. Show login form
+		// 2. Show Captcha
 		w.WriteHeader(http.StatusUnauthorized)
 		h, _ := json.Marshal(r.Header.Clone())
 		b, _ := ioutil.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
@@ -41,49 +37,51 @@ func authMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		render(w, templateLogin, &renderData{
+		render(w, templateCaptcha, &renderData{
 			Data: map[string]string{
-				"loginmethod":  r.Method,
-				"loginheaders": base64.StdEncoding.EncodeToString(h),
-				"loginbody":    base64.StdEncoding.EncodeToString(b),
+				"captchamethod":  r.Method,
+				"captchaheaders": base64.StdEncoding.EncodeToString(h),
+				"captchabody":    base64.StdEncoding.EncodeToString(b),
+				"captchaid":      captcha.New(),
 			},
 		})
 	})
 }
 
-func checkIsLogin(next http.Handler) http.Handler {
+func checkIsCaptcha(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if !checkLogin(rw, r) {
+		if !checkCaptcha(rw, r) {
 			next.ServeHTTP(rw, r)
 		}
 	})
 }
 
-func checkLogin(w http.ResponseWriter, r *http.Request) bool {
+func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method == http.MethodPost &&
 		r.Header.Get(contentType) == contentTypeWWWForm &&
-		r.FormValue("loginaction") == "login" {
+		r.FormValue("captchaaction") == "captcha" {
 		// Do original request
-		loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
-		req, _ := http.NewRequest(r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
+		captchabody, _ := base64.StdEncoding.DecodeString(r.FormValue("captchabody"))
+		req, _ := http.NewRequest(r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
 		// Copy original headers
-		loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
+		captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
 		var headers http.Header
-		json.Unmarshal(loginheaders, &headers)
+		json.Unmarshal(captchaheaders, &headers)
 		for k, v := range headers {
 			req.Header[k] = v
 		}
-		// Check credential
-		if checkCredentials(r.FormValue("username"), r.FormValue("password")) {
-			tokenCookie, err := createTokenCookie()
+		// Check captcha
+		if captcha.VerifyString(r.FormValue("captchaid"), r.FormValue("digits")) {
+			// Create cookie
+			captchaCookie, err := createCaptchaCookie()
 			if err != nil {
 				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return true
 			}
 			// Add cookie to original request
-			req.AddCookie(tokenCookie)
+			req.AddCookie(captchaCookie)
 			// Send cookie
-			http.SetCookie(w, tokenCookie)
+			http.SetCookie(w, captchaCookie)
 		}
 		// Serve original request
 		d.ServeHTTP(w, req)
@@ -92,14 +90,14 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
-func createTokenCookie() (*http.Cookie, error) {
-	expiration := time.Now().Add(7 * 24 * time.Hour)
+func createCaptchaCookie() (*http.Cookie, error) {
+	expiration := time.Now().Add(24 * time.Hour)
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.StandardClaims{ExpiresAt: expiration.Unix()}).SignedString(jwtKey())
 	if err != nil {
 		return nil, err
 	}
 	return &http.Cookie{
-		Name:     "token",
+		Name:     "captcha",
 		Value:    tokenString,
 		Expires:  expiration,
 		Secure:   true,

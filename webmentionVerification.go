@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joncrlsn/dque"
@@ -87,10 +86,6 @@ func (m *mention) verifyMention() error {
 		m.Title = m.Title[0:57] + "…"
 	}
 	newStatus := webmentionStatusVerified
-	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
-		// Approve if it's server-intern
-		newStatus = webmentionStatusApproved
-	}
 	if webmentionExists(m.Source, m.Target) {
 		_, err = appDbExec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
 			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))

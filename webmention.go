@@ -117,7 +117,7 @@ func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	purgeCache()
-	http.Redirect(w, r, "/webmention", http.StatusFound)
+	http.Redirect(w, r, ".", http.StatusFound)
 	return
 }
 
@@ -133,7 +133,7 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	purgeCache()
-	http.Redirect(w, r, "/webmention", http.StatusFound)
+	http.Redirect(w, r, ".", http.StatusFound)
 	return
 }
 

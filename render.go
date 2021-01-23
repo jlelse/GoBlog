@@ -35,6 +35,9 @@ const templateEditor = "editor"
 const templateLogin = "login"
 const templateStaticHome = "statichome"
 const templateBlogStats = "blogstats"
+const templateComment = "comment"
+const templateCaptcha = "captcha"
+const templateCommentsAdmin = "commentsadmin"
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap
@@ -198,6 +201,9 @@ func initRendering() error {
 				return nil
 			}
 			return parsed
+		},
+		"commentsenabled": func(blog *configBlog) bool {
+			return blog.Comments != nil && blog.Comments.Enabled
 		},
 	}
 

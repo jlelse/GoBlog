@@ -1,0 +1,28 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "comments" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "comments" }}</h1>
+    {{ $blog := .Blog }}
+    {{ range $i, $comment := .Data }}
+      <div class="p">
+        <p>
+          Target: <a href="{{ $comment.Target }}" target="_blank">{{ $comment.Target }}</a><br/>
+          Name: {{ $comment.Name }}<br/>
+          Website: {{ $comment.Website }}<br/>
+          Comment: {{ $comment.Comment }}
+        </p>
+        <form method="post">
+          <input type="hidden" name="commentid" value="{{ $comment.ID }}">
+          <input type="submit" formaction="comment/delete" value="{{ string $blog.Lang "delete" }}">
+        </form>
+      </div>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "commentsadmin" }}
+    {{ template "base" . }}
+{{ end }}

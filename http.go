@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/caddyserver/certmagic"
+	"github.com/dchest/captcha"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -85,6 +86,7 @@ func buildHandler() (http.Handler, error) {
 		r.Use(middleware.NoCache)
 	}
 	r.Use(checkIsLogin)
+	r.Use(checkIsCaptcha)
 
 	// Profiler
 	if appConfig.Server.Debug {
@@ -185,6 +187,9 @@ func buildHandler() (http.Handler, error) {
 
 	// Media files
 	r.Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
+
+	// Captcha
+	r.Handle("/captcha/*", captcha.Server(500, 250))
 
 	// Short paths
 	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
@@ -333,6 +338,18 @@ func buildHandler() (http.Handler, error) {
 			mpRouter.Get("/", serveEditor(blog))
 			mpRouter.Post("/", serveEditorPost(blog))
 		})
+
+		// Comments
+		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
+			commentsPath := blogPath + "/comment"
+			r.Route(commentsPath, func(cr chi.Router) {
+				cr.With(cacheMiddleware, minifier.Middleware).Get("/{id:[0-9]+}", serveComment(blog))
+				cr.With(captchaMiddleware).Post("/", createComment(blog, commentsPath))
+				// Admin
+				cr.With(minifier.Middleware, authMiddleware).Get("/", commentsAdmin)
+				cr.With(authMiddleware).Post("/delete", commentsAdminDelete)
+			})
+		}
 	}
 
 	// Sitemap
