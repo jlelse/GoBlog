@@ -120,7 +120,7 @@ func commentsAdmin(w http.ResponseWriter, r *http.Request) {
 
 func getComments() ([]*comment, error) {
 	comments := []*comment{}
-	rows, err := appDbQuery("select id, target, name, website, comment from comments")
+	rows, err := appDbQuery("select id, target, name, website, comment from comments order by id desc")
 	if err != nil {
 		return nil, err
 	}
