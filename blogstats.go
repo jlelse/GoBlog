@@ -7,7 +7,7 @@ import (
 func serveBlogStats(blog, statsPath string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Build query
-		query, params := buildQuery(&postsRequestConfig{
+		query, params := buildPostsQuery(&postsRequestConfig{
 			blog:   blog,
 			status: statusPublished,
 		})

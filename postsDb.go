@@ -272,7 +272,7 @@ type postsRequestConfig struct {
 	randomOrder                                 bool
 }
 
-func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
+func buildPostsQuery(config *postsRequestConfig) (query string, args []interface{}) {
 	args = []interface{}{}
 	defaultSelection := "select p.path as path, coalesce(content, '') as content, coalesce(published, '') as published, coalesce(updated, '') as updated, coalesce(blog, '') as blog, coalesce(section, '') as section, coalesce(status, '') as status, coalesce(parameter, '') as parameter, coalesce(value, '') as value "
 	postsTable := "posts"
@@ -344,7 +344,7 @@ func buildQuery(config *postsRequestConfig) (query string, args []interface{}) {
 }
 
 func getPosts(config *postsRequestConfig) (posts []*post, err error) {
-	query, queryParams := buildQuery(config)
+	query, queryParams := buildPostsQuery(config)
 	rows, err := appDbQuery(query, queryParams...)
 	if err != nil {
 		return nil, err
@@ -378,7 +378,7 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 }
 
 func countPosts(config *postsRequestConfig) (count int, err error) {
-	query, params := buildQuery(config)
+	query, params := buildPostsQuery(config)
 	query = "select count(distinct path) from (" + query + ")"
 	row, err := appDbQueryRow(query, params...)
 	if err != nil {
