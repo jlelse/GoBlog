@@ -5,9 +5,8 @@
 {{ define "main" }}
   <main>
     <h1>{{ string .Blog.Lang "webmentions" }}</h1>
-    <h2>{{ string .Blog.Lang "verified" }}</h2>
     {{ $blog := .Blog }}
-    {{ range $i, $mention := .Data.Verified }}
+    {{ range $i, $mention := .Data.Mentions }}
       <div class="p">
         <p>
           From: <a href="{{ $mention.Source }}" target="_blank" rel="noopener noreferrer">{{ $mention.Source }}</a><br/>
@@ -16,24 +15,18 @@
         </p>
         <form method="post">
           <input type="hidden" name="mentionid" value="{{ $mention.ID }}">
-          <input type="submit" formaction="/webmention/approve" value="{{ string $blog.Lang "approve" }}">
+          {{ if eq $mention.Status "verified" }}
+            <input type="submit" formaction="/webmention/approve" value="{{ string $blog.Lang "approve" }}">
+          {{ end }}
           <input type="submit" formaction="/webmention/delete" value="{{ string $blog.Lang "delete" }}">
         </form>
       </div>
     {{ end }}
-    <h2>{{ string .Blog.Lang "approved" }}</h2>
-    {{ range $i, $mention := .Data.Approved }}
-      <div class="p">
-        <p>
-          From: <a href="{{ $mention.Source }}" target="_blank" rel="noopener noreferrer">{{ $mention.Source }}</a><br/>
-          To: <a href="{{ $mention.Target }}" target="_blank">{{ $mention.Target }}</a><br/>
-          Created: {{ unixtodate $mention.Created }}
-        </p>
-        <form method="post">
-          <input type="hidden" name="mentionid" value="{{ $mention.ID }}">
-          <input type="submit" formaction="/webmention/delete" value="{{ string $blog.Lang "delete" }}">
-        </form>
-      </div>
+    {{ if .Data.HasPrev }}
+      <p><a href="{{ .Data.Prev }}">{{ string .Blog.Lang "prev" }}</a></p>
+    {{ end }}
+    {{ if .Data.HasNext }}
+      <p><a href="{{ .Data.Next }}">{{ string .Blog.Lang "next" }}</a></p>
     {{ end }}
   </main>
 {{ end }}

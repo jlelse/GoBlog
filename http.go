@@ -71,6 +71,10 @@ func reloadRouter() error {
 }
 
 func buildHandler() (http.Handler, error) {
+
+	paginationPath := "/page/{page:[0-9-]+}"
+	feedPath := ".{feed:rss|json|atom}"
+
 	r := chi.NewRouter()
 
 	if appConfig.Server.Logging {
@@ -128,10 +132,11 @@ func buildHandler() (http.Handler, error) {
 	}
 
 	// Webmentions
-	r.Route("/webmention", func(webmentionRouter chi.Router) {
+	r.Route(webmentionPath, func(webmentionRouter chi.Router) {
 		webmentionRouter.Use(middleware.NoCache)
 		webmentionRouter.Post("/", handleWebmention)
 		webmentionRouter.With(minifier.Middleware, authMiddleware).Get("/", webmentionAdmin)
+		webmentionRouter.With(minifier.Middleware, authMiddleware).Get(paginationPath, webmentionAdmin)
 		webmentionRouter.With(authMiddleware).Post("/delete", webmentionAdminDelete)
 		webmentionRouter.With(authMiddleware).Post("/approve", webmentionAdminApprove)
 	})
@@ -193,9 +198,6 @@ func buildHandler() (http.Handler, error) {
 
 	// Short paths
 	r.With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
-
-	paginationPath := "/page/{page:[0-9-]+}"
-	feedPath := ".{feed:rss|json|atom}"
 
 	for blog, blogConfig := range appConfig.Blogs {
 

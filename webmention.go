@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi"
+	"github.com/vcraescu/go-paginator"
 )
 
 type webmentionStatus string
 
 const (
-	webmentionStatusNew      webmentionStatus = "new"
-	webmentionStatusRenew    webmentionStatus = "renew"
 	webmentionStatusVerified webmentionStatus = "verified"
 	webmentionStatusApproved webmentionStatus = "approved"
+
+	webmentionPath = "/webmention"
 )
 
 type mention struct {
@@ -28,6 +32,7 @@ type mention struct {
 	Title   string
 	Content string
 	Author  string
+	Status  webmentionStatus
 }
 
 func initWebmention() error {
@@ -83,24 +88,46 @@ func extractMention(r *http.Request) (*mention, error) {
 }
 
 func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
-	verified, err := getWebmentions(&webmentionsRequestConfig{
-		status: webmentionStatusVerified,
-	})
+	pageNoString := chi.URLParam(r, "page")
+	pageNo, _ := strconv.Atoi(pageNoString)
+	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{}}, 10)
+	p.SetPage(pageNo)
+	var mentions []*mention
+	err := p.Results(&mentions)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	approved, err := getWebmentions(&webmentionsRequestConfig{
-		status: webmentionStatusApproved,
-	})
-	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	// Navigation
+	var hasPrev, hasNext bool
+	var prevPage, nextPage int
+	var prevPath, nextPath string
+	hasPrev, _ = p.HasPrev()
+	if hasPrev {
+		prevPage, _ = p.PrevPage()
+	} else {
+		prevPage, _ = p.Page()
 	}
+	if prevPage < 2 {
+		prevPath = webmentionPath
+	} else {
+		prevPath = fmt.Sprintf("%s/page/%d", webmentionPath, prevPage)
+	}
+	hasNext, _ = p.HasNext()
+	if hasNext {
+		nextPage, _ = p.NextPage()
+	} else {
+		nextPage, _ = p.Page()
+	}
+	nextPath = fmt.Sprintf("%s/page/%d", webmentionPath, nextPage)
+	// Render
 	render(w, "webmentionadmin", &renderData{
-		Data: map[string][]*mention{
-			"Verified": verified,
-			"Approved": approved,
+		Data: map[string]interface{}{
+			"Mentions": mentions,
+			"HasPrev":  hasPrev,
+			"HasNext":  hasNext,
+			"Prev":     slashIfEmpty(prevPath),
+			"Next":     slashIfEmpty(nextPath),
 		},
 	})
 }
@@ -168,16 +195,41 @@ func approveWebmention(id int) error {
 }
 
 type webmentionsRequestConfig struct {
-	target string
-	status webmentionStatus
-	asc    bool
+	target        string
+	status        webmentionStatus
+	asc           bool
+	offset, limit int
 }
 
-func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
-	mentions := []*mention{}
-	var rows *sql.Rows
-	var err error
-	args := []interface{}{}
+type webmentionPaginationAdapter struct {
+	config *webmentionsRequestConfig
+	nums   int64
+}
+
+func (p *webmentionPaginationAdapter) Nums() (int64, error) {
+	if p.nums == 0 {
+		nums, _ := countWebmentions(p.config)
+		p.nums = int64(nums)
+	}
+	return p.nums, nil
+}
+
+func (p *webmentionPaginationAdapter) Slice(offset, length int, data interface{}) error {
+	if reflect.TypeOf(data).Kind() != reflect.Ptr {
+		panic("data has to be a pointer")
+	}
+
+	modifiedConfig := *p.config
+	modifiedConfig.offset = offset
+	modifiedConfig.limit = length
+
+	wms, err := getWebmentions(&modifiedConfig)
+	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&wms).Elem())
+	return err
+}
+
+func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []interface{}) {
+	args = []interface{}{}
 	filter := ""
 	if config != nil {
 		if config.target != "" && config.status != "" {
@@ -195,17 +247,39 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	if config.asc {
 		order = "asc"
 	}
-	rows, err = appDbQuery("select id, source, target, created, title, content, author from webmentions "+filter+" order by created "+order, args...)
+	query = "select id, source, target, created, title, content, author, status from webmentions " + filter + " order by created " + order
+	if config.limit != 0 || config.offset != 0 {
+		query += " limit @limit offset @offset"
+		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
+	}
+	return query, args
+}
+
+func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
+	mentions := []*mention{}
+	query, args := buildWebmentionsQuery(config)
+	rows, err := appDbQuery(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		m := &mention{}
-		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Created, &m.Title, &m.Content, &m.Author)
+		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)
 		if err != nil {
 			return nil, err
 		}
 		mentions = append(mentions, m)
 	}
 	return mentions, nil
+}
+
+func countWebmentions(config *webmentionsRequestConfig) (count int, err error) {
+	query, params := buildWebmentionsQuery(config)
+	query = "select count(*) from (" + query + ")"
+	row, err := appDbQueryRow(query, params...)
+	if err != nil {
+		return
+	}
+	err = row.Scan(&count)
+	return
 }
