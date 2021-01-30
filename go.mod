@@ -34,7 +34,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4
-	github.com/miekg/dns v1.1.35 // indirect
+	github.com/miekg/dns v1.1.37 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
@@ -56,7 +56,7 @@ require (
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210123111255-9b0068b26619 // indirect
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

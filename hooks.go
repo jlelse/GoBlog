@@ -89,12 +89,17 @@ func executeTemplateCommand(hookType string, tmpl string, data map[string]interf
 }
 
 func startHourlyHooks() {
+	n := time.Now()
+	f := time.Date(n.Year(), n.Month(), n.Day(), n.Hour(), 0, 0, 0, n.Location()).Add(time.Hour)
+	w := f.Sub(n)
 	for _, cmd := range appConfig.Hooks.Hourly {
 		go func(cmd string) {
 			run := func() {
 				log.Println("Executing hourly hook:", cmd)
 				executeCommand(cmd)
 			}
+			// Wait for next hour to begin
+			time.Sleep(w)
 			// Execute once
 			go run()
 			// Start ticker and execute regularly
