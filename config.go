@@ -135,6 +135,7 @@ type configUser struct {
 	Password string `mapstructure:"password"`
 	Picture  string `mapstructure:"picture"`
 	Emoji    string `mapstructure:"emoji"`
+	Email    string `mapstructure:"email"`
 	Link     string `mapstructure:"link"`
 }
 

@@ -36,7 +36,8 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
 		Created:     now,
 		Author: &feeds.Author{
-			Name: appConfig.User.Name,
+			Name:  appConfig.User.Name,
+			Email: appConfig.User.Email,
 		},
 		Image: &feeds.Image{
 			Url: appConfig.User.Picture,
@@ -64,18 +65,17 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 			Enclosure:   enc,
 		})
 	}
-	var feedStr string
 	var err error
 	switch f {
 	case rssFeed:
-		w.Header().Add(contentType, "application/rss+xml; charset=utf-8")
-		feedStr, err = feed.ToRss()
+		w.Header().Set(contentType, "application/rss+xml; charset=utf-8")
+		err = feed.WriteRss(w)
 	case atomFeed:
-		w.Header().Add(contentType, "application/atom+xml; charset=utf-8")
-		feedStr, err = feed.ToAtom()
+		w.Header().Set(contentType, "application/atom+xml; charset=utf-8")
+		err = feed.WriteAtom(w)
 	case jsonFeed:
-		w.Header().Add(contentType, "application/feed+json; charset=utf-8")
-		feedStr, err = feed.ToJSON()
+		w.Header().Set(contentType, "application/feed+json; charset=utf-8")
+		err = feed.WriteJSON(w)
 	default:
 		return
 	}
@@ -84,6 +84,4 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(feedStr))
 }
