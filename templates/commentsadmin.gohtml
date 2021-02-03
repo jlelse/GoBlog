@@ -12,7 +12,7 @@
           Target: <a href="{{ $comment.Target }}" target="_blank">{{ $comment.Target }}</a><br/>
           Name: {{ $comment.Name }}<br/>
           Website: {{ $comment.Website }}<br/>
-          Comment: {{ $comment.Comment }}
+          Comment: {{ html $comment.Comment }}
         </p>
         <form method="post">
           <input type="hidden" name="commentid" value="{{ $comment.ID }}">

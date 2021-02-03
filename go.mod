@@ -16,7 +16,7 @@ require (
 	github.com/gofrs/flock v0.8.0 // indirect
 	github.com/goodsign/monday v1.0.1-0.20201007115131-c065b60ec611
 	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/gorilla/feeds v1.1.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/hashicorp/golang-lru v0.5.4
@@ -34,7 +34,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4
-	github.com/miekg/dns v1.1.37 // indirect
+	github.com/miekg/dns v1.1.38 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect

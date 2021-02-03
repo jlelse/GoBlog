@@ -61,6 +61,9 @@ func initRendering() error {
 			}
 			return template.HTML(htmlContent)
 		},
+		"html": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 		// Post specific
 		"p": func(p *post, parameter string) string {
 			return p.firstParameter(parameter)
