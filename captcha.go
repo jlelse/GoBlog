@@ -19,10 +19,11 @@ func initCaptcha() {
 func captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check JWT
+		claims := &captchaClaims{}
 		if captchaCookie, err := r.Cookie("captcha"); err == nil {
-			if tkn, err := jwt.Parse(captchaCookie.Value, func(t *jwt.Token) (interface{}, error) {
+			if tkn, err := jwt.ParseWithClaims(captchaCookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
 				return jwtKey(), nil
-			}); err == nil && tkn.Valid {
+			}); err == nil && tkn.Valid && claims.TokenType == "captcha" {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -90,9 +91,17 @@ func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
+type captchaClaims struct {
+	*jwt.StandardClaims
+	TokenType string
+}
+
 func createCaptchaCookie() (*http.Cookie, error) {
 	expiration := time.Now().Add(24 * time.Hour)
-	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.StandardClaims{ExpiresAt: expiration.Unix()}).SignedString(jwtKey())
+	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &captchaClaims{
+		&jwt.StandardClaims{ExpiresAt: expiration.Unix()},
+		"captcha",
+	}).SignedString(jwtKey())
 	if err != nil {
 		return nil, err
 	}
