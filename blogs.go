@@ -11,7 +11,3 @@ func (blog *configBlog) getRelativePath(path string) string {
 	}
 	return path
 }
-
-func getBlogRelativePath(blog, path string) string {
-	return appConfig.Blogs[blog].getRelativePath(path)
-}

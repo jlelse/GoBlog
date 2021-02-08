@@ -13,9 +13,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func initCaptcha() {
-}
-
 func captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check JWT
@@ -67,7 +64,7 @@ func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 		// Copy original headers
 		captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
 		var headers http.Header
-		json.Unmarshal(captchaheaders, &headers)
+		_ = json.Unmarshal(captchaheaders, &headers)
 		for k, v := range headers {
 			req.Header[k] = v
 		}

@@ -229,7 +229,6 @@ func deletePost(path string) error {
 
 func rebuildFTSIndex() {
 	_, _ = appDbExec("insert into posts_fts(posts_fts) values ('rebuild')")
-	return
 }
 
 func getPost(path string) (*post, error) {

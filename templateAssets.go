@@ -41,10 +41,10 @@ func initTemplateAssets() (err error) {
 	return nil
 }
 
-func compileAsset(name string) (compiledFileName string, err error) {
+func compileAsset(name string) (string, error) {
 	originalContent, err := ioutil.ReadFile(name)
 	if err != nil {
-		return
+		return "", err
 	}
 	ext := path.Ext(name)
 	var compiledContent []byte
@@ -53,26 +53,28 @@ func compileAsset(name string) (compiledFileName string, err error) {
 	case ".js":
 		compiledContent, err = minifier.Bytes("application/javascript", originalContent)
 		if err != nil {
-			return
+			return "", err
 		}
 	case ".css":
 		compiledContent, err = minifier.Bytes("text/css", originalContent)
 		if err != nil {
-			return
+			return "", err
 		}
 	default:
 		// Just copy the file
 		compiledContent = originalContent
 	}
 	sha := sha1.New()
-	sha.Write(compiledContent)
+	if _, err := sha.Write(compiledContent); err != nil {
+		return "", err
+	}
 	hash := fmt.Sprintf("%x", sha.Sum(nil))
-	compiledFileName = hash + compiledExt
+	compiledFileName := hash + compiledExt
 	assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(compiledExt),
 		body:        compiledContent,
 	}
-	return
+	return compiledFileName, err
 }
 
 // Function for templates
@@ -90,13 +92,12 @@ func allAssetPaths() []string {
 
 // Gets only called by registered paths
 func serveAsset(w http.ResponseWriter, r *http.Request) {
-	f := strings.TrimPrefix(r.URL.Path, "/")
-	af, ok := assetFiles[f]
+	af, ok := assetFiles[strings.TrimPrefix(r.URL.Path, "/")]
 	if !ok {
 		serve404(w, r)
 		return
 	}
 	w.Header().Set("Cache-Control", "public,max-age=31536000,immutable")
 	w.Header().Set(contentType, af.contentType)
-	w.Write(af.body)
+	_, _ = w.Write(af.body)
 }

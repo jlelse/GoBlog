@@ -71,10 +71,6 @@ func (p *post) postDeleteHooks() {
 	}
 }
 
-type hookTemplateData struct {
-	URL string
-}
-
 func executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {
@@ -82,7 +78,10 @@ func executeTemplateCommand(hookType string, tmpl string, data map[string]interf
 		return
 	}
 	var cmdBuf bytes.Buffer
-	cmdTmpl.Execute(&cmdBuf, data)
+	if err = cmdTmpl.Execute(&cmdBuf, data); err != nil {
+		log.Println("Failed to execute cmd template:", err.Error())
+		return
+	}
 	cmd := cmdBuf.String()
 	log.Println("Executing "+hookType+" hook:", cmd)
 	executeCommand(cmd)

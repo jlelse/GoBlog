@@ -21,7 +21,7 @@ import (
 const micropubMediaSubPath = "/media"
 
 func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
-	if !strings.Contains(r.Context().Value("scope").(string), "media") {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "media") {
 		serveError(w, r, "media scope missing", http.StatusForbidden)
 		return
 	}

@@ -104,5 +104,5 @@ func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 	}
 	w.WriteHeader(result.StatusCode)
 	body, _ := ioutil.ReadAll(result.Body)
-	w.Write(body)
+	_, _ = w.Write(body)
 }

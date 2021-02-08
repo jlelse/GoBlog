@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const indieAuthScope requestContextKey = "scope"
+
 func checkIndieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bearerToken := r.Header.Get("Authorization")
@@ -17,14 +19,12 @@ func checkIndieAuth(next http.Handler) http.Handler {
 			serveError(w, r, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "scope", strings.Join(tokenData.Scopes, " "))))
-		return
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), indieAuthScope, strings.Join(tokenData.Scopes, " "))))
 	})
 }
 
 func addAllScopes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), "scope", "create update delete media")))
-		return
+		next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), indieAuthScope, "create update delete media")))
 	})
 }

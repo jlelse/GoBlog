@@ -179,7 +179,7 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, "wrong content type", http.StatusBadRequest)
 		return
 	}
-	if !strings.Contains(r.Context().Value("scope").(string), "create") {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "create") {
 		serveError(w, r, "create scope missing", http.StatusForbidden)
 		return
 	}
@@ -189,7 +189,6 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, p.fullURL(), http.StatusAccepted)
-	return
 }
 
 func convertMPValueMapToPost(values map[string][]string) (*post, error) {
@@ -258,7 +257,7 @@ type micropubAction string
 
 const (
 	actionUpdate micropubAction = "update"
-	actionDelete                = "delete"
+	actionDelete micropubAction = "delete"
 )
 
 type microformatItem struct {
@@ -429,7 +428,7 @@ func (p *post) computeExtraPostParameters() error {
 }
 
 func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
-	if !strings.Contains(r.Context().Value("scope").(string), "delete") {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "delete") {
 		serveError(w, r, "delete scope missing", http.StatusForbidden)
 		return
 	}
@@ -438,11 +437,10 @@ func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 		return
 	}
 	http.Redirect(w, r, u.String(), http.StatusNoContent)
-	return
 }
 
 func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
-	if !strings.Contains(r.Context().Value("scope").(string), "update") {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "update") {
 		serveError(w, r, "update scope missing", http.StatusForbidden)
 		return
 	}

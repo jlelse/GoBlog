@@ -213,19 +213,19 @@ func initRendering() error {
 	templates = map[string]*template.Template{}
 
 	baseTemplatePath := path.Join(templatesDir, templateBase+templatesExt)
-	err := filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.Mode().IsRegular() && path.Ext(p) == templatesExt {
-			name := strings.TrimSuffix(path.Base(p), templatesExt)
-			if name != templateBase {
-				templates[name], err = template.New(name).Funcs(templateFunctions).ParseFiles(baseTemplatePath, p)
-				if err != nil {
+			if name := strings.TrimSuffix(path.Base(p), templatesExt); name != templateBase {
+				if templates[name], err = template.New(name).Funcs(templateFunctions).ParseFiles(baseTemplatePath, p); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	return nil

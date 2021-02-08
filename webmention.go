@@ -39,7 +39,7 @@ func initWebmention() error {
 	// Add hooks
 	hookFunc := func(p *post) {
 		if p.Status == statusPublished {
-			p.sendWebmentions()
+			_ = p.sendWebmentions()
 		}
 	}
 	postHooks[postPostHook] = append(postHooks[postPostHook], hookFunc)
@@ -145,7 +145,6 @@ func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	purgeCache()
 	http.Redirect(w, r, ".", http.StatusFound)
-	return
 }
 
 func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +160,6 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	purgeCache()
 	http.Redirect(w, r, ".", http.StatusFound)
-	return
 }
 
 func webmentionExists(source, target string) bool {

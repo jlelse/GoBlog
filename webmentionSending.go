@@ -26,7 +26,9 @@ func (p *post) sendWebmentions() error {
 		}
 		if strings.HasPrefix(link, appConfig.Server.PublicAddress) {
 			// Save mention directly
-			createWebmention(p.fullURL(), link)
+			if err := createWebmention(p.fullURL(), link); err != nil {
+				log.Println("Failed to create webmention:", err.Error())
+			}
 			continue
 		}
 		endpoint := discoverEndpoint(link)

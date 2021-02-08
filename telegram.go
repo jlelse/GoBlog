@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -36,7 +38,9 @@ func (p *post) tgPost() {
 		message.WriteString("\n\n")
 	}
 	message.WriteString(p.shortURL())
-	sendTelegramMessage(message.String(), tg.BotToken, tg.ChatID)
+	if err := sendTelegramMessage(message.String(), tg.BotToken, tg.ChatID); err != nil {
+		log.Println(err.Error())
+	}
 }
 
 func sendTelegramMessage(text, bottoken, chatID string) error {
@@ -50,8 +54,10 @@ func sendTelegramMessage(text, bottoken, chatID string) error {
 	tgURL.RawQuery = params.Encode()
 	req, _ := http.NewRequest(http.MethodPost, tgURL.String(), nil)
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return errors.New("failed to send Telegram message")
+	if err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to send Telegram message, status code %d", resp.StatusCode)
 	}
 	return nil
 }

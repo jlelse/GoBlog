@@ -118,7 +118,7 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				u.Fragment = ""
 				u.RawFragment = ""
-				apRemoveFollower(blogName, u.String())
+				_ = apRemoveFollower(blogName, u.String())
 				w.WriteHeader(http.StatusOK)
 				return
 			}
@@ -165,13 +165,13 @@ func apHandleInbox(w http.ResponseWriter, r *http.Request) {
 				id, hasID := object["id"].(string)
 				if hasReplyToString && hasID && len(inReplyTo) > 0 && len(id) > 0 && strings.Contains(inReplyTo, blogIri) {
 					// It's an ActivityPub reply; save reply as webmention
-					createWebmention(id, inReplyTo)
+					_ = createWebmention(id, inReplyTo)
 				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
 					// May be a mention; find links to blog and save them as webmentions
 					if links, err := allLinksFromHTML(strings.NewReader(content), id); err == nil {
 						for _, link := range links {
 							if strings.Contains(link, blogIri) {
-								createWebmention(id, link)
+								_ = createWebmention(id, link)
 							}
 						}
 					}
@@ -233,7 +233,7 @@ func apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(contentType, "application/xrd+xml"+charsetUtf8Suffix)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
+	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
 }
 
 func apGetRemoteActor(iri string) (*asPerson, int, error) {
@@ -363,7 +363,9 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 	if endpoints := follower.Endpoints; endpoints != nil && endpoints.SharedInbox != "" {
 		inbox = endpoints.SharedInbox
 	}
-	apAddFollower(blogName, follower.ID, inbox)
+	if err = apAddFollower(blogName, follower.ID, inbox); err != nil {
+		return
+	}
 	// remove @context from the inner activity
 	delete(follow, "@context")
 	accept := map[string]interface{}{
@@ -374,7 +376,7 @@ func apAccept(blogName string, blog *configBlog, follow map[string]interface{}) 
 		"type":     "Accept",
 	}
 	_, accept["id"] = apNewID(blog)
-	apQueueSendSigned(blog.apIri(), follower.Inbox, accept)
+	_ = apQueueSendSigned(blog.apIri(), follower.Inbox, accept)
 }
 
 func apSendToAllFollowers(blog string, activity interface{}) {
@@ -389,7 +391,7 @@ func apSendToAllFollowers(blog string, activity interface{}) {
 func apSendTo(blogIri string, activity interface{}, inboxes []string) {
 	for _, i := range inboxes {
 		go func(inbox string) {
-			apQueueSendSigned(blogIri, inbox, activity)
+			_ = apQueueSendSigned(blogIri, inbox, activity)
 		}(i)
 	}
 }

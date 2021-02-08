@@ -75,12 +75,16 @@ func createComment(blog, commentsPath string) func(http.ResponseWriter, *http.Re
 			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		commentID, err := result.LastInsertId()
-		commentAddress := fmt.Sprintf("%s/%d", commentsPath, commentID)
-		// Send webmention
-		createWebmention(appConfig.Server.PublicAddress+commentAddress, appConfig.Server.PublicAddress+target)
-		// Redirect to comment
-		http.Redirect(w, r, commentAddress, http.StatusFound)
+		if commentID, err := result.LastInsertId(); err != nil {
+			// Serve error
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
+		} else {
+			commentAddress := fmt.Sprintf("%s/%d", commentsPath, commentID)
+			// Send webmention
+			_ = createWebmention(appConfig.Server.PublicAddress+commentAddress, appConfig.Server.PublicAddress+target)
+			// Redirect to comment
+			http.Redirect(w, r, commentAddress, http.StatusFound)
+		}
 	}
 }
 
@@ -148,7 +152,6 @@ func commentsAdminDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	purgeCache()
 	http.Redirect(w, r, ".", http.StatusFound)
-	return
 }
 
 func deleteComment(id int) error {

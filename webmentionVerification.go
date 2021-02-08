@@ -25,7 +25,11 @@ func wmMentionBuilder() interface{} {
 func initWebmentionQueue() (err error) {
 	queuePath := "queues"
 	if _, err := os.Stat(queuePath); os.IsNotExist(err) {
-		os.Mkdir(queuePath, 0755)
+		if err := os.Mkdir(queuePath, 0755); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
 	}
 	wmQueue, err = dque.NewOrOpen("webmention", queuePath, 5, wmMentionBuilder)
 	if err != nil {
@@ -99,7 +103,9 @@ func (m *mention) verifyMention() error {
 
 func (m *mention) verifyReader(body io.Reader) error {
 	var linksBuffer, gqBuffer, mfBuffer bytes.Buffer
-	io.Copy(io.MultiWriter(&linksBuffer, &gqBuffer, &mfBuffer), body)
+	if _, err := io.Copy(io.MultiWriter(&linksBuffer, &gqBuffer, &mfBuffer), body); err != nil {
+		return err
+	}
 	// Check if source mentions target
 	links, err := allLinksFromHTML(&linksBuffer, m.Source)
 	if err != nil {

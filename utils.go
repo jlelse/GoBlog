@@ -13,6 +13,8 @@ import (
 	"github.com/araddon/dateparse"
 )
 
+type requestContextKey string
+
 func urlize(str string) string {
 	newStr := ""
 	for _, c := range strings.Split(strings.ToLower(str), "") {

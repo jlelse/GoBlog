@@ -79,7 +79,7 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		// Copy original headers
 		loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
 		var headers http.Header
-		json.Unmarshal(loginheaders, &headers)
+		_ = json.Unmarshal(loginheaders, &headers)
 		for k, v := range headers {
 			req.Header[k] = v
 		}

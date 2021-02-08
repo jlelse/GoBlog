@@ -26,8 +26,7 @@ func servePostAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var path string
-	err = row.Scan(&path)
-	if err == sql.ErrNoRows {
+	if err := row.Scan(&path); err == sql.ErrNoRows {
 		serve404(w, r)
 		return
 	} else if err != nil {
@@ -35,5 +34,4 @@ func servePostAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, path, http.StatusFound)
-	return
 }

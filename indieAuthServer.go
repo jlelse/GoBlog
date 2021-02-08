@@ -29,7 +29,10 @@ type indieAuthData struct {
 
 func indieAuthRequest(w http.ResponseWriter, r *http.Request) {
 	// Authorization request
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
 	data := &indieAuthData{
 		ClientID:    r.Form.Get("client_id"),
 		RedirectURI: r.Form.Get("redirect_uri"),
@@ -78,7 +81,10 @@ func isValidProfileURL(profileURL string) bool {
 
 func indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 	// Authentication flow
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
 	data := &indieAuthData{
 		ClientID:    r.Form.Get("client_id"),
 		RedirectURI: r.Form.Get("redirect_uri"),
@@ -87,7 +93,10 @@ func indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 		time:        time.Now(),
 	}
 	sha := sha1.New()
-	sha.Write([]byte(data.time.String() + data.ClientID))
+	if _, err := sha.Write([]byte(data.time.String() + data.ClientID)); err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	data.code = fmt.Sprintf("%x", sha.Sum(nil))
 	err := data.saveAuthorization()
 	if err != nil {
@@ -107,7 +116,10 @@ type tokenResponse struct {
 
 func indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 	// Authorization verification
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
 	data := &indieAuthData{
 		code:        r.Form.Get("code"),
 		ClientID:    r.Form.Get("client_id"),
@@ -156,7 +168,10 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	} else if r.Method == http.MethodPost {
-		r.ParseForm()
+		if err := r.ParseForm(); err != nil {
+			serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
 		// Token Revocation
 		if r.Form.Get("action") == "revoke" {
 			revokeIndieAuthToken(r.Form.Get("token"))
@@ -185,7 +200,10 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			}
 			data.time = time.Now()
 			sha := sha1.New()
-			sha.Write([]byte(data.time.String() + data.ClientID))
+			if _, err := sha.Write([]byte(data.time.String() + data.ClientID)); err != nil {
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			data.token = fmt.Sprintf("%x", sha.Sum(nil))
 			err = data.saveToken()
 			if err != nil {
@@ -269,9 +287,7 @@ func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 }
 
 func revokeIndieAuthToken(token string) {
-	if token == "" {
-		return
+	if token != "" {
+		_, _ = appDbExec("delete from indieauthtoken where token=?", token)
 	}
-	_, _ = appDbExec("delete from indieauthtoken where token=?", token)
-	return
 }
