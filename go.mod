@@ -6,7 +6,7 @@ require (
 	codeberg.org/jlelse/tinify v0.0.0-20200123222407-7fc9c21822b0
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
-	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
+	github.com/araddon/dateparse v0.0.0-20210207001429-0eec95c9db7e
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -43,11 +43,10 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/tdewolff/minify/v2 v2.9.11
+	github.com/tdewolff/minify/v2 v2.9.12
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.3.1
+	github.com/yuin/goldmark v1.3.2
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
