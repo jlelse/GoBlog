@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const telegramBaseURL = "https://api.telegram.org/bot"
@@ -32,22 +33,34 @@ func (p *post) tgPost() {
 	if tg == nil || !tg.Enabled || tg.BotToken == "" || tg.ChatID == "" {
 		return
 	}
+	replacer := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
 	var message bytes.Buffer
 	if title := p.title(); title != "" {
-		message.WriteString(title)
+		message.WriteString(replacer.Replace(title))
 		message.WriteString("\n\n")
 	}
-	message.WriteString(p.shortURL())
-	if err := sendTelegramMessage(message.String(), tg.BotToken, tg.ChatID); err != nil {
+	if tg.InstantViewHash != "" {
+		message.WriteString("<a href=\"https://t.me/iv?rhash=" + tg.InstantViewHash + "&url=" + url.QueryEscape(p.fullURL()) + "\">")
+		message.WriteString(replacer.Replace(p.shortURL()))
+		message.WriteString("</a>")
+	} else {
+		message.WriteString("<a href=\"" + p.shortURL() + "\">")
+		message.WriteString(replacer.Replace(p.shortURL()))
+		message.WriteString("</a>")
+	}
+	if err := sendTelegramMessage(message.String(), "HTML", tg.BotToken, tg.ChatID); err != nil {
 		log.Println(err.Error())
 	}
 }
 
-func sendTelegramMessage(text, bottoken, chatID string) error {
+func sendTelegramMessage(message, mode, token, chat string) error {
 	params := url.Values{}
-	params.Add("chat_id", chatID)
-	params.Add("text", text)
-	tgURL, err := url.Parse(telegramBaseURL + bottoken + "/sendMessage")
+	params.Add("chat_id", chat)
+	params.Add("text", message)
+	if mode != "" {
+		params.Add("parse_mode", mode)
+	}
+	tgURL, err := url.Parse(telegramBaseURL + token + "/sendMessage")
 	if err != nil {
 		return errors.New("failed to create Telegram request")
 	}

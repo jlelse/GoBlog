@@ -192,9 +192,10 @@ type configNotifications struct {
 }
 
 type configTelegram struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	ChatID   string `mapstructure:"chatId"`
-	BotToken string `mapstructure:"botToken"`
+	Enabled         bool   `mapstructure:"enabled"`
+	ChatID          string `mapstructure:"chatId"`
+	BotToken        string `mapstructure:"botToken"`
+	InstantViewHash string `mapstructure:"instantViewHash"`
 }
 
 var appConfig = &config{}
