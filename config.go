@@ -174,6 +174,7 @@ type configMicropubMedia struct {
 	BunnyStorageKey  string `mapstructure:"bunnyStorageKey"`
 	BunnyStorageName string `mapstructure:"bunnyStorageName"`
 	TinifyKey        string `mapstructure:"tinifyKey"`
+	ShortPixelKey    string `mapstructure:"shortPixelKey"`
 }
 
 type configRegexRedirect struct {
