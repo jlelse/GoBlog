@@ -1,11 +1,9 @@
 {{ define "interactions" }}
     <details class="p" id="interactions">
         <summary><b>{{ string .Blog.Lang "interactions" }}</b></summary>
-        {{ $postperma := ( absolute .Data.Path ) }}
-        {{ $mentions := ( postmentions .Data ) }}
-        {{ if $mentions }}
+        {{ with ( mentions .Canonical ) }}
             <ul>
-            {{ range $i, $mention := $mentions }}
+            {{ range $i, $mention := . }}
                 <li><a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer ugc">
                     {{ if $mention.Author }}
                         {{ $mention.Author }}
@@ -19,11 +17,11 @@
         <form class="fw-form p" method="post" action="/webmention">
             <label for="wm-source" class="p">{{ string .Blog.Lang "interactionslabel" }}</label>
             <input id="wm-source" type="url" name="source" placeholder="URL" required>
-            <input type="hidden" name="target" value="{{ $postperma }}">
+            <input type="hidden" name="target" value="{{ .Canonical }}">
             <input class="fw" type="submit" value="{{ string .Blog.Lang "send" }}">
         </form>
         <form class="fw-form p" method="post" action="{{ blogrelative .Blog "/comment" }}">
-            <input type="hidden" name="target" value="{{ .Data.Path }}">
+            <input type="hidden" name="target" value="{{ .Canonical }}">
             <input type="text" name="name" placeholder="{{ string .Blog.Lang "nameopt" }}">
             <input type="url" name="website" placeholder="{{ string .Blog.Lang "websiteopt" }}">
             <textarea name="comment" required placeholder="{{ string .Blog.Lang "comment" }}"></textarea>

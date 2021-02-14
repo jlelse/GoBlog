@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ string .Blog.Lang "acommentby" }} {{ .Data.Name }} - {{ .Blog.Title }}</title>
+  <title>{{ string .Blog.Lang "acommentby" }} {{ .Data.Name }}</title>
 {{ end }}
 
 {{ define "main" }}
@@ -13,6 +13,9 @@
       {{ html .Data.Comment }}
     </div>
   </main>
+  {{ if commentsenabled .Blog }}
+    {{ include "interactions" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "comment" }}

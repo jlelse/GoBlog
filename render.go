@@ -86,14 +86,6 @@ func initRendering() error {
 		"translations": func(p *post) []*post {
 			return p.translations()
 		},
-		"postmentions": func(p *post) []*mention {
-			mentions, _ := getWebmentions(&webmentionsRequestConfig{
-				target: p.fullURL(),
-				status: webmentionStatusApproved,
-				asc:    true,
-			})
-			return mentions
-		},
 		"shorturl": func(p *post) string {
 			return p.shortURL()
 		},
@@ -207,6 +199,14 @@ func initRendering() error {
 		},
 		"commentsenabled": func(blog *configBlog) bool {
 			return blog.Comments != nil && blog.Comments.Enabled
+		},
+		"mentions": func(absolute string) []*mention {
+			mentions, _ := getWebmentions(&webmentionsRequestConfig{
+				target: absolute,
+				status: webmentionStatusApproved,
+				asc:    true,
+			})
+			return mentions
 		},
 	}
 

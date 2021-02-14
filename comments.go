@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/microcosm-cc/bluemonday"
@@ -41,6 +43,7 @@ func serveComment(blog string) func(http.ResponseWriter, *http.Request) {
 		w.Header().Set("X-Robots-Tag", "noindex")
 		render(w, templateComment, &renderData{
 			BlogString: blog,
+			Canonical:  appConfig.Server.PublicAddress + appConfig.Blogs[blog].getRelativePath(fmt.Sprintf("/comment/%d", id)),
 			Data:       comment,
 		})
 	}
@@ -93,22 +96,16 @@ func checkCommentTarget(w http.ResponseWriter, r *http.Request) string {
 	if target == "" {
 		serveError(w, r, "No target specified", http.StatusBadRequest)
 		return ""
+	} else if !strings.HasPrefix(target, appConfig.Server.PublicAddress) {
+		serveError(w, r, "Bad target", http.StatusBadRequest)
+		return ""
 	}
-	postExists := 0
-	row, err := appDbQueryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", target))
+	targetURL, err := url.Parse(target)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return ""
 	}
-	if err = row.Scan(&postExists); err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
-	if postExists != 1 {
-		serveError(w, r, "Post does not exist", http.StatusBadRequest)
-		return ""
-	}
-	return target
+	return targetURL.Path
 }
 
 func commentsAdmin(w http.ResponseWriter, r *http.Request) {
