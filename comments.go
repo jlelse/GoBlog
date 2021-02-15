@@ -56,22 +56,18 @@ func createComment(blog, commentsPath string) func(http.ResponseWriter, *http.Re
 		if target == "" {
 			return
 		}
-		// Check comment
-		comment := r.FormValue("comment")
+		// Check and clean comment
+		strict := bluemonday.StrictPolicy()
+		comment := strings.TrimSpace(strict.Sanitize(r.FormValue("comment")))
 		if comment == "" {
 			serveError(w, r, "Comment is empty", http.StatusBadRequest)
 			return
 		}
-		name := r.FormValue("name")
+		name := strings.TrimSpace(strict.Sanitize(r.FormValue("name")))
 		if name == "" {
 			name = "Anonymous"
 		}
-		website := r.FormValue("website")
-		// Clean
-		strict := bluemonday.StrictPolicy()
-		name = strict.Sanitize(name)
-		website = strict.Sanitize(website)
-		comment = strict.Sanitize(comment)
+		website := strings.TrimSpace(strict.Sanitize(r.FormValue("website")))
 		// Insert
 		result, err := appDbExec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
 		if err != nil {
