@@ -31,6 +31,7 @@ type configServer struct {
 	PublicAddress       string `mapstructure:"publicAddress"`
 	ShortPublicAddress  string `mapstructure:"shortPublicAddress"`
 	PublicHTTPS         bool   `mapstructure:"publicHttps"`
+	SecurityHeaders     bool   `mapstructure:"securityHeaders"`
 	LetsEncryptMail     string `mapstructure:"letsEncryptMail"`
 	JWTSecret           string `mapstructure:"jwtSecret"`
 	publicHostname      string

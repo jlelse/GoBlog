@@ -9,21 +9,21 @@
     <table class="p">
       <thead>
         <tr>
-          <th style="text-align:left">{{ string .Blog.Lang "year" }}</th>
-          <th style="text-align:right">{{ string .Blog.Lang "count" }}</th>
+          <th class="tal">{{ string .Blog.Lang "year" }}</th>
+          <th class="tar">{{ string .Blog.Lang "count" }}</th>
         </tr>
       </thead>
       <tbody>
         {{ $counts := .Data.counts }}
         {{ range $i, $year := .Data.years }}
           <tr>
-            <td style="text-align:left">{{ $year }}</td>
-            <td style="text-align:right">{{ index $counts $i }}</td>
+            <td class="tal">{{ $year }}</td>
+            <td class="tar">{{ index $counts $i }}</td>
           </tr>
         {{ end }}
         <tr>
-          <td style="text-align:left"><b>{{ string .Blog.Lang "total" }}</b></td>
-          <td style="text-align:right">{{ .Data.total }}</td>
+          <td class="tal"><b>{{ string .Blog.Lang "total" }}</b></td>
+          <td class="tar">{{ .Data.total }}</td>
         </tr>
       </tbody>
     </table>

@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 )
 
 const searchPlaceholder = "{search}"
 
-func serveSearch(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
+func serveSearch(blog string, servePath string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -17,12 +18,12 @@ func serveSearch(blog string, path string) func(w http.ResponseWriter, r *http.R
 			return
 		}
 		if q := r.Form.Get("q"); q != "" {
-			http.Redirect(w, r, path+"/"+searchEncode(q), http.StatusFound)
+			http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
 			return
 		}
 		render(w, templateSearch, &renderData{
 			BlogString: blog,
-			Canonical:  appConfig.Server.PublicAddress + path,
+			Canonical:  appConfig.Server.PublicAddress + servePath,
 		})
 	}
 }

@@ -54,6 +54,8 @@ func startServer() (err error) {
 			hosts = append(hosts, appConfig.Server.shortPublicHostname)
 		}
 		err = certmagic.HTTPS(hosts, securityHeaders(d))
+	} else if appConfig.Server.SecurityHeaders {
+		err = http.ListenAndServe(localAddress, securityHeaders(d))
 	} else {
 		err = http.ListenAndServe(localAddress, d)
 	}
