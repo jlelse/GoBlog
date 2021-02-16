@@ -4,7 +4,9 @@ import (
 	"compress/flate"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/caddyserver/certmagic"
@@ -388,13 +390,22 @@ func buildHandler() (http.Handler, error) {
 }
 
 func securityHeaders(next http.Handler) http.Handler {
+	extraCSPDomains := ""
+	if mp := appConfig.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
+		if u, err := url.Parse(mp.MediaURL); err == nil {
+			extraCSPDomains += " " + u.Hostname()
+		}
+	}
+	if len(appConfig.Server.CSPDomains) > 0 {
+		extraCSPDomains += " " + strings.Join(appConfig.Server.CSPDomains, " ")
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Strict-Transport-Security", "max-age=31536000;")
 		w.Header().Add("Referrer-Policy", "no-referrer")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Add("X-Xss-Protection", "1; mode=block")
-		// TODO: Add CSP
+		w.Header().Add("Content-Security-Policy", "default-src 'self'"+extraCSPDomains)
 		next.ServeHTTP(w, r)
 	})
 }

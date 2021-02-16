@@ -1,45 +1,37 @@
 "use strict";
 
-function getVoice() {
-    if (window.speechSynthesis) {
-        return window.speechSynthesis.getVoices().filter(voice => voice.lang.startsWith(document.querySelector('html').lang))[0];
+let sb = document.getElementById('speakBtn')
+let s = window.speechSynthesis
+
+function gv() {
+    return s ? s.getVoices().filter(voice => voice.lang.startsWith(document.querySelector('html').lang))[0] : false
+}
+
+function is() {
+    if (s) {
+        sb.classList.remove('hide')
+        sb.onclick = sp
+        sb.textContent = sb.dataset.speak
     }
-    return false;
 }
 
-function initSpeak() {
-    if (window.speechSynthesis) {
-        let speakBtn = document.querySelector('#speakBtn');
-        speakBtn.style.display = '';
-        speakBtn.onclick = function() { speak() };
-        speakBtn.textContent = speakText;
-    }
+function sp() {
+    sb.onclick = ssp
+    sb.textContent = sb.dataset.stopspeak
+    let ut = new SpeechSynthesisUtterance(
+        ((document.querySelector('article .p-name')) ? document.querySelector('article .p-name').innerText + "\n\n" : '') + document.querySelector('article .e-content').innerText
+    )
+    ut.voice = gv()
+    ut.onerror = ssp
+    ut.onend = ssp
+    s.speak(ut)
 }
 
-function speak() {
-    console.log("Start speaking")
-    let speakBtn = document.querySelector('#speakBtn');
-    speakBtn.onclick = function() { stopSpeak() };
-    speakBtn.textContent = stopSpeakText;
-    let textContent =
-        ((document.querySelector('article .p-name')) ? document.querySelector('article .p-name').innerText + "\n\n" : "")
-        + document.querySelector('article .e-content').innerText;
-    let utterThis = new SpeechSynthesisUtterance(textContent);
-    utterThis.voice = getVoice();
-    utterThis.onerror = stopSpeak;
-    utterThis.onend = stopSpeak;
-    window.speechSynthesis.speak(utterThis);
+function ssp() {
+    s.cancel()
+    sb.onclick = sp
+    sb.textContent = sb.dataset.speak
 }
 
-function stopSpeak() {
-    console.log("Stop speaking")
-    window.speechSynthesis.cancel();
-    let speakBtn = document.querySelector('#speakBtn');
-    speakBtn.onclick = function() { speak() };
-    speakBtn.textContent = speakText;
-}
-
-window.onbeforeunload = function () {
-    stopSpeak();
-}
-initSpeak();
+window.onbeforeunload = ssp
+is()

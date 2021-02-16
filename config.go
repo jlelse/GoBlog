@@ -23,16 +23,17 @@ type config struct {
 }
 
 type configServer struct {
-	Logging             bool   `mapstructure:"logging"`
-	LogFile             string `mapstructure:"logFile"`
-	Debug               bool   `mapstructure:"Debug"`
-	Port                int    `mapstructure:"port"`
-	PublicAddress       string `mapstructure:"publicAddress"`
-	ShortPublicAddress  string `mapstructure:"shortPublicAddress"`
-	PublicHTTPS         bool   `mapstructure:"publicHttps"`
-	SecurityHeaders     bool   `mapstructure:"securityHeaders"`
-	LetsEncryptMail     string `mapstructure:"letsEncryptMail"`
-	JWTSecret           string `mapstructure:"jwtSecret"`
+	Logging             bool     `mapstructure:"logging"`
+	LogFile             string   `mapstructure:"logFile"`
+	Debug               bool     `mapstructure:"Debug"`
+	Port                int      `mapstructure:"port"`
+	PublicAddress       string   `mapstructure:"publicAddress"`
+	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
+	PublicHTTPS         bool     `mapstructure:"publicHttps"`
+	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
+	CSPDomains          []string `mapstructure:"cspDomains"`
+	LetsEncryptMail     string   `mapstructure:"letsEncryptMail"`
+	JWTSecret           string   `mapstructure:"jwtSecret"`
 	publicHostname      string
 	shortPublicHostname string
 }
