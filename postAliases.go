@@ -14,7 +14,9 @@ func allPostAliases() ([]string, error) {
 	for rows.Next() {
 		var path string
 		_ = rows.Scan(&path)
-		aliases = append(aliases, path)
+		if path != "" {
+			aliases = append(aliases, path)
+		}
 	}
 	return aliases, nil
 }

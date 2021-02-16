@@ -14,9 +14,11 @@ var asContext = []string{"https://www.w3.org/ns/activitystreams"}
 
 func manipulateAsPath(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, contentTypeAS) || strings.Contains(lowerAccept, "application/ld+json")) && !strings.Contains(lowerAccept, contentTypeHTML) {
-			// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
-			r.URL.Path += ".as"
+		if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
+			if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, contentTypeAS) || strings.Contains(lowerAccept, "application/ld+json")) && !strings.Contains(lowerAccept, contentTypeHTML) {
+				// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
+				r.URL.Path += ".as"
+			}
 		}
 		next.ServeHTTP(rw, r)
 	})
@@ -68,9 +70,9 @@ type asEndpoints struct {
 }
 
 func (p *post) serveActivityStreams(w http.ResponseWriter) {
-	// Send JSON
-	w.Header().Add(contentType, contentTypeASUTF8)
-	_ = json.NewEncoder(w).Encode(p.toASNote())
+	b, _ := json.Marshal(p.toASNote())
+	w.Header().Set(contentType, contentTypeASUTF8)
+	_, _ = writeMinified(w, contentTypeAS, b)
 }
 
 func (p *post) toASNote() *asNote {
@@ -126,8 +128,6 @@ func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter, r 
 		serveError(w, r, "Failed to marshal public key", http.StatusInternalServerError)
 		return
 	}
-	// Send JSON
-	w.Header().Add(contentType, contentTypeASUTF8)
 	asBlog := &asPerson{
 		Context:           asContext,
 		Type:              "Person",
@@ -154,5 +154,7 @@ func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter, r 
 			URL:  appConfig.User.Picture,
 		}
 	}
-	_ = json.NewEncoder(w).Encode(asBlog)
+	jb, _ := json.Marshal(asBlog)
+	w.Header().Set(contentType, contentTypeASUTF8)
+	_, _ = writeMinified(w, contentTypeAS, jb)
 }

@@ -134,16 +134,11 @@ func indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, "Authentication not valid", http.StatusForbidden)
 		return
 	}
-	res := &tokenResponse{
+	b, _ := json.Marshal(tokenResponse{
 		Me: appConfig.Server.PublicAddress,
-	}
-	w.Header().Add(contentType, contentTypeJSONUTF8)
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		w.Header().Del(contentType)
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	})
+	w.Header().Set(contentType, contentTypeJSONUTF8)
+	_, _ = writeMinified(w, contentTypeJSON, b)
 }
 
 func indieAuthToken(w http.ResponseWriter, r *http.Request) {
@@ -159,13 +154,9 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			Me:       appConfig.Server.PublicAddress,
 			ClientID: data.ClientID,
 		}
-		w.Header().Add(contentType, contentTypeJSONUTF8)
-		err = json.NewEncoder(w).Encode(res)
-		if err != nil {
-			w.Header().Del(contentType)
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		b, _ := json.Marshal(res)
+		w.Header().Set(contentType, contentTypeJSONUTF8)
+		_, _ = writeMinified(w, contentTypeJSON, b)
 		return
 	} else if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
@@ -216,13 +207,9 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				Scope:       strings.Join(data.Scopes, " "),
 				Me:          appConfig.Server.PublicAddress,
 			}
-			w.Header().Add(contentType, contentTypeJSONUTF8)
-			err = json.NewEncoder(w).Encode(res)
-			if err != nil {
-				w.Header().Del(contentType)
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			b, _ := json.Marshal(res)
+			w.Header().Set(contentType, contentTypeJSONUTF8)
+			_, _ = writeMinified(w, contentTypeJSON, b)
 			return
 		}
 		serveError(w, r, "", http.StatusBadRequest)

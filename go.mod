@@ -20,7 +20,6 @@ require (
 	github.com/gorilla/feeds v1.1.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jeremywohl/flatten v1.0.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
 	github.com/klauspost/cpuid v1.3.1 // indirect
@@ -43,8 +42,7 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/tdewolff/minify/v2 v2.9.12
-	github.com/tdewolff/parse/v2 v2.5.10 // indirect
+	github.com/tdewolff/minify/v2 v2.9.13
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.3.2

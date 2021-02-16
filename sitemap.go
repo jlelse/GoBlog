@@ -35,5 +35,5 @@ func serveSitemap(w http.ResponseWriter, r *http.Request) {
 		}
 		sm.Add(item)
 	}
-	_, _ = sm.WriteTo(w)
+	_, _ = sm.WriteTo(w) // Already minified
 }

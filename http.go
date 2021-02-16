@@ -23,6 +23,9 @@ const (
 	contentTypeWWWForm       = "application/x-www-form-urlencoded"
 	contentTypeMultipartForm = "multipart/form-data"
 	contentTypeAS            = "application/activity+json"
+	contentTypeRSS           = "application/rss+xml"
+	contentTypeATOM          = "application/atom+xml"
+	contentTypeJSONFeed      = "application/feed+json"
 
 	contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
 	contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
@@ -99,15 +102,9 @@ func buildHandler() (http.Handler, error) {
 		r.Mount("/debug", middleware.Profiler())
 	}
 
-	// API
-	r.Route("/api", func(apiRouter chi.Router) {
-		apiRouter.Use(middleware.NoCache, authMiddleware)
-		apiRouter.Post("/hugo", apiPostCreateHugo)
-	})
-
 	// Micropub
 	r.Route(micropubPath, func(mpRouter chi.Router) {
-		mpRouter.Use(checkIndieAuth, middleware.NoCache, minifier.Middleware)
+		mpRouter.Use(checkIndieAuth)
 		mpRouter.Get("/", serveMicropubQuery)
 		mpRouter.Post("/", serveMicropubPost)
 		mpRouter.Post(micropubMediaSubPath, serveMicropubMedia)
@@ -115,7 +112,6 @@ func buildHandler() (http.Handler, error) {
 
 	// IndieAuth
 	r.Route("/indieauth", func(indieauthRouter chi.Router) {
-		indieauthRouter.Use(middleware.NoCache, minifier.Middleware)
 		indieauthRouter.Get("/", indieAuthRequest)
 		indieauthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
 		indieauthRouter.Post("/", indieAuthVerification)
@@ -124,23 +120,26 @@ func buildHandler() (http.Handler, error) {
 	})
 
 	// ActivityPub and stuff
-	if appConfig.ActivityPub.Enabled {
+	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
 		r.Post("/activitypub/inbox/{blog}", apHandleInbox)
 		r.Post("/activitypub/{blog}/inbox", apHandleInbox)
-		r.Get("/.well-known/webfinger", apHandleWebfinger)
+		r.With(cacheMiddleware).Get("/.well-known/webfinger", apHandleWebfinger)
 		r.With(cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
-		r.With(cacheMiddleware, minifier.Middleware).Get("/.well-known/nodeinfo", serveNodeInfoDiscover)
-		r.With(cacheMiddleware, minifier.Middleware).Get("/nodeinfo", serveNodeInfo)
+		r.With(cacheMiddleware).Get("/.well-known/nodeinfo", serveNodeInfoDiscover)
+		r.With(cacheMiddleware).Get("/nodeinfo", serveNodeInfo)
 	}
 
 	// Webmentions
 	r.Route(webmentionPath, func(webmentionRouter chi.Router) {
-		webmentionRouter.Use(middleware.NoCache)
 		webmentionRouter.Post("/", handleWebmention)
-		webmentionRouter.With(minifier.Middleware, authMiddleware).Get("/", webmentionAdmin)
-		webmentionRouter.With(minifier.Middleware, authMiddleware).Get(paginationPath, webmentionAdmin)
-		webmentionRouter.With(authMiddleware).Post("/delete", webmentionAdminDelete)
-		webmentionRouter.With(authMiddleware).Post("/approve", webmentionAdminApprove)
+		webmentionRouter.Group(func(r chi.Router) {
+			// Authenticated routes
+			r.Use(authMiddleware)
+			r.Get("/", webmentionAdmin)
+			r.Get(paginationPath, webmentionAdmin)
+			r.Post("/delete", webmentionAdminDelete)
+			r.Post("/approve", webmentionAdminApprove)
+		})
 	})
 
 	// Posts
@@ -148,39 +147,36 @@ func buildHandler() (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	var postMW []func(http.Handler) http.Handler
-	if appConfig.ActivityPub.Enabled {
-		postMW = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
-	} else {
-		postMW = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
-	}
-	for _, path := range pp {
-		if path != "" {
-			r.With(postMW...).Get(path, servePost)
+	r.Group(func(r chi.Router) {
+		r.Use(manipulateAsPath, cacheMiddleware)
+		for _, path := range pp {
+			r.Get(path, servePost)
 		}
-	}
+	})
 
 	// Drafts
 	dp, err := allPostPaths(statusDraft)
 	if err != nil {
 		return nil, err
 	}
-	for _, path := range dp {
-		if path != "" {
-			r.With(middleware.NoCache, minifier.Middleware, authMiddleware).Get(path, servePost)
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware, cacheMiddleware)
+		for _, path := range dp {
+			r.Get(path, servePost)
 		}
-	}
+	})
 
 	// Post aliases
 	allPostAliases, err := allPostAliases()
 	if err != nil {
 		return nil, err
 	}
-	for _, path := range allPostAliases {
-		if path != "" {
-			r.With(cacheMiddleware).Get(path, servePostAlias)
+	r.Group(func(r chi.Router) {
+		r.Use(cacheMiddleware)
+		for _, path := range allPostAliases {
+			r.Get(path, servePostAlias)
 		}
-	}
+	})
 
 	// Assets
 	for _, path := range allAssetPaths() {
@@ -209,60 +205,79 @@ func buildHandler() (http.Handler, error) {
 			blogPath = ""
 		}
 
-		// Indexes, Feeds
-		for _, section := range blogConfig.Sections {
-			if section.Name != "" {
-				path := blogPath + "/" + section.Name
-				handler := serveSection(blog, path, section)
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, handler)
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+feedPath, handler)
-				r.With(cacheMiddleware, minifier.Middleware).Get(path+paginationPath, handler)
-			}
-		}
+		r.Group(func(r chi.Router) {
 
+		})
+
+		// Sections
+		r.Group(func(r chi.Router) {
+			r.Use(cacheMiddleware)
+			for _, section := range blogConfig.Sections {
+				if section.Name != "" {
+					secPath := blogPath + "/" + section.Name
+					handler := serveSection(blog, secPath, section)
+					r.Get(secPath, handler)
+					r.Get(secPath+feedPath, handler)
+					r.Get(secPath+paginationPath, handler)
+				}
+			}
+		})
+
+		// Taxonomies
 		for _, taxonomy := range blogConfig.Taxonomies {
 			if taxonomy.Name != "" {
-				path := blogPath + "/" + taxonomy.Name
-				r.With(cacheMiddleware, minifier.Middleware).Get(path, serveTaxonomy(blog, taxonomy))
-				values, err := allTaxonomyValues(blog, taxonomy.Name)
+				taxPath := blogPath + "/" + taxonomy.Name
+				taxValues, err := allTaxonomyValues(blog, taxonomy.Name)
 				if err != nil {
 					return nil, err
 				}
-				for _, tv := range values {
-					vPath := path + "/" + urlize(tv)
-					handler := serveTaxonomyValue(blog, vPath, taxonomy, tv)
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath, handler)
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+feedPath, handler)
-					r.With(cacheMiddleware, minifier.Middleware).Get(vPath+paginationPath, handler)
-				}
+				r.Group(func(r chi.Router) {
+					r.Use(cacheMiddleware)
+					r.Get(taxPath, serveTaxonomy(blog, taxonomy))
+					for _, tv := range taxValues {
+						vPath := taxPath + "/" + urlize(tv)
+						handler := serveTaxonomyValue(blog, vPath, taxonomy, tv)
+						r.Get(vPath, handler)
+						r.Get(vPath+feedPath, handler)
+						r.Get(vPath+paginationPath, handler)
+					}
+				})
+
 			}
 		}
 
 		// Photos
 		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
-			photoPath := blogPath + blogConfig.Photos.Path
-			handler := servePhotos(blog, photoPath)
-			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath, handler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(photoPath+paginationPath, handler)
+			r.Group(func(r chi.Router) {
+				r.Use(cacheMiddleware)
+				photoPath := blogPath + blogConfig.Photos.Path
+				handler := servePhotos(blog, photoPath)
+				r.Get(photoPath, handler)
+				r.Get(photoPath+feedPath, handler)
+				r.Get(photoPath+paginationPath, handler)
+			})
 		}
 
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			searchPath := blogPath + blogConfig.Search.Path
-			handler := serveSearch(blog, searchPath)
-			r.With(cacheMiddleware, minifier.Middleware).Get(searchPath, handler)
-			r.With(cacheMiddleware, minifier.Middleware).Post(searchPath, handler)
-			searchResultPath := searchPath + "/" + searchPlaceholder
-			resultHandler := serveSearchResults(blog, searchResultPath)
-			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath, resultHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+feedPath, resultHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(searchResultPath+paginationPath, resultHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(cacheMiddleware)
+				searchPath := blogPath + blogConfig.Search.Path
+				handler := serveSearch(blog, searchPath)
+				r.Get(searchPath, handler)
+				r.Post(searchPath, handler)
+				searchResultPath := searchPath + "/" + searchPlaceholder
+				resultHandler := serveSearchResults(blog, searchResultPath)
+				r.Get(searchResultPath, resultHandler)
+				r.Get(searchResultPath+feedPath, resultHandler)
+				r.Get(searchResultPath+paginationPath, resultHandler)
+			})
 		}
 
 		// Stats
 		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
 			statsPath := blogPath + blogConfig.BlogStats.Path
-			r.With(cacheMiddleware, minifier.Middleware).Get(statsPath, serveBlogStats(blog, statsPath))
+			r.With(cacheMiddleware).Get(statsPath, serveBlogStats(blog, statsPath))
 		}
 
 		// Year / month archives
@@ -270,60 +285,57 @@ func buildHandler() (http.Handler, error) {
 		if err != nil {
 			return nil, err
 		}
-		for _, d := range dates {
-			// Year
-			yearPath := blogPath + "/" + fmt.Sprintf("%0004d", d.year)
-			yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
-			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath, yearHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+feedPath, yearHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(yearPath+paginationPath, yearHandler)
-			// Specific month
-			monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
-			monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
-			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath, monthHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+feedPath, monthHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(monthPath+paginationPath, monthHandler)
-			// Specific day
-			dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
-			dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
-			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath, dayHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath+feedPath, dayHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(dayPath+paginationPath, dayHandler)
-			// Generic month
-			genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
-			genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath, genericMonthHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath+feedPath, genericMonthHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthPath+paginationPath, genericMonthHandler)
-			// Specific day
-			genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
-			genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath, genericMonthDayHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
-		}
+		r.Group(func(r chi.Router) {
+			r.Use(cacheMiddleware)
+			for _, d := range dates {
+				// Year
+				yearPath := blogPath + "/" + fmt.Sprintf("%0004d", d.year)
+				yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
+				r.Get(yearPath, yearHandler)
+				r.Get(yearPath+feedPath, yearHandler)
+				r.Get(yearPath+paginationPath, yearHandler)
+				// Specific month
+				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
+				monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
+				r.Get(monthPath, monthHandler)
+				r.Get(monthPath+feedPath, monthHandler)
+				r.Get(monthPath+paginationPath, monthHandler)
+				// Specific day
+				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
+				dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
+				r.Get(dayPath, dayHandler)
+				r.Get(dayPath+feedPath, dayHandler)
+				r.Get(dayPath+paginationPath, dayHandler)
+				// Generic month
+				genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
+				genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
+				r.Get(genericMonthPath, genericMonthHandler)
+				r.Get(genericMonthPath+feedPath, genericMonthHandler)
+				r.Get(genericMonthPath+paginationPath, genericMonthHandler)
+				// Specific day
+				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
+				genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
+				r.Get(genericMonthDayPath, genericMonthDayHandler)
+				r.Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
+				r.Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
+			}
+		})
 
 		// Blog
 		if !blogConfig.PostAsHome {
-			var mw []func(http.Handler) http.Handler
-			if appConfig.ActivityPub.Enabled {
-				mw = []func(http.Handler) http.Handler{manipulateAsPath, cacheMiddleware, minifier.Middleware}
-			} else {
-				mw = []func(http.Handler) http.Handler{cacheMiddleware, minifier.Middleware}
-			}
 			handler := serveHome(blog, blogPath)
-			r.With(mw...).Get(fullBlogPath, handler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(fullBlogPath+feedPath, handler)
-			r.With(cacheMiddleware, minifier.Middleware).Get(blogPath+paginationPath, handler)
+			r.With(manipulateAsPath, cacheMiddleware).Get(fullBlogPath, handler)
+			r.With(cacheMiddleware).Get(fullBlogPath+feedPath, handler)
+			r.With(cacheMiddleware).Get(blogPath+paginationPath, handler)
 		}
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
 			handler := serveCustomPage(blogConfig, cp)
 			if cp.Cache {
-				r.With(cacheMiddleware, minifier.Middleware).Get(cp.Path, handler)
+				r.With(cacheMiddleware).Get(cp.Path, handler)
 			} else {
-				r.With(minifier.Middleware).Get(cp.Path, handler)
+				r.Get(cp.Path, handler)
 			}
 		}
 
@@ -338,7 +350,7 @@ func buildHandler() (http.Handler, error) {
 
 		// Editor
 		r.Route(blogPath+"/editor", func(mpRouter chi.Router) {
-			mpRouter.Use(middleware.NoCache, minifier.Middleware, authMiddleware)
+			mpRouter.Use(authMiddleware)
 			mpRouter.Get("/", serveEditor(blog))
 			mpRouter.Post("/", serveEditorPost(blog))
 		})
@@ -347,25 +359,28 @@ func buildHandler() (http.Handler, error) {
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
 			commentsPath := blogPath + "/comment"
 			r.Route(commentsPath, func(cr chi.Router) {
-				cr.With(cacheMiddleware, minifier.Middleware).Get("/{id:[0-9]+}", serveComment(blog))
+				cr.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment(blog))
 				cr.With(captchaMiddleware).Post("/", createComment(blog, commentsPath))
 				// Admin
-				cr.With(minifier.Middleware, authMiddleware).Get("/", commentsAdmin)
-				cr.With(authMiddleware).Post("/delete", commentsAdminDelete)
+				cr.Group(func(r chi.Router) {
+					r.Use(authMiddleware)
+					r.Get("/", commentsAdmin)
+					r.Post("/delete", commentsAdminDelete)
+				})
 			})
 		}
 	}
 
 	// Sitemap
-	r.With(cacheMiddleware, minifier.Middleware).Get(sitemapPath, serveSitemap)
+	r.With(cacheMiddleware).Get(sitemapPath, serveSitemap)
 
 	// Robots.txt - doesn't need cache, because it's too simple
 	r.Get("/robots.txt", serveRobotsTXT)
 
 	// Check redirects, then serve 404
-	r.With(cacheMiddleware, checkRegexRedirects, minifier.Middleware).NotFound(serve404)
+	r.With(cacheMiddleware, checkRegexRedirects).NotFound(serve404)
 
-	r.With(minifier.Middleware).MethodNotAllowed(func(rw http.ResponseWriter, r *http.Request) {
+	r.MethodNotAllowed(func(rw http.ResponseWriter, r *http.Request) {
 		serveError(rw, r, "", http.StatusMethodNotAllowed)
 	})
 

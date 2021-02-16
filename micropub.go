@@ -25,11 +25,12 @@ type micropubConfig struct {
 func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Query().Get("q") {
 	case "config":
-		w.Header().Add(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(&micropubConfig{
+		b, _ := json.Marshal(&micropubConfig{
 			MediaEndpoint: appConfig.Server.PublicAddress + micropubPath + micropubMediaSubPath,
 		})
+		_, _ = writeMinified(w, contentTypeJSON, b)
 	case "source":
 		var mf interface{}
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
@@ -61,9 +62,10 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			mf = list
 		}
-		w.Header().Add(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(mf)
+		b, _ := json.Marshal(mf)
+		_, _ = writeMinified(w, contentTypeJSON, b)
 	case "category":
 		allCategories := []string{}
 		for blog := range appConfig.Blogs {
@@ -74,11 +76,12 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			allCategories = append(allCategories, values...)
 		}
-		w.Header().Add(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		b, _ := json.Marshal(map[string]interface{}{
 			"categories": allCategories,
 		})
+		_, _ = writeMinified(w, contentTypeJSON, b)
 	default:
 		serve404(w, r)
 	}

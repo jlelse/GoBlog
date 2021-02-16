@@ -264,8 +264,8 @@ func render(w http.ResponseWriter, template string, data *renderData) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Set content type (needed for minification middleware
+	// Set content type
 	w.Header().Set(contentType, contentTypeHTMLUTF8)
 	// Write buffered response
-	_, _ = w.Write(buffer.Bytes())
+	_, _ = writeMinified(w, contentTypeHTML, buffer.Bytes())
 }

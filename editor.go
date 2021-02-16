@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -103,6 +103,6 @@ func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 		return
 	}
 	w.WriteHeader(result.StatusCode)
-	body, _ := ioutil.ReadAll(result.Body)
-	_, _ = w.Write(body)
+	_, _ = io.Copy(w, result.Body)
+	_ = result.Body.Close()
 }

@@ -6,24 +6,23 @@ import (
 )
 
 func serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(contentType, contentTypeJSONUTF8)
-	nid := map[string]interface{}{
+	b, _ := json.Marshal(map[string]interface{}{
 		"links": []map[string]interface{}{
 			{
 				"href": appConfig.Server.PublicAddress + "/nodeinfo",
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
 			},
 		},
-	}
-	_ = json.NewEncoder(w).Encode(&nid)
+	})
+	w.Header().Set(contentType, contentTypeJSONUTF8)
+	_, _ = writeMinified(w, contentTypeJSON, b)
 }
 
 func serveNodeInfo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(contentType, contentTypeJSONUTF8)
 	localPosts, _ := countPosts(&postsRequestConfig{
 		status: statusPublished,
 	})
-	nid := map[string]interface{}{
+	b, _ := json.Marshal(map[string]interface{}{
 		"version": "2.1",
 		"software": map[string]interface{}{
 			"name":       "goblog",
@@ -41,6 +40,7 @@ func serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 			"webmention",
 		},
 		"metadata": map[string]interface{}{},
-	}
-	_ = json.NewEncoder(w).Encode(&nid)
+	})
+	w.Header().Set(contentType, contentTypeJSONUTF8)
+	_, _ = writeMinified(w, contentTypeJSON, b)
 }

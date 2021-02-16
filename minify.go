@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io"
+
 	"github.com/tdewolff/minify/v2"
 	mCss "github.com/tdewolff/minify/v2/css"
 	mHtml "github.com/tdewolff/minify/v2/html"
@@ -17,7 +19,14 @@ func initMinify() {
 	minifier.AddFunc("text/css", mCss.Minify)
 	minifier.AddFunc("text/xml", mXml.Minify)
 	minifier.AddFunc("application/javascript", mJs.Minify)
-	minifier.AddFunc("application/rss+xml", mXml.Minify)
-	minifier.AddFunc("application/atom+xml", mXml.Minify)
-	minifier.AddFunc("application/feed+json", mJson.Minify)
+	minifier.AddFunc(contentTypeRSS, mXml.Minify)
+	minifier.AddFunc(contentTypeATOM, mXml.Minify)
+	minifier.AddFunc(contentTypeJSONFeed, mJson.Minify)
+	minifier.AddFunc(contentTypeAS, mJson.Minify)
+}
+
+func writeMinified(w io.Writer, mediatype string, b []byte) (int, error) {
+	mw := minifier.Writer(mediatype, w)
+	defer func() { mw.Close() }()
+	return mw.Write(b)
 }

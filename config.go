@@ -16,7 +16,6 @@ type config struct {
 	Blogs         map[string]*configBlog `mapstructure:"blogs"`
 	User          *configUser            `mapstructure:"user"`
 	Hooks         *configHooks           `mapstructure:"hooks"`
-	Hugo          *configHugo            `mapstructure:"hugo"`
 	Micropub      *configMicropub        `mapstructure:"micropub"`
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
@@ -151,15 +150,6 @@ type configHooks struct {
 	PostDelete []string `mapstructure:"postdelete"`
 }
 
-type configHugo struct {
-	Frontmatter []*frontmatter `mapstructure:"frontmatter"`
-}
-
-type frontmatter struct {
-	Meta      string `mapstructure:"meta"`
-	Parameter string `mapstructure:"parameter"`
-}
-
 type configMicropub struct {
 	CategoryParam         string               `mapstructure:"categoryParam"`
 	ReplyParam            string               `mapstructure:"replyParam"`
@@ -223,7 +213,6 @@ func initConfig() error {
 	viper.SetDefault("user.nick", "admin")
 	viper.SetDefault("user.password", "secret")
 	viper.SetDefault("hooks.shell", "/bin/bash")
-	viper.SetDefault("hugo.frontmatter", []*frontmatter{{Meta: "title", Parameter: "title"}, {Meta: "tags", Parameter: "tags"}})
 	viper.SetDefault("micropub.categoryParam", "tags")
 	viper.SetDefault("micropub.replyParam", "replylink")
 	viper.SetDefault("micropub.likeParam", "likelink")

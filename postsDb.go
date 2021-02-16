@@ -396,7 +396,9 @@ func allPostPaths(status postStatus) ([]string, error) {
 	for rows.Next() {
 		var path string
 		_ = rows.Scan(&path)
-		postPaths = append(postPaths, path)
+		if path != "" {
+			postPaths = append(postPaths, path)
+		}
 	}
 	return postPaths, nil
 }

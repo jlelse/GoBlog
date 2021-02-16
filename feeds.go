@@ -66,16 +66,17 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		})
 	}
 	var err error
+	var feedString, feedMediaType string
 	switch f {
 	case rssFeed:
-		w.Header().Set(contentType, "application/rss+xml; charset=utf-8")
-		err = feed.WriteRss(w)
+		feedMediaType = contentTypeRSS
+		feedString, err = feed.ToRss()
 	case atomFeed:
-		w.Header().Set(contentType, "application/atom+xml; charset=utf-8")
-		err = feed.WriteAtom(w)
+		feedMediaType = contentTypeATOM
+		feedString, err = feed.ToAtom()
 	case jsonFeed:
-		w.Header().Set(contentType, "application/feed+json; charset=utf-8")
-		err = feed.WriteJSON(w)
+		feedMediaType = contentTypeJSONFeed
+		feedString, err = feed.ToJSON()
 	default:
 		return
 	}
@@ -84,4 +85,6 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set(contentType, feedMediaType+charsetUtf8Suffix)
+	_, _ = writeMinified(w, feedMediaType, []byte(feedString))
 }

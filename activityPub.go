@@ -84,8 +84,7 @@ func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, "Blog not found", http.StatusNotFound)
 		return
 	}
-	w.Header().Set(contentType, "application/jrd+json"+charsetUtf8Suffix)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	b, _ := json.Marshal(map[string]interface{}{
 		"subject": "acct:" + name + "@" + appConfig.Server.publicHostname,
 		"links": []map[string]string{
 			{
@@ -95,6 +94,8 @@ func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	})
+	w.Header().Set(contentType, "application/jrd+json"+charsetUtf8Suffix)
+	_, _ = writeMinified(w, contentTypeJSON, b)
 }
 
 func apHandleInbox(w http.ResponseWriter, r *http.Request) {
