@@ -9,10 +9,12 @@
     {{ range $i, $comment := .Data.Comments }}
       <div class="p">
         <p>
+          ID: {{ $comment.ID }}<br/>
           Target: <a href="{{ $comment.Target }}" target="_blank">{{ $comment.Target }}</a><br/>
-          Name: {{ $comment.Name }}<br/>
-          Website: {{ $comment.Website }}<br/>
-          Comment: {{ html $comment.Comment }}
+          Name: {{ if $comment.Website }}<a href="{{ $comment.Website }}" target="_blank" rel="nofollow noopener noreferrer ugc">{{ $comment.Name }}</a>{{ else }}{{ $comment.Name }}{{ end }}
+        </p>
+        <p class="e-content">
+          {{ html $comment.Comment }}
         </p>
         <form method="post">
           <input type="hidden" name="commentid" value="{{ $comment.ID }}">

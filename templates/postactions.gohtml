@@ -1,7 +1,7 @@
 {{ define "postactions" }}
     <div class="p flex" id="post-actions">
 	<a href="https://www.addtoany.com/share#url={{ absolute .Data.Path }}{{ with title .Data }}&title={{ . }}{{ end }}" target="_blank" rel="nofollow noopener noreferrer" class="button invert">{{ string .Blog.Lang "share" }}</a>&nbsp;
-	<button id="speakBtn" class="button invert hide" data-speak="{{ string .Blog.Lang "speak" }}" data-stopspeak="{{ string .Blog.Lang "stopspeak" }}"></button>
+	<button id="speakBtn" class="invert hide" data-speak="{{ string .Blog.Lang "speak" }}" data-stopspeak="{{ string .Blog.Lang "stopspeak" }}"></button>
 	<script defer src="{{ asset "js/speak.js" }}"></script>
 </div>
 {{ end }}
