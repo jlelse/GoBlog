@@ -6,7 +6,7 @@
   <main>
     <h1>{{ string .Blog.Lang "comments" }}</h1>
     {{ $blog := .Blog }}
-    {{ range $i, $comment := .Data }}
+    {{ range $i, $comment := .Data.Comments }}
       <div class="p">
         <p>
           Target: <a href="{{ $comment.Target }}" target="_blank">{{ $comment.Target }}</a><br/>
@@ -19,6 +19,12 @@
           <input type="submit" formaction="comment/delete" value="{{ string $blog.Lang "delete" }}">
         </form>
       </div>
+    {{ end }}
+    {{ if .Data.HasPrev }}
+      <p><a href="{{ .Data.Prev }}">{{ string .Blog.Lang "prev" }}</a></p>
+    {{ end }}
+    {{ if .Data.HasNext }}
+      <p><a href="{{ .Data.Next }}">{{ string .Blog.Lang "next" }}</a></p>
     {{ end }}
   </main>
 {{ end }}

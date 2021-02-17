@@ -98,10 +98,6 @@ func (p *postPaginationAdapter) Nums() (int64, error) {
 }
 
 func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) error {
-	if reflect.TypeOf(data).Kind() != reflect.Ptr {
-		panic("data has to be a pointer")
-	}
-
 	modifiedConfig := *p.config
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length

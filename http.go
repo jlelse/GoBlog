@@ -366,7 +366,9 @@ func buildHandler() (http.Handler, error) {
 				// Admin
 				cr.Group(func(r chi.Router) {
 					r.Use(authMiddleware)
-					r.Get("/", commentsAdmin)
+					handler := commentsAdmin(blog, commentsPath)
+					r.Get("/", handler)
+					r.Get(paginationPath, handler)
 					r.Post("/delete", commentsAdminDelete)
 				})
 			})

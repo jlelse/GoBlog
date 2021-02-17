@@ -104,20 +104,24 @@ func checkCommentTarget(w http.ResponseWriter, r *http.Request) string {
 	return targetURL.Path
 }
 
-func commentsAdmin(w http.ResponseWriter, r *http.Request) {
-	comments, err := getComments()
-	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	render(w, templateCommentsAdmin, &renderData{
-		Data: comments,
-	})
+type commentsRequestConfig struct {
+	offset, limit int
 }
 
-func getComments() ([]*comment, error) {
+func buildCommentsQuery(config *commentsRequestConfig) (query string, args []interface{}) {
+	args = []interface{}{}
+	query = "select id, target, name, website, comment from comments order by id desc"
+	if config.limit != 0 || config.offset != 0 {
+		query += " limit @limit offset @offset"
+		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
+	}
+	return
+}
+
+func getComments(config *commentsRequestConfig) ([]*comment, error) {
 	comments := []*comment{}
-	rows, err := appDbQuery("select id, target, name, website, comment from comments order by id desc")
+	query, args := buildCommentsQuery(config)
+	rows, err := appDbQuery(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,19 +136,15 @@ func getComments() ([]*comment, error) {
 	return comments, nil
 }
 
-func commentsAdminDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.FormValue("commentid"))
+func countComments(config *commentsRequestConfig) (count int, err error) {
+	query, params := buildCommentsQuery(config)
+	query = "select count(*) from (" + query + ")"
+	row, err := appDbQueryRow(query, params...)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = deleteComment(id)
-	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	purgeCache()
-	http.Redirect(w, r, ".", http.StatusFound)
+	err = row.Scan(&count)
+	return
 }
 
 func deleteComment(id int) error {
