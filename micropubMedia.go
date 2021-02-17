@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -157,7 +156,7 @@ func tinify(url string, config *configMicropubMedia) (location string, err error
 	if err = s.ToFile(tmpFile.Name()); err != nil {
 		return "", err
 	}
-	fileName, err := hashFile(tmpFile.Name())
+	fileName, err := getSHA256(tmpFile)
 	if err != nil {
 		return "", err
 	}
@@ -177,8 +176,7 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 		return "", nil
 	}
 	// Compress
-	var buf bytes.Buffer
-	_ = json.NewEncoder(&buf).Encode(map[string]interface{}{
+	j, _ := json.Marshal(map[string]interface{}{
 		"key":            config.ShortPixelKey,
 		"plugin_version": "GB001",
 		"lossy":          1,
@@ -189,7 +187,7 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 		"keep_exif":      0,
 		"url":            url,
 	})
-	req, err := http.NewRequest(http.MethodPut, "https://api.shortpixel.com/v2/reducer-sync.php", &buf)
+	req, err := http.NewRequest(http.MethodPut, "https://api.shortpixel.com/v2/reducer-sync.php", bytes.NewReader(j))
 	if err != nil {
 		return "", err
 	}
@@ -203,22 +201,15 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 	if err != nil {
 		return "", err
 	}
-	tmpFileName := tmpFile.Name()
 	defer func() {
 		_ = resp.Body.Close()
 		_ = tmpFile.Close()
-		_ = os.Remove(tmpFileName)
+		_ = os.Remove(tmpFile.Name())
 	}()
 	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
 		return "", err
 	}
-	fileName, err := hashFile(tmpFileName)
-	if err != nil {
-		return "", err
-	}
-	// Reopen tmp file
-	_ = tmpFile.Close()
-	tmpFile, err = os.Open(tmpFileName)
+	fileName, err := getSHA256(tmpFile)
 	if err != nil {
 		return "", err
 	}
@@ -237,25 +228,16 @@ func compressionIsSupported(url string, allowed ...string) (string, bool) {
 	return ext, true
 }
 
-func getSHA256(file multipart.File) (filename string, err error) {
+func getSHA256(file io.ReadSeeker) (filename string, err error) {
+	if _, err = file.Seek(0, 0); err != nil {
+		return "", err
+	}
 	h := sha256.New()
 	if _, err = io.Copy(h, file); err != nil {
 		return "", err
 	}
+	if _, err = file.Seek(0, 0); err != nil {
+		return "", err
+	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
-
-func hashFile(filename string) (string, error) {
-	hashFile, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = hashFile.Close()
-	}()
-	fn, err := getSHA256(hashFile)
-	if err != nil {
-		return "", err
-	}
-	return fn, nil
 }
