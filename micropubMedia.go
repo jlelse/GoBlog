@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -147,7 +146,7 @@ func tinify(url string, config *configMicropubMedia) (location string, err error
 	}); err != nil {
 		return "", err
 	}
-	tmpFile, err := ioutil.TempFile("", "tiny-*."+fileExtension)
+	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +199,7 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 	} else if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to compress image, status code %d", resp.StatusCode)
 	}
-	tmpFile, err := ioutil.TempFile("", "tiny-*."+fileExtension)
+	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
 		return "", err
 	}

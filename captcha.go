@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -28,7 +27,7 @@ func captchaMiddleware(next http.Handler) http.Handler {
 		// 2. Show Captcha
 		w.WriteHeader(http.StatusUnauthorized)
 		h, _ := json.Marshal(r.Header.Clone())
-		b, _ := ioutil.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
+		b, _ := io.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
 		_ = r.Body.Close()
 		if len(b) == 0 {
 			// Maybe it's a form

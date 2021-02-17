@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -42,7 +41,7 @@ func initTemplateAssets() (err error) {
 }
 
 func compileAsset(name string) (string, error) {
-	originalContent, err := ioutil.ReadFile(name)
+	originalContent, err := os.ReadFile(name)
 	if err != nil {
 		return "", err
 	}

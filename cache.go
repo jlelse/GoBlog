@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -122,7 +121,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		next.ServeHTTP(recorder, r)
 		// Cache values from recorder
 		result := recorder.Result()
-		body, _ := ioutil.ReadAll(result.Body)
+		body, _ := io.ReadAll(result.Body)
 		_ = result.Body.Close()
 		eTag := result.Header.Get("ETag")
 		if eTag == "" {

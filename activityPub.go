@@ -8,10 +8,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -46,7 +46,7 @@ func initActivityPub() error {
 		p.apDelete()
 	})
 	// Read key and prepare signing
-	pkfile, err := ioutil.ReadFile(appConfig.ActivityPub.KeyPath)
+	pkfile, err := os.ReadFile(appConfig.ActivityPub.KeyPath)
 	if err != nil {
 		return err
 	}

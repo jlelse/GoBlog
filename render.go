@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -186,7 +185,7 @@ func initRendering() error {
 		},
 		"jsonFile": func(filename string) *map[string]interface{} {
 			parsed := &map[string]interface{}{}
-			content, err := ioutil.ReadFile(filename)
+			content, err := os.ReadFile(filename)
 			if err != nil {
 				return nil
 			}

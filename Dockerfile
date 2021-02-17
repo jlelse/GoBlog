@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine3.13 as build
+FROM golang:1.16-alpine3.13 as build
 RUN apk add --no-cache git gcc musl-dev sqlite-dev
 ADD *.go /app/
 ADD go.mod /app/

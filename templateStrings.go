@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -22,7 +21,7 @@ func initTemplateStrings() error {
 	}
 	for _, variant := range variants {
 		variantStrings := map[string]string{}
-		fileContent, err := ioutil.ReadFile(path.Join(stringsDir, variant+variantFileExt))
+		fileContent, err := os.ReadFile(path.Join(stringsDir, variant+variantFileExt))
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue

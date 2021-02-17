@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -130,7 +130,7 @@ func apSendSigned(blogIri, to string, activity []byte) error {
 		return err
 	}
 	if !apRequestIsSuccess(resp.StatusCode) {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
 		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
 	}
