@@ -4,7 +4,7 @@
     let speakButton = query('#speakBtn')
     let speech = window.speechSynthesis
 
-    if (getVoice()) {
+    if (speech) {
         speakButton.classList.remove('hide')
         speakButton.onclick = startSpeak
         speakButton.textContent = speakButton.dataset.speak
