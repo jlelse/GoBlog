@@ -1,37 +1,38 @@
-"use strict";
+(function () {
+    window.onbeforeunload = stopSpeak
 
-let sb = document.getElementById('speakBtn')
-let s = window.speechSynthesis
+    let speakButton = query('#speakBtn')
+    let speech = window.speechSynthesis
 
-function gv() {
-    return s ? s.getVoices().filter(voice => voice.lang.startsWith(document.querySelector('html').lang))[0] : false
-}
-
-function is() {
-    if (s) {
-        sb.classList.remove('hide')
-        sb.onclick = sp
-        sb.textContent = sb.dataset.speak
+    if (getVoice()) {
+        speakButton.classList.remove('hide')
+        speakButton.onclick = startSpeak
+        speakButton.textContent = speakButton.dataset.speak
     }
-}
 
-function sp() {
-    sb.onclick = ssp
-    sb.textContent = sb.dataset.stopspeak
-    let ut = new SpeechSynthesisUtterance(
-        ((document.querySelector('article .p-name')) ? document.querySelector('article .p-name').innerText + "\n\n" : '') + document.querySelector('article .e-content').innerText
-    )
-    ut.voice = gv()
-    ut.onerror = ssp
-    ut.onend = ssp
-    s.speak(ut)
-}
+    function query(selector) {
+        return document.querySelector(selector)
+    }
 
-function ssp() {
-    s.cancel()
-    sb.onclick = sp
-    sb.textContent = sb.dataset.speak
-}
+    function getVoice() {
+        return speech ? speech.getVoices().filter(voice => voice.lang.startsWith(query('html').lang))[0] : false
+    }
 
-window.onbeforeunload = ssp
-is()
+    function startSpeak() {
+        speakButton.onclick = stopSpeak
+        speakButton.textContent = speakButton.dataset.stopspeak
+        let ut = new SpeechSynthesisUtterance(
+            ((query('article .p-name')) ? query('article .p-name').innerText + "\n\n" : '') + query('article .e-content').innerText
+        )
+        ut.voice = getVoice()
+        ut.onerror = stopSpeak
+        ut.onend = stopSpeak
+        speech.speak(ut)
+    }
+
+    function stopSpeak() {
+        speech.cancel()
+        speakButton.onclick = startSpeak
+        speakButton.textContent = speakButton.dataset.speak
+    }
+})()
