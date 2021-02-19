@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -22,9 +21,11 @@ import (
 )
 
 var (
-	apPrivateKey    *rsa.PrivateKey
-	apPostSigner    httpsig.Signer
-	apPostSignMutex *sync.Mutex = &sync.Mutex{}
+	apPrivateKey       *rsa.PrivateKey
+	apPostSigner       httpsig.Signer
+	apPostSignMutex    *sync.Mutex = &sync.Mutex{}
+	webfingerResources map[string]*configBlog
+	webfingerAccts     map[string]string
 )
 
 func initActivityPub() error {
@@ -45,6 +46,15 @@ func initActivityPub() error {
 	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], func(p *post) {
 		p.apDelete()
 	})
+	// Prepare webfinger
+	webfingerResources = map[string]*configBlog{}
+	webfingerAccts = map[string]string{}
+	for name, blog := range appConfig.Blogs {
+		acct := "acct:" + name + "@" + appConfig.Server.publicHostname
+		webfingerResources[acct] = blog
+		webfingerResources[blog.apIri()] = blog
+		webfingerAccts[blog.apIri()] = acct
+	}
 	// Read key and prepare signing
 	pkfile, err := os.ReadFile(appConfig.ActivityPub.KeyPath)
 	if err != nil {
@@ -73,23 +83,26 @@ func initActivityPub() error {
 }
 
 func apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
-	re, err := regexp.Compile(`^acct:(.*)@` + regexp.QuoteMeta(appConfig.Server.publicHostname) + `$`)
-	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	name := re.ReplaceAllString(r.URL.Query().Get("resource"), "$1")
-	blog := appConfig.Blogs[name]
-	if blog == nil {
-		serveError(w, r, "Blog not found", http.StatusNotFound)
+	blog, ok := webfingerResources[r.URL.Query().Get("resource")]
+	if !ok {
+		serveError(w, r, "Resource not found", http.StatusNotFound)
 		return
 	}
 	b, _ := json.Marshal(map[string]interface{}{
-		"subject": "acct:" + name + "@" + appConfig.Server.publicHostname,
+		"subject": webfingerAccts[blog.apIri()],
+		"aliases": []string{
+			webfingerAccts[blog.apIri()],
+			blog.apIri(),
+		},
 		"links": []map[string]string{
 			{
 				"rel":  "self",
 				"type": contentTypeAS,
+				"href": blog.apIri(),
+			},
+			{
+				"rel":  "http://webfinger.net/rel/profile-page",
+				"type": "text/html",
 				"href": blog.apIri(),
 			},
 		},
