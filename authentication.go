@@ -121,8 +121,8 @@ func createTokenCookie(username string) (*http.Cookie, error) {
 		Name:     "token",
 		Value:    tokenString,
 		Expires:  expiration,
-		Secure:   true,
+		Secure:   httpsConfigured(),
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}, nil
 }

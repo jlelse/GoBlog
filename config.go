@@ -260,3 +260,7 @@ func initConfig() error {
 	}
 	return nil
 }
+
+func httpsConfigured() bool {
+	return appConfig.Server.PublicHTTPS || appConfig.Server.SecurityHeaders || strings.HasPrefix(appConfig.Server.PublicAddress, "https")
+}

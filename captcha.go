@@ -105,8 +105,8 @@ func createCaptchaCookie() (*http.Cookie, error) {
 		Name:     "captcha",
 		Value:    tokenString,
 		Expires:  expiration,
-		Secure:   true,
+		Secure:   httpsConfigured(),
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}, nil
 }
