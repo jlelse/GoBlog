@@ -21,7 +21,7 @@ func serveSearch(blog string, servePath string) func(w http.ResponseWriter, r *h
 			http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
 			return
 		}
-		render(w, templateSearch, &renderData{
+		render(w, r, templateSearch, &renderData{
 			BlogString: blog,
 			Canonical:  appConfig.Server.PublicAddress + servePath,
 		})

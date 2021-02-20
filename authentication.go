@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -25,20 +26,20 @@ func jwtKey() []byte {
 
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if already logged in
+		if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+			next.ServeHTTP(w, r)
+			return
+		}
 		// 1. Check BasicAuth
 		if username, password, ok := r.BasicAuth(); ok && checkCredentials(username, password) {
 			next.ServeHTTP(w, r)
 			return
 		}
 		// 2. Check JWT
-		if tokenCookie, err := r.Cookie("token"); err == nil {
-			claims := &authClaims{}
-			if tkn, err := jwt.ParseWithClaims(tokenCookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
-				return jwtKey(), nil
-			}); err == nil && tkn.Valid && claims.TokenType == "login" && checkUsername(claims.Username) {
-				next.ServeHTTP(w, r)
-				return
-			}
+		if checkAuthToken(r) {
+			next.ServeHTTP(w, r)
+			return
 		}
 		// 3. Show login form
 		w.WriteHeader(http.StatusUnauthorized)
@@ -50,13 +51,39 @@ func authMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		render(w, templateLogin, &renderData{
+		render(w, r, templateLogin, &renderData{
 			Data: map[string]string{
 				"loginmethod":  r.Method,
 				"loginheaders": base64.StdEncoding.EncodeToString(h),
 				"loginbody":    base64.StdEncoding.EncodeToString(b),
 			},
 		})
+	})
+}
+
+func checkAuthToken(r *http.Request) bool {
+	if tokenCookie, err := r.Cookie("token"); err == nil {
+		claims := &authClaims{}
+		if tkn, err := jwt.ParseWithClaims(tokenCookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
+			return jwtKey(), nil
+		}); err == nil && tkn.Valid &&
+			claims.TokenType == "login" &&
+			checkUsername(claims.Username) {
+			return true
+		}
+	}
+	return false
+}
+
+const loggedInKey requestContextKey = "loggedIn"
+
+func checkLoggedIn(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if checkAuthToken(r) {
+			next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), loggedInKey, true)))
+			return
+		}
+		next.ServeHTTP(rw, r)
 	})
 }
 

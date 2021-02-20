@@ -67,7 +67,7 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	nextPath = fmt.Sprintf("%s/page/%d", webmentionPath, nextPage)
 	// Render
-	render(w, "webmentionadmin", &renderData{
+	render(w, r, templateWebmentionAdmin, &renderData{
 		Data: map[string]interface{}{
 			"Mentions": mentions,
 			"HasPrev":  hasPrev,

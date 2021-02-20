@@ -11,9 +11,9 @@ import (
 
 const editorPath = "/editor"
 
-func serveEditor(blog string) func(w http.ResponseWriter, _ *http.Request) {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		render(w, templateEditor, &renderData{
+func serveEditor(blog string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, templateEditor, &renderData{
 			BlogString: blog,
 			Data: map[string]interface{}{
 				"Drafts": loadDrafts(blog),
@@ -38,7 +38,7 @@ func serveEditorPost(blog string) func(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				mf := post.toMfItem()
-				render(w, templateEditor, &renderData{
+				render(w, r, templateEditor, &renderData{
 					BlogString: blog,
 					Data: map[string]interface{}{
 						"UpdatePostURL":     parsedURL.String(),

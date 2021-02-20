@@ -31,43 +31,52 @@ func initCache() (err error) {
 
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if appConfig.Cache.Enable &&
-			// check method
-			(r.Method == http.MethodGet || r.Method == http.MethodHead) &&
-			// check bypass query
-			!(r.URL.Query().Get("cache") == "0" || r.URL.Query().Get("cache") == "false") {
-			key := cacheKey(r)
-			// Get cache or render it
-			cacheInterface, _, _ := cacheGroup.Do(key, func() (interface{}, error) {
-				return getCache(key, next, r), nil
-			})
-			cache := cacheInterface.(*cacheItem)
-			// copy cached headers
-			for k, v := range cache.header {
-				w.Header()[k] = v
-			}
-			setCacheHeaders(w, cache)
-			// check conditional request
-			if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.eTag {
+		// Do checks
+		if !appConfig.Cache.Enable {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !(r.Method == http.MethodGet || r.Method == http.MethodHead) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Query().Get("cache") == "0" || r.URL.Query().Get("cache") == "false" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Search and serve cache
+		key := cacheKey(r)
+		// Get cache or render it
+		cacheInterface, _, _ := cacheGroup.Do(key, func() (interface{}, error) {
+			return getCache(key, next, r), nil
+		})
+		cache := cacheInterface.(*cacheItem)
+		// copy cached headers
+		for k, v := range cache.header {
+			w.Header()[k] = v
+		}
+		setCacheHeaders(w, cache)
+		// check conditional request
+		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.eTag {
+			// send 304
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
+			if t, err := dateparse.ParseAny(ifModifiedSinceHeader); err == nil && t.After(cache.creationTime) {
 				// send 304
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
-			if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
-				t, err := dateparse.ParseAny(ifModifiedSinceHeader)
-				if err == nil && t.After(cache.creationTime) {
-					// send 304
-					w.WriteHeader(http.StatusNotModified)
-					return
-				}
-			}
-			// set status code
-			w.WriteHeader(cache.code)
-			// write cached body
-			_, _ = w.Write(cache.body)
-			return
 		}
-		next.ServeHTTP(w, r)
+		// set status code
+		w.WriteHeader(cache.code)
+		// write cached body
+		_, _ = w.Write(cache.body)
 	})
 }
 

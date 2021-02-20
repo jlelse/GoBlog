@@ -41,7 +41,7 @@ func serveComment(blog string) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		w.Header().Set("X-Robots-Tag", "noindex")
-		render(w, templateComment, &renderData{
+		render(w, r, templateComment, &renderData{
 			BlogString: blog,
 			Canonical:  appConfig.Server.PublicAddress + appConfig.Blogs[blog].getRelativePath(fmt.Sprintf("/comment/%d", id)),
 			Data:       comment,

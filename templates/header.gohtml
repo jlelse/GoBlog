@@ -4,8 +4,16 @@
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
       <nav>
         {{ with menu .Blog "main" }}
-            {{ range $i, $item := .Items }}{{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>{{ end }}
+          {{ range $i, $item := .Items }}{{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>{{ end }}
         {{ end }}
       </nav>
+      {{ if .LoggedIn }}
+        <nav>
+          <a href="{{ blogrelative .Blog "/editor" }}">{{ string .Blog.Lang "editor" }}</a>
+          &bull; <a href="/notifications">{{ string .Blog.Lang "notifications" }}</a>
+          &bull; <a href="/webmention">{{ string .Blog.Lang "webmentions" }}</a>
+          &bull; <a href="{{ blogrelative .Blog "/comment" }}">{{ string .Blog.Lang "comments" }}</a>
+        </nav>
+      {{ end }}
   </header>
 {{ end }}

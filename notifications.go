@@ -144,7 +144,7 @@ func notificationsAdmin(notificationPath string) func(http.ResponseWriter, *http
 		}
 		nextPath = fmt.Sprintf("%s/page/%d", notificationPath, nextPage)
 		// Render
-		render(w, templateNotificationsAdmin, &renderData{
+		render(w, r, templateNotificationsAdmin, &renderData{
 			Data: map[string]interface{}{
 				"Notifications": notifications,
 				"HasPrev":       hasPrev,

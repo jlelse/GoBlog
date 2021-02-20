@@ -33,7 +33,7 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) 
 	return err
 }
 
-func commentsAdmin(blog, commentPath string) func(w http.ResponseWriter, r *http.Request) {
+func commentsAdmin(blog, commentPath string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Adapter
 		pageNoString := chi.URLParam(r, "page")
@@ -69,7 +69,7 @@ func commentsAdmin(blog, commentPath string) func(w http.ResponseWriter, r *http
 		}
 		nextPath = fmt.Sprintf("%s/page/%d", commentPath, nextPage)
 		// Render
-		render(w, templateCommentsAdmin, &renderData{
+		render(w, r, templateCommentsAdmin, &renderData{
 			BlogString: blog,
 			Data: map[string]interface{}{
 				"Comments": comments,

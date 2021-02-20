@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func serveBlogStats(blog, statsPath string) func(w http.ResponseWriter, r *http.Request) {
+func serveBlogStats(blog, statsPath string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Build query
 		query, params := buildPostsQuery(&postsRequestConfig{
@@ -36,7 +36,7 @@ func serveBlogStats(blog, statsPath string) func(w http.ResponseWriter, r *http.
 				counts = append(counts, count)
 			}
 		}
-		render(w, templateBlogStats, &renderData{
+		render(w, r, templateBlogStats, &renderData{
 			BlogString: blog,
 			Canonical:  statsPath,
 			Data: map[string]interface{}{

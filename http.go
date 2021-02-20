@@ -98,6 +98,7 @@ func buildHandler() (http.Handler, error) {
 	}
 	r.Use(checkIsLogin)
 	r.Use(checkIsCaptcha)
+	r.Use(checkLoggedIn)
 
 	// Profiler
 	if appConfig.Server.Debug {

@@ -34,7 +34,7 @@ func captchaMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		render(w, templateCaptcha, &renderData{
+		render(w, r, templateCaptcha, &renderData{
 			Data: map[string]string{
 				"captchamethod":  r.Method,
 				"captchaheaders": base64.StdEncoding.EncodeToString(h),

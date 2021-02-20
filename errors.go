@@ -24,7 +24,7 @@ func serveError(w http.ResponseWriter, r *http.Request, message string, status i
 	if message == "" {
 		message = http.StatusText(status)
 	}
-	render(w, templateError, &renderData{
+	render(w, r, templateError, &renderData{
 		Data: &errorData{
 			Title:   title,
 			Message: message,

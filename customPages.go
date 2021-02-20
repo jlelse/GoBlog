@@ -2,8 +2,8 @@ package main
 
 import "net/http"
 
-func serveCustomPage(blog *configBlog, page *customPage) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, _ *http.Request) {
+func serveCustomPage(blog *configBlog, page *customPage) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if appConfig.Cache != nil && appConfig.Cache.Enable && page.Cache {
 			if page.CacheExpiration != 0 {
 				setInternalCacheExpirationHeader(w, page.CacheExpiration)
@@ -11,7 +11,7 @@ func serveCustomPage(blog *configBlog, page *customPage) func(w http.ResponseWri
 				setInternalCacheExpirationHeader(w, int(appConfig.Cache.Expiration))
 			}
 		}
-		render(w, page.Template, &renderData{
+		render(w, r, page.Template, &renderData{
 			Blog:      blog,
 			Canonical: appConfig.Server.PublicAddress + page.Path,
 			Data:      page.Data,

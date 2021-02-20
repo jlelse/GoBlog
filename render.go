@@ -39,6 +39,7 @@ const (
 	templateCaptcha            = "captcha"
 	templateCommentsAdmin      = "commentsadmin"
 	templateNotificationsAdmin = "notificationsadmin"
+	templateWebmentionAdmin    = "webmentionadmin"
 )
 
 var templates map[string]*template.Template
@@ -238,9 +239,10 @@ type renderData struct {
 	Canonical  string
 	Blog       *configBlog
 	Data       interface{}
+	LoggedIn   bool
 }
 
-func render(w http.ResponseWriter, template string, data *renderData) {
+func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
 	// Check render data
 	if data.Blog == nil {
 		if len(data.BlogString) == 0 {
@@ -259,15 +261,20 @@ func render(w http.ResponseWriter, template string, data *renderData) {
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}
 	}
-	// We need to use a buffer here to enable minification
-	var buffer bytes.Buffer
-	err := templates[template].ExecuteTemplate(&buffer, template, data)
+	// Check login
+	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		data.LoggedIn = true
+	}
+	// Minify and write response
+	mw := minifier.Writer(contentTypeHTML, w)
+	defer func() {
+		_ = mw.Close()
+	}()
+	err := templates[template].ExecuteTemplate(mw, template, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Set content type
 	w.Header().Set(contentType, contentTypeHTMLUTF8)
-	// Write buffered response
-	_, _ = writeMinified(w, contentTypeHTML, buffer.Bytes())
 }

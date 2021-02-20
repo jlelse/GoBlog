@@ -53,7 +53,7 @@ func indieAuthRequest(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, "state must not be empty", http.StatusBadRequest)
 		return
 	}
-	render(w, "indieauth", &renderData{
+	render(w, r, "indieauth", &renderData{
 		Data: data,
 	})
 }
