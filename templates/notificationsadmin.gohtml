@@ -1,0 +1,26 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "notifications" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    <h1>{{ string .Blog.Lang "notifications" }}</h1>
+    {{ range $i, $notification := .Data.Notifications }}
+      <p>
+        ID: {{ $notification.ID }}<br/>
+        Time: {{ unixtodate $notification.Time }}<br/>
+        Text: {{ $notification.Text }}
+      </p>
+    {{ end }}
+    {{ if .Data.HasPrev }}
+      <p><a href="{{ .Data.Prev }}">{{ string .Blog.Lang "prev" }}</a></p>
+    {{ end }}
+    {{ if .Data.HasNext }}
+      <p><a href="{{ .Data.Next }}">{{ string .Blog.Lang "next" }}</a></p>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "notificationsadmin" }}
+    {{ template "base" . }}
+{{ end }}

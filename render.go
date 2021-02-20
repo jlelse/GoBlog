@@ -19,24 +19,27 @@ import (
 	"github.com/goodsign/monday"
 )
 
-const templatesDir = "templates"
-const templatesExt = ".gohtml"
+const (
+	templatesDir = "templates"
+	templatesExt = ".gohtml"
 
-const templateBase = "base"
-const templatePost = "post"
-const templateError = "error"
-const templateIndex = "index"
-const templateTaxonomy = "taxonomy"
-const templateSearch = "search"
-const templateSummary = "summary"
-const templatePhotosSummary = "photosummary"
-const templateEditor = "editor"
-const templateLogin = "login"
-const templateStaticHome = "statichome"
-const templateBlogStats = "blogstats"
-const templateComment = "comment"
-const templateCaptcha = "captcha"
-const templateCommentsAdmin = "commentsadmin"
+	templateBase               = "base"
+	templatePost               = "post"
+	templateError              = "error"
+	templateIndex              = "index"
+	templateTaxonomy           = "taxonomy"
+	templateSearch             = "search"
+	templateSummary            = "summary"
+	templatePhotosSummary      = "photosummary"
+	templateEditor             = "editor"
+	templateLogin              = "login"
+	templateStaticHome         = "statichome"
+	templateBlogStats          = "blogstats"
+	templateComment            = "comment"
+	templateCaptcha            = "captcha"
+	templateCommentsAdmin      = "commentsadmin"
+	templateNotificationsAdmin = "notificationsadmin"
+)
 
 var templates map[string]*template.Template
 var templateFunctions template.FuncMap

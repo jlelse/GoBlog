@@ -144,6 +144,15 @@ func buildHandler() (http.Handler, error) {
 		})
 	})
 
+	// Notifications
+	notificationsPath := "/notifications"
+	r.Route(notificationsPath, func(r chi.Router) {
+		r.Use(authMiddleware)
+		handler := notificationsAdmin(notificationsPath)
+		r.Get("/", handler)
+		r.Get(paginationPath, handler)
+	})
+
 	// Posts
 	pp, err := allPostPaths(statusPublished)
 	if err != nil {

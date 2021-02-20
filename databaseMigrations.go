@@ -130,6 +130,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00011",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create table notifications (id integer primary key autoincrement, time integer not null, text text not null);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

@@ -13,7 +13,7 @@
           Target: <a href="{{ $comment.Target }}" target="_blank">{{ $comment.Target }}</a><br/>
           Name: {{ if $comment.Website }}<a href="{{ $comment.Website }}" target="_blank" rel="nofollow noopener noreferrer ugc">{{ $comment.Name }}</a>{{ else }}{{ $comment.Name }}{{ end }}
         </p>
-        <p class="e-content">
+        <p>
           {{ html $comment.Comment }}
         </p>
         <form method="post">
