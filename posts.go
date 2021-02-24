@@ -41,10 +41,6 @@ const (
 )
 
 func servePost(w http.ResponseWriter, r *http.Request) {
-	as := strings.HasSuffix(r.URL.Path, ".as")
-	if as {
-		r.URL.Path = strings.TrimSuffix(r.URL.Path, ".as")
-	}
 	p, err := getPost(r.URL.Path)
 	if err == errPostNotFound {
 		serve404(w, r)
@@ -53,7 +49,7 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if as {
+	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		p.serveActivityStreams(w)
 		return
 	}
@@ -109,8 +105,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 
 func serveHome(blog string, path string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		as := strings.HasSuffix(r.URL.Path, ".as")
-		if as {
+		if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 			appConfig.Blogs[blog].serveActivityStreams(blog, w, r)
 			return
 		}

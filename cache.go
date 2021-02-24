@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -81,7 +83,23 @@ func cacheMiddleware(next http.Handler) http.Handler {
 }
 
 func cacheKey(r *http.Request) string {
-	return r.URL.String()
+	def := cacheURLString(r.URL)
+	// Special cases
+	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
+		return "as-" + def
+	}
+	// Default
+	return def
+}
+
+func cacheURLString(u *url.URL) string {
+	var buf strings.Builder
+	_, _ = buf.WriteString(u.EscapedPath())
+	if u.RawQuery != "" {
+		_ = buf.WriteByte('?')
+		_, _ = buf.WriteString(u.RawQuery)
+	}
+	return buf.String()
 }
 
 func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {

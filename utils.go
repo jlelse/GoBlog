@@ -16,15 +16,15 @@ import (
 type requestContextKey string
 
 func urlize(str string) string {
-	newStr := ""
-	for _, c := range strings.Split(strings.ToLower(str), "") {
-		if c >= "a" && c <= "z" || c >= "A" && c <= "Z" || c >= "0" && c <= "9" {
-			newStr += c
-		} else if c == " " {
-			newStr += "-"
+	var sb strings.Builder
+	for _, c := range strings.ToLower(str) {
+		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
+			_, _ = sb.WriteRune(c)
+		} else if c == ' ' {
+			_, _ = sb.WriteRune('-')
 		}
 	}
-	return newStr
+	return sb.String()
 }
 
 func sortedStrings(s []string) []string {
@@ -105,11 +105,10 @@ func resolveURLReferences(base string, refs ...string) ([]string, error) {
 }
 
 func unescapedPath(p string) string {
-	u, err := url.PathUnescape(p)
-	if err != nil {
-		return p
+	if u, err := url.PathUnescape(p); err == nil {
+		return u
 	}
-	return u
+	return p
 }
 
 func slashIfEmpty(s string) string {

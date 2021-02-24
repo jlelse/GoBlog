@@ -96,36 +96,40 @@ func checkIsLogin(next http.Handler) http.Handler {
 }
 
 func checkLogin(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodPost &&
-		r.Header.Get(contentType) == contentTypeWWWForm &&
-		r.FormValue("loginaction") == "login" {
-		// Do original request
-		loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
-		req, _ := http.NewRequest(r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
-		// Copy original headers
-		loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
-		var headers http.Header
-		_ = json.Unmarshal(loginheaders, &headers)
-		for k, v := range headers {
-			req.Header[k] = v
-		}
-		// Check credential
-		if checkCredentials(r.FormValue("username"), r.FormValue("password")) {
-			tokenCookie, err := createTokenCookie(r.FormValue("username"))
-			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return true
-			}
-			// Add cookie to original request
-			req.AddCookie(tokenCookie)
-			// Send cookie
-			http.SetCookie(w, tokenCookie)
-		}
-		// Serve original request
-		d.ServeHTTP(w, req)
-		return true
+	if r.Method != http.MethodPost {
+		return false
 	}
-	return false
+	if r.Header.Get(contentType) != contentTypeWWWForm {
+		return false
+	}
+	if r.FormValue("loginaction") != "login" {
+		return false
+	}
+	// Do original request
+	loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
+	req, _ := http.NewRequest(r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
+	// Copy original headers
+	loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
+	var headers http.Header
+	_ = json.Unmarshal(loginheaders, &headers)
+	for k, v := range headers {
+		req.Header[k] = v
+	}
+	// Check credential
+	if checkCredentials(r.FormValue("username"), r.FormValue("password")) {
+		tokenCookie, err := createTokenCookie(r.FormValue("username"))
+		if err != nil {
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return true
+		}
+		// Add cookie to original request
+		req.AddCookie(tokenCookie)
+		// Send cookie
+		http.SetCookie(w, tokenCookie)
+	}
+	// Serve original request
+	d.ServeHTTP(w, req)
+	return true
 }
 
 type authClaims struct {

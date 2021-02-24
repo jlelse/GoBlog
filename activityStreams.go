@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -12,12 +13,14 @@ import (
 
 var asContext = []string{"https://www.w3.org/ns/activitystreams"}
 
+const asRequestKey requestContextKey = "asRequest"
+
 func manipulateAsPath(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
 			if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, contentTypeAS) || strings.Contains(lowerAccept, "application/ld+json")) && !strings.Contains(lowerAccept, contentTypeHTML) {
-				// Is ActivityStream, add ".as" to differentiate cache and also trigger as function
-				r.URL.Path += ".as"
+				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
+				return
 			}
 		}
 		next.ServeHTTP(rw, r)
