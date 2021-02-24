@@ -100,6 +100,10 @@ func buildHandler() (http.Handler, error) {
 	r.Use(checkIsCaptcha)
 	r.Use(checkLoggedIn)
 
+	// Logout
+	r.With(authMiddleware).Get("/login", serveLogin)
+	r.With(authMiddleware).Get("/logout", serveLogout)
+
 	// Micropub
 	r.Route(micropubPath, func(mpRouter chi.Router) {
 		mpRouter.Use(checkIndieAuth)

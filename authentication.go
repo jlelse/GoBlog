@@ -157,3 +157,19 @@ func createTokenCookie(username string) (*http.Cookie, error) {
 		SameSite: http.SameSiteLaxMode,
 	}, nil
 }
+
+// Need to set auth middleware!
+func serveLogin(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func serveLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		MaxAge:   -1,
+		Secure:   httpsConfigured(),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.Redirect(w, r, "/", http.StatusFound)
+}
