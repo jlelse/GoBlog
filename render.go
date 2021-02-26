@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/goodsign/monday"
 )
 
 const (
@@ -93,20 +92,9 @@ func initRendering() error {
 			return p.shortURL()
 		},
 		// Others
-		"dateformat": func(date string, format string) string {
-			d, err := dateparse.ParseLocal(date)
-			if err != nil {
-				return ""
-			}
-			return d.Local().Format(format)
-		},
-		"longdate": func(date string, localeString string) string {
-			d, err := dateparse.ParseLocal(date)
-			if err != nil {
-				return ""
-			}
-			ml := monday.Locale(localeString)
-			return monday.Format(d.Local(), monday.LongFormatsByLocale[ml], ml)
+		"dateformat": dateFormat,
+		"isodate": func(date string) string {
+			return dateFormat(date, "2006-01-02")
 		},
 		"unixtodate": func(unix int64) string {
 			return time.Unix(unix, 0).Local().String()

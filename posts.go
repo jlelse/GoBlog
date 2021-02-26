@@ -8,10 +8,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/goodsign/monday"
 	"github.com/vcraescu/go-paginator"
 )
 
@@ -152,28 +150,19 @@ func serveSearchResults(blog string, path string) func(w http.ResponseWriter, r 
 }
 
 func serveDate(blog string, path string, year, month, day int) func(w http.ResponseWriter, r *http.Request) {
-	var title string
-	// Specific
-	if year != 0 && month == 0 && day == 0 {
-		title = fmt.Sprintf("%0004d", year)
-	} else if year != 0 && month != 0 && day == 0 {
-		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
-		date := time.Date(year, time.Month(month), 1, 1, 0, 0, 0, time.Local)
-		title = monday.Format(date, "January 2006", ml)
-	} else if year != 0 && month != 0 && day != 0 {
-		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
-		date := time.Date(year, time.Month(month), day, 1, 0, 0, 0, time.Local)
-		title = monday.Format(date, "January 2, 2006", ml)
-	} else
-	// Generic
-	if year == 0 && month != 0 && day == 0 {
-		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
-		date := time.Date(0, time.Month(month), 1, 1, 0, 0, 0, time.Local)
-		title = monday.Format(date, "January", ml)
-	} else if year == 0 && month != 0 && day != 0 {
-		ml := monday.Locale(appConfig.Blogs[blog].TimeLang)
-		date := time.Date(0, time.Month(month), day, 1, 0, 0, 0, time.Local)
-		title = monday.Format(date, "January 2", ml)
+	var title strings.Builder
+	if year != 0 {
+		title.WriteString(fmt.Sprintf("%0004d", year))
+	} else {
+		title.WriteString("XXXX")
+	}
+	if month != 0 {
+		title.WriteString(fmt.Sprintf("-%02d", month))
+	} else if day != 0 {
+		title.WriteString("-XX")
+	}
+	if day != 0 {
+		title.WriteString(fmt.Sprintf("-%02d", day))
 	}
 	return serveIndex(&indexConfig{
 		blog:  blog,
@@ -181,7 +170,7 @@ func serveDate(blog string, path string, year, month, day int) func(w http.Respo
 		year:  year,
 		month: month,
 		day:   day,
-		title: title,
+		title: title.String(),
 	})
 }
 

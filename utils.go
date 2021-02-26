@@ -157,3 +157,11 @@ func toLocal(s string) (string, error) {
 	}
 	return d.Local().String(), nil
 }
+
+func dateFormat(date string, format string) string {
+	d, err := dateparse.ParseLocal(date)
+	if err != nil {
+		return ""
+	}
+	return d.Local().Format(format)
+}

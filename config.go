@@ -49,7 +49,6 @@ type configCache struct {
 type configBlog struct {
 	Path           string              `mapstructure:"path"`
 	Lang           string              `mapstructure:"lang"`
-	TimeLang       string              `mapstructure:"timelang"`
 	Title          string              `mapstructure:"title"`
 	Description    string              `mapstructure:"description"`
 	Pagination     int                 `mapstructure:"pagination"`
