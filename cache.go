@@ -178,7 +178,9 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 			body:         body,
 		}
 		// Save cache
-		cacheLru.Add(key, item)
+		if cch := item.header.Get("Cache-Control"); !strings.Contains(cch, "no-store") && !strings.Contains(cch, "private") && !strings.Contains(cch, "no-cache") {
+			cacheLru.Add(key, item)
+		}
 	}
 	return item
 }
