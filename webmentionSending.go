@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/thoas/go-funk"
 	"github.com/tomnomnom/linkheader"
 )
 
@@ -19,16 +20,22 @@ func (p *post) sendWebmentions() error {
 		return err
 	}
 	links = append(links, contentLinks...)
-	links = append(links, p.firstParameter(appConfig.Micropub.LikeParam), p.firstParameter(appConfig.Micropub.ReplyParam), p.firstParameter(appConfig.Micropub.BookmarkParam))
-	for _, link := range links {
+	links = append(links, p.firstParameter("link"), p.firstParameter(appConfig.Micropub.LikeParam), p.firstParameter(appConfig.Micropub.ReplyParam), p.firstParameter(appConfig.Micropub.BookmarkParam))
+	for _, link := range funk.UniqString(links) {
 		if link == "" {
 			continue
 		}
+		// Internal mention
 		if strings.HasPrefix(link, appConfig.Server.PublicAddress) {
 			// Save mention directly
 			if err := createWebmention(p.fullURL(), link); err != nil {
 				log.Println("Failed to create webmention:", err.Error())
 			}
+			continue
+		}
+		// External mention
+		if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
+			// Private mode, don't send external mentions
 			continue
 		}
 		endpoint := discoverEndpoint(link)

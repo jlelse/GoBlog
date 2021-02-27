@@ -20,6 +20,7 @@ type config struct {
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
 	Notifications *configNotifications   `mapstructure:"notifications"`
+	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
 }
 
 type configServer struct {
@@ -190,6 +191,10 @@ type configTelegram struct {
 	InstantViewHash string `mapstructure:"instantViewHash"`
 }
 
+type configPrivateMode struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
 var appConfig = &config{}
 
 func initConfig() error {
@@ -254,6 +259,9 @@ func initConfig() error {
 			appConfig.Micropub.MediaStorage.BunnyStorageName = ""
 		}
 		appConfig.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(appConfig.Micropub.MediaStorage.MediaURL, "/")
+	}
+	if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
+		appConfig.ActivityPub = &configActivityPub{Enabled: false}
 	}
 	return nil
 }

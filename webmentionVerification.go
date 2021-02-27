@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joncrlsn/dque"
@@ -73,6 +74,10 @@ func (m *mention) verifyMention() error {
 		return err
 	}
 	req.Header.Set(userAgent, appUserAgent)
+	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
+		// Set authentication
+		req.SetBasicAuth(appConfig.User.Nick, appConfig.User.Password)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
