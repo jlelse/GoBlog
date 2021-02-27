@@ -27,10 +27,12 @@ func sendNotification(text string) {
 	if err := saveNotification(n); err != nil {
 		log.Println("Failed to save notification:", err.Error())
 	}
-	if appConfig.Notifications.Telegram.Enabled {
-		err := sendTelegramMessage(n.Text, "", appConfig.Notifications.Telegram.BotToken, appConfig.Notifications.Telegram.ChatID)
-		if err != nil {
-			log.Println("Failed to send Telegram notification:", err.Error())
+	if an := appConfig.Notifications; an != nil {
+		if tg := an.Telegram; tg != nil && tg.Enabled {
+			err := sendTelegramMessage(n.Text, "", tg.BotToken, tg.ChatID)
+			if err != nil {
+				log.Println("Failed to send Telegram notification:", err.Error())
+			}
 		}
 	}
 }
