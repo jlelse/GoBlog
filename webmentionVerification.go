@@ -76,7 +76,8 @@ func (m *mention) verifyMention() error {
 	req.Header.Set(userAgent, appUserAgent)
 	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
 		// Set authentication
-		req.SetBasicAuth(appConfig.User.Nick, appConfig.User.Password)
+		c, _ := createTokenCookie()
+		req.AddCookie(c)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

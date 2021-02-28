@@ -10,8 +10,11 @@
       <input type="hidden" name="loginmethod" value="{{ .Data.loginmethod }}">
       <input type="hidden" name="loginheaders" value="{{ .Data.loginheaders }}">
       <input type="hidden" name="loginbody" value="{{ .Data.loginbody }}">
-      <input type="text" name="username" placeholder="{{ string .Blog.Lang "username" }}">
-      <input type="password" name="password" placeholder="{{ string .Blog.Lang "password" }}">
+      <input type="text" name="username" autocomplete="username" placeholder="{{ string .Blog.Lang "username" }}">
+      <input type="password" name="password" autocomplete="current-password" placeholder="{{ string .Blog.Lang "password" }}">
+      {{ if .Data.totp }}
+        <input type="text" name="token" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="{{ string .Blog.Lang "totp" }}">
+      {{ end }}
       <input class="fw" type="submit" value="{{ string .Blog.Lang "login" }}">
     </form>
     {{ include "author" . }}

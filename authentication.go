@@ -10,14 +10,26 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/pquerna/otp/totp"
 )
 
-func checkCredentials(username, password string) bool {
-	return username == appConfig.User.Nick && password == appConfig.User.Password
+func checkCredentials(username, password, totpPasscode string) bool {
+	return username == appConfig.User.Nick &&
+		password == appConfig.User.Password &&
+		(appConfig.User.TOTP == "" || totp.Validate(totpPasscode, appConfig.User.TOTP))
 }
 
-func checkUsername(username string) bool {
-	return username == appConfig.User.Nick
+func checkUsernameTOTP(username string, totp bool) bool {
+	return username == appConfig.User.Nick && totp == (appConfig.User.TOTP != "")
+}
+
+func checkAppPasswords(username, password string) bool {
+	for _, apw := range appConfig.User.AppPasswords {
+		if apw.Username == username && apw.Password == password {
+			return true
+		}
+	}
+	return false
 }
 
 func jwtKey() []byte {
@@ -31,8 +43,8 @@ func authMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// 1. Check BasicAuth
-		if username, password, ok := r.BasicAuth(); ok && checkCredentials(username, password) {
+		// 1. Check BasicAuth (just for app passwords)
+		if username, password, ok := r.BasicAuth(); ok && checkAppPasswords(username, password) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -52,10 +64,11 @@ func authMiddleware(next http.Handler) http.Handler {
 			b = []byte(r.PostForm.Encode())
 		}
 		render(w, r, templateLogin, &renderData{
-			Data: map[string]string{
+			Data: map[string]interface{}{
 				"loginmethod":  r.Method,
 				"loginheaders": base64.StdEncoding.EncodeToString(h),
 				"loginbody":    base64.StdEncoding.EncodeToString(b),
+				"totp":         appConfig.User.TOTP != "",
 			},
 		})
 	})
@@ -68,7 +81,7 @@ func checkAuthToken(r *http.Request) bool {
 			return jwtKey(), nil
 		}); err == nil && tkn.Valid &&
 			claims.TokenType == "login" &&
-			checkUsername(claims.Username) {
+			checkUsernameTOTP(claims.Username, claims.TOTP) {
 			return true
 		}
 	}
@@ -105,7 +118,12 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if r.FormValue("loginaction") != "login" {
 		return false
 	}
-	// Do original request
+	// Check credential
+	if !checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) {
+		serveError(w, r, "Incorrect credentials", http.StatusUnauthorized)
+		return true
+	}
+	// Prepare original request
 	loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
 	req, _ := http.NewRequest(r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
 	// Copy original headers
@@ -115,18 +133,14 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	for k, v := range headers {
 		req.Header[k] = v
 	}
-	// Check credential
-	if checkCredentials(r.FormValue("username"), r.FormValue("password")) {
-		tokenCookie, err := createTokenCookie(r.FormValue("username"))
-		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return true
-		}
-		// Add cookie to original request
-		req.AddCookie(tokenCookie)
-		// Send cookie
-		http.SetCookie(w, tokenCookie)
+	// Cookie
+	tokenCookie, err := createTokenCookie()
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return true
 	}
+	req.AddCookie(tokenCookie)
+	http.SetCookie(w, tokenCookie)
 	// Serve original request
 	d.ServeHTTP(w, req)
 	return true
@@ -136,14 +150,16 @@ type authClaims struct {
 	*jwt.StandardClaims
 	TokenType string
 	Username  string
+	TOTP      bool
 }
 
-func createTokenCookie(username string) (*http.Cookie, error) {
+func createTokenCookie() (*http.Cookie, error) {
 	expiration := time.Now().Add(7 * 24 * time.Hour)
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &authClaims{
 		&jwt.StandardClaims{ExpiresAt: expiration.Unix()},
 		"login",
-		username,
+		appConfig.User.Nick,
+		appConfig.User.TOTP != "",
 	}).SignedString(jwtKey())
 	if err != nil {
 		return nil, err

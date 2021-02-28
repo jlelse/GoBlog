@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"runtime/pprof"
 	"syscall"
+
+	"github.com/pquerna/otp/totp"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
@@ -26,12 +28,30 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
+
 	// Initialize config
 	log.Println("Initialize configuration...")
 	err := initConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Small tools
+	if len(os.Args) >= 2 {
+		if os.Args[1] == "totp-secret" {
+			key, err := totp.Generate(totp.GenerateOpts{
+				Issuer:      appConfig.Server.PublicAddress,
+				AccountName: appConfig.User.Nick,
+			})
+			if err != nil {
+				log.Fatal(err.Error())
+				return
+			}
+			log.Println("TOTP-Secret:", key.Secret())
+			return
+		}
+	}
+
 	// Execute pre-start hooks
 	preStartHooks()
 	// Initialize everything else

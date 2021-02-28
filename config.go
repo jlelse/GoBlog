@@ -130,14 +130,20 @@ type comments struct {
 }
 
 type configUser struct {
-	Nick       string   `mapstructure:"nick"`
-	Name       string   `mapstructure:"name"`
-	Password   string   `mapstructure:"password"`
-	Picture    string   `mapstructure:"picture"`
-	Emoji      string   `mapstructure:"emoji"`
-	Email      string   `mapstructure:"email"`
-	Link       string   `mapstructure:"link"`
-	Identities []string `mapstructure:"identities"`
+	Nick         string         `mapstructure:"nick"`
+	Name         string         `mapstructure:"name"`
+	Password     string         `mapstructure:"password"`
+	TOTP         string         `mapstructure:"totp"`
+	AppPasswords []*appPassword `mapstructure:"appPasswords"`
+	Picture      string         `mapstructure:"picture"`
+	Email        string         `mapstructure:"email"`
+	Link         string         `mapstructure:"link"`
+	Identities   []string       `mapstructure:"identities"`
+}
+
+type appPassword struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type configHooks struct {
