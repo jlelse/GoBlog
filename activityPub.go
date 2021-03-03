@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 )
 

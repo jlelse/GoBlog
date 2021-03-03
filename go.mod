@@ -7,10 +7,11 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20210207001429-0eec95c9db7e
+	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/go-chi/chi v1.5.3
+	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/flock v0.8.0 // indirect
@@ -44,7 +45,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/tdewolff/minify/v2 v2.9.13
-	github.com/tdewolff/parse/v2 v2.5.11 // indirect
+	github.com/tdewolff/parse/v2 v2.5.12 // indirect
 	github.com/thoas/go-funk v0.7.1-0.20201128100912-5035611e402b
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
@@ -57,7 +58,7 @@ require (
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210227040730-b0d1d43c014d // indirect
+	golang.org/x/sys v0.0.0-20210303074136-134d130e1a04 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

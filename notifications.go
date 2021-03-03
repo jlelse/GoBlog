@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
 )
 
