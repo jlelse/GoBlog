@@ -54,7 +54,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		// 3. Show login form
-		w.Header().Set("Cache-Control", "no-cache,no-store,must-revalidate")
+		w.Header().Set("Cache-Control", "no-store,max-age=0")
 		h, _ := json.Marshal(r.Header.Clone())
 		b, _ := io.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
 		_ = r.Body.Close()
