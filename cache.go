@@ -95,9 +95,9 @@ func cacheKey(r *http.Request) string {
 func cacheURLString(u *url.URL) string {
 	var buf strings.Builder
 	_, _ = buf.WriteString(u.EscapedPath())
-	if u.RawQuery != "" {
+	if q := u.Query(); len(q) > 0 {
 		_ = buf.WriteByte('?')
-		_, _ = buf.WriteString(u.RawQuery)
+		_, _ = buf.WriteString(q.Encode())
 	}
 	return buf.String()
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/vcraescu/go-paginator"
 )
 
@@ -233,6 +234,8 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		} else if search != "" {
 			title = fmt.Sprintf("%s: %s", appConfig.Blogs[ic.blog].Search.Title, search)
 		}
+		// Clean title
+		title = bluemonday.StrictPolicy().Sanitize(title)
 		// Check if feed
 		if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
 			generateFeed(ic.blog, ft, w, r, posts, title, description)
