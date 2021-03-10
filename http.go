@@ -3,11 +3,13 @@ package main
 import (
 	"compress/flate"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/dchest/captcha"
@@ -81,6 +83,8 @@ const paginationPath = "/page/{page:[0-9-]+}"
 const feedPath = ".{feed:rss|json|atom}"
 
 func buildHandler() (http.Handler, error) {
+	startTime := time.Now()
+
 	r := chi.NewRouter()
 
 	// Private mode
@@ -316,37 +320,53 @@ func buildHandler() (http.Handler, error) {
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
 			r.Use(cacheMiddleware)
+			already := map[string]bool{}
 			for _, d := range dates {
 				// Year
 				yearPath := blogPath + "/" + fmt.Sprintf("%0004d", d.year)
-				yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
-				r.Get(yearPath, yearHandler)
-				r.Get(yearPath+feedPath, yearHandler)
-				r.Get(yearPath+paginationPath, yearHandler)
+				if !already[yearPath] {
+					yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
+					r.Get(yearPath, yearHandler)
+					r.Get(yearPath+feedPath, yearHandler)
+					r.Get(yearPath+paginationPath, yearHandler)
+					already[yearPath] = true
+				}
 				// Specific month
 				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
-				monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
-				r.Get(monthPath, monthHandler)
-				r.Get(monthPath+feedPath, monthHandler)
-				r.Get(monthPath+paginationPath, monthHandler)
+				if !already[monthPath] {
+					monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
+					r.Get(monthPath, monthHandler)
+					r.Get(monthPath+feedPath, monthHandler)
+					r.Get(monthPath+paginationPath, monthHandler)
+					already[monthPath] = true
+				}
 				// Specific day
 				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
-				dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
-				r.Get(dayPath, dayHandler)
-				r.Get(dayPath+feedPath, dayHandler)
-				r.Get(dayPath+paginationPath, dayHandler)
+				if !already[dayPath] {
+					dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
+					r.Get(dayPath, dayHandler)
+					r.Get(dayPath+feedPath, dayHandler)
+					r.Get(dayPath+paginationPath, dayHandler)
+					already[dayPath] = true
+				}
 				// Generic month
 				genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
-				genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
-				r.Get(genericMonthPath, genericMonthHandler)
-				r.Get(genericMonthPath+feedPath, genericMonthHandler)
-				r.Get(genericMonthPath+paginationPath, genericMonthHandler)
+				if !already[genericMonthPath] {
+					genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
+					r.Get(genericMonthPath, genericMonthHandler)
+					r.Get(genericMonthPath+feedPath, genericMonthHandler)
+					r.Get(genericMonthPath+paginationPath, genericMonthHandler)
+					already[genericMonthPath] = true
+				}
 				// Specific day
 				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
-				genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
-				r.Get(genericMonthDayPath, genericMonthDayHandler)
-				r.Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
-				r.Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
+				if !already[genericMonthDayPath] {
+					genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
+					r.Get(genericMonthDayPath, genericMonthDayHandler)
+					r.Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
+					r.Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
+					already[genericMonthDayPath] = true
+				}
 			}
 		})
 
@@ -423,6 +443,8 @@ func buildHandler() (http.Handler, error) {
 	r.MethodNotAllowed(func(rw http.ResponseWriter, r *http.Request) {
 		serveError(rw, r, "", http.StatusMethodNotAllowed)
 	})
+
+	log.Println("Building handler took", time.Since(startTime))
 
 	return r, nil
 }
