@@ -182,8 +182,9 @@ type configRegexRedirect struct {
 }
 
 type configActivityPub struct {
-	Enabled bool   `mapstructure:"enabled"`
-	KeyPath string `mapstructure:"keyPath"`
+	Enabled        bool     `mapstructure:"enabled"`
+	KeyPath        string   `mapstructure:"keyPath"`
+	TagsTaxonomies []string `mapstructure:"tagsTaxonomies"`
 }
 
 type configNotifications struct {
@@ -230,6 +231,7 @@ func initConfig() error {
 	viper.SetDefault("micropub.photoParam", "images")
 	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
 	viper.SetDefault("activityPub.keyPath", "data/private.pem")
+	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
 	// Unmarshal config
 	err = viper.Unmarshal(appConfig)
 	if err != nil {

@@ -5,20 +5,28 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/araddon/dateparse"
+	"github.com/elnormous/contenttype"
 )
 
 var asContext = []string{"https://www.w3.org/ns/activitystreams"}
+
+var asCheckMediaTypes = []contenttype.MediaType{
+	contenttype.NewMediaType(contentTypeHTML),
+	contenttype.NewMediaType(contentTypeAS),
+	contenttype.NewMediaType("application/ld+json"),
+}
 
 const asRequestKey requestContextKey = "asRequest"
 
 func checkActivityStreamsRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
-			if lowerAccept := strings.ToLower(r.Header.Get("Accept")); (strings.Contains(lowerAccept, contentTypeAS) || strings.Contains(lowerAccept, "application/ld+json")) && !strings.Contains(lowerAccept, contentTypeHTML) {
+			// Check if accepted media type is not HTML
+			if mt, _, err := contenttype.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
 				return
 			}
@@ -41,6 +49,7 @@ type asNote struct {
 	ID           string          `json:"id,omitempty"`
 	URL          string          `json:"url,omitempty"`
 	AttributedTo string          `json:"attributedTo,omitempty"`
+	Tag          []*asTag        `json:"tag,omitempty"`
 }
 
 type asPerson struct {
@@ -60,6 +69,12 @@ type asPerson struct {
 type asAttachment struct {
 	Type string `json:"type,omitempty"`
 	URL  string `json:"url,omitempty"`
+}
+
+type asTag struct {
+	Type string `json:"type,omitempty"`
+	Name string `json:"name,omitempty"`
+	Href string `json:"href,omitempty"`
 }
 
 type asPublicKey struct {
@@ -103,6 +118,16 @@ func (p *post) toASNote() *asNote {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
 				URL:  image,
+			})
+		}
+	}
+	// Tags
+	for _, tagTax := range appConfig.ActivityPub.TagsTaxonomies {
+		for _, tag := range p.Parameters[tagTax] {
+			as.Tag = append(as.Tag, &asTag{
+				Type: "Hashtag",
+				Name: tag,
+				Href: appConfig.Server.PublicAddress + appConfig.Blogs[p.Blog].getRelativePath(fmt.Sprintf("/%s/%s", tagTax, urlize(tag))),
 			})
 		}
 	}

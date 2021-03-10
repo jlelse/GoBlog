@@ -11,6 +11,7 @@ require (
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/elnormous/contenttype v0.0.0-20210110050721-79150725153f
 	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
