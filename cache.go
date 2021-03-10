@@ -14,6 +14,7 @@ import (
 
 	"github.com/araddon/dateparse"
 	lru "github.com/hashicorp/golang-lru"
+	servertiming "github.com/mitchellh/go-server-timing"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -136,6 +137,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 	}
 	if item == nil || item.expired() {
 		// No cache available
+		servertiming.FromContext(r.Context()).NewMetric("cacheMiss")
 		// Remove problematic headers
 		r.Header.Del("If-Modified-Since")
 		r.Header.Del("If-Unmodified-Since")
@@ -168,6 +170,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		result.Header.Del("Accept-Ranges")
 		result.Header.Del("ETag")
 		result.Header.Del("Last-Modified")
+		result.Header.Del("Server-Timing")
 		// Create cache item
 		item = &cacheItem{
 			expiration:   exp,
@@ -181,6 +184,8 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		if cch := item.header.Get("Cache-Control"); !strings.Contains(cch, "no-store") && !strings.Contains(cch, "private") && !strings.Contains(cch, "no-cache") {
 			cacheLru.Add(key, item)
 		}
+	} else {
+		servertiming.FromContext(r.Context()).NewMetric("cache")
 	}
 	return item
 }

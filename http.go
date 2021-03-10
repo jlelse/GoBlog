@@ -15,6 +15,7 @@ import (
 	"github.com/dchest/captcha"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 const (
@@ -46,6 +47,18 @@ var (
 func startServer() (err error) {
 	// Start
 	d = &dynamicHandler{}
+	// Set basic middlewares
+	var finalHandler http.Handler = d
+	if appConfig.Server.PublicHTTPS || appConfig.Server.SecurityHeaders {
+		finalHandler = securityHeaders(finalHandler)
+	}
+	finalHandler = servertiming.Middleware(finalHandler, nil)
+	finalHandler = middleware.Compress(flate.DefaultCompression)(finalHandler)
+	finalHandler = middleware.Recoverer(finalHandler)
+	if appConfig.Server.Logging {
+		finalHandler = logMiddleware(finalHandler)
+	}
+	// Load router
 	err = reloadRouter()
 	if err != nil {
 		return
@@ -60,9 +73,9 @@ func startServer() (err error) {
 		if appConfig.Server.shortPublicHostname != "" {
 			hosts = append(hosts, appConfig.Server.shortPublicHostname)
 		}
-		err = certmagic.HTTPS(hosts, securityHeaders(d))
+		err = certmagic.HTTPS(hosts, finalHandler)
 	} else if appConfig.Server.SecurityHeaders {
-		err = http.ListenAndServe(localAddress, securityHeaders(d))
+		err = http.ListenAndServe(localAddress, finalHandler)
 	} else {
 		err = http.ListenAndServe(localAddress, d)
 	}
@@ -96,11 +109,6 @@ func buildHandler() (http.Handler, error) {
 	}
 
 	// Basic middleware
-	if appConfig.Server.Logging {
-		r.Use(logMiddleware)
-	}
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Compress(flate.DefaultCompression))
 	r.Use(redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)

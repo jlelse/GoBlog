@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 const (
@@ -231,6 +232,8 @@ type renderData struct {
 }
 
 func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
+	// Server timing
+	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
 	// Check render data
 	if data.Blog == nil {
 		if len(data.BlogString) == 0 {
@@ -265,4 +268,6 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 	}
 	// Set content type
 	w.Header().Set(contentType, contentTypeHTMLUTF8)
+	// Server timing
+	t.Stop()
 }

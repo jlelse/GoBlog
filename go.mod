@@ -16,6 +16,7 @@ require (
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/flock v0.8.0 // indirect
+	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/gorilla/feeds v1.1.1
@@ -36,6 +37,7 @@ require (
 	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4
 	github.com/miekg/dns v1.1.40 // indirect
+	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pquerna/otp v1.3.0

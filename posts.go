@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/microcosm-cc/bluemonday"
+	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/vcraescu/go-paginator"
 )
 
@@ -40,7 +41,9 @@ const (
 )
 
 func servePost(w http.ResponseWriter, r *http.Request) {
+	t := servertiming.FromContext(r.Context()).NewMetric("gp").Start()
 	p, err := getPost(r.URL.Path)
+	t.Stop()
 	if err == errPostNotFound {
 		serve404(w, r)
 		return
@@ -218,7 +221,9 @@ func serveIndex(ic *indexConfig) func(w http.ResponseWriter, r *http.Request) {
 		}}, appConfig.Blogs[ic.blog].Pagination)
 		p.SetPage(pageNo)
 		var posts []*post
+		t := servertiming.FromContext(r.Context()).NewMetric("gp").Start()
 		err := p.Results(&posts)
+		t.Stop()
 		if err != nil {
 			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
