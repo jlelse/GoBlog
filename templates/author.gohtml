@@ -3,7 +3,7 @@
         <div class="p-author h-card hide">
             {{ with .Picture }}<data class="u-photo" value="{{ . }}"></data>{{ end }}
             {{ if .Name }}
-            <a href="{{ .Link | default "/" }}" class="p-name u-url" rel="me">{{ .Name }}</a>
+            <a href="{{ with .Link }}{{ . }}{{ else }}/{{ end }}" class="p-name u-url" rel="me">{{ .Name }}</a>
             {{ end }}
         </div>
     {{ end }}

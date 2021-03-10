@@ -137,7 +137,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 	}
 	if item == nil || item.expired() {
 		// No cache available
-		servertiming.FromContext(r.Context()).NewMetric("cacheMiss")
+		servertiming.FromContext(r.Context()).NewMetric("cm")
 		// Remove problematic headers
 		r.Header.Del("If-Modified-Since")
 		r.Header.Del("If-Unmodified-Since")
@@ -185,7 +185,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 			cacheLru.Add(key, item)
 		}
 	} else {
-		servertiming.FromContext(r.Context()).NewMetric("cache")
+		servertiming.FromContext(r.Context()).NewMetric("c")
 	}
 	return item
 }

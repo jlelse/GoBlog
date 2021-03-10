@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"time"
 
@@ -47,9 +46,6 @@ var templateFunctions template.FuncMap
 
 func initRendering() error {
 	templateFunctions = template.FuncMap{
-		"blog": func(blog string) *configBlog {
-			return appConfig.Blogs[blog]
-		},
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
 		},
@@ -133,35 +129,11 @@ func initRendering() error {
 					nrd.Data = data[1]
 					rd = &nrd
 				}
-				buf := new(bytes.Buffer)
-				err := templates[templateName].ExecuteTemplate(buf, templateName, rd)
+				var buf bytes.Buffer
+				err := templates[templateName].ExecuteTemplate(&buf, templateName, rd)
 				return template.HTML(buf.String()), err
 			}
 			return "", errors.New("wrong arguments")
-		},
-		"default": func(dflt interface{}, given ...interface{}) interface{} {
-			if len(given) == 0 {
-				return dflt
-			}
-			g := reflect.ValueOf(given[0])
-			if !g.IsValid() {
-				return dflt
-			}
-			set := false
-			switch g.Kind() {
-			case reflect.Bool:
-				set = true
-			case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
-				set = g.Len() != 0
-			case reflect.Int:
-				set = g.Int() != 0
-			default:
-				set = !g.IsNil()
-			}
-			if set {
-				return given[0]
-			}
-			return dflt
 		},
 		"urlize": urlize,
 		"sort":   sortedStrings,
