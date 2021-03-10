@@ -77,7 +77,7 @@ func startServer() (err error) {
 	} else if appConfig.Server.SecurityHeaders {
 		err = http.ListenAndServe(localAddress, finalHandler)
 	} else {
-		err = http.ListenAndServe(localAddress, d)
+		err = http.ListenAndServe(localAddress, finalHandler)
 	}
 	return
 }
