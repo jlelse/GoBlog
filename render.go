@@ -124,25 +124,20 @@ func initRendering() error {
 		"asset":  assetFileName,
 		"string": getTemplateStringVariant,
 		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
-			if len(data) == 1 {
-				if rd, ok := data[0].(*renderData); ok {
-					buf := new(bytes.Buffer)
-					err := templates[templateName].ExecuteTemplate(buf, templateName, rd)
-					return template.HTML(buf.String()), err
-				}
-				return "", errors.New("wrong argument")
-			} else if len(data) == 2 {
-				if blog, ok := data[0].(*configBlog); ok {
-					buf := new(bytes.Buffer)
-					err := templates[templateName].ExecuteTemplate(buf, templateName, &renderData{
-						Blog: blog,
-						Data: data[1],
-					})
-					return template.HTML(buf.String()), err
-				}
-				return "", errors.New("wrong arguments")
+			if len(data) == 0 || len(data) > 2 {
+				return "", errors.New("wrong argument count")
 			}
-			return "", errors.New("wrong argument count")
+			if rd, ok := data[0].(*renderData); ok {
+				if len(data) == 2 {
+					nrd := *rd
+					nrd.Data = data[1]
+					rd = &nrd
+				}
+				buf := new(bytes.Buffer)
+				err := templates[templateName].ExecuteTemplate(buf, templateName, rd)
+				return template.HTML(buf.String()), err
+			}
+			return "", errors.New("wrong arguments")
 		},
 		"default": func(dflt interface{}, given ...interface{}) interface{} {
 			if len(given) == 0 {

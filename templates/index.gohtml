@@ -12,11 +12,11 @@
       {{ if (or .Data.Title .Data.Description) }}
         <hr>
       {{ end }}
-      {{ $blog := .Blog }}
       {{ if .Data.Posts }}
         {{ $summaryTemplate := .Data.SummaryTemplate }}
+        {{ $rd := . }}
         {{ range $i, $post := .Data.Posts }}
-            {{ include $summaryTemplate $blog $post }}
+            {{ include $summaryTemplate $rd $post }}
         {{ end }}
       {{ else }}
         <p>{{ string .Blog.Lang "noposts" }}</p>

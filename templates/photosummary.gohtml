@@ -1,7 +1,7 @@
 {{ define "photosummary" }}
   <article class="h-entry border-bottom">
     {{ with p .Data "title" }}<h2>{{ . }}</h2>{{ end }}
-    {{ include "postmeta" . }}
+    {{ include "summarymeta" . }}
     {{ range $i, $photo := ( ps .Data .Blog.Photos.Parameter ) }}
       {{ md ( printf "![](%s)" $photo ) }}
     {{ end }}
