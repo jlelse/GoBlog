@@ -41,11 +41,10 @@ const (
 	templateWebmentionAdmin    = "webmentionadmin"
 )
 
-var templates map[string]*template.Template
-var templateFunctions template.FuncMap
+var templates map[string]*template.Template = map[string]*template.Template{}
 
 func initRendering() error {
-	templateFunctions = template.FuncMap{
+	templateFunctions := template.FuncMap{
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
 		},
@@ -169,22 +168,24 @@ func initRendering() error {
 		},
 	}
 
-	templates = map[string]*template.Template{}
-
-	baseTemplatePath := path.Join(templatesDir, templateBase+templatesExt)
-	if err := filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
+	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
+	if err != nil {
+		return err
+	}
+	err = filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.Mode().IsRegular() && path.Ext(p) == templatesExt {
 			if name := strings.TrimSuffix(path.Base(p), templatesExt); name != templateBase {
-				if templates[name], err = template.New(name).Funcs(templateFunctions).ParseFiles(baseTemplatePath, p); err != nil {
+				if templates[name], err = template.Must(baseTemplate.Clone()).New(name).ParseFiles(p); err != nil {
 					return err
 				}
 			}
 		}
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 	return nil

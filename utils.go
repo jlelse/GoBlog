@@ -34,14 +34,15 @@ func sortedStrings(s []string) []string {
 	return s
 }
 
+const randomLetters = "abcdefghijklmnopqrstuvwxyz"
+
 func generateRandomString(chars int) string {
 	rand.Seed(time.Now().UnixNano())
-	letters := []rune("abcdefghijklmnopqrstuvwxyz")
-	b := make([]rune, chars)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+	var b strings.Builder
+	for i := 0; i < chars; i++ {
+		b.WriteByte(randomLetters[rand.Intn(len(randomLetters))])
 	}
-	return string(b)
+	return b.String()
 }
 
 func isAllowedHost(r *http.Request, hosts ...string) bool {
