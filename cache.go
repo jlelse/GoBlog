@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,9 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/araddon/dateparse"
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/dgraph-io/ristretto"
 	servertiming "github.com/mitchellh/go-server-timing"
 	"golang.org/x/sync/singleflight"
 )
@@ -24,11 +26,29 @@ const (
 
 var (
 	cacheGroup singleflight.Group
-	cacheLru   *lru.Cache
+	cacheR     *ristretto.Cache
 )
 
 func initCache() (err error) {
-	cacheLru, err = lru.New(500)
+	cacheR, err = ristretto.NewCache(&ristretto.Config{
+		NumCounters: 5000,
+		MaxCost:     20000000, // 20 MB
+		BufferItems: 16,
+		Cost: func(value interface{}) (cost int64) {
+			if cacheItem, ok := value.(*cacheItem); ok {
+				cost = int64(binary.Size(cacheItem.body)) // Byte size of body
+				for h, hv := range cacheItem.header {
+					cost += int64(binary.Size([]byte(h))) // Byte size of header name
+					for _, hvi := range hv {
+						cost += int64(binary.Size([]byte(hvi))) // byte size of each header value item
+					}
+				}
+			} else {
+				cost = int64(unsafe.Sizeof(cacheItem))
+			}
+			return cost
+		},
+	})
 	return
 }
 
@@ -124,18 +144,11 @@ type cacheItem struct {
 	body         []byte
 }
 
-func (c *cacheItem) expired() bool {
-	if c.expiration != 0 {
-		return time.Now().After(c.creationTime.Add(time.Duration(c.expiration) * time.Second))
-	}
-	return false
-}
-
 func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) {
-	if lruItem, ok := cacheLru.Get(key); ok {
-		item = lruItem.(*cacheItem)
+	if rItem, ok := cacheR.Get(key); ok {
+		item = rItem.(*cacheItem)
 	}
-	if item == nil || item.expired() {
+	if item == nil {
 		// No cache available
 		servertiming.FromContext(r.Context()).NewMetric("cm")
 		// Remove problematic headers
@@ -182,7 +195,12 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		}
 		// Save cache
 		if cch := item.header.Get("Cache-Control"); !strings.Contains(cch, "no-store") && !strings.Contains(cch, "private") && !strings.Contains(cch, "no-cache") {
-			cacheLru.Add(key, item)
+			if exp == 0 {
+				cacheR.Set(key, item, 0)
+			} else {
+				ttl := time.Duration(exp) * time.Second
+				cacheR.SetWithTTL(key, item, 0, ttl)
+			}
 		}
 	} else {
 		servertiming.FromContext(r.Context()).NewMetric("c")
@@ -191,7 +209,7 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 }
 
 func purgeCache() {
-	cacheLru.Purge()
+	cacheR.Clear()
 }
 
 func setInternalCacheExpirationHeader(w http.ResponseWriter, expiration int) {

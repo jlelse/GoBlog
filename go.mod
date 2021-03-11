@@ -10,6 +10,7 @@ require (
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
+	github.com/dgraph-io/ristretto v0.0.4-0.20210311064603-e4f298c8aa88
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elnormous/contenttype v0.0.0-20210110050721-79150725153f
 	github.com/go-chi/chi/v5 v5.0.1
@@ -21,7 +22,6 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/gorilla/feeds v1.1.1
 	github.com/gorilla/handlers v1.5.1
-	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
 	github.com/klauspost/cpuid v1.3.1 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/tdewolff/minify/v2 v2.9.13
 	github.com/tdewolff/parse/v2 v2.5.12 // indirect
-	github.com/thoas/go-funk v0.7.1-0.20201128100912-5035611e402b
+	github.com/thoas/go-funk v0.8.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.3.2
