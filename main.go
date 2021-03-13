@@ -52,6 +52,9 @@ func main() {
 		}
 	}
 
+	// Init regular garbage collection
+	initGC()
+
 	// Execute pre-start hooks
 	preStartHooks()
 	// Initialize everything else

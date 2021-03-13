@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -211,10 +210,6 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 
 func purgeCache() {
 	cacheR.Clear()
-	// Do manual GC
-	go func() {
-		runtime.GC()
-	}()
 }
 
 func setInternalCacheExpirationHeader(w http.ResponseWriter, expiration int) {

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -90,11 +89,6 @@ func reloadRouter() error {
 	}
 	purgeCache()
 	d.swapHandler(h)
-	// Do manual GC
-	go func() {
-		time.Sleep(10 * time.Second)
-		runtime.GC()
-	}()
 	return nil
 }
 
