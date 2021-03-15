@@ -1,0 +1,190 @@
+# This is an example configuration for GoBlog
+# Until there's an official release configuration may change
+# Keep a look at the commit history
+
+# Database
+database:
+  file: data/db.sqlite # File for the SQLite database
+
+# Web server
+server:
+  # Logging
+  logging: true # Log website access (time, path, status code, response size, referrer, user agent, but NO IP address)
+  logFile: data/access.log # File path for the access log (rotated, date will get appended)
+  # Addresses
+  port: 8080
+  publicAddress: https://example.com # Public address to use for the blog
+  shortPublicAddress: https://short.example.com # Optional short address, will redirect to main address
+  # Security
+  publicHttps: true # Use Let's Encrypt and serve site with HTTPS
+  letsEncryptMail: blog@example.com # Email to use for Let's Encrypt
+  securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
+  cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
+  - media.example.com
+  # Cookies
+  jwtSecret: changeThisWeakSecret # JWT secret to use for Json Web Token in cookies (login and captcha)
+
+# Cache
+cache:
+  enable: true # Enable cache on some paths
+  expiration: 600 # Time in seconds for cache TTL
+
+# Private mode
+privateMode:
+  enabled: true # Enable private mode and only allow access with login
+
+# User
+user:
+  name: John Doe # Full name
+  nick: johndoe # Username
+  password: changeThisWeakPassword # Password for login
+  totp: HHUCH2SBOFXKKVCRJPVRS3W5MHX4FHXP # Optional for Two Factor Authentication; generate with "./GoBlog totp-secret"
+  appPasswords: # Optional passwords you can use with Basic Authentication
+    - username: app1
+      password: abcdef
+  picture: https://example.com/profile.png # Optional user picture
+  link: https://example.net # Optional user link to use instead of homepage
+  email: contact@example.com # Email (only used in feeds)
+  identities: # Other identities to add to the HTML header with rel=me links
+    - https://micro.blog/exampleuser
+
+# Hooks
+hooks:
+  shell: /bin/bash # Shell to use to execute commands (default is /bin/bash)
+  hourly: # Commands to execute every full hour
+  - echo Hourly
+  prestart: # Commands to execute when starting
+  - echo Start
+  # Post hooks (you can use .URL (URL string) or .Post (post object) as text/template objects)
+  postpost: # Commands to execute after creating a new post
+  - echo Created new post at {{.URL}}
+  postupdate: # Commands to execute after updating a post
+  - echo Updated post at {{.URL}}
+  postdelete: # Commands to execute after deleting a post
+  - echo Deleted post at {{.URL}}
+
+# ActivityPub
+activityPub:
+  enabled: true # Enable ActivityPub
+
+# MicroPub
+micropub:
+  # Media configuration
+  mediaStorage:
+    mediaUrl: https://media.example.com # Define external media URL (instead of /m subpath)
+    # BunnyCDN storage (optional)
+    bunnyStorageKey: BUNNY-STORAGE-KEY # Secret key for BunnyCDN storage
+    bunnyStorageName: storagename # BunnyCDN storage name
+    # Image compression (optional, you can define no, one or both)
+    tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API
+    shortPixelKey: SHORT-PIXEL-KEY # Secret key for the ShortPixel API
+  # MicroPub parameters (defaults already set, set to overwrite)
+  # You can set parameters via the UI of your MicroPub editor or via front matter in the content
+  categoryParam: tags
+  replyParam: replylink
+  likeParam: likelink
+  bookmarkParam: link
+  audioParam: audio
+  photoParam: images
+  photoDescriptionParam: imagealts
+
+# Notifications
+notifications:
+  telegram: # Receive notifications via Telegram
+    enabled: true
+    chatId: 123456 # Telegram chat ID (usually the user id on Telegram)
+    botToken: BOT-TOKEN # Telegram bot token
+
+# Redirects
+pathRedirects:
+  # Simple 302 redirect from /index.xml to .rss
+  - from: "\\/index\\.xml"
+    to: ".rss"
+  # Redirect using regular expressions
+  - from: "^\\/(writings|dev)\\/posts(.*)$"
+    to: "/$1$2"
+    type: 301 # custom redirect type
+
+# Blogs
+defaultBlog: en # Default blog (needed because you can define multiple blogs)
+blogs:
+  en: # Blog code
+    path: / # Path of blog
+    lang: en # Language of blog
+    title: My awesome blog # Blog title
+    description: My awesome blog description # Blog description
+    pagination: 10 # Number of posts per page
+    # Sections
+    defaultsection: micro # Default section
+    sections:
+      posts: # Section code
+        name: posts # Section code again
+        title: Posts # Section title
+        pathtemplate: "{{printf \"/%v/%v\" .Section .Slug}}" # Template to generate post paths (available: .Section, .Slug, .Year, .Month, .Day, .BlogPath (useful for blogs on sub-paths))
+      micro:
+        name: micro
+        title: Micro
+        description: "You can also use **Markdown** here." # Section description, can also use Markdown
+        pathtemplate: "{{printf \"/%v/%02d/%02d/%v\" .Section .Year .Month .Slug}}"
+    # Taxonomies
+    taxonomies:
+      - name: tags # Code of taxonomy (used via post parameters)
+        title: Tags # Name
+        description: "**Tags** on this blog" # Description
+    # Menus
+    menus:
+      # Main menu
+      main:
+        items:
+          - title: Home # Title
+            link: / # Site-relative or absolute links
+          - title: Posts
+            link: /posts
+          - title: Contact
+            link: https://example.com/contact
+      # Footer menu
+      footer:
+        items:
+          - title: Imprint & Privacy Policy
+            link: https://example.com/legal
+    # Index page which shows all posts with photos
+    photos:
+      enabled: true # Enable
+      parameter: images # Parameter which includes photo links
+      path: /photos # Path
+      title: Photos # Title
+      description: Instead of using Instagram, I prefer uploading pictures to my blog. # Description
+    # Full text search
+    search:
+      enabled: true # Enable
+      title: Search # Title
+      path: /search # Path
+      placeholder: Search on this blog # Description
+    # Page with blog statistics (posts per year)
+    blogStats:
+      enabled: true # Enable
+      path: /statistics # Path
+      title: Statistics # Title
+      description: "Here are some statistics with the number of posts per year:" # Description
+    # Custom pages
+    custompages:
+      - path: /blogroll # Path
+        template: blogroll # Template
+        cache: true # Enable caching
+        cacheExpiration: 600 # Cache expiration (default uses blog cache TTL)
+        data: # Data to provide to template
+          Title: Blogroll
+          Description: "This are alphabetically sorted lists of blogs and sites I subscribe to."
+    # Redirect to random post
+    randomPost:
+      enabled: true # Enable
+      path: /random # Path
+    # Send notifications about new posts to Telegram channel
+    telegram:
+      enabled: true # Enable
+      chatId: "@telegram" # Chat ID, usually channel username
+      botToken: BOT-TOKEN # Telegram Bot Token
+      instantViewHash: INSTANT-VIEW-HASH # Use custom TG IV template
+    # Comments
+    comments:
+      enabled: true # Enable comments

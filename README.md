@@ -9,8 +9,19 @@ The goals of GoBlog are:
 - Minimalism
 - Performance
 - Flexibility
-- (IndieWeb)
+- IndieWeb
 
-Documentation on how to use GoBlog yourself will follow soon.
+To configure GoBlog, take a look at the `example-config.yml` file and save your configuration to `config\config.yml`.
 
--- [jlelse](https://jlelse.blog)
+Administration paths:
+
+- Login: `/login`
+- Logout: `/logout`
+- Editor: `/editor` (prefixed with the blog path)
+- Notifications: `/notifications`
+- Webmentions: `/webmention`
+- Comments: `/comment`
+
+More detailed documentation on how to use GoBlog yourself will follow soon.
+
+[jlelse](https://jlelse.blog)
