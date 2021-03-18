@@ -1,4 +1,4 @@
-.sans-serif, input, textarea, select, button, .button, body {
+.sans-serif, input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button, body {
   font-family: sans-serif;
 }
 
@@ -52,7 +52,7 @@ img {
   width: 100%;
 }
 
-input, textarea, select, button, .button {
+input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
   background: #fff;
@@ -64,6 +64,7 @@ input, textarea, select, button, .button {
   box-sizing: border-box;
   text-decoration: none;
   font-size: 1rem;
+  line-height: 1.5;
 }
 
 form input, form textarea, form select {
@@ -86,6 +87,10 @@ pre {
 
 :not(pre) > code {
   font-size: 1rem;
+  color: #fff;
+  color: var(--background, #fff);
+  background: #000;
+  background: var(--primary, #000);
 }
 
 code {
@@ -121,13 +126,6 @@ footer * {
   border-bottom: 1px solid var(--primary, #000);
 }
 
-.invert, :not(pre) > code {
-  color: #fff;
-  color: var(--background, #fff);
-  background: #000;
-  background: var(--primary, #000);
-}
-
 .p {
   display: block;
   margin-top: 1em;
@@ -159,7 +157,7 @@ footer * {
 }
 
 .captchaimg {
-  background-color: white;
+  background-color: #fff;
 }
 
 .tal {

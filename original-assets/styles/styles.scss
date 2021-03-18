@@ -1,8 +1,8 @@
 $colors: (
-    background: #fff,
-    background-dark: #000,
-    primary: #000,
-    primary-dark: #fff
+  background: #fff,
+  background-dark: #000,
+  primary: #000,
+  primary-dark: #fff
 );
 
 @mixin color($property, $varName) {
@@ -77,7 +77,7 @@ img {
   width: 100%;
 }
 
-input, textarea, select, button, .button {
+input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button {
   @include color-border(border, 1px, solid, primary);
   @include color(background, background);
   @include color(color, primary);
@@ -87,10 +87,13 @@ input, textarea, select, button, .button {
   box-sizing: border-box;
   text-decoration: none;
   font-size: 1rem;
+  line-height: 1.5;
 }
 
-form input, form textarea, form select {
-  margin-bottom: 5px;
+form {
+  input, textarea, select {
+    margin-bottom: 5px;
+  }
 }
 
 .fw-form {
@@ -114,8 +117,10 @@ pre {
 }
 
 :not(pre) > code {
-  @extend .invert;
   font-size: 1rem;
+  // Invert
+  @include color(color, background);
+  @include color(background, primary);
 }
 
 code {
@@ -150,11 +155,6 @@ footer {
   @include color-border(border-bottom, 1px, solid, primary);
 }
 
-.invert {
-  @include color(color, background);
-  @include color(background, primary);
-}
-
 .p {
   display: block;
   margin-top: 1em;
@@ -186,7 +186,7 @@ footer {
 }
 
 .captchaimg {
-  background-color: white;
+  background-color: #fff;
 }
 
 .tal {

@@ -5,6 +5,6 @@
                 {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>
             {{ end }}
         {{ end }}
-        <p>&copy; {{ dateformat now "2006" }} {{ with user.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
+        <p translate="no">&copy; {{ dateformat now "2006" }} {{ with user.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
     </footer>
 {{ end }}
