@@ -23,6 +23,8 @@ server:
   - media.example.com
   # Cookies
   jwtSecret: changeThisWeakSecret # JWT secret to use for Json Web Token in cookies (login and captcha)
+  # Tor
+  tor: true # Publish onion service, requires Tor to be installed and available in path
 
 # Cache
 cache:

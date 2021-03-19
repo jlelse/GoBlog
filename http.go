@@ -63,6 +63,14 @@ func startServer() (err error) {
 	if err != nil {
 		return
 	}
+	// Start Onion service
+	if appConfig.Server.Tor {
+		go func() {
+			torErr := startOnionService(finalHandler)
+			log.Println("Tor failed:", torErr.Error())
+		}()
+	}
+	// Start HTTP(s) server
 	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
 	if appConfig.Server.PublicHTTPS {
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
@@ -74,8 +82,6 @@ func startServer() (err error) {
 			hosts = append(hosts, appConfig.Server.shortPublicHostname)
 		}
 		err = certmagic.HTTPS(hosts, finalHandler)
-	} else if appConfig.Server.SecurityHeaders {
-		err = http.ListenAndServe(localAddress, finalHandler)
 	} else {
 		err = http.ListenAndServe(localAddress, finalHandler)
 	}
@@ -457,23 +463,32 @@ func buildHandler() (http.Handler, error) {
 	return r, nil
 }
 
-func securityHeaders(next http.Handler) http.Handler {
-	extraCSPDomains := ""
+var cspDomains = ""
+
+func refreshCSPDomains() {
+	cspDomains = ""
 	if mp := appConfig.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
-			extraCSPDomains += " " + u.Hostname()
+			cspDomains += " " + u.Hostname()
 		}
 	}
 	if len(appConfig.Server.CSPDomains) > 0 {
-		extraCSPDomains += " " + strings.Join(appConfig.Server.CSPDomains, " ")
+		cspDomains += " " + strings.Join(appConfig.Server.CSPDomains, " ")
 	}
+}
+
+func securityHeaders(next http.Handler) http.Handler {
+	refreshCSPDomains()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'"+extraCSPDomains)
+		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
+		if appConfig.Server.Tor && torAddress != "" {
+			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", torAddress, r.URL.Path))
+		}
 		next.ServeHTTP(w, r)
 	})
 }

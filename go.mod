@@ -9,6 +9,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210207001429-0eec95c9db7e
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/caddyserver/certmagic v0.12.0
+	github.com/cretz/bine v0.1.1-0.20200124154328-f9f678b84cca
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.0.4-0.20210311064603-e4f298c8aa88
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -36,7 +37,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4
-	github.com/miekg/dns v1.1.40 // indirect
+	github.com/miekg/dns v1.1.41 // indirect
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -60,7 +61,7 @@ require (
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210317225723-c4fcb01b228e // indirect
+	golang.org/x/sys v0.0.0-20210319071255-635bc2c9138d // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

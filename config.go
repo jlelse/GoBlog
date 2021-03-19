@@ -30,6 +30,7 @@ type configServer struct {
 	PublicAddress       string   `mapstructure:"publicAddress"`
 	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
 	PublicHTTPS         bool     `mapstructure:"publicHttps"`
+	Tor                 bool     `mapstructure:"tor"`
 	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
 	CSPDomains          []string `mapstructure:"cspDomains"`
 	LetsEncryptMail     string   `mapstructure:"letsEncryptMail"`
