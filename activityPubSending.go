@@ -96,14 +96,13 @@ func apQueueSendSigned(blogIri, to string, activity interface{}) error {
 }
 
 func apSendSigned(blogIri, to string, activity []byte) error {
-	// Copy activity to sign it
-	activityCopy := make([]byte, len(activity))
-	copy(activityCopy, activity)
 	// Create request context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// Create request
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, to, bytes.NewBuffer(activity))
+	var requestBuffer bytes.Buffer
+	requestBuffer.Write(activity)
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, to, &requestBuffer)
 	if err != nil {
 		return err
 	}
@@ -119,7 +118,7 @@ func apSendSigned(blogIri, to string, activity []byte) error {
 	r.Header.Set("Host", iri.Host)
 	// Sign request
 	apPostSignMutex.Lock()
-	err = apPostSigner.SignRequest(apPrivateKey, blogIri+"#main-key", r, activityCopy)
+	err = apPostSigner.SignRequest(apPrivateKey, blogIri+"#main-key", r, activity)
 	apPostSignMutex.Unlock()
 	if err != nil {
 		return err

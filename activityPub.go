@@ -68,10 +68,13 @@ func initActivityPub() error {
 	if err != nil {
 		return err
 	}
-	prefs := []httpsig.Algorithm{httpsig.RSA_SHA256}
-	digestAlgorithm := httpsig.DigestSha256
-	headersToSign := []string{httpsig.RequestTarget, "date", "host", "digest"}
-	apPostSigner, _, err = httpsig.NewSigner(prefs, digestAlgorithm, headersToSign, httpsig.Signature, 0)
+	apPostSigner, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host", "digest"},
+		httpsig.Signature,
+		0,
+	)
 	if err != nil {
 		return err
 	}
