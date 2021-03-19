@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -93,15 +93,15 @@ func reloadRouter() error {
 	if err != nil {
 		return err
 	}
-	purgeCache()
 	d.swapHandler(h)
+	purgeCache()
 	return nil
 }
 
 const paginationPath = "/page/{page:[0-9-]+}"
 const feedPath = ".{feed:rss|json|atom}"
 
-func buildHandler() (http.Handler, error) {
+func buildHandler() (*chi.Mux, error) {
 	startTime := time.Now()
 
 	r := chi.NewRouter()
@@ -501,16 +501,22 @@ func noIndexHeader(next http.Handler) http.Handler {
 }
 
 type dynamicHandler struct {
-	realHandler atomic.Value
+	router *chi.Mux
+	mutex  sync.RWMutex
 }
 
-func (d *dynamicHandler) swapHandler(h http.Handler) {
-	d.realHandler.Store(h)
+func (d *dynamicHandler) swapHandler(h *chi.Mux) {
+	d.mutex.Lock()
+	d.router = h
+	d.mutex.Unlock()
 }
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Fix to use Path routing instead of RawPath routing in Chi
 	r.URL.RawPath = ""
 	// Serve request
-	d.realHandler.Load().(http.Handler).ServeHTTP(w, r)
+	d.mutex.RLock()
+	router := d.router
+	d.mutex.RUnlock()
+	router.ServeHTTP(w, r)
 }
