@@ -13,6 +13,8 @@ import (
 	"github.com/vcraescu/go-paginator"
 )
 
+const notificationsPath = "/notifications"
+
 type notification struct {
 	ID   int
 	Time int64

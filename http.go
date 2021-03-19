@@ -40,9 +40,7 @@ const (
 	appUserAgent = "GoBlog"
 )
 
-var (
-	d *dynamicHandler
-)
+var d *dynamicHandler
 
 func startServer() (err error) {
 	// Start
@@ -57,6 +55,11 @@ func startServer() (err error) {
 	finalHandler = middleware.Recoverer(finalHandler)
 	if appConfig.Server.Logging {
 		finalHandler = logMiddleware(finalHandler)
+	}
+	// Create routers that don't change
+	err = buildStaticHandlersRouters()
+	if err != nil {
+		return
 	}
 	// Load router
 	err = reloadRouter()
@@ -89,7 +92,7 @@ func startServer() (err error) {
 }
 
 func reloadRouter() error {
-	h, err := buildHandler()
+	h, err := buildDynamicRouter()
 	if err != nil {
 		return err
 	}
@@ -98,21 +101,122 @@ func reloadRouter() error {
 	return nil
 }
 
-const paginationPath = "/page/{page:[0-9-]+}"
-const feedPath = ".{feed:rss|json|atom}"
+const (
+	paginationPath = "/page/{page:[0-9-]+}"
+	feedPath       = ".{feed:rss|json|atom}"
+)
 
-func buildHandler() (*chi.Mux, error) {
-	startTime := time.Now()
+var (
+	privateMode        = false
+	privateModeHandler = []func(http.Handler) http.Handler{}
 
-	r := chi.NewRouter()
+	captchaHandler http.Handler
 
-	// Private mode
-	privateMode := false
-	privateModeHandler := []func(http.Handler) http.Handler{}
+	micropubRouter      *chi.Mux
+	indieAuthRouter     *chi.Mux
+	webmentionsRouter   *chi.Mux
+	notificationsRouter *chi.Mux
+	activitypubRouter   *chi.Mux
+
+	editorRouters  = map[string]*chi.Mux{}
+	commentRouters = map[string]*chi.Mux{}
+	searchRouters  = map[string]*chi.Mux{}
+)
+
+func buildStaticHandlersRouters() error {
 	if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
 		privateMode = true
 		privateModeHandler = append(privateModeHandler, authMiddleware)
 	}
+
+	captchaHandler = captcha.Server(500, 250)
+
+	micropubRouter = chi.NewRouter()
+	micropubRouter.Use(checkIndieAuth)
+	micropubRouter.Get("/", serveMicropubQuery)
+	micropubRouter.Post("/", serveMicropubPost)
+	micropubRouter.Post(micropubMediaSubPath, serveMicropubMedia)
+
+	indieAuthRouter = chi.NewRouter()
+	indieAuthRouter.Get("/", indieAuthRequest)
+	indieAuthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
+	indieAuthRouter.Post("/", indieAuthVerification)
+	indieAuthRouter.Get("/token", indieAuthToken)
+	indieAuthRouter.Post("/token", indieAuthToken)
+
+	webmentionsRouter = chi.NewRouter()
+	webmentionsRouter.Post("/", handleWebmention)
+	webmentionsRouter.Group(func(r chi.Router) {
+		// Authenticated routes
+		r.Use(authMiddleware)
+		r.Get("/", webmentionAdmin)
+		r.Get(paginationPath, webmentionAdmin)
+		r.Post("/delete", webmentionAdminDelete)
+		r.Post("/approve", webmentionAdminApprove)
+	})
+
+	notificationsRouter = chi.NewRouter()
+	notificationsRouter.Use(authMiddleware)
+	notificationsHandler := notificationsAdmin(notificationsPath)
+	notificationsRouter.Get("/", notificationsHandler)
+	notificationsRouter.Get(paginationPath, notificationsHandler)
+
+	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
+		activitypubRouter = chi.NewRouter()
+		activitypubRouter.Post("/inbox/{blog}", apHandleInbox)
+		activitypubRouter.Post("/{blog}/inbox", apHandleInbox)
+	}
+
+	for blog, blogConfig := range appConfig.Blogs {
+		blogPath := blogPath(blogConfig)
+
+		editorRouter := chi.NewRouter()
+		editorRouter.Use(authMiddleware)
+		editorRouter.Get("/", serveEditor(blog))
+		editorRouter.Post("/", serveEditorPost(blog))
+		editorRouters[blog] = editorRouter
+
+		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
+			commentsPath := blogPath + "/comment"
+			commentRouter := chi.NewRouter()
+			commentRouter.Use(privateModeHandler...)
+			commentRouter.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment(blog))
+			commentRouter.With(captchaMiddleware).Post("/", createComment(blog, commentsPath))
+			// Admin
+			commentRouter.Group(func(r chi.Router) {
+				r.Use(authMiddleware)
+				handler := commentsAdmin(blog, commentsPath)
+				r.Get("/", handler)
+				r.Get(paginationPath, handler)
+				r.Post("/delete", commentsAdminDelete)
+			})
+			commentRouters[blog] = commentRouter
+		}
+
+		if blogConfig.Search != nil && blogConfig.Search.Enabled {
+			searchPath := blogPath + blogConfig.Search.Path
+			searchRouter := chi.NewRouter()
+			searchRouter.Use(privateModeHandler...)
+			searchRouter.Use(cacheMiddleware)
+			handler := serveSearch(blog, searchPath)
+			searchRouter.Get("/", handler)
+			searchRouter.Post("/", handler)
+			searchResultPath := "/" + searchPlaceholder
+			resultHandler := serveSearchResults(blog, searchPath+searchResultPath)
+			searchRouter.Get(searchResultPath, resultHandler)
+			searchRouter.Get(searchResultPath+feedPath, resultHandler)
+			searchRouter.Get(searchResultPath+paginationPath, resultHandler)
+			searchRouters[blog] = searchRouter
+		}
+	}
+
+	return nil
+}
+
+func buildDynamicRouter() (*chi.Mux, error) {
+	startTime := time.Now()
+
+	r := chi.NewRouter()
 
 	// Basic middleware
 	r.Use(redirectShortDomain)
@@ -139,26 +243,14 @@ func buildHandler() (*chi.Mux, error) {
 	r.With(authMiddleware).Get("/logout", serveLogout)
 
 	// Micropub
-	r.Route(micropubPath, func(r chi.Router) {
-		r.Use(checkIndieAuth)
-		r.Get("/", serveMicropubQuery)
-		r.Post("/", serveMicropubPost)
-		r.Post(micropubMediaSubPath, serveMicropubMedia)
-	})
+	r.Mount(micropubPath, micropubRouter)
 
 	// IndieAuth
-	r.Route("/indieauth", func(r chi.Router) {
-		r.Get("/", indieAuthRequest)
-		r.With(authMiddleware).Post("/accept", indieAuthAccept)
-		r.Post("/", indieAuthVerification)
-		r.Get("/token", indieAuthToken)
-		r.Post("/token", indieAuthToken)
-	})
+	r.Mount("/indieauth", indieAuthRouter)
 
 	// ActivityPub and stuff
 	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
-		r.Post("/activitypub/inbox/{blog}", apHandleInbox)
-		r.Post("/activitypub/{blog}/inbox", apHandleInbox)
+		r.Mount("/activitypub", activitypubRouter)
 		r.With(cacheMiddleware).Get("/.well-known/webfinger", apHandleWebfinger)
 		r.With(cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
 		r.With(cacheMiddleware).Get("/.well-known/nodeinfo", serveNodeInfoDiscover)
@@ -166,26 +258,10 @@ func buildHandler() (*chi.Mux, error) {
 	}
 
 	// Webmentions
-	r.Route(webmentionPath, func(r chi.Router) {
-		r.Post("/", handleWebmention)
-		r.Group(func(r chi.Router) {
-			// Authenticated routes
-			r.Use(authMiddleware)
-			r.Get("/", webmentionAdmin)
-			r.Get(paginationPath, webmentionAdmin)
-			r.Post("/delete", webmentionAdminDelete)
-			r.Post("/approve", webmentionAdminApprove)
-		})
-	})
+	r.Mount(webmentionPath, webmentionsRouter)
 
 	// Notifications
-	notificationsPath := "/notifications"
-	r.Route(notificationsPath, func(r chi.Router) {
-		r.Use(authMiddleware)
-		handler := notificationsAdmin(notificationsPath)
-		r.Get("/", handler)
-		r.Get(paginationPath, handler)
-	})
+	r.Mount(notificationsPath, notificationsRouter)
 
 	// Posts
 	pp, err := allPostPaths(statusPublished)
@@ -239,18 +315,13 @@ func buildHandler() (*chi.Mux, error) {
 	r.With(privateModeHandler...).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
 
 	// Captcha
-	r.Handle("/captcha/*", captcha.Server(500, 250))
+	r.Handle("/captcha/*", captchaHandler)
 
 	// Short paths
 	r.With(privateModeHandler...).With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
 
 	for blog, blogConfig := range appConfig.Blogs {
-
-		fullBlogPath := blogConfig.Path
-		blogPath := fullBlogPath
-		if blogPath == "/" {
-			blogPath = ""
-		}
+		blogPath := blogPath(blogConfig)
 
 		// Sections
 		r.Group(func(r chi.Router) {
@@ -305,19 +376,7 @@ func buildHandler() (*chi.Mux, error) {
 
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware)
-				searchPath := blogPath + blogConfig.Search.Path
-				handler := serveSearch(blog, searchPath)
-				r.Get(searchPath, handler)
-				r.Post(searchPath, handler)
-				searchResultPath := searchPath + "/" + searchPlaceholder
-				resultHandler := serveSearchResults(blog, searchResultPath)
-				r.Get(searchResultPath, resultHandler)
-				r.Get(searchResultPath+feedPath, resultHandler)
-				r.Get(searchResultPath+paginationPath, resultHandler)
-			})
+			r.Mount(blogPath+blogConfig.Search.Path, searchRouters[blog])
 		}
 
 		// Stats
@@ -390,8 +449,8 @@ func buildHandler() (*chi.Mux, error) {
 				r.Use(privateModeHandler...)
 				r.Use(cacheMiddleware)
 				handler := serveHome(blog, blogPath)
-				r.Get(fullBlogPath, handler)
-				r.Get(fullBlogPath+feedPath, handler)
+				r.Get(blogConfig.Path, handler)
+				r.Get(blogConfig.Path+feedPath, handler)
 				r.Get(blogPath+paginationPath, handler)
 			})
 		}
@@ -416,28 +475,11 @@ func buildHandler() (*chi.Mux, error) {
 		}
 
 		// Editor
-		r.Route(blogPath+"/editor", func(r chi.Router) {
-			r.Use(authMiddleware)
-			r.Get("/", serveEditor(blog))
-			r.Post("/", serveEditorPost(blog))
-		})
+		r.Mount(blogPath+"/editor", editorRouters[blog])
 
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsPath := blogPath + "/comment"
-			r.Route(commentsPath, func(cr chi.Router) {
-				cr.Use(privateModeHandler...)
-				cr.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment(blog))
-				cr.With(captchaMiddleware).Post("/", createComment(blog, commentsPath))
-				// Admin
-				cr.Group(func(r chi.Router) {
-					r.Use(authMiddleware)
-					handler := commentsAdmin(blog, commentsPath)
-					r.Get("/", handler)
-					r.Get(paginationPath, handler)
-					r.Post("/delete", commentsAdminDelete)
-				})
-			})
+			r.Mount(blogPath+"/comment", commentRouters[blog])
 		}
 	}
 
@@ -461,6 +503,14 @@ func buildHandler() (*chi.Mux, error) {
 	log.Println("Building handler took", time.Since(startTime))
 
 	return r, nil
+}
+
+func blogPath(cb *configBlog) string {
+	blogPath := cb.Path
+	if blogPath == "/" {
+		return ""
+	}
+	return blogPath
 }
 
 var cspDomains = ""
