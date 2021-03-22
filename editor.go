@@ -11,74 +11,72 @@ import (
 
 const editorPath = "/editor"
 
-func serveEditor(blog string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, templateEditor, &renderData{
-			BlogString: blog,
-			Data: map[string]interface{}{
-				"Drafts": loadDrafts(blog),
-			},
-		})
-	}
+func serveEditor(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	render(w, r, templateEditor, &renderData{
+		BlogString: blog,
+		Data: map[string]interface{}{
+			"Drafts": loadDrafts(blog),
+		},
+	})
 }
 
-func serveEditorPost(blog string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if action := r.FormValue("editoraction"); action != "" {
-			switch action {
-			case "loadupdate":
-				parsedURL, err := url.Parse(r.FormValue("url"))
-				if err != nil {
-					serveError(w, r, err.Error(), http.StatusBadRequest)
-					return
-				}
-				post, err := getPost(parsedURL.Path)
-				if err != nil {
-					serveError(w, r, err.Error(), http.StatusBadRequest)
-					return
-				}
-				mf := post.toMfItem()
-				render(w, r, templateEditor, &renderData{
-					BlogString: blog,
-					Data: map[string]interface{}{
-						"UpdatePostURL":     parsedURL.String(),
-						"UpdatePostContent": mf.Properties.Content[0],
-						"Drafts":            loadDrafts(blog),
-					},
-				})
-			case "updatepost":
-				urlValue := r.FormValue("url")
-				content := r.FormValue("content")
-				mf := map[string]interface{}{
-					"action": actionUpdate,
-					"url":    urlValue,
-					"replace": map[string][]string{
-						"content": {
-							content,
-						},
-					},
-				}
-				jsonBytes, err := json.Marshal(mf)
-				if err != nil {
-					serveError(w, r, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(jsonBytes))
-				if err != nil {
-					serveError(w, r, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				req.Header.Set(contentType, contentTypeJSON)
-				editorMicropubPost(w, req, false)
-			case "upload":
-				editorMicropubPost(w, r, true)
-			default:
-				serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
+func serveEditorPost(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	if action := r.FormValue("editoraction"); action != "" {
+		switch action {
+		case "loadupdate":
+			parsedURL, err := url.Parse(r.FormValue("url"))
+			if err != nil {
+				serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
 			}
-			return
+			post, err := getPost(parsedURL.Path)
+			if err != nil {
+				serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			mf := post.toMfItem()
+			render(w, r, templateEditor, &renderData{
+				BlogString: blog,
+				Data: map[string]interface{}{
+					"UpdatePostURL":     parsedURL.String(),
+					"UpdatePostContent": mf.Properties.Content[0],
+					"Drafts":            loadDrafts(blog),
+				},
+			})
+		case "updatepost":
+			urlValue := r.FormValue("url")
+			content := r.FormValue("content")
+			mf := map[string]interface{}{
+				"action": actionUpdate,
+				"url":    urlValue,
+				"replace": map[string][]string{
+					"content": {
+						content,
+					},
+				},
+			}
+			jsonBytes, err := json.Marshal(mf)
+			if err != nil {
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(jsonBytes))
+			if err != nil {
+				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			req.Header.Set(contentType, contentTypeJSON)
+			editorMicropubPost(w, req, false)
+		case "upload":
+			editorMicropubPost(w, r, true)
+		default:
+			serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}
-		editorMicropubPost(w, r, false)
+		return
 	}
+	editorMicropubPost(w, r, false)
 }
 
 func loadDrafts(blog string) []*post {

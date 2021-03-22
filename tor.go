@@ -41,7 +41,7 @@ func startOnionService(h http.Handler) error {
 			return err
 		}
 		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-		os.WriteFile(torKeyPath, pemEncoded, os.ModePerm)
+		_ = os.WriteFile(torKeyPath, pemEncoded, os.ModePerm)
 	} else {
 		d, _ := os.ReadFile(torKeyPath)
 		block, _ := pem.Decode(d)
@@ -53,7 +53,7 @@ func startOnionService(h http.Handler) error {
 	}
 	// Start tor with default config (can set start conf's DebugWriter to os.Stdout for debug logs)
 	log.Println("Starting and registering onion service, please wait a couple of minutes...")
-	t, err := tor.Start(nil, &tor.StartConf{
+	t, err := tor.Start(context.Background(), &tor.StartConf{
 		TempDataDirBase: os.TempDir(),
 	})
 	if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"net/http"
 	"net/url"
@@ -10,22 +11,28 @@ import (
 
 const searchPlaceholder = "{search}"
 
-func serveSearch(blog string, servePath string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			serveError(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if q := r.Form.Get("q"); q != "" {
-			http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
-			return
-		}
-		render(w, r, templateSearch, &renderData{
-			BlogString: blog,
-			Canonical:  appConfig.Server.PublicAddress + servePath,
-		})
+func serveSearch(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	servePath := r.Context().Value(pathContextKey).(string)
+	err := r.ParseForm()
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
 	}
+	if q := r.Form.Get("q"); q != "" {
+		http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
+		return
+	}
+	render(w, r, templateSearch, &renderData{
+		BlogString: blog,
+		Canonical:  appConfig.Server.PublicAddress + servePath,
+	})
+}
+
+func serveSearchResult(w http.ResponseWriter, r *http.Request) {
+	serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path: r.Context().Value(pathContextKey).(string) + "/" + searchPlaceholder,
+	})))
 }
 
 func searchEncode(search string) string {

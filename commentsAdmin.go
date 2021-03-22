@@ -33,53 +33,53 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) 
 	return err
 }
 
-func commentsAdmin(blog, commentPath string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Adapter
-		pageNoString := chi.URLParam(r, "page")
-		pageNo, _ := strconv.Atoi(pageNoString)
-		p := paginator.New(&commentsPaginationAdapter{config: &commentsRequestConfig{}}, 5)
-		p.SetPage(pageNo)
-		var comments []*comment
-		err := p.Results(&comments)
-		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Navigation
-		var hasPrev, hasNext bool
-		var prevPage, nextPage int
-		var prevPath, nextPath string
-		hasPrev, _ = p.HasPrev()
-		if hasPrev {
-			prevPage, _ = p.PrevPage()
-		} else {
-			prevPage, _ = p.Page()
-		}
-		if prevPage < 2 {
-			prevPath = commentPath
-		} else {
-			prevPath = fmt.Sprintf("%s/page/%d", commentPath, prevPage)
-		}
-		hasNext, _ = p.HasNext()
-		if hasNext {
-			nextPage, _ = p.NextPage()
-		} else {
-			nextPage, _ = p.Page()
-		}
-		nextPath = fmt.Sprintf("%s/page/%d", commentPath, nextPage)
-		// Render
-		render(w, r, templateCommentsAdmin, &renderData{
-			BlogString: blog,
-			Data: map[string]interface{}{
-				"Comments": comments,
-				"HasPrev":  hasPrev,
-				"HasNext":  hasNext,
-				"Prev":     slashIfEmpty(prevPath),
-				"Next":     slashIfEmpty(nextPath),
-			},
-		})
+func commentsAdmin(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	commentsPath := r.Context().Value(pathContextKey).(string)
+	// Adapter
+	pageNoString := chi.URLParam(r, "page")
+	pageNo, _ := strconv.Atoi(pageNoString)
+	p := paginator.New(&commentsPaginationAdapter{config: &commentsRequestConfig{}}, 5)
+	p.SetPage(pageNo)
+	var comments []*comment
+	err := p.Results(&comments)
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	// Navigation
+	var hasPrev, hasNext bool
+	var prevPage, nextPage int
+	var prevPath, nextPath string
+	hasPrev, _ = p.HasPrev()
+	if hasPrev {
+		prevPage, _ = p.PrevPage()
+	} else {
+		prevPage, _ = p.Page()
+	}
+	if prevPage < 2 {
+		prevPath = commentsPath
+	} else {
+		prevPath = fmt.Sprintf("%s/page/%d", commentsPath, prevPage)
+	}
+	hasNext, _ = p.HasNext()
+	if hasNext {
+		nextPage, _ = p.NextPage()
+	} else {
+		nextPage, _ = p.Page()
+	}
+	nextPath = fmt.Sprintf("%s/page/%d", commentsPath, nextPage)
+	// Render
+	render(w, r, templateCommentsAdmin, &renderData{
+		BlogString: blog,
+		Data: map[string]interface{}{
+			"Comments": comments,
+			"HasPrev":  hasPrev,
+			"HasNext":  hasNext,
+			"Prev":     slashIfEmpty(prevPath),
+			"Next":     slashIfEmpty(nextPath),
+		},
+	})
 }
 
 func commentsAdminDelete(w http.ResponseWriter, r *http.Request) {

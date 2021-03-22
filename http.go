@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/dchest/captcha"
@@ -110,6 +109,8 @@ var (
 	privateMode        = false
 	privateModeHandler = []func(http.Handler) http.Handler{}
 
+	setBlogMiddlewares = map[string]func(http.Handler) http.Handler{}
+
 	captchaHandler http.Handler
 
 	micropubRouter      *chi.Mux
@@ -117,10 +118,9 @@ var (
 	webmentionsRouter   *chi.Mux
 	notificationsRouter *chi.Mux
 	activitypubRouter   *chi.Mux
-
-	editorRouters  = map[string]*chi.Mux{}
-	commentRouters = map[string]*chi.Mux{}
-	searchRouters  = map[string]*chi.Mux{}
+	editorRouter        *chi.Mux
+	commentsRouter      *chi.Mux
+	searchRouter        *chi.Mux
 )
 
 func buildStaticHandlersRouters() error {
@@ -157,9 +157,8 @@ func buildStaticHandlersRouters() error {
 
 	notificationsRouter = chi.NewRouter()
 	notificationsRouter.Use(authMiddleware)
-	notificationsHandler := notificationsAdmin(notificationsPath)
-	notificationsRouter.Get("/", notificationsHandler)
-	notificationsRouter.Get(paginationPath, notificationsHandler)
+	notificationsRouter.Get("/", notificationsAdmin)
+	notificationsRouter.Get(paginationPath, notificationsAdmin)
 
 	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
 		activitypubRouter = chi.NewRouter()
@@ -167,55 +166,42 @@ func buildStaticHandlersRouters() error {
 		activitypubRouter.Post("/{blog}/inbox", apHandleInbox)
 	}
 
-	for blog, blogConfig := range appConfig.Blogs {
-		blogPath := blogPath(blogConfig)
+	editorRouter = chi.NewRouter()
+	editorRouter.Use(authMiddleware)
+	editorRouter.Get("/", serveEditor)
+	editorRouter.Post("/", serveEditorPost)
 
-		editorRouter := chi.NewRouter()
-		editorRouter.Use(authMiddleware)
-		editorRouter.Get("/", serveEditor(blog))
-		editorRouter.Post("/", serveEditorPost(blog))
-		editorRouters[blog] = editorRouter
+	commentsRouter = chi.NewRouter()
+	commentsRouter.Use(privateModeHandler...)
+	commentsRouter.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment)
+	commentsRouter.With(captchaMiddleware).Post("/", createComment)
+	commentsRouter.Group(func(r chi.Router) {
+		// Admin
+		r.Use(authMiddleware)
+		r.Get("/", commentsAdmin)
+		r.Get(paginationPath, commentsAdmin)
+		r.Post("/delete", commentsAdminDelete)
+	})
 
-		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsPath := blogPath + "/comment"
-			commentRouter := chi.NewRouter()
-			commentRouter.Use(privateModeHandler...)
-			commentRouter.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment(blog))
-			commentRouter.With(captchaMiddleware).Post("/", createComment(blog, commentsPath))
-			// Admin
-			commentRouter.Group(func(r chi.Router) {
-				r.Use(authMiddleware)
-				handler := commentsAdmin(blog, commentsPath)
-				r.Get("/", handler)
-				r.Get(paginationPath, handler)
-				r.Post("/delete", commentsAdminDelete)
-			})
-			commentRouters[blog] = commentRouter
-		}
+	searchRouter = chi.NewRouter()
+	searchRouter.Use(privateModeHandler...)
+	searchRouter.Use(cacheMiddleware)
+	searchRouter.Get("/", serveSearch)
+	searchRouter.Post("/", serveSearch)
+	searchResultPath := "/" + searchPlaceholder
+	searchRouter.Get(searchResultPath, serveSearchResult)
+	searchRouter.Get(searchResultPath+feedPath, serveSearchResult)
+	searchRouter.Get(searchResultPath+paginationPath, serveSearchResult)
 
-		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			searchPath := blogPath + blogConfig.Search.Path
-			searchRouter := chi.NewRouter()
-			searchRouter.Use(privateModeHandler...)
-			searchRouter.Use(cacheMiddleware)
-			handler := serveSearch(blog, searchPath)
-			searchRouter.Get("/", handler)
-			searchRouter.Post("/", handler)
-			searchResultPath := "/" + searchPlaceholder
-			resultHandler := serveSearchResults(blog, searchPath+searchResultPath)
-			searchRouter.Get(searchResultPath, resultHandler)
-			searchRouter.Get(searchResultPath+feedPath, resultHandler)
-			searchRouter.Get(searchResultPath+paginationPath, resultHandler)
-			searchRouters[blog] = searchRouter
-		}
+	for blog := range appConfig.Blogs {
+		sbm := middleware.WithValue(blogContextKey, blog)
+		setBlogMiddlewares[blog] = sbm
 	}
 
 	return nil
 }
 
 func buildDynamicRouter() (*chi.Mux, error) {
-	startTime := time.Now()
-
 	r := chi.NewRouter()
 
 	// Basic middleware
@@ -321,7 +307,9 @@ func buildDynamicRouter() (*chi.Mux, error) {
 	r.With(privateModeHandler...).With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
 
 	for blog, blogConfig := range appConfig.Blogs {
-		blogPath := blogPath(blogConfig)
+		blogPath := blogPath(blog)
+
+		sbm := setBlogMiddlewares[blog]
 
 		// Sections
 		r.Group(func(r chi.Router) {
@@ -330,10 +318,15 @@ func buildDynamicRouter() (*chi.Mux, error) {
 			for _, section := range blogConfig.Sections {
 				if section.Name != "" {
 					secPath := blogPath + "/" + section.Name
-					handler := serveSection(blog, secPath, section)
-					r.Get(secPath, handler)
-					r.Get(secPath+feedPath, handler)
-					r.Get(secPath+paginationPath, handler)
+					r.Group(func(r chi.Router) {
+						r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
+							path:    secPath,
+							section: section,
+						}))
+						r.Get(secPath, serveIndex)
+						r.Get(secPath+feedPath, serveIndex)
+						r.Get(secPath+paginationPath, serveIndex)
+					})
 				}
 			}
 		})
@@ -349,13 +342,19 @@ func buildDynamicRouter() (*chi.Mux, error) {
 				r.Group(func(r chi.Router) {
 					r.Use(privateModeHandler...)
 					r.Use(cacheMiddleware)
-					r.Get(taxPath, serveTaxonomy(blog, taxonomy))
+					r.With(sbm, middleware.WithValue(taxonomyContextKey, taxonomy)).Get(taxPath, serveTaxonomy)
 					for _, tv := range taxValues {
 						vPath := taxPath + "/" + urlize(tv)
-						handler := serveTaxonomyValue(blog, vPath, taxonomy, tv)
-						r.Get(vPath, handler)
-						r.Get(vPath+feedPath, handler)
-						r.Get(vPath+paginationPath, handler)
+						r.Group(func(r chi.Router) {
+							r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
+								path:     vPath,
+								tax:      taxonomy,
+								taxValue: tv,
+							}))
+							r.Get(vPath, serveIndex)
+							r.Get(vPath+feedPath, serveIndex)
+							r.Get(vPath+paginationPath, serveIndex)
+						})
 					}
 				})
 			}
@@ -367,101 +366,74 @@ func buildDynamicRouter() (*chi.Mux, error) {
 				r.Use(privateModeHandler...)
 				r.Use(cacheMiddleware)
 				photoPath := blogPath + blogConfig.Photos.Path
-				handler := servePhotos(blog, photoPath)
-				r.Get(photoPath, handler)
-				r.Get(photoPath+feedPath, handler)
-				r.Get(photoPath+paginationPath, handler)
+				r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
+					path:            photoPath,
+					parameter:       blogConfig.Photos.Parameter,
+					title:           blogConfig.Photos.Title,
+					description:     blogConfig.Photos.Description,
+					summaryTemplate: templatePhotosSummary,
+				}))
+				r.Get(photoPath, serveIndex)
+				r.Get(photoPath+feedPath, serveIndex)
+				r.Get(photoPath+paginationPath, serveIndex)
 			})
 		}
 
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			r.Mount(blogPath+blogConfig.Search.Path, searchRouters[blog])
+			searchPath := blogPath + blogConfig.Search.Path
+			r.With(sbm, middleware.WithValue(pathContextKey, searchPath)).Mount(searchPath, searchRouter)
 		}
 
 		// Stats
 		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
 			statsPath := blogPath + blogConfig.BlogStats.Path
-			r.With(privateModeHandler...).With(cacheMiddleware).Get(statsPath, serveBlogStats(blog, statsPath))
+			r.With(privateModeHandler...).With(cacheMiddleware, sbm).Get(statsPath, serveBlogStats)
 		}
 
-		// Year / month archives
-		dates, err := allPublishedDates(blog)
-		if err != nil {
-			return nil, err
-		}
+		// Date archives
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
-			r.Use(cacheMiddleware)
-			already := map[string]bool{}
-			for _, d := range dates {
-				// Year
-				yearPath := blogPath + "/" + fmt.Sprintf("%0004d", d.year)
-				if !already[yearPath] {
-					yearHandler := serveDate(blog, yearPath, d.year, 0, 0)
-					r.Get(yearPath, yearHandler)
-					r.Get(yearPath+feedPath, yearHandler)
-					r.Get(yearPath+paginationPath, yearHandler)
-					already[yearPath] = true
-				}
-				// Specific month
-				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
-				if !already[monthPath] {
-					monthHandler := serveDate(blog, monthPath, d.year, d.month, 0)
-					r.Get(monthPath, monthHandler)
-					r.Get(monthPath+feedPath, monthHandler)
-					r.Get(monthPath+paginationPath, monthHandler)
-					already[monthPath] = true
-				}
-				// Specific day
-				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
-				if !already[dayPath] {
-					dayHandler := serveDate(blog, monthPath, d.year, d.month, d.day)
-					r.Get(dayPath, dayHandler)
-					r.Get(dayPath+feedPath, dayHandler)
-					r.Get(dayPath+paginationPath, dayHandler)
-					already[dayPath] = true
-				}
-				// Generic month
-				genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
-				if !already[genericMonthPath] {
-					genericMonthHandler := serveDate(blog, genericMonthPath, 0, d.month, 0)
-					r.Get(genericMonthPath, genericMonthHandler)
-					r.Get(genericMonthPath+feedPath, genericMonthHandler)
-					r.Get(genericMonthPath+paginationPath, genericMonthHandler)
-					already[genericMonthPath] = true
-				}
-				// Specific day
-				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
-				if !already[genericMonthDayPath] {
-					genericMonthDayHandler := serveDate(blog, genericMonthDayPath, 0, d.month, d.day)
-					r.Get(genericMonthDayPath, genericMonthDayHandler)
-					r.Get(genericMonthDayPath+feedPath, genericMonthDayHandler)
-					r.Get(genericMonthDayPath+paginationPath, genericMonthDayHandler)
-					already[genericMonthDayPath] = true
-				}
-			}
+			r.Use(cacheMiddleware, sbm)
+
+			yearRegex := `/{year:x|\d\d\d\d}`
+			monthRegex := `/{month:x|\d\d}`
+			dayRegex := `/{day:\d\d}`
+
+			yearPath := blogPath + yearRegex
+			r.Get(yearPath, serveDate)
+			r.Get(yearPath+feedPath, serveDate)
+			r.Get(yearPath+paginationPath, serveDate)
+
+			monthPath := yearPath + monthRegex
+			r.Get(monthPath, serveDate)
+			r.Get(monthPath+feedPath, serveDate)
+			r.Get(monthPath+paginationPath, serveDate)
+
+			dayPath := monthPath + dayRegex
+			r.Get(dayPath, serveDate)
+			r.Get(dayPath+feedPath, serveDate)
+			r.Get(dayPath+paginationPath, serveDate)
 		})
 
 		// Blog
 		if !blogConfig.PostAsHome {
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware)
-				handler := serveHome(blog, blogPath)
-				r.Get(blogConfig.Path, handler)
-				r.Get(blogConfig.Path+feedPath, handler)
-				r.Get(blogPath+paginationPath, handler)
+				r.Use(cacheMiddleware, sbm)
+				r.Get(blogConfig.Path, serveHome)
+				r.Get(blogConfig.Path+feedPath, serveHome)
+				r.Get(blogPath+paginationPath, serveHome)
 			})
 		}
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
-			handler := serveCustomPage(blogConfig, cp)
+			scp := middleware.WithValue(customPageContextKey, cp)
 			if cp.Cache {
-				r.With(privateModeHandler...).With(cacheMiddleware).Get(cp.Path, handler)
+				r.With(privateModeHandler...).With(cacheMiddleware, sbm, scp).Get(cp.Path, serveCustomPage)
 			} else {
-				r.With(privateModeHandler...).Get(cp.Path, handler)
+				r.With(privateModeHandler...).With(sbm, scp).Get(cp.Path, serveCustomPage)
 			}
 		}
 
@@ -471,15 +443,16 @@ func buildDynamicRouter() (*chi.Mux, error) {
 			if randomPath == "" {
 				randomPath = "/random"
 			}
-			r.With(privateModeHandler...).Get(blogPath+randomPath, redirectToRandomPost(blog))
+			r.With(privateModeHandler...).With(sbm).Get(blogPath+randomPath, redirectToRandomPost)
 		}
 
 		// Editor
-		r.Mount(blogPath+"/editor", editorRouters[blog])
+		r.With(sbm).Mount(blogPath+"/editor", editorRouter)
 
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			r.Mount(blogPath+"/comment", commentRouters[blog])
+			commentsPath := blogPath + "/comment"
+			r.With(sbm, middleware.WithValue(pathContextKey, commentsPath)).Mount(commentsPath, commentsRouter)
 		}
 	}
 
@@ -500,18 +473,19 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		serveError(rw, r, "", http.StatusMethodNotAllowed)
 	})
 
-	log.Println("Building handler took", time.Since(startTime))
-
 	return r, nil
 }
 
-func blogPath(cb *configBlog) string {
-	blogPath := cb.Path
+func blogPath(blog string) string {
+	blogPath := appConfig.Blogs[blog].Path
 	if blogPath == "/" {
 		return ""
 	}
 	return blogPath
 }
+
+const blogContextKey requestContextKey = "blog"
+const pathContextKey requestContextKey = "httpPath"
 
 var cspDomains = ""
 

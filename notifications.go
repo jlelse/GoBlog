@@ -112,50 +112,48 @@ func (p *notificationsPaginationAdapter) Slice(offset, length int, data interfac
 	return err
 }
 
-func notificationsAdmin(notificationPath string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Adapter
-		pageNoString := chi.URLParam(r, "page")
-		pageNo, _ := strconv.Atoi(pageNoString)
-		p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}}, 10)
-		p.SetPage(pageNo)
-		var notifications []*notification
-		err := p.Results(&notifications)
-		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Navigation
-		var hasPrev, hasNext bool
-		var prevPage, nextPage int
-		var prevPath, nextPath string
-		hasPrev, _ = p.HasPrev()
-		if hasPrev {
-			prevPage, _ = p.PrevPage()
-		} else {
-			prevPage, _ = p.Page()
-		}
-		if prevPage < 2 {
-			prevPath = notificationPath
-		} else {
-			prevPath = fmt.Sprintf("%s/page/%d", notificationPath, prevPage)
-		}
-		hasNext, _ = p.HasNext()
-		if hasNext {
-			nextPage, _ = p.NextPage()
-		} else {
-			nextPage, _ = p.Page()
-		}
-		nextPath = fmt.Sprintf("%s/page/%d", notificationPath, nextPage)
-		// Render
-		render(w, r, templateNotificationsAdmin, &renderData{
-			Data: map[string]interface{}{
-				"Notifications": notifications,
-				"HasPrev":       hasPrev,
-				"HasNext":       hasNext,
-				"Prev":          slashIfEmpty(prevPath),
-				"Next":          slashIfEmpty(nextPath),
-			},
-		})
+func notificationsAdmin(w http.ResponseWriter, r *http.Request) {
+	// Adapter
+	pageNoString := chi.URLParam(r, "page")
+	pageNo, _ := strconv.Atoi(pageNoString)
+	p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}}, 10)
+	p.SetPage(pageNo)
+	var notifications []*notification
+	err := p.Results(&notifications)
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	// Navigation
+	var hasPrev, hasNext bool
+	var prevPage, nextPage int
+	var prevPath, nextPath string
+	hasPrev, _ = p.HasPrev()
+	if hasPrev {
+		prevPage, _ = p.PrevPage()
+	} else {
+		prevPage, _ = p.Page()
+	}
+	if prevPage < 2 {
+		prevPath = notificationsPath
+	} else {
+		prevPath = fmt.Sprintf("%s/page/%d", notificationsPath, prevPage)
+	}
+	hasNext, _ = p.HasNext()
+	if hasNext {
+		nextPage, _ = p.NextPage()
+	} else {
+		nextPage, _ = p.Page()
+	}
+	nextPath = fmt.Sprintf("%s/page/%d", notificationsPath, nextPage)
+	// Render
+	render(w, r, templateNotificationsAdmin, &renderData{
+		Data: map[string]interface{}{
+			"Notifications": notifications,
+			"HasPrev":       hasPrev,
+			"HasNext":       hasNext,
+			"Prev":          slashIfEmpty(prevPath),
+			"Next":          slashIfEmpty(nextPath),
+		},
+	})
 }
