@@ -110,8 +110,6 @@ var (
 	privateMode        = false
 	privateModeHandler = []func(http.Handler) http.Handler{}
 
-	setBlogMiddlewares = map[string]func(http.Handler) http.Handler{}
-
 	captchaHandler http.Handler
 
 	micropubRouter      *chi.Mux
@@ -122,6 +120,14 @@ var (
 	editorRouter        *chi.Mux
 	commentsRouter      *chi.Mux
 	searchRouter        *chi.Mux
+
+	setBlogMiddlewares     = map[string]func(http.Handler) http.Handler{}
+	sectionMiddlewares     = map[string]func(http.Handler) http.Handler{}
+	taxonomyMiddlewares    = map[string]func(http.Handler) http.Handler{}
+	photosMiddlewares      = map[string]func(http.Handler) http.Handler{}
+	searchMiddlewares      = map[string]func(http.Handler) http.Handler{}
+	customPagesMiddlewares = map[string]func(http.Handler) http.Handler{}
+	commentsMiddlewares    = map[string]func(http.Handler) http.Handler{}
 )
 
 func buildStaticHandlersRouters() error {
@@ -194,13 +200,58 @@ func buildStaticHandlersRouters() error {
 	searchRouter.Get(searchResultPath+feedPath, serveSearchResult)
 	searchRouter.Get(searchResultPath+paginationPath, serveSearchResult)
 
-	for blog := range appConfig.Blogs {
+	for blog, blogConfig := range appConfig.Blogs {
 		sbm := middleware.WithValue(blogContextKey, blog)
 		setBlogMiddlewares[blog] = sbm
+
+		blogPath := blogPath(blog)
+
+		for _, section := range blogConfig.Sections {
+			if section.Name != "" {
+				secPath := blogPath + "/" + section.Name
+				sectionMiddlewares[secPath] = middleware.WithValue(indexConfigKey, &indexConfig{
+					path:    secPath,
+					section: section,
+				})
+			}
+		}
+
+		for _, taxonomy := range blogConfig.Taxonomies {
+			if taxonomy.Name != "" {
+				taxPath := blogPath + "/" + taxonomy.Name
+				taxonomyMiddlewares[taxPath] = middleware.WithValue(taxonomyContextKey, taxonomy)
+			}
+		}
+
+		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
+			photosMiddlewares[blog] = middleware.WithValue(indexConfigKey, &indexConfig{
+				path:            blogPath + blogConfig.Photos.Path,
+				parameter:       blogConfig.Photos.Parameter,
+				title:           blogConfig.Photos.Title,
+				description:     blogConfig.Photos.Description,
+				summaryTemplate: templatePhotosSummary,
+			})
+		}
+
+		if blogConfig.Search != nil && blogConfig.Search.Enabled {
+			searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+blogConfig.Search.Path)
+		}
+
+		for _, cp := range blogConfig.CustomPages {
+			customPagesMiddlewares[cp.Path] = middleware.WithValue(customPageContextKey, cp)
+		}
+
+		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
+			commentsMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+"/comment")
+		}
 	}
 
 	return nil
 }
+
+var (
+	taxValueMiddlewares = map[string]func(http.Handler) http.Handler{}
+)
 
 func buildDynamicRouter() (*chi.Mux, error) {
 	r := chi.NewRouter()
@@ -315,15 +366,12 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		// Sections
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
-			r.Use(cacheMiddleware)
+			r.Use(cacheMiddleware, sbm)
 			for _, section := range blogConfig.Sections {
 				if section.Name != "" {
 					secPath := blogPath + "/" + section.Name
 					r.Group(func(r chi.Router) {
-						r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
-							path:    secPath,
-							section: section,
-						}))
+						r.Use(sectionMiddlewares[secPath])
 						r.Get(secPath, serveIndex)
 						r.Get(secPath+feedPath, serveIndex)
 						r.Get(secPath+paginationPath, serveIndex)
@@ -342,16 +390,19 @@ func buildDynamicRouter() (*chi.Mux, error) {
 				}
 				r.Group(func(r chi.Router) {
 					r.Use(privateModeHandler...)
-					r.Use(cacheMiddleware)
-					r.With(sbm, middleware.WithValue(taxonomyContextKey, taxonomy)).Get(taxPath, serveTaxonomy)
+					r.Use(cacheMiddleware, sbm)
+					r.With(taxonomyMiddlewares[taxPath]).Get(taxPath, serveTaxonomy)
 					for _, tv := range taxValues {
-						vPath := taxPath + "/" + urlize(tv)
 						r.Group(func(r chi.Router) {
-							r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
-								path:     vPath,
-								tax:      taxonomy,
-								taxValue: tv,
-							}))
+							vPath := taxPath + "/" + urlize(tv)
+							if _, ok := taxValueMiddlewares[vPath]; !ok {
+								taxValueMiddlewares[vPath] = middleware.WithValue(indexConfigKey, &indexConfig{
+									path:     vPath,
+									tax:      taxonomy,
+									taxValue: tv,
+								})
+							}
+							r.Use(taxValueMiddlewares[vPath])
 							r.Get(vPath, serveIndex)
 							r.Get(vPath+feedPath, serveIndex)
 							r.Get(vPath+paginationPath, serveIndex)
@@ -365,15 +416,8 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware)
+				r.Use(cacheMiddleware, sbm, photosMiddlewares[blog])
 				photoPath := blogPath + blogConfig.Photos.Path
-				r.Use(sbm, middleware.WithValue(indexConfigKey, &indexConfig{
-					path:            photoPath,
-					parameter:       blogConfig.Photos.Parameter,
-					title:           blogConfig.Photos.Title,
-					description:     blogConfig.Photos.Description,
-					summaryTemplate: templatePhotosSummary,
-				}))
 				r.Get(photoPath, serveIndex)
 				r.Get(photoPath+feedPath, serveIndex)
 				r.Get(photoPath+paginationPath, serveIndex)
@@ -383,7 +427,7 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
 			searchPath := blogPath + blogConfig.Search.Path
-			r.With(sbm, middleware.WithValue(pathContextKey, searchPath)).Mount(searchPath, searchRouter)
+			r.With(sbm, searchMiddlewares[blog]).Mount(searchPath, searchRouter)
 		}
 
 		// Stats
@@ -430,7 +474,7 @@ func buildDynamicRouter() (*chi.Mux, error) {
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
-			scp := middleware.WithValue(customPageContextKey, cp)
+			scp := customPagesMiddlewares[cp.Path]
 			if cp.Cache {
 				r.With(privateModeHandler...).With(cacheMiddleware, sbm, scp).Get(cp.Path, serveCustomPage)
 			} else {
@@ -453,7 +497,7 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
 			commentsPath := blogPath + "/comment"
-			r.With(sbm, middleware.WithValue(pathContextKey, commentsPath)).Mount(commentsPath, commentsRouter)
+			r.With(sbm, commentsMiddlewares[blog]).Mount(commentsPath, commentsRouter)
 		}
 	}
 
@@ -470,9 +514,7 @@ func buildDynamicRouter() (*chi.Mux, error) {
 	// Check redirects, then serve 404
 	r.With(cacheMiddleware, checkRegexRedirects).NotFound(serve404)
 
-	r.MethodNotAllowed(func(rw http.ResponseWriter, r *http.Request) {
-		serveError(rw, r, "", http.StatusMethodNotAllowed)
-	})
+	r.MethodNotAllowed(serveNotAllowed)
 
 	return r, nil
 }

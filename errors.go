@@ -16,6 +16,10 @@ func serve404(w http.ResponseWriter, r *http.Request) {
 	serveError(w, r, fmt.Sprintf("%s was not found", r.RequestURI), http.StatusNotFound)
 }
 
+func serveNotAllowed(w http.ResponseWriter, r *http.Request) {
+	serveError(w, r, "", http.StatusMethodNotAllowed)
+}
+
 var errorCheckMediaTypes = []contenttype.MediaType{
 	contenttype.NewMediaType(contentTypeHTML),
 }
