@@ -50,6 +50,7 @@ func startServer() (err error) {
 		finalHandler = securityHeaders(finalHandler)
 	}
 	finalHandler = servertiming.Middleware(finalHandler, nil)
+	finalHandler = middleware.Heartbeat("/ping")(finalHandler)
 	finalHandler = middleware.Compress(flate.DefaultCompression)(finalHandler)
 	finalHandler = middleware.Recoverer(finalHandler)
 	if appConfig.Server.Logging {
