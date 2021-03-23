@@ -53,6 +53,10 @@ func servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
+		if r.URL.Path == blogPath(p.Blog) {
+			appConfig.Blogs[p.Blog].serveActivityStreams(p.Blog, w, r)
+			return
+		}
 		p.serveActivityStreams(w)
 		return
 	}

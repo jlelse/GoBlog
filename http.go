@@ -112,14 +112,7 @@ var (
 
 	captchaHandler http.Handler
 
-	micropubRouter      *chi.Mux
-	indieAuthRouter     *chi.Mux
-	webmentionsRouter   *chi.Mux
-	notificationsRouter *chi.Mux
-	activitypubRouter   *chi.Mux
-	editorRouter        *chi.Mux
-	commentsRouter      *chi.Mux
-	searchRouter        *chi.Mux
+	micropubRouter, indieAuthRouter, webmentionsRouter, notificationsRouter, activitypubRouter, editorRouter, commentsRouter, searchRouter *chi.Mux
 
 	setBlogMiddlewares     = map[string]func(http.Handler) http.Handler{}
 	sectionMiddlewares     = map[string]func(http.Handler) http.Handler{}
@@ -274,7 +267,6 @@ func buildDynamicRouter() (*chi.Mux, error) {
 	r.Use(checkIsLogin)
 	r.Use(checkIsCaptcha)
 	r.Use(checkLoggedIn)
-	r.Use(checkActivityStreamsRequest)
 
 	// Logout
 	r.With(authMiddleware).Get("/login", serveLogin)
@@ -308,7 +300,7 @@ func buildDynamicRouter() (*chi.Mux, error) {
 	}
 	r.Group(func(r chi.Router) {
 		r.Use(privateModeHandler...)
-		r.Use(cacheMiddleware)
+		r.Use(checkActivityStreamsRequest, cacheMiddleware)
 		for _, path := range pp {
 			r.Get(path, servePost)
 		}
@@ -465,10 +457,10 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		if !blogConfig.PostAsHome {
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware, sbm)
-				r.Get(blogConfig.Path, serveHome)
-				r.Get(blogConfig.Path+feedPath, serveHome)
-				r.Get(blogPath+paginationPath, serveHome)
+				r.Use(sbm)
+				r.With(checkActivityStreamsRequest, cacheMiddleware).Get(blogConfig.Path, serveHome)
+				r.With(cacheMiddleware).Get(blogConfig.Path+feedPath, serveHome)
+				r.With(cacheMiddleware).Get(blogPath+paginationPath, serveHome)
 			})
 		}
 
