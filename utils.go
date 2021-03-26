@@ -127,7 +127,7 @@ type stringGroup struct {
 func groupStrings(toGroup []string) []stringGroup {
 	stringMap := map[string][]string{}
 	for _, s := range toGroup {
-		first := strings.ToUpper(strings.Split(s, "")[0])
+		first := strings.ToUpper(string([]rune(s)[0]))
 		stringMap[first] = append(stringMap[first], s)
 	}
 	stringGroups := []stringGroup{}

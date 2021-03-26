@@ -2,9 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"log"
+	"os"
 	"sync"
 
 	sqlite "github.com/mattn/go-sqlite3"
+	"github.com/schollz/sqlite3dump"
 )
 
 var (
@@ -27,7 +30,33 @@ func initDatabase() (err error) {
 	if err != nil {
 		return err
 	}
-	return migrateDb()
+	err = appDb.Ping()
+	if err != nil {
+		return err
+	}
+	vacuumDb()
+	err = migrateDb()
+	if err != nil {
+		return err
+	}
+	if appConfig.Db.DumpFile != "" {
+		hourlyHooks = append(hourlyHooks, dumpDb)
+		dumpDb()
+	}
+	return nil
+}
+
+func dumpDb() {
+	f, err := os.Create(appConfig.Db.DumpFile)
+	if err != nil {
+		log.Println("Error while dump db:", err.Error())
+	}
+	startWritingToDb()
+	defer finishWritingToDb()
+	err = sqlite3dump.DumpDB(appDb, f)
+	if err != nil {
+		log.Println("Error while dump db:", err.Error())
+	}
 }
 
 func startWritingToDb() {
@@ -44,7 +73,7 @@ func closeDb() error {
 }
 
 func vacuumDb() {
-	_, _ = appDbExec("VACUUM;")
+	_, _ = appDbExec("VACUUM")
 }
 
 func prepareAppDbStatement(query string) (*sql.Stmt, error) {

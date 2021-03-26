@@ -14,7 +14,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.4-0.20210311064603-e4f298c8aa88
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elnormous/contenttype v1.0.0
-	github.com/go-chi/chi/v5 v5.0.1
+	github.com/go-chi/chi/v5 v5.0.2
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/flock v0.8.0 // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/libdns/libdns v0.2.0 // indirect
 	github.com/lopezator/migrator v0.3.0
-	github.com/magiconair/properties v1.8.4 // indirect
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4
@@ -42,6 +42,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pquerna/otp v1.3.0
+	github.com/schollz/sqlite3dump v1.2.4
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/afero v1.6.0 // indirect
@@ -56,12 +57,11 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670 // indirect
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4 // indirect
+	golang.org/x/net v0.0.0-20210326060303-6b1517762897 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

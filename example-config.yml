@@ -5,6 +5,7 @@
 # Database
 database:
   file: data/db.sqlite # File for the SQLite database
+  dumpFile: data/db.sql # (Optional) File for database dump, will be executed hourly
 
 # Web server
 server:

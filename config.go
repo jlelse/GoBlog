@@ -40,7 +40,8 @@ type configServer struct {
 }
 
 type configDb struct {
-	File string `mapstructure:"file"`
+	File     string `mapstructure:"file"`
+	DumpFile string `mapstructure:"dumpFile"`
 }
 
 type configCache struct {
