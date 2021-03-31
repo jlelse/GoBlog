@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -66,10 +67,13 @@ func sendTelegramMessage(message, mode, token, chat string) error {
 	}
 	tgURL.RawQuery = params.Encode()
 	req, _ := http.NewRequest(http.MethodPost, tgURL.String(), nil)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := appHttpClient.Do(req)
 	if err != nil {
 		return err
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to send Telegram message, status code %d", resp.StatusCode)
 	}
 	return nil

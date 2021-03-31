@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -260,17 +261,19 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 	}
 	req.Header.Set("Accept", contentTypeAS)
 	req.Header.Set(userAgent, appUserAgent)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := appHttpClient.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
+	defer resp.Body.Close()
 	if !apRequestIsSuccess(resp.StatusCode) {
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, resp.StatusCode, nil
 	}
 	actor := &asPerson{}
 	err = json.NewDecoder(resp.Body).Decode(actor)
-	defer resp.Body.Close()
 	if err != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, 0, err
 	}
 	return actor, 0, nil

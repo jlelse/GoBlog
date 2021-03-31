@@ -116,8 +116,13 @@ func uploadToBunny(filename string, f io.Reader, config *configMicropubMedia) (l
 	}
 	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("https://storage.bunnycdn.com/%s/%s", url.PathEscape(config.BunnyStorageName), url.PathEscape(filename)), f)
 	req.Header.Add("AccessKey", config.BunnyStorageKey)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusCreated {
+	resp, err := appHttpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode != http.StatusCreated {
 		return "", errors.New("failed to upload file to BunnyCDN")
 	}
 	return config.MediaURL + "/" + filename, nil
@@ -191,22 +196,26 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 	if err != nil {
 		return "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := appHttpClient.Do(req)
 	if err != nil {
 		return "", err
-	} else if resp.StatusCode != http.StatusOK {
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", fmt.Errorf("failed to compress image, status code %d", resp.StatusCode)
 	}
 	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	defer func() {
-		_ = resp.Body.Close()
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpFile.Name())
 	}()
 	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	fileName, err := getSHA256(tmpFile)

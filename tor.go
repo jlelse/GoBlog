@@ -77,5 +77,10 @@ func startOnionService(h http.Handler) error {
 	torAddress = onion.String()
 	log.Println("Onion service published on http://" + torAddress)
 	// Serve handler
-	return http.Serve(onion, h)
+	s := &http.Server{
+		Handler:      h,
+		ReadTimeout:  5 * time.Minute,
+		WriteTimeout: 5 * time.Minute,
+	}
+	return s.Serve(onion)
 }

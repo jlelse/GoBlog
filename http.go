@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/dchest/captcha"
@@ -86,7 +87,13 @@ func startServer() (err error) {
 		}
 		err = certmagic.HTTPS(hosts, finalHandler)
 	} else {
-		err = http.ListenAndServe(localAddress, finalHandler)
+		s := &http.Server{
+			Addr:         localAddress,
+			Handler:      finalHandler,
+			ReadTimeout:  5 * time.Minute,
+			WriteTimeout: 5 * time.Minute,
+		}
+		err = s.ListenAndServe()
 	}
 	return
 }

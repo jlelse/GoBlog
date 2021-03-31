@@ -79,7 +79,7 @@ func (m *mention) verifyMention() error {
 		c, _ := createTokenCookie()
 		req.AddCookie(c)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := appHttpClient.Do(req)
 	if err != nil {
 		return err
 	}

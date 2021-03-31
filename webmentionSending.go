@@ -62,10 +62,12 @@ func sendWebmention(endpoint, source, target string) (*http.Response, error) {
 	}
 	req.Header.Set(contentType, contentTypeWWWForm)
 	req.Header.Set(userAgent, appUserAgent)
-	res, err := http.DefaultClient.Do(req)
+	res, err := appHttpClient.Do(req)
 	if err != nil {
 		return res, err
 	}
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, res.Body)
 	if code := res.StatusCode; code < 200 || 300 <= code {
 		return res, fmt.Errorf("response error: %v", res.StatusCode)
 	}
@@ -79,16 +81,18 @@ func discoverEndpoint(urlStr string) string {
 			return ""
 		}
 		req.Header.Set(userAgent, appUserAgent)
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := appHttpClient.Do(req)
 		if err != nil {
 			return ""
 		}
+		defer resp.Body.Close()
 		if code := resp.StatusCode; code < 200 || 300 <= code {
+			_, _ = io.Copy(io.Discard, resp.Body)
 			return ""
 		}
-		defer resp.Body.Close()
 		endpoint, err := extractEndpoint(resp)
 		if err != nil || endpoint == "" {
+			_, _ = io.Copy(io.Discard, resp.Body)
 			return ""
 		}
 		if urls, err := resolveURLReferences(urlStr, endpoint); err == nil && len(urls) > 0 && urls[0] != "" {

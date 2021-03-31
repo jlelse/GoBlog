@@ -124,14 +124,16 @@ func apSendSigned(blogIri, to string, activity []byte) error {
 		return err
 	}
 	// Do request
-	resp, err := http.DefaultClient.Do(r)
+	resp, err := appHttpClient.Do(r)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if !apRequestIsSuccess(resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
 		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
+	} else {
+		_, _ = io.Copy(io.Discard, resp.Body)
 	}
 	return nil
 }
