@@ -4,6 +4,7 @@ import (
 	"compress/flate"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -74,28 +75,54 @@ func startServer() (err error) {
 			log.Println("Tor failed:", torErr.Error())
 		}()
 	}
-	// Start HTTP(s) server
-	localAddress := ":" + strconv.Itoa(appConfig.Server.Port)
+	// Start server
+	s := &http.Server{
+		Handler:      finalHandler,
+		ReadTimeout:  5 * time.Minute,
+		WriteTimeout: 5 * time.Minute,
+	}
 	if appConfig.Server.PublicHTTPS {
+		// Configure
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
-		certmagic.DefaultACME.Agreed = true
 		certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
+		// Start HTTP server for TLS verification and redirect
+		httpServer := &http.Server{
+			Addr:         ":http",
+			Handler:      http.HandlerFunc(redirectToHttps),
+			ReadTimeout:  5 * time.Minute,
+			WriteTimeout: 5 * time.Minute,
+		}
+		go func() {
+			if err := httpServer.ListenAndServe(); err != nil {
+				log.Println("Failed to start HTTP server:", err.Error())
+			}
+		}()
+		// Start HTTPS
+		s.Addr = ":https"
 		hosts := []string{appConfig.Server.publicHostname}
 		if appConfig.Server.shortPublicHostname != "" {
 			hosts = append(hosts, appConfig.Server.shortPublicHostname)
 		}
-		err = certmagic.HTTPS(hosts, finalHandler)
-	} else {
-		s := &http.Server{
-			Addr:         localAddress,
-			Handler:      finalHandler,
-			ReadTimeout:  5 * time.Minute,
-			WriteTimeout: 5 * time.Minute,
+		listener, e := certmagic.Listen(hosts)
+		if e != nil {
+			return e
 		}
+		err = s.Serve(listener)
+	} else {
+		s.Addr = ":" + strconv.Itoa(appConfig.Server.Port)
 		err = s.ListenAndServe()
 	}
 	return
+}
+
+func redirectToHttps(w http.ResponseWriter, r *http.Request) {
+	requestHost, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		requestHost = r.Host
+	}
+	w.Header().Set("Connection", "close")
+	http.Redirect(w, r, fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI()), http.StatusMovedPermanently)
 }
 
 func reloadRouter() error {

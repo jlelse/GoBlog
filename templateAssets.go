@@ -2,7 +2,10 @@ package main
 
 import (
 	"crypto/sha1"
+	"crypto/sha512"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"os"
@@ -18,6 +21,7 @@ var assetFiles map[string]*assetFile = map[string]*assetFile{}
 
 type assetFile struct {
 	contentType string
+	sri         string
 	body        []byte
 }
 
@@ -41,37 +45,41 @@ func initTemplateAssets() (err error) {
 }
 
 func compileAsset(name string) (string, error) {
-	originalContent, err := os.ReadFile(name)
+	content, err := os.ReadFile(name)
 	if err != nil {
 		return "", err
 	}
 	ext := path.Ext(name)
-	var compiledContent []byte
 	compiledExt := ext
 	switch ext {
 	case ".js":
-		compiledContent, err = minifier.Bytes("application/javascript", originalContent)
+		content, err = minifier.Bytes("application/javascript", content)
 		if err != nil {
 			return "", err
 		}
 	case ".css":
-		compiledContent, err = minifier.Bytes("text/css", originalContent)
+		content, err = minifier.Bytes("text/css", content)
 		if err != nil {
 			return "", err
 		}
 	default:
-		// Just copy the file
-		compiledContent = originalContent
+		// Do nothing
 	}
-	sha := sha1.New()
-	if _, err := sha.Write(compiledContent); err != nil {
+	// Hashes
+	sha1Hash := sha1.New()
+	sha512Hash := sha512.New()
+	if _, err := io.MultiWriter(sha1Hash, sha512Hash).Write(content); err != nil {
 		return "", err
 	}
-	hash := fmt.Sprintf("%x", sha.Sum(nil))
-	compiledFileName := hash + compiledExt
+	// File name
+	compiledFileName := fmt.Sprintf("%x", sha1Hash.Sum(nil)) + compiledExt
+	// SRI
+	sriHash := fmt.Sprintf("sha512-%s", base64.StdEncoding.EncodeToString(sha512Hash.Sum(nil)))
+	// Create struct
 	assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(compiledExt),
-		body:        compiledContent,
+		sri:         sriHash,
+		body:        content,
 	}
 	return compiledFileName, err
 }
@@ -79,6 +87,10 @@ func compileAsset(name string) (string, error) {
 // Function for templates
 func assetFileName(fileName string) string {
 	return "/" + assetFileNames[fileName]
+}
+
+func assetSRI(fileName string) string {
+	return assetFiles[assetFileNames[fileName]].sri
 }
 
 func allAssetPaths() []string {

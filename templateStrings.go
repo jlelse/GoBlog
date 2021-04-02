@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,14 +21,14 @@ func initTemplateStrings() error {
 	}
 	for _, variant := range variants {
 		variantStrings := map[string]string{}
-		fileContent, err := os.ReadFile(path.Join(stringsDir, variant+variantFileExt))
+		f, err := os.Open(filepath.Join(stringsDir, variant+variantFileExt))
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
 			}
 			return err
 		}
-		err = yaml.Unmarshal(fileContent, variantStrings)
+		err = yaml.NewDecoder(f).Decode(variantStrings)
 		if err != nil {
 			return err
 		}
