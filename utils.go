@@ -166,3 +166,7 @@ func dateFormat(date string, format string) string {
 	}
 	return d.Local().Format(format)
 }
+
+type stringPair struct {
+	first, second string
+}

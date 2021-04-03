@@ -4,7 +4,12 @@
       {
         "label": "Build",
         "type": "shell",
-        "command": "go build --tags \"libsqlite3 linux sqlite_fts5\""
+        "command": "go build --tags \"libsqlite3 linux sqlite_fts5\"",
+        "problemMatcher": [],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
       }
     ]
   }

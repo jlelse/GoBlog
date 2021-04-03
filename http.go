@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	servertiming "github.com/mitchellh/go-server-timing"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -59,20 +60,19 @@ func startServer() (err error) {
 		finalHandler = logMiddleware(finalHandler)
 	}
 	// Create routers that don't change
-	err = buildStaticHandlersRouters()
-	if err != nil {
-		return
+	if err = buildStaticHandlersRouters(); err != nil {
+		return err
 	}
 	// Load router
-	err = reloadRouter()
-	if err != nil {
-		return
+	if err = reloadRouter(); err != nil {
+		return err
 	}
 	// Start Onion service
 	if appConfig.Server.Tor {
 		go func() {
-			torErr := startOnionService(finalHandler)
-			log.Println("Tor failed:", torErr.Error())
+			if err := startOnionService(finalHandler); err != nil {
+				log.Println("Tor failed:", err.Error())
+			}
 		}()
 	}
 	// Start server
@@ -81,20 +81,30 @@ func startServer() (err error) {
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
+	go onShutdown(func() {
+		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
+		_ = s.Shutdown(toc)
+		c()
+	})
 	if appConfig.Server.PublicHTTPS {
 		// Configure
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
 		certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
-		// Start HTTP server for TLS verification and redirect
+		// Start HTTP server for redirects
 		httpServer := &http.Server{
 			Addr:         ":http",
 			Handler:      http.HandlerFunc(redirectToHttps),
 			ReadTimeout:  5 * time.Minute,
 			WriteTimeout: 5 * time.Minute,
 		}
+		go onShutdown(func() {
+			toc, c := context.WithTimeout(context.Background(), 5*time.Second)
+			_ = httpServer.Shutdown(toc)
+			c()
+		})
 		go func() {
-			if err := httpServer.ListenAndServe(); err != nil {
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Println("Failed to start HTTP server:", err.Error())
 			}
 		}()
@@ -108,12 +118,16 @@ func startServer() (err error) {
 		if e != nil {
 			return e
 		}
-		err = s.Serve(listener)
+		if err = s.Serve(listener); err != nil && err != http.ErrServerClosed {
+			return err
+		}
 	} else {
 		s.Addr = ":" + strconv.Itoa(appConfig.Server.Port)
-		err = s.ListenAndServe()
+		if err = s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 func redirectToHttps(w http.ResponseWriter, r *http.Request) {

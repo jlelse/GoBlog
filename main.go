@@ -4,10 +4,8 @@ import (
 	"flag"
 	"log"
 	"os"
-	"os/signal"
 	"runtime"
 	"runtime/pprof"
-	"syscall"
 
 	"github.com/pquerna/otp/totp"
 )
@@ -16,6 +14,8 @@ var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
 var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
 
 func main() {
+	var err error
+
 	// Init CPU profiling
 	flag.Parse()
 	if *cpuprofile != "" {
@@ -32,25 +32,22 @@ func main() {
 
 	// Initialize config
 	log.Println("Initialize configuration...")
-	err := initConfig()
-	if err != nil {
-		log.Fatal(err)
+	if err = initConfig(); err != nil {
+		log.Fatalln("Failed to init config:", err.Error())
 	}
 
-	// Small tools
-	if len(os.Args) >= 2 {
-		if os.Args[1] == "totp-secret" {
-			key, err := totp.Generate(totp.GenerateOpts{
-				Issuer:      appConfig.Server.PublicAddress,
-				AccountName: appConfig.User.Nick,
-			})
-			if err != nil {
-				log.Fatal(err.Error())
-				return
-			}
-			log.Println("TOTP-Secret:", key.Secret())
+	// Small tools before init
+	if len(os.Args) >= 2 && os.Args[1] == "totp-secret" {
+		key, err := totp.Generate(totp.GenerateOpts{
+			Issuer:      appConfig.Server.PublicAddress,
+			AccountName: appConfig.User.Nick,
+		})
+		if err != nil {
+			log.Fatalln(err.Error())
 			return
 		}
+		log.Println("TOTP-Secret:", key.Secret())
+		return
 	}
 
 	// Init regular garbage collection
@@ -58,54 +55,54 @@ func main() {
 
 	// Execute pre-start hooks
 	preStartHooks()
-	// Initialize everything else
+
+	// Initialize database and markdown
 	log.Println("Initialize database...")
-	err = initDatabase()
-	if err != nil {
-		log.Fatal(err)
+	if err = initDatabase(); err != nil {
+		log.Fatalln("Failed to init database:", err.Error())
 		return
 	}
 	log.Println("Initialize server components...")
-	initMinify()
 	initMarkdown()
-	err = initTemplateAssets() // Needs minify
-	if err != nil {
-		log.Fatal(err)
+
+	// Link check tool after init of markdown
+	if len(os.Args) >= 2 && os.Args[1] == "check" {
+		checkAllExternalLinks()
 		return
 	}
-	err = initTemplateStrings()
-	if err != nil {
-		log.Fatal(err)
+
+	// More initializations
+	initMinify()
+	if err = initTemplateAssets(); err != nil { // Needs minify
+		log.Fatalln("Failed to init template assets:", err.Error())
 		return
 	}
-	err = initRendering() // Needs assets
-	if err != nil {
-		log.Fatal(err)
+	if err = initTemplateStrings(); err != nil {
+		log.Fatalln("Failed to init template translations:", err.Error())
 		return
 	}
-	err = initCache()
-	if err != nil {
-		log.Fatal(err)
+	if err = initRendering(); err != nil { // Needs assets and minify
+		log.Fatalln("Failed to init HTML rendering:", err.Error())
 		return
 	}
-	err = initRegexRedirects()
-	if err != nil {
-		log.Fatal(err)
+	if err = initCache(); err != nil {
+		log.Fatalln("Failed to init HTTP cache:", err.Error())
 		return
 	}
-	err = initHTTPLog()
-	if err != nil {
-		log.Fatal(err)
+	if err = initRegexRedirects(); err != nil {
+		log.Fatalln("Failed to init redirects:", err.Error())
 		return
 	}
-	err = initActivityPub()
-	if err != nil {
-		log.Fatal(err)
+	if err = initHTTPLog(); err != nil {
+		log.Fatal("Failed to init HTTP logging:", err.Error())
 		return
 	}
-	err = initWebmention()
-	if err != nil {
-		log.Fatal(err)
+	if err = initActivityPub(); err != nil {
+		log.Fatalln("Failed to init ActivityPub:", err.Error())
+		return
+	}
+	if err = initWebmention(); err != nil {
+		log.Fatalln("Failed to init webmention support:", err.Error())
 		return
 	}
 	initTelegram()
@@ -113,42 +110,37 @@ func main() {
 	// Start cron hooks
 	startHourlyHooks()
 
-	// Prepare graceful shutdown
-	quit := make(chan os.Signal, 1)
-
 	// Start the server
-	go func() {
-		log.Println("Starting server...")
-		err = startServer()
-		if err != nil {
-			log.Println("Failed to start server:")
-			log.Println(err)
-		}
-		quit <- os.Interrupt
-	}()
+	log.Println("Starting server...")
+	err = startServer()
+	if err != nil {
+		log.Fatalln("Failed to start server:", err.Error())
+		return
+	}
+	log.Println("Stopped server(s)")
 
-	// Graceful shutdown
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Stopping...")
+	// Wait till everything is shutdown
+	waitForShutdown()
+
+	// Close DB
+	if err = closeDb(); err != nil {
+		log.Fatalln("Failed to close DB:", err.Error())
+		return
+	}
+	log.Println("Closed Database")
 
 	// Write memory profile
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
-			log.Fatal("could not create memory profile: ", err)
+			log.Fatalln("could not create memory profile: ", err.Error())
+			return
 		}
 		defer f.Close()
 		runtime.GC()
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("could not write memory profile: ", err)
+			log.Fatalln("could not write memory profile: ", err.Error())
+			return
 		}
-	}
-
-	// Close DB
-	err = closeDb()
-	if err != nil {
-		log.Fatal(err)
-		return
 	}
 }
