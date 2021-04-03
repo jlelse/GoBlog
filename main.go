@@ -68,6 +68,9 @@ func main() {
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
 		checkAllExternalLinks()
+		if err = closeDb(); err != nil {
+			log.Fatalln("Failed to close DB:", err.Error())
+		}
 		return
 	}
 
