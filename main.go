@@ -16,7 +16,7 @@ var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
 func main() {
 	var err error
 
-	// Init CPU profiling
+	// Init CPU and memory profiling
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -29,6 +29,21 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
+	if *memprofile != "" {
+		defer func() {
+			f, err := os.Create(*memprofile)
+			if err != nil {
+				log.Fatalln("could not create memory profile: ", err.Error())
+				return
+			}
+			defer f.Close()
+			runtime.GC()
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				log.Fatalln("could not write memory profile: ", err.Error())
+				return
+			}
+		}()
+	}
 
 	// Initialize config
 	log.Println("Initialize configuration...")
@@ -36,7 +51,18 @@ func main() {
 		log.Fatalln("Failed to init config:", err.Error())
 	}
 
-	// Small tools before init
+	// Healthcheck tool
+	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
+		// Connect to public address + "/ping" and exit with 0 when successful
+		if health := healthcheck(); health {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Tool to generate TOTP secret
 	if len(os.Args) >= 2 && os.Args[1] == "totp-secret" {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      appConfig.Server.PublicAddress,
@@ -132,18 +158,4 @@ func main() {
 	}
 	log.Println("Closed Database")
 
-	// Write memory profile
-	if *memprofile != "" {
-		f, err := os.Create(*memprofile)
-		if err != nil {
-			log.Fatalln("could not create memory profile: ", err.Error())
-			return
-		}
-		defer f.Close()
-		runtime.GC()
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatalln("could not write memory profile: ", err.Error())
-			return
-		}
-	}
 }
