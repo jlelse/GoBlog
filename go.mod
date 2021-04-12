@@ -47,7 +47,7 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/tdewolff/minify/v2 v2.9.15
+	github.com/tdewolff/minify/v2 v2.9.16
 	github.com/thoas/go-funk v0.8.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2

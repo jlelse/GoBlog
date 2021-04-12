@@ -3,7 +3,7 @@
   <html lang="{{ .Blog.Lang }}">
     <meta charset="utf-8">
     <meta name=viewport content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="{{ asset "css/styles.css" }}" integrity="{{ assetsri "css/styles.css" }}">
+    <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
     {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
     {{ block "title" . }}
       <title>{{ .Blog.Title }}</title>
