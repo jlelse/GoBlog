@@ -2,15 +2,14 @@ package main
 
 import (
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
+	"github.com/thoas/go-funk"
 )
 
 type requestContextKey string
@@ -37,12 +36,7 @@ func sortedStrings(s []string) []string {
 const randomLetters = "abcdefghijklmnopqrstuvwxyz"
 
 func generateRandomString(chars int) string {
-	rand.Seed(time.Now().UnixNano())
-	var b strings.Builder
-	for i := 0; i < chars; i++ {
-		b.WriteByte(randomLetters[rand.Intn(len(randomLetters))])
-	}
-	return b.String()
+	return funk.RandomString(chars, []rune(randomLetters))
 }
 
 func isAllowedHost(r *http.Request, hosts ...string) bool {
@@ -86,7 +80,7 @@ func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 		}
 	})
 	links, err = resolveURLReferences(baseURL, links...)
-	return links, err
+	return funk.UniqString(links), err
 }
 
 func resolveURLReferences(base string, refs ...string) ([]string, error) {

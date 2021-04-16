@@ -11,10 +11,9 @@ import (
 )
 
 var (
-	appDb                 *sql.DB
-	appDbWriteMutex       = &sync.Mutex{}
-	dbStatementCache      = map[string]*sql.Stmt{}
-	dbStatementCacheMutex = &sync.RWMutex{}
+	appDb            *sql.DB
+	appDbWriteMutex  = &sync.Mutex{}
+	dbStatementCache = map[string]*sql.Stmt{}
 )
 
 func initDatabase() (err error) {
@@ -50,11 +49,11 @@ func dumpDb() {
 	f, err := os.Create(appConfig.Db.DumpFile)
 	if err != nil {
 		log.Println("Error while dump db:", err.Error())
+		return
 	}
 	startWritingToDb()
 	defer finishWritingToDb()
-	err = sqlite3dump.DumpDB(appDb, f)
-	if err != nil {
+	if err = sqlite3dump.DumpDB(appDb, f); err != nil {
 		log.Println("Error while dump db:", err.Error())
 	}
 }
@@ -78,9 +77,7 @@ func vacuumDb() {
 
 func prepareAppDbStatement(query string) (*sql.Stmt, error) {
 	stmt, err, _ := cacheGroup.Do(query, func() (interface{}, error) {
-		dbStatementCacheMutex.RLock()
 		stmt, ok := dbStatementCache[query]
-		dbStatementCacheMutex.RUnlock()
 		if ok && stmt != nil {
 			return stmt, nil
 		}
@@ -88,9 +85,7 @@ func prepareAppDbStatement(query string) (*sql.Stmt, error) {
 		if err != nil {
 			return nil, err
 		}
-		dbStatementCacheMutex.Lock()
 		dbStatementCache[query] = stmt
-		dbStatementCacheMutex.Unlock()
 		return stmt, nil
 	})
 	if err != nil {

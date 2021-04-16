@@ -14,6 +14,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/joncrlsn/dque"
+	"github.com/thoas/go-funk"
 	"willnorris.com/go/microformats"
 )
 
@@ -117,14 +118,9 @@ func (m *mention) verifyReader(body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	hasLink := false
-	for _, link := range links {
-		if unescapedPath(link) == unescapedPath(m.Target) {
-			hasLink = true
-			break
-		}
-	}
-	if !hasLink {
+	if _, hasLink := funk.FindString(links, func(s string) bool {
+		return unescapedPath(s) == unescapedPath(m.Target)
+	}); !hasLink {
 		return errors.New("target not found in source")
 	}
 	// Set title
