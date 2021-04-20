@@ -77,18 +77,27 @@ img {
   width: 100%;
 }
 
-input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button {
+button, input, textarea, select {
   @include color-border(border, 1px, solid, primary);
+  border-radius: 0;
   @include color(background, background);
   @include color(color, primary);
   @extend .sans-serif;
   padding: 5px 10px;
-  border-radius: 0;
   box-sizing: border-box;
   text-decoration: none;
   font-size: 1rem;
   line-height: 1.5;
 }
+
+.button {
+  @extend button;
+}
+
+// Disable this because it causes CSS to break in Firefox ESR (check again in the future)
+// input[type=file]::file-selector-button, input[type=file]::-webkit-file-upload-button {
+// @extend .button;
+// }
 
 form {
   input, textarea, select {

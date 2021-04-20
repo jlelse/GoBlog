@@ -1,4 +1,4 @@
-.sans-serif, input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button, body {
+.sans-serif, button, .button, input, textarea, select, body {
   font-family: sans-serif;
 }
 
@@ -52,15 +52,15 @@ img {
   width: 100%;
 }
 
-input, textarea, select, button, .button, ::file-selector-button, ::-webkit-file-upload-button {
+button, .button, input, textarea, select {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
+  border-radius: 0;
   background: #fff;
   background: var(--background, #fff);
   color: #000;
   color: var(--primary, #000);
   padding: 5px 10px;
-  border-radius: 0;
   box-sizing: border-box;
   text-decoration: none;
   font-size: 1rem;
