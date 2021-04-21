@@ -1,21 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	tfgo "codeberg.org/jlelse/tinify"
 )
 
 const micropubMediaSubPath = "/media"
@@ -126,105 +121,6 @@ func uploadToBunny(filename string, f io.Reader, config *configMicropubMedia) (l
 		return "", errors.New("failed to upload file to BunnyCDN")
 	}
 	return config.MediaURL + "/" + filename, nil
-}
-
-func tinify(url string, config *configMicropubMedia) (location string, err error) {
-	// Check config
-	if config == nil || config.TinifyKey == "" {
-		return "", errors.New("Tinify not configured")
-	}
-	// Check url
-	fileExtension, allowed := compressionIsSupported(url, "jpg", "jpeg", "png")
-	if !allowed {
-		return "", nil
-	}
-	// Compress
-	tfgo.SetKey(config.TinifyKey)
-	s, err := tfgo.FromUrl(url)
-	if err != nil {
-		return "", err
-	}
-	if err = s.Resize(&tfgo.ResizeOption{
-		Method: tfgo.ResizeMethodScale,
-		Width:  2000,
-	}); err != nil {
-		return "", err
-	}
-	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-	if err = s.ToFile(tmpFile.Name()); err != nil {
-		return "", err
-	}
-	fileName, err := getSHA256(tmpFile)
-	if err != nil {
-		return "", err
-	}
-	// Upload compressed file
-	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
-	return
-}
-
-func shortPixel(url string, config *configMicropubMedia) (location string, err error) {
-	// Check config
-	if config == nil || config.ShortPixelKey == "" {
-		return "", errors.New("ShortPixel not configured")
-	}
-	// Check url
-	fileExtension, allowed := compressionIsSupported(url, "jpg", "jpeg", "png")
-	if !allowed {
-		return "", nil
-	}
-	// Compress
-	j, _ := json.Marshal(map[string]interface{}{
-		"key":            config.ShortPixelKey,
-		"plugin_version": "GB001",
-		"lossy":          1,
-		"resize":         3,
-		"resize_width":   2000,
-		"resize_height":  3000,
-		"cmyk2rgb":       1,
-		"keep_exif":      0,
-		"url":            url,
-	})
-	req, err := http.NewRequest(http.MethodPut, "https://api.shortpixel.com/v2/reducer-sync.php", bytes.NewReader(j))
-	if err != nil {
-		return "", err
-	}
-	resp, err := appHttpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		return "", fmt.Errorf("failed to compress image, status code %d", resp.StatusCode)
-	}
-	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
-	if err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		return "", err
-	}
-	fileName, err := getSHA256(tmpFile)
-	if err != nil {
-		return "", err
-	}
-	// Upload compressed file
-	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
-	return
 }
 
 func compressionIsSupported(url string, allowed ...string) (string, bool) {
