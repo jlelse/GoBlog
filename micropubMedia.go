@@ -60,31 +60,42 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Try to compress file
-	if ms := appConfig.Micropub.MediaStorage; ms != nil {
+	// Try to compress file (only when not in private mode)
+	if pm := appConfig.PrivateMode; !(pm != nil && pm.Enabled) {
 		serveCompressionError := func(ce error) {
 			serveError(w, r, "failed to compress file: "+ce.Error(), http.StatusInternalServerError)
 		}
 		var compressedLocation string
 		var compressionErr error
-		// Default ShortPixel
-		if ms.ShortPixelKey != "" {
-			compressedLocation, compressionErr = shortPixel(location, ms)
-		}
-		if compressionErr != nil {
-			serveCompressionError(compressionErr)
-			return
-		}
-		// Fallback Tinify
-		if compressedLocation == "" && ms.TinifyKey != "" {
-			compressedLocation, compressionErr = tinify(location, ms)
-		}
-		if compressionErr != nil {
-			serveCompressionError(compressionErr)
-			return
-		}
-		if compressedLocation != "" {
-			location = compressedLocation
+		if ms := appConfig.Micropub.MediaStorage; ms != nil {
+			// Default ShortPixel
+			if ms.ShortPixelKey != "" {
+				compressedLocation, compressionErr = shortPixel(location, ms)
+			}
+			if compressionErr != nil {
+				serveCompressionError(compressionErr)
+				return
+			}
+			// Fallback Tinify
+			if compressedLocation == "" && ms.TinifyKey != "" {
+				compressedLocation, compressionErr = tinify(location, ms)
+			}
+			if compressionErr != nil {
+				serveCompressionError(compressionErr)
+				return
+			}
+			// Fallback Cloudflare
+			if compressedLocation == "" && ms.CloudflareCompressionEnabled {
+				compressedLocation, compressionErr = cloudflare(location)
+			}
+			if compressionErr != nil {
+				serveCompressionError(compressionErr)
+				return
+			}
+			// Overwrite location
+			if compressedLocation != "" {
+				location = compressedLocation
+			}
 		}
 	}
 	http.Redirect(w, r, location, http.StatusCreated)

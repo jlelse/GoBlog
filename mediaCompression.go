@@ -149,3 +149,47 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
 	return
 }
+
+func cloudflare(url string) (location string, err error) {
+	// Check url
+	_, allowed := compressionIsSupported(url, "jpg", "jpeg", "png")
+	if !allowed {
+		return "", nil
+	}
+	// Force jpeg
+	fileExtension := "jpeg"
+	// Compress
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url), nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := appHttpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return "", fmt.Errorf("cloudflare failed to compress image, status code %d", resp.StatusCode)
+	}
+	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
+	if err != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return "", err
+	}
+	defer func() {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpFile.Name())
+	}()
+	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return "", err
+	}
+	fileName, err := getSHA256(tmpFile)
+	if err != nil {
+		return "", err
+	}
+	// Upload compressed file
+	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
+	return
+}

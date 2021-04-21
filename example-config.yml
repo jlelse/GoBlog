@@ -78,9 +78,10 @@ micropub:
     # BunnyCDN storage (optional)
     bunnyStorageKey: BUNNY-STORAGE-KEY # Secret key for BunnyCDN storage
     bunnyStorageName: storagename # BunnyCDN storage name
-    # Image compression (optional, you can define no, one or both)
-    tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API
+    # Image compression (optional, you can define no, one or multiple services, disabled when private mode enabled)
     shortPixelKey: SHORT-PIXEL-KEY # Secret key for the ShortPixel API
+    tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API (first fallback)
+    cloudflareCompressionEnabled: true # Use Cloudflare's compression as a second fallback
   # MicroPub parameters (defaults already set, set to overwrite)
   # You can set parameters via the UI of your MicroPub editor or via front matter in the content
   categoryParam: tags

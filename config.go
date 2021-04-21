@@ -170,11 +170,12 @@ type configMicropub struct {
 }
 
 type configMicropubMedia struct {
-	MediaURL         string `mapstructure:"mediaUrl"`
-	BunnyStorageKey  string `mapstructure:"bunnyStorageKey"`
-	BunnyStorageName string `mapstructure:"bunnyStorageName"`
-	TinifyKey        string `mapstructure:"tinifyKey"`
-	ShortPixelKey    string `mapstructure:"shortPixelKey"`
+	MediaURL                     string `mapstructure:"mediaUrl"`
+	BunnyStorageKey              string `mapstructure:"bunnyStorageKey"`
+	BunnyStorageName             string `mapstructure:"bunnyStorageName"`
+	TinifyKey                    string `mapstructure:"tinifyKey"`
+	ShortPixelKey                string `mapstructure:"shortPixelKey"`
+	CloudflareCompressionEnabled bool   `mapstructure:"cloudflareCompressionEnabled"`
 }
 
 type configRegexRedirect struct {
