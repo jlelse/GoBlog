@@ -156,9 +156,6 @@ func initRendering() error {
 			}
 			return parsed
 		},
-		"commentsenabled": func(blog *configBlog) bool {
-			return blog.Comments != nil && blog.Comments.Enabled
-		},
 		"mentions": func(absolute string) []*mention {
 			mentions, _ := getWebmentions(&webmentionsRequestConfig{
 				target: absolute,
@@ -193,11 +190,12 @@ func initRendering() error {
 }
 
 type renderData struct {
-	BlogString string
-	Canonical  string
-	Blog       *configBlog
-	Data       interface{}
-	LoggedIn   bool
+	BlogString      string
+	Canonical       string
+	Blog            *configBlog
+	Data            interface{}
+	LoggedIn        bool
+	CommentsEnabled bool
 }
 
 func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
@@ -225,6 +223,8 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
 		data.LoggedIn = true
 	}
+	// Check if comments enabled
+	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
 	// Minify and write response
 	mw := minifier.Writer(contentTypeHTML, w)
 	defer func() {

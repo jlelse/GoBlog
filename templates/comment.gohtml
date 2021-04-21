@@ -13,7 +13,7 @@
       {{ html .Data.Comment }}
     </p>
   </main>
-  {{ if commentsenabled .Blog }}
+  {{ if .CommentsEnabled }}
     {{ include "interactions" . }}
   {{ end }}
 {{ end }}

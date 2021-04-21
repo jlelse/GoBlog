@@ -41,7 +41,7 @@
       </form>
     </div>
   {{ end }}
-  {{ if commentsenabled .Blog }}
+  {{ if .CommentsEnabled }}
     {{ include "interactions" . }}
   {{ end }}
 {{ end }}
