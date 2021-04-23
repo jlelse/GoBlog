@@ -19,6 +19,7 @@ type config struct {
 	Micropub      *configMicropub        `mapstructure:"micropub"`
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
+	Webmention    *configWebmention      `mapstructure:"webmention"`
 	Notifications *configNotifications   `mapstructure:"notifications"`
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
 }
@@ -205,6 +206,11 @@ type configPrivateMode struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
+type configWebmention struct {
+	DisableSending   bool `mapstructure:"disableSending"`
+	DisableReceiving bool `mapstructure:"disableReceiving"`
+}
+
 var appConfig = &config{}
 
 func initConfig() error {
@@ -235,6 +241,8 @@ func initConfig() error {
 	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
 	viper.SetDefault("activityPub.keyPath", "data/private.pem")
 	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
+	viper.SetDefault("webmention.disableSending", false)
+	viper.SetDefault("webmention.disableReceiving", false)
 	// Unmarshal config
 	err = viper.Unmarshal(appConfig)
 	if err != nil {
@@ -273,6 +281,12 @@ func initConfig() error {
 	}
 	if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
 		appConfig.ActivityPub = &configActivityPub{Enabled: false}
+	}
+	if wm := appConfig.Webmention; wm != nil && wm.DisableReceiving {
+		// Disable comments for all blogs
+		for _, b := range appConfig.Blogs {
+			b.Comments = &comments{Enabled: false}
+		}
 	}
 	return nil
 }

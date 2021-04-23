@@ -64,7 +64,7 @@ func handleWebmention(w http.ResponseWriter, r *http.Request) {
 
 func extractMention(r *http.Request) (*mention, error) {
 	if !strings.Contains(r.Header.Get(contentType), contentTypeWWWForm) {
-		return nil, errors.New("Unsupported Content-Type")
+		return nil, errors.New("unsupported Content-Type")
 	}
 	err := r.ParseForm()
 	if err != nil {
@@ -73,7 +73,7 @@ func extractMention(r *http.Request) (*mention, error) {
 	source := r.Form.Get("source")
 	target := unescapedPath(r.Form.Get("target"))
 	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
-		return nil, errors.New("Invalid request")
+		return nil, errors.New("invalid request")
 	}
 	return &mention{
 		Source:  source,

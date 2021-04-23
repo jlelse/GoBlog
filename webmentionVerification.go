@@ -66,6 +66,9 @@ func startWebmentionQueue() {
 }
 
 func queueMention(m *mention) error {
+	if wm := appConfig.Webmention; wm != nil && wm.DisableReceiving {
+		return errors.New("webmention receiving disabled")
+	}
 	return wmQueue.Enqueue(m)
 }
 

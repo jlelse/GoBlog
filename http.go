@@ -193,15 +193,17 @@ func buildStaticHandlersRouters() error {
 	indieAuthRouter.Post("/token", indieAuthToken)
 
 	webmentionsRouter = chi.NewRouter()
-	webmentionsRouter.Post("/", handleWebmention)
-	webmentionsRouter.Group(func(r chi.Router) {
-		// Authenticated routes
-		r.Use(authMiddleware)
-		r.Get("/", webmentionAdmin)
-		r.Get(paginationPath, webmentionAdmin)
-		r.Post("/delete", webmentionAdminDelete)
-		r.Post("/approve", webmentionAdminApprove)
-	})
+	if wm := appConfig.Webmention; wm != nil && !wm.DisableReceiving {
+		webmentionsRouter.Post("/", handleWebmention)
+		webmentionsRouter.Group(func(r chi.Router) {
+			// Authenticated routes
+			r.Use(authMiddleware)
+			r.Get("/", webmentionAdmin)
+			r.Get(paginationPath, webmentionAdmin)
+			r.Post("/delete", webmentionAdminDelete)
+			r.Post("/approve", webmentionAdminApprove)
+		})
+	}
 
 	notificationsRouter = chi.NewRouter()
 	notificationsRouter.Use(authMiddleware)

@@ -190,12 +190,13 @@ func initRendering() error {
 }
 
 type renderData struct {
-	BlogString      string
-	Canonical       string
-	Blog            *configBlog
-	Data            interface{}
-	LoggedIn        bool
-	CommentsEnabled bool
+	BlogString                 string
+	Canonical                  string
+	Blog                       *configBlog
+	Data                       interface{}
+	LoggedIn                   bool
+	CommentsEnabled            bool
+	WebmentionReceivingEnabled bool
 }
 
 func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
@@ -225,6 +226,8 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 	}
 	// Check if comments enabled
 	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
+	// Check if able to receive webmentions
+	data.WebmentionReceivingEnabled = appConfig.Webmention == nil || !appConfig.Webmention.DisableReceiving
 	// Minify and write response
 	mw := minifier.Writer(contentTypeHTML, w)
 	defer func() {

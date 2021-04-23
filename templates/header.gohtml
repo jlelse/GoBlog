@@ -11,7 +11,7 @@
         <nav>
           <a href="{{ blogrelative .Blog "/editor" }}">{{ string .Blog.Lang "editor" }}</a>
           &bull; <a href="/notifications">{{ string .Blog.Lang "notifications" }}</a>
-          &bull; <a href="/webmention">{{ string .Blog.Lang "webmentions" }}</a>
+          {{ if .WebmentionReceivingEnabled }}&bull; <a href="/webmention">{{ string .Blog.Lang "webmentions" }}</a>{{ end }}
           {{ if .CommentsEnabled }}&bull; <a href="{{ blogrelative .Blog "/comment" }}">{{ string .Blog.Lang "comments" }}</a>{{ end }}
           &bull; <a href="/logout">{{ string .Blog.Lang "logout" }}</a>
         </nav>

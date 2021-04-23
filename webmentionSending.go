@@ -14,6 +14,10 @@ import (
 )
 
 func (p *post) sendWebmentions() error {
+	if wm := appConfig.Webmention; wm != nil && wm.DisableSending {
+		// Just ignore the mentions
+		return nil
+	}
 	links := []string{}
 	contentLinks, err := allLinksFromHTML(strings.NewReader(string(p.html())), p.fullURL())
 	if err != nil {
@@ -42,8 +46,7 @@ func (p *post) sendWebmentions() error {
 		if endpoint == "" {
 			continue
 		}
-		_, err = sendWebmention(endpoint, p.fullURL(), link)
-		if err != nil {
+		if err = sendWebmention(endpoint, p.fullURL(), link); err != nil {
 			log.Println("Sending webmention to " + link + " failed")
 			continue
 		}
@@ -52,26 +55,30 @@ func (p *post) sendWebmentions() error {
 	return nil
 }
 
-func sendWebmention(endpoint, source, target string) (*http.Response, error) {
+func sendWebmention(endpoint, source, target string) error {
+	if wm := appConfig.Webmention; wm != nil && wm.DisableSending {
+		// Just ignore the mention
+		return nil
+	}
 	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(url.Values{
 		"source": []string{source},
 		"target": []string{target},
 	}.Encode()))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set(contentType, contentTypeWWWForm)
 	req.Header.Set(userAgent, appUserAgent)
 	res, err := appHttpClient.Do(req)
 	if err != nil {
-		return res, err
+		return err
 	}
 	defer res.Body.Close()
 	_, _ = io.Copy(io.Discard, res.Body)
 	if code := res.StatusCode; code < 200 || 300 <= code {
-		return res, fmt.Errorf("response error: %v", res.StatusCode)
+		return fmt.Errorf("response error: %v", res.StatusCode)
 	}
-	return res, nil
+	return nil
 }
 
 func discoverEndpoint(urlStr string) string {
