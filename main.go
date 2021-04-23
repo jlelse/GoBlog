@@ -22,10 +22,12 @@ func main() {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
 			log.Fatal("could not create CPU profile: ", err)
+			return
 		}
 		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			log.Fatal("could not start CPU profile: ", err)
+			return
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -96,6 +98,7 @@ func main() {
 		checkAllExternalLinks()
 		if err = closeDb(); err != nil {
 			log.Fatalln("Failed to close DB:", err.Error())
+			return
 		}
 		return
 	}
