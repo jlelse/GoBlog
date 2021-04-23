@@ -36,10 +36,10 @@ func checkAllExternalLinks() {
 			wg.Add(1)
 			for postLinkPair := range linkChan {
 				rm.RLock()
-				_, ok := responses[postLinkPair.second]
+				_, ok := responses[postLinkPair.Second]
 				rm.RUnlock()
 				if !ok {
-					req, err := http.NewRequest(http.MethodGet, postLinkPair.second, nil)
+					req, err := http.NewRequest(http.MethodGet, postLinkPair.Second, nil)
 					if err != nil {
 						fmt.Println(err.Error())
 						continue
@@ -50,19 +50,19 @@ func checkAllExternalLinks() {
 					req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 					resp, err := client.Do(req)
 					if err != nil {
-						fmt.Println(postLinkPair.second+" ("+postLinkPair.first+"):", err.Error())
+						fmt.Println(postLinkPair.Second+" ("+postLinkPair.First+"):", err.Error())
 						continue
 					}
 					status := resp.StatusCode
 					_, _ = io.Copy(io.Discard, resp.Body)
 					resp.Body.Close()
 					rm.Lock()
-					responses[postLinkPair.second] = status
+					responses[postLinkPair.Second] = status
 					rm.Unlock()
 				}
 				rm.RLock()
-				if response, ok := responses[postLinkPair.second]; ok && !checkSuccessStatus(response) {
-					fmt.Println(postLinkPair.second+" ("+postLinkPair.first+"):", response)
+				if response, ok := responses[postLinkPair.Second]; ok && !checkSuccessStatus(response) {
+					fmt.Println(postLinkPair.Second+" ("+postLinkPair.First+"):", response)
 				}
 				rm.RUnlock()
 			}

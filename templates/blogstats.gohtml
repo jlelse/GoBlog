@@ -14,19 +14,30 @@
         </tr>
       </thead>
       <tbody>
-        {{ $counts := .Data.counts }}
-        {{ range $i, $year := .Data.years }}
-          <tr>
-            <td class="tal">{{ $year }}</td>
-            <td class="tar">{{ index $counts $i }}</td>
+        {{ $months := .Data.months }}
+        {{ range $year := .Data.years }}
+          <tr class="statsyear" data-year="{{ $year.First }}">
+            <td class="tal"><b>{{ $year.First }}</b></td>
+            <td class="tar">{{ $year.Second }}</td>
           </tr>
+          {{ range $month := (index $months $year.First) }}
+            <tr class="statsmonth hide" data-year="{{ $year.First }}">
+              <td class="tal">{{ $month.First }}</td>
+              <td class="tar">{{ $month.Second }}</td>
+            </tr>
+          {{ end }}
         {{ end }}
         <tr>
-          <td class="tal"><b>{{ string .Blog.Lang "total" }}</b></td>
+          <td class="tal"><b>{{ string .Blog.Lang "withoutdate" }}</b></td>
+          <td class="tar">{{ .Data.withoutdate }}</td>
+        </tr>
+        <tr>
+          <td class="tal"><u><b>{{ string .Blog.Lang "total" }}</b></u></td>
           <td class="tar">{{ .Data.total }}</td>
         </tr>
       </tbody>
     </table>
+    <script defer src="{{ asset "js/blogstats.js" }}"></script>
   </main>
 {{ end }}
 

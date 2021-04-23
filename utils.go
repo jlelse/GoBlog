@@ -162,5 +162,5 @@ func dateFormat(date string, format string) string {
 }
 
 type stringPair struct {
-	first, second string
+	First, Second string
 }
