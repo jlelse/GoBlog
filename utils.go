@@ -164,3 +164,7 @@ func dateFormat(date string, format string) string {
 type stringPair struct {
 	First, Second string
 }
+
+func wordCount(s string) int {
+	return len(strings.Fields(s))
+}

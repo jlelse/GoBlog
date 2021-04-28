@@ -22,6 +22,9 @@ func initDatabase() (err error) {
 			if err := c.RegisterFunc("tolocal", toLocalSafe, true); err != nil {
 				return err
 			}
+			if err := c.RegisterFunc("wordcount", wordCount, true); err != nil {
+				return err
+			}
 			return nil
 		},
 	})

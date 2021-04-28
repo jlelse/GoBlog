@@ -1,83 +1,95 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
-	"strconv"
+
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
+	// Start timing
+	t := servertiming.FromContext(r.Context()).NewMetric("sq").Start()
 	// Build query
 	prq := &postsRequestConfig{
 		blog:   blog,
 		status: statusPublished,
 	}
 	query, params := buildPostsQuery(prq)
+	postCount := "count(distinct path) as postcount"
+	charCount := "sum(length(distinct content))"
+	wordCount := "sum(wordcount(distinct content)) as wordcount"
+	wordsPerPost := "round(wordcount/postcount,0)"
+	type statsTableType struct {
+		Name, Posts, Chars, Words, WordsPerPost string
+	}
 	// Count total posts
-	row, err := appDbQueryRow("select count(distinct path) from ("+query+")", params...)
+	row, err := appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var totalCount int
-	if err = row.Scan(&totalCount); err != nil {
+	total := statsTableType{}
+	if err = row.Scan(&total.Posts, &total.Chars, &total.Words, &total.WordsPerPost); err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Count posts per year
-	rows, err := appDbQuery("select substr(published, 1, 4) as year, count(distinct path) as count from ("+query+") where published != '' group by year order by year desc", params...)
+	rows, err := appDbQuery("select *, "+wordsPerPost+" from (select substr(published, 1, 4) as year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var years []stringPair
+	var years []statsTableType
+	year := statsTableType{}
 	for rows.Next() {
-		var year, count string
-		if err = rows.Scan(&year, &count); err == nil {
-			years = append(years, stringPair{year, count})
+		if err = rows.Scan(&year.Name, &year.Posts, &year.Chars, &year.Words, &year.WordsPerPost); err == nil {
+			years = append(years, year)
 		} else {
 			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 	// Count posts without date
-	row, err = appDbQueryRow("select count(distinct path) from ("+query+") where published = ''", params...)
+	row, err = appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var noDateCount int
-	if err = row.Scan(&noDateCount); err != nil {
+	noDate := statsTableType{}
+	if err = row.Scan(&noDate.Posts, &noDate.Chars, &noDate.Words, &noDate.WordsPerPost); err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Count posts per month per year
-	months := map[string][]stringPair{}
+	months := map[string][]statsTableType{}
+	month := statsTableType{}
 	for _, year := range years {
-		prq.publishedYear, _ = strconv.Atoi(year.First)
-		query, params = buildPostsQuery(prq)
-		rows, err = appDbQuery("select substr(published, 6, 2) as month, count(distinct path) as count from ("+query+") where published != '' group by month order by month desc", params...)
+		rows, err = appDbQuery("select *, "+wordsPerPost+" from (select substr(published, 6, 2) as month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and substr(published, 1, 4) = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
 		if err != nil {
 			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		for rows.Next() {
-			var month, count string
-			if err = rows.Scan(&month, &count); err == nil {
-				months[year.First] = append(months[year.First], stringPair{month, count})
+			if err = rows.Scan(&month.Name, &month.Posts, &month.Chars, &month.Words, &month.WordsPerPost); err == nil {
+				months[year.Name] = append(months[year.Name], month)
 			} else {
 				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 	}
+	// Stop timing
+	t.Stop()
+	// Render
 	render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,
 		Canonical:  blogPath(blog) + appConfig.Blogs[blog].BlogStats.Path,
 		Data: map[string]interface{}{
-			"total":       totalCount,
+			"total":       total,
 			"years":       years,
-			"withoutdate": noDateCount,
+			"withoutdate": noDate,
 			"months":      months,
 		},
 	})
