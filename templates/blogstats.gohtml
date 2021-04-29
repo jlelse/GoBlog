@@ -6,7 +6,7 @@
   <main>
     {{ with .Blog.BlogStats.Title }}<h1>{{ . }}</h1>{{ end }}
     {{ with .Blog.BlogStats.Description }}{{ md . }}{{ end }}
-    <table class="p">
+    <table>
       <thead>
         <tr>
           <th class="tal">{{ string .Blog.Lang "year" }}</th>

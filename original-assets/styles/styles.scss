@@ -137,8 +137,11 @@ code {
 }
 
 table {
+  @extend .p;
   border-collapse: collapse;
   border-spacing: 0;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 
 tr, td, th {

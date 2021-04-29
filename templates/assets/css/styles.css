@@ -100,6 +100,8 @@ code {
 table {
   border-collapse: collapse;
   border-spacing: 0;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 
 tr, td, th {
@@ -126,7 +128,7 @@ footer * {
   border-bottom: 1px solid var(--primary, #000);
 }
 
-.p {
+.p, table {
   display: block;
   margin-top: 1em;
   margin-bottom: 1em;
