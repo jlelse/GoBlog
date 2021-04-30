@@ -17,10 +17,10 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 		status: statusPublished,
 	}
 	query, params := buildPostsQuery(prq)
-	postCount := "count(distinct path) as postcount"
-	charCount := "sum(length(distinct coalesce(content, '')))"
-	wordCount := "sum(wordcount(distinct coalesce(content, ''))) as wordcount"
-	wordsPerPost := "round(wordcount/postcount,0)"
+	postCount := "coalesce(count(distinct path), 0) as postcount"
+	charCount := "coalesce(sum(coalesce(length(distinct content), 0)), 0)"
+	wordCount := "coalesce(sum(wordcount(distinct content)), 0) as wordcount"
+	wordsPerPost := "coalesce(round(wordcount/postcount,0), 0)"
 	type statsTableType struct {
 		Name, Posts, Chars, Words, WordsPerPost string
 	}

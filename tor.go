@@ -67,7 +67,6 @@ func startOnionService(h http.Handler) error {
 	onion, err := t.Listen(listenCtx, &tor.ListenConf{
 		Version3:    true,
 		Key:         torKey,
-		LocalPort:   8888,
 		RemotePorts: []int{80},
 	})
 	if err != nil {

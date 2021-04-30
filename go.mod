@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
-	github.com/araddon/dateparse v0.0.0-20210207001429-0eec95c9db7e
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/caddyserver/certmagic v0.13.0
 	github.com/cretz/bine v0.1.1-0.20200124154328-f9f678b84cca
@@ -14,7 +14,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elnormous/contenttype v1.0.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/go-chi/chi/v5 v5.0.2
+	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/flock v0.8.0 // indirect
