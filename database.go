@@ -36,6 +36,10 @@ func initDatabase() (err error) {
 	if err != nil {
 		return err
 	}
+	addShutdownFunc(func() {
+		_ = closeDb()
+		log.Println("Closed database")
+	})
 	vacuumDb()
 	err = migrateDb()
 	if err != nil {

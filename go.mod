@@ -7,7 +7,7 @@ require (
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/boombuler/barcode v1.0.1 // indirect
-	github.com/caddyserver/certmagic v0.13.0
+	github.com/caddyserver/certmagic v0.13.1
 	github.com/cretz/bine v0.1.1-0.20200124154328-f9f678b84cca
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.0.4-0.20210311064603-e4f298c8aa88
@@ -25,7 +25,6 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
-	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
@@ -35,7 +34,7 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/microcosm-cc/bluemonday v1.0.9
-	github.com/miekg/dns v1.1.41 // indirect
+	github.com/miekg/dns v1.1.42 // indirect
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.9.0 // indirect
@@ -54,14 +53,14 @@ require (
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.3.5
 	github.com/yuin/goldmark-emoji v1.0.1
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
+	golang.org/x/net v0.0.0-20210505214959-0714010a04ed
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
+	golang.org/x/sys v0.0.0-20210507014357-30e306a8bba5 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect

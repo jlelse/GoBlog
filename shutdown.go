@@ -7,15 +7,40 @@ import (
 	"syscall"
 )
 
-var shutdownWg sync.WaitGroup
+var (
+	quit                 = make(chan os.Signal, 1)
+	shutdownFuncs        = []func(){}
+	shutdownWg           sync.WaitGroup
+	shutdownFuncMapMutex sync.Mutex
+)
 
-func onShutdown(f func()) {
-	defer shutdownWg.Done()
+func init() {
+	signal.Notify(quit,
+		os.Interrupt,
+		syscall.SIGINT,
+		syscall.SIGTERM, // e.g. Docker stop
+	)
+	go func() {
+		<-quit
+		shutdown()
+	}()
+}
+
+func addShutdownFunc(f func()) {
 	shutdownWg.Add(1)
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	f()
+	shutdownFuncMapMutex.Lock()
+	shutdownFuncs = append(shutdownFuncs, f)
+	shutdownFuncMapMutex.Unlock()
+}
+
+func shutdown() {
+	for _, f := range shutdownFuncs {
+		go func(f func()) {
+			defer shutdownWg.Done()
+			f()
+		}(f)
+	}
+	shutdownWg.Wait()
 }
 
 func waitForShutdown() {

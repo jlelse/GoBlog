@@ -21,3 +21,11 @@ func healthcheck() bool {
 	_, _ = io.Copy(io.Discard, resp.Body)
 	return resp.StatusCode == 200
 }
+
+func healthcheckExitCode() int {
+	if healthcheck() {
+		return 0
+	} else {
+		return 1
+	}
+}

@@ -81,11 +81,7 @@ func startServer() (err error) {
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
-	go onShutdown(func() {
-		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
-		_ = s.Shutdown(toc)
-		c()
-	})
+	addShutdownFunc(shutdownServer(s, "main server"))
 	if appConfig.Server.PublicHTTPS {
 		// Configure
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
@@ -98,11 +94,7 @@ func startServer() (err error) {
 			ReadTimeout:  5 * time.Minute,
 			WriteTimeout: 5 * time.Minute,
 		}
-		go onShutdown(func() {
-			toc, c := context.WithTimeout(context.Background(), 5*time.Second)
-			_ = httpServer.Shutdown(toc)
-			c()
-		})
+		addShutdownFunc(shutdownServer(httpServer, "http server"))
 		go func() {
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Println("Failed to start HTTP server:", err.Error())
@@ -128,6 +120,15 @@ func startServer() (err error) {
 		}
 	}
 	return nil
+}
+
+func shutdownServer(s *http.Server, name string) func() {
+	return func() {
+		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
+		_ = s.Shutdown(toc)
+		c()
+		log.Println("Stopped server:", name)
+	}
 }
 
 func redirectToHttps(w http.ResponseWriter, r *http.Request) {

@@ -81,11 +81,7 @@ func startOnionService(h http.Handler) error {
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
-	go onShutdown(func() {
-		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
-		_ = s.Shutdown(toc)
-		c()
-	})
+	addShutdownFunc(shutdownServer(s, "tor"))
 	if err = s.Serve(onion); err != nil && err != http.ErrServerClosed {
 		return err
 	}

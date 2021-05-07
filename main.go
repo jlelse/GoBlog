@@ -21,12 +21,12 @@ func main() {
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
+			log.Fatalln("could not create CPU profile: ", err)
 			return
 		}
 		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
+			log.Fatalln("could not start CPU profile: ", err)
 			return
 		}
 		defer pprof.StopCPUProfile()
@@ -50,17 +50,16 @@ func main() {
 	// Initialize config
 	log.Println("Initialize configuration...")
 	if err = initConfig(); err != nil {
-		log.Fatalln("Failed to init config:", err.Error())
+		logErrAndQuit("Failed to init config:", err.Error())
+		return
 	}
 
 	// Healthcheck tool
 	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
 		// Connect to public address + "/ping" and exit with 0 when successful
-		if health := healthcheck(); health {
-			os.Exit(0)
-		} else {
-			os.Exit(1)
-		}
+		health := healthcheckExitCode()
+		shutdown()
+		os.Exit(health)
 		return
 	}
 
@@ -71,10 +70,11 @@ func main() {
 			AccountName: appConfig.User.Nick,
 		})
 		if err != nil {
-			log.Fatalln(err.Error())
+			logErrAndQuit(err.Error())
 			return
 		}
 		log.Println("TOTP-Secret:", key.Secret())
+		shutdown()
 		return
 	}
 
@@ -87,7 +87,7 @@ func main() {
 	// Initialize database and markdown
 	log.Println("Initialize database...")
 	if err = initDatabase(); err != nil {
-		log.Fatalln("Failed to init database:", err.Error())
+		logErrAndQuit("Failed to init database:", err.Error())
 		return
 	}
 	log.Println("Initialize server components...")
@@ -96,45 +96,42 @@ func main() {
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
 		checkAllExternalLinks()
-		if err = closeDb(); err != nil {
-			log.Fatalln("Failed to close DB:", err.Error())
-			return
-		}
+		shutdown()
 		return
 	}
 
 	// More initializations
 	initMinify()
 	if err = initTemplateAssets(); err != nil { // Needs minify
-		log.Fatalln("Failed to init template assets:", err.Error())
+		logErrAndQuit("Failed to init template assets:", err.Error())
 		return
 	}
 	if err = initTemplateStrings(); err != nil {
-		log.Fatalln("Failed to init template translations:", err.Error())
+		logErrAndQuit("Failed to init template translations:", err.Error())
 		return
 	}
 	if err = initRendering(); err != nil { // Needs assets and minify
-		log.Fatalln("Failed to init HTML rendering:", err.Error())
+		logErrAndQuit("Failed to init HTML rendering:", err.Error())
 		return
 	}
 	if err = initCache(); err != nil {
-		log.Fatalln("Failed to init HTTP cache:", err.Error())
+		logErrAndQuit("Failed to init HTTP cache:", err.Error())
 		return
 	}
 	if err = initRegexRedirects(); err != nil {
-		log.Fatalln("Failed to init redirects:", err.Error())
+		logErrAndQuit("Failed to init redirects:", err.Error())
 		return
 	}
 	if err = initHTTPLog(); err != nil {
-		log.Fatal("Failed to init HTTP logging:", err.Error())
+		logErrAndQuit("Failed to init HTTP logging:", err.Error())
 		return
 	}
 	if err = initActivityPub(); err != nil {
-		log.Fatalln("Failed to init ActivityPub:", err.Error())
+		logErrAndQuit("Failed to init ActivityPub:", err.Error())
 		return
 	}
 	if err = initWebmention(); err != nil {
-		log.Fatalln("Failed to init webmention support:", err.Error())
+		logErrAndQuit("Failed to init webmention support:", err.Error())
 		return
 	}
 	initTelegram()
@@ -143,22 +140,20 @@ func main() {
 	startHourlyHooks()
 
 	// Start the server
-	log.Println("Starting server...")
+	log.Println("Starting server(s)...")
 	err = startServer()
 	if err != nil {
-		log.Fatalln("Failed to start server:", err.Error())
+		logErrAndQuit("Failed to start server(s):", err.Error())
 		return
 	}
-	log.Println("Stopped server(s)")
 
 	// Wait till everything is shutdown
 	waitForShutdown()
 
-	// Close DB
-	if err = closeDb(); err != nil {
-		log.Fatalln("Failed to close DB:", err.Error())
-		return
-	}
-	log.Println("Closed Database")
+}
 
+func logErrAndQuit(v ...interface{}) {
+	log.Println(v...)
+	shutdown()
+	os.Exit(1)
 }
