@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/kaorimatz/go-opml"
@@ -104,12 +106,33 @@ func getBlogrollOutlines(config *configBlogroll) ([]*opml.Outline, error) {
 			if outline, ok := funk.Find(outlines, func(outline *opml.Outline) bool {
 				return outline.Title == category || outline.Text == category
 			}).(*opml.Outline); ok && outline != nil {
+				outline.Outlines = sortOutlines(outline.Outlines)
 				filtered = append(filtered, outline)
 			}
 		}
 		outlines = filtered
+	} else {
+		outlines = sortOutlines(outlines)
 	}
 	config.cachedOutlines = outlines
 	config.lastCache = time.Now()
 	return outlines, nil
+}
+
+func sortOutlines(outlines []*opml.Outline) []*opml.Outline {
+	sort.Slice(outlines, func(i, j int) bool {
+		name1 := outlines[i].Title
+		if name1 == "" {
+			name1 = outlines[i].Text
+		}
+		name2 := outlines[j].Title
+		if name2 == "" {
+			name2 = outlines[j].Text
+		}
+		return strings.ToLower(name1) < strings.ToLower(name2)
+	})
+	for _, outline := range outlines {
+		outline.Outlines = sortOutlines(outline.Outlines)
+	}
+	return outlines
 }
