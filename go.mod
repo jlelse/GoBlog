@@ -25,6 +25,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
+	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible

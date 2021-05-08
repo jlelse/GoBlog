@@ -4,7 +4,9 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/kaorimatz/go-opml"
 	"github.com/spf13/viper"
 )
 
@@ -63,6 +65,7 @@ type configBlog struct {
 	Photos         *photos             `mapstructure:"photos"`
 	Search         *search             `mapstructure:"search"`
 	BlogStats      *blogStats          `mapstructure:"blogStats"`
+	Blogroll       *configBlogroll     `mapstructure:"blogroll"`
 	CustomPages    []*customPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram     `mapstructure:"telegram"`
 	PostAsHome     bool                `mapstructure:"postAsHome"`
@@ -113,6 +116,19 @@ type blogStats struct {
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
+}
+
+type configBlogroll struct {
+	Enabled        bool     `mapstructure:"enabled"`
+	Path           string   `mapstructure:"path"`
+	Opml           string   `mapstructure:"opml"`
+	AuthHeader     string   `mapstructure:"authHeader"`
+	AuthValue      string   `mapstructure:"authValue"`
+	Categories     []string `mapstructure:"categories"`
+	Title          string   `mapstructure:"title"`
+	Description    string   `mapstructure:"description"`
+	cachedOutlines []*opml.Outline
+	lastCache      time.Time
 }
 
 type customPage struct {
@@ -286,6 +302,12 @@ func initConfig() error {
 		// Disable comments for all blogs
 		for _, b := range appConfig.Blogs {
 			b.Comments = &comments{Enabled: false}
+		}
+	}
+	// Check config for each blog
+	for _, blog := range appConfig.Blogs {
+		if br := blog.Blogroll; br != nil && br.Enabled && br.Opml == "" {
+			br.Enabled = false
 		}
 	}
 	return nil

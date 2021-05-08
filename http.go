@@ -26,6 +26,7 @@ const (
 	charsetUtf8Suffix = "; charset=utf-8"
 
 	contentTypeHTML          = "text/html"
+	contentTypeXML           = "text/xml"
 	contentTypeJSON          = "application/json"
 	contentTypeWWWForm       = "application/x-www-form-urlencoded"
 	contentTypeMultipartForm = "multipart/form-data"
@@ -35,6 +36,7 @@ const (
 	contentTypeJSONFeed      = "application/feed+json"
 
 	contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
+	contentTypeXMLUTF8  = contentTypeXML + charsetUtf8Suffix
 	contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
 	contentTypeASUTF8   = contentTypeAS + charsetUtf8Suffix
 
@@ -541,6 +543,17 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
 			commentsPath := blogPath + "/comment"
 			r.With(sbm, commentsMiddlewares[blog]).Mount(commentsPath, commentsRouter)
+		}
+
+		// Blogroll
+		if brConfig := blogConfig.Blogroll; brConfig != nil && brConfig.Enabled {
+			brPath := blogPath + brConfig.Path
+			r.Group(func(r chi.Router) {
+				r.Use(privateModeHandler...)
+				r.Use(cacheMiddleware, sbm)
+				r.Get(brPath, serveBlogroll)
+				r.Get(brPath+".opml", serveBlogrollExport)
+			})
 		}
 	}
 

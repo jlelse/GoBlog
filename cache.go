@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	cacheInternalExpirationHeader = "GoBlog-Expire"
+	cacheInternalExpirationHeader = "Goblog-Expire"
 )
 
 var (
@@ -212,6 +212,9 @@ func purgeCache() {
 	cacheR.Clear()
 }
 
-func setInternalCacheExpirationHeader(w http.ResponseWriter, expiration int) {
+func setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {
+	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		return
+	}
 	w.Header().Set(cacheInternalExpirationHeader, strconv.Itoa(expiration))
 }

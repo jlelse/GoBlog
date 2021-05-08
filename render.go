@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -39,6 +40,7 @@ const (
 	templateCommentsAdmin      = "commentsadmin"
 	templateNotificationsAdmin = "notificationsadmin"
 	templateWebmentionAdmin    = "webmentionadmin"
+	templateBlogroll           = "blogroll"
 )
 
 var templates map[string]*template.Template = map[string]*template.Template{}
@@ -163,6 +165,9 @@ func initRendering() error {
 				asc:    true,
 			})
 			return mentions
+		},
+		"urlToString": func(u url.URL) string {
+			return u.String()
 		},
 	}
 

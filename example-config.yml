@@ -175,6 +175,17 @@ blogs:
       path: /statistics # Path
       title: Statistics # Title
       description: "Here are some statistics with the number of posts per year:" # Description
+    # Blogroll
+    blogroll:
+      enabled: true # Enable
+      path: /blogroll # Path
+      title: Blogroll # Title
+      description: "I follow these blog:" # Description
+      opml: https://example.com/blogroll.opml # Required, URL to the OPML file
+      authHeader: X-Auth # Optional, header to use for OPML authentication
+      authValue: abc # Authentication value for OPML
+      categories: # Optional, allow only these categories
+        - Blogs
     # Custom pages
     custompages:
       - path: /blogroll # Path

@@ -114,6 +114,12 @@ func serveSitemap(w http.ResponseWriter, r *http.Request) {
 				Loc: appConfig.Server.PublicAddress + bc.getRelativePath(bc.BlogStats.Path),
 			})
 		}
+		// Blogroll
+		if bc.Blogroll != nil && bc.Blogroll.Enabled {
+			sm.Add(&sitemap.URL{
+				Loc: appConfig.Server.PublicAddress + bc.getRelativePath(bc.Blogroll.Path),
+			})
+		}
 		// Custom pages
 		for _, cp := range bc.CustomPages {
 			sm.Add(&sitemap.URL{

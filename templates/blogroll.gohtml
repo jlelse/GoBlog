@@ -1,0 +1,24 @@
+{{ define "title" }}
+    <title>{{ .Data.Title }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    {{ with .Data.Title }}<h1>{{ . }}</h1>{{ end }}
+    {{ with .Data.Description }}{{ md . }}{{ end }}
+    <p><a href="{{ blogrelative .Blog .Data.Download }}" class="button" download>{{ string .Blog.Lang "download" }}</a></p>
+    {{ $lang := .Blog.Lang }}
+    {{ range .Data.Outlines }}
+        <h2>{{ with .Title }}{{ . }}{{ else }}{{ with .Text }}{{ . }}{{ end }}{{ end }}</h2>
+        <ul>
+            {{ range .Outlines }}
+                <li><a href="{{ urlToString .HTMLURL }}" target="_blank">{{ with .Title }}{{ . }}{{ else }}{{ with .Text }}{{ . }}{{ end }}{{ end }}</a> (<a href="{{ urlToString .XMLURL }}" target="_blank">{{ string $lang "feed" }}</a>)</li>
+            {{ end }}
+        </ul>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "blogroll" }}
+    {{ template "base" . }}
+{{ end }}
