@@ -25,6 +25,14 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
+		case "loaddelete":
+			render(w, r, templateEditor, &renderData{
+				BlogString: blog,
+				Data: map[string]interface{}{
+					"DeleteURL": r.FormValue("url"),
+					"Drafts":    loadDrafts(blog),
+				},
+			})
 		case "loadupdate":
 			parsedURL, err := url.Parse(r.FormValue("url"))
 			if err != nil {
@@ -36,28 +44,24 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			mf := post.toMfItem()
 			render(w, r, templateEditor, &renderData{
 				BlogString: blog,
 				Data: map[string]interface{}{
 					"UpdatePostURL":     parsedURL.String(),
-					"UpdatePostContent": mf.Properties.Content[0],
+					"UpdatePostContent": post.toMfItem().Properties.Content[0],
 					"Drafts":            loadDrafts(blog),
 				},
 			})
 		case "updatepost":
-			urlValue := r.FormValue("url")
-			content := r.FormValue("content")
-			mf := map[string]interface{}{
+			jsonBytes, err := json.Marshal(map[string]interface{}{
 				"action": actionUpdate,
-				"url":    urlValue,
+				"url":    r.FormValue("url"),
 				"replace": map[string][]string{
 					"content": {
-						content,
+						r.FormValue("content"),
 					},
 				},
-			}
-			jsonBytes, err := json.Marshal(mf)
+			})
 			if err != nil {
 				serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return

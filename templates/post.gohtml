@@ -29,13 +29,13 @@
   </main>
   {{ if .LoggedIn }}
     <div class="p">
-      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}">
+      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}#update">
         <input type="hidden" name="editoraction" value="loadupdate">
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "update" }}">
       </form>
-      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}">
-        <input type="hidden" name="action" value="delete">
+      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}#delete">
+        <input type="hidden" name="editoraction" value="loaddelete">
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "delete" }}">
       </form>

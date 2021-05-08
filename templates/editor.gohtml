@@ -20,8 +20,8 @@ tags:
 </textarea>
       <input class="fw" type="submit" value="{{ string .Blog.Lang "create" }}">
     </form>
-    <h2>{{ string .Blog.Lang "update" }}</h2>
-    <form class="fw-form p" method="post">
+    <h2 id="update">{{ string .Blog.Lang "update" }}</h2>
+    <form class="fw-form p" method="post" action="#update">
       {{ if .Data.UpdatePostURL }}
         <input type="hidden" name="editoraction" value="updatepost">
         <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
@@ -32,11 +32,17 @@ tags:
       {{ end }}
       <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
-    <h2>{{ string .Blog.Lang "delete" }}</h2>
-    <form class="fw-form p" method="post">
-      <input type="hidden" name="action" value="delete">
-      <input type="url" name="url" placeholder="URL">
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "delete" }}">
+    <h2 id="delete">{{ string .Blog.Lang "delete" }}</h2>
+    <form class="fw-form p" method="post" action="#delete">
+      {{ if .Data.DeleteURL }}
+        <input type="hidden" name="action" value="delete">
+        <input type="url" name="url" placeholder="URL" value="{{ .Data.DeleteURL }}">
+        <input class="fw" type="submit" value="{{ string .Blog.Lang "confirmdelete" }}">
+      {{ else }}
+        <input type="hidden" name="editoraction" value="loaddelete">
+        <input type="url" name="url" placeholder="URL">
+        <input class="fw" type="submit" value="{{ string .Blog.Lang "delete" }}">
+      {{ end }}
     </form>
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw-form p" method="post" enctype="multipart/form-data">
