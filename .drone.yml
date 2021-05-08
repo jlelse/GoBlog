@@ -5,12 +5,11 @@ steps:
   - name: publish
     image: plugins/docker
     settings:
-      username:
-        from_secret: docker_username
+      username: nologin
       password:
         from_secret: docker_password
-      repo: quay.io/jlelse/goblog
-      registry: quay.io
+      repo: rg.fr-par.scw.cloud/jlelse/goblog
+      registry: rg.fr-par.scw.cloud/jlelse
       tags: latest
     when:
       branch:
