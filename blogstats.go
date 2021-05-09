@@ -3,8 +3,9 @@ package main
 import (
 	"database/sql"
 	"net/http"
+	"sync"
 
-	servertiming "github.com/mitchellh/go-server-timing"
+	"golang.org/x/sync/singleflight"
 )
 
 func serveBlogStats(w http.ResponseWriter, r *http.Request) {
@@ -19,10 +20,33 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var blogStatsCacheGroup singleflight.Group
+var blogStatsCache = map[string]map[string]interface{}{}
+var blogStatsCacheMutex sync.RWMutex
+
 func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	// Start timing
-	t := servertiming.FromContext(r.Context()).NewMetric("sq").Start()
+	data, err, _ := blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
+		return getBlogStats(blog)
+	})
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Render
+	render(w, r, templateBlogStatsTable, &renderData{
+		BlogString: blog,
+		Data:       data,
+	})
+}
+
+func getBlogStats(blog string) (data map[string]interface{}, err error) {
+	blogStatsCacheMutex.RLock()
+	if data, ok := blogStatsCache[blog]; ok && data != nil {
+		blogStatsCacheMutex.RUnlock()
+		return data, nil
+	}
+	blogStatsCacheMutex.RUnlock()
 	// Build query
 	prq := &postsRequestConfig{
 		blog:   blog,
@@ -40,19 +64,16 @@ func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	// Count total posts
 	row, err := appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	total := statsTableType{}
 	if err = row.Scan(&total.Posts, &total.Chars, &total.Words, &total.WordsPerPost); err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	// Count posts per year
 	rows, err := appDbQuery("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	var years []statsTableType
 	year := statsTableType{}
@@ -60,20 +81,17 @@ func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 		if err = rows.Scan(&year.Name, &year.Posts, &year.Chars, &year.Words, &year.WordsPerPost); err == nil {
 			years = append(years, year)
 		} else {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, err
 		}
 	}
 	// Count posts without date
 	row, err = appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	noDate := statsTableType{}
 	if err = row.Scan(&noDate.Posts, &noDate.Chars, &noDate.Words, &noDate.WordsPerPost); err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	// Count posts per month per year
 	months := map[string][]statsTableType{}
@@ -81,28 +99,30 @@ func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	for _, year := range years {
 		rows, err = appDbQuery("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, err
 		}
 		for rows.Next() {
 			if err = rows.Scan(&month.Name, &month.Posts, &month.Chars, &month.Words, &month.WordsPerPost); err == nil {
 				months[year.Name] = append(months[year.Name], month)
 			} else {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
+				return nil, err
 			}
 		}
 	}
-	// Stop timing
-	t.Stop()
-	// Render
-	render(w, r, templateBlogStatsTable, &renderData{
-		BlogString: blog,
-		Data: map[string]interface{}{
-			"total":       total,
-			"years":       years,
-			"withoutdate": noDate,
-			"months":      months,
-		},
-	})
+	blogStatsCacheMutex.Lock()
+	blogStatsCache[blog] = map[string]interface{}{
+		"total":       total,
+		"years":       years,
+		"withoutdate": noDate,
+		"months":      months,
+	}
+	data = blogStatsCache[blog]
+	blogStatsCacheMutex.Unlock()
+	return data, nil
+}
+
+func clearBlogStatsCache() {
+	blogStatsCacheMutex.Lock()
+	blogStatsCache = map[string]map[string]interface{}{}
+	blogStatsCacheMutex.Unlock()
 }
