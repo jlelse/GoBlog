@@ -104,13 +104,15 @@ func cacheMiddleware(next http.Handler) http.Handler {
 }
 
 func cacheKey(r *http.Request) string {
-	def := cacheURLString(r.URL)
+	key := cacheURLString(r.URL)
 	// Special cases
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
-		return "as-" + def
+		key = "as-" + key
 	}
-	// Default
-	return def
+	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
+		key = "tor-" + key
+	}
+	return key
 }
 
 func cacheURLString(u *url.URL) string {

@@ -615,7 +615,7 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
 		if appConfig.Server.Tor && torAddress != "" {
-			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", torAddress, r.URL.Path))
+			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", torAddress, r.RequestURI))
 		}
 		next.ServeHTTP(w, r)
 	})

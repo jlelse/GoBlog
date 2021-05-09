@@ -198,11 +198,13 @@ func initRendering() error {
 type renderData struct {
 	BlogString                 string
 	Canonical                  string
+	TorAddress                 string
 	Blog                       *configBlog
 	Data                       interface{}
 	LoggedIn                   bool
 	CommentsEnabled            bool
 	WebmentionReceivingEnabled bool
+	TorUsed                    bool
 }
 
 func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
@@ -223,6 +225,9 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 			}
 		}
 	}
+	if appConfig.Server.Tor && torAddress != "" {
+		data.TorAddress = fmt.Sprintf("http://%v%v", torAddress, r.RequestURI)
+	}
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}
 	}
@@ -234,6 +239,10 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
 	// Check if able to receive webmentions
 	data.WebmentionReceivingEnabled = appConfig.Webmention == nil || !appConfig.Webmention.DisableReceiving
+	// Check if Tor request
+	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
+		data.TorUsed = true
+	}
 	// Minify and write response
 	mw := minifier.Writer(contentTypeHTML, w)
 	defer func() {

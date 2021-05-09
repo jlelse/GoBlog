@@ -13,11 +13,14 @@ import (
 	"time"
 
 	"github.com/cretz/bine/tor"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var (
 	torAddress string
 )
+
+var torUsedKey requestContextKey = "tor"
 
 func startOnionService(h http.Handler) error {
 	torDataPath, err := filepath.Abs("data/tor")
@@ -75,9 +78,11 @@ func startOnionService(h http.Handler) error {
 	defer onion.Close()
 	torAddress = onion.String()
 	log.Println("Onion service published on http://" + torAddress)
+	// Clear cache
+	purgeCache()
 	// Serve handler
 	s := &http.Server{
-		Handler:      h,
+		Handler:      middleware.WithValue(torUsedKey, true)(h),
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
