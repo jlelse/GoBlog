@@ -35,6 +35,7 @@ const (
 	templateLogin              = "login"
 	templateStaticHome         = "statichome"
 	templateBlogStats          = "blogstats"
+	templateBlogStatsTable     = "blogstatstable"
 	templateComment            = "comment"
 	templateCaptcha            = "captcha"
 	templateCommentsAdmin      = "commentsadmin"

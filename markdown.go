@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	kemoji "github.com/kyokomi/emoji/v2"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
@@ -52,6 +53,18 @@ func renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err err
 		err = defaultMarkdown.Convert([]byte(source), &buffer)
 	}
 	return buffer.Bytes(), err
+}
+
+func renderText(s string) string {
+	h, err := renderMarkdown(s, false)
+	if err != nil {
+		return ""
+	}
+	d, err := goquery.NewDocumentFromReader(bytes.NewReader(h))
+	if err != nil {
+		return ""
+	}
+	return d.Text()
 }
 
 // Extensions etc...

@@ -25,6 +25,9 @@ func initDatabase() (err error) {
 			if err := c.RegisterFunc("wordcount", wordCount, true); err != nil {
 				return err
 			}
+			if err := c.RegisterFunc("mdtext", renderText, true); err != nil {
+				return err
+			}
 			return nil
 		},
 	})

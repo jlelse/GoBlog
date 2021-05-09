@@ -9,6 +9,18 @@ import (
 
 func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
+	canonical := blogPath(blog) + appConfig.Blogs[blog].BlogStats.Path
+	render(w, r, templateBlogStats, &renderData{
+		BlogString: blog,
+		Canonical:  canonical,
+		Data: map[string]interface{}{
+			"TableUrl": canonical + ".table.html",
+		},
+	})
+}
+
+func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
 	// Start timing
 	t := servertiming.FromContext(r.Context()).NewMetric("sq").Start()
 	// Build query
@@ -17,6 +29,7 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 		status: statusPublished,
 	}
 	query, params := buildPostsQuery(prq)
+	query = "select path, mdtext(content) as content, published, substr(published, 1, 4) as year, substr(published, 6, 2) as month from (" + query + ")"
 	postCount := "coalesce(count(distinct path), 0) as postcount"
 	charCount := "coalesce(sum(coalesce(length(distinct content), 0)), 0)"
 	wordCount := "coalesce(sum(wordcount(distinct content)), 0) as wordcount"
@@ -36,7 +49,7 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Count posts per year
-	rows, err := appDbQuery("select *, "+wordsPerPost+" from (select substr(published, 1, 4) as year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
+	rows, err := appDbQuery("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,7 +79,7 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	months := map[string][]statsTableType{}
 	month := statsTableType{}
 	for _, year := range years {
-		rows, err = appDbQuery("select *, "+wordsPerPost+" from (select substr(published, 6, 2) as month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and substr(published, 1, 4) = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
+		rows, err = appDbQuery("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
 		if err != nil {
 			serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
@@ -83,9 +96,8 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	// Stop timing
 	t.Stop()
 	// Render
-	render(w, r, templateBlogStats, &renderData{
+	render(w, r, templateBlogStatsTable, &renderData{
 		BlogString: blog,
-		Canonical:  blogPath(blog) + appConfig.Blogs[blog].BlogStats.Path,
 		Data: map[string]interface{}{
 			"total":       total,
 			"years":       years,

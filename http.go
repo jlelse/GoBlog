@@ -478,7 +478,12 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		// Stats
 		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
 			statsPath := blogPath + blogConfig.BlogStats.Path
-			r.With(privateModeHandler...).With(cacheMiddleware, sbm).Get(statsPath, serveBlogStats)
+			r.Group(func(r chi.Router) {
+				r.Use(privateModeHandler...)
+				r.Use(cacheMiddleware, sbm)
+				r.Get(statsPath, serveBlogStats)
+				r.Get(statsPath+".table.html", serveBlogStatsTable)
+			})
 		}
 
 		// Date archives

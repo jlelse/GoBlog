@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -26,7 +27,8 @@ func serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		return getBlogrollOutlines(c)
 	})
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		log.Println("Failed to get outlines:", err.Error())
+		serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	if appConfig.Cache != nil && appConfig.Cache.Enable {
@@ -54,7 +56,8 @@ func serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return getBlogrollOutlines(c)
 	})
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		log.Println("Failed to get outlines:", err.Error())
+		serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	if appConfig.Cache != nil && appConfig.Cache.Enable {
