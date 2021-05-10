@@ -39,7 +39,6 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("X-Robots-Tag", "noindex")
 	blog := r.Context().Value(blogContextKey).(string)
 	render(w, r, templateComment, &renderData{
 		BlogString: blog,

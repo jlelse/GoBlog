@@ -10,7 +10,7 @@ require (
 	github.com/caddyserver/certmagic v0.13.1
 	github.com/cretz/bine v0.1.1-0.20200124154328-f9f678b84cca
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
-	github.com/dgraph-io/ristretto v0.0.4-0.20210311064603-e4f298c8aa88
+	github.com/dgraph-io/ristretto v0.0.4-0.20210504190834-0bf2acd73aa3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elnormous/contenttype v1.0.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
@@ -19,6 +19,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/flock v0.8.0 // indirect
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
+	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/gorilla/feeds v1.1.1
@@ -59,9 +60,9 @@ require (
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210508051633-16afe75a6701
+	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210507161434-a76c4d0a0096 // indirect
+	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect

@@ -212,8 +212,6 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 
 func purgeCache() {
 	cacheR.Clear()
-	// Clear blog stats as well
-	clearBlogStatsCache()
 }
 
 func setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {

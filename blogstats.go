@@ -2,11 +2,21 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"log"
 	"net/http"
-	"sync"
 
 	"golang.org/x/sync/singleflight"
 )
+
+func initBlogStats() {
+	f := func(p *post) {
+		resetBlogStats(p.Blog)
+	}
+	postHooks[postPostHook] = append(postHooks[postPostHook], f)
+	postHooks[postUpdateHook] = append(postHooks[postPostHook], f)
+	postHooks[postDeleteHook] = append(postHooks[postPostHook], f)
+}
 
 func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
@@ -21,8 +31,6 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 }
 
 var blogStatsCacheGroup singleflight.Group
-var blogStatsCache = map[string]map[string]interface{}{}
-var blogStatsCacheMutex sync.RWMutex
 
 func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
@@ -41,12 +49,9 @@ func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBlogStats(blog string) (data map[string]interface{}, err error) {
-	blogStatsCacheMutex.RLock()
-	if data, ok := blogStatsCache[blog]; ok && data != nil {
-		blogStatsCacheMutex.RUnlock()
-		return data, nil
+	if stats := loadBlogStatsCache(blog); stats != nil {
+		return stats, nil
 	}
-	blogStatsCacheMutex.RUnlock()
 	// Build query
 	prq := &postsRequestConfig{
 		blog:   blog,
@@ -109,20 +114,33 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 			}
 		}
 	}
-	blogStatsCacheMutex.Lock()
-	blogStatsCache[blog] = map[string]interface{}{
+	data = map[string]interface{}{
 		"total":       total,
 		"years":       years,
 		"withoutdate": noDate,
 		"months":      months,
 	}
-	data = blogStatsCache[blog]
-	blogStatsCacheMutex.Unlock()
+	cacheBlogStats(blog, data)
 	return data, nil
 }
 
-func clearBlogStatsCache() {
-	blogStatsCacheMutex.Lock()
-	blogStatsCache = map[string]map[string]interface{}{}
-	blogStatsCacheMutex.Unlock()
+func cacheBlogStats(blog string, stats map[string]interface{}) {
+	jb, _ := json.Marshal(stats)
+	cachePersistently("blogstats_"+blog, jb)
+}
+
+func loadBlogStatsCache(blog string) (stats map[string]interface{}) {
+	data, err := retrievePersistentCache("blogstats_" + blog)
+	if err != nil || data == nil {
+		return nil
+	}
+	err = json.Unmarshal(data, &stats)
+	if err != nil {
+		log.Println(err)
+	}
+	return stats
+}
+
+func resetBlogStats(blog string) {
+	clearPersistentCache("blogstats_" + blog)
 }

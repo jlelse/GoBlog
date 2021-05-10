@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kaorimatz/go-opml"
+	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/thoas/go-funk"
 	"golang.org/x/sync/singleflight"
 )
@@ -18,14 +20,11 @@ var blogrollCacheGroup singleflight.Group
 
 func serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	c := appConfig.Blogs[blog].Blogroll
-	if !c.Enabled {
-		serve404(w, r)
-		return
-	}
+	t := servertiming.FromContext(r.Context()).NewMetric("bg").Start()
 	outlines, err, _ := blogrollCacheGroup.Do(blog, func() (interface{}, error) {
-		return getBlogrollOutlines(c)
+		return getBlogrollOutlines(blog)
 	})
+	t.Stop()
 	if err != nil {
 		log.Println("Failed to get outlines:", err.Error())
 		serveError(w, r, "", http.StatusInternalServerError)
@@ -34,6 +33,7 @@ func serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	if appConfig.Cache != nil && appConfig.Cache.Enable {
 		setInternalCacheExpirationHeader(w, r, int(appConfig.Cache.Expiration))
 	}
+	c := appConfig.Blogs[blog].Blogroll
 	render(w, r, templateBlogroll, &renderData{
 		BlogString: blog,
 		Data: map[string]interface{}{
@@ -47,13 +47,8 @@ func serveBlogroll(w http.ResponseWriter, r *http.Request) {
 
 func serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	c := appConfig.Blogs[blog].Blogroll
-	if !c.Enabled {
-		serve404(w, r)
-		return
-	}
 	outlines, err, _ := blogrollCacheGroup.Do(blog, func() (interface{}, error) {
-		return getBlogrollOutlines(c)
+		return getBlogrollOutlines(blog)
 	})
 	if err != nil {
 		log.Println("Failed to get outlines:", err.Error())
@@ -75,10 +70,10 @@ func serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getBlogrollOutlines(config *configBlogroll) ([]*opml.Outline, error) {
-	if config.cachedOutlines != nil && time.Since(config.lastCache).Minutes() < 60 {
-		// return cache if younger than 60 min
-		return config.cachedOutlines, nil
+func getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
+	config := appConfig.Blogs[blog].Blogroll
+	if cache := loadOutlineCache(blog); cache != nil {
+		return cache, nil
 	}
 	req, err := http.NewRequest(http.MethodGet, config.Opml, nil)
 	if err != nil {
@@ -117,9 +112,33 @@ func getBlogrollOutlines(config *configBlogroll) ([]*opml.Outline, error) {
 	} else {
 		outlines = sortOutlines(outlines)
 	}
-	config.cachedOutlines = outlines
-	config.lastCache = time.Now()
+	cacheOutlines(blog, outlines)
 	return outlines, nil
+}
+
+func cacheOutlines(blog string, outlines []*opml.Outline) {
+	var opmlBuffer bytes.Buffer
+	_ = opml.Render(&opmlBuffer, &opml.OPML{
+		Version:     "2.0",
+		DateCreated: time.Now().UTC(),
+		Outlines:    outlines,
+	})
+	cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
+}
+
+func loadOutlineCache(blog string) []*opml.Outline {
+	data, err := retrievePersistentCache("blogroll_" + blog)
+	if err != nil || data == nil {
+		return nil
+	}
+	o, err := opml.NewParser(bytes.NewReader(data)).Parse()
+	if err != nil {
+		return nil
+	}
+	if time.Since(o.DateCreated).Minutes() > 60 {
+		return nil
+	}
+	return o.Outlines
 }
 
 func sortOutlines(outlines []*opml.Outline) []*opml.Outline {

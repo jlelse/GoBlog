@@ -4,9 +4,7 @@ import (
 	"errors"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/kaorimatz/go-opml"
 	"github.com/spf13/viper"
 )
 
@@ -119,16 +117,14 @@ type blogStats struct {
 }
 
 type configBlogroll struct {
-	Enabled        bool     `mapstructure:"enabled"`
-	Path           string   `mapstructure:"path"`
-	Opml           string   `mapstructure:"opml"`
-	AuthHeader     string   `mapstructure:"authHeader"`
-	AuthValue      string   `mapstructure:"authValue"`
-	Categories     []string `mapstructure:"categories"`
-	Title          string   `mapstructure:"title"`
-	Description    string   `mapstructure:"description"`
-	cachedOutlines []*opml.Outline
-	lastCache      time.Time
+	Enabled     bool     `mapstructure:"enabled"`
+	Path        string   `mapstructure:"path"`
+	Opml        string   `mapstructure:"opml"`
+	AuthHeader  string   `mapstructure:"authHeader"`
+	AuthValue   string   `mapstructure:"authValue"`
+	Categories  []string `mapstructure:"categories"`
+	Title       string   `mapstructure:"title"`
+	Description string   `mapstructure:"description"`
 }
 
 type customPage struct {

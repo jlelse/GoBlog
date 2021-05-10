@@ -139,6 +139,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00012",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create table persistent_cache (key text primary key, data blob, date text not null);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

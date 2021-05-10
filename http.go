@@ -226,7 +226,7 @@ func buildStaticHandlersRouters() error {
 
 	commentsRouter = chi.NewRouter()
 	commentsRouter.Use(privateModeHandler...)
-	commentsRouter.With(cacheMiddleware).Get("/{id:[0-9]+}", serveComment)
+	commentsRouter.With(cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", serveComment)
 	commentsRouter.With(captchaMiddleware).Post("/", createComment)
 	commentsRouter.Group(func(r chi.Router) {
 		// Admin
