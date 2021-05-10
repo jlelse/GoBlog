@@ -123,7 +123,7 @@ func cacheOutlines(blog string, outlines []*opml.Outline) {
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines,
 	})
-	cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
+	_ = cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
 }
 
 func loadOutlineCache(blog string) []*opml.Outline {

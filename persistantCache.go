@@ -17,7 +17,7 @@ func retrievePersistentCache(key string) (data []byte, err error) {
 	} else if err != nil {
 		return nil, err
 	} else {
-		row.Scan(&data)
+		err = row.Scan(&data)
 		return data, err
 	}
 }

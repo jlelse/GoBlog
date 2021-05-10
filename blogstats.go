@@ -126,7 +126,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 
 func cacheBlogStats(blog string, stats map[string]interface{}) {
 	jb, _ := json.Marshal(stats)
-	cachePersistently("blogstats_"+blog, jb)
+	_ = cachePersistently("blogstats_"+blog, jb)
 }
 
 func loadBlogStatsCache(blog string) (stats map[string]interface{}) {
@@ -142,5 +142,5 @@ func loadBlogStatsCache(blog string) (stats map[string]interface{}) {
 }
 
 func resetBlogStats(blog string) {
-	clearPersistentCache("blogstats_" + blog)
+	_ = clearPersistentCache("blogstats_" + blog)
 }
