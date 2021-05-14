@@ -136,6 +136,7 @@ func main() {
 	}
 	initTelegram()
 	initBlogStats()
+	initSessions()
 
 	// Start cron hooks
 	startHourlyHooks()

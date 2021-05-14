@@ -148,6 +148,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00013",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create table sessions (id integer primary key autoincrement, data text default '', created text default '', modified datetime default '', expires text default '');
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

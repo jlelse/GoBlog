@@ -6,20 +6,16 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/dchest/captcha"
-	"github.com/dgrijalva/jwt-go"
 )
 
 func captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check JWT
-		claims := &captchaClaims{}
-		if captchaCookie, err := r.Cookie("captcha"); err == nil {
-			if tkn, err := jwt.ParseWithClaims(captchaCookie.Value, claims, func(t *jwt.Token) (interface{}, error) {
-				return jwtKey(), nil
-			}); err == nil && tkn.Valid && claims.TokenType == "captcha" {
+		// 1. Check Cookie
+		ses, err := captchaSessionsStore.Get(r, "c")
+		if err == nil && ses != nil {
+			if captcha, ok := ses.Values["captcha"]; ok && captcha.(bool) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -54,59 +50,41 @@ func checkIsCaptcha(next http.Handler) http.Handler {
 }
 
 func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodPost &&
-		r.Header.Get(contentType) == contentTypeWWWForm &&
-		r.FormValue("captchaaction") == "captcha" {
-		// Do original request
-		captchabody, _ := base64.StdEncoding.DecodeString(r.FormValue("captchabody"))
-		req, _ := http.NewRequest(r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
-		// Copy original headers
-		captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
-		var headers http.Header
-		_ = json.Unmarshal(captchaheaders, &headers)
-		for k, v := range headers {
-			req.Header[k] = v
-		}
-		// Check captcha
-		if captcha.VerifyString(r.FormValue("captchaid"), r.FormValue("digits")) {
-			// Create cookie
-			captchaCookie, err := createCaptchaCookie()
-			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return true
-			}
-			// Add cookie to original request
-			req.AddCookie(captchaCookie)
-			// Send cookie
-			http.SetCookie(w, captchaCookie)
-		}
-		// Serve original request
-		d.ServeHTTP(w, req)
-		return true
+	if r.Method != http.MethodPost {
+		return false
 	}
-	return false
-}
-
-type captchaClaims struct {
-	*jwt.StandardClaims
-	TokenType string
-}
-
-func createCaptchaCookie() (*http.Cookie, error) {
-	expiration := time.Now().Add(24 * time.Hour)
-	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &captchaClaims{
-		&jwt.StandardClaims{ExpiresAt: expiration.Unix()},
-		"captcha",
-	}).SignedString(jwtKey())
-	if err != nil {
-		return nil, err
+	if r.Header.Get(contentType) != contentTypeWWWForm {
+		return false
 	}
-	return &http.Cookie{
-		Name:     "captcha",
-		Value:    tokenString,
-		Expires:  expiration,
-		Secure:   httpsConfigured(),
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	}, nil
+	if r.FormValue("captchaaction") != "captcha" {
+		return false
+	}
+	// Prepare original request
+	captchabody, _ := base64.StdEncoding.DecodeString(r.FormValue("captchabody"))
+	req, _ := http.NewRequest(r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
+	// Copy original headers
+	captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
+	var headers http.Header
+	_ = json.Unmarshal(captchaheaders, &headers)
+	for k, v := range headers {
+		req.Header[k] = v
+	}
+	// Check captcha and create cookie
+	if captcha.VerifyString(r.FormValue("captchaid"), r.FormValue("digits")) {
+		ses, err := captchaSessionsStore.Get(r, "c")
+		if err != nil {
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return true
+		}
+		ses.Values["captcha"] = true
+		cookie, err := captchaSessionsStore.SaveGetCookie(r, w, ses)
+		if err != nil {
+			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return true
+		}
+		req.AddCookie(cookie)
+	}
+	// Serve original request
+	d.ServeHTTP(w, req)
+	return true
 }

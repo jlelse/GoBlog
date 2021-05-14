@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
@@ -77,15 +79,17 @@ func (m *mention) verifyMention() error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set(userAgent, appUserAgent)
+	var resp *http.Response
 	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
-		// Set authentication
-		c, _ := createTokenCookie()
-		req.AddCookie(c)
-	}
-	resp, err := appHttpClient.Do(req)
-	if err != nil {
-		return err
+		rec := httptest.NewRecorder()
+		d.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), loggedInKey, true)))
+		resp = rec.Result()
+	} else {
+		req.Header.Set(userAgent, appUserAgent)
+		resp, err = appHttpClient.Do(req)
+		if err != nil {
+			return err
+		}
 	}
 	err = m.verifyReader(resp.Body)
 	_ = resp.Body.Close()
