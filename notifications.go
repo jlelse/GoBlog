@@ -46,6 +46,11 @@ func saveNotification(n *notification) error {
 	return nil
 }
 
+func deleteNotification(id int) error {
+	_, err := appDbExec("delete from notifications where id = @id", sql.Named("id", id))
+	return err
+}
+
 type notificationsRequestConfig struct {
 	offset, limit int
 }
@@ -156,4 +161,18 @@ func notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 			"Next":          slashIfEmpty(nextPath),
 		},
 	})
+}
+
+func notificationsAdminDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.FormValue("notificationid"))
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = deleteNotification(id)
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, ".", http.StatusFound)
 }

@@ -212,6 +212,7 @@ func buildStaticHandlersRouters() error {
 	notificationsRouter.Use(authMiddleware)
 	notificationsRouter.Get("/", notificationsAdmin)
 	notificationsRouter.Get(paginationPath, notificationsAdmin)
+	notificationsRouter.Post("/delete", notificationsAdminDelete)
 
 	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
 		activitypubRouter = chi.NewRouter()

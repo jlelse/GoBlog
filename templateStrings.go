@@ -37,7 +37,18 @@ func initTemplateStrings() error {
 	return nil
 }
 
-func getTemplateStringVariant(lang, name string) (result string) {
+func getTemplateStringVariant(input ...string) (result string) {
+	var lang, name string
+	if l := len(input); l == 1 {
+		lang = appConfig.Blogs[appConfig.DefaultBlog].Lang
+		name = input[0]
+	} else if l == 2 {
+		lang = input[0]
+		name = input[1]
+	} else {
+		// Wrong number of input strings
+		return ""
+	}
 	m, ok := templateStrings[lang]
 	if !ok {
 		m = templateStrings[defaultStrings]
