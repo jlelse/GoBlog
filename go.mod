@@ -8,8 +8,10 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/caddyserver/certmagic v0.13.1
+	// master
 	github.com/cretz/bine v0.1.1-0.20200124154328-f9f678b84cca
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
+	// master
 	github.com/dgraph-io/ristretto v0.0.4-0.20210504190834-0bf2acd73aa3
 	github.com/elnormous/contenttype v1.0.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
@@ -54,14 +56,14 @@ require (
 	github.com/thoas/go-funk v0.8.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.3.5
+	github.com/yuin/goldmark v1.3.7
 	github.com/yuin/goldmark-emoji v1.0.1
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed
+	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
