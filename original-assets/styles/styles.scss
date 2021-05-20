@@ -56,6 +56,11 @@ body {
   * {
     @include color(color, primary);
     max-width: 100%;
+
+    &::selection {
+      @include color(color, background);
+      @include color(background, primary);
+    }
   }
 }
 
@@ -88,6 +93,11 @@ button, input, textarea, select {
   text-decoration: none;
   font-size: 1rem;
   line-height: 1.5;
+  outline: none;
+
+  &:focus {
+    @include color-border(outline, 3px, solid, primary);
+  }
 }
 
 .button {
@@ -125,11 +135,15 @@ pre {
   white-space: pre-wrap;
 }
 
-:not(pre) > code {
+mark, :not(pre) > code {
   font-size: 1rem;
   // Invert
   @include color(color, background);
   @include color(background, primary);
+  &::selection {
+    @include color(color, primary);
+    @include color(background, background);
+  }
 }
 
 code {

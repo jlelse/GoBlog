@@ -35,6 +35,12 @@ body * {
   color: var(--primary, #000);
   max-width: 100%;
 }
+body *::selection {
+  color: #fff;
+  color: var(--background, #fff);
+  background: #000;
+  background: var(--primary, #000);
+}
 
 header {
   padding: 10px 0;
@@ -65,6 +71,11 @@ button, .button, input, textarea, select {
   text-decoration: none;
   font-size: 1rem;
   line-height: 1.5;
+  outline: none;
+}
+button:focus, .button:focus, input:focus, textarea:focus, select:focus {
+  outline: 3px solid #000;
+  outline: 3px solid var(--primary, #000);
 }
 
 form input, form textarea, form select {
@@ -85,12 +96,18 @@ pre {
   white-space: pre-wrap;
 }
 
-:not(pre) > code {
+mark, :not(pre) > code {
   font-size: 1rem;
   color: #fff;
   color: var(--background, #fff);
   background: #000;
   background: var(--primary, #000);
+}
+mark::selection, :not(pre) > code::selection {
+  color: #000;
+  color: var(--primary, #000);
+  background: #fff;
+  background: var(--background, #fff);
 }
 
 code {
