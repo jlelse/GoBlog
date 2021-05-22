@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 
+	marktag "git.jlel.se/jlelse/goldmark-mark"
 	"github.com/PuerkitoBio/goquery"
 	kemoji "github.com/kyokomi/emoji/v2"
 	"github.com/yuin/goldmark"
@@ -14,7 +15,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
 
@@ -36,6 +36,7 @@ func initMarkdown() {
 			extension.Footnote,
 			extension.Typographer,
 			extension.Linkify,
+			marktag.Mark,
 			// Emojis
 			emoji.New(
 				emoji.WithEmojis(emojiGoLib()),
@@ -88,9 +89,6 @@ type customExtension struct {
 }
 
 func (l *customExtension) Extend(m goldmark.Markdown) {
-	m.Parser().AddOptions(parser.WithInlineParsers(
-		util.Prioritized(&markdownMarkParser{}, 500),
-	))
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(&customRenderer{
 			absoluteLinks: l.absoluteLinks,
@@ -105,7 +103,6 @@ type customRenderer struct {
 func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
 	r.Register(ast.KindLink, c.renderLink)
 	r.Register(ast.KindImage, c.renderImage)
-	r.Register(kindMarkdownMark, c.renderMarkTag)
 }
 
 func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -164,67 +161,4 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	}
 	_, _ = w.WriteString("></a>")
 	return ast.WalkSkipChildren, nil
-}
-
-type markdownMark struct {
-	ast.BaseInline
-}
-
-func (n *markdownMark) Kind() ast.NodeKind {
-	return kindMarkdownMark
-}
-
-func (n *markdownMark) Dump(source []byte, level int) {
-	ast.DumpHelper(n, source, level, nil, nil)
-}
-
-type markDelimiterProcessor struct {
-}
-
-func (p *markDelimiterProcessor) IsDelimiter(b byte) bool {
-	return b == '='
-}
-
-func (p *markDelimiterProcessor) CanOpenCloser(opener, closer *parser.Delimiter) bool {
-	return opener.Char == closer.Char
-}
-
-func (p *markDelimiterProcessor) OnMatch(consumes int) ast.Node {
-	return &markdownMark{}
-}
-
-var defaultMarkDelimiterProcessor = &markDelimiterProcessor{}
-
-type markdownMarkParser struct {
-}
-
-func (s *markdownMarkParser) Trigger() []byte {
-	return []byte{'='}
-}
-
-func (s *markdownMarkParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
-	before := block.PrecendingCharacter()
-	line, segment := block.PeekLine()
-	node := parser.ScanDelimiter(line, before, 2, defaultMarkDelimiterProcessor)
-	if node == nil {
-		return nil
-	}
-	node.Segment = segment.WithStop(segment.Start + node.OriginalLength)
-	block.Advance(node.OriginalLength)
-	pc.PushDelimiter(node)
-	return node
-}
-
-func (s *markdownMarkParser) CloseBlock(parent ast.Node, pc parser.Context) {
-}
-
-var kindMarkdownMark = ast.NewNodeKind("Mark")
-
-func (c *customRenderer) renderMarkTag(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
-	if entering {
-		_, _ = w.WriteString("<mark>")
-	} else {
-		_, _ = w.WriteString("</mark>")
-	}
-	return ast.WalkContinue, nil
 }
