@@ -121,7 +121,7 @@ func initRendering() error {
 		},
 		"asset":    assetFileName,
 		"assetsri": assetSRI,
-		"string":   getTemplateStringVariant,
+		"string":   appTs.GetTemplateStringVariantFunc(),
 		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
 			if len(data) == 0 || len(data) > 2 {
 				return "", errors.New("wrong argument count")

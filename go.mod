@@ -3,7 +3,8 @@ module git.jlel.se/jlelse/GoBlog
 go 1.16
 
 require (
-	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522161410-1a4509a3e844
+	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
+	git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de

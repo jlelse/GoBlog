@@ -12,8 +12,10 @@ cloud.google.com/go/firestore v1.1.0/go.mod h1:ulACoGHTpvq5r8rxGJ4ddJZBZqakUQqCl
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
 cloud.google.com/go/storage v1.0.0/go.mod h1:IhtSnM/ZTZV8YYJWCY8RULGVqBDmpoyjwiyrjsg+URw=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522161410-1a4509a3e844 h1:fZ2a31wUVzEnhJAgz9jyoRWoSRTc1NgzB+y7grI4aJU=
-git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522161410-1a4509a3e844/go.mod h1:ZFhxwbX+afhgbzh5rpkSJUp6vIduNPtIGDrsWpIcHTE=
+git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4 h1:p3c/vCY6MUADNXWCYI/hsZ8ZEvN7LtvwHzK2B8Y6BSk=
+git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4/go.mod h1:ZFhxwbX+afhgbzh5rpkSJUp6vIduNPtIGDrsWpIcHTE=
+git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee h1:zun+B6UygGTYm+OBxK9eoPUHSd3M7AebIxXJyFyZzR4=
+git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee/go.mod h1:KA7sVmsYAMxpPUBdDSSzShP8+sKLM16wnpKVk8ltaA0=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
