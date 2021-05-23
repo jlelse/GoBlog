@@ -124,3 +124,17 @@ func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 	purgeCache()
 	http.Redirect(w, r, ".", http.StatusFound)
 }
+
+func webmentionAdminReverify(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.FormValue("mentionid"))
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = reverifyWebmention(id)
+	if err != nil {
+		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, ".", http.StatusFound)
+}

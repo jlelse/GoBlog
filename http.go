@@ -205,6 +205,7 @@ func buildStaticHandlersRouters() error {
 			r.Get(paginationPath, webmentionAdmin)
 			r.Post("/delete", webmentionAdminDelete)
 			r.Post("/approve", webmentionAdminApprove)
+			r.Post("/reverify", webmentionAdminReverify)
 		})
 	}
 

@@ -112,9 +112,24 @@ func approveWebmention(id int) error {
 	return err
 }
 
+func reverifyWebmention(id int) error {
+	m, err := getWebmentions(&webmentionsRequestConfig{
+		id:    id,
+		limit: 1,
+	})
+	if err != nil {
+		return err
+	}
+	if len(m) > 0 {
+		queueMention(m[0])
+	}
+	return nil
+}
+
 type webmentionsRequestConfig struct {
 	target        string
 	status        webmentionStatus
+	id            int
 	asc           bool
 	offset, limit int
 }
@@ -132,6 +147,9 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 		} else if config.status != "" {
 			filter = "where status = @status"
 			args = append(args, sql.Named("status", config.status))
+		} else if config.id != 0 {
+			filter = "where id = @id"
+			args = append(args, sql.Named("id", config.id))
 		}
 	}
 	order := "desc"

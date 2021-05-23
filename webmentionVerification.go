@@ -155,29 +155,42 @@ func (m *mention) fillFromData(mf *microformats.Data) {
 
 func (m *mention) fill(mf *microformats.Microformat) bool {
 	if mfHasType(mf, "h-entry") {
-		if name, ok := mf.Properties["name"]; ok && len(name) > 0 {
-			if title, ok := name[0].(string); ok {
-				m.Title = title
-			}
-		}
-		if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
-			if content, ok := contents[0].(map[string]string); ok {
-				if contentValue, ok := content["value"]; ok {
-					m.Content = contentValue
+		// Check URL
+		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
+			if url0, ok := url[0].(string); ok {
+				if url0 != m.Source {
+					// Not correct URL
+					return false
 				}
 			}
 		}
+		// Title
+		if name, ok := mf.Properties["name"]; ok && len(name) > 0 {
+			if title, ok := name[0].(string); ok {
+				m.Title = strings.TrimSpace(title)
+			}
+		}
+		// Content
+		if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
+			if content, ok := contents[0].(map[string]string); ok {
+				if contentValue, ok := content["value"]; ok {
+					m.Content = strings.TrimSpace(contentValue)
+				}
+			}
+		}
+		// Author
 		if authors, ok := mf.Properties["author"]; ok && len(authors) > 0 {
 			if author, ok := authors[0].(*microformats.Microformat); ok {
 				if names, ok := author.Properties["name"]; ok && len(names) > 0 {
 					if name, ok := names[0].(string); ok {
-						m.Author = name
+						m.Author = strings.TrimSpace(name)
 					}
 				}
 			}
 		}
 		return true
-	} else if len(mf.Children) > 0 {
+	}
+	if len(mf.Children) > 0 {
 		for _, mfc := range mf.Children {
 			if m.fill(mfc) {
 				return true
