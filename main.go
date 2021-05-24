@@ -130,10 +130,7 @@ func main() {
 		logErrAndQuit("Failed to init ActivityPub:", err.Error())
 		return
 	}
-	if err = initWebmention(); err != nil {
-		logErrAndQuit("Failed to init webmention support:", err.Error())
-		return
-	}
+	initWebmention()
 	initTelegram()
 	initBlogStats()
 	initSessions()

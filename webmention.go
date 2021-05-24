@@ -30,7 +30,7 @@ type mention struct {
 	Status  webmentionStatus
 }
 
-func initWebmention() error {
+func initWebmention() {
 	// Add hooks
 	hookFunc := func(p *post) {
 		if p.Status == statusPublished {
@@ -41,7 +41,7 @@ func initWebmention() error {
 	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], hookFunc)
 	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], hookFunc)
 	// Start verifier
-	return initWebmentionQueue()
+	initWebmentionQueue()
 }
 
 func handleWebmention(w http.ResponseWriter, r *http.Request) {

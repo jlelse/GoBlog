@@ -20,15 +20,9 @@ import (
 	"willnorris.com/go/microformats"
 )
 
-func initWebmentionQueue() (err error) {
-	startWebmentionQueue()
-	return nil
-}
-
-func startWebmentionQueue() {
+func initWebmentionQueue() {
 	go func() {
 		for {
-			time.Sleep(10 * time.Second)
 			qi, err := peekQueue("wm")
 			if err != nil {
 				log.Println(err.Error())
@@ -49,6 +43,9 @@ func startWebmentionQueue() {
 				if err != nil {
 					log.Println(err.Error())
 				}
+			} else {
+				// No item in the queue, wait a moment
+				time.Sleep(15 * time.Second)
 			}
 		}
 	}()

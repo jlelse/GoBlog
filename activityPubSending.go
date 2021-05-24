@@ -19,15 +19,9 @@ type apRequest struct {
 	Try         int
 }
 
-func initAPSendQueue() (err error) {
-	startAPSendQueue()
-	return nil
-}
-
-func startAPSendQueue() {
+func initAPSendQueue() {
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
 			qi, err := peekQueue("ap")
 			if err != nil {
 				log.Println(err.Error())
@@ -56,6 +50,9 @@ func startAPSendQueue() {
 				if err != nil {
 					log.Println(err.Error())
 				}
+			} else {
+				// No item in the queue, wait a moment
+				time.Sleep(15 * time.Second)
 			}
 		}
 	}()

@@ -80,9 +80,7 @@ func initActivityPub() error {
 		return err
 	}
 	// Init send queue
-	if err = initAPSendQueue(); err != nil {
-		return err
-	}
+	initAPSendQueue()
 	return nil
 }
 
