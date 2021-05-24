@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
@@ -11,34 +12,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/joncrlsn/dque"
 	"github.com/thoas/go-funk"
 	"willnorris.com/go/microformats"
 )
 
-var wmQueue *dque.DQue
-
-func wmMentionBuilder() interface{} {
-	return &mention{}
-}
-
 func initWebmentionQueue() (err error) {
-	queuePath := "queues"
-	if _, err := os.Stat(queuePath); os.IsNotExist(err) {
-		if err := os.Mkdir(queuePath, 0755); err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-	wmQueue, err = dque.NewOrOpen("webmention", queuePath, 5, wmMentionBuilder)
-	if err != nil {
-		return err
-	}
 	startWebmentionQueue()
 	return nil
 }
@@ -46,21 +28,26 @@ func initWebmentionQueue() (err error) {
 func startWebmentionQueue() {
 	go func() {
 		for {
-			if i, err := wmQueue.PeekBlock(); err == nil {
-				if i == nil {
-					// Empty request
-					_, _ = wmQueue.Dequeue()
+			time.Sleep(10 * time.Second)
+			qi, err := peekQueue("wm")
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			} else if qi != nil {
+				var m mention
+				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m)
+				if err != nil {
+					log.Println(err.Error())
+					_ = qi.dequeue()
 					continue
 				}
-				if m, ok := i.(*mention); ok {
-					err = m.verifyMention()
-					if err != nil {
-						log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
-					}
-					_, _ = wmQueue.Dequeue()
-				} else {
-					// Invalid type
-					_, _ = wmQueue.Dequeue()
+				err = m.verifyMention()
+				if err != nil {
+					log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
+				}
+				err = qi.dequeue()
+				if err != nil {
+					log.Println(err.Error())
 				}
 			}
 		}
@@ -71,7 +58,11 @@ func queueMention(m *mention) error {
 	if wm := appConfig.Webmention; wm != nil && wm.DisableReceiving {
 		return errors.New("webmention receiving disabled")
 	}
-	return wmQueue.Enqueue(m)
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(m); err != nil {
+		return err
+	}
+	return enqueue("wm", buf.Bytes(), time.Now())
 }
 
 func (m *mention) verifyMention() error {

@@ -20,7 +20,6 @@ require (
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
-	github.com/gofrs/flock v0.8.0 // indirect
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -30,7 +29,6 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
-	github.com/joncrlsn/dque v0.0.0-20200702023911-3e80e3146ce5
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kyokomi/emoji/v2 v2.2.8

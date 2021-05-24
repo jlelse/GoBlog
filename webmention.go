@@ -121,9 +121,9 @@ func reverifyWebmention(id int) error {
 		return err
 	}
 	if len(m) > 0 {
-		queueMention(m[0])
+		err = queueMention(m[0])
 	}
-	return nil
+	return err
 }
 
 type webmentionsRequestConfig struct {

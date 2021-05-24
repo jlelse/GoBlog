@@ -3,44 +3,23 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
-
-	"github.com/joncrlsn/dque"
 )
-
-var apQueue *dque.DQue
 
 type apRequest struct {
 	BlogIri, To string
 	Activity    []byte
 	Try         int
-	LastTry     int64
-}
-
-func apRequestBuilder() interface{} {
-	return &apRequest{}
 }
 
 func initAPSendQueue() (err error) {
-	queuePath := "queues"
-	if _, err := os.Stat(queuePath); os.IsNotExist(err) {
-		if err = os.Mkdir(queuePath, 0755); err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-	apQueue, err = dque.NewOrOpen("activitypub", queuePath, 1000, apRequestBuilder)
-	if err != nil {
-		return err
-	}
 	startAPSendQueue()
 	return nil
 }
@@ -48,35 +27,34 @@ func initAPSendQueue() (err error) {
 func startAPSendQueue() {
 	go func() {
 		for {
-			if rInterface, err := apQueue.PeekBlock(); err == nil {
-				if rInterface == nil {
-					// Empty request
-					_, _ = apQueue.Dequeue()
+			time.Sleep(3 * time.Second)
+			qi, err := peekQueue("ap")
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			} else if qi != nil {
+				var r apRequest
+				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r)
+				if err != nil {
+					log.Println(err.Error())
+					_ = qi.dequeue()
 					continue
 				}
-				if r, ok := rInterface.(*apRequest); ok {
-					if r.LastTry != 0 && time.Now().Before(time.Unix(r.LastTry, 0).Add(time.Duration(r.Try)*10*time.Minute)) {
-						_ = apQueue.Enqueue(r)
+				if err := apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
+					if r.Try++; r.Try < 20 {
+						// Try it again
+						qi.content, _ = r.encode()
+						_ = qi.reschedule(time.Duration(r.Try) * 10 * time.Minute)
+						continue
 					} else {
-						// Send request
-						if err := apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
-							if r.Try++; r.Try < 21 {
-								// Try it again
-								r.LastTry = time.Now().Unix()
-								_ = apQueue.Enqueue(r)
-							} else {
-								log.Printf("Request to %s failed for the 20th time", r.To)
-								log.Println()
-								_ = apRemoveInbox(r.To)
-							}
-						}
+						log.Printf("Request to %s failed for the 20th time", r.To)
+						log.Println()
+						_ = apRemoveInbox(r.To)
 					}
-					// Finish
-					_, _ = apQueue.Dequeue()
-					time.Sleep(1 * time.Second)
-				} else {
-					// Invalid type
-					_, _ = apQueue.Dequeue()
+				}
+				err = qi.dequeue()
+				if err != nil {
+					log.Println(err.Error())
 				}
 			}
 		}
@@ -88,11 +66,24 @@ func apQueueSendSigned(blogIri, to string, activity interface{}) error {
 	if err != nil {
 		return err
 	}
-	return apQueue.Enqueue(&apRequest{
+	b, err := (&apRequest{
 		BlogIri:  blogIri,
 		To:       to,
 		Activity: body,
-	})
+	}).encode()
+	if err != nil {
+		return err
+	}
+	return enqueue("ap", b, time.Now())
+}
+
+func (r *apRequest) encode() ([]byte, error) {
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(r)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func apSendSigned(blogIri, to string, activity []byte) error {

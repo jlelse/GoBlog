@@ -157,6 +157,15 @@ func migrateDb() error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00014",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create table queue (id integer primary key autoincrement, name text not null, content blob, schedule text not null);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
