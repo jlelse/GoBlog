@@ -37,9 +37,9 @@ func initWebmention() {
 			_ = p.sendWebmentions()
 		}
 	}
-	postHooks[postPostHook] = append(postHooks[postPostHook], hookFunc)
-	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], hookFunc)
-	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], hookFunc)
+	postPostHooks = append(postPostHooks, hookFunc)
+	postUpdateHooks = append(postUpdateHooks, hookFunc)
+	postDeleteHooks = append(postDeleteHooks, hookFunc)
 	// Start verifier
 	initWebmentionQueue()
 }

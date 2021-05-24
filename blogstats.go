@@ -13,9 +13,9 @@ func initBlogStats() {
 	f := func(p *post) {
 		resetBlogStats(p.Blog)
 	}
-	postHooks[postPostHook] = append(postHooks[postPostHook], f)
-	postHooks[postUpdateHook] = append(postHooks[postPostHook], f)
-	postHooks[postDeleteHook] = append(postHooks[postPostHook], f)
+	postPostHooks = append(postPostHooks, f)
+	postUpdateHooks = append(postUpdateHooks, f)
+	postDeleteHooks = append(postDeleteHooks, f)
 }
 
 func serveBlogStats(w http.ResponseWriter, r *http.Request) {

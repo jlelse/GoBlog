@@ -34,17 +34,17 @@ func initActivityPub() error {
 		return nil
 	}
 	// Add hooks
-	postHooks[postPostHook] = append(postHooks[postPostHook], func(p *post) {
+	postPostHooks = append(postPostHooks, func(p *post) {
 		if p.isPublishedSectionPost() {
 			p.apPost()
 		}
 	})
-	postHooks[postUpdateHook] = append(postHooks[postUpdateHook], func(p *post) {
+	postUpdateHooks = append(postUpdateHooks, func(p *post) {
 		if p.isPublishedSectionPost() {
 			p.apUpdate()
 		}
 	})
-	postHooks[postDeleteHook] = append(postHooks[postDeleteHook], func(p *post) {
+	postDeleteHooks = append(postDeleteHooks, func(p *post) {
 		p.apDelete()
 	})
 	// Prepare webfinger

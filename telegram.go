@@ -21,7 +21,7 @@ func initTelegram() {
 		}
 	}
 	if enable {
-		postHooks[postPostHook] = append(postHooks[postPostHook], func(p *post) {
+		postPostHooks = append(postPostHooks, func(p *post) {
 			if p.isPublishedSectionPost() {
 				p.tgPost()
 			}

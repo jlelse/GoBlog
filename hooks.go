@@ -17,15 +17,13 @@ func preStartHooks() {
 	}
 }
 
-type postHookType string
+type postHookFunc func(*post)
 
-const (
-	postPostHook   postHookType = "post"
-	postUpdateHook postHookType = "update"
-	postDeleteHook postHookType = "delete"
+var (
+	postPostHooks   []postHookFunc
+	postUpdateHooks []postHookFunc
+	postDeleteHooks []postHookFunc
 )
-
-var postHooks = map[postHookType][]func(*post){}
 
 func (p *post) postPostHooks() {
 	// Hooks after post published
@@ -37,7 +35,7 @@ func (p *post) postPostHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postHooks[postPostHook] {
+	for _, f := range postPostHooks {
 		go f(p)
 	}
 }
@@ -52,7 +50,7 @@ func (p *post) postUpdateHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postHooks[postUpdateHook] {
+	for _, f := range postUpdateHooks {
 		go f(p)
 	}
 }
@@ -66,7 +64,7 @@ func (p *post) postDeleteHooks() {
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postHooks[postDeleteHook] {
+	for _, f := range postDeleteHooks {
 		go f(p)
 	}
 }
