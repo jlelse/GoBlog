@@ -129,6 +129,7 @@ func reverifyWebmention(id int) error {
 type webmentionsRequestConfig struct {
 	target        string
 	status        webmentionStatus
+	sourcelike    string
 	id            int
 	asc           bool
 	offset, limit int
@@ -138,17 +139,21 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	args = []interface{}{}
 	filter := ""
 	if config != nil {
-		if config.target != "" && config.status != "" {
-			filter = "where target = @target and status = @status"
-			args = append(args, sql.Named("target", unescapedPath(config.target)), sql.Named("status", config.status))
-		} else if config.target != "" {
-			filter = "where target = @target"
+		filter = "where 1 = 1"
+		if config.target != "" {
+			filter += " and target = @target"
 			args = append(args, sql.Named("target", config.target))
-		} else if config.status != "" {
-			filter = "where status = @status"
+		}
+		if config.status != "" {
+			filter += " and status = @status"
 			args = append(args, sql.Named("status", config.status))
-		} else if config.id != 0 {
-			filter = "where id = @id"
+		}
+		if config.sourcelike != "" {
+			filter += " and source like @sourcelike"
+			args = append(args, sql.Named("sourcelike", "%"+config.sourcelike+"%"))
+		}
+		if config.id != 0 {
+			filter += " and id = @id"
 			args = append(args, sql.Named("id", config.id))
 		}
 	}

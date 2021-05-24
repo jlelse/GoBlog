@@ -44,7 +44,11 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	case webmentionStatusApproved:
 		status = webmentionStatusApproved
 	}
-	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{status: status}}, 10)
+	sourcelike := r.URL.Query().Get("source")
+	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{
+		status:     status,
+		sourcelike: sourcelike,
+	}}, 10)
 	p.SetPage(pageNo)
 	var mentions []*mention
 	err := p.Results(&mentions)
@@ -79,6 +83,9 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	params := url.Values{}
 	if status != "" {
 		params.Add("status", string(status))
+	}
+	if sourcelike != "" {
+		params.Add("source", sourcelike)
 	}
 	if len(params) > 0 {
 		query = "?" + params.Encode()
