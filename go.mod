@@ -2,6 +2,9 @@ module git.jlel.se/jlelse/GoBlog
 
 go 1.16
 
+// master
+replace github.com/yuin/goldmark-emoji => github.com/jlelse/goldmark-emoji v1.0.2-0.20210524171342-a1615b7be38a
+
 require (
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee
@@ -31,7 +34,6 @@ require (
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/kr/text v0.2.0 // indirect
-	github.com/kyokomi/emoji/v2 v2.2.8
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/lib/pq v1.9.0 // indirect

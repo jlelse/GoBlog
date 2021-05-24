@@ -2,14 +2,11 @@ package main
 
 import (
 	"bytes"
-	"strings"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
 	"github.com/PuerkitoBio/goquery"
-	kemoji "github.com/kyokomi/emoji/v2"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
-	"github.com/yuin/goldmark-emoji/definition"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -17,8 +14,6 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 )
-
-var emojilib definition.Emojis
 
 var defaultMarkdown, absoluteMarkdown goldmark.Markdown
 
@@ -37,10 +32,7 @@ func initMarkdown() {
 			extension.Typographer,
 			extension.Linkify,
 			marktag.Mark,
-			// Emojis
-			emoji.New(
-				emoji.WithEmojis(emojiGoLib()),
-			),
+			emoji.Emoji,
 		),
 	}
 	defaultMarkdown = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{absoluteLinks: false}))...)
@@ -70,18 +62,6 @@ func renderText(s string) string {
 }
 
 // Extensions etc...
-
-// All emojis from emoji lib
-func emojiGoLib() definition.Emojis {
-	if emojilib == nil {
-		var emojis []definition.Emoji
-		for shotcode, e := range kemoji.CodeMap() {
-			emojis = append(emojis, definition.NewEmoji(e, []rune(e), strings.ReplaceAll(shotcode, ":", "")))
-		}
-		emojilib = definition.NewEmojis(emojis...)
-	}
-	return emojilib
-}
 
 // Links
 type customExtension struct {
