@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ with p .Data "title" }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
+  <title>{{ with title .Data }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
 {{ end }}

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/araddon/dateparse"
 	servertiming "github.com/mitchellh/go-server-timing"
 )
@@ -169,6 +170,16 @@ func initRendering() error {
 		},
 		"urlToString": func(u url.URL) string {
 			return u.String()
+		},
+		"geouri": func(u string) *gogeouri.Geo {
+			g, _ := gogeouri.Parse(u)
+			return g
+		},
+		"geourip": func(g *gogeouri.Geo, parameter string) (s string) {
+			if gp := g.Parameters[parameter]; len(gp) > 0 {
+				return gp[0]
+			}
+			return
 		},
 	}
 

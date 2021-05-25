@@ -179,6 +179,7 @@ type configMicropub struct {
 	AudioParam            string               `mapstructure:"audioParam"`
 	PhotoParam            string               `mapstructure:"photoParam"`
 	PhotoDescriptionParam string               `mapstructure:"photoDescriptionParam"`
+	LocationParam         string               `mapstructure:"locationParam"`
 	MediaStorage          *configMicropubMedia `mapstructure:"mediaStorage"`
 }
 
@@ -251,6 +252,7 @@ func initConfig() error {
 	viper.SetDefault("micropub.audioParam", "audio")
 	viper.SetDefault("micropub.photoParam", "images")
 	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
+	viper.SetDefault("micropub.locationParam", "location")
 	viper.SetDefault("activityPub.keyPath", "data/private.pem")
 	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
 	viper.SetDefault("webmention.disableSending", false)

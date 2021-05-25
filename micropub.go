@@ -198,56 +198,81 @@ func convertMPValueMapToPost(values map[string][]string) (*post, error) {
 	if h, ok := values["h"]; ok && (len(h) != 1 || h[0] != "entry") {
 		return nil, errors.New("only entry type is supported so far")
 	}
+	delete(values, "h")
 	entry := &post{
 		Parameters: map[string][]string{},
 	}
 	if content, ok := values["content"]; ok {
 		entry.Content = content[0]
+		delete(values, "content")
 	}
 	if published, ok := values["published"]; ok {
 		entry.Published = published[0]
+		delete(values, "published")
 	}
 	if updated, ok := values["updated"]; ok {
 		entry.Updated = updated[0]
+		delete(values, "updated")
 	}
 	if status, ok := values["post-status"]; ok {
 		entry.Status = postStatus(status[0])
+		delete(values, "post-status")
+	}
+	if slug, ok := values["mp-slug"]; ok {
+		entry.Slug = slug[0]
+		delete(values, "mp-slug")
 	}
 	// Parameter
 	if name, ok := values["name"]; ok {
 		entry.Parameters["title"] = name
+		delete(values, "name")
 	}
 	if category, ok := values["category"]; ok {
 		entry.Parameters[appConfig.Micropub.CategoryParam] = category
+		delete(values, "category")
 	} else if categories, ok := values["category[]"]; ok {
 		entry.Parameters[appConfig.Micropub.CategoryParam] = categories
+		delete(values, "category[]")
 	}
 	if inReplyTo, ok := values["in-reply-to"]; ok {
 		entry.Parameters[appConfig.Micropub.ReplyParam] = inReplyTo
+		delete(values, "in-reply-to")
 	}
 	if likeOf, ok := values["like-of"]; ok {
 		entry.Parameters[appConfig.Micropub.LikeParam] = likeOf
+		delete(values, "like-of")
 	}
 	if bookmarkOf, ok := values["bookmark-of"]; ok {
 		entry.Parameters[appConfig.Micropub.BookmarkParam] = bookmarkOf
+		delete(values, "bookmark-of")
 	}
 	if audio, ok := values["audio"]; ok {
 		entry.Parameters[appConfig.Micropub.AudioParam] = audio
+		delete(values, "audio")
 	} else if audio, ok := values["audio[]"]; ok {
 		entry.Parameters[appConfig.Micropub.AudioParam] = audio
+		delete(values, "audio[]")
 	}
 	if photo, ok := values["photo"]; ok {
 		entry.Parameters[appConfig.Micropub.PhotoParam] = photo
+		delete(values, "photo")
 	} else if photos, ok := values["photo[]"]; ok {
 		entry.Parameters[appConfig.Micropub.PhotoParam] = photos
+		delete(values, "photo[]")
 	}
 	if photoAlt, ok := values["mp-photo-alt"]; ok {
 		entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = photoAlt
+		delete(values, "mp-photo-alt")
 	} else if photoAlts, ok := values["mp-photo-alt[]"]; ok {
 		entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = photoAlts
+		delete(values, "mp-photo-alt[]")
 	}
-	if slug, ok := values["mp-slug"]; ok {
-		entry.Slug = slug[0]
+	if location, ok := values["location"]; ok {
+		entry.Parameters[appConfig.Micropub.LocationParam] = location
+		delete(values, "location")
+	}
+	for n, p := range values {
+		entry.Parameters[n] = append(entry.Parameters[n], p...)
 	}
 	err := entry.computeExtraPostParameters()
 	if err != nil {

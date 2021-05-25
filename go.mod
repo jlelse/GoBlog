@@ -6,6 +6,7 @@ go 1.16
 replace github.com/yuin/goldmark-emoji => github.com/jlelse/goldmark-emoji v1.0.2-0.20210524171342-a1615b7be38a
 
 require (
+	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee
 	github.com/PuerkitoBio/goquery v1.6.1
