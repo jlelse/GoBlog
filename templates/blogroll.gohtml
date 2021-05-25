@@ -11,7 +11,7 @@
     {{ range .Data.Outlines }}
         {{ $title := .Title }}
         {{ if not $title }}{{ $title = .Text }}{{ end }}
-        <h2 id="{{ urlize $title }}">{{ $title }}</h2>
+        <h2 id="{{ urlize $title }}">{{ $title }} ({{ len .Outlines }})</h2>
         <ul>
             {{ range .Outlines }}
                 {{ $ct := .Title }}
