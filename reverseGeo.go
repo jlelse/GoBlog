@@ -5,14 +5,15 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/thoas/go-funk"
 )
 
-func geoTitle(lat, lon float64) string {
-	ba, err := photonReverse(lat, lon)
+func geoTitle(lat, lon float64, lang string) string {
+	ba, err := photonReverse(lat, lon, lang)
 	if err != nil {
 		return ""
 	}
@@ -28,13 +29,21 @@ func geoTitle(lat, lon float64) string {
 	return strings.Join(funk.FilterString([]string{name, city, state, country}, func(s string) bool { return s != "" }), ", ")
 }
 
-func photonReverse(lat, lon float64) ([]byte, error) {
-	cacheKey := fmt.Sprintf("photon-%v-%v", lat, lon)
+func photonReverse(lat, lon float64, lang string) ([]byte, error) {
+	cacheKey := fmt.Sprintf("photon-%v-%v-%v", lat, lon, lang)
 	cache, _ := retrievePersistentCache(cacheKey)
 	if cache != nil {
 		return cache, nil
 	}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://photon.komoot.io/reverse?lat=%v&lon=%v", lat, lon), nil)
+	uv := url.Values{}
+	uv.Set("lat", fmt.Sprintf("%v", lat))
+	uv.Set("lon", fmt.Sprintf("%v", lon))
+	if lang == "de" || lang == "fr" || lang == "it" {
+		uv.Set("lang", lang)
+	} else {
+		uv.Set("lang", "en")
+	}
+	req, err := http.NewRequest(http.MethodGet, "https://photon.komoot.io/reverse?"+uv.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}

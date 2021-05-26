@@ -1,11 +1,12 @@
 {{ define "postmeta" }}
     <div class="p">
         {{ include "summaryandpostmeta" . }}
+        {{ $bloglang := .Blog.Lang }}
         {{ $loc := ( p .Data "location" ) }}
         {{ if $loc }}
             {{ with geouri $loc }}
                 <div>📍 <a class="p-location h-geo" href="https://www.openstreetmap.org/?mlat={{ .Latitude }}&mlon={{ .Longitude }}" target="_blank" rel="nofollow noopener noreferrer">
-                <span class="p-name">{{ with ( geourip . "name" ) }}{{ . }}{{ else }}{{ with ( geotitle .Latitude .Longitude ) }}{{ . }}{{ else }}{{ .Latitude }}, {{ .Longitude }}{{ end }}{{ end }}</span>
+                <span class="p-name">{{ with ( geourip . "name" ) }}{{ . }}{{ else }}{{ with ( geotitle .Latitude .Longitude $bloglang ) }}{{ . }}{{ else }}{{ .Latitude }}, {{ .Longitude }}{{ end }}{{ end }}</span>
                 <data class="p-longitude" value="{{ .Longitude }}" />
                 <data class="p-latitude" value="{{ .Latitude }}" />
                 </a></div>
