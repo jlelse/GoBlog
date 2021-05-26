@@ -181,6 +181,7 @@ func initRendering() error {
 			}
 			return
 		},
+		"geotitle": geoTitle,
 	}
 
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))

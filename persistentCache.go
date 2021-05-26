@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 func cachePersistently(key string, data []byte) error {
@@ -11,15 +13,23 @@ func cachePersistently(key string, data []byte) error {
 	return err
 }
 
+var persistentCacheGroup singleflight.Group
+
 func retrievePersistentCache(key string) (data []byte, err error) {
-	if row, err := appDbQueryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
+	d, err, _ := persistentCacheGroup.Do(key, func() (interface{}, error) {
+		if row, err := appDbQueryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
+			return nil, nil
+		} else if err != nil {
+			return nil, err
+		} else {
+			err = row.Scan(&data)
+			return data, err
+		}
+	})
+	if err != nil {
 		return nil, err
-	} else {
-		err = row.Scan(&data)
-		return data, err
 	}
+	return d.([]byte), nil
 }
 
 func clearPersistentCache(pattern string) error {

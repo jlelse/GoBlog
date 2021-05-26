@@ -5,14 +5,9 @@
         {{ if $loc }}
             {{ with geouri $loc }}
                 <div>📍 <a class="p-location h-geo" href="https://www.openstreetmap.org/?mlat={{ .Latitude }}&mlon={{ .Longitude }}" target="_blank" rel="nofollow noopener noreferrer">
-                {{ $geoname := ( geourip . "name" ) }}
-                {{ if $geoname }}
-                    <span class="p-name">{{ $geoname }}</span>
-                    <data class="p-longitude" value="{{ .Longitude }}" />
-                    <data class="p-latitude" value="{{ .Latitude }}" />
-                {{ else }}
-                    <span class="p-latitude">{{ .Latitude }}</span>, <span class="p-longitude">{{ .Longitude }}</span>
-                {{ end }}
+                <span class="p-name">{{ with ( geourip . "name" ) }}{{ . }}{{ else }}{{ with ( geotitle .Latitude .Longitude ) }}{{ . }}{{ else }}{{ .Latitude }}, {{ .Longitude }}{{ end }}{{ end }}</span>
+                <data class="p-longitude" value="{{ .Longitude }}" />
+                <data class="p-latitude" value="{{ .Latitude }}" />
                 </a></div>
             {{ end }}
         {{ end }}
