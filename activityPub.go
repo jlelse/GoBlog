@@ -278,7 +278,7 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 }
 
 func apGetAllInboxes(blog string) ([]string, error) {
-	rows, err := appDbQuery("select distinct inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
+	rows, err := appDb.query("select distinct inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
@@ -295,17 +295,17 @@ func apGetAllInboxes(blog string) ([]string, error) {
 }
 
 func apAddFollower(blog, follower, inbox string) error {
-	_, err := appDbExec("insert or replace into activitypub_followers (blog, follower, inbox) values (@blog, @follower, @inbox)", sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox))
+	_, err := appDb.exec("insert or replace into activitypub_followers (blog, follower, inbox) values (@blog, @follower, @inbox)", sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox))
 	return err
 }
 
 func apRemoveFollower(blog, follower string) error {
-	_, err := appDbExec("delete from activitypub_followers where blog = @blog and follower = @follower", sql.Named("blog", blog), sql.Named("follower", follower))
+	_, err := appDb.exec("delete from activitypub_followers where blog = @blog and follower = @follower", sql.Named("blog", blog), sql.Named("follower", follower))
 	return err
 }
 
 func apRemoveInbox(inbox string) error {
-	_, err := appDbExec("delete from activitypub_followers where inbox = @inbox", sql.Named("inbox", inbox))
+	_, err := appDb.exec("delete from activitypub_followers where inbox = @inbox", sql.Named("inbox", inbox))
 	return err
 }
 

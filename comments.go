@@ -26,7 +26,7 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
 		serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := appDbQueryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
+	row, err := appDb.queryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,7 +66,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	}
 	website := strings.TrimSpace(strict.Sanitize(r.FormValue("website")))
 	// Insert
-	result, err := appDbExec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
+	result, err := appDb.exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
 	if err != nil {
 		serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,7 +117,7 @@ func buildCommentsQuery(config *commentsRequestConfig) (query string, args []int
 func getComments(config *commentsRequestConfig) ([]*comment, error) {
 	comments := []*comment{}
 	query, args := buildCommentsQuery(config)
-	rows, err := appDbQuery(query, args...)
+	rows, err := appDb.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func getComments(config *commentsRequestConfig) ([]*comment, error) {
 func countComments(config *commentsRequestConfig) (count int, err error) {
 	query, params := buildCommentsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDbQueryRow(query, params...)
+	row, err := appDb.queryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -144,6 +144,6 @@ func countComments(config *commentsRequestConfig) (count int, err error) {
 }
 
 func deleteComment(id int) error {
-	_, err := appDbExec("delete from comments where id = @id", sql.Named("id", id))
+	_, err := appDb.exec("delete from comments where id = @id", sql.Named("id", id))
 	return err
 }

@@ -16,7 +16,7 @@ func shortenPath(p string) (string, error) {
 	}
 	id := getShortPathID(p)
 	if id == -1 {
-		_, err := appDbExec("insert or ignore into shortpath (path) values (@path)", sql.Named("path", p))
+		_, err := appDb.exec("insert or ignore into shortpath (path) values (@path)", sql.Named("path", p))
 		if err != nil {
 			return "", err
 		}
@@ -32,7 +32,7 @@ func getShortPathID(p string) (id int) {
 	if p == "" {
 		return -1
 	}
-	row, err := appDbQueryRow("select id from shortpath where path = @path", sql.Named("path", p))
+	row, err := appDb.queryRow("select id from shortpath where path = @path", sql.Named("path", p))
 	if err != nil {
 		return -1
 	}
@@ -49,7 +49,7 @@ func redirectToLongPath(rw http.ResponseWriter, r *http.Request) {
 		serve404(rw, r)
 		return
 	}
-	row, err := appDbQueryRow("select path from shortpath where id = @id", sql.Named("id", id))
+	row, err := appDb.queryRow("select path from shortpath where id = @id", sql.Named("id", id))
 	if err != nil {
 		serve404(rw, r)
 		return

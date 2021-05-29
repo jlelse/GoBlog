@@ -23,7 +23,7 @@ const (
 
 func initSessions() {
 	deleteExpiredSessions := func() {
-		if _, err := appDbExec("delete from sessions where expires < @now",
+		if _, err := appDb.exec("delete from sessions where expires < @now",
 			sql.Named("now", time.Now().Local().String())); err != nil {
 			log.Println("Failed to delete expired sessions:", err.Error())
 		}
@@ -101,14 +101,14 @@ func (s *dbSessionStore) Delete(r *http.Request, w http.ResponseWriter, session 
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
-	if _, err := appDbExec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
+	if _, err := appDb.exec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *dbSessionStore) load(session *sessions.Session) (err error) {
-	row, err := appDbQueryRow("select data, created, modified, expires from sessions where id = @id", sql.Named("id", session.ID))
+	row, err := appDb.queryRow("select data, created, modified, expires from sessions where id = @id", sql.Named("id", session.ID))
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	if err != nil {
 		return err
 	}
-	res, err := appDbExec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
+	res, err := appDb.exec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
 		sql.Named("data", encoded), sql.Named("created", created.Local().String()), sql.Named("modified", modified.Local().String()), sql.Named("expires", expires.Local().String()))
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ func (s *dbSessionStore) save(session *sessions.Session) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = appDbExec("update sessions set data = @data, modified = @modified where id = @id",
+	_, err = appDb.exec("update sessions set data = @data, modified = @modified where id = @id",
 		sql.Named("data", encoded), sql.Named("modified", time.Now().Local().String()), sql.Named("id", session.ID))
 	if err != nil {
 		return err

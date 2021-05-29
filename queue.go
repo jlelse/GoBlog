@@ -12,7 +12,7 @@ func enqueue(name string, content []byte, schedule time.Time) error {
 	if len(content) == 0 {
 		return errors.New("empty content")
 	}
-	_, err := appDbExec("insert into queue (name, content, schedule) values (@name, @content, @schedule)",
+	_, err := appDb.exec("insert into queue (name, content, schedule) values (@name, @content, @schedule)",
 		sql.Named("name", name), sql.Named("content", content), sql.Named("schedule", schedule.UTC().String()))
 	return err
 }
@@ -25,17 +25,17 @@ type queueItem struct {
 }
 
 func (qi *queueItem) reschedule(dur time.Duration) error {
-	_, err := appDbExec("update queue set schedule = @schedule, content = @content where id = @id", sql.Named("schedule", qi.schedule.Add(dur).UTC().String()), sql.Named("content", qi.content), sql.Named("id", qi.id))
+	_, err := appDb.exec("update queue set schedule = @schedule, content = @content where id = @id", sql.Named("schedule", qi.schedule.Add(dur).UTC().String()), sql.Named("content", qi.content), sql.Named("id", qi.id))
 	return err
 }
 
 func (qi *queueItem) dequeue() error {
-	_, err := appDbExec("delete from queue where id = @id", sql.Named("id", qi.id))
+	_, err := appDb.exec("delete from queue where id = @id", sql.Named("id", qi.id))
 	return err
 }
 
 func peekQueue(name string) (*queueItem, error) {
-	row, err := appDbQueryRow("select id, name, content, schedule from queue where schedule <= @schedule and name = @name order by schedule asc limit 1", sql.Named("name", name), sql.Named("schedule", time.Now().UTC().String()))
+	row, err := appDb.queryRow("select id, name, content, schedule from queue where schedule <= @schedule and name = @name order by schedule asc limit 1", sql.Named("name", name), sql.Named("schedule", time.Now().UTC().String()))
 	if err != nil {
 		return nil, err
 	}

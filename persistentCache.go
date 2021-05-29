@@ -9,7 +9,7 @@ import (
 
 func cachePersistently(key string, data []byte) error {
 	date, _ := toLocal(time.Now().String())
-	_, err := appDbExec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", date))
+	_, err := appDb.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", date))
 	return err
 }
 
@@ -17,7 +17,7 @@ var persistentCacheGroup singleflight.Group
 
 func retrievePersistentCache(key string) (data []byte, err error) {
 	d, err, _ := persistentCacheGroup.Do(key, func() (interface{}, error) {
-		if row, err := appDbQueryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
+		if row, err := appDb.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
 			return nil, nil
 		} else if err != nil {
 			return nil, err
@@ -33,6 +33,6 @@ func retrievePersistentCache(key string) (data []byte, err error) {
 }
 
 func clearPersistentCache(pattern string) error {
-	_, err := appDbExec("delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
+	_, err := appDb.exec("delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
 	return err
 }

@@ -40,14 +40,14 @@ func sendNotification(text string) {
 }
 
 func saveNotification(n *notification) error {
-	if _, err := appDbExec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
+	if _, err := appDb.exec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func deleteNotification(id int) error {
-	_, err := appDbExec("delete from notifications where id = @id", sql.Named("id", id))
+	_, err := appDb.exec("delete from notifications where id = @id", sql.Named("id", id))
 	return err
 }
 
@@ -68,7 +68,7 @@ func buildNotificationsQuery(config *notificationsRequestConfig) (query string, 
 func getNotifications(config *notificationsRequestConfig) ([]*notification, error) {
 	notifications := []*notification{}
 	query, args := buildNotificationsQuery(config)
-	rows, err := appDbQuery(query, args...)
+	rows, err := appDb.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func getNotifications(config *notificationsRequestConfig) ([]*notification, erro
 func countNotifications(config *notificationsRequestConfig) (count int, err error) {
 	query, params := buildNotificationsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDbQueryRow(query, params...)
+	row, err := appDb.queryRow(query, params...)
 	if err != nil {
 		return
 	}

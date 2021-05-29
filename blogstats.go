@@ -67,7 +67,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		Name, Posts, Chars, Words, WordsPerPost string
 	}
 	// Count total posts
-	row, err := appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
+	row, err := appDb.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		return nil, err
 	}
 	// Count posts per year
-	rows, err := appDbQuery("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
+	rows, err := appDb.query("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		}
 	}
 	// Count posts without date
-	row, err = appDbQueryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
+	row, err = appDb.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 	months := map[string][]statsTableType{}
 	month := statsTableType{}
 	for _, year := range years {
-		rows, err = appDbQuery("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
+		rows, err = appDb.query("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
 		if err != nil {
 			return nil, err
 		}

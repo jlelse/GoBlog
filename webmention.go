@@ -84,7 +84,7 @@ func extractMention(r *http.Request) (*mention, error) {
 
 func webmentionExists(source, target string) bool {
 	result := 0
-	row, err := appDbQueryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
+	row, err := appDb.queryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
 	if err != nil {
 		return false
 	}
@@ -103,12 +103,12 @@ func createWebmention(source, target string) (err error) {
 }
 
 func deleteWebmention(id int) error {
-	_, err := appDbExec("delete from webmentions where id = @id", sql.Named("id", id))
+	_, err := appDb.exec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 
 func approveWebmention(id int) error {
-	_, err := appDbExec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
+	_, err := appDb.exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
@@ -172,7 +172,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	mentions := []*mention{}
 	query, args := buildWebmentionsQuery(config)
-	rows, err := appDbQuery(query, args...)
+	rows, err := appDb.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 func countWebmentions(config *webmentionsRequestConfig) (count int, err error) {
 	query, params := buildWebmentionsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDbQueryRow(query, params...)
+	row, err := appDb.queryRow(query, params...)
 	if err != nil {
 		return
 	}

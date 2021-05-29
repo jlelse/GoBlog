@@ -218,13 +218,13 @@ func indieAuthToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (data *indieAuthData) saveAuthorization() (err error) {
-	_, err = appDbExec("insert into indieauthauth (time, code, client, redirect, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
+	_, err = appDb.exec("insert into indieauthauth (time, code, client, redirect, scope) values (?, ?, ?, ?, ?)", data.time.Unix(), data.code, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "))
 	return
 }
 
 func (data *indieAuthData) verifyAuthorization() (valid bool, err error) {
 	// code valid for 600 seconds
-	row, err := appDbQueryRow("select code, client, redirect, scope from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
+	row, err := appDb.queryRow("select code, client, redirect, scope from indieauthauth where time >= ? and code = ? and client = ? and redirect = ?", time.Now().Unix()-600, data.code, data.ClientID, data.RedirectURI)
 	if err != nil {
 		return false, err
 	}
@@ -239,13 +239,13 @@ func (data *indieAuthData) verifyAuthorization() (valid bool, err error) {
 		data.Scopes = strings.Split(scope, " ")
 	}
 	valid = true
-	_, err = appDbExec("delete from indieauthauth where code = ? or time < ?", data.code, time.Now().Unix()-600)
+	_, err = appDb.exec("delete from indieauthauth where code = ? or time < ?", data.code, time.Now().Unix()-600)
 	data.code = ""
 	return
 }
 
 func (data *indieAuthData) saveToken() (err error) {
-	_, err = appDbExec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", data.time.Unix(), data.token, data.ClientID, strings.Join(data.Scopes, " "))
+	_, err = appDb.exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", data.time.Unix(), data.token, data.ClientID, strings.Join(data.Scopes, " "))
 	return
 }
 
@@ -254,7 +254,7 @@ func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 	data = &indieAuthData{
 		Scopes: []string{},
 	}
-	row, err := appDbQueryRow("select time, token, client, scope from indieauthtoken where token = @token", sql.Named("token", token))
+	row, err := appDb.queryRow("select time, token, client, scope from indieauthtoken where token = @token", sql.Named("token", token))
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +275,6 @@ func verifyIndieAuthToken(token string) (data *indieAuthData, err error) {
 
 func revokeIndieAuthToken(token string) {
 	if token != "" {
-		_, _ = appDbExec("delete from indieauthtoken where token=?", token)
+		_, _ = appDb.exec("delete from indieauthtoken where token=?", token)
 	}
 }

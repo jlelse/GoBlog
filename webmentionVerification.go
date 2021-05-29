@@ -82,7 +82,7 @@ func (m *mention) verifyMention() error {
 	err = m.verifyReader(resp.Body)
 	_ = resp.Body.Close()
 	if err != nil {
-		_, err := appDbExec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
+		_, err := appDb.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
 		return err
 	}
 	if len(m.Content) > 500 {
@@ -93,10 +93,10 @@ func (m *mention) verifyMention() error {
 	}
 	newStatus := webmentionStatusVerified
 	if webmentionExists(m.Source, m.Target) {
-		_, err = appDbExec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
+		_, err = appDb.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
 			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))
 	} else {
-		_, err = appDbExec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
+		_, err = appDb.exec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
 			sql.Named("source", m.Source), sql.Named("target", m.Target), sql.Named("created", m.Created), sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author))
 		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}

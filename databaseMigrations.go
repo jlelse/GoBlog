@@ -6,9 +6,7 @@ import (
 	"github.com/lopezator/migrator"
 )
 
-func migrateDb() error {
-	startWritingToDb()
-	defer finishWritingToDb()
+func migrateDb(db *sql.DB) error {
 	m, err := migrator.New(
 		migrator.Migrations(
 			&migrator.Migration{
@@ -171,8 +169,5 @@ func migrateDb() error {
 	if err != nil {
 		return err
 	}
-	if err := m.Migrate(appDb); err != nil {
-		return err
-	}
-	return nil
+	return m.Migrate(db)
 }
