@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -120,11 +121,16 @@ type postCreationOptions struct {
 	oldStatus postStatus
 }
 
+var postCreationMutex sync.Mutex
+
 func (p *post) createOrReplace(o *postCreationOptions) error {
 	err := p.checkPost()
 	if err != nil {
 		return err
 	}
+	// Prevent bad things
+	postCreationMutex.Lock()
+	defer postCreationMutex.Unlock()
 	// Check if path is already in use
 	if o.new || (p.Path != o.oldPath) {
 		// Post is new or post path was changed
