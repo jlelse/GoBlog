@@ -8,68 +8,62 @@ import (
 	"time"
 )
 
-func preStartHooks() {
-	for _, cmd := range appConfig.Hooks.PreStart {
+func (a *goBlog) preStartHooks() {
+	for _, cmd := range a.cfg.Hooks.PreStart {
 		func(cmd string) {
 			log.Println("Executing pre-start hook:", cmd)
-			executeCommand(cmd)
+			a.cfg.Hooks.executeCommand(cmd)
 		}(cmd)
 	}
 }
 
 type postHookFunc func(*post)
 
-var (
-	postPostHooks   []postHookFunc
-	postUpdateHooks []postHookFunc
-	postDeleteHooks []postHookFunc
-)
-
-func (p *post) postPostHooks() {
+func (a *goBlog) postPostHooks(p *post) {
 	// Hooks after post published
-	for _, cmdTmplString := range appConfig.Hooks.PostPost {
+	for _, cmdTmplString := range a.cfg.Hooks.PostPost {
 		go func(p *post, cmdTmplString string) {
-			executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
-				"URL":  p.fullURL(),
+			a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
+				"URL":  a.fullPostURL(p),
 				"Post": p,
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postPostHooks {
+	for _, f := range a.pPostHooks {
 		go f(p)
 	}
 }
 
-func (p *post) postUpdateHooks() {
+func (a *goBlog) postUpdateHooks(p *post) {
 	// Hooks after post updated
-	for _, cmdTmplString := range appConfig.Hooks.PostUpdate {
+	for _, cmdTmplString := range a.cfg.Hooks.PostUpdate {
 		go func(p *post, cmdTmplString string) {
-			executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
-				"URL":  p.fullURL(),
+			a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
+				"URL":  a.fullPostURL(p),
 				"Post": p,
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postUpdateHooks {
+	for _, f := range a.pUpdateHooks {
 		go f(p)
 	}
 }
 
-func (p *post) postDeleteHooks() {
-	for _, cmdTmplString := range appConfig.Hooks.PostDelete {
+func (a *goBlog) postDeleteHooks(p *post) {
+	for _, cmdTmplString := range a.cfg.Hooks.PostDelete {
 		go func(p *post, cmdTmplString string) {
-			executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
-				"URL":  p.fullURL(),
+			a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
+				"URL":  a.fullPostURL(p),
 				"Post": p,
 			})
 		}(p, cmdTmplString)
 	}
-	for _, f := range postDeleteHooks {
+	for _, f := range a.pDeleteHooks {
 		go f(p)
 	}
 }
 
-func executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
+func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {
 		log.Println("Failed to parse cmd template:", err.Error())
@@ -82,18 +76,18 @@ func executeTemplateCommand(hookType string, tmpl string, data map[string]interf
 	}
 	cmd := cmdBuf.String()
 	log.Println("Executing "+hookType+" hook:", cmd)
-	executeCommand(cmd)
+	cfg.executeCommand(cmd)
 }
 
 var hourlyHooks = []func(){}
 
-func startHourlyHooks() {
+func (a *goBlog) startHourlyHooks() {
 	// Add configured hourly hooks
-	for _, cmd := range appConfig.Hooks.Hourly {
+	for _, cmd := range a.cfg.Hooks.Hourly {
 		c := cmd
 		f := func() {
 			log.Println("Executing hourly hook:", c)
-			executeCommand(c)
+			a.cfg.Hooks.executeCommand(c)
 		}
 		hourlyHooks = append(hourlyHooks, f)
 	}
@@ -121,8 +115,8 @@ func startHourlyHooks() {
 	}
 }
 
-func executeCommand(cmd string) {
-	out, err := exec.Command(appConfig.Hooks.Shell, "-c", cmd).CombinedOutput()
+func (cfg *configHooks) executeCommand(cmd string) {
+	out, err := exec.Command(cfg.Shell, "-c", cmd).CombinedOutput()
 	if err != nil {
 		log.Println("Failed to execute command:", err.Error())
 	}

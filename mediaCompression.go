@@ -13,7 +13,7 @@ import (
 const defaultCompressionWidth = 2000
 const defaultCompressionHeight = 3000
 
-func tinify(url string, config *configMicropubMedia) (location string, err error) {
+func (a *goBlog) tinify(url string, config *configMicropubMedia) (location string, err error) {
 	// Check config
 	if config == nil || config.TinifyKey == "" {
 		return "", errors.New("service Tinify not configured")
@@ -89,11 +89,11 @@ func tinify(url string, config *configMicropubMedia) (location string, err error
 		return "", err
 	}
 	// Upload compressed file
-	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
+	location, err = a.uploadFile(fileName+"."+fileExtension, tmpFile)
 	return
 }
 
-func shortPixel(url string, config *configMicropubMedia) (location string, err error) {
+func (a *goBlog) shortPixel(url string, config *configMicropubMedia) (location string, err error) {
 	// Check config
 	if config == nil || config.ShortPixelKey == "" {
 		return "", errors.New("service ShortPixel not configured")
@@ -146,11 +146,11 @@ func shortPixel(url string, config *configMicropubMedia) (location string, err e
 		return "", err
 	}
 	// Upload compressed file
-	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
+	location, err = a.uploadFile(fileName+"."+fileExtension, tmpFile)
 	return
 }
 
-func cloudflare(url string) (location string, err error) {
+func (a *goBlog) cloudflare(url string) (location string, err error) {
 	// Check url
 	_, allowed := compressionIsSupported(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -190,6 +190,6 @@ func cloudflare(url string) (location string, err error) {
 		return "", err
 	}
 	// Upload compressed file
-	location, err = uploadFile(fileName+"."+fileExtension, tmpFile)
+	location, err = a.uploadFile(fileName+"."+fileExtension, tmpFile)
 	return
 }

@@ -16,24 +16,23 @@ import (
 
 const assetsFolder = "templates/assets"
 
-var assetFileNames map[string]string = map[string]string{}
-var assetFiles map[string]*assetFile = map[string]*assetFile{}
-
 type assetFile struct {
 	contentType string
 	sri         string
 	body        []byte
 }
 
-func initTemplateAssets() (err error) {
+func (a *goBlog) initTemplateAssets() (err error) {
+	a.assetFileNames = map[string]string{}
+	a.assetFiles = map[string]*assetFile{}
 	err = filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsRegular() {
-			compiled, err := compileAsset(path)
+			compiled, err := a.compileAsset(path)
 			if err != nil {
 				return err
 			}
 			if compiled != "" {
-				assetFileNames[strings.TrimPrefix(path, assetsFolder+"/")] = compiled
+				a.assetFileNames[strings.TrimPrefix(path, assetsFolder+"/")] = compiled
 			}
 		}
 		return nil
@@ -44,21 +43,22 @@ func initTemplateAssets() (err error) {
 	return nil
 }
 
-func compileAsset(name string) (string, error) {
+func (a *goBlog) compileAsset(name string) (string, error) {
 	content, err := os.ReadFile(name)
 	if err != nil {
 		return "", err
 	}
 	ext := path.Ext(name)
 	compiledExt := ext
+	m := getMinifier()
 	switch ext {
 	case ".js":
-		content, err = minifier.Bytes("application/javascript", content)
+		content, err = m.Bytes("application/javascript", content)
 		if err != nil {
 			return "", err
 		}
 	case ".css":
-		content, err = minifier.Bytes("text/css", content)
+		content, err = m.Bytes("text/css", content)
 		if err != nil {
 			return "", err
 		}
@@ -76,7 +76,7 @@ func compileAsset(name string) (string, error) {
 	// SRI
 	sriHash := fmt.Sprintf("sha512-%s", base64.StdEncoding.EncodeToString(sha512Hash.Sum(nil)))
 	// Create struct
-	assetFiles[compiledFileName] = &assetFile{
+	a.assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(compiledExt),
 		sri:         sriHash,
 		body:        content,
@@ -85,27 +85,27 @@ func compileAsset(name string) (string, error) {
 }
 
 // Function for templates
-func assetFileName(fileName string) string {
-	return "/" + assetFileNames[fileName]
+func (a *goBlog) assetFileName(fileName string) string {
+	return "/" + a.assetFileNames[fileName]
 }
 
-func assetSRI(fileName string) string {
-	return assetFiles[assetFileNames[fileName]].sri
+func (a *goBlog) assetSRI(fileName string) string {
+	return a.assetFiles[a.assetFileNames[fileName]].sri
 }
 
-func allAssetPaths() []string {
+func (a *goBlog) allAssetPaths() []string {
 	var paths []string
-	for _, name := range assetFileNames {
+	for _, name := range a.assetFileNames {
 		paths = append(paths, "/"+name)
 	}
 	return paths
 }
 
 // Gets only called by registered paths
-func serveAsset(w http.ResponseWriter, r *http.Request) {
-	af, ok := assetFiles[strings.TrimPrefix(r.URL.Path, "/")]
+func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
+	af, ok := a.assetFiles[strings.TrimPrefix(r.URL.Path, "/")]
 	if !ok {
-		serve404(w, r)
+		a.serve404(w, r)
 		return
 	}
 	w.Header().Set("Cache-Control", "public,max-age=31536000,immutable")

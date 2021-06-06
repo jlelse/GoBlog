@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-func serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(map[string]interface{}{
 		"links": []map[string]interface{}{
 			{
-				"href": appConfig.Server.PublicAddress + "/nodeinfo",
+				"href": a.cfg.Server.PublicAddress + "/nodeinfo",
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
 			},
 		},
@@ -18,8 +18,8 @@ func serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	_, _ = writeMinified(w, contentTypeJSON, b)
 }
 
-func serveNodeInfo(w http.ResponseWriter, r *http.Request) {
-	localPosts, _ := countPosts(&postsRequestConfig{
+func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
+	localPosts, _ := a.db.countPosts(&postsRequestConfig{
 		status: statusPublished,
 	})
 	b, _ := json.Marshal(map[string]interface{}{
@@ -30,7 +30,7 @@ func serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		"usage": map[string]interface{}{
 			"users": map[string]interface{}{
-				"total": len(appConfig.Blogs),
+				"total": len(a.cfg.Blogs),
 			},
 			"localPosts": localPosts,
 		},

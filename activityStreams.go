@@ -22,9 +22,9 @@ var asCheckMediaTypes = []contenttype.MediaType{
 
 const asRequestKey requestContextKey = "asRequest"
 
-func checkActivityStreamsRequest(next http.Handler) http.Handler {
+func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
+		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
 			// Check if accepted media type is not HTML
 			if mt, _, err := contenttype.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
@@ -87,21 +87,21 @@ type asEndpoints struct {
 	SharedInbox string `json:"sharedInbox,omitempty"`
 }
 
-func (p *post) serveActivityStreams(w http.ResponseWriter) {
-	b, _ := json.Marshal(p.toASNote())
+func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter) {
+	b, _ := json.Marshal(a.toASNote(p))
 	w.Header().Set(contentType, contentTypeASUTF8)
 	_, _ = writeMinified(w, contentTypeAS, b)
 }
 
-func (p *post) toASNote() *asNote {
+func (a *goBlog) toASNote(p *post) *asNote {
 	// Create a Note object
 	as := &asNote{
 		Context:      asContext,
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
 		MediaType:    contentTypeHTML,
-		ID:           p.fullURL(),
-		URL:          p.fullURL(),
-		AttributedTo: appConfig.Blogs[p.Blog].apIri(),
+		ID:           a.fullPostURL(p),
+		URL:          a.fullPostURL(p),
+		AttributedTo: a.apIri(a.cfg.Blogs[p.Blog]),
 	}
 	// Name and Type
 	if title := p.title(); title != "" {
@@ -111,9 +111,9 @@ func (p *post) toASNote() *asNote {
 		as.Type = "Note"
 	}
 	// Content
-	as.Content = string(p.absoluteHTML())
+	as.Content = string(a.absoluteHTML(p))
 	// Attachments
-	if images := p.Parameters[appConfig.Micropub.PhotoParam]; len(images) > 0 {
+	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		for _, image := range images {
 			as.Attachment = append(as.Attachment, &asAttachment{
 				Type: "Image",
@@ -122,12 +122,12 @@ func (p *post) toASNote() *asNote {
 		}
 	}
 	// Tags
-	for _, tagTax := range appConfig.ActivityPub.TagsTaxonomies {
+	for _, tagTax := range a.cfg.ActivityPub.TagsTaxonomies {
 		for _, tag := range p.Parameters[tagTax] {
 			as.Tag = append(as.Tag, &asTag{
 				Type: "Hashtag",
 				Name: tag,
-				Href: appConfig.Server.PublicAddress + appConfig.Blogs[p.Blog].getRelativePath(fmt.Sprintf("/%s/%s", tagTax, urlize(tag))),
+				Href: a.cfg.Server.PublicAddress + a.cfg.Blogs[p.Blog].getRelativePath(fmt.Sprintf("/%s/%s", tagTax, urlize(tag))),
 			})
 		}
 	}
@@ -144,30 +144,31 @@ func (p *post) toASNote() *asNote {
 		}
 	}
 	// Reply
-	if replyLink := p.firstParameter(appConfig.Micropub.ReplyParam); replyLink != "" {
+	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" {
 		as.InReplyTo = replyLink
 	}
 	return as
 }
 
-func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
-	publicKeyDer, err := x509.MarshalPKIXPublicKey(&apPrivateKey.PublicKey)
+func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
+	b := a.cfg.Blogs[blog]
+	publicKeyDer, err := x509.MarshalPKIXPublicKey(&(a.apPrivateKey.PublicKey))
 	if err != nil {
-		serveError(w, r, "Failed to marshal public key", http.StatusInternalServerError)
+		a.serveError(w, r, "Failed to marshal public key", http.StatusInternalServerError)
 		return
 	}
 	asBlog := &asPerson{
 		Context:           asContext,
 		Type:              "Person",
-		ID:                b.apIri(),
-		URL:               b.apIri(),
+		ID:                a.apIri(b),
+		URL:               a.apIri(b),
 		Name:              b.Title,
 		Summary:           b.Description,
 		PreferredUsername: blog,
-		Inbox:             appConfig.Server.PublicAddress + "/activitypub/inbox/" + blog,
+		Inbox:             a.cfg.Server.PublicAddress + "/activitypub/inbox/" + blog,
 		PublicKey: &asPublicKey{
-			Owner: b.apIri(),
-			ID:    b.apIri() + "#main-key",
+			Owner: a.apIri(b),
+			ID:    a.apIri(b) + "#main-key",
 			PublicKeyPem: string(pem.EncodeToMemory(&pem.Block{
 				Type:    "PUBLIC KEY",
 				Headers: nil,
@@ -176,10 +177,10 @@ func (b *configBlog) serveActivityStreams(blog string, w http.ResponseWriter, r 
 		},
 	}
 	// Add profile picture
-	if appConfig.User.Picture != "" {
+	if a.cfg.User.Picture != "" {
 		asBlog.Icon = &asAttachment{
 			Type: "Image",
-			URL:  appConfig.User.Picture,
+			URL:  a.cfg.User.Picture,
 		}
 	}
 	jb, _ := json.Marshal(asBlog)

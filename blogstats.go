@@ -9,19 +9,19 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-func initBlogStats() {
+func (a *goBlog) initBlogStats() {
 	f := func(p *post) {
-		resetBlogStats(p.Blog)
+		a.db.resetBlogStats(p.Blog)
 	}
-	postPostHooks = append(postPostHooks, f)
-	postUpdateHooks = append(postUpdateHooks, f)
-	postDeleteHooks = append(postDeleteHooks, f)
+	a.pPostHooks = append(a.pPostHooks, f)
+	a.pUpdateHooks = append(a.pUpdateHooks, f)
+	a.pDeleteHooks = append(a.pDeleteHooks, f)
 }
 
-func serveBlogStats(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	canonical := blogPath(blog) + appConfig.Blogs[blog].BlogStats.Path
-	render(w, r, templateBlogStats, &renderData{
+	canonical := a.blogPath(blog) + a.cfg.Blogs[blog].BlogStats.Path
+	a.render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,
 		Canonical:  canonical,
 		Data: map[string]interface{}{
@@ -32,24 +32,24 @@ func serveBlogStats(w http.ResponseWriter, r *http.Request) {
 
 var blogStatsCacheGroup singleflight.Group
 
-func serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	data, err, _ := blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
-		return getBlogStats(blog)
+		return a.db.getBlogStats(blog)
 	})
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Render
-	render(w, r, templateBlogStatsTable, &renderData{
+	a.render(w, r, templateBlogStatsTable, &renderData{
 		BlogString: blog,
 		Data:       data,
 	})
 }
 
-func getBlogStats(blog string) (data map[string]interface{}, err error) {
-	if stats := loadBlogStatsCache(blog); stats != nil {
+func (db *database) getBlogStats(blog string) (data map[string]interface{}, err error) {
+	if stats := db.loadBlogStatsCache(blog); stats != nil {
 		return stats, nil
 	}
 	// Build query
@@ -67,7 +67,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		Name, Posts, Chars, Words, WordsPerPost string
 	}
 	// Count total posts
-	row, err := appDb.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
+	row, err := db.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		return nil, err
 	}
 	// Count posts per year
-	rows, err := appDb.query("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
+	rows, err := db.query("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		}
 	}
 	// Count posts without date
-	row, err = appDb.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
+	row, err = db.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 	months := map[string][]statsTableType{}
 	month := statsTableType{}
 	for _, year := range years {
-		rows, err = appDb.query("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
+		rows, err = db.query("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
 		if err != nil {
 			return nil, err
 		}
@@ -120,17 +120,17 @@ func getBlogStats(blog string) (data map[string]interface{}, err error) {
 		"withoutdate": noDate,
 		"months":      months,
 	}
-	cacheBlogStats(blog, data)
+	db.cacheBlogStats(blog, data)
 	return data, nil
 }
 
-func cacheBlogStats(blog string, stats map[string]interface{}) {
+func (db *database) cacheBlogStats(blog string, stats map[string]interface{}) {
 	jb, _ := json.Marshal(stats)
-	_ = cachePersistently("blogstats_"+blog, jb)
+	_ = db.cachePersistently("blogstats_"+blog, jb)
 }
 
-func loadBlogStatsCache(blog string) (stats map[string]interface{}) {
-	data, err := retrievePersistentCache("blogstats_" + blog)
+func (db *database) loadBlogStatsCache(blog string) (stats map[string]interface{}) {
+	data, err := db.retrievePersistentCache("blogstats_" + blog)
 	if err != nil || data == nil {
 		return nil
 	}
@@ -141,6 +141,6 @@ func loadBlogStatsCache(blog string) (stats map[string]interface{}) {
 	return stats
 }
 
-func resetBlogStats(blog string) {
-	_ = clearPersistentCache("blogstats_" + blog)
+func (db *database) resetBlogStats(blog string) {
+	_ = db.clearPersistentCache("blogstats_" + blog)
 }

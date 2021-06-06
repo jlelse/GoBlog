@@ -12,8 +12,8 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func geoTitle(lat, lon float64, lang string) string {
-	ba, err := photonReverse(lat, lon, lang)
+func (db *database) geoTitle(lat, lon float64, lang string) string {
+	ba, err := db.photonReverse(lat, lon, lang)
 	if err != nil {
 		return ""
 	}
@@ -29,9 +29,9 @@ func geoTitle(lat, lon float64, lang string) string {
 	return strings.Join(funk.FilterString([]string{name, city, state, country}, func(s string) bool { return s != "" }), ", ")
 }
 
-func photonReverse(lat, lon float64, lang string) ([]byte, error) {
+func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error) {
 	cacheKey := fmt.Sprintf("photon-%v-%v-%v", lat, lon, lang)
-	cache, _ := retrievePersistentCache(cacheKey)
+	cache, _ := db.retrievePersistentCache(cacheKey)
 	if cache != nil {
 		return cache, nil
 	}
@@ -63,6 +63,6 @@ func photonReverse(lat, lon float64, lang string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = cachePersistently(cacheKey, ba)
+	_ = db.cachePersistently(cacheKey, ba)
 	return ba, nil
 }

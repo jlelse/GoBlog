@@ -4,18 +4,18 @@ import "net/http"
 
 const customPageContextKey = "custompage"
 
-func serveCustomPage(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveCustomPage(w http.ResponseWriter, r *http.Request) {
 	page := r.Context().Value(customPageContextKey).(*customPage)
-	if appConfig.Cache != nil && appConfig.Cache.Enable && page.Cache {
+	if a.cfg.Cache != nil && a.cfg.Cache.Enable && page.Cache {
 		if page.CacheExpiration != 0 {
 			setInternalCacheExpirationHeader(w, r, page.CacheExpiration)
 		} else {
-			setInternalCacheExpirationHeader(w, r, int(appConfig.Cache.Expiration))
+			setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 		}
 	}
-	render(w, r, page.Template, &renderData{
+	a.render(w, r, page.Template, &renderData{
 		BlogString: r.Context().Value(blogContextKey).(string),
-		Canonical:  appConfig.Server.PublicAddress + page.Path,
+		Canonical:  a.cfg.Server.PublicAddress + page.Path,
 		Data:       page.Data,
 	})
 }

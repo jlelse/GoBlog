@@ -8,15 +8,13 @@ import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
-var logf *rotatelogs.RotateLogs
-
-func initHTTPLog() (err error) {
-	if !appConfig.Server.Logging {
+func (a *goBlog) initHTTPLog() (err error) {
+	if !a.cfg.Server.Logging {
 		return nil
 	}
-	logf, err = rotatelogs.New(
-		appConfig.Server.LogFile+".%Y%m%d",
-		rotatelogs.WithLinkName(appConfig.Server.LogFile),
+	a.logf, err = rotatelogs.New(
+		a.cfg.Server.LogFile+".%Y%m%d",
+		rotatelogs.WithLinkName(a.cfg.Server.LogFile),
 		rotatelogs.WithClock(rotatelogs.UTC),
 		rotatelogs.WithMaxAge(30*24*time.Hour),
 		rotatelogs.WithRotationTime(24*time.Hour),
@@ -24,8 +22,8 @@ func initHTTPLog() (err error) {
 	return
 }
 
-func logMiddleware(next http.Handler) http.Handler {
-	h := handlers.CombinedLoggingHandler(logf, next)
+func (a *goBlog) logMiddleware(next http.Handler) http.Handler {
+	h := handlers.CombinedLoggingHandler(a.logf, next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Remove remote address for privacy
 		r.RemoteAddr = ""

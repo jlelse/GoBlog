@@ -8,11 +8,11 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func enqueue(name string, content []byte, schedule time.Time) error {
+func (db *database) enqueue(name string, content []byte, schedule time.Time) error {
 	if len(content) == 0 {
 		return errors.New("empty content")
 	}
-	_, err := appDb.exec("insert into queue (name, content, schedule) values (@name, @content, @schedule)",
+	_, err := db.exec("insert into queue (name, content, schedule) values (@name, @content, @schedule)",
 		sql.Named("name", name), sql.Named("content", content), sql.Named("schedule", schedule.UTC().String()))
 	return err
 }
@@ -24,18 +24,18 @@ type queueItem struct {
 	schedule *time.Time
 }
 
-func (qi *queueItem) reschedule(dur time.Duration) error {
-	_, err := appDb.exec("update queue set schedule = @schedule, content = @content where id = @id", sql.Named("schedule", qi.schedule.Add(dur).UTC().String()), sql.Named("content", qi.content), sql.Named("id", qi.id))
+func (db *database) reschedule(qi *queueItem, dur time.Duration) error {
+	_, err := db.exec("update queue set schedule = @schedule, content = @content where id = @id", sql.Named("schedule", qi.schedule.Add(dur).UTC().String()), sql.Named("content", qi.content), sql.Named("id", qi.id))
 	return err
 }
 
-func (qi *queueItem) dequeue() error {
-	_, err := appDb.exec("delete from queue where id = @id", sql.Named("id", qi.id))
+func (db *database) dequeue(qi *queueItem) error {
+	_, err := db.exec("delete from queue where id = @id", sql.Named("id", qi.id))
 	return err
 }
 
-func peekQueue(name string) (*queueItem, error) {
-	row, err := appDb.queryRow("select id, name, content, schedule from queue where schedule <= @schedule and name = @name order by schedule asc limit 1", sql.Named("name", name), sql.Named("schedule", time.Now().UTC().String()))
+func (db *database) peekQueue(name string) (*queueItem, error) {
+	row, err := db.queryRow("select id, name, content, schedule from queue where schedule <= @schedule and name = @name order by schedule asc limit 1", sql.Named("name", name), sql.Named("schedule", time.Now().UTC().String()))
 	if err != nil {
 		return nil, err
 	}

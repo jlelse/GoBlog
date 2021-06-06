@@ -14,11 +14,12 @@ import (
 type webmentionPaginationAdapter struct {
 	config *webmentionsRequestConfig
 	nums   int64
+	db     *database
 }
 
 func (p *webmentionPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		nums, _ := countWebmentions(p.config)
+		nums, _ := p.db.countWebmentions(p.config)
 		p.nums = int64(nums)
 	}
 	return p.nums, nil
@@ -29,12 +30,12 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data interface{}
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length
 
-	wms, err := getWebmentions(&modifiedConfig)
+	wms, err := p.db.getWebmentions(&modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&wms).Elem())
 	return err
 }
 
-func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	pageNoString := chi.URLParam(r, "page")
 	pageNo, _ := strconv.Atoi(pageNoString)
 	var status webmentionStatus = ""
@@ -48,12 +49,12 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{
 		status:     status,
 		sourcelike: sourcelike,
-	}}, 10)
+	}, db: a.db}, 10)
 	p.SetPage(pageNo)
 	var mentions []*mention
 	err := p.Results(&mentions)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Navigation
@@ -91,7 +92,7 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		query = "?" + params.Encode()
 	}
 	// Render
-	render(w, r, templateWebmentionAdmin, &renderData{
+	a.render(w, r, templateWebmentionAdmin, &renderData{
 		Data: map[string]interface{}{
 			"Mentions": mentions,
 			"HasPrev":  hasPrev,
@@ -102,45 +103,45 @@ func webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = deleteWebmention(id)
+	err = a.db.deleteWebmention(id)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	purgeCache()
+	a.cache.purge()
 	http.Redirect(w, r, ".", http.StatusFound)
 }
 
-func webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = approveWebmention(id)
+	err = a.db.approveWebmention(id)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	purgeCache()
+	a.cache.purge()
 	http.Redirect(w, r, ".", http.StatusFound)
 }
 
-func webmentionAdminReverify(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) webmentionAdminReverify(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = reverifyWebmention(id)
+	err = a.reverifyWebmention(id)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, ".", http.StatusFound)

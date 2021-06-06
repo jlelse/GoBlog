@@ -22,13 +22,13 @@ type micropubConfig struct {
 	MediaEndpoint string `json:"media-endpoint,omitempty"`
 }
 
-func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Query().Get("q") {
 	case "config":
 		w.Header().Set(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		b, _ := json.Marshal(&micropubConfig{
-			MediaEndpoint: appConfig.Server.PublicAddress + micropubPath + micropubMediaSubPath,
+			MediaEndpoint: a.cfg.Server.PublicAddress + micropubPath + micropubMediaSubPath,
 		})
 		_, _ = writeMinified(w, contentTypeJSON, b)
 	case "source":
@@ -36,29 +36,29 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
 			u, err := url.Parse(r.URL.Query().Get("url"))
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			p, err := getPost(u.Path)
+			p, err := a.db.getPost(u.Path)
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			mf = p.toMfItem()
+			mf = a.toMfItem(p)
 		} else {
 			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-			posts, err := getPosts(&postsRequestConfig{
+			posts, err := a.db.getPosts(&postsRequestConfig{
 				limit:  limit,
 				offset: offset,
 			})
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			list := map[string][]*microformatItem{}
 			for _, p := range posts {
-				list["items"] = append(list["items"], p.toMfItem())
+				list["items"] = append(list["items"], a.toMfItem(p))
 			}
 			mf = list
 		}
@@ -68,10 +68,10 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		_, _ = writeMinified(w, contentTypeJSON, b)
 	case "category":
 		allCategories := []string{}
-		for blog := range appConfig.Blogs {
-			values, err := allTaxonomyValues(blog, appConfig.Micropub.CategoryParam)
+		for blog := range a.cfg.Blogs {
+			values, err := a.db.allTaxonomyValues(blog, a.cfg.Micropub.CategoryParam)
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			allCategories = append(allCategories, values...)
@@ -83,11 +83,11 @@ func serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		})
 		_, _ = writeMinified(w, contentTypeJSON, b)
 	default:
-		serve404(w, r)
+		a.serve404(w, r)
 	}
 }
 
-func (p *post) toMfItem() *microformatItem {
+func (a *goBlog) toMfItem(p *post) *microformatItem {
 	params := p.Parameters
 	params["path"] = []string{p.Path}
 	params["section"] = []string{p.Section}
@@ -104,20 +104,20 @@ func (p *post) toMfItem() *microformatItem {
 			Published:  []string{p.Published},
 			Updated:    []string{p.Updated},
 			PostStatus: []string{string(p.Status)},
-			Category:   p.Parameters[appConfig.Micropub.CategoryParam],
+			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
 			Content:    []string{content},
-			URL:        []string{p.fullURL()},
-			InReplyTo:  p.Parameters[appConfig.Micropub.ReplyParam],
-			LikeOf:     p.Parameters[appConfig.Micropub.LikeParam],
-			BookmarkOf: p.Parameters[appConfig.Micropub.BookmarkParam],
+			URL:        []string{a.fullPostURL(p)},
+			InReplyTo:  p.Parameters[a.cfg.Micropub.ReplyParam],
+			LikeOf:     p.Parameters[a.cfg.Micropub.LikeParam],
+			BookmarkOf: p.Parameters[a.cfg.Micropub.BookmarkParam],
 			MpSlug:     []string{p.Slug},
-			Audio:      p.Parameters[appConfig.Micropub.AudioParam],
+			Audio:      p.Parameters[a.cfg.Micropub.AudioParam],
 			// TODO: Photos
 		},
 	}
 }
 
-func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var p *post
 	if ct := r.Header.Get(contentType); strings.Contains(ct, contentTypeWWWForm) || strings.Contains(ct, contentTypeMultipartForm) {
@@ -128,73 +128,73 @@ func serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			err = r.ParseForm()
 		}
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusBadRequest)
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if action := micropubAction(r.Form.Get("action")); action != "" {
 			u, err := url.Parse(r.Form.Get("url"))
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			if action == actionDelete {
-				micropubDelete(w, r, u)
+				a.micropubDelete(w, r, u)
 				return
 			}
-			serveError(w, r, "Action not supported", http.StatusNotImplemented)
+			a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
-		p, err = convertMPValueMapToPost(r.Form)
+		p, err = a.convertMPValueMapToPost(r.Form)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else if strings.Contains(ct, contentTypeJSON) {
 		parsedMfItem := &microformatItem{}
 		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if parsedMfItem.Action != "" {
 			u, err := url.Parse(parsedMfItem.URL)
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			if parsedMfItem.Action == actionDelete {
-				micropubDelete(w, r, u)
+				a.micropubDelete(w, r, u)
 				return
 			}
 			if parsedMfItem.Action == actionUpdate {
-				micropubUpdate(w, r, u, parsedMfItem)
+				a.micropubUpdate(w, r, u, parsedMfItem)
 				return
 			}
-			serveError(w, r, "Action not supported", http.StatusNotImplemented)
+			a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
-		p, err = convertMPMfToPost(parsedMfItem)
+		p, err = a.convertMPMfToPost(parsedMfItem)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		serveError(w, r, "wrong content type", http.StatusBadRequest)
+		a.serveError(w, r, "wrong content type", http.StatusBadRequest)
 		return
 	}
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "create") {
-		serveError(w, r, "create scope missing", http.StatusForbidden)
+		a.serveError(w, r, "create scope missing", http.StatusForbidden)
 		return
 	}
-	err := p.create()
+	err := a.createPost(p)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, p.fullURL(), http.StatusAccepted)
+	http.Redirect(w, r, a.fullPostURL(p), http.StatusAccepted)
 }
 
-func convertMPValueMapToPost(values map[string][]string) (*post, error) {
+func (a *goBlog) convertMPValueMapToPost(values map[string][]string) (*post, error) {
 	if h, ok := values["h"]; ok && (len(h) != 1 || h[0] != "entry") {
 		return nil, errors.New("only entry type is supported so far")
 	}
@@ -228,53 +228,53 @@ func convertMPValueMapToPost(values map[string][]string) (*post, error) {
 		delete(values, "name")
 	}
 	if category, ok := values["category"]; ok {
-		entry.Parameters[appConfig.Micropub.CategoryParam] = category
+		entry.Parameters[a.cfg.Micropub.CategoryParam] = category
 		delete(values, "category")
 	} else if categories, ok := values["category[]"]; ok {
-		entry.Parameters[appConfig.Micropub.CategoryParam] = categories
+		entry.Parameters[a.cfg.Micropub.CategoryParam] = categories
 		delete(values, "category[]")
 	}
 	if inReplyTo, ok := values["in-reply-to"]; ok {
-		entry.Parameters[appConfig.Micropub.ReplyParam] = inReplyTo
+		entry.Parameters[a.cfg.Micropub.ReplyParam] = inReplyTo
 		delete(values, "in-reply-to")
 	}
 	if likeOf, ok := values["like-of"]; ok {
-		entry.Parameters[appConfig.Micropub.LikeParam] = likeOf
+		entry.Parameters[a.cfg.Micropub.LikeParam] = likeOf
 		delete(values, "like-of")
 	}
 	if bookmarkOf, ok := values["bookmark-of"]; ok {
-		entry.Parameters[appConfig.Micropub.BookmarkParam] = bookmarkOf
+		entry.Parameters[a.cfg.Micropub.BookmarkParam] = bookmarkOf
 		delete(values, "bookmark-of")
 	}
 	if audio, ok := values["audio"]; ok {
-		entry.Parameters[appConfig.Micropub.AudioParam] = audio
+		entry.Parameters[a.cfg.Micropub.AudioParam] = audio
 		delete(values, "audio")
 	} else if audio, ok := values["audio[]"]; ok {
-		entry.Parameters[appConfig.Micropub.AudioParam] = audio
+		entry.Parameters[a.cfg.Micropub.AudioParam] = audio
 		delete(values, "audio[]")
 	}
 	if photo, ok := values["photo"]; ok {
-		entry.Parameters[appConfig.Micropub.PhotoParam] = photo
+		entry.Parameters[a.cfg.Micropub.PhotoParam] = photo
 		delete(values, "photo")
 	} else if photos, ok := values["photo[]"]; ok {
-		entry.Parameters[appConfig.Micropub.PhotoParam] = photos
+		entry.Parameters[a.cfg.Micropub.PhotoParam] = photos
 		delete(values, "photo[]")
 	}
 	if photoAlt, ok := values["mp-photo-alt"]; ok {
-		entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = photoAlt
+		entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = photoAlt
 		delete(values, "mp-photo-alt")
 	} else if photoAlts, ok := values["mp-photo-alt[]"]; ok {
-		entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = photoAlts
+		entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = photoAlts
 		delete(values, "mp-photo-alt[]")
 	}
 	if location, ok := values["location"]; ok {
-		entry.Parameters[appConfig.Micropub.LocationParam] = location
+		entry.Parameters[a.cfg.Micropub.LocationParam] = location
 		delete(values, "location")
 	}
 	for n, p := range values {
 		entry.Parameters[n] = append(entry.Parameters[n], p...)
 	}
-	err := entry.computeExtraPostParameters()
+	err := a.computeExtraPostParameters(entry)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ type microformatProperties struct {
 	Audio      []string      `json:"audio,omitempty"`
 }
 
-func convertMPMfToPost(mf *microformatItem) (*post, error) {
+func (a *goBlog) convertMPMfToPost(mf *microformatItem) (*post, error) {
 	if len(mf.Type) != 1 || mf.Type[0] != "h-entry" {
 		return nil, errors.New("only entry type is supported so far")
 	}
@@ -339,35 +339,35 @@ func convertMPMfToPost(mf *microformatItem) (*post, error) {
 		entry.Parameters["title"] = mf.Properties.Name
 	}
 	if len(mf.Properties.Category) > 0 {
-		entry.Parameters[appConfig.Micropub.CategoryParam] = mf.Properties.Category
+		entry.Parameters[a.cfg.Micropub.CategoryParam] = mf.Properties.Category
 	}
 	if len(mf.Properties.InReplyTo) == 1 {
-		entry.Parameters[appConfig.Micropub.ReplyParam] = mf.Properties.InReplyTo
+		entry.Parameters[a.cfg.Micropub.ReplyParam] = mf.Properties.InReplyTo
 	}
 	if len(mf.Properties.LikeOf) == 1 {
-		entry.Parameters[appConfig.Micropub.LikeParam] = mf.Properties.LikeOf
+		entry.Parameters[a.cfg.Micropub.LikeParam] = mf.Properties.LikeOf
 	}
 	if len(mf.Properties.BookmarkOf) == 1 {
-		entry.Parameters[appConfig.Micropub.BookmarkParam] = mf.Properties.BookmarkOf
+		entry.Parameters[a.cfg.Micropub.BookmarkParam] = mf.Properties.BookmarkOf
 	}
 	if len(mf.Properties.Audio) > 0 {
-		entry.Parameters[appConfig.Micropub.AudioParam] = mf.Properties.Audio
+		entry.Parameters[a.cfg.Micropub.AudioParam] = mf.Properties.Audio
 	}
 	if len(mf.Properties.Photo) > 0 {
 		for _, photo := range mf.Properties.Photo {
 			if theString, justString := photo.(string); justString {
-				entry.Parameters[appConfig.Micropub.PhotoParam] = append(entry.Parameters[appConfig.Micropub.PhotoParam], theString)
-				entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = append(entry.Parameters[appConfig.Micropub.PhotoDescriptionParam], "")
+				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], theString)
+				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], "")
 			} else if thePhoto, isPhoto := photo.(map[string]interface{}); isPhoto {
-				entry.Parameters[appConfig.Micropub.PhotoParam] = append(entry.Parameters[appConfig.Micropub.PhotoParam], cast.ToString(thePhoto["value"]))
-				entry.Parameters[appConfig.Micropub.PhotoDescriptionParam] = append(entry.Parameters[appConfig.Micropub.PhotoDescriptionParam], cast.ToString(thePhoto["alt"]))
+				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], cast.ToString(thePhoto["value"]))
+				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], cast.ToString(thePhoto["alt"]))
 			}
 		}
 	}
 	if len(mf.Properties.MpSlug) == 1 {
 		entry.Slug = mf.Properties.MpSlug[0]
 	}
-	err := entry.computeExtraPostParameters()
+	err := a.computeExtraPostParameters(entry)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func convertMPMfToPost(mf *microformatItem) (*post, error) {
 
 }
 
-func (p *post) computeExtraPostParameters() error {
+func (a *goBlog) computeExtraPostParameters(p *post) error {
 	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
 	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && len(strings.TrimSpace(split[0])) == 0 {
 		// Contains frontmatter
@@ -405,7 +405,7 @@ func (p *post) computeExtraPostParameters() error {
 		p.Blog = blog[0]
 		delete(p.Parameters, "blog")
 	} else {
-		p.Blog = appConfig.DefaultBlog
+		p.Blog = a.cfg.DefaultBlog
 	}
 	if path := p.Parameters["path"]; len(path) == 1 {
 		p.Path = path[0]
@@ -433,15 +433,15 @@ func (p *post) computeExtraPostParameters() error {
 	}
 	if p.Path == "" && p.Section == "" {
 		// Has no path or section -> default section
-		p.Section = appConfig.Blogs[p.Blog].DefaultSection
+		p.Section = a.cfg.Blogs[p.Blog].DefaultSection
 	}
 	if p.Published == "" && p.Section != "" {
 		// Has no published date, but section -> published now
 		p.Published = time.Now().Local().String()
 	}
 	// Add images not in content
-	images := p.Parameters[appConfig.Micropub.PhotoParam]
-	imageAlts := p.Parameters[appConfig.Micropub.PhotoDescriptionParam]
+	images := p.Parameters[a.cfg.Micropub.PhotoParam]
+	imageAlts := p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
 	useAlts := len(images) == len(imageAlts)
 	for i, image := range images {
 		if !strings.Contains(p.Content, image) {
@@ -455,26 +455,26 @@ func (p *post) computeExtraPostParameters() error {
 	return nil
 }
 
-func micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
+func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "delete") {
-		serveError(w, r, "delete scope missing", http.StatusForbidden)
+		a.serveError(w, r, "delete scope missing", http.StatusForbidden)
 		return
 	}
-	if err := deletePost(u.Path); err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+	if err := a.deletePost(u.Path); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	http.Redirect(w, r, u.String(), http.StatusNoContent)
 }
 
-func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
+func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "update") {
-		serveError(w, r, "update scope missing", http.StatusForbidden)
+		a.serveError(w, r, "update scope missing", http.StatusForbidden)
 		return
 	}
-	p, err := getPost(u.Path)
+	p, err := a.db.getPost(u.Path)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	oldPath := p.Path
@@ -491,15 +491,15 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 			case "name":
 				p.Parameters["title"] = cast.ToStringSlice(value)
 			case "category":
-				p.Parameters[appConfig.Micropub.CategoryParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.CategoryParam] = cast.ToStringSlice(value)
 			case "in-reply-to":
-				p.Parameters[appConfig.Micropub.ReplyParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
 			case "like-of":
-				p.Parameters[appConfig.Micropub.LikeParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
 			case "bookmark-of":
-				p.Parameters[appConfig.Micropub.BookmarkParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
 			case "audio":
-				p.Parameters[appConfig.Micropub.AudioParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.AudioParam] = cast.ToStringSlice(value)
 				// TODO: photo
 			}
 		}
@@ -514,23 +514,23 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 			case "updated":
 				p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
 			case "category":
-				category := p.Parameters[appConfig.Micropub.CategoryParam]
+				category := p.Parameters[a.cfg.Micropub.CategoryParam]
 				if category == nil {
 					category = []string{}
 				}
-				p.Parameters[appConfig.Micropub.CategoryParam] = append(category, cast.ToStringSlice(value)...)
+				p.Parameters[a.cfg.Micropub.CategoryParam] = append(category, cast.ToStringSlice(value)...)
 			case "in-reply-to":
-				p.Parameters[appConfig.Micropub.ReplyParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
 			case "like-of":
-				p.Parameters[appConfig.Micropub.LikeParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
 			case "bookmark-of":
-				p.Parameters[appConfig.Micropub.BookmarkParam] = cast.ToStringSlice(value)
+				p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
 			case "audio":
-				audio := p.Parameters[appConfig.Micropub.CategoryParam]
+				audio := p.Parameters[a.cfg.Micropub.CategoryParam]
 				if audio == nil {
 					audio = []string{}
 				}
-				p.Parameters[appConfig.Micropub.AudioParam] = append(audio, cast.ToStringSlice(value)...)
+				p.Parameters[a.cfg.Micropub.AudioParam] = append(audio, cast.ToStringSlice(value)...)
 				// TODO: photo
 			}
 		}
@@ -548,18 +548,18 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 					case "updated":
 						p.Updated = ""
 					case "category":
-						delete(p.Parameters, appConfig.Micropub.CategoryParam)
+						delete(p.Parameters, a.cfg.Micropub.CategoryParam)
 					case "in-reply-to":
-						delete(p.Parameters, appConfig.Micropub.ReplyParam)
+						delete(p.Parameters, a.cfg.Micropub.ReplyParam)
 					case "like-of":
-						delete(p.Parameters, appConfig.Micropub.LikeParam)
+						delete(p.Parameters, a.cfg.Micropub.LikeParam)
 					case "bookmark-of":
-						delete(p.Parameters, appConfig.Micropub.BookmarkParam)
+						delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
 					case "audio":
-						delete(p.Parameters, appConfig.Micropub.AudioParam)
+						delete(p.Parameters, a.cfg.Micropub.AudioParam)
 					case "photo":
-						delete(p.Parameters, appConfig.Micropub.PhotoParam)
-						delete(p.Parameters, appConfig.Micropub.PhotoDescriptionParam)
+						delete(p.Parameters, a.cfg.Micropub.PhotoParam)
+						delete(p.Parameters, a.cfg.Micropub.PhotoDescriptionParam)
 					}
 				}
 			}
@@ -576,11 +576,11 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 						case "updated":
 							p.Updated = ""
 						case "in-reply-to":
-							delete(p.Parameters, appConfig.Micropub.ReplyParam)
+							delete(p.Parameters, a.cfg.Micropub.ReplyParam)
 						case "like-of":
-							delete(p.Parameters, appConfig.Micropub.LikeParam)
+							delete(p.Parameters, a.cfg.Micropub.LikeParam)
 						case "bookmark-of":
-							delete(p.Parameters, appConfig.Micropub.BookmarkParam)
+							delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
 							// Use content to edit other parameters
 						}
 					}
@@ -588,15 +588,15 @@ func micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *micr
 			}
 		}
 	}
-	err = p.computeExtraPostParameters()
+	err = a.computeExtraPostParameters(p)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = p.replace(oldPath, oldStatus)
+	err = a.replacePost(p, oldPath, oldStatus)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, p.fullURL(), http.StatusNoContent)
+	http.Redirect(w, r, a.fullPostURL(p), http.StatusNoContent)
 }

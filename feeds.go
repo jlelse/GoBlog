@@ -22,25 +22,25 @@ const (
 	feedAudioLength = "audiolength"
 )
 
-func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
+func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
 	now := time.Now()
 	if title == "" {
-		title = appConfig.Blogs[blog].Title
+		title = a.cfg.Blogs[blog].Title
 	}
 	if description == "" {
-		description = appConfig.Blogs[blog].Description
+		description = a.cfg.Blogs[blog].Description
 	}
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
-		Link:        &feeds.Link{Href: appConfig.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
+		Link:        &feeds.Link{Href: a.cfg.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
 		Created:     now,
 		Author: &feeds.Author{
-			Name:  appConfig.User.Name,
-			Email: appConfig.User.Email,
+			Name:  a.cfg.User.Name,
+			Email: a.cfg.User.Email,
 		},
 		Image: &feeds.Image{
-			Url: appConfig.User.Picture,
+			Url: a.cfg.User.Picture,
 		},
 	}
 	for _, p := range posts {
@@ -56,10 +56,10 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 		}
 		feed.Add(&feeds.Item{
 			Title:       p.title(),
-			Link:        &feeds.Link{Href: p.fullURL()},
-			Description: p.summary(),
+			Link:        &feeds.Link{Href: a.fullPostURL(p)},
+			Description: a.summary(p),
 			Id:          p.Path,
-			Content:     string(p.absoluteHTML()),
+			Content:     string(a.absoluteHTML(p)),
 			Created:     created,
 			Updated:     updated,
 			Enclosure:   enc,
@@ -82,7 +82,7 @@ func generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Reques
 	}
 	if err != nil {
 		w.Header().Del(contentType)
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set(contentType, feedMediaType+charsetUtf8Suffix)

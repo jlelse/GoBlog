@@ -2,12 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/lopezator/migrator"
 )
 
 func migrateDb(db *sql.DB) error {
 	m, err := migrator.New(
+		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...interface{}) {
+			log.Printf(s, i)
+		})),
 		migrator.Migrations(
 			&migrator.Migration{
 				Name: "00001",

@@ -3,21 +3,17 @@ package main
 import (
 	"database/sql"
 	"time"
-
-	"golang.org/x/sync/singleflight"
 )
 
-func cachePersistently(key string, data []byte) error {
+func (db *database) cachePersistently(key string, data []byte) error {
 	date, _ := toLocal(time.Now().String())
-	_, err := appDb.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", date))
+	_, err := db.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", date))
 	return err
 }
 
-var persistentCacheGroup singleflight.Group
-
-func retrievePersistentCache(key string) (data []byte, err error) {
-	d, err, _ := persistentCacheGroup.Do(key, func() (interface{}, error) {
-		if row, err := appDb.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
+func (db *database) retrievePersistentCache(key string) (data []byte, err error) {
+	d, err, _ := db.persistentCacheGroup.Do(key, func() (interface{}, error) {
+		if row, err := db.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
 			return nil, nil
 		} else if err != nil {
 			return nil, err
@@ -32,7 +28,7 @@ func retrievePersistentCache(key string) (data []byte, err error) {
 	return d.([]byte), nil
 }
 
-func clearPersistentCache(pattern string) error {
-	_, err := appDb.exec("delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
+func (db *database) clearPersistentCache(pattern string) error {
+	_, err := db.exec("delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
 	return err
 }

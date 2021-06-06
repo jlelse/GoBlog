@@ -45,18 +45,17 @@ const (
 	templateBlogroll           = "blogroll"
 )
 
-var templates map[string]*template.Template = map[string]*template.Template{}
-
-func initRendering() error {
+func (a *goBlog) initRendering() error {
+	a.templates = map[string]*template.Template{}
 	templateFunctions := template.FuncMap{
 		"menu": func(blog *configBlog, id string) *menu {
 			return blog.Menus[id]
 		},
 		"user": func() *configUser {
-			return appConfig.User
+			return a.cfg.User
 		},
 		"md": func(content string) template.HTML {
-			htmlContent, err := renderMarkdown(content, false)
+			htmlContent, err := a.renderMarkdown(content, false)
 			if err != nil {
 				log.Fatal(err)
 				return ""
@@ -80,16 +79,16 @@ func initRendering() error {
 			return p.title()
 		},
 		"content": func(p *post) template.HTML {
-			return p.html()
+			return a.html(p)
 		},
 		"summary": func(p *post) string {
-			return p.summary()
+			return a.summary(p)
 		},
 		"translations": func(p *post) []*post {
-			return p.translations()
+			return a.translations(p)
 		},
 		"shorturl": func(p *post) string {
-			return p.shortURL()
+			return a.shortPostURL(p)
 		},
 		// Others
 		"dateformat": dateFormat,
@@ -120,9 +119,9 @@ func initRendering() error {
 			}
 			return d.Before(b)
 		},
-		"asset":    assetFileName,
-		"assetsri": assetSRI,
-		"string":   appTs.GetTemplateStringVariantFunc(),
+		"asset":    a.assetFileName,
+		"assetsri": a.assetSRI,
+		"string":   a.ts.GetTemplateStringVariantFunc(),
 		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
 			if len(data) == 0 || len(data) > 2 {
 				return "", errors.New("wrong argument count")
@@ -134,7 +133,7 @@ func initRendering() error {
 					rd = &nrd
 				}
 				var buf bytes.Buffer
-				err := templates[templateName].ExecuteTemplate(&buf, templateName, rd)
+				err := a.templates[templateName].ExecuteTemplate(&buf, templateName, rd)
 				return template.HTML(buf.String()), err
 			}
 			return "", errors.New("wrong arguments")
@@ -142,7 +141,7 @@ func initRendering() error {
 		"urlize": urlize,
 		"sort":   sortedStrings,
 		"absolute": func(path string) string {
-			return appConfig.Server.PublicAddress + path
+			return a.cfg.Server.PublicAddress + path
 		},
 		"blogrelative": func(blog *configBlog, path string) string {
 			return blog.getRelativePath(path)
@@ -161,7 +160,7 @@ func initRendering() error {
 			return parsed
 		},
 		"mentions": func(absolute string) []*mention {
-			mentions, _ := getWebmentions(&webmentionsRequestConfig{
+			mentions, _ := a.db.getWebmentions(&webmentionsRequestConfig{
 				target: absolute,
 				status: webmentionStatusApproved,
 				asc:    true,
@@ -181,7 +180,7 @@ func initRendering() error {
 			}
 			return
 		},
-		"geotitle": geoTitle,
+		"geotitle": a.db.geoTitle,
 	}
 
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
@@ -194,7 +193,7 @@ func initRendering() error {
 		}
 		if info.Mode().IsRegular() && path.Ext(p) == templatesExt {
 			if name := strings.TrimSuffix(path.Base(p), templatesExt); name != templateBase {
-				if templates[name], err = template.Must(baseTemplate.Clone()).New(name).ParseFiles(p); err != nil {
+				if a.templates[name], err = template.Must(baseTemplate.Clone()).New(name).ParseFiles(p); err != nil {
 					return err
 				}
 			}
@@ -219,26 +218,26 @@ type renderData struct {
 	TorUsed                    bool
 }
 
-func render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
+func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
 	// Server timing
 	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
 	// Check render data
 	if data.Blog == nil {
 		if len(data.BlogString) == 0 {
-			data.BlogString = appConfig.DefaultBlog
+			data.BlogString = a.cfg.DefaultBlog
 		}
-		data.Blog = appConfig.Blogs[data.BlogString]
+		data.Blog = a.cfg.Blogs[data.BlogString]
 	}
 	if data.BlogString == "" {
-		for s, b := range appConfig.Blogs {
+		for s, b := range a.cfg.Blogs {
 			if b == data.Blog {
 				data.BlogString = s
 				break
 			}
 		}
 	}
-	if appConfig.Server.Tor && torAddress != "" {
-		data.TorAddress = fmt.Sprintf("http://%v%v", torAddress, r.RequestURI)
+	if a.cfg.Server.Tor && a.torAddress != "" {
+		data.TorAddress = fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI)
 	}
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}
@@ -250,23 +249,25 @@ func render(w http.ResponseWriter, r *http.Request, template string, data *rende
 	// Check if comments enabled
 	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
 	// Check if able to receive webmentions
-	data.WebmentionReceivingEnabled = appConfig.Webmention == nil || !appConfig.Webmention.DisableReceiving
+	data.WebmentionReceivingEnabled = a.cfg.Webmention == nil || !a.cfg.Webmention.DisableReceiving
 	// Check if Tor request
 	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
 		data.TorUsed = true
 	}
+	// Set content type
+	w.Header().Set(contentType, contentTypeHTMLUTF8)
 	// Minify and write response
-	mw := minifier.Writer(contentTypeHTML, w)
-	defer func() {
-		_ = mw.Close()
-	}()
-	err := templates[template].ExecuteTemplate(mw, template, data)
+	var tw bytes.Buffer
+	err := a.templates[template].ExecuteTemplate(&tw, template, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Set content type
-	w.Header().Set(contentType, contentTypeHTMLUTF8)
+	_, err = writeMinified(w, contentTypeHTML, tw.Bytes())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// Server timing
 	t.Stop()
 }

@@ -30,32 +30,32 @@ type mention struct {
 	Status  webmentionStatus
 }
 
-func initWebmention() {
+func (a *goBlog) initWebmention() {
 	// Add hooks
 	hookFunc := func(p *post) {
 		if p.Status == statusPublished {
-			_ = p.sendWebmentions()
+			_ = a.sendWebmentions(p)
 		}
 	}
-	postPostHooks = append(postPostHooks, hookFunc)
-	postUpdateHooks = append(postUpdateHooks, hookFunc)
-	postDeleteHooks = append(postDeleteHooks, hookFunc)
+	a.pPostHooks = append(a.pPostHooks, hookFunc)
+	a.pUpdateHooks = append(a.pUpdateHooks, hookFunc)
+	a.pDeleteHooks = append(a.pDeleteHooks, hookFunc)
 	// Start verifier
-	initWebmentionQueue()
+	a.initWebmentionQueue()
 }
 
-func handleWebmention(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 	m, err := extractMention(r)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), appConfig.Server.publicHostname) {
-		serveError(w, r, "target not allowed", http.StatusBadRequest)
+	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), a.cfg.Server.publicHostname) {
+		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
-	if err = queueMention(m); err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+	if err = a.queueMention(m); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
@@ -82,9 +82,9 @@ func extractMention(r *http.Request) (*mention, error) {
 	}, nil
 }
 
-func webmentionExists(source, target string) bool {
+func (db *database) webmentionExists(source, target string) bool {
 	result := 0
-	row, err := appDb.queryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
+	row, err := db.queryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
 	if err != nil {
 		return false
 	}
@@ -94,26 +94,26 @@ func webmentionExists(source, target string) bool {
 	return result == 1
 }
 
-func createWebmention(source, target string) (err error) {
-	return queueMention(&mention{
+func (a *goBlog) createWebmention(source, target string) (err error) {
+	return a.queueMention(&mention{
 		Source:  source,
 		Target:  unescapedPath(target),
 		Created: time.Now().Unix(),
 	})
 }
 
-func deleteWebmention(id int) error {
-	_, err := appDb.exec("delete from webmentions where id = @id", sql.Named("id", id))
+func (db *database) deleteWebmention(id int) error {
+	_, err := db.exec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 
-func approveWebmention(id int) error {
-	_, err := appDb.exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
+func (db *database) approveWebmention(id int) error {
+	_, err := db.exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
-func reverifyWebmention(id int) error {
-	m, err := getWebmentions(&webmentionsRequestConfig{
+func (a *goBlog) reverifyWebmention(id int) error {
+	m, err := a.db.getWebmentions(&webmentionsRequestConfig{
 		id:    id,
 		limit: 1,
 	})
@@ -121,7 +121,7 @@ func reverifyWebmention(id int) error {
 		return err
 	}
 	if len(m) > 0 {
-		err = queueMention(m[0])
+		err = a.queueMention(m[0])
 	}
 	return err
 }
@@ -169,10 +169,10 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	return query, args
 }
 
-func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
+func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	mentions := []*mention{}
 	query, args := buildWebmentionsQuery(config)
-	rows, err := appDb.query(query, args...)
+	rows, err := db.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,10 +187,10 @@ func getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	return mentions, nil
 }
 
-func countWebmentions(config *webmentionsRequestConfig) (count int, err error) {
+func (db *database) countWebmentions(config *webmentionsRequestConfig) (count int, err error) {
 	query, params := buildWebmentionsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDb.queryRow(query, params...)
+	row, err := db.queryRow(query, params...)
 	if err != nil {
 		return
 	}

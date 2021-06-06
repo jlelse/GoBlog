@@ -13,46 +13,47 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-var loginSessionsStore, captchaSessionsStore *dbSessionStore
-
 const (
 	sessionCreatedOn  = "created"
 	sessionModifiedOn = "modified"
 	sessionExpiresOn  = "expires"
 )
 
-func initSessions() {
+func (a *goBlog) initSessions() {
 	deleteExpiredSessions := func() {
-		if _, err := appDb.exec("delete from sessions where expires < @now",
+		if _, err := a.db.exec("delete from sessions where expires < @now",
 			sql.Named("now", time.Now().Local().String())); err != nil {
 			log.Println("Failed to delete expired sessions:", err.Error())
 		}
 	}
 	deleteExpiredSessions()
 	hourlyHooks = append(hourlyHooks, deleteExpiredSessions)
-	loginSessionsStore = &dbSessionStore{
-		codecs: securecookie.CodecsFromPairs(jwtKey()),
+	a.loginSessions = &dbSessionStore{
+		codecs: securecookie.CodecsFromPairs(a.jwtKey()),
 		options: &sessions.Options{
-			Secure:   httpsConfigured(),
+			Secure:   a.httpsConfigured(),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((7 * 24 * time.Hour).Seconds()),
 		},
+		db: a.db,
 	}
-	captchaSessionsStore = &dbSessionStore{
-		codecs: securecookie.CodecsFromPairs(jwtKey()),
+	a.captchaSessions = &dbSessionStore{
+		codecs: securecookie.CodecsFromPairs(a.jwtKey()),
 		options: &sessions.Options{
-			Secure:   httpsConfigured(),
+			Secure:   a.httpsConfigured(),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((24 * time.Hour).Seconds()),
 		},
+		db: a.db,
 	}
 }
 
 type dbSessionStore struct {
 	options *sessions.Options
 	codecs  []securecookie.Codec
+	db      *database
 }
 
 func (s *dbSessionStore) Get(r *http.Request, name string) (*sessions.Session, error) {
@@ -101,14 +102,14 @@ func (s *dbSessionStore) Delete(r *http.Request, w http.ResponseWriter, session 
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
-	if _, err := appDb.exec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
+	if _, err := s.db.exec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *dbSessionStore) load(session *sessions.Session) (err error) {
-	row, err := appDb.queryRow("select data, created, modified, expires from sessions where id = @id", sql.Named("id", session.ID))
+	row, err := s.db.queryRow("select data, created, modified, expires from sessions where id = @id", sql.Named("id", session.ID))
 	if err != nil {
 		return err
 	}
@@ -144,7 +145,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	if err != nil {
 		return err
 	}
-	res, err := appDb.exec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
+	res, err := s.db.exec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
 		sql.Named("data", encoded), sql.Named("created", created.Local().String()), sql.Named("modified", modified.Local().String()), sql.Named("expires", expires.Local().String()))
 	if err != nil {
 		return err
@@ -168,7 +169,7 @@ func (s *dbSessionStore) save(session *sessions.Session) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = appDb.exec("update sessions set data = @data, modified = @modified where id = @id",
+	_, err = s.db.exec("update sessions set data = @data, modified = @modified where id = @id",
 		sql.Named("data", encoded), sql.Named("modified", time.Now().Local().String()), sql.Named("id", session.ID))
 	if err != nil {
 		return err

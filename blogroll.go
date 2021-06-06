@@ -13,28 +13,25 @@ import (
 	"github.com/kaorimatz/go-opml"
 	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/thoas/go-funk"
-	"golang.org/x/sync/singleflight"
 )
 
-var blogrollCacheGroup singleflight.Group
-
-func serveBlogroll(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	t := servertiming.FromContext(r.Context()).NewMetric("bg").Start()
-	outlines, err, _ := blogrollCacheGroup.Do(blog, func() (interface{}, error) {
-		return getBlogrollOutlines(blog)
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
+		return a.getBlogrollOutlines(blog)
 	})
 	t.Stop()
 	if err != nil {
-		log.Println("Failed to get outlines:", err.Error())
-		serveError(w, r, "", http.StatusInternalServerError)
+		log.Printf("Failed to get outlines: %v", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	if appConfig.Cache != nil && appConfig.Cache.Enable {
-		setInternalCacheExpirationHeader(w, r, int(appConfig.Cache.Expiration))
+	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
+		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
-	c := appConfig.Blogs[blog].Blogroll
-	render(w, r, templateBlogroll, &renderData{
+	c := a.cfg.Blogs[blog].Blogroll
+	a.render(w, r, templateBlogroll, &renderData{
 		BlogString: blog,
 		Data: map[string]interface{}{
 			"Title":       c.Title,
@@ -45,34 +42,32 @@ func serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	outlines, err, _ := blogrollCacheGroup.Do(blog, func() (interface{}, error) {
-		return getBlogrollOutlines(blog)
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
+		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
-		log.Println("Failed to get outlines:", err.Error())
-		serveError(w, r, "", http.StatusInternalServerError)
+		log.Printf("Failed to get outlines: %v", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	if appConfig.Cache != nil && appConfig.Cache.Enable {
-		setInternalCacheExpirationHeader(w, r, int(appConfig.Cache.Expiration))
+	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
+		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
 	w.Header().Set(contentType, contentTypeXMLUTF8)
-	mw := minifier.Writer(contentTypeXML, w)
-	defer func() {
-		_ = mw.Close()
-	}()
-	_ = opml.Render(mw, &opml.OPML{
+	var opmlBytes bytes.Buffer
+	_ = opml.Render(&opmlBytes, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines.([]*opml.Outline),
 	})
+	_, _ = writeMinified(w, contentTypeXML, opmlBytes.Bytes())
 }
 
-func getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
-	config := appConfig.Blogs[blog].Blogroll
-	if cache := loadOutlineCache(blog); cache != nil {
+func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
+	config := a.cfg.Blogs[blog].Blogroll
+	if cache := a.db.loadOutlineCache(blog); cache != nil {
 		return cache, nil
 	}
 	req, err := http.NewRequest(http.MethodGet, config.Opml, nil)
@@ -112,22 +107,22 @@ func getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	} else {
 		outlines = sortOutlines(outlines)
 	}
-	cacheOutlines(blog, outlines)
+	a.db.cacheOutlines(blog, outlines)
 	return outlines, nil
 }
 
-func cacheOutlines(blog string, outlines []*opml.Outline) {
+func (db *database) cacheOutlines(blog string, outlines []*opml.Outline) {
 	var opmlBuffer bytes.Buffer
 	_ = opml.Render(&opmlBuffer, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines,
 	})
-	_ = cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
+	_ = db.cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
 }
 
-func loadOutlineCache(blog string) []*opml.Outline {
-	data, err := retrievePersistentCache("blogroll_" + blog)
+func (db *database) loadOutlineCache(blog string) []*opml.Outline {
+	data, err := db.retrievePersistentCache("blogroll_" + blog)
 	if err != nil || data == nil {
 		return nil
 	}

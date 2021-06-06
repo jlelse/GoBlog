@@ -20,10 +20,10 @@ import (
 	"willnorris.com/go/microformats"
 )
 
-func initWebmentionQueue() {
+func (a *goBlog) initWebmentionQueue() {
 	go func() {
 		for {
-			qi, err := peekQueue("wm")
+			qi, err := a.db.peekQueue("wm")
 			if err != nil {
 				log.Println(err.Error())
 				continue
@@ -32,14 +32,14 @@ func initWebmentionQueue() {
 				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m)
 				if err != nil {
 					log.Println(err.Error())
-					_ = qi.dequeue()
+					_ = a.db.dequeue(qi)
 					continue
 				}
-				err = m.verifyMention()
+				err = a.verifyMention(&m)
 				if err != nil {
 					log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
 				}
-				err = qi.dequeue()
+				err = a.db.dequeue(qi)
 				if err != nil {
 					log.Println(err.Error())
 				}
@@ -51,26 +51,30 @@ func initWebmentionQueue() {
 	}()
 }
 
-func queueMention(m *mention) error {
-	if wm := appConfig.Webmention; wm != nil && wm.DisableReceiving {
+func (a *goBlog) queueMention(m *mention) error {
+	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		return errors.New("webmention receiving disabled")
 	}
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(m); err != nil {
 		return err
 	}
-	return enqueue("wm", buf.Bytes(), time.Now())
+	return a.db.enqueue("wm", buf.Bytes(), time.Now())
 }
 
-func (m *mention) verifyMention() error {
+func (a *goBlog) verifyMention(m *mention) error {
 	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
 	if err != nil {
 		return err
 	}
 	var resp *http.Response
-	if strings.HasPrefix(m.Source, appConfig.Server.PublicAddress) {
+	if strings.HasPrefix(m.Source, a.cfg.Server.PublicAddress) {
 		rec := httptest.NewRecorder()
-		d.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), loggedInKey, true)))
+		for a.d == nil {
+			// Server not yet started
+			time.Sleep(10 * time.Second)
+		}
+		a.d.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), loggedInKey, true)))
 		resp = rec.Result()
 	} else {
 		req.Header.Set(userAgent, appUserAgent)
@@ -82,7 +86,7 @@ func (m *mention) verifyMention() error {
 	err = m.verifyReader(resp.Body)
 	_ = resp.Body.Close()
 	if err != nil {
-		_, err := appDb.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
+		_, err := a.db.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
 		return err
 	}
 	if len(m.Content) > 500 {
@@ -92,13 +96,13 @@ func (m *mention) verifyMention() error {
 		m.Title = m.Title[0:57] + "…"
 	}
 	newStatus := webmentionStatusVerified
-	if webmentionExists(m.Source, m.Target) {
-		_, err = appDb.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
+	if a.db.webmentionExists(m.Source, m.Target) {
+		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
 			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))
 	} else {
-		_, err = appDb.exec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
+		_, err = a.db.exec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
 			sql.Named("source", m.Source), sql.Named("target", m.Target), sql.Named("created", m.Created), sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author))
-		sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
+		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
 	return err
 }

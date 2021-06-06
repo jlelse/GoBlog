@@ -16,13 +16,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-var (
-	torAddress string
-)
-
 var torUsedKey requestContextKey = "tor"
 
-func startOnionService(h http.Handler) error {
+func (a *goBlog) startOnionService(h http.Handler) error {
 	torDataPath, err := filepath.Abs("data/tor")
 	if err != nil {
 		return err
@@ -76,10 +72,10 @@ func startOnionService(h http.Handler) error {
 		return err
 	}
 	defer onion.Close()
-	torAddress = onion.String()
-	log.Println("Onion service published on http://" + torAddress)
+	a.torAddress = onion.String()
+	log.Println("Onion service published on http://" + a.torAddress)
 	// Clear cache
-	purgeCache()
+	a.cache.purge()
 	// Serve handler
 	s := &http.Server{
 		Handler:      middleware.WithValue(torUsedKey, true)(h),

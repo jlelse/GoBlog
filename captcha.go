@@ -10,10 +10,10 @@ import (
 	"github.com/dchest/captcha"
 )
 
-func captchaMiddleware(next http.Handler) http.Handler {
+func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check Cookie
-		ses, err := captchaSessionsStore.Get(r, "c")
+		ses, err := a.captchaSessions.Get(r, "c")
 		if err == nil && ses != nil {
 			if captcha, ok := ses.Values["captcha"]; ok && captcha.(bool) {
 				next.ServeHTTP(w, r)
@@ -30,7 +30,7 @@ func captchaMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		render(w, r, templateCaptcha, &renderData{
+		a.render(w, r, templateCaptcha, &renderData{
 			Data: map[string]string{
 				"captchamethod":  r.Method,
 				"captchaheaders": base64.StdEncoding.EncodeToString(h),
@@ -41,15 +41,15 @@ func captchaMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func checkIsCaptcha(next http.Handler) http.Handler {
+func (a *goBlog) checkIsCaptcha(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if !checkCaptcha(rw, r) {
+		if !a.checkCaptcha(rw, r) {
 			next.ServeHTTP(rw, r)
 		}
 	})
 }
 
-func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
+func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
@@ -71,20 +71,20 @@ func checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// Check captcha and create cookie
 	if captcha.VerifyString(r.FormValue("captchaid"), r.FormValue("digits")) {
-		ses, err := captchaSessionsStore.Get(r, "c")
+		ses, err := a.captchaSessions.Get(r, "c")
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return true
 		}
 		ses.Values["captcha"] = true
-		cookie, err := captchaSessionsStore.SaveGetCookie(r, w, ses)
+		cookie, err := a.captchaSessions.SaveGetCookie(r, w, ses)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return true
 		}
 		req.AddCookie(cookie)
 	}
 	// Serve original request
-	d.ServeHTTP(w, req)
+	a.d.ServeHTTP(w, req)
 	return true
 }

@@ -20,17 +20,22 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-const (
-	cacheInternalExpirationHeader = "Goblog-Expire"
-)
+const cacheInternalExpirationHeader = "Goblog-Expire"
 
-var (
-	cacheGroup singleflight.Group
-	cacheR     *ristretto.Cache
-)
+type cache struct {
+	g   singleflight.Group
+	c   *ristretto.Cache
+	cfg *configCache
+}
 
-func initCache() (err error) {
-	cacheR, err = ristretto.NewCache(&ristretto.Config{
+func (a *goBlog) initCache() (err error) {
+	a.cache = &cache{
+		cfg: a.cfg.Cache,
+	}
+	if a.cache.cfg != nil && !a.cache.cfg.Enable {
+		return nil
+	}
+	a.cache.c, err = ristretto.NewCache(&ristretto.Config{
 		NumCounters: 5000,
 		MaxCost:     20000000, // 20 MB
 		BufferItems: 16,
@@ -52,13 +57,14 @@ func initCache() (err error) {
 	return
 }
 
-func cacheMiddleware(next http.Handler) http.Handler {
+func (c *cache) cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Do checks
-		if !appConfig.Cache.Enable {
+		if c.c == nil {
+			// No cache configured
 			next.ServeHTTP(w, r)
 			return
 		}
+		// Do checks
 		if !(r.Method == http.MethodGet || r.Method == http.MethodHead) {
 			next.ServeHTTP(w, r)
 			return
@@ -74,32 +80,32 @@ func cacheMiddleware(next http.Handler) http.Handler {
 		// Search and serve cache
 		key := cacheKey(r)
 		// Get cache or render it
-		cacheInterface, _, _ := cacheGroup.Do(key, func() (interface{}, error) {
-			return getCache(key, next, r), nil
+		cacheInterface, _, _ := c.g.Do(key, func() (interface{}, error) {
+			return c.getCache(key, next, r), nil
 		})
-		cache := cacheInterface.(*cacheItem)
+		ci := cacheInterface.(*cacheItem)
 		// copy cached headers
-		for k, v := range cache.header {
+		for k, v := range ci.header {
 			w.Header()[k] = v
 		}
-		setCacheHeaders(w, cache)
+		c.setCacheHeaders(w, ci)
 		// check conditional request
-		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == cache.eTag {
+		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == ci.eTag {
 			// send 304
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
 		if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
-			if t, err := dateparse.ParseAny(ifModifiedSinceHeader); err == nil && t.After(cache.creationTime) {
+			if t, err := dateparse.ParseAny(ifModifiedSinceHeader); err == nil && t.After(ci.creationTime) {
 				// send 304
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
 		}
 		// set status code
-		w.WriteHeader(cache.code)
+		w.WriteHeader(ci.code)
 		// write cached body
-		_, _ = w.Write(cache.body)
+		_, _ = w.Write(ci.body)
 	})
 }
 
@@ -125,14 +131,14 @@ func cacheURLString(u *url.URL) string {
 	return buf.String()
 }
 
-func setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
+func (c *cache) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	w.Header().Set("ETag", cache.eTag)
 	w.Header().Set("Last-Modified", cache.creationTime.UTC().Format(http.TimeFormat))
 	if w.Header().Get("Cache-Control") == "" {
 		if cache.expiration != 0 {
 			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
 		} else {
-			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", appConfig.Cache.Expiration, appConfig.Cache.Expiration/3, appConfig.Cache.Expiration))
+			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", c.cfg.Expiration, c.cfg.Expiration/3, c.cfg.Expiration))
 		}
 	}
 }
@@ -146,8 +152,8 @@ type cacheItem struct {
 	body         []byte
 }
 
-func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) {
-	if rItem, ok := cacheR.Get(key); ok {
+func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) {
+	if rItem, ok := c.c.Get(key); ok {
 		item = rItem.(*cacheItem)
 	}
 	if item == nil {
@@ -198,10 +204,10 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 		// Save cache
 		if cch := item.header.Get("Cache-Control"); !strings.Contains(cch, "no-store") && !strings.Contains(cch, "private") && !strings.Contains(cch, "no-cache") {
 			if exp == 0 {
-				cacheR.Set(key, item, 0)
+				c.c.Set(key, item, 0)
 			} else {
 				ttl := time.Duration(exp) * time.Second
-				cacheR.SetWithTTL(key, item, 0, ttl)
+				c.c.SetWithTTL(key, item, 0, ttl)
 			}
 		}
 	} else {
@@ -210,8 +216,8 @@ func getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) 
 	return item
 }
 
-func purgeCache() {
-	cacheR.Clear()
+func (c *cache) purge() {
+	c.c.Clear()
 }
 
 func setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {

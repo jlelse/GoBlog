@@ -27,11 +27,11 @@ func saveMediaFile(filename string, mediaFile io.Reader) (string, error) {
 	return "/m/" + filename, nil
 }
 
-func serveMediaFile(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 	f := filepath.Join(mediaFilePath, chi.URLParam(r, "file"))
 	_, err := os.Stat(f)
 	if err != nil {
-		serve404(w, r)
+		a.serve404(w, r)
 		return
 	}
 	w.Header().Add("Cache-Control", "public,max-age=31536000,immutable")

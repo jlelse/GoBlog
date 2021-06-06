@@ -15,23 +15,23 @@ import (
 
 const micropubMediaSubPath = "/media"
 
-func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "media") {
-		serveError(w, r, "media scope missing", http.StatusForbidden)
+		a.serveError(w, r, "media scope missing", http.StatusForbidden)
 		return
 	}
 	if ct := r.Header.Get(contentType); !strings.Contains(ct, contentTypeMultipartForm) {
-		serveError(w, r, "wrong content-type", http.StatusBadRequest)
+		a.serveError(w, r, "wrong content-type", http.StatusBadRequest)
 		return
 	}
 	err := r.ParseMultipartForm(0)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer func() { _ = file.Close() }()
@@ -39,7 +39,7 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = hashFile.Close() }()
 	fileName, err := getSHA256(hashFile)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	fileExtension := filepath.Ext(header.Filename)
@@ -55,22 +55,22 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	fileName += strings.ToLower(fileExtension)
 	// Save file
-	location, err := uploadFile(fileName, file)
+	location, err := a.uploadFile(fileName, file)
 	if err != nil {
-		serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Try to compress file (only when not in private mode)
-	if pm := appConfig.PrivateMode; !(pm != nil && pm.Enabled) {
+	if pm := a.cfg.PrivateMode; !(pm != nil && pm.Enabled) {
 		serveCompressionError := func(ce error) {
-			serveError(w, r, "failed to compress file: "+ce.Error(), http.StatusInternalServerError)
+			a.serveError(w, r, "failed to compress file: "+ce.Error(), http.StatusInternalServerError)
 		}
 		var compressedLocation string
 		var compressionErr error
-		if ms := appConfig.Micropub.MediaStorage; ms != nil {
+		if ms := a.cfg.Micropub.MediaStorage; ms != nil {
 			// Default ShortPixel
 			if ms.ShortPixelKey != "" {
-				compressedLocation, compressionErr = shortPixel(location, ms)
+				compressedLocation, compressionErr = a.shortPixel(location, ms)
 			}
 			if compressionErr != nil {
 				serveCompressionError(compressionErr)
@@ -78,7 +78,7 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 			}
 			// Fallback Tinify
 			if compressedLocation == "" && ms.TinifyKey != "" {
-				compressedLocation, compressionErr = tinify(location, ms)
+				compressedLocation, compressionErr = a.tinify(location, ms)
 			}
 			if compressionErr != nil {
 				serveCompressionError(compressionErr)
@@ -86,7 +86,7 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 			}
 			// Fallback Cloudflare
 			if compressedLocation == "" && ms.CloudflareCompressionEnabled {
-				compressedLocation, compressionErr = cloudflare(location)
+				compressedLocation, compressionErr = a.cloudflare(location)
 			}
 			if compressionErr != nil {
 				serveCompressionError(compressionErr)
@@ -101,10 +101,10 @@ func serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, location, http.StatusCreated)
 }
 
-func uploadFile(filename string, f io.Reader) (string, error) {
-	ms := appConfig.Micropub.MediaStorage
+func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
+	ms := a.cfg.Micropub.MediaStorage
 	if ms != nil && ms.BunnyStorageKey != "" && ms.BunnyStorageName != "" {
-		return uploadToBunny(filename, f, ms)
+		return ms.uploadToBunny(filename, f)
 	}
 	loc, err := saveMediaFile(filename, f)
 	if err != nil {
@@ -113,10 +113,10 @@ func uploadFile(filename string, f io.Reader) (string, error) {
 	if ms != nil && ms.MediaURL != "" {
 		return ms.MediaURL + loc, nil
 	}
-	return appConfig.Server.PublicAddress + loc, nil
+	return a.cfg.Server.PublicAddress + loc, nil
 }
 
-func uploadToBunny(filename string, f io.Reader, config *configMicropubMedia) (location string, err error) {
+func (config *configMicropubMedia) uploadToBunny(filename string, f io.Reader) (location string, err error) {
 	if config == nil || config.BunnyStorageName == "" || config.BunnyStorageKey == "" || config.MediaURL == "" {
 		return "", errors.New("Bunny storage not completely configured")
 	}

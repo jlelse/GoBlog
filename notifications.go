@@ -21,15 +21,15 @@ type notification struct {
 	Text string
 }
 
-func sendNotification(text string) {
+func (a *goBlog) sendNotification(text string) {
 	n := &notification{
 		Time: time.Now().Unix(),
 		Text: text,
 	}
-	if err := saveNotification(n); err != nil {
+	if err := a.db.saveNotification(n); err != nil {
 		log.Println("Failed to save notification:", err.Error())
 	}
-	if an := appConfig.Notifications; an != nil {
+	if an := a.cfg.Notifications; an != nil {
 		if tg := an.Telegram; tg != nil && tg.Enabled {
 			err := sendTelegramMessage(n.Text, "", tg.BotToken, tg.ChatID)
 			if err != nil {
@@ -39,15 +39,15 @@ func sendNotification(text string) {
 	}
 }
 
-func saveNotification(n *notification) error {
-	if _, err := appDb.exec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
+func (db *database) saveNotification(n *notification) error {
+	if _, err := db.exec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func deleteNotification(id int) error {
-	_, err := appDb.exec("delete from notifications where id = @id", sql.Named("id", id))
+func (db *database) deleteNotification(id int) error {
+	_, err := db.exec("delete from notifications where id = @id", sql.Named("id", id))
 	return err
 }
 
@@ -65,10 +65,10 @@ func buildNotificationsQuery(config *notificationsRequestConfig) (query string, 
 	return
 }
 
-func getNotifications(config *notificationsRequestConfig) ([]*notification, error) {
+func (db *database) getNotifications(config *notificationsRequestConfig) ([]*notification, error) {
 	notifications := []*notification{}
 	query, args := buildNotificationsQuery(config)
-	rows, err := appDb.query(query, args...)
+	rows, err := db.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func getNotifications(config *notificationsRequestConfig) ([]*notification, erro
 	return notifications, nil
 }
 
-func countNotifications(config *notificationsRequestConfig) (count int, err error) {
+func (db *database) countNotifications(config *notificationsRequestConfig) (count int, err error) {
 	query, params := buildNotificationsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDb.queryRow(query, params...)
+	row, err := db.queryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -97,11 +97,12 @@ func countNotifications(config *notificationsRequestConfig) (count int, err erro
 type notificationsPaginationAdapter struct {
 	config *notificationsRequestConfig
 	nums   int64
+	db     *database
 }
 
 func (p *notificationsPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		nums, _ := countNotifications(p.config)
+		nums, _ := p.db.countNotifications(p.config)
 		p.nums = int64(nums)
 	}
 	return p.nums, nil
@@ -112,21 +113,21 @@ func (p *notificationsPaginationAdapter) Slice(offset, length int, data interfac
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length
 
-	notifications, err := getNotifications(&modifiedConfig)
+	notifications, err := p.db.getNotifications(&modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&notifications).Elem())
 	return err
 }
 
-func notificationsAdmin(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	// Adapter
 	pageNoString := chi.URLParam(r, "page")
 	pageNo, _ := strconv.Atoi(pageNoString)
-	p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}}, 10)
+	p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}, db: a.db}, 10)
 	p.SetPage(pageNo)
 	var notifications []*notification
 	err := p.Results(&notifications)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Navigation
@@ -152,7 +153,7 @@ func notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	nextPath = fmt.Sprintf("%s/page/%d", notificationsPath, nextPage)
 	// Render
-	render(w, r, templateNotificationsAdmin, &renderData{
+	a.render(w, r, templateNotificationsAdmin, &renderData{
 		Data: map[string]interface{}{
 			"Notifications": notifications,
 			"HasPrev":       hasPrev,
@@ -163,15 +164,15 @@ func notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func notificationsAdminDelete(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) notificationsAdminDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("notificationid"))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = deleteNotification(id)
+	err = a.db.deleteNotification(id)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, ".", http.StatusFound)

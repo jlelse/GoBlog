@@ -20,36 +20,36 @@ type comment struct {
 	Comment string
 }
 
-func serveComment(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := appDb.queryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
+	row, err := a.db.queryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	comment := &comment{}
 	if err = row.Scan(&comment.ID, &comment.Target, &comment.Name, &comment.Website, &comment.Comment); err == sql.ErrNoRows {
-		serve404(w, r)
+		a.serve404(w, r)
 		return
 	} else if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	blog := r.Context().Value(blogContextKey).(string)
-	render(w, r, templateComment, &renderData{
+	a.render(w, r, templateComment, &renderData{
 		BlogString: blog,
-		Canonical:  appConfig.Server.PublicAddress + appConfig.Blogs[blog].getRelativePath(fmt.Sprintf("/comment/%d", id)),
+		Canonical:  a.cfg.Server.PublicAddress + a.cfg.Blogs[blog].getRelativePath(fmt.Sprintf("/comment/%d", id)),
 		Data:       comment,
 	})
 }
 
-func createComment(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
 	// Check target
-	target := checkCommentTarget(w, r)
+	target := a.checkCommentTarget(w, r)
 	if target == "" {
 		return
 	}
@@ -57,7 +57,7 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	strict := bluemonday.StrictPolicy()
 	comment := strings.TrimSpace(strict.Sanitize(r.FormValue("comment")))
 	if comment == "" {
-		serveError(w, r, "Comment is empty", http.StatusBadRequest)
+		a.serveError(w, r, "Comment is empty", http.StatusBadRequest)
 		return
 	}
 	name := strings.TrimSpace(strict.Sanitize(r.FormValue("name")))
@@ -66,35 +66,35 @@ func createComment(w http.ResponseWriter, r *http.Request) {
 	}
 	website := strings.TrimSpace(strict.Sanitize(r.FormValue("website")))
 	// Insert
-	result, err := appDb.exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
+	result, err := a.db.exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if commentID, err := result.LastInsertId(); err != nil {
 		// Serve error
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 	} else {
-		commentAddress := fmt.Sprintf("%s/%d", blogPath(r.Context().Value(blogContextKey).(string))+"/comment", commentID)
+		commentAddress := fmt.Sprintf("%s/%d", a.blogPath(r.Context().Value(blogContextKey).(string))+"/comment", commentID)
 		// Send webmention
-		_ = createWebmention(appConfig.Server.PublicAddress+commentAddress, appConfig.Server.PublicAddress+target)
+		_ = a.createWebmention(a.cfg.Server.PublicAddress+commentAddress, a.cfg.Server.PublicAddress+target)
 		// Redirect to comment
 		http.Redirect(w, r, commentAddress, http.StatusFound)
 	}
 }
 
-func checkCommentTarget(w http.ResponseWriter, r *http.Request) string {
+func (a *goBlog) checkCommentTarget(w http.ResponseWriter, r *http.Request) string {
 	target := r.FormValue("target")
 	if target == "" {
-		serveError(w, r, "No target specified", http.StatusBadRequest)
+		a.serveError(w, r, "No target specified", http.StatusBadRequest)
 		return ""
-	} else if !strings.HasPrefix(target, appConfig.Server.PublicAddress) {
-		serveError(w, r, "Bad target", http.StatusBadRequest)
+	} else if !strings.HasPrefix(target, a.cfg.Server.PublicAddress) {
+		a.serveError(w, r, "Bad target", http.StatusBadRequest)
 		return ""
 	}
 	targetURL, err := url.Parse(target)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return ""
 	}
 	return targetURL.Path
@@ -114,10 +114,10 @@ func buildCommentsQuery(config *commentsRequestConfig) (query string, args []int
 	return
 }
 
-func getComments(config *commentsRequestConfig) ([]*comment, error) {
+func (db *database) getComments(config *commentsRequestConfig) ([]*comment, error) {
 	comments := []*comment{}
 	query, args := buildCommentsQuery(config)
-	rows, err := appDb.query(query, args...)
+	rows, err := db.query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,10 +132,10 @@ func getComments(config *commentsRequestConfig) ([]*comment, error) {
 	return comments, nil
 }
 
-func countComments(config *commentsRequestConfig) (count int, err error) {
+func (db *database) countComments(config *commentsRequestConfig) (count int, err error) {
 	query, params := buildCommentsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := appDb.queryRow(query, params...)
+	row, err := db.queryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -143,7 +143,7 @@ func countComments(config *commentsRequestConfig) (count int, err error) {
 	return
 }
 
-func deleteComment(id int) error {
-	_, err := appDb.exec("delete from comments where id = @id", sql.Named("id", id))
+func (db *database) deleteComment(id int) error {
+	_, err := db.exec("delete from comments where id = @id", sql.Named("id", id))
 	return err
 }

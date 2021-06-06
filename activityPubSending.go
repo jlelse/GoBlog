@@ -19,10 +19,10 @@ type apRequest struct {
 	Try         int
 }
 
-func initAPSendQueue() {
+func (a *goBlog) initAPSendQueue() {
 	go func() {
 		for {
-			qi, err := peekQueue("ap")
+			qi, err := a.db.peekQueue("ap")
 			if err != nil {
 				log.Println(err.Error())
 				continue
@@ -31,22 +31,22 @@ func initAPSendQueue() {
 				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r)
 				if err != nil {
 					log.Println(err.Error())
-					_ = qi.dequeue()
+					_ = a.db.dequeue(qi)
 					continue
 				}
-				if err := apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
+				if err := a.apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
 					if r.Try++; r.Try < 20 {
 						// Try it again
 						qi.content, _ = r.encode()
-						_ = qi.reschedule(time.Duration(r.Try) * 10 * time.Minute)
+						_ = a.db.reschedule(qi, time.Duration(r.Try)*10*time.Minute)
 						continue
 					} else {
 						log.Printf("Request to %s failed for the 20th time", r.To)
 						log.Println()
-						_ = apRemoveInbox(r.To)
+						_ = a.db.apRemoveInbox(r.To)
 					}
 				}
-				err = qi.dequeue()
+				err = a.db.dequeue(qi)
 				if err != nil {
 					log.Println(err.Error())
 				}
@@ -58,7 +58,7 @@ func initAPSendQueue() {
 	}()
 }
 
-func apQueueSendSigned(blogIri, to string, activity interface{}) error {
+func (db *database) apQueueSendSigned(blogIri, to string, activity interface{}) error {
 	body, err := json.Marshal(activity)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func apQueueSendSigned(blogIri, to string, activity interface{}) error {
 	if err != nil {
 		return err
 	}
-	return enqueue("ap", b, time.Now())
+	return db.enqueue("ap", b, time.Now())
 }
 
 func (r *apRequest) encode() ([]byte, error) {
@@ -83,7 +83,7 @@ func (r *apRequest) encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func apSendSigned(blogIri, to string, activity []byte) error {
+func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	// Create request context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -105,9 +105,9 @@ func apSendSigned(blogIri, to string, activity []byte) error {
 	r.Header.Set(contentType, contentTypeASUTF8)
 	r.Header.Set("Host", iri.Host)
 	// Sign request
-	apPostSignMutex.Lock()
-	err = apPostSigner.SignRequest(apPrivateKey, blogIri+"#main-key", r, activity)
-	apPostSignMutex.Unlock()
+	a.apPostSignMutex.Lock()
+	err = a.apPostSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, activity)
+	a.apPostSignMutex.Unlock()
 	if err != nil {
 		return err
 	}

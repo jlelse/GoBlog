@@ -13,40 +13,44 @@ import (
 	"github.com/tomnomnom/linkheader"
 )
 
-func (p *post) sendWebmentions() error {
-	if wm := appConfig.Webmention; wm != nil && wm.DisableSending {
+func (a *goBlog) sendWebmentions(p *post) error {
+	if wm := a.cfg.Webmention; wm != nil && wm.DisableSending {
 		// Just ignore the mentions
 		return nil
 	}
 	links := []string{}
-	contentLinks, err := allLinksFromHTML(strings.NewReader(string(p.html())), p.fullURL())
+	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.html(p))), a.fullPostURL(p))
 	if err != nil {
 		return err
 	}
 	links = append(links, contentLinks...)
-	links = append(links, p.firstParameter("link"), p.firstParameter(appConfig.Micropub.LikeParam), p.firstParameter(appConfig.Micropub.ReplyParam), p.firstParameter(appConfig.Micropub.BookmarkParam))
+	links = append(links, p.firstParameter("link"), p.firstParameter(a.cfg.Micropub.LikeParam), p.firstParameter(a.cfg.Micropub.ReplyParam), p.firstParameter(a.cfg.Micropub.BookmarkParam))
 	for _, link := range funk.UniqString(links) {
 		if link == "" {
 			continue
 		}
 		// Internal mention
-		if strings.HasPrefix(link, appConfig.Server.PublicAddress) {
+		if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
 			// Save mention directly
-			if err := createWebmention(p.fullURL(), link); err != nil {
+			if err := a.createWebmention(a.fullPostURL(p), link); err != nil {
 				log.Println("Failed to create webmention:", err.Error())
 			}
 			continue
 		}
 		// External mention
-		if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
+		if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
 			// Private mode, don't send external mentions
+			continue
+		}
+		if wm := a.cfg.Webmention; wm != nil && wm.DisableSending {
+			// Just ignore the mention
 			continue
 		}
 		endpoint := discoverEndpoint(link)
 		if endpoint == "" {
 			continue
 		}
-		if err = sendWebmention(endpoint, p.fullURL(), link); err != nil {
+		if err = sendWebmention(endpoint, a.fullPostURL(p), link); err != nil {
 			log.Println("Sending webmention to " + link + " failed")
 			continue
 		}
@@ -56,10 +60,6 @@ func (p *post) sendWebmentions() error {
 }
 
 func sendWebmention(endpoint, source, target string) error {
-	if wm := appConfig.Webmention; wm != nil && wm.DisableSending {
-		// Just ignore the mention
-		return nil
-	}
 	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(url.Values{
 		"source": []string{source},
 		"target": []string{target},

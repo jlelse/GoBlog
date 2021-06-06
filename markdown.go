@@ -15,9 +15,7 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-var defaultMarkdown, absoluteMarkdown goldmark.Markdown
-
-func initMarkdown() {
+func (a *goBlog) initMarkdown() {
 	defaultGoldmarkOptions := []goldmark.Option{
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
@@ -35,22 +33,28 @@ func initMarkdown() {
 			emoji.Emoji,
 		),
 	}
-	defaultMarkdown = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{absoluteLinks: false}))...)
-	absoluteMarkdown = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{absoluteLinks: true}))...)
+	a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
+		absoluteLinks: false,
+		publicAddress: a.cfg.Server.PublicAddress,
+	}))...)
+	a.absoluteMd = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
+		absoluteLinks: true,
+		publicAddress: a.cfg.Server.PublicAddress,
+	}))...)
 }
 
-func renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
+func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
 	var buffer bytes.Buffer
 	if absoluteLinks {
-		err = absoluteMarkdown.Convert([]byte(source), &buffer)
+		err = a.absoluteMd.Convert([]byte(source), &buffer)
 	} else {
-		err = defaultMarkdown.Convert([]byte(source), &buffer)
+		err = a.md.Convert([]byte(source), &buffer)
 	}
 	return buffer.Bytes(), err
 }
 
-func renderText(s string) string {
-	h, err := renderMarkdown(s, false)
+func (a *goBlog) renderText(s string) string {
+	h, err := a.renderMarkdown(s, false)
 	if err != nil {
 		return ""
 	}
@@ -66,18 +70,21 @@ func renderText(s string) string {
 // Links
 type customExtension struct {
 	absoluteLinks bool
+	publicAddress string
 }
 
 func (l *customExtension) Extend(m goldmark.Markdown) {
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(&customRenderer{
 			absoluteLinks: l.absoluteLinks,
+			publicAddress: l.publicAddress,
 		}, 500),
 	))
 }
 
 type customRenderer struct {
 	absoluteLinks bool
+	publicAddress string
 }
 
 func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
@@ -91,8 +98,8 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 		_, _ = w.WriteString("<a href=\"")
 		// Make URL absolute if it's relative
 		newDestination := util.URLEscape(n.Destination, true)
-		if c.absoluteLinks && bytes.HasPrefix(newDestination, []byte("/")) {
-			_, _ = w.Write(util.EscapeHTML([]byte(appConfig.Server.PublicAddress)))
+		if c.absoluteLinks && c.publicAddress != "" && bytes.HasPrefix(newDestination, []byte("/")) {
+			_, _ = w.Write(util.EscapeHTML([]byte(c.publicAddress)))
 		}
 		_, _ = w.Write(util.EscapeHTML(newDestination))
 		_, _ = w.WriteRune('"')
@@ -120,8 +127,8 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	n := node.(*ast.Image)
 	// Make URL absolute if it's relative
 	destination := util.URLEscape(n.Destination, true)
-	if bytes.HasPrefix(destination, []byte("/")) {
-		destination = util.EscapeHTML(append([]byte(appConfig.Server.PublicAddress), destination...))
+	if c.publicAddress != "" && bytes.HasPrefix(destination, []byte("/")) {
+		destination = util.EscapeHTML(append([]byte(c.publicAddress), destination...))
 	} else {
 		destination = util.EscapeHTML(destination)
 	}

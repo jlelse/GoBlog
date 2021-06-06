@@ -8,15 +8,15 @@ import (
 
 const indieAuthScope requestContextKey = "scope"
 
-func checkIndieAuth(next http.Handler) http.Handler {
+func (a *goBlog) checkIndieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bearerToken := r.Header.Get("Authorization")
 		if len(bearerToken) == 0 {
 			bearerToken = r.URL.Query().Get("access_token")
 		}
-		tokenData, err := verifyIndieAuthToken(bearerToken)
+		tokenData, err := a.db.verifyIndieAuthToken(bearerToken)
 		if err != nil {
-			serveError(w, r, err.Error(), http.StatusUnauthorized)
+			a.serveError(w, r, err.Error(), http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), indieAuthScope, strings.Join(tokenData.Scopes, " "))))

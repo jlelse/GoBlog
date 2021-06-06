@@ -13,7 +13,7 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func (p *post) checkPost() (err error) {
+func (a *goBlog) checkPost(p *post) (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -57,13 +57,13 @@ func (p *post) checkPost() (err error) {
 	}
 	// Check blog
 	if p.Blog == "" {
-		p.Blog = appConfig.DefaultBlog
+		p.Blog = a.cfg.DefaultBlog
 	}
-	if _, ok := appConfig.Blogs[p.Blog]; !ok {
+	if _, ok := a.cfg.Blogs[p.Blog]; !ok {
 		return errors.New("blog doesn't exist")
 	}
 	// Check if section exists
-	if _, ok := appConfig.Blogs[p.Blog].Sections[p.Section]; p.Section != "" && !ok {
+	if _, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]; p.Section != "" && !ok {
 		return errors.New("section doesn't exist")
 	}
 	// Check path
@@ -72,14 +72,14 @@ func (p *post) checkPost() (err error) {
 	}
 	if p.Path == "" {
 		if p.Section == "" {
-			p.Section = appConfig.Blogs[p.Blog].DefaultSection
+			p.Section = a.cfg.Blogs[p.Blog].DefaultSection
 		}
 		if p.Slug == "" {
 			random := generateRandomString(5)
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
 		published, _ := dateparse.ParseLocal(p.Published)
-		pathTmplString := appConfig.Blogs[p.Blog].Sections[p.Section].PathTemplate
+		pathTmplString := a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate
 		if pathTmplString == "" {
 			return errors.New("path template empty")
 		}
@@ -89,7 +89,7 @@ func (p *post) checkPost() (err error) {
 		}
 		var pathBuffer bytes.Buffer
 		err = pathTmpl.Execute(&pathBuffer, map[string]interface{}{
-			"BlogPath": appConfig.Blogs[p.Blog].Path,
+			"BlogPath": a.cfg.Blogs[p.Blog].Path,
 			"Year":     published.Year(),
 			"Month":    int(published.Month()),
 			"Day":      published.Day(),
@@ -107,12 +107,12 @@ func (p *post) checkPost() (err error) {
 	return nil
 }
 
-func (p *post) create() error {
-	return p.createOrReplace(&postCreationOptions{new: true})
+func (a *goBlog) createPost(p *post) error {
+	return a.createOrReplacePost(p, &postCreationOptions{new: true})
 }
 
-func (p *post) replace(oldPath string, oldStatus postStatus) error {
-	return p.createOrReplace(&postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus})
+func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus) error {
+	return a.createOrReplacePost(p, &postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus})
 }
 
 type postCreationOptions struct {
@@ -123,8 +123,8 @@ type postCreationOptions struct {
 
 var postCreationMutex sync.Mutex
 
-func (p *post) createOrReplace(o *postCreationOptions) error {
-	err := p.checkPost()
+func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
+	err := a.checkPost(p)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (p *post) createOrReplace(o *postCreationOptions) error {
 	if o.new || (p.Path != o.oldPath) {
 		// Post is new or post path was changed
 		newPathExists := false
-		row, err := appDb.queryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", p.Path))
+		row, err := a.db.queryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", p.Path))
 		if err != nil {
 			return err
 		}
@@ -169,65 +169,37 @@ func (p *post) createOrReplace(o *postCreationOptions) error {
 		}
 	}
 	// Execute
-	_, err = appDb.execMulti(sqlBuilder.String(), sqlArgs...)
+	_, err = a.db.execMulti(sqlBuilder.String(), sqlArgs...)
 	if err != nil {
 		return err
 	}
 	// Update FTS index, trigger hooks and reload router
-	rebuildFTSIndex()
+	a.db.rebuildFTSIndex()
 	if p.Status == statusPublished {
 		if o.new || o.oldStatus == statusDraft {
-			defer p.postPostHooks()
+			defer a.postPostHooks(p)
 		} else {
-			defer p.postUpdateHooks()
+			defer a.postUpdateHooks(p)
 		}
 	}
-	return reloadRouter()
+	return a.reloadRouter()
 }
 
-func deletePost(path string) error {
+func (a *goBlog) deletePost(path string) error {
 	if path == "" {
 		return nil
 	}
-	p, err := getPost(path)
+	p, err := a.db.getPost(path)
 	if err != nil {
 		return err
 	}
-	_, err = appDb.exec("delete from posts where path = @path", sql.Named("path", p.Path))
+	_, err = a.db.exec("delete from posts where path = @path", sql.Named("path", p.Path))
 	if err != nil {
 		return err
 	}
-	rebuildFTSIndex()
-	defer p.postDeleteHooks()
-	return reloadRouter()
-}
-
-func rebuildFTSIndex() {
-	_, _ = appDb.exec("insert into posts_fts(posts_fts) values ('rebuild')")
-}
-
-func getPost(path string) (*post, error) {
-	posts, err := getPosts(&postsRequestConfig{path: path})
-	if err != nil {
-		return nil, err
-	} else if len(posts) == 0 {
-		return nil, errPostNotFound
-	}
-	return posts[0], nil
-}
-
-func getRandomPostPath(blog string) (string, error) {
-	var sections []string
-	for sectionKey := range appConfig.Blogs[blog].Sections {
-		sections = append(sections, sectionKey)
-	}
-	posts, err := getPosts(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections})
-	if err != nil {
-		return "", err
-	} else if len(posts) == 0 {
-		return "", errPostNotFound
-	}
-	return posts[0].Path, nil
+	a.db.rebuildFTSIndex()
+	defer a.postDeleteHooks(p)
+	return a.reloadRouter()
 }
 
 type postsRequestConfig struct {
@@ -246,39 +218,39 @@ type postsRequestConfig struct {
 	randomOrder                                 bool
 }
 
-func buildPostsQuery(config *postsRequestConfig) (query string, args []interface{}) {
+func buildPostsQuery(c *postsRequestConfig) (query string, args []interface{}) {
 	args = []interface{}{}
 	defaultSelection := "select p.path as path, coalesce(content, '') as content, coalesce(published, '') as published, coalesce(updated, '') as updated, coalesce(blog, '') as blog, coalesce(section, '') as section, coalesce(status, '') as status, coalesce(parameter, '') as parameter, coalesce(value, '') as value "
 	postsTable := "posts"
-	if config.search != "" {
+	if c.search != "" {
 		postsTable = "posts_fts(@search)"
-		args = append(args, sql.Named("search", config.search))
+		args = append(args, sql.Named("search", c.search))
 	}
-	if config.status != "" && config.status != statusNil {
+	if c.status != "" && c.status != statusNil {
 		postsTable = "(select * from " + postsTable + " where status = @status)"
-		args = append(args, sql.Named("status", config.status))
+		args = append(args, sql.Named("status", c.status))
 	}
-	if config.blog != "" {
+	if c.blog != "" {
 		postsTable = "(select * from " + postsTable + " where blog = @blog)"
-		args = append(args, sql.Named("blog", config.blog))
+		args = append(args, sql.Named("blog", c.blog))
 	}
-	if config.parameter != "" {
+	if c.parameter != "" {
 		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @param "
-		args = append(args, sql.Named("param", config.parameter))
-		if config.parameterValue != "" {
+		args = append(args, sql.Named("param", c.parameter))
+		if c.parameterValue != "" {
 			postsTable += "and pp.value = @paramval)"
-			args = append(args, sql.Named("paramval", config.parameterValue))
+			args = append(args, sql.Named("paramval", c.parameterValue))
 		} else {
 			postsTable += "and length(coalesce(pp.value, '')) > 1)"
 		}
 	}
-	if config.taxonomy != nil && len(config.taxonomyValue) > 0 {
+	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
 		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @taxname and lower(pp.value) = lower(@taxval))"
-		args = append(args, sql.Named("taxname", config.taxonomy.Name), sql.Named("taxval", config.taxonomyValue))
+		args = append(args, sql.Named("taxname", c.taxonomy.Name), sql.Named("taxval", c.taxonomyValue))
 	}
-	if len(config.sections) > 0 {
+	if len(c.sections) > 0 {
 		postsTable = "(select * from " + postsTable + " where"
-		for i, section := range config.sections {
+		for i, section := range c.sections {
 			if i > 0 {
 				postsTable += " or"
 			}
@@ -288,38 +260,38 @@ func buildPostsQuery(config *postsRequestConfig) (query string, args []interface
 		}
 		postsTable += ")"
 	}
-	if config.publishedYear != 0 {
+	if c.publishedYear != 0 {
 		postsTable = "(select * from " + postsTable + " p where substr(p.published, 1, 4) = @publishedyear)"
-		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", config.publishedYear)))
+		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", c.publishedYear)))
 	}
-	if config.publishedMonth != 0 {
+	if c.publishedMonth != 0 {
 		postsTable = "(select * from " + postsTable + " p where substr(p.published, 6, 2) = @publishedmonth)"
-		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", config.publishedMonth)))
+		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", c.publishedMonth)))
 	}
-	if config.publishedDay != 0 {
+	if c.publishedDay != 0 {
 		postsTable = "(select * from " + postsTable + " p where substr(p.published, 9, 2) = @publishedday)"
-		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", config.publishedDay)))
+		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", c.publishedDay)))
 	}
 	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
 	defaultSorting := " order by p.published desc "
-	if config.randomOrder {
+	if c.randomOrder {
 		defaultSorting = " order by random() "
 	}
-	if config.path != "" {
+	if c.path != "" {
 		query = defaultSelection + defaultTables + " where p.path = @path" + defaultSorting
-		args = append(args, sql.Named("path", config.path))
-	} else if config.limit != 0 || config.offset != 0 {
+		args = append(args, sql.Named("path", c.path))
+	} else if c.limit != 0 || c.offset != 0 {
 		query = defaultSelection + " from (select * from " + postsTable + " p " + defaultSorting + " limit @limit offset @offset) p left outer join post_parameters pp on p.path = pp.path "
-		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
+		args = append(args, sql.Named("limit", c.limit), sql.Named("offset", c.offset))
 	} else {
 		query = defaultSelection + defaultTables + defaultSorting
 	}
 	return
 }
 
-func getPosts(config *postsRequestConfig) (posts []*post, err error) {
+func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	query, queryParams := buildPostsQuery(config)
-	rows, err := appDb.query(query, queryParams...)
+	rows, err := d.query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -351,10 +323,25 @@ func getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	return posts, nil
 }
 
-func countPosts(config *postsRequestConfig) (count int, err error) {
+func (d *database) getPost(path string) (*post, error) {
+	posts, err := d.getPosts(&postsRequestConfig{path: path})
+	if err != nil {
+		return nil, err
+	} else if len(posts) == 0 {
+		return nil, errPostNotFound
+	}
+	return posts[0], nil
+}
+
+func (d *database) getDrafts(blog string) []*post {
+	ps, _ := d.getPosts(&postsRequestConfig{status: statusDraft, blog: blog})
+	return ps
+}
+
+func (d *database) countPosts(config *postsRequestConfig) (count int, err error) {
 	query, params := buildPostsQuery(config)
 	query = "select count(distinct path) from (" + query + ")"
-	row, err := appDb.queryRow(query, params...)
+	row, err := d.queryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -362,9 +349,9 @@ func countPosts(config *postsRequestConfig) (count int, err error) {
 	return
 }
 
-func allPostPaths(status postStatus) ([]string, error) {
+func (d *database) allPostPaths(status postStatus) ([]string, error) {
 	var postPaths []string
-	rows, err := appDb.query("select path from posts where status = @status", sql.Named("status", status))
+	rows, err := d.query("select path from posts where status = @status", sql.Named("status", status))
 	if err != nil {
 		return nil, err
 	}
@@ -378,9 +365,23 @@ func allPostPaths(status postStatus) ([]string, error) {
 	return postPaths, nil
 }
 
-func allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
+func (a *goBlog) getRandomPostPath(blog string) (string, error) {
+	var sections []string
+	for sectionKey := range a.cfg.Blogs[blog].Sections {
+		sections = append(sections, sectionKey)
+	}
+	posts, err := a.db.getPosts(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections})
+	if err != nil {
+		return "", err
+	} else if len(posts) == 0 {
+		return "", errPostNotFound
+	}
+	return posts[0].Path, nil
+}
+
+func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
 	var values []string
-	rows, err := appDb.query("select distinct pp.value from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @tax and length(coalesce(pp.value, '')) > 1 and blog = @blog and status = @status", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
+	rows, err := d.query("select distinct pp.value from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @tax and length(coalesce(pp.value, '')) > 1 and blog = @blog and status = @status", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}
@@ -396,8 +397,8 @@ type publishedDate struct {
 	year, month, day int
 }
 
-func allPublishedDates(blog string) (dates []publishedDate, err error) {
-	rows, err := appDb.query("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month, substr(published, 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
+func (d *database) allPublishedDates(blog string) (dates []publishedDate, err error) {
+	rows, err := d.query("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month, substr(published, 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}

@@ -47,9 +47,11 @@ func main() {
 		}()
 	}
 
+	app := &goBlog{}
+
 	// Initialize config
 	log.Println("Initialize configuration...")
-	if err = initConfig(); err != nil {
+	if err = app.initConfig(); err != nil {
 		logErrAndQuit("Failed to init config:", err.Error())
 		return
 	}
@@ -57,7 +59,7 @@ func main() {
 	// Healthcheck tool
 	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
 		// Connect to public address + "/ping" and exit with 0 when successful
-		health := healthcheckExitCode()
+		health := app.healthcheckExitCode()
 		shutdown()
 		os.Exit(health)
 		return
@@ -66,8 +68,8 @@ func main() {
 	// Tool to generate TOTP secret
 	if len(os.Args) >= 2 && os.Args[1] == "totp-secret" {
 		key, err := totp.Generate(totp.GenerateOpts{
-			Issuer:      appConfig.Server.PublicAddress,
-			AccountName: appConfig.User.Nick,
+			Issuer:      app.cfg.Server.PublicAddress,
+			AccountName: app.cfg.User.Nick,
 		})
 		if err != nil {
 			logErrAndQuit(err.Error())
@@ -82,65 +84,64 @@ func main() {
 	initGC()
 
 	// Execute pre-start hooks
-	preStartHooks()
+	app.preStartHooks()
 
 	// Initialize database and markdown
 	log.Println("Initialize database...")
-	if err = initDatabase(); err != nil {
+	if err = app.initDatabase(); err != nil {
 		logErrAndQuit("Failed to init database:", err.Error())
 		return
 	}
 	log.Println("Initialize server components...")
-	initMarkdown()
+	app.initMarkdown()
 
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
-		checkAllExternalLinks()
+		app.checkAllExternalLinks()
 		shutdown()
 		return
 	}
 
 	// More initializations
-	initMinify()
-	if err = initTemplateAssets(); err != nil { // Needs minify
+	if err = app.initTemplateAssets(); err != nil { // Needs minify
 		logErrAndQuit("Failed to init template assets:", err.Error())
 		return
 	}
-	if err = initTemplateStrings(); err != nil {
+	if err = app.initTemplateStrings(); err != nil {
 		logErrAndQuit("Failed to init template translations:", err.Error())
 		return
 	}
-	if err = initRendering(); err != nil { // Needs assets and minify
+	if err = app.initRendering(); err != nil { // Needs assets and minify
 		logErrAndQuit("Failed to init HTML rendering:", err.Error())
 		return
 	}
-	if err = initCache(); err != nil {
+	if err = app.initCache(); err != nil {
 		logErrAndQuit("Failed to init HTTP cache:", err.Error())
 		return
 	}
-	if err = initRegexRedirects(); err != nil {
+	if err = app.initRegexRedirects(); err != nil {
 		logErrAndQuit("Failed to init redirects:", err.Error())
 		return
 	}
-	if err = initHTTPLog(); err != nil {
+	if err = app.initHTTPLog(); err != nil {
 		logErrAndQuit("Failed to init HTTP logging:", err.Error())
 		return
 	}
-	if err = initActivityPub(); err != nil {
+	if err = app.initActivityPub(); err != nil {
 		logErrAndQuit("Failed to init ActivityPub:", err.Error())
 		return
 	}
-	initWebmention()
-	initTelegram()
-	initBlogStats()
-	initSessions()
+	app.initWebmention()
+	app.initTelegram()
+	app.initBlogStats()
+	app.initSessions()
 
 	// Start cron hooks
-	startHourlyHooks()
+	app.startHourlyHooks()
 
 	// Start the server
 	log.Println("Starting server(s)...")
-	err = startServer()
+	err = app.startServer()
 	if err != nil {
 		logErrAndQuit("Failed to start server(s):", err.Error())
 		return

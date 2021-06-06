@@ -11,45 +11,45 @@ import (
 
 const editorPath = "/editor"
 
-func serveEditor(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	render(w, r, templateEditor, &renderData{
+	a.render(w, r, templateEditor, &renderData{
 		BlogString: blog,
 		Data: map[string]interface{}{
-			"Drafts": loadDrafts(blog),
+			"Drafts": a.db.getDrafts(blog),
 		},
 	})
 }
 
-func serveEditorPost(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
 		case "loaddelete":
-			render(w, r, templateEditor, &renderData{
+			a.render(w, r, templateEditor, &renderData{
 				BlogString: blog,
 				Data: map[string]interface{}{
 					"DeleteURL": r.FormValue("url"),
-					"Drafts":    loadDrafts(blog),
+					"Drafts":    a.db.getDrafts(blog),
 				},
 			})
 		case "loadupdate":
 			parsedURL, err := url.Parse(r.FormValue("url"))
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			post, err := getPost(parsedURL.Path)
+			post, err := a.db.getPost(parsedURL.Path)
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusBadRequest)
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			render(w, r, templateEditor, &renderData{
+			a.render(w, r, templateEditor, &renderData{
 				BlogString: blog,
 				Data: map[string]interface{}{
 					"UpdatePostURL":     parsedURL.String(),
-					"UpdatePostContent": post.toMfItem().Properties.Content[0],
-					"Drafts":            loadDrafts(blog),
+					"UpdatePostContent": a.toMfItem(post).Properties.Content[0],
+					"Drafts":            a.db.getDrafts(blog),
 				},
 			})
 		case "updatepost":
@@ -63,37 +63,32 @@ func serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(jsonBytes))
 			if err != nil {
-				serveError(w, r, err.Error(), http.StatusInternalServerError)
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			req.Header.Set(contentType, contentTypeJSON)
-			editorMicropubPost(w, req, false)
+			a.editorMicropubPost(w, req, false)
 		case "upload":
-			editorMicropubPost(w, r, true)
+			a.editorMicropubPost(w, r, true)
 		default:
-			serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
+			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}
 		return
 	}
-	editorMicropubPost(w, r, false)
+	a.editorMicropubPost(w, r, false)
 }
 
-func loadDrafts(blog string) []*post {
-	ps, _ := getPosts(&postsRequestConfig{status: statusDraft, blog: blog})
-	return ps
-}
-
-func editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
+func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
 	recorder := httptest.NewRecorder()
 	if media {
-		addAllScopes(http.HandlerFunc(serveMicropubMedia)).ServeHTTP(recorder, r)
+		addAllScopes(http.HandlerFunc(a.serveMicropubMedia)).ServeHTTP(recorder, r)
 	} else {
-		addAllScopes(http.HandlerFunc(serveMicropubPost)).ServeHTTP(recorder, r)
+		addAllScopes(http.HandlerFunc(a.serveMicropubPost)).ServeHTTP(recorder, r)
 	}
 	result := recorder.Result()
 	if location := result.Header.Get("Location"); location != "" {

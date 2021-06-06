@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func healthcheck() bool {
-	req, err := http.NewRequest(http.MethodGet, appConfig.Server.PublicAddress+"/ping", nil)
+func (a *goBlog) healthcheck() bool {
+	req, err := http.NewRequest(http.MethodGet, a.cfg.Server.PublicAddress+"/ping", nil)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -22,8 +22,8 @@ func healthcheck() bool {
 	return resp.StatusCode == 200
 }
 
-func healthcheckExitCode() int {
-	if healthcheck() {
+func (a *goBlog) healthcheckExitCode() int {
+	if a.healthcheck() {
 		return 0
 	} else {
 		return 1

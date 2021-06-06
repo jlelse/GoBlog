@@ -1,15 +1,33 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "Build",
-        "type": "shell",
-        "command": "go build --tags \"libsqlite3 linux sqlite_fts5\"",
-        "problemMatcher": [],
-        "group": {
-          "kind": "build",
-          "isDefault": true
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "go build",
+      "options": {
+        "env": {
+          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5"
         }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
       }
-    ]
-  }
+    },
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "go test",
+      "options": {
+        "env": {
+          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5"
+        }
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
+}

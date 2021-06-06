@@ -11,14 +11,14 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-func checkCredentials(username, password, totpPasscode string) bool {
-	return username == appConfig.User.Nick &&
-		password == appConfig.User.Password &&
-		(appConfig.User.TOTP == "" || totp.Validate(totpPasscode, appConfig.User.TOTP))
+func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {
+	return username == a.cfg.User.Nick &&
+		password == a.cfg.User.Password &&
+		(a.cfg.User.TOTP == "" || totp.Validate(totpPasscode, a.cfg.User.TOTP))
 }
 
-func checkAppPasswords(username, password string) bool {
-	for _, apw := range appConfig.User.AppPasswords {
+func (a *goBlog) checkAppPasswords(username, password string) bool {
+	for _, apw := range a.cfg.User.AppPasswords {
 		if apw.Username == username && apw.Password == password {
 			return true
 		}
@@ -26,11 +26,11 @@ func checkAppPasswords(username, password string) bool {
 	return false
 }
 
-func jwtKey() []byte {
-	return []byte(appConfig.Server.JWTSecret)
+func (a *goBlog) jwtKey() []byte {
+	return []byte(a.cfg.Server.JWTSecret)
 }
 
-func authMiddleware(next http.Handler) http.Handler {
+func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check if already logged in
 		if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
@@ -38,12 +38,12 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		// 2. Check BasicAuth (just for app passwords)
-		if username, password, ok := r.BasicAuth(); ok && checkAppPasswords(username, password) {
+		if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
 			next.ServeHTTP(w, r)
 			return
 		}
 		// 3. Check login cookie
-		if checkLoginCookie(r) {
+		if a.checkLoginCookie(r) {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), loggedInKey, true)))
 			return
 		}
@@ -57,12 +57,12 @@ func authMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		render(w, r, templateLogin, &renderData{
+		a.render(w, r, templateLogin, &renderData{
 			Data: map[string]interface{}{
 				"loginmethod":  r.Method,
 				"loginheaders": base64.StdEncoding.EncodeToString(h),
 				"loginbody":    base64.StdEncoding.EncodeToString(b),
-				"totp":         appConfig.User.TOTP != "",
+				"totp":         a.cfg.User.TOTP != "",
 			},
 		})
 	})
@@ -70,9 +70,9 @@ func authMiddleware(next http.Handler) http.Handler {
 
 const loggedInKey requestContextKey = "loggedIn"
 
-func checkLoggedIn(next http.Handler) http.Handler {
+func (a *goBlog) checkLoggedIn(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if checkLoginCookie(r) {
+		if a.checkLoginCookie(r) {
 			next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), loggedInKey, true)))
 			return
 		}
@@ -80,8 +80,8 @@ func checkLoggedIn(next http.Handler) http.Handler {
 	})
 }
 
-func checkLoginCookie(r *http.Request) bool {
-	ses, err := loginSessionsStore.Get(r, "l")
+func (a *goBlog) checkLoginCookie(r *http.Request) bool {
+	ses, err := a.loginSessions.Get(r, "l")
 	if err == nil && ses != nil {
 		if login, ok := ses.Values["login"]; ok && login.(bool) {
 			return true
@@ -90,15 +90,15 @@ func checkLoginCookie(r *http.Request) bool {
 	return false
 }
 
-func checkIsLogin(next http.Handler) http.Handler {
+func (a *goBlog) checkIsLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if !checkLogin(rw, r) {
+		if !a.checkLogin(rw, r) {
 			next.ServeHTTP(rw, r)
 		}
 	})
 }
 
-func checkLogin(w http.ResponseWriter, r *http.Request) bool {
+func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
@@ -109,8 +109,8 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	// Check credential
-	if !checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) {
-		serveError(w, r, "Incorrect credentials", http.StatusUnauthorized)
+	if !a.checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) {
+		a.serveError(w, r, "Incorrect credentials", http.StatusUnauthorized)
 		return true
 	}
 	// Prepare original request
@@ -124,20 +124,20 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		req.Header[k] = v
 	}
 	// Cookie
-	ses, err := loginSessionsStore.Get(r, "l")
+	ses, err := a.loginSessions.Get(r, "l")
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return true
 	}
 	ses.Values["login"] = true
-	cookie, err := loginSessionsStore.SaveGetCookie(r, w, ses)
+	cookie, err := a.loginSessions.SaveGetCookie(r, w, ses)
 	if err != nil {
-		serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return true
 	}
 	req.AddCookie(cookie)
 	// Serve original request
-	d.ServeHTTP(w, req)
+	a.d.ServeHTTP(w, req)
 	return true
 }
 
@@ -146,9 +146,9 @@ func serveLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func serveLogout(w http.ResponseWriter, r *http.Request) {
-	if ses, err := loginSessionsStore.Get(r, "l"); err == nil && ses != nil {
-		_ = loginSessionsStore.Delete(r, w, ses)
+func (a *goBlog) serveLogout(w http.ResponseWriter, r *http.Request) {
+	if ses, err := a.loginSessions.Get(r, "l"); err == nil && ses != nil {
+		_ = a.loginSessions.Delete(r, w, ses)
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
 }

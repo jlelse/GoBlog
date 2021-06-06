@@ -8,19 +8,19 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func (p *post) fullURL() string {
-	return appConfig.Server.PublicAddress + p.Path
+func (a *goBlog) fullPostURL(p *post) string {
+	return a.cfg.Server.PublicAddress + p.Path
 }
 
-func (p *post) shortURL() string {
-	s, err := shortenPath(p.Path)
+func (a *goBlog) shortPostURL(p *post) string {
+	s, err := a.db.shortenPath(p.Path)
 	if err != nil {
 		return ""
 	}
-	if appConfig.Server.ShortPublicAddress != "" {
-		return appConfig.Server.ShortPublicAddress + s
+	if a.cfg.Server.ShortPublicAddress != "" {
+		return a.cfg.Server.ShortPublicAddress + s
 	}
-	return appConfig.Server.PublicAddress + s
+	return a.cfg.Server.PublicAddress + s
 }
 
 func (p *post) firstParameter(parameter string) (result string) {
@@ -34,11 +34,11 @@ func (p *post) title() string {
 	return p.firstParameter("title")
 }
 
-func (p *post) html() template.HTML {
+func (a *goBlog) html(p *post) template.HTML {
 	if p.rendered != "" {
 		return p.rendered
 	}
-	htmlContent, err := renderMarkdown(p.Content, false)
+	htmlContent, err := a.renderMarkdown(p.Content, false)
 	if err != nil {
 		log.Fatal(err)
 		return ""
@@ -47,11 +47,11 @@ func (p *post) html() template.HTML {
 	return p.rendered
 }
 
-func (p *post) absoluteHTML() template.HTML {
+func (a *goBlog) absoluteHTML(p *post) template.HTML {
 	if p.absoluteRendered != "" {
 		return p.absoluteRendered
 	}
-	htmlContent, err := renderMarkdown(p.Content, true)
+	htmlContent, err := a.renderMarkdown(p.Content, true)
 	if err != nil {
 		log.Fatal(err)
 		return ""
@@ -62,12 +62,12 @@ func (p *post) absoluteHTML() template.HTML {
 
 const summaryDivider = "<!--more-->"
 
-func (p *post) summary() (summary string) {
+func (a *goBlog) summary(p *post) (summary string) {
 	summary = p.firstParameter("summary")
 	if summary != "" {
 		return
 	}
-	html := string(p.html())
+	html := string(a.html(p))
 	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
 		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(splitted[0]))
 		summary = doc.Text()
@@ -78,12 +78,12 @@ func (p *post) summary() (summary string) {
 	return
 }
 
-func (p *post) translations() []*post {
+func (a *goBlog) translations(p *post) []*post {
 	translationkey := p.firstParameter("translationkey")
 	if translationkey == "" {
 		return nil
 	}
-	posts, err := getPosts(&postsRequestConfig{
+	posts, err := a.db.getPosts(&postsRequestConfig{
 		parameter:      "translationkey",
 		parameterValue: translationkey,
 	})

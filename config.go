@@ -224,9 +224,7 @@ type configWebmention struct {
 	DisableReceiving bool `mapstructure:"disableReceiving"`
 }
 
-var appConfig = &config{}
-
-func initConfig() error {
+func (a *goBlog) initConfig() error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("./config/")
 	err := viper.ReadInConfig()
@@ -258,52 +256,53 @@ func initConfig() error {
 	viper.SetDefault("webmention.disableSending", false)
 	viper.SetDefault("webmention.disableReceiving", false)
 	// Unmarshal config
-	err = viper.Unmarshal(appConfig)
+	a.cfg = &config{}
+	err = viper.Unmarshal(a.cfg)
 	if err != nil {
 		return err
 	}
 	// Check config
-	publicURL, err := url.Parse(appConfig.Server.PublicAddress)
+	publicURL, err := url.Parse(a.cfg.Server.PublicAddress)
 	if err != nil {
 		return err
 	}
-	appConfig.Server.publicHostname = publicURL.Hostname()
-	if appConfig.Server.ShortPublicAddress != "" {
-		shortPublicURL, err := url.Parse(appConfig.Server.ShortPublicAddress)
+	a.cfg.Server.publicHostname = publicURL.Hostname()
+	if a.cfg.Server.ShortPublicAddress != "" {
+		shortPublicURL, err := url.Parse(a.cfg.Server.ShortPublicAddress)
 		if err != nil {
 			return err
 		}
-		appConfig.Server.shortPublicHostname = shortPublicURL.Hostname()
+		a.cfg.Server.shortPublicHostname = shortPublicURL.Hostname()
 	}
-	if appConfig.Server.JWTSecret == "" {
+	if a.cfg.Server.JWTSecret == "" {
 		return errors.New("no JWT secret configured")
 	}
-	if len(appConfig.Blogs) == 0 {
+	if len(a.cfg.Blogs) == 0 {
 		return errors.New("no blog configured")
 	}
-	if len(appConfig.DefaultBlog) == 0 || appConfig.Blogs[appConfig.DefaultBlog] == nil {
+	if len(a.cfg.DefaultBlog) == 0 || a.cfg.Blogs[a.cfg.DefaultBlog] == nil {
 		return errors.New("no default blog or default blog not present")
 	}
-	if appConfig.Micropub.MediaStorage != nil {
-		if appConfig.Micropub.MediaStorage.MediaURL == "" ||
-			appConfig.Micropub.MediaStorage.BunnyStorageKey == "" ||
-			appConfig.Micropub.MediaStorage.BunnyStorageName == "" {
-			appConfig.Micropub.MediaStorage.BunnyStorageKey = ""
-			appConfig.Micropub.MediaStorage.BunnyStorageName = ""
+	if a.cfg.Micropub.MediaStorage != nil {
+		if a.cfg.Micropub.MediaStorage.MediaURL == "" ||
+			a.cfg.Micropub.MediaStorage.BunnyStorageKey == "" ||
+			a.cfg.Micropub.MediaStorage.BunnyStorageName == "" {
+			a.cfg.Micropub.MediaStorage.BunnyStorageKey = ""
+			a.cfg.Micropub.MediaStorage.BunnyStorageName = ""
 		}
-		appConfig.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(appConfig.Micropub.MediaStorage.MediaURL, "/")
+		a.cfg.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(a.cfg.Micropub.MediaStorage.MediaURL, "/")
 	}
-	if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
-		appConfig.ActivityPub = &configActivityPub{Enabled: false}
+	if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
+		a.cfg.ActivityPub = &configActivityPub{Enabled: false}
 	}
-	if wm := appConfig.Webmention; wm != nil && wm.DisableReceiving {
+	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		// Disable comments for all blogs
-		for _, b := range appConfig.Blogs {
+		for _, b := range a.cfg.Blogs {
 			b.Comments = &comments{Enabled: false}
 		}
 	}
 	// Check config for each blog
-	for _, blog := range appConfig.Blogs {
+	for _, blog := range a.cfg.Blogs {
 		if br := blog.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false
 		}
@@ -311,6 +310,6 @@ func initConfig() error {
 	return nil
 }
 
-func httpsConfigured() bool {
-	return appConfig.Server.PublicHTTPS || appConfig.Server.SecurityHeaders || strings.HasPrefix(appConfig.Server.PublicAddress, "https")
+func (a *goBlog) httpsConfigured() bool {
+	return a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders || strings.HasPrefix(a.cfg.Server.PublicAddress, "https")
 }

@@ -44,35 +44,33 @@ const (
 	appUserAgent = "GoBlog"
 )
 
-var d *dynamicHandler
-
-func startServer() (err error) {
+func (a *goBlog) startServer() (err error) {
 	// Start
-	d = &dynamicHandler{}
+	a.d = &dynamicHandler{}
 	// Set basic middlewares
-	var finalHandler http.Handler = d
-	if appConfig.Server.PublicHTTPS || appConfig.Server.SecurityHeaders {
-		finalHandler = securityHeaders(finalHandler)
+	var finalHandler http.Handler = a.d
+	if a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders {
+		finalHandler = a.securityHeaders(finalHandler)
 	}
 	finalHandler = servertiming.Middleware(finalHandler, nil)
 	finalHandler = middleware.Heartbeat("/ping")(finalHandler)
 	finalHandler = middleware.Compress(flate.DefaultCompression)(finalHandler)
 	finalHandler = middleware.Recoverer(finalHandler)
-	if appConfig.Server.Logging {
-		finalHandler = logMiddleware(finalHandler)
+	if a.cfg.Server.Logging {
+		finalHandler = a.logMiddleware(finalHandler)
 	}
 	// Create routers that don't change
-	if err = buildStaticHandlersRouters(); err != nil {
+	if err = a.buildStaticHandlersRouters(); err != nil {
 		return err
 	}
 	// Load router
-	if err = reloadRouter(); err != nil {
+	if err = a.reloadRouter(); err != nil {
 		return err
 	}
 	// Start Onion service
-	if appConfig.Server.Tor {
+	if a.cfg.Server.Tor {
 		go func() {
-			if err := startOnionService(finalHandler); err != nil {
+			if err := a.startOnionService(finalHandler); err != nil {
 				log.Println("Tor failed:", err.Error())
 			}
 		}()
@@ -84,10 +82,10 @@ func startServer() (err error) {
 		WriteTimeout: 5 * time.Minute,
 	}
 	addShutdownFunc(shutdownServer(s, "main server"))
-	if appConfig.Server.PublicHTTPS {
+	if a.cfg.Server.PublicHTTPS {
 		// Configure
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
-		certmagic.DefaultACME.Email = appConfig.Server.LetsEncryptMail
+		certmagic.DefaultACME.Email = a.cfg.Server.LetsEncryptMail
 		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
 		// Start HTTP server for redirects
 		httpServer := &http.Server{
@@ -104,9 +102,9 @@ func startServer() (err error) {
 		}()
 		// Start HTTPS
 		s.Addr = ":https"
-		hosts := []string{appConfig.Server.publicHostname}
-		if appConfig.Server.shortPublicHostname != "" {
-			hosts = append(hosts, appConfig.Server.shortPublicHostname)
+		hosts := []string{a.cfg.Server.publicHostname}
+		if a.cfg.Server.shortPublicHostname != "" {
+			hosts = append(hosts, a.cfg.Server.shortPublicHostname)
 		}
 		listener, e := certmagic.Listen(hosts)
 		if e != nil {
@@ -116,7 +114,7 @@ func startServer() (err error) {
 			return err
 		}
 	} else {
-		s.Addr = ":" + strconv.Itoa(appConfig.Server.Port)
+		s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
 		if err = s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			return err
 		}
@@ -142,13 +140,13 @@ func redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI()), http.StatusMovedPermanently)
 }
 
-func reloadRouter() error {
-	h, err := buildDynamicRouter()
+func (a *goBlog) reloadRouter() error {
+	h, err := a.buildDynamicRouter()
 	if err != nil {
 		return err
 	}
-	d.swapHandler(h)
-	purgeCache()
+	a.d.swapHandler(h)
+	a.cache.purge()
 	return nil
 }
 
@@ -157,107 +155,101 @@ const (
 	feedPath       = ".{feed:rss|json|atom}"
 )
 
-var (
-	privateMode        = false
-	privateModeHandler = []func(http.Handler) http.Handler{}
-
-	captchaHandler http.Handler
-
-	micropubRouter, indieAuthRouter, webmentionsRouter, notificationsRouter, activitypubRouter, editorRouter, commentsRouter, searchRouter *chi.Mux
-
-	setBlogMiddlewares     = map[string]func(http.Handler) http.Handler{}
-	sectionMiddlewares     = map[string]func(http.Handler) http.Handler{}
-	taxonomyMiddlewares    = map[string]func(http.Handler) http.Handler{}
-	photosMiddlewares      = map[string]func(http.Handler) http.Handler{}
-	searchMiddlewares      = map[string]func(http.Handler) http.Handler{}
-	customPagesMiddlewares = map[string]func(http.Handler) http.Handler{}
-	commentsMiddlewares    = map[string]func(http.Handler) http.Handler{}
-)
-
-func buildStaticHandlersRouters() error {
-	if pm := appConfig.PrivateMode; pm != nil && pm.Enabled {
-		privateMode = true
-		privateModeHandler = append(privateModeHandler, authMiddleware)
+func (a *goBlog) buildStaticHandlersRouters() error {
+	if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
+		a.privateMode = true
+		a.privateModeHandler = append(a.privateModeHandler, a.authMiddleware)
+	} else {
+		a.privateMode = false
+		a.privateModeHandler = []func(http.Handler) http.Handler{}
 	}
 
-	captchaHandler = captcha.Server(500, 250)
+	a.captchaHandler = captcha.Server(500, 250)
 
-	micropubRouter = chi.NewRouter()
-	micropubRouter.Use(checkIndieAuth)
-	micropubRouter.Get("/", serveMicropubQuery)
-	micropubRouter.Post("/", serveMicropubPost)
-	micropubRouter.Post(micropubMediaSubPath, serveMicropubMedia)
+	a.micropubRouter = chi.NewRouter()
+	a.micropubRouter.Use(a.checkIndieAuth)
+	a.micropubRouter.Get("/", a.serveMicropubQuery)
+	a.micropubRouter.Post("/", a.serveMicropubPost)
+	a.micropubRouter.Post(micropubMediaSubPath, a.serveMicropubMedia)
 
-	indieAuthRouter = chi.NewRouter()
-	indieAuthRouter.Get("/", indieAuthRequest)
-	indieAuthRouter.With(authMiddleware).Post("/accept", indieAuthAccept)
-	indieAuthRouter.Post("/", indieAuthVerification)
-	indieAuthRouter.Get("/token", indieAuthToken)
-	indieAuthRouter.Post("/token", indieAuthToken)
+	a.indieAuthRouter = chi.NewRouter()
+	a.indieAuthRouter.Get("/", a.indieAuthRequest)
+	a.indieAuthRouter.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
+	a.indieAuthRouter.Post("/", a.indieAuthVerification)
+	a.indieAuthRouter.Get("/token", a.indieAuthToken)
+	a.indieAuthRouter.Post("/token", a.indieAuthToken)
 
-	webmentionsRouter = chi.NewRouter()
-	if wm := appConfig.Webmention; wm != nil && !wm.DisableReceiving {
-		webmentionsRouter.Post("/", handleWebmention)
-		webmentionsRouter.Group(func(r chi.Router) {
+	a.webmentionsRouter = chi.NewRouter()
+	if wm := a.cfg.Webmention; wm != nil && !wm.DisableReceiving {
+		a.webmentionsRouter.Post("/", a.handleWebmention)
+		a.webmentionsRouter.Group(func(r chi.Router) {
 			// Authenticated routes
-			r.Use(authMiddleware)
-			r.Get("/", webmentionAdmin)
-			r.Get(paginationPath, webmentionAdmin)
-			r.Post("/delete", webmentionAdminDelete)
-			r.Post("/approve", webmentionAdminApprove)
-			r.Post("/reverify", webmentionAdminReverify)
+			r.Use(a.authMiddleware)
+			r.Get("/", a.webmentionAdmin)
+			r.Get(paginationPath, a.webmentionAdmin)
+			r.Post("/delete", a.webmentionAdminDelete)
+			r.Post("/approve", a.webmentionAdminApprove)
+			r.Post("/reverify", a.webmentionAdminReverify)
 		})
 	}
 
-	notificationsRouter = chi.NewRouter()
-	notificationsRouter.Use(authMiddleware)
-	notificationsRouter.Get("/", notificationsAdmin)
-	notificationsRouter.Get(paginationPath, notificationsAdmin)
-	notificationsRouter.Post("/delete", notificationsAdminDelete)
+	a.notificationsRouter = chi.NewRouter()
+	a.notificationsRouter.Use(a.authMiddleware)
+	a.notificationsRouter.Get("/", a.notificationsAdmin)
+	a.notificationsRouter.Get(paginationPath, a.notificationsAdmin)
+	a.notificationsRouter.Post("/delete", a.notificationsAdminDelete)
 
-	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
-		activitypubRouter = chi.NewRouter()
-		activitypubRouter.Post("/inbox/{blog}", apHandleInbox)
-		activitypubRouter.Post("/{blog}/inbox", apHandleInbox)
+	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
+		a.activitypubRouter = chi.NewRouter()
+		a.activitypubRouter.Post("/inbox/{blog}", a.apHandleInbox)
+		a.activitypubRouter.Post("/{blog}/inbox", a.apHandleInbox)
 	}
 
-	editorRouter = chi.NewRouter()
-	editorRouter.Use(authMiddleware)
-	editorRouter.Get("/", serveEditor)
-	editorRouter.Post("/", serveEditorPost)
+	a.editorRouter = chi.NewRouter()
+	a.editorRouter.Use(a.authMiddleware)
+	a.editorRouter.Get("/", a.serveEditor)
+	a.editorRouter.Post("/", a.serveEditorPost)
 
-	commentsRouter = chi.NewRouter()
-	commentsRouter.Use(privateModeHandler...)
-	commentsRouter.With(cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", serveComment)
-	commentsRouter.With(captchaMiddleware).Post("/", createComment)
-	commentsRouter.Group(func(r chi.Router) {
+	a.commentsRouter = chi.NewRouter()
+	a.commentsRouter.Use(a.privateModeHandler...)
+	a.commentsRouter.With(a.cache.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
+	a.commentsRouter.With(a.captchaMiddleware).Post("/", a.createComment)
+	a.commentsRouter.Group(func(r chi.Router) {
 		// Admin
-		r.Use(authMiddleware)
-		r.Get("/", commentsAdmin)
-		r.Get(paginationPath, commentsAdmin)
-		r.Post("/delete", commentsAdminDelete)
+		r.Use(a.authMiddleware)
+		r.Get("/", a.commentsAdmin)
+		r.Get(paginationPath, a.commentsAdmin)
+		r.Post("/delete", a.commentsAdminDelete)
 	})
 
-	searchRouter = chi.NewRouter()
-	searchRouter.Use(privateModeHandler...)
-	searchRouter.Use(cacheMiddleware)
-	searchRouter.Get("/", serveSearch)
-	searchRouter.Post("/", serveSearch)
+	a.searchRouter = chi.NewRouter()
+	a.searchRouter.Use(a.privateModeHandler...)
+	a.searchRouter.Use(a.cache.cacheMiddleware)
+	a.searchRouter.Get("/", a.serveSearch)
+	a.searchRouter.Post("/", a.serveSearch)
 	searchResultPath := "/" + searchPlaceholder
-	searchRouter.Get(searchResultPath, serveSearchResult)
-	searchRouter.Get(searchResultPath+feedPath, serveSearchResult)
-	searchRouter.Get(searchResultPath+paginationPath, serveSearchResult)
+	a.searchRouter.Get(searchResultPath, a.serveSearchResult)
+	a.searchRouter.Get(searchResultPath+feedPath, a.serveSearchResult)
+	a.searchRouter.Get(searchResultPath+paginationPath, a.serveSearchResult)
 
-	for blog, blogConfig := range appConfig.Blogs {
+	a.setBlogMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.sectionMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.taxonomyMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.photosMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.searchMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.customPagesMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.commentsMiddlewares = map[string]func(http.Handler) http.Handler{}
+
+	for blog, blogConfig := range a.cfg.Blogs {
 		sbm := middleware.WithValue(blogContextKey, blog)
-		setBlogMiddlewares[blog] = sbm
+		a.setBlogMiddlewares[blog] = sbm
 
-		blogPath := blogPath(blog)
+		blogPath := a.blogPath(blog)
 
 		for _, section := range blogConfig.Sections {
 			if section.Name != "" {
 				secPath := blogPath + "/" + section.Name
-				sectionMiddlewares[secPath] = middleware.WithValue(indexConfigKey, &indexConfig{
+				a.sectionMiddlewares[secPath] = middleware.WithValue(indexConfigKey, &indexConfig{
 					path:    secPath,
 					section: section,
 				})
@@ -267,12 +259,12 @@ func buildStaticHandlersRouters() error {
 		for _, taxonomy := range blogConfig.Taxonomies {
 			if taxonomy.Name != "" {
 				taxPath := blogPath + "/" + taxonomy.Name
-				taxonomyMiddlewares[taxPath] = middleware.WithValue(taxonomyContextKey, taxonomy)
+				a.taxonomyMiddlewares[taxPath] = middleware.WithValue(taxonomyContextKey, taxonomy)
 			}
 		}
 
 		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
-			photosMiddlewares[blog] = middleware.WithValue(indexConfigKey, &indexConfig{
+			a.photosMiddlewares[blog] = middleware.WithValue(indexConfigKey, &indexConfig{
 				path:            blogPath + blogConfig.Photos.Path,
 				parameter:       blogConfig.Photos.Parameter,
 				title:           blogConfig.Photos.Title,
@@ -282,15 +274,15 @@ func buildStaticHandlersRouters() error {
 		}
 
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+blogConfig.Search.Path)
+			a.searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+blogConfig.Search.Path)
 		}
 
 		for _, cp := range blogConfig.CustomPages {
-			customPagesMiddlewares[cp.Path] = middleware.WithValue(customPageContextKey, cp)
+			a.customPagesMiddlewares[cp.Path] = middleware.WithValue(customPageContextKey, cp)
 		}
 
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+"/comment")
+			a.commentsMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+"/comment")
 		}
 	}
 
@@ -301,127 +293,127 @@ var (
 	taxValueMiddlewares = map[string]func(http.Handler) http.Handler{}
 )
 
-func buildDynamicRouter() (*chi.Mux, error) {
+func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	r := chi.NewRouter()
 
 	// Basic middleware
-	r.Use(redirectShortDomain)
+	r.Use(a.redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.GetHead)
-	if !appConfig.Cache.Enable {
+	if !a.cfg.Cache.Enable {
 		r.Use(middleware.NoCache)
 	}
 
 	// No Index Header
-	if privateMode {
+	if a.privateMode {
 		r.Use(noIndexHeader)
 	}
 
 	// Login middleware etc.
-	r.Use(checkIsLogin)
-	r.Use(checkIsCaptcha)
-	r.Use(checkLoggedIn)
+	r.Use(a.checkIsLogin)
+	r.Use(a.checkIsCaptcha)
+	r.Use(a.checkLoggedIn)
 
 	// Logout
-	r.With(authMiddleware).Get("/login", serveLogin)
-	r.With(authMiddleware).Get("/logout", serveLogout)
+	r.With(a.authMiddleware).Get("/login", serveLogin)
+	r.With(a.authMiddleware).Get("/logout", a.serveLogout)
 
 	// Micropub
-	r.Mount(micropubPath, micropubRouter)
+	r.Mount(micropubPath, a.micropubRouter)
 
 	// IndieAuth
-	r.Mount("/indieauth", indieAuthRouter)
+	r.Mount("/indieauth", a.indieAuthRouter)
 
 	// ActivityPub and stuff
-	if ap := appConfig.ActivityPub; ap != nil && ap.Enabled {
-		r.Mount("/activitypub", activitypubRouter)
-		r.With(cacheMiddleware).Get("/.well-known/webfinger", apHandleWebfinger)
-		r.With(cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
-		r.With(cacheMiddleware).Get("/.well-known/nodeinfo", serveNodeInfoDiscover)
-		r.With(cacheMiddleware).Get("/nodeinfo", serveNodeInfo)
+	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
+		r.Mount("/activitypub", a.activitypubRouter)
+		r.With(a.cache.cacheMiddleware).Get("/.well-known/webfinger", a.apHandleWebfinger)
+		r.With(a.cache.cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
+		r.With(a.cache.cacheMiddleware).Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
+		r.With(a.cache.cacheMiddleware).Get("/nodeinfo", a.serveNodeInfo)
 	}
 
 	// Webmentions
-	r.Mount(webmentionPath, webmentionsRouter)
+	r.Mount(webmentionPath, a.webmentionsRouter)
 
 	// Notifications
-	r.Mount(notificationsPath, notificationsRouter)
+	r.Mount(notificationsPath, a.notificationsRouter)
 
 	// Posts
-	pp, err := allPostPaths(statusPublished)
+	pp, err := a.db.allPostPaths(statusPublished)
 	if err != nil {
 		return nil, err
 	}
 	r.Group(func(r chi.Router) {
-		r.Use(privateModeHandler...)
-		r.Use(checkActivityStreamsRequest, cacheMiddleware)
+		r.Use(a.privateModeHandler...)
+		r.Use(a.checkActivityStreamsRequest, a.cache.cacheMiddleware)
 		for _, path := range pp {
-			r.Get(path, servePost)
+			r.Get(path, a.servePost)
 		}
 	})
 
 	// Drafts
-	dp, err := allPostPaths(statusDraft)
+	dp, err := a.db.allPostPaths(statusDraft)
 	if err != nil {
 		return nil, err
 	}
 	r.Group(func(r chi.Router) {
-		r.Use(authMiddleware)
+		r.Use(a.authMiddleware)
 		for _, path := range dp {
-			r.Get(path, servePost)
+			r.Get(path, a.servePost)
 		}
 	})
 
 	// Post aliases
-	allPostAliases, err := allPostAliases()
+	allPostAliases, err := a.db.allPostAliases()
 	if err != nil {
 		return nil, err
 	}
 	r.Group(func(r chi.Router) {
-		r.Use(privateModeHandler...)
-		r.Use(cacheMiddleware)
+		r.Use(a.privateModeHandler...)
+		r.Use(a.cache.cacheMiddleware)
 		for _, path := range allPostAliases {
-			r.Get(path, servePostAlias)
+			r.Get(path, a.servePostAlias)
 		}
 	})
 
 	// Assets
-	for _, path := range allAssetPaths() {
-		r.Get(path, serveAsset)
+	for _, path := range a.allAssetPaths() {
+		r.Get(path, a.serveAsset)
 	}
 
 	// Static files
 	for _, path := range allStaticPaths() {
-		r.Get(path, serveStaticFile)
+		r.Get(path, a.serveStaticFile)
 	}
 
 	// Media files
-	r.With(privateModeHandler...).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, serveMediaFile)
+	r.With(a.privateModeHandler...).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, a.serveMediaFile)
 
 	// Captcha
-	r.Handle("/captcha/*", captchaHandler)
+	r.Handle("/captcha/*", a.captchaHandler)
 
 	// Short paths
-	r.With(privateModeHandler...).With(cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", redirectToLongPath)
+	r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
 
-	for blog, blogConfig := range appConfig.Blogs {
-		blogPath := blogPath(blog)
+	for blog, blogConfig := range a.cfg.Blogs {
+		blogPath := a.blogPath(blog)
 
-		sbm := setBlogMiddlewares[blog]
+		sbm := a.setBlogMiddlewares[blog]
 
 		// Sections
 		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(cacheMiddleware, sbm)
+			r.Use(a.privateModeHandler...)
+			r.Use(a.cache.cacheMiddleware, sbm)
 			for _, section := range blogConfig.Sections {
 				if section.Name != "" {
 					secPath := blogPath + "/" + section.Name
 					r.Group(func(r chi.Router) {
-						r.Use(sectionMiddlewares[secPath])
-						r.Get(secPath, serveIndex)
-						r.Get(secPath+feedPath, serveIndex)
-						r.Get(secPath+paginationPath, serveIndex)
+						r.Use(a.sectionMiddlewares[secPath])
+						r.Get(secPath, a.serveIndex)
+						r.Get(secPath+feedPath, a.serveIndex)
+						r.Get(secPath+paginationPath, a.serveIndex)
 					})
 				}
 			}
@@ -431,14 +423,14 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		for _, taxonomy := range blogConfig.Taxonomies {
 			if taxonomy.Name != "" {
 				taxPath := blogPath + "/" + taxonomy.Name
-				taxValues, err := allTaxonomyValues(blog, taxonomy.Name)
+				taxValues, err := a.db.allTaxonomyValues(blog, taxonomy.Name)
 				if err != nil {
 					return nil, err
 				}
 				r.Group(func(r chi.Router) {
-					r.Use(privateModeHandler...)
-					r.Use(cacheMiddleware, sbm)
-					r.With(taxonomyMiddlewares[taxPath]).Get(taxPath, serveTaxonomy)
+					r.Use(a.privateModeHandler...)
+					r.Use(a.cache.cacheMiddleware, sbm)
+					r.With(a.taxonomyMiddlewares[taxPath]).Get(taxPath, a.serveTaxonomy)
 					for _, tv := range taxValues {
 						r.Group(func(r chi.Router) {
 							vPath := taxPath + "/" + urlize(tv)
@@ -450,9 +442,9 @@ func buildDynamicRouter() (*chi.Mux, error) {
 								})
 							}
 							r.Use(taxValueMiddlewares[vPath])
-							r.Get(vPath, serveIndex)
-							r.Get(vPath+feedPath, serveIndex)
-							r.Get(vPath+paginationPath, serveIndex)
+							r.Get(vPath, a.serveIndex)
+							r.Get(vPath+feedPath, a.serveIndex)
+							r.Get(vPath+paginationPath, a.serveIndex)
 						})
 					}
 				})
@@ -462,75 +454,75 @@ func buildDynamicRouter() (*chi.Mux, error) {
 		// Photos
 		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
 			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware, sbm, photosMiddlewares[blog])
+				r.Use(a.privateModeHandler...)
+				r.Use(a.cache.cacheMiddleware, sbm, a.photosMiddlewares[blog])
 				photoPath := blogPath + blogConfig.Photos.Path
-				r.Get(photoPath, serveIndex)
-				r.Get(photoPath+feedPath, serveIndex)
-				r.Get(photoPath+paginationPath, serveIndex)
+				r.Get(photoPath, a.serveIndex)
+				r.Get(photoPath+feedPath, a.serveIndex)
+				r.Get(photoPath+paginationPath, a.serveIndex)
 			})
 		}
 
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
 			searchPath := blogPath + blogConfig.Search.Path
-			r.With(sbm, searchMiddlewares[blog]).Mount(searchPath, searchRouter)
+			r.With(sbm, a.searchMiddlewares[blog]).Mount(searchPath, a.searchRouter)
 		}
 
 		// Stats
 		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
 			statsPath := blogPath + blogConfig.BlogStats.Path
 			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware, sbm)
-				r.Get(statsPath, serveBlogStats)
-				r.Get(statsPath+".table.html", serveBlogStatsTable)
+				r.Use(a.privateModeHandler...)
+				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Get(statsPath, a.serveBlogStats)
+				r.Get(statsPath+".table.html", a.serveBlogStatsTable)
 			})
 		}
 
 		// Date archives
 		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(cacheMiddleware, sbm)
+			r.Use(a.privateModeHandler...)
+			r.Use(a.cache.cacheMiddleware, sbm)
 
 			yearRegex := `/{year:x|\d\d\d\d}`
 			monthRegex := `/{month:x|\d\d}`
 			dayRegex := `/{day:\d\d}`
 
 			yearPath := blogPath + yearRegex
-			r.Get(yearPath, serveDate)
-			r.Get(yearPath+feedPath, serveDate)
-			r.Get(yearPath+paginationPath, serveDate)
+			r.Get(yearPath, a.serveDate)
+			r.Get(yearPath+feedPath, a.serveDate)
+			r.Get(yearPath+paginationPath, a.serveDate)
 
 			monthPath := yearPath + monthRegex
-			r.Get(monthPath, serveDate)
-			r.Get(monthPath+feedPath, serveDate)
-			r.Get(monthPath+paginationPath, serveDate)
+			r.Get(monthPath, a.serveDate)
+			r.Get(monthPath+feedPath, a.serveDate)
+			r.Get(monthPath+paginationPath, a.serveDate)
 
 			dayPath := monthPath + dayRegex
-			r.Get(dayPath, serveDate)
-			r.Get(dayPath+feedPath, serveDate)
-			r.Get(dayPath+paginationPath, serveDate)
+			r.Get(dayPath, a.serveDate)
+			r.Get(dayPath+feedPath, a.serveDate)
+			r.Get(dayPath+paginationPath, a.serveDate)
 		})
 
 		// Blog
 		if !blogConfig.PostAsHome {
 			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
+				r.Use(a.privateModeHandler...)
 				r.Use(sbm)
-				r.With(checkActivityStreamsRequest, cacheMiddleware).Get(blogConfig.Path, serveHome)
-				r.With(cacheMiddleware).Get(blogConfig.Path+feedPath, serveHome)
-				r.With(cacheMiddleware).Get(blogPath+paginationPath, serveHome)
+				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogConfig.Path, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogConfig.Path+feedPath, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogPath+paginationPath, a.serveHome)
 			})
 		}
 
 		// Custom pages
 		for _, cp := range blogConfig.CustomPages {
-			scp := customPagesMiddlewares[cp.Path]
+			scp := a.customPagesMiddlewares[cp.Path]
 			if cp.Cache {
-				r.With(privateModeHandler...).With(cacheMiddleware, sbm, scp).Get(cp.Path, serveCustomPage)
+				r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware, sbm, scp).Get(cp.Path, a.serveCustomPage)
 			} else {
-				r.With(privateModeHandler...).With(sbm, scp).Get(cp.Path, serveCustomPage)
+				r.With(a.privateModeHandler...).With(sbm, scp).Get(cp.Path, a.serveCustomPage)
 			}
 		}
 
@@ -540,50 +532,50 @@ func buildDynamicRouter() (*chi.Mux, error) {
 			if randomPath == "" {
 				randomPath = "/random"
 			}
-			r.With(privateModeHandler...).With(sbm).Get(blogPath+randomPath, redirectToRandomPost)
+			r.With(a.privateModeHandler...).With(sbm).Get(blogPath+randomPath, a.redirectToRandomPost)
 		}
 
 		// Editor
-		r.With(sbm).Mount(blogPath+"/editor", editorRouter)
+		r.With(sbm).Mount(blogPath+"/editor", a.editorRouter)
 
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
 			commentsPath := blogPath + "/comment"
-			r.With(sbm, commentsMiddlewares[blog]).Mount(commentsPath, commentsRouter)
+			r.With(sbm, a.commentsMiddlewares[blog]).Mount(commentsPath, a.commentsRouter)
 		}
 
 		// Blogroll
 		if brConfig := blogConfig.Blogroll; brConfig != nil && brConfig.Enabled {
 			brPath := blogPath + brConfig.Path
 			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(cacheMiddleware, sbm)
-				r.Get(brPath, serveBlogroll)
-				r.Get(brPath+".opml", serveBlogrollExport)
+				r.Use(a.privateModeHandler...)
+				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Get(brPath, a.serveBlogroll)
+				r.Get(brPath+".opml", a.serveBlogrollExport)
 			})
 		}
 	}
 
 	// Sitemap
-	r.With(privateModeHandler...).With(cacheMiddleware).Get(sitemapPath, serveSitemap)
+	r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
 	// Robots.txt - doesn't need cache, because it's too simple
-	if !privateMode {
-		r.Get("/robots.txt", serveRobotsTXT)
+	if !a.privateMode {
+		r.Get("/robots.txt", a.serveRobotsTXT)
 	} else {
 		r.Get("/robots.txt", servePrivateRobotsTXT)
 	}
 
 	// Check redirects, then serve 404
-	r.With(cacheMiddleware, checkRegexRedirects).NotFound(serve404)
+	r.With(a.cache.cacheMiddleware, a.checkRegexRedirects).NotFound(a.serve404)
 
-	r.MethodNotAllowed(serveNotAllowed)
+	r.MethodNotAllowed(a.serveNotAllowed)
 
 	return r, nil
 }
 
-func blogPath(blog string) string {
-	blogPath := appConfig.Blogs[blog].Path
+func (a *goBlog) blogPath(blog string) string {
+	blogPath := a.cfg.Blogs[blog].Path
 	if blogPath == "/" {
 		return ""
 	}
@@ -595,20 +587,20 @@ const pathContextKey requestContextKey = "httpPath"
 
 var cspDomains = ""
 
-func refreshCSPDomains() {
+func (a *goBlog) refreshCSPDomains() {
 	cspDomains = ""
-	if mp := appConfig.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
+	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
 			cspDomains += " " + u.Hostname()
 		}
 	}
-	if len(appConfig.Server.CSPDomains) > 0 {
-		cspDomains += " " + strings.Join(appConfig.Server.CSPDomains, " ")
+	if len(a.cfg.Server.CSPDomains) > 0 {
+		cspDomains += " " + strings.Join(a.cfg.Server.CSPDomains, " ")
 	}
 }
 
-func securityHeaders(next http.Handler) http.Handler {
-	refreshCSPDomains()
+func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
+	a.refreshCSPDomains()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")
 		w.Header().Set("Referrer-Policy", "no-referrer")
@@ -616,8 +608,8 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
-		if appConfig.Server.Tor && torAddress != "" {
-			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", torAddress, r.RequestURI))
+		if a.cfg.Server.Tor && a.torAddress != "" {
+			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI))
 		}
 		next.ServeHTTP(w, r)
 	})

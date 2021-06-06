@@ -13,40 +13,39 @@ import (
 
 const telegramBaseURL = "https://api.telegram.org/bot"
 
-func initTelegram() {
+func (a *goBlog) initTelegram() {
 	enable := false
-	for _, b := range appConfig.Blogs {
+	for _, b := range a.cfg.Blogs {
 		if tg := b.Telegram; tg != nil && tg.Enabled && tg.BotToken != "" && tg.ChatID != "" {
 			enable = true
 		}
 	}
 	if enable {
-		postPostHooks = append(postPostHooks, func(p *post) {
+		a.pPostHooks = append(a.pPostHooks, func(p *post) {
 			if p.isPublishedSectionPost() {
-				p.tgPost()
+				tgPost(a.cfg.Blogs[p.Blog].Telegram, p.title(), a.fullPostURL(p), a.shortPostURL(p))
 			}
 		})
 	}
 }
 
-func (p *post) tgPost() {
-	tg := appConfig.Blogs[p.Blog].Telegram
+func tgPost(tg *configTelegram, title, fullURL, shortURL string) {
 	if tg == nil || !tg.Enabled || tg.BotToken == "" || tg.ChatID == "" {
 		return
 	}
 	replacer := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
 	var message bytes.Buffer
-	if title := p.title(); title != "" {
+	if title != "" {
 		message.WriteString(replacer.Replace(title))
 		message.WriteString("\n\n")
 	}
 	if tg.InstantViewHash != "" {
-		message.WriteString("<a href=\"https://t.me/iv?rhash=" + tg.InstantViewHash + "&url=" + url.QueryEscape(p.fullURL()) + "\">")
-		message.WriteString(replacer.Replace(p.shortURL()))
+		message.WriteString("<a href=\"https://t.me/iv?rhash=" + tg.InstantViewHash + "&url=" + url.QueryEscape(fullURL) + "\">")
+		message.WriteString(replacer.Replace(shortURL))
 		message.WriteString("</a>")
 	} else {
-		message.WriteString("<a href=\"" + p.shortURL() + "\">")
-		message.WriteString(replacer.Replace(p.shortURL()))
+		message.WriteString("<a href=\"" + shortURL + "\">")
+		message.WriteString(replacer.Replace(shortURL))
 		message.WriteString("</a>")
 	}
 	if err := sendTelegramMessage(message.String(), "HTML", tg.BotToken, tg.ChatID); err != nil {
