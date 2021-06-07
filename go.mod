@@ -2,9 +2,6 @@ module git.jlel.se/jlelse/GoBlog
 
 go 1.16
 
-// master
-replace github.com/yuin/goldmark-emoji => github.com/jlelse/goldmark-emoji v1.0.2-0.20210524171342-a1615b7be38a
-
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
@@ -59,7 +56,8 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.3.7
-	github.com/yuin/goldmark-emoji v1.0.1
+	// master
+	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5

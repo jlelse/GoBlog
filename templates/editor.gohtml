@@ -8,7 +8,7 @@
     <h2>{{ string .Blog.Lang "create" }}</h2>
     <form class="fw-form p" method="post">
       <input type="hidden" name="h" value="entry">
-      <textarea name="content" class="monospace h400p">---
+      <textarea name="content" class="monospace h400p formcache" id="create-input">---
 status: draft
 blog: {{ .BlogString }}
 section: 
@@ -60,6 +60,7 @@ tags:
       </select>
       <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
+    <script defer src="{{ asset "js/formcache.js" }}"></script>
   </main>
 {{ end }}
 
