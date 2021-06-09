@@ -23,5 +23,6 @@
     {{ include "header" . }}
     {{ block "main" . }}{{ end }}
     {{ include "footer" . }}
+    <script defer src="{{ asset "js/easteregg.js" }}"></script>
   </html>
 {{ end }}

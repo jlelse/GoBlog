@@ -223,6 +223,14 @@ footer {
   text-align: right;
 }
 
+.turn-around {
+  transform: rotate(180deg);
+}
+
+.egg-anim {
+  transition: transform 2s ease;
+}
+
 /* Print */
 @media print {
   html {
