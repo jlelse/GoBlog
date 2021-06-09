@@ -223,15 +223,17 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 	})
 
 	a.searchRouter = chi.NewRouter()
-	a.searchRouter.Use(a.privateModeHandler...)
-	a.searchRouter.Use(a.cache.cacheMiddleware)
-	a.searchRouter.Get("/", a.serveSearch)
-	a.searchRouter.Post("/", a.serveSearch)
-	a.searchRouter.Get("/opensearch.xml", a.serveOpenSearch)
-	searchResultPath := "/" + searchPlaceholder
-	a.searchRouter.Get(searchResultPath, a.serveSearchResult)
-	a.searchRouter.Get(searchResultPath+feedPath, a.serveSearchResult)
-	a.searchRouter.Get(searchResultPath+paginationPath, a.serveSearchResult)
+	a.searchRouter.Group(func(r chi.Router) {
+		r.Use(a.privateModeHandler...)
+		r.Use(a.cache.cacheMiddleware)
+		r.Get("/", a.serveSearch)
+		r.Post("/", a.serveSearch)
+		searchResultPath := "/" + searchPlaceholder
+		r.Get(searchResultPath, a.serveSearchResult)
+		r.Get(searchResultPath+feedPath, a.serveSearchResult)
+		r.Get(searchResultPath+paginationPath, a.serveSearchResult)
+	})
+	a.searchRouter.With(a.cache.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
 
 	a.setBlogMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.sectionMiddlewares = map[string]func(http.Handler) http.Handler{}
