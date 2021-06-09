@@ -20,6 +20,10 @@
     <link rel="me" href="{{ . }}" />
     {{ end }}
     {{ end }}
+    {{ $os := opensearch .Blog }}
+    {{ if $os }}
+      <link rel="search" type="application/opensearchdescription+xml" href="{{ $os }}" title="{{ .Blog.Title }}" />
+    {{ end }}
     {{ include "header" . }}
     {{ block "main" . }}{{ end }}
     {{ include "footer" . }}

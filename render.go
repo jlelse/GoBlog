@@ -180,7 +180,8 @@ func (a *goBlog) initRendering() error {
 			}
 			return
 		},
-		"geotitle": a.db.geoTitle,
+		"geotitle":   a.db.geoTitle,
+		"opensearch": openSearchUrl,
 	}
 
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))

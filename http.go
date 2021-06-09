@@ -227,6 +227,7 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 	a.searchRouter.Use(a.cache.cacheMiddleware)
 	a.searchRouter.Get("/", a.serveSearch)
 	a.searchRouter.Post("/", a.serveSearch)
+	a.searchRouter.Get("/opensearch.xml", a.serveOpenSearch)
 	searchResultPath := "/" + searchPlaceholder
 	a.searchRouter.Get(searchResultPath, a.serveSearchResult)
 	a.searchRouter.Get(searchResultPath+feedPath, a.serveSearchResult)
