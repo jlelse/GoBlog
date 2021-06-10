@@ -113,7 +113,7 @@ func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
 	if ms != nil && ms.MediaURL != "" {
 		return ms.MediaURL + loc, nil
 	}
-	return a.cfg.Server.PublicAddress + loc, nil
+	return a.getFullAddress(loc), nil
 }
 
 func (config *configMicropubMedia) uploadToBunny(filename string, f io.Reader) (location string, err error) {

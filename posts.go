@@ -53,7 +53,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
-		if r.URL.Path == a.blogPath(p.Blog) {
+		if r.URL.Path == a.getRelativePath(p.Blog, "") {
 			a.serveActivityStreams(p.Blog, w, r)
 			return
 		}
@@ -116,7 +116,7 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path: a.blogPath(blog),
+		path: a.getRelativePath(blog, ""),
 	})))
 }
 
@@ -136,7 +136,6 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var title, dPath strings.Builder
-	dPath.WriteString(a.blogPath(r.Context().Value(blogContextKey).(string)) + "/")
 	if year != 0 {
 		ys := fmt.Sprintf("%0004d", year)
 		title.WriteString(ys)
@@ -157,7 +156,7 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		dPath.WriteString(fmt.Sprintf("/%02d", day))
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:  dPath.String(),
+		path:  a.getRelativePath(r.Context().Value(blogContextKey).(string), dPath.String()),
 		year:  year,
 		month: month,
 		day:   day,
@@ -257,7 +256,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	if prevPage < 2 {
 		prevPath = path
 	} else {
-		prevPath = fmt.Sprintf("%s/page/%d", path, prevPage)
+		prevPath = fmt.Sprintf("%s/page/%d", strings.TrimSuffix(path, "/"), prevPage)
 	}
 	hasNext, _ = p.HasNext()
 	if hasNext {
@@ -265,23 +264,23 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	} else {
 		nextPage, _ = p.Page()
 	}
-	nextPath = fmt.Sprintf("%s/page/%d", path, nextPage)
+	nextPath = fmt.Sprintf("%s/page/%d", strings.TrimSuffix(path, "/"), nextPage)
 	summaryTemplate := ic.summaryTemplate
 	if summaryTemplate == "" {
 		summaryTemplate = templateSummary
 	}
 	a.render(w, r, templateIndex, &renderData{
 		BlogString: blog,
-		Canonical:  a.cfg.Server.PublicAddress + path,
+		Canonical:  a.getFullAddress(path),
 		Data: map[string]interface{}{
 			"Title":           title,
 			"Description":     description,
 			"Posts":           posts,
 			"HasPrev":         hasPrev,
 			"HasNext":         hasNext,
-			"First":           slashIfEmpty(path),
-			"Prev":            slashIfEmpty(prevPath),
-			"Next":            slashIfEmpty(nextPath),
+			"First":           path,
+			"Prev":            prevPath,
+			"Next":            nextPath,
 			"SummaryTemplate": summaryTemplate,
 		},
 	})

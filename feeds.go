@@ -33,7 +33,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
-		Link:        &feeds.Link{Href: a.cfg.Server.PublicAddress + strings.TrimSuffix(r.URL.Path, "."+string(f))},
+		Link:        &feeds.Link{Href: a.getFullAddress(strings.TrimSuffix(r.URL.Path, "."+string(f)))},
 		Created:     now,
 		Author: &feeds.Author{
 			Name:  a.cfg.User.Name,

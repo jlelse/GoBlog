@@ -28,7 +28,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(contentType, contentTypeJSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		b, _ := json.Marshal(&micropubConfig{
-			MediaEndpoint: a.cfg.Server.PublicAddress + micropubPath + micropubMediaSubPath,
+			MediaEndpoint: a.getFullAddress(micropubPath + micropubMediaSubPath),
 		})
 		_, _ = writeMinified(w, contentTypeJSON, b)
 	case "source":

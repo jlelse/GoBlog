@@ -20,10 +20,11 @@ func (a *goBlog) initBlogStats() {
 
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	canonical := a.blogPath(blog) + a.cfg.Blogs[blog].BlogStats.Path
+	bc := a.cfg.Blogs[blog]
+	canonical := bc.getRelativePath(bc.BlogStats.Path)
 	a.render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,
-		Canonical:  canonical,
+		Canonical:  a.getFullAddress(canonical),
 		Data: map[string]interface{}{
 			"TableUrl": canonical + ".table.html",
 		},

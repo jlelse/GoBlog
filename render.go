@@ -141,7 +141,7 @@ func (a *goBlog) initRendering() error {
 		"urlize": urlize,
 		"sort":   sortedStrings,
 		"absolute": func(path string) string {
-			return a.cfg.Server.PublicAddress + path
+			return a.getFullAddress(path)
 		},
 		"blogrelative": func(blog *configBlog, path string) string {
 			return blog.getRelativePath(path)

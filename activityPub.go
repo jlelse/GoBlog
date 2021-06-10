@@ -409,7 +409,7 @@ func (a *goBlog) apNewID(blog *configBlog) (hash string, url string) {
 }
 
 func (a *goBlog) apIri(b *configBlog) string {
-	return a.cfg.Server.PublicAddress + b.Path
+	return a.getFullAddress(b.Path)
 }
 
 func apRequestIsSuccess(code int) bool {

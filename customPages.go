@@ -15,7 +15,7 @@ func (a *goBlog) serveCustomPage(w http.ResponseWriter, r *http.Request) {
 	}
 	a.render(w, r, page.Template, &renderData{
 		BlogString: r.Context().Value(blogContextKey).(string),
-		Canonical:  a.cfg.Server.PublicAddress + page.Path,
+		Canonical:  a.getFullAddress(page.Path),
 		Data:       page.Data,
 	})
 }

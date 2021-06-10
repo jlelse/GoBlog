@@ -7,7 +7,7 @@ import (
 )
 
 func (a *goBlog) healthcheck() bool {
-	req, err := http.NewRequest(http.MethodGet, a.cfg.Server.PublicAddress+"/ping", nil)
+	req, err := http.NewRequest(http.MethodGet, a.getFullAddress("/ping"), nil)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false

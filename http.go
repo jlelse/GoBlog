@@ -247,11 +247,9 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 		sbm := middleware.WithValue(blogContextKey, blog)
 		a.setBlogMiddlewares[blog] = sbm
 
-		blogPath := a.blogPath(blog)
-
 		for _, section := range blogConfig.Sections {
 			if section.Name != "" {
-				secPath := blogPath + "/" + section.Name
+				secPath := blogConfig.getRelativePath(section.Name)
 				a.sectionMiddlewares[secPath] = middleware.WithValue(indexConfigKey, &indexConfig{
 					path:    secPath,
 					section: section,
@@ -261,14 +259,14 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 
 		for _, taxonomy := range blogConfig.Taxonomies {
 			if taxonomy.Name != "" {
-				taxPath := blogPath + "/" + taxonomy.Name
+				taxPath := blogConfig.getRelativePath(taxonomy.Name)
 				a.taxonomyMiddlewares[taxPath] = middleware.WithValue(taxonomyContextKey, taxonomy)
 			}
 		}
 
 		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
 			a.photosMiddlewares[blog] = middleware.WithValue(indexConfigKey, &indexConfig{
-				path:            blogPath + blogConfig.Photos.Path,
+				path:            blogConfig.getRelativePath(blogConfig.Photos.Path),
 				parameter:       blogConfig.Photos.Parameter,
 				title:           blogConfig.Photos.Title,
 				description:     blogConfig.Photos.Description,
@@ -277,7 +275,7 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 		}
 
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			a.searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+blogConfig.Search.Path)
+			a.searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogConfig.getRelativePath(blogConfig.Search.Path))
 		}
 
 		for _, cp := range blogConfig.CustomPages {
@@ -285,7 +283,7 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 		}
 
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			a.commentsMiddlewares[blog] = middleware.WithValue(pathContextKey, blogPath+"/comment")
+			a.commentsMiddlewares[blog] = middleware.WithValue(pathContextKey, blogConfig.getRelativePath("/comment"))
 		}
 	}
 
@@ -401,8 +399,6 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
 
 	for blog, blogConfig := range a.cfg.Blogs {
-		blogPath := a.blogPath(blog)
-
 		sbm := a.setBlogMiddlewares[blog]
 
 		// Sections
@@ -411,7 +407,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			r.Use(a.cache.cacheMiddleware, sbm)
 			for _, section := range blogConfig.Sections {
 				if section.Name != "" {
-					secPath := blogPath + "/" + section.Name
+					secPath := blogConfig.getRelativePath(section.Name)
 					r.Group(func(r chi.Router) {
 						r.Use(a.sectionMiddlewares[secPath])
 						r.Get(secPath, a.serveIndex)
@@ -425,7 +421,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 		// Taxonomies
 		for _, taxonomy := range blogConfig.Taxonomies {
 			if taxonomy.Name != "" {
-				taxPath := blogPath + "/" + taxonomy.Name
+				taxPath := blogConfig.getRelativePath(taxonomy.Name)
 				taxValues, err := a.db.allTaxonomyValues(blog, taxonomy.Name)
 				if err != nil {
 					return nil, err
@@ -459,7 +455,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm, a.photosMiddlewares[blog])
-				photoPath := blogPath + blogConfig.Photos.Path
+				photoPath := blogConfig.getRelativePath(blogConfig.Photos.Path)
 				r.Get(photoPath, a.serveIndex)
 				r.Get(photoPath+feedPath, a.serveIndex)
 				r.Get(photoPath+paginationPath, a.serveIndex)
@@ -468,13 +464,13 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 
 		// Search
 		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			searchPath := blogPath + blogConfig.Search.Path
+			searchPath := blogConfig.getRelativePath(blogConfig.Search.Path)
 			r.With(sbm, a.searchMiddlewares[blog]).Mount(searchPath, a.searchRouter)
 		}
 
 		// Stats
 		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
-			statsPath := blogPath + blogConfig.BlogStats.Path
+			statsPath := blogConfig.getRelativePath(blogConfig.BlogStats.Path)
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm)
@@ -492,7 +488,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			monthRegex := `/{month:x|\d\d}`
 			dayRegex := `/{day:\d\d}`
 
-			yearPath := blogPath + yearRegex
+			yearPath := blogConfig.getRelativePath(yearRegex)
 			r.Get(yearPath, a.serveDate)
 			r.Get(yearPath+feedPath, a.serveDate)
 			r.Get(yearPath+paginationPath, a.serveDate)
@@ -514,8 +510,8 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 				r.Use(a.privateModeHandler...)
 				r.Use(sbm)
 				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogConfig.Path, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogConfig.Path+feedPath, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogPath+paginationPath, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(feedPath), a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
 			})
 		}
 
@@ -535,21 +531,20 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			if randomPath == "" {
 				randomPath = "/random"
 			}
-			r.With(a.privateModeHandler...).With(sbm).Get(blogPath+randomPath, a.redirectToRandomPost)
+			r.With(a.privateModeHandler...).With(sbm).Get(blogConfig.getRelativePath(randomPath), a.redirectToRandomPost)
 		}
 
 		// Editor
-		r.With(sbm).Mount(blogPath+"/editor", a.editorRouter)
+		r.With(sbm).Mount(blogConfig.getRelativePath("/editor"), a.editorRouter)
 
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsPath := blogPath + "/comment"
-			r.With(sbm, a.commentsMiddlewares[blog]).Mount(commentsPath, a.commentsRouter)
+			r.With(sbm, a.commentsMiddlewares[blog]).Mount(blogConfig.getRelativePath("/comment"), a.commentsRouter)
 		}
 
 		// Blogroll
 		if brConfig := blogConfig.Blogroll; brConfig != nil && brConfig.Enabled {
-			brPath := blogPath + brConfig.Path
+			brPath := blogConfig.getRelativePath(brConfig.Path)
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm)
@@ -575,14 +570,6 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	return r, nil
-}
-
-func (a *goBlog) blogPath(blog string) string {
-	blogPath := a.cfg.Blogs[blog].Path
-	if blogPath == "/" {
-		return ""
-	}
-	return blogPath
 }
 
 const blogContextKey requestContextKey = "blog"

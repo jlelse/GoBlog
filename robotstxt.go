@@ -6,7 +6,7 @@ import (
 )
 
 func (a *goBlog) serveRobotsTXT(w http.ResponseWriter, r *http.Request) {
-	_, _ = w.Write([]byte(fmt.Sprintf("User-agent: *\nSitemap: %v", a.cfg.Server.PublicAddress+sitemapPath)))
+	_, _ = w.Write([]byte(fmt.Sprintf("User-agent: *\nSitemap: %v", a.getFullAddress(sitemapPath))))
 }
 
 func servePrivateRobotsTXT(w http.ResponseWriter, r *http.Request) {

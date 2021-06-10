@@ -97,8 +97,8 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 			"Mentions": mentions,
 			"HasPrev":  hasPrev,
 			"HasNext":  hasNext,
-			"Prev":     slashIfEmpty(prevPath) + query,
-			"Next":     slashIfEmpty(nextPath) + query,
+			"Prev":     prevPath + query,
+			"Next":     nextPath + query,
 		},
 	})
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func (a *goBlog) fullPostURL(p *post) string {
-	return a.cfg.Server.PublicAddress + p.Path
+	return a.getFullAddress(p.Path)
 }
 
 func (a *goBlog) shortPostURL(p *post) string {
@@ -20,7 +20,7 @@ func (a *goBlog) shortPostURL(p *post) string {
 	if a.cfg.Server.ShortPublicAddress != "" {
 		return a.cfg.Server.ShortPublicAddress + s
 	}
-	return a.cfg.Server.PublicAddress + s
+	return a.getFullAddress(s)
 }
 
 func (p *post) firstParameter(parameter string) (result string) {

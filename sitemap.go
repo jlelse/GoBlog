@@ -17,18 +17,14 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	// Blogs
 	for b, bc := range a.cfg.Blogs {
 		// Blog
-		blogPath := bc.Path
-		if blogPath == "/" {
-			blogPath = ""
-		}
 		sm.Add(&sitemap.URL{
-			Loc: a.cfg.Server.PublicAddress + blogPath,
+			Loc: a.getFullAddress(bc.Path),
 		})
 		// Sections
 		for _, section := range bc.Sections {
 			if section.Name != "" {
 				sm.Add(&sitemap.URL{
-					Loc: a.cfg.Server.PublicAddress + bc.getRelativePath("/"+section.Name),
+					Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
 				})
 			}
 		}
@@ -38,13 +34,13 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 				// Taxonomy
 				taxPath := bc.getRelativePath("/" + taxonomy.Name)
 				sm.Add(&sitemap.URL{
-					Loc: a.cfg.Server.PublicAddress + taxPath,
+					Loc: a.getFullAddress(taxPath),
 				})
 				// Values
 				if taxValues, err := a.db.allTaxonomyValues(b, taxonomy.Name); err == nil {
 					for _, tv := range taxValues {
 						sm.Add(&sitemap.URL{
-							Loc: a.cfg.Server.PublicAddress + taxPath + "/" + urlize(tv),
+							Loc: a.getFullAddress(taxPath + "/" + urlize(tv)),
 						})
 					}
 				}
@@ -58,7 +54,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 				yearPath := bc.getRelativePath("/" + fmt.Sprintf("%0004d", d.year))
 				if !already[yearPath] {
 					sm.Add(&sitemap.URL{
-						Loc: a.cfg.Server.PublicAddress + yearPath,
+						Loc: a.getFullAddress(yearPath),
 					})
 					already[yearPath] = true
 				}
@@ -66,7 +62,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
 				if !already[monthPath] {
 					sm.Add(&sitemap.URL{
-						Loc: a.cfg.Server.PublicAddress + monthPath,
+						Loc: a.getFullAddress(monthPath),
 					})
 					already[monthPath] = true
 				}
@@ -74,15 +70,15 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
 				if !already[dayPath] {
 					sm.Add(&sitemap.URL{
-						Loc: a.cfg.Server.PublicAddress + dayPath,
+						Loc: a.getFullAddress(dayPath),
 					})
 					already[dayPath] = true
 				}
 				// Generic month
-				genericMonthPath := blogPath + "/x/" + fmt.Sprintf("%02d", d.month)
+				genericMonthPath := bc.getRelativePath("/x/" + fmt.Sprintf("%02d", d.month))
 				if !already[genericMonthPath] {
 					sm.Add(&sitemap.URL{
-						Loc: a.cfg.Server.PublicAddress + genericMonthPath,
+						Loc: a.getFullAddress(genericMonthPath),
 					})
 					already[genericMonthPath] = true
 				}
@@ -90,7 +86,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
 				if !already[genericMonthDayPath] {
 					sm.Add(&sitemap.URL{
-						Loc: a.cfg.Server.PublicAddress + genericMonthDayPath,
+						Loc: a.getFullAddress(genericMonthDayPath),
 					})
 					already[genericMonthDayPath] = true
 				}
@@ -99,31 +95,31 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 		// Photos
 		if bc.Photos != nil && bc.Photos.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.cfg.Server.PublicAddress + bc.getRelativePath(bc.Photos.Path),
+				Loc: a.getFullAddress(bc.getRelativePath(bc.Photos.Path)),
 			})
 		}
 		// Search
 		if bc.Search != nil && bc.Search.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.cfg.Server.PublicAddress + bc.getRelativePath(bc.Search.Path),
+				Loc: a.getFullAddress(bc.getRelativePath(bc.Search.Path)),
 			})
 		}
 		// Stats
 		if bc.BlogStats != nil && bc.BlogStats.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.cfg.Server.PublicAddress + bc.getRelativePath(bc.BlogStats.Path),
+				Loc: a.getFullAddress(bc.getRelativePath(bc.BlogStats.Path)),
 			})
 		}
 		// Blogroll
 		if bc.Blogroll != nil && bc.Blogroll.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.cfg.Server.PublicAddress + bc.getRelativePath(bc.Blogroll.Path),
+				Loc: a.getFullAddress(bc.getRelativePath(bc.Blogroll.Path)),
 			})
 		}
 		// Custom pages
 		for _, cp := range bc.CustomPages {
 			sm.Add(&sitemap.URL{
-				Loc: a.cfg.Server.PublicAddress + cp.Path,
+				Loc: a.getFullAddress(cp.Path),
 			})
 		}
 	}

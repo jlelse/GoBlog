@@ -77,8 +77,8 @@ func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 			"Comments": comments,
 			"HasPrev":  hasPrev,
 			"HasNext":  hasNext,
-			"Prev":     slashIfEmpty(prevPath),
-			"Next":     slashIfEmpty(nextPath),
+			"Prev":     prevPath,
+			"Next":     nextPath,
 		},
 	})
 }

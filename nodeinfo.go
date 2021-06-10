@@ -9,7 +9,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(map[string]interface{}{
 		"links": []map[string]interface{}{
 			{
-				"href": a.cfg.Server.PublicAddress + "/nodeinfo",
+				"href": a.getFullAddress("/nodeinfo"),
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
 			},
 		},

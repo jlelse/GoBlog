@@ -158,8 +158,8 @@ func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 			"Notifications": notifications,
 			"HasPrev":       hasPrev,
 			"HasNext":       hasNext,
-			"Prev":          slashIfEmpty(prevPath),
-			"Next":          slashIfEmpty(nextPath),
+			"Prev":          prevPath,
+			"Next":          nextPath,
 		},
 	})
 }

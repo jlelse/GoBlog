@@ -106,13 +106,6 @@ func unescapedPath(p string) string {
 	return p
 }
 
-func slashIfEmpty(s string) string {
-	if s == "" {
-		return "/"
-	}
-	return s
-}
-
 type stringGroup struct {
 	Identifier string
 	Strings    []string

@@ -25,7 +25,7 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	a.render(w, r, templateSearch, &renderData{
 		BlogString: blog,
-		Canonical:  a.cfg.Server.PublicAddress + servePath,
+		Canonical:  a.getFullAddress(servePath),
 	})
 }
 

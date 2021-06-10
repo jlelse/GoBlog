@@ -127,7 +127,7 @@ func (a *goBlog) toASNote(p *post) *asNote {
 			as.Tag = append(as.Tag, &asTag{
 				Type: "Hashtag",
 				Name: tag,
-				Href: a.cfg.Server.PublicAddress + a.cfg.Blogs[p.Blog].getRelativePath(fmt.Sprintf("/%s/%s", tagTax, urlize(tag))),
+				Href: a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))),
 			})
 		}
 	}
@@ -165,7 +165,7 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 		Name:              b.Title,
 		Summary:           b.Description,
 		PreferredUsername: blog,
-		Inbox:             a.cfg.Server.PublicAddress + "/activitypub/inbox/" + blog,
+		Inbox:             a.getFullAddress("/activitypub/inbox/" + blog),
 		PublicKey: &asPublicKey{
 			Owner: a.apIri(b),
 			ID:    a.apIri(b) + "#main-key",

@@ -14,7 +14,7 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 	}
 	a.render(w, r, templateTaxonomy, &renderData{
 		BlogString: blog,
-		Canonical:  a.cfg.Server.PublicAddress + r.URL.Path,
+		Canonical:  a.getFullAddress(r.URL.Path),
 		Data: map[string]interface{}{
 			"Taxonomy":    tax,
 			"ValueGroups": groupStrings(allValues),
