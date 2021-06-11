@@ -65,7 +65,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		canonical = a.fullPostURL(p)
 	}
 	template := templatePost
-	if p.Path == a.cfg.Blogs[p.Blog].Path {
+	if p.Path == a.getRelativePath(p.Blog, "") {
 		template = templateStaticHome
 	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))

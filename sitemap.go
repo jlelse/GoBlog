@@ -18,7 +18,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	for b, bc := range a.cfg.Blogs {
 		// Blog
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.Path),
+			Loc: a.getFullAddress(bc.getRelativePath("")),
 		})
 		// Sections
 		for _, section := range bc.Sections {

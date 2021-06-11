@@ -89,7 +89,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 		}
 		var pathBuffer bytes.Buffer
 		err = pathTmpl.Execute(&pathBuffer, map[string]interface{}{
-			"BlogPath": a.cfg.Blogs[p.Blog].Path,
+			"BlogPath": a.getRelativePath(p.Blog, ""),
 			"Year":     published.Year(),
 			"Month":    int(published.Month()),
 			"Day":      published.Day(),

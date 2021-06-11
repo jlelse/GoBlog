@@ -509,9 +509,10 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(sbm)
-				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogConfig.Path, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(feedPath), a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
+				blogBasePath := blogConfig.getRelativePath("")
+				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogBasePath, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogBasePath+feedPath, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogBasePath+paginationPath, a.serveHome)
 			})
 		}
 
