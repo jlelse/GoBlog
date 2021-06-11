@@ -37,7 +37,7 @@ require (
 	github.com/lopezator/migrator v0.3.0
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7
-	github.com/microcosm-cc/bluemonday v1.0.9
+	github.com/microcosm-cc/bluemonday v1.0.10
 	github.com/miekg/dns v1.1.42 // indirect
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
@@ -63,7 +63,7 @@ require (
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
+	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
