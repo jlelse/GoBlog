@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"strings"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
 	"github.com/PuerkitoBio/goquery"
@@ -62,7 +63,7 @@ func (a *goBlog) renderText(s string) string {
 	if err != nil {
 		return ""
 	}
-	return d.Text()
+	return strings.TrimSpace(d.Text())
 }
 
 // Extensions etc...
@@ -104,7 +105,7 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 		_, _ = w.Write(util.EscapeHTML(newDestination))
 		_, _ = w.WriteRune('"')
 		// Open external links (links that start with "http") in new tab
-		if bytes.HasPrefix(n.Destination, []byte("http")) {
+		if isAbsoluteURL(string(n.Destination)) {
 			_, _ = w.WriteString(` target="_blank" rel="noopener"`)
 		}
 		// Title

@@ -12,7 +12,7 @@ func (db *database) cachePersistently(key string, data []byte) error {
 }
 
 func (db *database) retrievePersistentCache(key string) (data []byte, err error) {
-	d, err, _ := db.persistentCacheGroup.Do(key, func() (interface{}, error) {
+	d, err, _ := db.pc.Do(key, func() (interface{}, error) {
 		if row, err := db.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
 			return nil, nil
 		} else if err != nil {

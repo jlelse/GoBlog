@@ -174,7 +174,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 					_ = a.createWebmention(id, inReplyTo)
 				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
 					// May be a mention; find links to blog and save them as webmentions
-					if links, err := allLinksFromHTML(strings.NewReader(content), id); err == nil {
+					if links, err := allLinksFromHTMLString(content, id); err == nil {
 						for _, link := range links {
 							if strings.Contains(link, blogIri) {
 								_ = a.createWebmention(id, link)

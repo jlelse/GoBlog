@@ -7,10 +7,12 @@ import (
 	"github.com/lopezator/migrator"
 )
 
-func migrateDb(db *sql.DB) error {
+func migrateDb(db *sql.DB, logging bool) error {
 	m, err := migrator.New(
 		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...interface{}) {
-			log.Printf(s, i)
+			if logging {
+				log.Printf(s, i)
+			}
 		})),
 		migrator.Migrations(
 			&migrator.Migration{

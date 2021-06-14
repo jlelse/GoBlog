@@ -59,13 +59,14 @@ func isAllowedHost(r *http.Request, hosts ...string) bool {
 }
 
 func isAbsoluteURL(s string) bool {
-	if !strings.HasPrefix(s, "https://") && !strings.HasPrefix(s, "http://") {
-		return false
-	}
-	if _, err := url.Parse(s); err != nil {
+	if u, err := url.Parse(s); err != nil || !u.IsAbs() {
 		return false
 	}
 	return true
+}
+
+func allLinksFromHTMLString(html, baseURL string) ([]string, error) {
+	return allLinksFromHTML(strings.NewReader(html), baseURL)
 }
 
 func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {

@@ -90,7 +90,7 @@ func (a *goBlog) getExternalLinks(posts []*post, linkChan chan<- stringPair) err
 		wg.Add(1)
 		go func(p *post) {
 			defer wg.Done()
-			links, _ := allLinksFromHTML(strings.NewReader(string(a.absoluteHTML(p))), a.fullPostURL(p))
+			links, _ := allLinksFromHTMLString(string(a.absoluteHTML(p)), a.fullPostURL(p))
 			for _, link := range links {
 				linkChan <- stringPair{a.fullPostURL(p), link}
 			}
