@@ -36,7 +36,7 @@ type goBlog struct {
 	pPostHooks   []postHookFunc
 	pUpdateHooks []postHookFunc
 	pDeleteHooks []postHookFunc
-	// HTTP
+	// HTTP Routers
 	d                      *dynamicHandler
 	privateMode            bool
 	privateModeHandler     []func(http.Handler) http.Handler

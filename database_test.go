@@ -4,6 +4,10 @@ import (
 	"testing"
 )
 
+func (a *goBlog) setInMemoryDatabase() {
+	a.db, _ = a.openDatabase(":memory:", false)
+}
+
 func Test_database(t *testing.T) {
 	t.Run("Basic Database Test", func(t *testing.T) {
 		app := &goBlog{}
