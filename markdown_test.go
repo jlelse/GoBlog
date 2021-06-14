@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,33 @@ func Test_markdown(t *testing.T) {
 		renderedText := app.renderText("**This** *is* [text](/)")
 		if renderedText != "This is text" {
 			t.Errorf("Wrong result, got \"%v\"", renderedText)
+		}
+	})
+}
+
+func Benchmark_markdown(b *testing.B) {
+	markdownExample, err := os.ReadFile("testdata/markdownexample.md")
+	if err != nil {
+		b.Errorf("Failed to read markdown example: %v", err)
+	}
+	mdExp := string(markdownExample)
+
+	app := &goBlog{
+		cfg: &config{
+			Server: &configServer{
+				PublicAddress: "https://example.com",
+			},
+		},
+	}
+
+	app.initMarkdown()
+
+	b.Run("Benchmark Markdown Rendering", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := app.renderMarkdown(mdExp, true)
+			if err != nil {
+				b.Errorf("Error: %v", err)
+			}
 		}
 	})
 }

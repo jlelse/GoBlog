@@ -11,6 +11,11 @@ func Test_configTelegram_enabled(t *testing.T) {
 		t.Error("Telegram shouldn't be enabled")
 	}
 
+	var tg *configTelegram
+	if tg.enabled() == true {
+		t.Error("Telegram shouldn't be enabled")
+	}
+
 	if (&configTelegram{
 		Enabled: true,
 	}).enabled() == true {

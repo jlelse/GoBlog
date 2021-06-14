@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -59,7 +58,7 @@ func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error)
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("response status code: %v", resp.StatusCode)
 	}
-	ba, err := ioutil.ReadAll(resp.Body)
+	ba, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
