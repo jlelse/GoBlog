@@ -72,7 +72,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		rec := httptest.NewRecorder()
 		for a.d == nil {
 			// Server not yet started
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 		a.d.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), loggedInKey, true)))
 		resp = rec.Result()
@@ -89,11 +89,11 @@ func (a *goBlog) verifyMention(m *mention) error {
 		_, err := a.db.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
 		return err
 	}
-	if len(m.Content) > 500 {
-		m.Content = m.Content[0:497] + "…"
+	if cr := []rune(m.Content); len(cr) > 500 {
+		m.Content = string(cr[0:497]) + "…"
 	}
-	if len(m.Title) > 60 {
-		m.Title = m.Title[0:57] + "…"
+	if tr := []rune(m.Title); len(tr) > 60 {
+		m.Title = string(tr[0:57]) + "…"
 	}
 	newStatus := webmentionStatusVerified
 	if a.db.webmentionExists(m.Source, m.Target) {
@@ -122,20 +122,25 @@ func (m *mention) verifyReader(body io.Reader) error {
 	}); !hasLink {
 		return errors.New("target not found in source")
 	}
-	// Set title
-	doc, err := goquery.NewDocumentFromReader(&gqBuffer)
-	if err != nil {
-		return err
-	}
-	if title := doc.Find("title"); title != nil {
-		m.Title = title.Text()
-	}
 	// Fill mention attributes
 	sourceURL, err := url.Parse(m.Source)
 	if err != nil {
 		return err
 	}
+	m.Title = ""
+	m.Content = ""
+	m.Author = ""
 	m.fillFromData(microformats.Parse(&mfBuffer, sourceURL))
+	// Set title when content is empty as well
+	if m.Title == "" && m.Content == "" {
+		doc, err := goquery.NewDocumentFromReader(&gqBuffer)
+		if err != nil {
+			return err
+		}
+		if title := doc.Find("title"); title != nil {
+			m.Title = title.Text()
+		}
+	}
 	return nil
 }
 

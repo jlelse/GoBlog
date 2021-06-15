@@ -614,17 +614,22 @@ func noIndexHeader(next http.Handler) http.Handler {
 }
 
 type dynamicHandler struct {
-	router *chi.Mux
-	mutex  sync.RWMutex
+	router      *chi.Mux
+	mutex       sync.RWMutex
+	initialized bool
 }
 
 func (d *dynamicHandler) swapHandler(h *chi.Mux) {
 	d.mutex.Lock()
 	d.router = h
+	d.initialized = true
 	d.mutex.Unlock()
 }
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	for !d.initialized {
+		time.Sleep(1 * time.Second)
+	}
 	// Fix to use Path routing instead of RawPath routing in Chi
 	r.URL.RawPath = ""
 	// Serve request

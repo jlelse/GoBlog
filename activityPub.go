@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
+	"github.com/spf13/cast"
 )
 
 func (a *goBlog) initActivityPub() error {
@@ -167,17 +168,22 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case "Create":
 		{
 			if object, ok := activity["object"].(map[string]interface{}); ok {
-				inReplyTo, hasReplyToString := object["inReplyTo"].(string)
-				id, hasID := object["id"].(string)
-				if hasReplyToString && hasID && len(inReplyTo) > 0 && len(id) > 0 && strings.Contains(inReplyTo, blogIri) {
+				inReplyTo := cast.ToString(object["inReplyTo"])
+				objectId := cast.ToString(object["id"])
+				objectUrl := cast.ToString(object["url"])
+				baseUrl := objectId
+				if objectUrl != "" {
+					baseUrl = objectUrl
+				}
+				if inReplyTo != "" && objectId != "" && strings.Contains(inReplyTo, blogIri) {
 					// It's an ActivityPub reply; save reply as webmention
-					_ = a.createWebmention(id, inReplyTo)
-				} else if content, hasContent := object["content"].(string); hasContent && hasID && len(id) > 0 {
+					_ = a.createWebmention(baseUrl, inReplyTo)
+				} else if content, hasContent := object["content"].(string); hasContent && objectId != "" {
 					// May be a mention; find links to blog and save them as webmentions
-					if links, err := allLinksFromHTMLString(content, id); err == nil {
+					if links, err := allLinksFromHTMLString(content, baseUrl); err == nil {
 						for _, link := range links {
 							if strings.Contains(link, blogIri) {
-								_ = a.createWebmention(id, link)
+								_ = a.createWebmention(baseUrl, link)
 							}
 						}
 					}
