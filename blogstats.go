@@ -61,7 +61,7 @@ func (db *database) getBlogStats(blog string) (data map[string]interface{}, err 
 	query, params := buildPostsQuery(prq)
 	query = "select path, mdtext(content) as content, published, substr(published, 1, 4) as year, substr(published, 6, 2) as month from (" + query + ")"
 	postCount := "coalesce(count(distinct path), 0) as postcount"
-	charCount := "coalesce(sum(coalesce(length(distinct content), 0)), 0)"
+	charCount := "coalesce(sum(coalesce(charcount(distinct content), 0)), 0)"
 	wordCount := "coalesce(sum(wordcount(distinct content)), 0) as wordcount"
 	wordsPerPost := "coalesce(round(wordcount/postcount,0), 0)"
 	type statsTableType struct {

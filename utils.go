@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
@@ -161,4 +162,14 @@ type stringPair struct {
 
 func wordCount(s string) int {
 	return len(strings.Fields(s))
+}
+
+// Count all letters and numbers in string
+func charCount(s string) (count int) {
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			count++
+		}
+	}
+	return count
 }

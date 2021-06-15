@@ -1,26 +1,18 @@
 package main
 
 import (
-	"io"
 	"net/http"
-	"net/http/httptest"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_robotsTXT(t *testing.T) {
-	testRecorder := httptest.NewRecorder()
-	testRequest := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
 
-	servePrivateRobotsTXT(testRecorder, testRequest)
-
-	testResult := testRecorder.Result()
-	if sc := testResult.StatusCode; sc != 200 {
-		t.Errorf("Wrong status code, got: %v", sc)
-	}
-	if rb, _ := io.ReadAll(testResult.Body); !reflect.DeepEqual(rb, []byte("User-agent: *\nDisallow: /")) {
-		t.Errorf("Wrong response body, got: %v", rb)
-	}
+	h := http.HandlerFunc(servePrivateRobotsTXT)
+	assert.HTTPStatusCode(t, h, http.MethodGet, "", nil, 200)
+	txt := assert.HTTPBody(h, http.MethodGet, "", nil)
+	assert.Equal(t, "User-agent: *\nDisallow: /", txt)
 
 	app := &goBlog{
 		cfg: &config{
@@ -30,16 +22,9 @@ func Test_robotsTXT(t *testing.T) {
 		},
 	}
 
-	testRecorder = httptest.NewRecorder()
-	testRequest = httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	h = http.HandlerFunc(app.serveRobotsTXT)
+	assert.HTTPStatusCode(t, h, http.MethodGet, "", nil, 200)
+	txt = assert.HTTPBody(h, http.MethodGet, "", nil)
+	assert.Equal(t, "User-agent: *\nSitemap: https://example.com/sitemap.xml", txt)
 
-	app.serveRobotsTXT(testRecorder, testRequest)
-
-	testResult = testRecorder.Result()
-	if sc := testResult.StatusCode; sc != 200 {
-		t.Errorf("Wrong status code, got: %v", sc)
-	}
-	if rb, _ := io.ReadAll(testResult.Body); !reflect.DeepEqual(rb, []byte("User-agent: *\nSitemap: https://example.com/sitemap.xml")) {
-		t.Errorf("Wrong response body, got: %v", string(rb))
-	}
 }

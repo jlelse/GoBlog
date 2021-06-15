@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
+	"github.com/thoas/go-funk"
 )
 
 func (a *goBlog) checkPost(p *post) (err error) {
@@ -124,10 +125,28 @@ type postCreationOptions struct {
 var postCreationMutex sync.Mutex
 
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
-	err := a.checkPost(p)
-	if err != nil {
+	// Check post
+	if err := a.checkPost(p); err != nil {
 		return err
 	}
+	// Save to db
+	if err := a.db.savePost(p, o); err != nil {
+		return err
+	}
+	// Trigger hooks
+	if p.Status == statusPublished {
+		if o.new || o.oldStatus == statusDraft {
+			defer a.postPostHooks(p)
+		} else {
+			defer a.postUpdateHooks(p)
+		}
+	}
+	// Reload router
+	return a.reloadRouter()
+}
+
+// Save check post to database
+func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Prevent bad things
 	postCreationMutex.Lock()
 	defer postCreationMutex.Unlock()
@@ -135,7 +154,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	if o.new || (p.Path != o.oldPath) {
 		// Post is new or post path was changed
 		newPathExists := false
-		row, err := a.db.queryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", p.Path))
+		row, err := db.queryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", p.Path))
 		if err != nil {
 			return err
 		}
@@ -169,37 +188,37 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 		}
 	}
 	// Execute
-	_, err = a.db.execMulti(sqlBuilder.String(), sqlArgs...)
-	if err != nil {
+	if _, err := db.execMulti(sqlBuilder.String(), sqlArgs...); err != nil {
 		return err
 	}
-	// Update FTS index, trigger hooks and reload router
-	a.db.rebuildFTSIndex()
-	if p.Status == statusPublished {
-		if o.new || o.oldStatus == statusDraft {
-			defer a.postPostHooks(p)
-		} else {
-			defer a.postUpdateHooks(p)
-		}
-	}
-	return a.reloadRouter()
+	// Update FTS index
+	db.rebuildFTSIndex()
+	return nil
 }
 
 func (a *goBlog) deletePost(path string) error {
-	if path == "" {
-		return nil
-	}
-	p, err := a.db.getPost(path)
-	if err != nil {
+	p, err := a.db.deletePost(path)
+	if err != nil || p == nil {
 		return err
 	}
-	_, err = a.db.exec("delete from posts where path = @path", sql.Named("path", p.Path))
-	if err != nil {
-		return err
-	}
-	a.db.rebuildFTSIndex()
 	defer a.postDeleteHooks(p)
 	return a.reloadRouter()
+}
+
+func (db *database) deletePost(path string) (*post, error) {
+	if path == "" {
+		return nil, nil
+	}
+	p, err := db.getPost(path)
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.exec("delete from posts where path = @path", sql.Named("path", p.Path))
+	if err != nil {
+		return nil, err
+	}
+	db.rebuildFTSIndex()
+	return p, nil
 }
 
 type postsRequestConfig struct {
@@ -366,9 +385,9 @@ func (d *database) allPostPaths(status postStatus) ([]string, error) {
 }
 
 func (a *goBlog) getRandomPostPath(blog string) (string, error) {
-	var sections []string
-	for sectionKey := range a.cfg.Blogs[blog].Sections {
-		sections = append(sections, sectionKey)
+	sections, ok := funk.Keys(a.cfg.Blogs[blog].Sections).([]string)
+	if !ok {
+		return "", errors.New("no sections")
 	}
 	posts, err := a.db.getPosts(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections})
 	if err != nil {

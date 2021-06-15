@@ -47,13 +47,18 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	dbDriverName := generateRandomString(15)
 	sql.Register("goblog_db_"+dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
+			// Depends on app
+			if err := c.RegisterFunc("mdtext", a.renderText, true); err != nil {
+				return err
+			}
+			// Independent
 			if err := c.RegisterFunc("tolocal", toLocalSafe, true); err != nil {
 				return err
 			}
 			if err := c.RegisterFunc("wordcount", wordCount, true); err != nil {
 				return err
 			}
-			if err := c.RegisterFunc("mdtext", a.renderText, true); err != nil {
+			if err := c.RegisterFunc("charcount", charCount, true); err != nil {
 				return err
 			}
 			return nil

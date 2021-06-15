@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_urlize(t *testing.T) {
@@ -63,9 +65,11 @@ func Test_isAbsoluteURL(t *testing.T) {
 }
 
 func Test_wordCount(t *testing.T) {
-	if wordCount("abc def abc") != 3 {
-		t.Error("Wrong result")
-	}
+	assert.Equal(t, 3, wordCount("abc def abc"))
+}
+
+func Test_charCount(t *testing.T) {
+	assert.Equal(t, 4, charCount("  t  e\n  s  t €.☺️"))
 }
 
 func Test_allLinksFromHTMLString(t *testing.T) {

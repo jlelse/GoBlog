@@ -82,7 +82,7 @@ func Test_configTelegram_send(t *testing.T) {
 
 	err := tg.send("Message", "HTML")
 	if err != nil {
-		t.Errorf("Error: %v", err)
+		t.Fatalf("Error: %v", err)
 	}
 
 	if fakeAppHttpClient.req == nil {
