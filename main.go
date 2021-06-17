@@ -50,9 +50,8 @@ func main() {
 	app := &goBlog{}
 
 	// Initialize config
-	log.Println("Initialize configuration...")
 	if err = app.initConfig(); err != nil {
-		logErrAndQuit("Failed to init config:", err.Error())
+		app.logErrAndQuit("Failed to init config:", err.Error())
 		return
 	}
 
@@ -60,7 +59,7 @@ func main() {
 	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
 		// Connect to public address + "/ping" and exit with 0 when successful
 		health := app.healthcheckExitCode()
-		shutdown()
+		app.shutdown.Shutdown()
 		os.Exit(health)
 		return
 	}
@@ -72,11 +71,11 @@ func main() {
 			AccountName: app.cfg.User.Nick,
 		})
 		if err != nil {
-			logErrAndQuit(err.Error())
+			app.logErrAndQuit(err.Error())
 			return
 		}
 		log.Println("TOTP-Secret:", key.Secret())
-		shutdown()
+		app.shutdown.Shutdown()
 		return
 	}
 
@@ -87,48 +86,49 @@ func main() {
 	app.preStartHooks()
 
 	// Initialize database and markdown
-	log.Println("Initialize database...")
 	if err = app.initDatabase(); err != nil {
-		logErrAndQuit("Failed to init database:", err.Error())
+		app.logErrAndQuit("Failed to init database:", err.Error())
 		return
 	}
-	log.Println("Initialize server components...")
+
+	log.Println("Initialize components...")
+
 	app.initMarkdown()
 
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
 		app.checkAllExternalLinks()
-		shutdown()
+		app.shutdown.Shutdown()
 		return
 	}
 
 	// More initializations
 	if err = app.initTemplateAssets(); err != nil { // Needs minify
-		logErrAndQuit("Failed to init template assets:", err.Error())
+		app.logErrAndQuit("Failed to init template assets:", err.Error())
 		return
 	}
 	if err = app.initTemplateStrings(); err != nil {
-		logErrAndQuit("Failed to init template translations:", err.Error())
+		app.logErrAndQuit("Failed to init template translations:", err.Error())
 		return
 	}
 	if err = app.initRendering(); err != nil { // Needs assets and minify
-		logErrAndQuit("Failed to init HTML rendering:", err.Error())
+		app.logErrAndQuit("Failed to init HTML rendering:", err.Error())
 		return
 	}
 	if err = app.initCache(); err != nil {
-		logErrAndQuit("Failed to init HTTP cache:", err.Error())
+		app.logErrAndQuit("Failed to init HTTP cache:", err.Error())
 		return
 	}
 	if err = app.initRegexRedirects(); err != nil {
-		logErrAndQuit("Failed to init redirects:", err.Error())
+		app.logErrAndQuit("Failed to init redirects:", err.Error())
 		return
 	}
 	if err = app.initHTTPLog(); err != nil {
-		logErrAndQuit("Failed to init HTTP logging:", err.Error())
+		app.logErrAndQuit("Failed to init HTTP logging:", err.Error())
 		return
 	}
 	if err = app.initActivityPub(); err != nil {
-		logErrAndQuit("Failed to init ActivityPub:", err.Error())
+		app.logErrAndQuit("Failed to init ActivityPub:", err.Error())
 		return
 	}
 	app.initWebmention()
@@ -139,21 +139,21 @@ func main() {
 	// Start cron hooks
 	app.startHourlyHooks()
 
+	log.Println("Initialized components")
+
 	// Start the server
-	log.Println("Starting server(s)...")
 	err = app.startServer()
 	if err != nil {
-		logErrAndQuit("Failed to start server(s):", err.Error())
+		app.logErrAndQuit("Failed to start server(s):", err.Error())
 		return
 	}
 
 	// Wait till everything is shutdown
-	waitForShutdown()
-
+	app.shutdown.Wait()
 }
 
-func logErrAndQuit(v ...interface{}) {
+func (a *goBlog) logErrAndQuit(v ...interface{}) {
 	log.Println(v...)
-	shutdown()
+	a.shutdown.Shutdown()
 	os.Exit(1)
 }

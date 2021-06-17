@@ -45,6 +45,7 @@ const (
 )
 
 func (a *goBlog) startServer() (err error) {
+	log.Println("Start server(s)...")
 	// Start
 	a.d = &dynamicHandler{}
 	// Set basic middlewares
@@ -81,7 +82,7 @@ func (a *goBlog) startServer() (err error) {
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
-	addShutdownFunc(shutdownServer(s, "main server"))
+	a.shutdown.Add(shutdownServer(s, "main server"))
 	if a.cfg.Server.PublicHTTPS {
 		// Configure
 		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
@@ -94,7 +95,7 @@ func (a *goBlog) startServer() (err error) {
 			ReadTimeout:  5 * time.Minute,
 			WriteTimeout: 5 * time.Minute,
 		}
-		addShutdownFunc(shutdownServer(httpServer, "http server"))
+		a.shutdown.Add(shutdownServer(httpServer, "http server"))
 		go func() {
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Println("Failed to start HTTP server:", err.Error())
@@ -125,8 +126,10 @@ func (a *goBlog) startServer() (err error) {
 func shutdownServer(s *http.Server, name string) func() {
 	return func() {
 		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
-		_ = s.Shutdown(toc)
-		c()
+		defer c()
+		if err := s.Shutdown(toc); err != nil {
+			log.Printf("Error on server shutdown (%v): %v", name, err)
+		}
 		log.Println("Stopped server:", name)
 	}
 }
@@ -627,13 +630,13 @@ func (d *dynamicHandler) swapHandler(h *chi.Mux) {
 }
 
 func (d *dynamicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for !d.initialized {
-		time.Sleep(1 * time.Second)
-	}
 	// Fix to use Path routing instead of RawPath routing in Chi
 	r.URL.RawPath = ""
 	// Serve request
 	d.mutex.RLock()
+	for !d.initialized {
+		time.Sleep(10 * time.Millisecond)
+	}
 	router := d.router
 	d.mutex.RUnlock()
 	router.ServeHTTP(w, r)

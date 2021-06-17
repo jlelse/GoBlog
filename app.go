@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
@@ -66,6 +67,8 @@ type goBlog struct {
 	templates map[string]*template.Template
 	// Sessions
 	loginSessions, captchaSessions *dbSessionStore
+	// Shutdown
+	shutdown shutdowner.Shutdowner
 	// Template strings
 	ts *ts.TemplateStrings
 	// Tor

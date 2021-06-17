@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
+	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617142609-b824b8996568
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee
 	github.com/PuerkitoBio/goquery v1.7.0
@@ -34,11 +35,11 @@ require (
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.7
-	github.com/microcosm-cc/bluemonday v1.0.10
+	github.com/microcosm-cc/bluemonday v1.0.14
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0
-	github.com/schollz/sqlite3dump v1.2.4
+	github.com/schollz/sqlite3dump v1.3.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.3.1
@@ -48,14 +49,15 @@ require (
 	github.com/thoas/go-funk v0.8.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.3.7
+	github.com/yuin/goldmark v1.3.8
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210616045830-e2b7044e8c71 // indirect
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

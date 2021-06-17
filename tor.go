@@ -82,7 +82,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
 	}
-	addShutdownFunc(shutdownServer(s, "tor"))
+	a.shutdown.Add(shutdownServer(s, "tor"))
 	if err = s.Serve(onion); err != nil && err != http.ErrServerClosed {
 		return err
 	}

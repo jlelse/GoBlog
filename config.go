@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/url"
 	"strings"
 
@@ -225,6 +226,7 @@ type configWebmention struct {
 }
 
 func (a *goBlog) initConfig() error {
+	log.Println("Initialize configuration...")
 	viper.SetConfigName("config")
 	viper.AddConfigPath("./config/")
 	err := viper.ReadInConfig()
@@ -307,6 +309,7 @@ func (a *goBlog) initConfig() error {
 			br.Enabled = false
 		}
 	}
+	log.Println("Initialized configuration")
 	return nil
 }
 

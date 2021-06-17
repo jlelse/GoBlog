@@ -22,6 +22,7 @@ type database struct {
 }
 
 func (a *goBlog) initDatabase() (err error) {
+	log.Println("Initialize database...")
 	// Setup db
 	db, err := a.openDatabase(a.cfg.Db.File, true)
 	if err != nil {
@@ -29,9 +30,12 @@ func (a *goBlog) initDatabase() (err error) {
 	}
 	// Create appDB
 	a.db = db
-	addShutdownFunc(func() {
-		_ = db.close()
-		log.Println("Closed database")
+	a.shutdown.Add(func() {
+		if err := db.close(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		} else {
+			log.Println("Closed database")
+		}
 	})
 	if a.cfg.Db.DumpFile != "" {
 		hourlyHooks = append(hourlyHooks, func() {
@@ -39,6 +43,7 @@ func (a *goBlog) initDatabase() (err error) {
 		})
 		db.dump(a.cfg.Db.DumpFile)
 	}
+	log.Println("Initialized database")
 	return nil
 }
 
@@ -113,7 +118,7 @@ func (db *database) dump(file string) {
 		log.Println("Error while dump db:", err.Error())
 		return
 	}
-	if err = sqlite3dump.DumpDB(db.db, f); err != nil {
+	if err = sqlite3dump.DumpDB(db.db, f, sqlite3dump.WithTransaction(true)); err != nil {
 		log.Println("Error while dump db:", err.Error())
 	}
 }

@@ -9,10 +9,10 @@ import (
 )
 
 func (a *goBlog) preStartHooks() {
-	for _, cmd := range a.cfg.Hooks.PreStart {
+	cfg := a.cfg.Hooks
+	for _, cmd := range cfg.PreStart {
 		func(cmd string) {
-			log.Println("Executing pre-start hook:", cmd)
-			a.cfg.Hooks.executeCommand(cmd)
+			executeHookCommand("pre-start", cfg.Shell, cmd)
 		}(cmd)
 	}
 }
@@ -75,53 +75,56 @@ func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, dat
 		return
 	}
 	cmd := cmdBuf.String()
-	log.Println("Executing "+hookType+" hook:", cmd)
-	cfg.executeCommand(cmd)
+	executeHookCommand(hookType, cfg.Shell, cmd)
 }
 
 var hourlyHooks = []func(){}
 
 func (a *goBlog) startHourlyHooks() {
+	cfg := a.cfg.Hooks
 	// Add configured hourly hooks
-	for _, cmd := range a.cfg.Hooks.Hourly {
+	for _, cmd := range cfg.Hourly {
 		c := cmd
 		f := func() {
-			log.Println("Executing hourly hook:", c)
-			a.cfg.Hooks.executeCommand(c)
+			executeHookCommand("hourly", cfg.Shell, c)
 		}
 		hourlyHooks = append(hourlyHooks, f)
 	}
-	// Calculate waiting time for first exec
-	n := time.Now()
-	f := time.Date(n.Year(), n.Month(), n.Day(), n.Hour(), 0, 0, 0, n.Location()).Add(time.Hour)
-	w := f.Sub(n)
 	// When there are hooks, start ticker
 	if len(hourlyHooks) > 0 {
-		go func() {
-			// Wait for next hour to begin
-			time.Sleep(w)
+		// Wait for next full hour
+		tr := time.AfterFunc(time.Until(time.Now().Truncate(time.Hour).Add(time.Hour)), func() {
 			// Execute once
 			for _, f := range hourlyHooks {
 				go f()
 			}
 			// Start ticker and execute regularly
 			ticker := time.NewTicker(1 * time.Hour)
+			a.shutdown.Add(func() {
+				ticker.Stop()
+				log.Println("Stopped hourly hooks")
+			})
 			for range ticker.C {
 				for _, f := range hourlyHooks {
 					go f()
 				}
 			}
-		}()
+		})
+		a.shutdown.Add(func() {
+			if tr.Stop() {
+				log.Println("Canceled hourly hooks")
+			}
+		})
 	}
 }
 
-func (cfg *configHooks) executeCommand(cmd string) {
-	out, err := exec.Command(cfg.Shell, "-c", cmd).CombinedOutput()
+func executeHookCommand(hookType, shell, cmd string) {
+	log.Printf("Executing %v hook: %v", hookType, cmd)
+	out, err := exec.Command(shell, "-c", cmd).CombinedOutput()
 	if err != nil {
 		log.Println("Failed to execute command:", err.Error())
 	}
 	if len(out) > 0 {
-		log.Println("Output:")
-		log.Print(string(out))
+		log.Printf("Output:\n%v", string(out))
 	}
 }
