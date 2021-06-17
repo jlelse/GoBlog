@@ -40,12 +40,12 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6 h1:d7k1NKd9fr+Eq7EtUrqUly+HDqDzpx9T9v8Gl2jJvpo=
 git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6/go.mod h1:eKL81ZHiGWZ4cdv9MI0ADmPiG9p0C+ajkSldNTr2ftQ=
-git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617142609-b824b8996568 h1:lsGzeyyxEnbf3rYRnb1eIx7kCP2rNipDhfo75K9qzTw=
-git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617142609-b824b8996568/go.mod h1:ekOAwB3OuHq9a5aInTRZeJic5oPltZXgZXChUxWw6HA=
+git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617195814-5da00556182e h1:XSqtYqjBPgdMAqYIBNiohFKtAyRjmlh8TgOZcfxqNVE=
+git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617195814-5da00556182e/go.mod h1:C4E+E1LpDuayNCX7fJKUx5ERKpBw//2NSna9aeiS5yE=
 git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4 h1:p3c/vCY6MUADNXWCYI/hsZ8ZEvN7LtvwHzK2B8Y6BSk=
 git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4/go.mod h1:ZFhxwbX+afhgbzh5rpkSJUp6vIduNPtIGDrsWpIcHTE=
-git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee h1:zun+B6UygGTYm+OBxK9eoPUHSd3M7AebIxXJyFyZzR4=
-git.jlel.se/jlelse/template-strings v0.0.0-20210523080439-57437f8d23ee/go.mod h1:KA7sVmsYAMxpPUBdDSSzShP8+sKLM16wnpKVk8ltaA0=
+git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40 h1:xFR5EREcB9FHX2/HXgM3KueC7EJEFiPcuoC+jIZttQw=
+git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40/go.mod h1:KA7sVmsYAMxpPUBdDSSzShP8+sKLM16wnpKVk8ltaA0=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/PuerkitoBio/goquery v1.5.0/go.mod h1:qD2PgZ9lccMbQlc7eEOjaeRlFQON7xY8kdmcsrnKqMg=
