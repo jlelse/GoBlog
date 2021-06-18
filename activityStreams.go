@@ -8,25 +8,26 @@ import (
 	"fmt"
 	"net/http"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/araddon/dateparse"
-	"github.com/elnormous/contenttype"
+	ct "github.com/elnormous/contenttype"
 )
 
-var asContext = []string{"https://www.w3.org/ns/activitystreams"}
-
-var asCheckMediaTypes = []contenttype.MediaType{
-	contenttype.NewMediaType(contentTypeHTML),
-	contenttype.NewMediaType(contentTypeAS),
-	contenttype.NewMediaType("application/ld+json"),
-}
+const asContext = "https://www.w3.org/ns/activitystreams"
 
 const asRequestKey requestContextKey = "asRequest"
+
+var asCheckMediaTypes = []ct.MediaType{
+	ct.NewMediaType(contenttype.HTML),
+	ct.NewMediaType(contenttype.AS),
+	ct.NewMediaType(contenttype.LDJSON),
+}
 
 func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
 			// Check if accepted media type is not HTML
-			if mt, _, err := contenttype.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
+			if mt, _, err := ct.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
 				return
 			}
@@ -89,29 +90,29 @@ type asEndpoints struct {
 
 func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter) {
 	b, _ := json.Marshal(a.toASNote(p))
-	w.Header().Set(contentType, contentTypeASUTF8)
-	_, _ = writeMinified(w, contentTypeAS, b)
+	w.Header().Set(contentType, contenttype.ASUTF8)
+	_, _ = a.min.Write(w, contenttype.AS, b)
 }
 
 func (a *goBlog) toASNote(p *post) *asNote {
 	// Create a Note object
 	as := &asNote{
-		Context:      asContext,
+		Context:      []string{asContext},
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
-		MediaType:    contentTypeHTML,
+		MediaType:    contenttype.HTML,
 		ID:           a.fullPostURL(p),
 		URL:          a.fullPostURL(p),
 		AttributedTo: a.apIri(a.cfg.Blogs[p.Blog]),
 	}
 	// Name and Type
-	if title := p.title(); title != "" {
+	if title := p.Title(); title != "" {
 		as.Name = title
 		as.Type = "Article"
 	} else {
 		as.Type = "Note"
 	}
 	// Content
-	as.Content = string(a.absoluteHTML(p))
+	as.Content = string(a.absolutePostHTML(p))
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		for _, image := range images {
@@ -158,7 +159,7 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 		return
 	}
 	asBlog := &asPerson{
-		Context:           asContext,
+		Context:           []string{asContext},
 		Type:              "Person",
 		ID:                a.apIri(b),
 		URL:               a.apIri(b),
@@ -184,6 +185,6 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 		}
 	}
 	jb, _ := json.Marshal(asBlog)
-	w.Header().Set(contentType, contentTypeASUTF8)
-	_, _ = writeMinified(w, contentTypeAS, jb)
+	w.Header().Set(contentType, contenttype.ASUTF8)
+	_, _ = a.min.Write(w, contenttype.AS, jb)
 }

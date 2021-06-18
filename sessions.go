@@ -27,7 +27,7 @@ func (a *goBlog) initSessions() {
 		}
 	}
 	deleteExpiredSessions()
-	hourlyHooks = append(hourlyHooks, deleteExpiredSessions)
+	a.hourlyHooks = append(a.hourlyHooks, deleteExpiredSessions)
 	a.loginSessions = &dbSessionStore{
 		codecs: securecookie.CodecsFromPairs(a.jwtKey()),
 		options: &sessions.Options{

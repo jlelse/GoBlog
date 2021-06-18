@@ -55,7 +55,7 @@ tags:
       <input type="hidden" name="editoraction" value="loadupdate">
       <select name="url" class="fw">
         {{ range $i, $draft := .Data.Drafts }}
-          <option value="{{ absolute $draft.Path }}">{{ with (title $draft) }}{{ . }}{{ else }}{{ $draft.Path }}{{ end }}</option>
+          <option value="{{ absolute $draft.Path }}">{{ with ($draft.Title) }}{{ . }}{{ else }}{{ $draft.Path }}{{ end }}</option>
         {{ end }}
       </select>
       <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">

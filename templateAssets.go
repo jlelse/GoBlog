@@ -2,23 +2,21 @@ package main
 
 import (
 	"crypto/sha1"
-	"crypto/sha512"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 const assetsFolder = "templates/assets"
 
 type assetFile struct {
 	contentType string
-	sri         string
 	body        []byte
 }
 
@@ -50,7 +48,7 @@ func (a *goBlog) compileAsset(name string) (string, error) {
 	}
 	ext := path.Ext(name)
 	compiledExt := ext
-	m := getMinifier()
+	m := a.min.Get()
 	switch ext {
 	case ".js":
 		content, err = m.Bytes("application/javascript", content)
@@ -67,18 +65,14 @@ func (a *goBlog) compileAsset(name string) (string, error) {
 	}
 	// Hashes
 	sha1Hash := sha1.New()
-	sha512Hash := sha512.New()
-	if _, err := io.MultiWriter(sha1Hash, sha512Hash).Write(content); err != nil {
+	if _, err := sha1Hash.Write(content); err != nil {
 		return "", err
 	}
 	// File name
 	compiledFileName := fmt.Sprintf("%x", sha1Hash.Sum(nil)) + compiledExt
-	// SRI
-	sriHash := fmt.Sprintf("sha512-%s", base64.StdEncoding.EncodeToString(sha512Hash.Sum(nil)))
 	// Create struct
 	a.assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(compiledExt),
-		sri:         sriHash,
 		body:        content,
 	}
 	return compiledFileName, err
@@ -87,10 +81,6 @@ func (a *goBlog) compileAsset(name string) (string, error) {
 // Function for templates
 func (a *goBlog) assetFileName(fileName string) string {
 	return "/" + a.assetFileNames[fileName]
-}
-
-func (a *goBlog) assetSRI(fileName string) string {
-	return a.assetFiles[a.assetFileNames[fileName]].sri
 }
 
 func (a *goBlog) allAssetPaths() []string {
@@ -109,6 +99,6 @@ func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "public,max-age=31536000,immutable")
-	w.Header().Set(contentType, af.contentType+charsetUtf8Suffix)
+	w.Header().Set(contentType, af.contentType+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write(af.body)
 }

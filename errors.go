@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/elnormous/contenttype"
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	ct "github.com/elnormous/contenttype"
 )
 
 type errorData struct {
@@ -20,12 +21,12 @@ func (a *goBlog) serveNotAllowed(w http.ResponseWriter, r *http.Request) {
 	a.serveError(w, r, "", http.StatusMethodNotAllowed)
 }
 
-var errorCheckMediaTypes = []contenttype.MediaType{
-	contenttype.NewMediaType(contentTypeHTML),
+var errorCheckMediaTypes = []ct.MediaType{
+	ct.NewMediaType(contenttype.HTML),
 }
 
 func (a *goBlog) serveError(w http.ResponseWriter, r *http.Request, message string, status int) {
-	if mt, _, err := contenttype.GetAcceptableMediaType(r, errorCheckMediaTypes); err != nil || mt.String() != errorCheckMediaTypes[0].String() {
+	if mt, _, err := ct.GetAcceptableMediaType(r, errorCheckMediaTypes); err != nil || mt.String() != errorCheckMediaTypes[0].String() {
 		// Request doesn't accept HTML
 		http.Error(w, message, status)
 		return

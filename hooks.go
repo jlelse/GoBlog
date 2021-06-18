@@ -78,7 +78,7 @@ func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, dat
 	executeHookCommand(hookType, cfg.Shell, cmd)
 }
 
-var hourlyHooks = []func(){}
+type hourlyHookFunc func()
 
 func (a *goBlog) startHourlyHooks() {
 	cfg := a.cfg.Hooks
@@ -88,14 +88,14 @@ func (a *goBlog) startHourlyHooks() {
 		f := func() {
 			executeHookCommand("hourly", cfg.Shell, c)
 		}
-		hourlyHooks = append(hourlyHooks, f)
+		a.hourlyHooks = append(a.hourlyHooks, f)
 	}
 	// When there are hooks, start ticker
-	if len(hourlyHooks) > 0 {
+	if len(a.hourlyHooks) > 0 {
 		// Wait for next full hour
 		tr := time.AfterFunc(time.Until(time.Now().Truncate(time.Hour).Add(time.Hour)), func() {
 			// Execute once
-			for _, f := range hourlyHooks {
+			for _, f := range a.hourlyHooks {
 				go f()
 			}
 			// Start ticker and execute regularly
@@ -105,7 +105,7 @@ func (a *goBlog) startHourlyHooks() {
 				log.Println("Stopped hourly hooks")
 			})
 			for range ticker.C {
-				for _, f := range hourlyHooks {
+				for _, f := range a.hourlyHooks {
 					go f()
 				}
 			}

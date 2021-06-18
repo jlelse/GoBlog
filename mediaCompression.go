@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 const defaultCompressionWidth = 2000
@@ -34,7 +36,7 @@ func (a *goBlog) tinify(url string, config *configMicropubMedia) (location strin
 		return "", err
 	}
 	req.SetBasicAuth("api", config.TinifyKey)
-	req.Header.Set(contentType, contentTypeJSON)
+	req.Header.Set(contentType, contenttype.JSON)
 	resp, err := appHttpClient.Do(req)
 	if err != nil {
 		return "", err
@@ -61,7 +63,7 @@ func (a *goBlog) tinify(url string, config *configMicropubMedia) (location strin
 		return "", err
 	}
 	downloadReq.SetBasicAuth("api", config.TinifyKey)
-	downloadReq.Header.Set(contentType, contentTypeJSON)
+	downloadReq.Header.Set(contentType, contenttype.JSON)
 	downloadResp, err := appHttpClient.Do(downloadReq)
 	if err != nil {
 		return "", err

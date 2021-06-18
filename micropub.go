@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/spf13/cast"
 	"gopkg.in/yaml.v3"
 )
@@ -25,12 +26,12 @@ type micropubConfig struct {
 func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Query().Get("q") {
 	case "config":
-		w.Header().Set(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contenttype.JSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		b, _ := json.Marshal(&micropubConfig{
 			MediaEndpoint: a.getFullAddress(micropubPath + micropubMediaSubPath),
 		})
-		_, _ = writeMinified(w, contentTypeJSON, b)
+		_, _ = a.min.Write(w, contenttype.JSON, b)
 	case "source":
 		var mf interface{}
 		if urlString := r.URL.Query().Get("url"); urlString != "" {
@@ -62,10 +63,10 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			mf = list
 		}
-		w.Header().Set(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contenttype.JSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		b, _ := json.Marshal(mf)
-		_, _ = writeMinified(w, contentTypeJSON, b)
+		_, _ = a.min.Write(w, contenttype.JSON, b)
 	case "category":
 		allCategories := []string{}
 		for blog := range a.cfg.Blogs {
@@ -76,12 +77,12 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			allCategories = append(allCategories, values...)
 		}
-		w.Header().Set(contentType, contentTypeJSONUTF8)
+		w.Header().Set(contentType, contenttype.JSONUTF8)
 		w.WriteHeader(http.StatusOK)
 		b, _ := json.Marshal(map[string]interface{}{
 			"categories": allCategories,
 		})
-		_, _ = writeMinified(w, contentTypeJSON, b)
+		_, _ = a.min.Write(w, contenttype.JSON, b)
 	default:
 		a.serve404(w, r)
 	}
@@ -120,9 +121,9 @@ func (a *goBlog) toMfItem(p *post) *microformatItem {
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var p *post
-	if ct := r.Header.Get(contentType); strings.Contains(ct, contentTypeWWWForm) || strings.Contains(ct, contentTypeMultipartForm) {
+	if ct := r.Header.Get(contentType); strings.Contains(ct, contenttype.WWWForm) || strings.Contains(ct, contenttype.MultipartForm) {
 		var err error
-		if strings.Contains(ct, contentTypeMultipartForm) {
+		if strings.Contains(ct, contenttype.MultipartForm) {
 			err = r.ParseMultipartForm(0)
 		} else {
 			err = r.ParseForm()
@@ -149,7 +150,7 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	} else if strings.Contains(ct, contentTypeJSON) {
+	} else if strings.Contains(ct, contenttype.JSON) {
 		parsedMfItem := &microformatItem{}
 		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
 		if err != nil {

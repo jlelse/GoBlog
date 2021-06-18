@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"time"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 type webmentionStatus string
@@ -63,7 +65,7 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 }
 
 func extractMention(r *http.Request) (*mention, error) {
-	if !strings.Contains(r.Header.Get(contentType), contentTypeWWWForm) {
+	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return nil, errors.New("unsupported Content-Type")
 	}
 	err := r.ParseForm()
@@ -185,6 +187,15 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 		mentions = append(mentions, m)
 	}
 	return mentions, nil
+}
+
+func (db *database) getWebmentionsByAddress(address string) []*mention {
+	mentions, _ := db.getWebmentions(&webmentionsRequestConfig{
+		target: address,
+		status: webmentionStatusApproved,
+		asc:    true,
+	})
+	return mentions
 }
 
 func (db *database) countWebmentions(config *webmentionsRequestConfig) (count int, err error) {

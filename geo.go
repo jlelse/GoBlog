@@ -7,12 +7,16 @@ import (
 	"net/url"
 	"strings"
 
+	gogeouri "git.jlel.se/jlelse/go-geouri"
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/thoas/go-funk"
 )
 
-func (db *database) geoTitle(lat, lon float64, lang string) string {
-	ba, err := db.photonReverse(lat, lon, lang)
+func (db *database) geoTitle(g *gogeouri.Geo, lang string) string {
+	if name, ok := g.Parameters["name"]; ok && len(name) > 0 && name[0] != "" {
+		return name[0]
+	}
+	ba, err := db.photonReverse(g.Latitude, g.Longitude, lang)
 	if err != nil {
 		return ""
 	}
@@ -64,4 +68,8 @@ func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error)
 	}
 	_ = db.cachePersistently(cacheKey, ba)
 	return ba, nil
+}
+
+func geoOSMLink(g *gogeouri.Geo) string {
+	return fmt.Sprintf("https://www.openstreetmap.org/?mlat=%v&mlon=%v", g.Latitude, g.Longitude)
 }

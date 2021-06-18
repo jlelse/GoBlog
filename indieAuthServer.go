@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/spf13/cast"
 )
 
@@ -137,8 +138,8 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(tokenResponse{
 		Me: a.cfg.Server.PublicAddress,
 	})
-	w.Header().Set(contentType, contentTypeJSONUTF8)
-	_, _ = writeMinified(w, contentTypeJSON, b)
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = a.min.Write(w, contenttype.JSON, b)
 }
 
 func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
@@ -155,8 +156,8 @@ func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
 			ClientID: data.ClientID,
 		}
 		b, _ := json.Marshal(res)
-		w.Header().Set(contentType, contentTypeJSONUTF8)
-		_, _ = writeMinified(w, contentTypeJSON, b)
+		w.Header().Set(contentType, contenttype.JSONUTF8)
+		_, _ = a.min.Write(w, contenttype.JSON, b)
 		return
 	} else if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
@@ -208,8 +209,8 @@ func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				Me:          a.cfg.Server.PublicAddress,
 			}
 			b, _ := json.Marshal(res)
-			w.Header().Set(contentType, contentTypeJSONUTF8)
-			_, _ = writeMinified(w, contentTypeJSON, b)
+			w.Header().Set(contentType, contenttype.JSONUTF8)
+			_, _ = a.min.Write(w, contenttype.JSON, b)
 			return
 		}
 		a.serveError(w, r, "", http.StatusBadRequest)

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"html/template"
 	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
@@ -156,6 +158,18 @@ func dateFormat(date string, format string) string {
 	return d.Local().Format(format)
 }
 
+func isoDateFormat(date string) string {
+	return dateFormat(date, "2006-01-02")
+}
+
+func unixToLocalDateString(unix int64) string {
+	return time.Unix(unix, 0).Local().String()
+}
+
+func localNowString() string {
+	return time.Now().Local().String()
+}
+
 type stringPair struct {
 	First, Second string
 }
@@ -172,4 +186,8 @@ func charCount(s string) (count int) {
 		}
 	}
 	return count
+}
+
+func wrapStringAsHTML(s string) template.HTML {
+	return template.HTML(s)
 }

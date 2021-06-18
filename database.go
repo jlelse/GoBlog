@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"sync"
 
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
@@ -19,6 +20,7 @@ type database struct {
 	stmts map[string]*sql.Stmt
 	g     singleflight.Group
 	pc    singleflight.Group
+	pcm   sync.Mutex
 }
 
 func (a *goBlog) initDatabase() (err error) {
@@ -38,7 +40,7 @@ func (a *goBlog) initDatabase() (err error) {
 		}
 	})
 	if a.cfg.Db.DumpFile != "" {
-		hourlyHooks = append(hourlyHooks, func() {
+		a.hourlyHooks = append(a.hourlyHooks, func() {
 			db.dump(a.cfg.Db.DumpFile)
 		})
 		db.dump(a.cfg.Db.DumpFile)

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +19,7 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 		"</OpenSearchDescription>",
 		title, title, sURL, sURL)
 	w.Header().Set(contentType, "application/opensearchdescription+xml")
-	_, _ = writeMinified(w, contentTypeXML, []byte(xml))
+	_, _ = a.min.Write(w, contenttype.XML, []byte(xml))
 }
 
 func openSearchUrl(b *configBlog) string {

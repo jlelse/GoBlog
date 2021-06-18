@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/dchest/captcha"
 )
 
@@ -53,7 +54,7 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
-	if r.Header.Get(contentType) != contentTypeWWWForm {
+	if r.Header.Get(contentType) != contenttype.WWWForm {
 		return false
 	}
 	if r.FormValue("captchaaction") != "captcha" {

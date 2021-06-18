@@ -53,7 +53,7 @@ func Test_postsDb(t *testing.T) {
 	is.Equal("en", p.Blog)
 	is.Equal("test", p.Section)
 	is.Equal(statusDraft, p.Status)
-	is.Equal("Title", p.title())
+	is.Equal("Title", p.Title())
 
 	// Check number of post paths
 	pp, err := app.db.allPostPaths(statusDraft)

@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_markdown(t *testing.T) {
@@ -65,6 +67,11 @@ func Test_markdown(t *testing.T) {
 		if renderedText != "This is text" {
 			t.Errorf("Wrong result, got \"%v\"", renderedText)
 		}
+
+		// Template func
+
+		renderedText = string(app.safeRenderMarkdownAsHTML("[Relative](/relative)"))
+		assert.Contains(t, renderedText, `href="/relative"`)
 	})
 }
 

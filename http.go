@@ -21,25 +21,7 @@ import (
 )
 
 const (
-	contentType = "Content-Type"
-
-	charsetUtf8Suffix = "; charset=utf-8"
-
-	contentTypeHTML          = "text/html"
-	contentTypeXML           = "text/xml"
-	contentTypeJSON          = "application/json"
-	contentTypeWWWForm       = "application/x-www-form-urlencoded"
-	contentTypeMultipartForm = "multipart/form-data"
-	contentTypeAS            = "application/activity+json"
-	contentTypeRSS           = "application/rss+xml"
-	contentTypeATOM          = "application/atom+xml"
-	contentTypeJSONFeed      = "application/feed+json"
-
-	contentTypeHTMLUTF8 = contentTypeHTML + charsetUtf8Suffix
-	contentTypeXMLUTF8  = contentTypeXML + charsetUtf8Suffix
-	contentTypeJSONUTF8 = contentTypeJSON + charsetUtf8Suffix
-	contentTypeASUTF8   = contentTypeAS + charsetUtf8Suffix
-
+	contentType  = "Content-Type"
 	userAgent    = "User-Agent"
 	appUserAgent = "GoBlog"
 )
@@ -241,6 +223,7 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 	a.setBlogMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.sectionMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.taxonomyMiddlewares = map[string]func(http.Handler) http.Handler{}
+	a.taxValueMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.photosMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.searchMiddlewares = map[string]func(http.Handler) http.Handler{}
 	a.customPagesMiddlewares = map[string]func(http.Handler) http.Handler{}
@@ -292,10 +275,6 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 
 	return nil
 }
-
-var (
-	taxValueMiddlewares = map[string]func(http.Handler) http.Handler{}
-)
 
 func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	r := chi.NewRouter()
@@ -436,14 +415,14 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 					for _, tv := range taxValues {
 						r.Group(func(r chi.Router) {
 							vPath := taxPath + "/" + urlize(tv)
-							if _, ok := taxValueMiddlewares[vPath]; !ok {
-								taxValueMiddlewares[vPath] = middleware.WithValue(indexConfigKey, &indexConfig{
+							if _, ok := a.taxValueMiddlewares[vPath]; !ok {
+								a.taxValueMiddlewares[vPath] = middleware.WithValue(indexConfigKey, &indexConfig{
 									path:     vPath,
 									tax:      taxonomy,
 									taxValue: tv,
 								})
 							}
-							r.Use(taxValueMiddlewares[vPath])
+							r.Use(a.taxValueMiddlewares[vPath])
 							r.Get(vPath, a.serveIndex)
 							r.Get(vPath+feedPath, a.serveIndex)
 							r.Get(vPath+paginationPath, a.serveIndex)
@@ -512,10 +491,9 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(sbm)
-				blogBasePath := blogConfig.getRelativePath("")
-				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogBasePath, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogBasePath+feedPath, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogBasePath+paginationPath, a.serveHome)
+				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(""), a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath("")+feedPath, a.serveHome)
+				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
 			})
 		}
 
@@ -579,17 +557,15 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 const blogContextKey requestContextKey = "blog"
 const pathContextKey requestContextKey = "httpPath"
 
-var cspDomains = ""
-
 func (a *goBlog) refreshCSPDomains() {
-	cspDomains = ""
+	a.cspDomains = ""
 	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
-			cspDomains += " " + u.Hostname()
+			a.cspDomains += " " + u.Hostname()
 		}
 	}
 	if len(a.cfg.Server.CSPDomains) > 0 {
-		cspDomains += " " + strings.Join(a.cfg.Server.CSPDomains, " ")
+		a.cspDomains += " " + strings.Join(a.cfg.Server.CSPDomains, " ")
 	}
 }
 
@@ -601,7 +577,7 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
+		w.Header().Set("Content-Security-Policy", "default-src 'self'"+a.cspDomains)
 		if a.cfg.Server.Tor && a.torAddress != "" {
 			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI))
 		}

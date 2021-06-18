@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"html/template"
 	"strings"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
@@ -52,6 +53,19 @@ func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []b
 		err = a.md.Convert([]byte(source), &buffer)
 	}
 	return buffer.Bytes(), err
+}
+
+func (a *goBlog) renderMarkdownAsHTML(source string, absoluteLinks bool) (rendered template.HTML, err error) {
+	b, err := a.renderMarkdown(source, absoluteLinks)
+	if err != nil {
+		return "", err
+	}
+	return template.HTML(b), nil
+}
+
+func (a *goBlog) safeRenderMarkdownAsHTML(source string) template.HTML {
+	h, _ := a.renderMarkdownAsHTML(source, false)
+	return h
 }
 
 func (a *goBlog) renderText(s string) string {

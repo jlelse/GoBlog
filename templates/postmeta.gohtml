@@ -2,19 +2,17 @@
     <div class="p">
         {{ include "summaryandpostmeta" . }}
         {{ $bloglang := .Blog.Lang }}
-        {{ $loc := ( p .Data "location" ) }}
-        {{ if $loc }}
-            {{ with geouri $loc }}
-                <div>📍 <a class="p-location h-geo" href="https://www.openstreetmap.org/?mlat={{ .Latitude }}&mlon={{ .Longitude }}" target="_blank" rel="nofollow noopener noreferrer">
-                <span class="p-name">{{ with ( geourip . "name" ) }}{{ . }}{{ else }}{{ with ( geotitle .Latitude .Longitude $bloglang ) }}{{ . }}{{ else }}{{ .Latitude }}, {{ .Longitude }}{{ end }}{{ end }}</span>
-                <data class="p-longitude" value="{{ .Longitude }}" />
-                <data class="p-latitude" value="{{ .Latitude }}" />
-                </a></div>
-            {{ end }}
+        {{ $geo := .Data.GeoURI }}
+        {{ if $geo }}
+            <div>📍 <a class="p-location h-geo" href="{{ geolink $geo }}" target="_blank" rel="nofollow noopener noreferrer">
+            <span class="p-name">{{ geotitle $geo .Blog.Lang }}</span>
+            <data class="p-longitude" value="{{ $geo.Longitude }}" />
+            <data class="p-latitude" value="{{ $geo.Latitude }}" />
+            </a></div>
         {{ end }}
         {{ $translations := (translations .Data) }}
         {{ if gt (len $translations) 0 }}
-            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ title $t }}</a>{{ $delimiter = ", " }}{{ end }}</div>
+            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ $t.Title }}</a>{{ $delimiter = ", " }}{{ end }}</div>
         {{ end }}
         {{ $short := shorturl .Data }}
         {{ if $short }}<div>{{ string .Blog.Lang "shorturl" }} <a href="{{ $short }}" rel="shortlink">{{ $short }}</a></div>{{ end }}

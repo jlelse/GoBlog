@@ -1,5 +1,5 @@
 {{ define "author" }}
-    {{ with user }}
+    {{ with .User }}
         <div class="p-author h-card hide">
             {{ with .Picture }}<data class="u-photo" value="{{ . }}"></data>{{ end }}
             {{ if .Name }}

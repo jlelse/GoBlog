@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/thoas/go-funk"
 	"github.com/tomnomnom/linkheader"
@@ -19,7 +20,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		return nil
 	}
 	links := []string{}
-	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.html(p))), a.fullPostURL(p))
+	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.postHtml(p))), a.fullPostURL(p))
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func sendWebmention(endpoint, source, target string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set(contentType, contentTypeWWWForm)
+	req.Header.Set(contentType, contenttype.WWWForm)
 	req.Header.Set(userAgent, appUserAgent)
 	res, err := appHttpClient.Do(req)
 	if err != nil {

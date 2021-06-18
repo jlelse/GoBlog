@@ -12,7 +12,7 @@
       <h2>{{ $valueGroup.Identifier }}</h2>
       <p>
         {{ range $i, $value := $valueGroup.Strings }}
-          {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ blogrelative $blog ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a>
+          {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $blog.RelativePath ( printf "/%s/%s" $taxonomy (urlize .) ) }}">{{ . }}</a>
         {{ end }}
       </p>
     {{ end }}

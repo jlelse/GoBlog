@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/araddon/dateparse"
 	"github.com/gorilla/feeds"
 )
@@ -55,11 +56,11 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			}
 		}
 		feed.Add(&feeds.Item{
-			Title:       p.title(),
+			Title:       p.Title(),
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
-			Description: a.summary(p),
+			Description: a.postSummary(p),
 			Id:          p.Path,
-			Content:     string(a.absoluteHTML(p)),
+			Content:     string(a.absolutePostHTML(p)),
 			Created:     created,
 			Updated:     updated,
 			Enclosure:   enc,
@@ -69,13 +70,13 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	var feedString, feedMediaType string
 	switch f {
 	case rssFeed:
-		feedMediaType = contentTypeRSS
+		feedMediaType = contenttype.RSS
 		feedString, err = feed.ToRss()
 	case atomFeed:
-		feedMediaType = contentTypeATOM
+		feedMediaType = contenttype.ATOM
 		feedString, err = feed.ToAtom()
 	case jsonFeed:
-		feedMediaType = contentTypeJSONFeed
+		feedMediaType = contenttype.JSONFeed
 		feedString, err = feed.ToJSON()
 	default:
 		return
@@ -85,6 +86,6 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(contentType, feedMediaType+charsetUtf8Suffix)
-	_, _ = writeMinified(w, feedMediaType, []byte(feedString))
+	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
+	_, _ = a.min.Write(w, feedMediaType, []byte(feedString))
 }

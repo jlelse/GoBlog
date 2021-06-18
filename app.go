@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/minify"
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
 	"github.com/go-chi/chi/v5"
@@ -27,6 +28,8 @@ type goBlog struct {
 	assetFiles     map[string]*assetFile
 	// Blogroll
 	blogrollCacheGroup singleflight.Group
+	// Blogstats
+	blogStatsCacheGroup singleflight.Group
 	// Cache
 	cache *cache
 	// Config
@@ -37,6 +40,9 @@ type goBlog struct {
 	pPostHooks   []postHookFunc
 	pUpdateHooks []postHookFunc
 	pDeleteHooks []postHookFunc
+	hourlyHooks  []hourlyHookFunc
+	// HTTP
+	cspDomains string
 	// HTTP Routers
 	d                      *dynamicHandler
 	privateMode            bool
@@ -53,6 +59,7 @@ type goBlog struct {
 	setBlogMiddlewares     map[string]func(http.Handler) http.Handler
 	sectionMiddlewares     map[string]func(http.Handler) http.Handler
 	taxonomyMiddlewares    map[string]func(http.Handler) http.Handler
+	taxValueMiddlewares    map[string]func(http.Handler) http.Handler
 	photosMiddlewares      map[string]func(http.Handler) http.Handler
 	searchMiddlewares      map[string]func(http.Handler) http.Handler
 	customPagesMiddlewares map[string]func(http.Handler) http.Handler
@@ -61,6 +68,8 @@ type goBlog struct {
 	logf *rotatelogs.RotateLogs
 	// Markdown
 	md, absoluteMd goldmark.Markdown
+	// Minify
+	min minify.Minifier
 	// Regex Redirects
 	regexRedirects []*regexRedirect
 	// Rendering

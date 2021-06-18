@@ -43,3 +43,9 @@ func (cfg *configServer) getFullAddress(path string) string {
 	}
 	return pa + path
 }
+
+// Rendering funcs
+
+func (blog *configBlog) RelativePath(path string) string {
+	return blog.getRelativePath(path)
+}

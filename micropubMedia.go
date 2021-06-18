@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 const micropubMediaSubPath = "/media"
@@ -20,7 +22,7 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "media scope missing", http.StatusForbidden)
 		return
 	}
-	if ct := r.Header.Get(contentType); !strings.Contains(ct, contentTypeMultipartForm) {
+	if ct := r.Header.Get(contentType); !strings.Contains(ct, contenttype.MultipartForm) {
 		a.serveError(w, r, "wrong content-type", http.StatusBadRequest)
 		return
 	}

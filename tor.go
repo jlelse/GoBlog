@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-var torUsedKey requestContextKey = "tor"
+const torUsedKey requestContextKey = "tor"
 
 func (a *goBlog) startOnionService(h http.Handler) error {
 	torDataPath, err := filepath.Abs("data/tor")

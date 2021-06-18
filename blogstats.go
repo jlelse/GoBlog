@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"golang.org/x/sync/singleflight"
 )
 
 func (a *goBlog) initBlogStats() {
@@ -31,11 +29,9 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-var blogStatsCacheGroup singleflight.Group
-
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	data, err, _ := blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
+	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.db.getBlogStats(blog)
 	})
 	if err != nil {

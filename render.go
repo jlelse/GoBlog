@@ -2,21 +2,16 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
-	gogeouri "git.jlel.se/jlelse/go-geouri"
-	"github.com/araddon/dateparse"
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	servertiming "github.com/mitchellh/go-server-timing"
 )
 
@@ -48,142 +43,32 @@ const (
 func (a *goBlog) initRendering() error {
 	a.templates = map[string]*template.Template{}
 	templateFunctions := template.FuncMap{
-		"menu": func(blog *configBlog, id string) *menu {
-			return blog.Menus[id]
-		},
-		"user": func() *configUser {
-			return a.cfg.User
-		},
-		"md": func(content string) template.HTML {
-			htmlContent, err := a.renderMarkdown(content, false)
-			if err != nil {
-				log.Fatal(err)
-				return ""
-			}
-			return template.HTML(htmlContent)
-		},
-		"html": func(s string) template.HTML {
-			return template.HTML(s)
-		},
+		"md":   a.safeRenderMarkdownAsHTML,
+		"html": wrapStringAsHTML,
 		// Post specific
-		"p": func(p *post, parameter string) string {
-			return p.firstParameter(parameter)
-		},
-		"ps": func(p *post, parameter string) []string {
-			return p.Parameters[parameter]
-		},
-		"hasp": func(p *post, parameter string) bool {
-			return len(p.Parameters[parameter]) > 0
-		},
-		"title": func(p *post) string {
-			return p.title()
-		},
-		"content": func(p *post) template.HTML {
-			return a.html(p)
-		},
-		"summary": func(p *post) string {
-			return a.summary(p)
-		},
-		"translations": func(p *post) []*post {
-			return a.translations(p)
-		},
-		"shorturl": func(p *post) string {
-			return a.shortPostURL(p)
-		},
+		"p":            firstPostParameter,
+		"ps":           postParameter,
+		"hasp":         postHasParameter,
+		"content":      a.postHtml,
+		"summary":      a.postSummary,
+		"translations": a.postTranslations,
+		"shorturl":     a.shortPostURL,
 		// Others
 		"dateformat": dateFormat,
-		"isodate": func(date string) string {
-			return dateFormat(date, "2006-01-02")
-		},
-		"unixtodate": func(unix int64) string {
-			return time.Unix(unix, 0).Local().String()
-		},
-		"now": func() string {
-			return time.Now().Local().String()
-		},
-		"dateadd": func(date string, years, months, days int) string {
-			d, err := dateparse.ParseLocal(date)
-			if err != nil {
-				return ""
-			}
-			return d.AddDate(years, months, days).Local().String()
-		},
-		"datebefore": func(date string, before string) bool {
-			d, err := dateparse.ParseLocal(date)
-			if err != nil {
-				return false
-			}
-			b, err := dateparse.ParseLocal(before)
-			if err != nil {
-				return false
-			}
-			return d.Before(b)
-		},
-		"asset":    a.assetFileName,
-		"assetsri": a.assetSRI,
-		"string":   a.ts.GetTemplateStringVariantFunc(),
-		"include": func(templateName string, data ...interface{}) (template.HTML, error) {
-			if len(data) == 0 || len(data) > 2 {
-				return "", errors.New("wrong argument count")
-			}
-			if rd, ok := data[0].(*renderData); ok {
-				if len(data) == 2 {
-					nrd := *rd
-					nrd.Data = data[1]
-					rd = &nrd
-				}
-				var buf bytes.Buffer
-				err := a.templates[templateName].ExecuteTemplate(&buf, templateName, rd)
-				return template.HTML(buf.String()), err
-			}
-			return "", errors.New("wrong arguments")
-		},
-		"urlize": urlize,
-		"sort":   sortedStrings,
-		"absolute": func(path string) string {
-			return a.getFullAddress(path)
-		},
-		"blogrelative": func(blog *configBlog, path string) string {
-			return blog.getRelativePath(path)
-		},
-		"jsonFile": func(filename string) *map[string]interface{} {
-			parsed := &map[string]interface{}{}
-			content, err := os.ReadFile(filename)
-			if err != nil {
-				return nil
-			}
-			err = json.Unmarshal(content, parsed)
-			if err != nil {
-				fmt.Println(err.Error())
-				return nil
-			}
-			return parsed
-		},
-		"mentions": func(absolute string) []*mention {
-			mentions, _ := a.db.getWebmentions(&webmentionsRequestConfig{
-				target: absolute,
-				status: webmentionStatusApproved,
-				asc:    true,
-			})
-			return mentions
-		},
-		"urlToString": func(u url.URL) string {
-			return u.String()
-		},
-		"geouri": func(u string) *gogeouri.Geo {
-			g, _ := gogeouri.Parse(u)
-			return g
-		},
-		"geourip": func(g *gogeouri.Geo, parameter string) (s string) {
-			if gp := g.Parameters[parameter]; len(gp) > 0 {
-				return gp[0]
-			}
-			return
-		},
+		"isodate":    isoDateFormat,
+		"unixtodate": unixToLocalDateString,
+		"now":        localNowString,
+		"asset":      a.assetFileName,
+		"string":     a.ts.GetTemplateStringVariantFunc(),
+		"include":    a.includeRenderedTemplate,
+		"urlize":     urlize,
+		"sort":       sortedStrings,
+		"absolute":   a.getFullAddress,
+		"mentions":   a.db.getWebmentionsByAddress,
 		"geotitle":   a.db.geoTitle,
+		"geolink":    geoOSMLink,
 		"opensearch": openSearchUrl,
 	}
-
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
 	if err != nil {
 		return err
@@ -212,6 +97,7 @@ type renderData struct {
 	Canonical                  string
 	TorAddress                 string
 	Blog                       *configBlog
+	User                       *configUser
 	Data                       interface{}
 	LoggedIn                   bool
 	CommentsEnabled            bool
@@ -223,6 +109,9 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 	// Server timing
 	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
 	// Check render data
+	if data.User == nil {
+		data.User = a.cfg.User
+	}
 	if data.Blog == nil {
 		if len(data.BlogString) == 0 {
 			data.BlogString = a.cfg.DefaultBlog
@@ -256,7 +145,7 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 		data.TorUsed = true
 	}
 	// Set content type
-	w.Header().Set(contentType, contentTypeHTMLUTF8)
+	w.Header().Set(contentType, contenttype.HTMLUTF8)
 	// Minify and write response
 	var tw bytes.Buffer
 	err := a.templates[template].ExecuteTemplate(&tw, template, data)
@@ -264,11 +153,28 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_, err = writeMinified(w, contentTypeHTML, tw.Bytes())
+	_, err = a.min.Write(w, contenttype.HTML, tw.Bytes())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Server timing
 	t.Stop()
+}
+
+func (a *goBlog) includeRenderedTemplate(templateName string, data ...interface{}) (template.HTML, error) {
+	if l := len(data); l < 1 || l > 2 {
+		return "", errors.New("wrong argument count")
+	}
+	if rd, ok := data[0].(*renderData); ok {
+		if len(data) == 2 {
+			nrd := *rd
+			nrd.Data = data[1]
+			rd = &nrd
+		}
+		var buf bytes.Buffer
+		err := a.templates[templateName].ExecuteTemplate(&buf, templateName, rd)
+		return template.HTML(buf.String()), err
+	}
+	return "", errors.New("wrong arguments")
 }

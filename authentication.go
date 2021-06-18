@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/pquerna/otp/totp"
 )
 
@@ -102,7 +103,7 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
-	if r.Header.Get(contentType) != contentTypeWWWForm {
+	if r.Header.Get(contentType) != contenttype.WWWForm {
 		return false
 	}
 	if r.FormValue("loginaction") != "login" {

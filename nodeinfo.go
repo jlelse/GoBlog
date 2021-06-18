@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
@@ -14,8 +16,8 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	})
-	w.Header().Set(contentType, contentTypeJSONUTF8)
-	_, _ = writeMinified(w, contentTypeJSON, b)
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = a.min.Write(w, contenttype.JSON, b)
 }
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +43,6 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		"metadata": map[string]interface{}{},
 	})
-	w.Header().Set(contentType, contentTypeJSONUTF8)
-	_, _ = writeMinified(w, contentTypeJSON, b)
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = a.min.Write(w, contenttype.JSON, b)
 }

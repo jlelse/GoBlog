@@ -4,7 +4,7 @@ RUN apk add --no-cache git gcc musl-dev
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
 ADD *.go go.mod go.sum /app/
 ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5"
-RUN go test -cover
+RUN go test -cover ./...
 RUN go build -ldflags '-w -s' -o GoBlog
 
 FROM alpine:3.13

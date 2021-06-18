@@ -1,13 +1,13 @@
 {{ define "footer" }}
     <footer>
-        {{ with menu .Blog "footer" }}
+        {{ with index .Blog.Menus "footer" }}
             <p>
             {{ range $i, $item := .Items }}
                 {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>
             {{ end }}
             </p>
         {{ end }}
-        <p translate="no">&copy; {{ dateformat now "2006" }} {{ with user.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
+        <p translate="no">&copy; {{ dateformat now "2006" }} {{ with .User.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
         {{ if .TorUsed }}
             <p>🔐 {{ string .Blog.Lang "connectedviator" }}</p>
         {{ else }}

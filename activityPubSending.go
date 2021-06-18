@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 type apRequest struct {
@@ -101,8 +103,8 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	r.Header.Set("Accept-Charset", "utf-8")
 	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
 	r.Header.Set(userAgent, appUserAgent)
-	r.Header.Set("Accept", contentTypeASUTF8)
-	r.Header.Set(contentType, contentTypeASUTF8)
+	r.Header.Set("Accept", contenttype.ASUTF8)
+	r.Header.Set(contentType, contenttype.ASUTF8)
 	r.Header.Set("Host", iri.Host)
 	// Sign request
 	a.apPostSignMutex.Lock()

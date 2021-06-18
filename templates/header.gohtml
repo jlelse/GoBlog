@@ -1,18 +1,18 @@
 {{ define "header" }}
   <header>
-    <h1><a href="{{ blogrelative .Blog "/" }}" rel="home" title="{{ .Blog.Title }}" translate="no">{{ .Blog.Title }}</a></h1>
+    <h1><a href="{{ .Blog.RelativePath "/" }}" rel="home" title="{{ .Blog.Title }}" translate="no">{{ .Blog.Title }}</a></h1>
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}
       <nav>
-        {{ with menu .Blog "main" }}
+        {{ with index .Blog.Menus "main" }}
           {{ range $i, $item := .Items }}{{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>{{ end }}
         {{ end }}
       </nav>
       {{ if .LoggedIn }}
         <nav>
-          <a href="{{ blogrelative .Blog "/editor" }}">{{ string .Blog.Lang "editor" }}</a>
+          <a href="{{ .Blog.RelativePath "/editor" }}">{{ string .Blog.Lang "editor" }}</a>
           &bull; <a href="/notifications">{{ string .Blog.Lang "notifications" }}</a>
           {{ if .WebmentionReceivingEnabled }}&bull; <a href="/webmention">{{ string .Blog.Lang "webmentions" }}</a>{{ end }}
-          {{ if .CommentsEnabled }}&bull; <a href="{{ blogrelative .Blog "/comment" }}">{{ string .Blog.Lang "comments" }}</a>{{ end }}
+          {{ if .CommentsEnabled }}&bull; <a href="{{ .Blog.RelativePath "/comment" }}">{{ string .Blog.Lang "comments" }}</a>{{ end }}
           &bull; <a href="/logout">{{ string .Blog.Lang "logout" }}</a>
         </nav>
       {{ end }}

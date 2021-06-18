@@ -84,6 +84,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 	}
 	err = m.verifyReader(resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 	_ = resp.Body.Close()
 	if err != nil {
 		_, err := a.db.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
@@ -162,39 +163,49 @@ func (m *mention) fill(mf *microformats.Microformat) bool {
 			}
 		}
 		// Title
-		if name, ok := mf.Properties["name"]; ok && len(name) > 0 {
-			if title, ok := name[0].(string); ok {
-				m.Title = strings.TrimSpace(title)
-			}
-		}
+		m.fillTitle(mf)
 		// Content
-		if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
-			if content, ok := contents[0].(map[string]string); ok {
-				if contentValue, ok := content["value"]; ok {
-					m.Content = strings.TrimSpace(contentValue)
-				}
-			}
-		}
+		m.fillContent(mf)
 		// Author
-		if authors, ok := mf.Properties["author"]; ok && len(authors) > 0 {
-			if author, ok := authors[0].(*microformats.Microformat); ok {
-				if names, ok := author.Properties["name"]; ok && len(names) > 0 {
-					if name, ok := names[0].(string); ok {
-						m.Author = strings.TrimSpace(name)
-					}
-				}
-			}
-		}
+		m.fillAuthor(mf)
 		return true
 	}
-	if len(mf.Children) > 0 {
-		for _, mfc := range mf.Children {
-			if m.fill(mfc) {
-				return true
-			}
+	for _, mfc := range mf.Children {
+		if m.fill(mfc) {
+			return true
 		}
 	}
 	return false
+}
+
+func (m *mention) fillTitle(mf *microformats.Microformat) {
+	if name, ok := mf.Properties["name"]; ok && len(name) > 0 {
+		if title, ok := name[0].(string); ok {
+			m.Title = strings.TrimSpace(title)
+		}
+	}
+}
+
+func (m *mention) fillContent(mf *microformats.Microformat) {
+	if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
+		if content, ok := contents[0].(map[string]string); ok {
+			if contentValue, ok := content["value"]; ok {
+				m.Content = strings.TrimSpace(contentValue)
+			}
+		}
+	}
+}
+
+func (m *mention) fillAuthor(mf *microformats.Microformat) {
+	if authors, ok := mf.Properties["author"]; ok && len(authors) > 0 {
+		if author, ok := authors[0].(*microformats.Microformat); ok {
+			if names, ok := author.Properties["name"]; ok && len(names) > 0 {
+				if name, ok := names[0].(string); ok {
+					m.Author = strings.TrimSpace(name)
+				}
+			}
+		}
+	}
 }
 
 func mfHasType(mf *microformats.Microformat, typ string) bool {

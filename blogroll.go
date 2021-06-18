@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/kaorimatz/go-opml"
 	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/thoas/go-funk"
@@ -55,14 +56,14 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
 		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
-	w.Header().Set(contentType, contentTypeXMLUTF8)
+	w.Header().Set(contentType, contenttype.XMLUTF8)
 	var opmlBytes bytes.Buffer
 	_ = opml.Render(&opmlBytes, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines.([]*opml.Outline),
 	})
-	_, _ = writeMinified(w, contentTypeXML, opmlBytes.Bytes())
+	_, _ = a.min.Write(w, contenttype.XML, opmlBytes.Bytes())
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

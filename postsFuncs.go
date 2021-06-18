@@ -4,8 +4,11 @@ import (
 	"html/template"
 	"log"
 	"strings"
+	"time"
 
+	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/araddon/dateparse"
 )
 
 func (a *goBlog) fullPostURL(p *post) string {
@@ -23,6 +26,14 @@ func (a *goBlog) shortPostURL(p *post) string {
 	return a.getFullAddress(s)
 }
 
+func postParameter(p *post, parameter string) []string {
+	return p.Parameters[parameter]
+}
+
+func postHasParameter(p *post, parameter string) bool {
+	return len(p.Parameters[parameter]) > 0
+}
+
 func (p *post) firstParameter(parameter string) (result string) {
 	if pp := p.Parameters[parameter]; len(pp) > 0 {
 		result = pp[0]
@@ -30,11 +41,11 @@ func (p *post) firstParameter(parameter string) (result string) {
 	return
 }
 
-func (p *post) title() string {
-	return p.firstParameter("title")
+func firstPostParameter(p *post, parameter string) string {
+	return p.firstParameter(parameter)
 }
 
-func (a *goBlog) html(p *post) template.HTML {
+func (a *goBlog) postHtml(p *post) template.HTML {
 	if p.rendered != "" {
 		return p.rendered
 	}
@@ -47,7 +58,7 @@ func (a *goBlog) html(p *post) template.HTML {
 	return p.rendered
 }
 
-func (a *goBlog) absoluteHTML(p *post) template.HTML {
+func (a *goBlog) absolutePostHTML(p *post) template.HTML {
 	if p.absoluteRendered != "" {
 		return p.absoluteRendered
 	}
@@ -62,12 +73,12 @@ func (a *goBlog) absoluteHTML(p *post) template.HTML {
 
 const summaryDivider = "<!--more-->"
 
-func (a *goBlog) summary(p *post) (summary string) {
+func (a *goBlog) postSummary(p *post) (summary string) {
 	summary = p.firstParameter("summary")
 	if summary != "" {
 		return
 	}
-	html := string(a.html(p))
+	html := string(a.postHtml(p))
 	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
 		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(splitted[0]))
 		summary = doc.Text()
@@ -78,7 +89,7 @@ func (a *goBlog) summary(p *post) (summary string) {
 	return
 }
 
-func (a *goBlog) translations(p *post) []*post {
+func (a *goBlog) postTranslations(p *post) []*post {
 	translationkey := p.firstParameter("translationkey")
 	if translationkey == "" {
 		return nil
@@ -104,4 +115,31 @@ func (a *goBlog) translations(p *post) []*post {
 
 func (p *post) isPublishedSectionPost() bool {
 	return p.Published != "" && p.Section != "" && p.Status == statusPublished
+}
+
+// Public because of rendering
+
+func (p *post) Title() string {
+	return p.firstParameter("title")
+}
+
+func (p *post) GeoURI() *gogeouri.Geo {
+	loc := p.firstParameter("location")
+	if loc == "" {
+		return nil
+	}
+	g, _ := gogeouri.Parse(loc)
+	return g
+}
+
+func (p *post) Old() bool {
+	pub := p.Published
+	if pub == "" {
+		return false
+	}
+	pubDate, err := dateparse.ParseLocal(pub)
+	if err != nil {
+		return false
+	}
+	return pubDate.AddDate(1, 0, 0).Before(time.Now())
 }

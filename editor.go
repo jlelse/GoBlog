@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 )
 
 const editorPath = "/editor"
@@ -71,7 +73,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			req.Header.Set(contentType, contentTypeJSON)
+			req.Header.Set(contentType, contenttype.JSON)
 			a.editorMicropubPost(w, req, false)
 		case "upload":
 			a.editorMicropubPost(w, r, true)

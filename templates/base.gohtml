@@ -15,11 +15,7 @@
     <link rel="micropub" href="/micropub" />
     <link rel="authorization_endpoint" href="/indieauth" />
     <link rel="token_endpoint" href="/indieauth/token" />
-    {{ with user }}
-    {{ range .Identities }}
-    <link rel="me" href="{{ . }}" />
-    {{ end }}
-    {{ end }}
+    {{ with .User }}{{ range .Identities }}<link rel="me" href="{{ . }}" />{{ end }}{{ end }}
     {{ $os := opensearch .Blog }}
     {{ if $os }}
       <link rel="search" type="application/opensearchdescription+xml" href="{{ $os }}" title="{{ .Blog.Title }}" />

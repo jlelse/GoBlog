@@ -20,7 +20,7 @@
             <input type="hidden" name="target" value="{{ .Canonical }}">
             <input class="fw" type="submit" value="{{ string .Blog.Lang "send" }}">
         </form>
-        <form class="fw-form p" method="post" action="{{ blogrelative .Blog "/comment" }}">
+        <form class="fw-form p" method="post" action="{{ .Blog.RelativePath "/comment" }}">
             <input type="hidden" name="target" value="{{ .Canonical }}">
             <input type="text" name="name" placeholder="{{ string .Blog.Lang "nameopt" }}">
             <input type="url" name="website" placeholder="{{ string .Blog.Lang "websiteopt" }}">

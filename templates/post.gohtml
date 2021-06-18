@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ with title .Data }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
+  <title>{{ with .Data.Title }}{{ . }} - {{end}}{{ .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
 {{ end }}
@@ -8,7 +8,7 @@
   <main class=h-entry>
     <article>
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
-      {{ with title .Data }}<h1 class=p-name>{{ . }}</h1>{{ end }}
+      {{ with .Data.Title }}<h1 class=p-name>{{ . }}</h1>{{ end }}
       {{ include "postmeta" . }}
       {{ include "postactions" . }}
       {{ if .Data.Content }}
@@ -29,12 +29,12 @@
   </main>
   {{ if .LoggedIn }}
     <div class="p">
-      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}#update">
+      <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}#update">
         <input type="hidden" name="editoraction" value="loadupdate">
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "update" }}">
       </form>
-      <form class="in" method="post" action="{{ blogrelative .Blog "/editor" }}#delete">
+      <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}#delete">
         <input type="hidden" name="editoraction" value="loaddelete">
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "delete" }}">

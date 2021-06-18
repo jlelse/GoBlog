@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/spf13/cast"
@@ -90,7 +91,7 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		"links": []map[string]string{
 			{
 				"rel":  "self",
-				"type": contentTypeAS,
+				"type": contenttype.AS,
 				"href": a.apIri(blog),
 			},
 			{
@@ -100,8 +101,8 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	})
-	w.Header().Set(contentType, "application/jrd+json"+charsetUtf8Suffix)
-	_, _ = writeMinified(w, contentTypeJSON, b)
+	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
+	_, _ = a.min.Write(w, contenttype.JSON, b)
 }
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +245,7 @@ func apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
 }
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(contentType, "application/xrd+xml"+charsetUtf8Suffix)
+	w.Header().Set(contentType, "application/xrd+xml"+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
 }
 
@@ -253,7 +254,7 @@ func apGetRemoteActor(iri string) (*asPerson, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	req.Header.Set("Accept", contentTypeAS)
+	req.Header.Set("Accept", contenttype.AS)
 	req.Header.Set(userAgent, appUserAgent)
 	resp, err := appHttpClient.Do(req)
 	if err != nil {
@@ -308,7 +309,7 @@ func (db *database) apRemoveInbox(inbox string) error {
 func (a *goBlog) apPost(p *post) {
 	n := a.toASNote(p)
 	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
-		"@context":  asContext,
+		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":        a.fullPostURL(p),
 		"published": n.Published,
@@ -324,7 +325,7 @@ func (a *goBlog) apPost(p *post) {
 
 func (a *goBlog) apUpdate(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
-		"@context":  asContext,
+		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":        a.fullPostURL(p),
 		"published": time.Now().Format("2006-01-02T15:04:05-07:00"),
@@ -335,7 +336,7 @@ func (a *goBlog) apUpdate(p *post) {
 
 func (a *goBlog) apAnnounce(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
-		"@context":  asContext,
+		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":        a.fullPostURL(p) + "#announce",
 		"published": a.toASNote(p).Published,
@@ -346,7 +347,7 @@ func (a *goBlog) apAnnounce(p *post) {
 
 func (a *goBlog) apDelete(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
-		"@context": asContext,
+		"@context": []string{asContext},
 		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":       a.fullPostURL(p) + "#delete",
 		"type":     "Delete",
@@ -383,7 +384,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]i
 	// remove @context from the inner activity
 	delete(follow, "@context")
 	accept := map[string]interface{}{
-		"@context": asContext,
+		"@context": []string{asContext},
 		"to":       follow["actor"],
 		"actor":    a.apIri(blog),
 		"object":   follow,

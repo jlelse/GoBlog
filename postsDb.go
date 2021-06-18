@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"text/template"
 	"time"
 
@@ -122,8 +121,6 @@ type postCreationOptions struct {
 	oldStatus postStatus
 }
 
-var postCreationMutex sync.Mutex
-
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	// Check post
 	if err := a.checkPost(p); err != nil {
@@ -148,8 +145,8 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 // Save check post to database
 func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Prevent bad things
-	postCreationMutex.Lock()
-	defer postCreationMutex.Unlock()
+	db.pcm.Lock()
+	defer db.pcm.Unlock()
 	// Check if path is already in use
 	if o.new || (p.Path != o.oldPath) {
 		// Post is new or post path was changed
