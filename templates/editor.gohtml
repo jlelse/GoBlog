@@ -18,7 +18,7 @@ tags:
 - 
 ---
 </textarea>
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "create" }}">
+      <input type="submit" value="{{ string .Blog.Lang "create" }}">
     </form>
     <h2 id="update">{{ string .Blog.Lang "update" }}</h2>
     <form class="fw-form p" method="post" action="#update">
@@ -30,25 +30,25 @@ tags:
         <input type="hidden" name="editoraction" value="loadupdate">
         <input type="url" name="url" placeholder="URL">
       {{ end }}
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">
+      <input type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
     <h2 id="delete">{{ string .Blog.Lang "delete" }}</h2>
     <form class="fw-form p" method="post" action="#delete">
       {{ if .Data.DeleteURL }}
         <input type="hidden" name="action" value="delete">
         <input type="url" name="url" placeholder="URL" value="{{ .Data.DeleteURL }}">
-        <input class="fw" type="submit" value="{{ string .Blog.Lang "confirmdelete" }}">
+        <input type="submit" value="{{ string .Blog.Lang "confirmdelete" }}">
       {{ else }}
         <input type="hidden" name="editoraction" value="loaddelete">
         <input type="url" name="url" placeholder="URL">
-        <input class="fw" type="submit" value="{{ string .Blog.Lang "delete" }}">
+        <input type="submit" value="{{ string .Blog.Lang "delete" }}">
       {{ end }}
     </form>
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw-form p" method="post" enctype="multipart/form-data">
       <input type="hidden" name="editoraction" value="upload">
       <input class="fw" type="file" name="file">
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "upload" }}">
+      <input type="submit" value="{{ string .Blog.Lang "upload" }}">
     </form>
     <h2>{{ string .Blog.Lang "drafts" }}</h2>
     <form class="fw-form p" method="post">
@@ -58,8 +58,14 @@ tags:
           <option value="{{ absolute $draft.Path }}">{{ with ($draft.Title) }}{{ . }}{{ else }}{{ $draft.Path }}{{ end }}</option>
         {{ end }}
       </select>
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "update" }}">
+      <input type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
+    <h2>{{ string .Blog.Lang "location" }}</h2>
+    <form class="fw-form p">
+      <input id="geobtn" type="button" class="fw" value="{{ string .Blog.Lang "locationget" }}" data-failed="{{ string .Blog.Lang "locationfailed" }}" data-notsupported="{{ string .Blog.Lang "locationnotsupported" }}">
+      <input id="geostatus" type="text" class="hide" readonly>
+    </form>
+    <script defer src="{{ asset "js/geohelper.js" }}"></script>
     <script defer src="{{ asset "js/formcache.js" }}"></script>
   </main>
 {{ end }}
