@@ -2,8 +2,10 @@ FROM golang:1.16-alpine3.13 as build
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
-ADD *.go go.mod go.sum /app/
 ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5"
+ADD *.go go.mod go.sum /app/
+ADD pkgs/ /app/pkgs/
+ADD testdata/ /app/testdata/
 RUN go test -cover ./...
 RUN go build -ldflags '-w -s' -o GoBlog
 
