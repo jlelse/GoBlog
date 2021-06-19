@@ -6,6 +6,7 @@ ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5"
 ADD *.go go.mod go.sum /app/
 ADD pkgs/ /app/pkgs/
 ADD testdata/ /app/testdata/
+Add templates/ /app/templates/
 RUN go test -cover ./...
 RUN go build -ldflags '-w -s' -o GoBlog
 
