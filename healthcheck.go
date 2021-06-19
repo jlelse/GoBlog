@@ -12,7 +12,7 @@ func (a *goBlog) healthcheck() bool {
 		fmt.Println(err.Error())
 		return false
 	}
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false

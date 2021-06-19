@@ -78,7 +78,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		resp = rec.Result()
 	} else {
 		req.Header.Set(userAgent, appUserAgent)
-		resp, err = appHttpClient.Do(req)
+		resp, err = a.httpClient.Do(req)
 		if err != nil {
 			return err
 		}

@@ -47,6 +47,7 @@ func main() {
 	}
 
 	app := &goBlog{}
+	app.initHTTPClient()
 
 	// Initialize config
 	if err = app.initConfig(); err != nil {

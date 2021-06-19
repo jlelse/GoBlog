@@ -21,24 +21,24 @@ func (a *goBlog) serveNotAllowed(w http.ResponseWriter, r *http.Request) {
 	a.serveError(w, r, "", http.StatusMethodNotAllowed)
 }
 
-var errorCheckMediaTypes = []ct.MediaType{
-	ct.NewMediaType(contenttype.HTML),
-}
-
 func (a *goBlog) serveError(w http.ResponseWriter, r *http.Request, message string, status int) {
-	if mt, _, err := ct.GetAcceptableMediaType(r, errorCheckMediaTypes); err != nil || mt.String() != errorCheckMediaTypes[0].String() {
+	// Init the first time
+	if len(a.errorCheckMediaTypes) == 0 {
+		a.errorCheckMediaTypes = append(a.errorCheckMediaTypes, ct.NewMediaType(contenttype.HTML))
+	}
+	// Check message
+	if message == "" {
+		message = http.StatusText(status)
+	}
+	// Check if request accepts HTML
+	if mt, _, err := ct.GetAcceptableMediaType(r, a.errorCheckMediaTypes); err != nil || mt.String() != a.errorCheckMediaTypes[0].String() {
 		// Request doesn't accept HTML
 		http.Error(w, message, status)
 		return
 	}
-	title := fmt.Sprintf("%d %s", status, http.StatusText(status))
-	if message == "" {
-		message = http.StatusText(status)
-	}
-	w.WriteHeader(status)
-	a.render(w, r, templateError, &renderData{
+	a.renderWithStatusCode(w, r, status, templateError, &renderData{
 		Data: &errorData{
-			Title:   title,
+			Title:   fmt.Sprintf("%d %s", status, http.StatusText(status)),
 			Message: message,
 		},
 	})

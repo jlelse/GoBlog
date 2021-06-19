@@ -9,6 +9,7 @@ import (
 	"git.jlel.se/jlelse/GoBlog/pkgs/minify"
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
+	ct "github.com/elnormous/contenttype"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -23,6 +24,8 @@ type goBlog struct {
 	apPostSignMutex    sync.Mutex
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
+	// ActivityStreams
+	asCheckMediaTypes []ct.MediaType
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile
@@ -36,6 +39,8 @@ type goBlog struct {
 	cfg *config
 	// Database
 	db *database
+	// Errors
+	errorCheckMediaTypes []ct.MediaType
 	// Hooks
 	pPostHooks   []postHookFunc
 	pUpdateHooks []postHookFunc
@@ -43,6 +48,8 @@ type goBlog struct {
 	hourlyHooks  []hourlyHookFunc
 	// HTTP
 	cspDomains string
+	// HTTP Client
+	httpClient httpClient
 	// HTTP Routers
 	d                      *dynamicHandler
 	privateMode            bool

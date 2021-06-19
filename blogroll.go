@@ -78,7 +78,7 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	if config.AuthHeader != "" && config.AuthValue != "" {
 		req.Header.Set(config.AuthHeader, config.AuthValue)
 	}
-	res, err := appHttpClient.Do(req)
+	res, err := a.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

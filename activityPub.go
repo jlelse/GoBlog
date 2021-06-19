@@ -114,7 +114,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	blogIri := a.apIri(blog)
 	// Verify request
-	requestActor, requestKey, requestActorStatus, err := apVerifySignature(r)
+	requestActor, requestKey, requestActorStatus, err := a.apVerifySignature(r)
 	if err != nil {
 		// Send 401 because signature could not be verified
 		a.serveError(w, r, err.Error(), http.StatusUnauthorized)
@@ -217,14 +217,14 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
+func (a *goBlog) apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
 	verifier, err := httpsig.NewVerifier(r)
 	if err != nil {
 		// Error with signature header etc.
 		return nil, "", 0, err
 	}
 	keyID := verifier.KeyId()
-	actor, statusCode, err := apGetRemoteActor(keyID)
+	actor, statusCode, err := a.apGetRemoteActor(keyID)
 	if err != nil || actor == nil || statusCode != 0 {
 		// Actor not found or something else bad
 		return nil, keyID, statusCode, err
@@ -249,14 +249,14 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
 }
 
-func apGetRemoteActor(iri string) (*asPerson, int, error) {
+func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {
 	req, err := http.NewRequest(http.MethodGet, iri, nil)
 	if err != nil {
 		return nil, 0, err
 	}
 	req.Header.Set("Accept", contenttype.AS)
 	req.Header.Set(userAgent, appUserAgent)
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -367,7 +367,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]i
 		// actor and object are equal
 		return
 	}
-	follower, status, err := apGetRemoteActor(newFollower)
+	follower, status, err := a.apGetRemoteActor(newFollower)
 	if err != nil || status != 0 {
 		// Couldn't retrieve remote actor info
 		log.Println("Failed to retrieve remote actor info:", newFollower)

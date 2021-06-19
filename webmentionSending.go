@@ -47,11 +47,11 @@ func (a *goBlog) sendWebmentions(p *post) error {
 			// Just ignore the mention
 			continue
 		}
-		endpoint := discoverEndpoint(link)
+		endpoint := a.discoverEndpoint(link)
 		if endpoint == "" {
 			continue
 		}
-		if err = sendWebmention(endpoint, a.fullPostURL(p), link); err != nil {
+		if err = a.sendWebmention(endpoint, a.fullPostURL(p), link); err != nil {
 			log.Println("Sending webmention to " + link + " failed")
 			continue
 		}
@@ -60,7 +60,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 	return nil
 }
 
-func sendWebmention(endpoint, source, target string) error {
+func (a *goBlog) sendWebmention(endpoint, source, target string) error {
 	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(url.Values{
 		"source": []string{source},
 		"target": []string{target},
@@ -70,7 +70,7 @@ func sendWebmention(endpoint, source, target string) error {
 	}
 	req.Header.Set(contentType, contenttype.WWWForm)
 	req.Header.Set(userAgent, appUserAgent)
-	res, err := appHttpClient.Do(req)
+	res, err := a.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -82,14 +82,14 @@ func sendWebmention(endpoint, source, target string) error {
 	return nil
 }
 
-func discoverEndpoint(urlStr string) string {
+func (a *goBlog) discoverEndpoint(urlStr string) string {
 	doRequest := func(method, urlStr string) string {
 		req, err := http.NewRequest(method, urlStr, nil)
 		if err != nil {
 			return ""
 		}
 		req.Header.Set(userAgent, appUserAgent)
-		resp, err := appHttpClient.Do(req)
+		resp, err := a.httpClient.Do(req)
 		if err != nil {
 			return ""
 		}

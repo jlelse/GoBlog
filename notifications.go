@@ -30,7 +30,7 @@ func (a *goBlog) sendNotification(text string) {
 		log.Println("Failed to save notification:", err.Error())
 	}
 	if an := a.cfg.Notifications; an != nil {
-		err := an.Telegram.send(n.Text, "")
+		err := a.send(an.Telegram, n.Text, "")
 		if err != nil {
 			log.Println("Failed to send Telegram notification:", err.Error())
 		}

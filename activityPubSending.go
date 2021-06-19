@@ -114,7 +114,7 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 		return err
 	}
 	// Do request
-	resp, err := appHttpClient.Do(r)
+	resp, err := a.httpClient.Do(r)
 	if err != nil {
 		return err
 	}

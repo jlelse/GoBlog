@@ -106,7 +106,7 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
 	ms := a.cfg.Micropub.MediaStorage
 	if ms != nil && ms.BunnyStorageKey != "" && ms.BunnyStorageName != "" {
-		return ms.uploadToBunny(filename, f)
+		return a.uploadToBunny(filename, f)
 	}
 	loc, err := saveMediaFile(filename, f)
 	if err != nil {
@@ -118,13 +118,14 @@ func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
 	return a.getFullAddress(loc), nil
 }
 
-func (config *configMicropubMedia) uploadToBunny(filename string, f io.Reader) (location string, err error) {
+func (a *goBlog) uploadToBunny(filename string, f io.Reader) (location string, err error) {
+	config := a.cfg.Micropub.MediaStorage
 	if config == nil || config.BunnyStorageName == "" || config.BunnyStorageKey == "" || config.MediaURL == "" {
 		return "", errors.New("Bunny storage not completely configured")
 	}
 	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("https://storage.bunnycdn.com/%s/%s", url.PathEscape(config.BunnyStorageName), url.PathEscape(filename)), f)
 	req.Header.Add("AccessKey", config.BunnyStorageKey)
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}

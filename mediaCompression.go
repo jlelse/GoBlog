@@ -37,7 +37,7 @@ func (a *goBlog) tinify(url string, config *configMicropubMedia) (location strin
 	}
 	req.SetBasicAuth("api", config.TinifyKey)
 	req.Header.Set(contentType, contenttype.JSON)
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +64,7 @@ func (a *goBlog) tinify(url string, config *configMicropubMedia) (location strin
 	}
 	downloadReq.SetBasicAuth("api", config.TinifyKey)
 	downloadReq.Header.Set(contentType, contenttype.JSON)
-	downloadResp, err := appHttpClient.Do(downloadReq)
+	downloadResp, err := a.httpClient.Do(downloadReq)
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +121,7 @@ func (a *goBlog) shortPixel(url string, config *configMicropubMedia) (location s
 	if err != nil {
 		return "", err
 	}
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -165,7 +165,7 @@ func (a *goBlog) cloudflare(url string) (location string, err error) {
 	if err != nil {
 		return "", err
 	}
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}

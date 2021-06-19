@@ -65,7 +65,7 @@ func (a *goBlog) initRendering() error {
 		"sort":       sortedStrings,
 		"absolute":   a.getFullAddress,
 		"mentions":   a.db.getWebmentionsByAddress,
-		"geotitle":   a.db.geoTitle,
+		"geotitle":   a.geoTitle,
 		"geolink":    geoOSMLink,
 		"opensearch": openSearchUrl,
 	}
@@ -106,6 +106,10 @@ type renderData struct {
 }
 
 func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
+	a.renderWithStatusCode(w, r, http.StatusOK, template, data)
+}
+
+func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, template string, data *renderData) {
 	// Server timing
 	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
 	// Check render data
@@ -153,6 +157,7 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(statusCode)
 	_, err = a.min.Write(w, contenttype.HTML, tw.Bytes())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

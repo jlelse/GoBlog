@@ -17,17 +17,18 @@ const asContext = "https://www.w3.org/ns/activitystreams"
 
 const asRequestKey requestContextKey = "asRequest"
 
-var asCheckMediaTypes = []ct.MediaType{
-	ct.NewMediaType(contenttype.HTML),
-	ct.NewMediaType(contenttype.AS),
-	ct.NewMediaType(contenttype.LDJSON),
-}
-
 func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
+	if len(a.asCheckMediaTypes) == 0 {
+		a.asCheckMediaTypes = []ct.MediaType{
+			ct.NewMediaType(contenttype.HTML),
+			ct.NewMediaType(contenttype.AS),
+			ct.NewMediaType(contenttype.LDJSON),
+		}
+	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
 			// Check if accepted media type is not HTML
-			if mt, _, err := ct.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
+			if mt, _, err := ct.GetAcceptableMediaType(r, a.asCheckMediaTypes); err == nil && mt.String() != a.asCheckMediaTypes[0].String() {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
 				return
 			}

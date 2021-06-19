@@ -17,7 +17,7 @@ func (a *goBlog) initTelegram() {
 	a.pPostHooks = append(a.pPostHooks, func(p *post) {
 		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() && p.isPublishedSectionPost() {
 			if html := tg.generateHTML(p.Title(), a.fullPostURL(p), a.shortPostURL(p)); html != "" {
-				if err := tg.send(html, "HTML"); err != nil {
+				if err := a.send(tg, html, "HTML"); err != nil {
 					log.Printf("Failed to send post to Telegram: %v", err)
 				}
 			}
@@ -54,7 +54,7 @@ func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) string {
 	return message.String()
 }
 
-func (tg *configTelegram) send(message, mode string) error {
+func (a *goBlog) send(tg *configTelegram, message, mode string) error {
 	if !tg.enabled() {
 		return nil
 	}
@@ -70,7 +70,7 @@ func (tg *configTelegram) send(message, mode string) error {
 	}
 	tgURL.RawQuery = params.Encode()
 	req, _ := http.NewRequest(http.MethodPost, tgURL.String(), nil)
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return err
 	}

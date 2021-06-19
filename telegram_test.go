@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_configTelegram_enabled(t *testing.T) {
@@ -69,8 +71,7 @@ func Test_configTelegram_generateHTML(t *testing.T) {
 }
 
 func Test_configTelegram_send(t *testing.T) {
-	fakeAppHttpClient.lock(true)
-	defer fakeAppHttpClient.unlock()
+	fakeClient := getFakeHTTPClient()
 
 	tg := &configTelegram{
 		Enabled:  true,
@@ -78,25 +79,19 @@ func Test_configTelegram_send(t *testing.T) {
 		BotToken: "bottoken",
 	}
 
-	fakeAppHttpClient.setFakeResponse(200, "", nil)
-
-	err := tg.send("Message", "HTML")
-	if err != nil {
-		t.Fatalf("Error: %v", err)
+	app := &goBlog{
+		httpClient: fakeClient,
 	}
 
-	if fakeAppHttpClient.req == nil {
-		t.Error("Empty request")
-	}
-	if fakeAppHttpClient.err != nil {
-		t.Error("Error in request")
-	}
-	if fakeAppHttpClient.req.Method != http.MethodPost {
-		t.Error("Wrong method")
-	}
-	if u := fakeAppHttpClient.req.URL.String(); u != "https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Message" {
-		t.Errorf("Wrong request URL, got: %v", u)
-	}
+	fakeClient.setFakeResponse(200, "", nil)
+
+	err := app.send(tg, "Message", "HTML")
+	assert.Nil(t, err)
+
+	assert.NotNil(t, fakeClient.req)
+	assert.Nil(t, fakeClient.err)
+	assert.Equal(t, http.MethodPost, fakeClient.req.Method)
+	assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Message", fakeClient.req.URL.String())
 }
 
 func Test_goBlog_initTelegram(t *testing.T) {
@@ -113,10 +108,9 @@ func Test_goBlog_initTelegram(t *testing.T) {
 
 func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
-		fakeAppHttpClient.lock(true)
-		defer fakeAppHttpClient.unlock()
+		fakeClient := getFakeHTTPClient()
 
-		fakeAppHttpClient.setFakeResponse(200, "", nil)
+		fakeClient.setFakeResponse(200, "", nil)
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
@@ -134,6 +128,7 @@ func Test_telegram(t *testing.T) {
 					},
 				},
 			},
+			httpClient: fakeClient,
 		}
 		app.setInMemoryDatabase()
 
@@ -152,16 +147,17 @@ func Test_telegram(t *testing.T) {
 
 		app.pPostHooks[0](p)
 
-		if u := fakeAppHttpClient.req.URL.String(); u != "https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Title%0A%0A%3Ca+href%3D%22https%3A%2F%2Fexample.com%2Fs%2F1%22%3Ehttps%3A%2F%2Fexample.com%2Fs%2F1%3C%2Fa%3E" {
-			t.Errorf("Wrong request URL, got: %v", u)
-		}
+		assert.Equal(
+			t,
+			"https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Title%0A%0A%3Ca+href%3D%22https%3A%2F%2Fexample.com%2Fs%2F1%22%3Ehttps%3A%2F%2Fexample.com%2Fs%2F1%3C%2Fa%3E",
+			fakeClient.req.URL.String(),
+		)
 	})
 
 	t.Run("Telegram disabled", func(t *testing.T) {
-		fakeAppHttpClient.lock(true)
-		defer fakeAppHttpClient.unlock()
+		fakeClient := getFakeHTTPClient()
 
-		fakeAppHttpClient.setFakeResponse(200, "", nil)
+		fakeClient.setFakeResponse(200, "", nil)
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
@@ -173,6 +169,7 @@ func Test_telegram(t *testing.T) {
 					"en": {},
 				},
 			},
+			httpClient: fakeClient,
 		}
 		app.setInMemoryDatabase()
 
@@ -191,8 +188,6 @@ func Test_telegram(t *testing.T) {
 
 		app.pPostHooks[0](p)
 
-		if fakeAppHttpClient.req != nil {
-			t.Error("There should be no request")
-		}
+		assert.Nil(t, fakeClient.req)
 	})
 }

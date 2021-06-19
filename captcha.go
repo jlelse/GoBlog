@@ -22,7 +22,6 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			}
 		}
 		// 2. Show Captcha
-		w.WriteHeader(http.StatusUnauthorized)
 		h, _ := json.Marshal(r.Header.Clone())
 		b, _ := io.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
 		_ = r.Body.Close()
@@ -31,7 +30,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		a.render(w, r, templateCaptcha, &renderData{
+		a.renderWithStatusCode(w, r, http.StatusUnauthorized, templateCaptcha, &renderData{
 			Data: map[string]string{
 				"captchamethod":  r.Method,
 				"captchaheaders": base64.StdEncoding.EncodeToString(h),

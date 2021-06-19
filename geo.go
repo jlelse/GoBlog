@@ -12,11 +12,11 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func (db *database) geoTitle(g *gogeouri.Geo, lang string) string {
+func (a *goBlog) geoTitle(g *gogeouri.Geo, lang string) string {
 	if name, ok := g.Parameters["name"]; ok && len(name) > 0 && name[0] != "" {
 		return name[0]
 	}
-	ba, err := db.photonReverse(g.Latitude, g.Longitude, lang)
+	ba, err := a.photonReverse(g.Latitude, g.Longitude, lang)
 	if err != nil {
 		return ""
 	}
@@ -32,9 +32,9 @@ func (db *database) geoTitle(g *gogeouri.Geo, lang string) string {
 	return strings.Join(funk.FilterString([]string{name, city, state, country}, func(s string) bool { return s != "" }), ", ")
 }
 
-func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error) {
+func (a *goBlog) photonReverse(lat, lon float64, lang string) ([]byte, error) {
 	cacheKey := fmt.Sprintf("photon-%v-%v-%v", lat, lon, lang)
-	cache, _ := db.retrievePersistentCache(cacheKey)
+	cache, _ := a.db.retrievePersistentCache(cacheKey)
 	if cache != nil {
 		return cache, nil
 	}
@@ -51,7 +51,7 @@ func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error)
 		return nil, err
 	}
 	req.Header.Set(userAgent, appUserAgent)
-	resp, err := appHttpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (db *database) photonReverse(lat, lon float64, lang string) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	_ = db.cachePersistently(cacheKey, ba)
+	_ = a.db.cachePersistently(cacheKey, ba)
 	return ba, nil
 }
 
