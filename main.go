@@ -59,7 +59,7 @@ func main() {
 	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
 		// Connect to public address + "/ping" and exit with 0 when successful
 		health := app.healthcheckExitCode()
-		app.shutdown.Shutdown()
+		app.shutdown.ShutdownAndWait()
 		os.Exit(health)
 		return
 	}
@@ -75,7 +75,7 @@ func main() {
 			return
 		}
 		log.Println("TOTP-Secret:", key.Secret())
-		app.shutdown.Shutdown()
+		app.shutdown.ShutdownAndWait()
 		return
 	}
 
@@ -98,7 +98,7 @@ func main() {
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
 		app.checkAllExternalLinks()
-		app.shutdown.Shutdown()
+		app.shutdown.ShutdownAndWait()
 		return
 	}
 
@@ -154,6 +154,6 @@ func main() {
 
 func (a *goBlog) logErrAndQuit(v ...interface{}) {
 	log.Println(v...)
-	a.shutdown.Shutdown()
+	a.shutdown.ShutdownAndWait()
 	os.Exit(1)
 }

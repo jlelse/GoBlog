@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -15,8 +14,6 @@ import (
 
 type database struct {
 	db    *sql.DB
-	c     context.Context
-	cf    context.CancelFunc
 	stmts map[string]*sql.Stmt
 	g     singleflight.Group
 	pc    singleflight.Group
@@ -103,12 +100,9 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, cf := context.WithCancel(context.Background())
 	return &database{
 		db:    db,
 		stmts: map[string]*sql.Stmt{},
-		c:     c,
-		cf:    cf,
 	}, nil
 }
 
@@ -126,7 +120,6 @@ func (db *database) dump(file string) {
 }
 
 func (db *database) close() error {
-	db.cf()
 	return db.db.Close()
 }
 
@@ -136,7 +129,7 @@ func (db *database) prepare(query string) (*sql.Stmt, error) {
 		if ok && stmt != nil {
 			return stmt, nil
 		}
-		stmt, err := db.db.PrepareContext(db.c, query)
+		stmt, err := db.db.Prepare(query)
 		if err != nil {
 			return nil, err
 		}
@@ -154,12 +147,12 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 	if err != nil {
 		return nil, err
 	}
-	return stmt.ExecContext(db.c, args...)
+	return stmt.Exec(args...)
 }
 
 func (db *database) execMulti(query string, args ...interface{}) (sql.Result, error) {
 	// Can't prepare the statement
-	return db.db.ExecContext(db.c, query, args...)
+	return db.db.Exec(query, args...)
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
@@ -167,7 +160,7 @@ func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) 
 	if err != nil {
 		return nil, err
 	}
-	return stmt.QueryContext(db.c, args...)
+	return stmt.Query(args...)
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
@@ -175,7 +168,7 @@ func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error
 	if err != nil {
 		return nil, err
 	}
-	return stmt.QueryRowContext(db.c, args...), nil
+	return stmt.QueryRow(args...), nil
 }
 
 // Other things

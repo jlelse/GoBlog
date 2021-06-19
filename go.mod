@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
-	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210617195814-5da00556182e
+	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210619211856-8953b4bd5490
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40
 	github.com/PuerkitoBio/goquery v1.7.0

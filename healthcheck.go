@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 func (a *goBlog) healthcheck() bool {
-	req, err := http.NewRequest(http.MethodGet, a.getFullAddress("/ping"), nil)
+	timeoutContext, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelFunc()
+	req, err := http.NewRequestWithContext(timeoutContext, http.MethodGet, a.getFullAddress("/ping"), nil)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
