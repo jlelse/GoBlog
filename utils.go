@@ -1,10 +1,13 @@
 package main
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -190,4 +193,36 @@ func charCount(s string) (count int) {
 
 func wrapStringAsHTML(s string) template.HTML {
 	return template.HTML(s)
+}
+
+// Check if url has allowed file extension
+func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
+	u, err := url.Parse(rawUrl)
+	if err != nil {
+		return "", false
+	}
+	ext = strings.ToLower(path.Ext(u.Path))
+	if ext == "" {
+		return "", false
+	}
+	ext = ext[1:]
+	allowed = funk.Map(allowed, func(str string) string {
+		return strings.ToLower(str)
+	}).([]string)
+	return ext, funk.ContainsString(allowed, strings.ToLower(ext))
+}
+
+// Get SHA-256 hash of file
+func getSHA256(file io.ReadSeeker) (filename string, err error) {
+	if _, err = file.Seek(0, 0); err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	if _, err = io.Copy(h, file); err != nil {
+		return "", err
+	}
+	if _, err = file.Seek(0, 0); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

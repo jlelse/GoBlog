@@ -83,13 +83,12 @@ func Test_configTelegram_send(t *testing.T) {
 		httpClient: fakeClient,
 	}
 
-	fakeClient.setFakeResponse(200, "", nil)
+	fakeClient.setFakeResponse(200, "")
 
 	err := app.send(tg, "Message", "HTML")
 	assert.Nil(t, err)
 
 	assert.NotNil(t, fakeClient.req)
-	assert.Nil(t, fakeClient.err)
 	assert.Equal(t, http.MethodPost, fakeClient.req.Method)
 	assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Message", fakeClient.req.URL.String())
 }
@@ -110,7 +109,7 @@ func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
 		fakeClient := getFakeHTTPClient()
 
-		fakeClient.setFakeResponse(200, "", nil)
+		fakeClient.setFakeResponse(200, "")
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
@@ -157,7 +156,7 @@ func Test_telegram(t *testing.T) {
 	t.Run("Telegram disabled", func(t *testing.T) {
 		fakeClient := getFakeHTTPClient()
 
-		fakeClient.setFakeResponse(200, "", nil)
+		fakeClient.setFakeResponse(200, "")
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},

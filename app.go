@@ -75,6 +75,9 @@ type goBlog struct {
 	logf *rotatelogs.RotateLogs
 	// Markdown
 	md, absoluteMd goldmark.Markdown
+	// Media
+	compressorsInit sync.Once
+	compressors     []mediaCompression
 	// Minify
 	min minify.Minifier
 	// Regex Redirects

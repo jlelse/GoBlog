@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
@@ -63,45 +61,21 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Try to compress file (only when not in private mode)
-	if pm := a.cfg.PrivateMode; !(pm != nil && pm.Enabled) {
-		serveCompressionError := func(ce error) {
-			a.serveError(w, r, "failed to compress file: "+ce.Error(), http.StatusInternalServerError)
+	if pm := a.cfg.PrivateMode; pm == nil || !pm.Enabled {
+		compressedLocation, compressionErr := a.compressMediaFile(location)
+		if compressionErr != nil {
+			a.serveError(w, r, "failed to compress file: "+compressionErr.Error(), http.StatusInternalServerError)
+			return
 		}
-		var compressedLocation string
-		var compressionErr error
-		if ms := a.cfg.Micropub.MediaStorage; ms != nil {
-			// Default ShortPixel
-			if ms.ShortPixelKey != "" {
-				compressedLocation, compressionErr = a.shortPixel(location, ms)
-			}
-			if compressionErr != nil {
-				serveCompressionError(compressionErr)
-				return
-			}
-			// Fallback Tinify
-			if compressedLocation == "" && ms.TinifyKey != "" {
-				compressedLocation, compressionErr = a.tinify(location, ms)
-			}
-			if compressionErr != nil {
-				serveCompressionError(compressionErr)
-				return
-			}
-			// Fallback Cloudflare
-			if compressedLocation == "" && ms.CloudflareCompressionEnabled {
-				compressedLocation, compressionErr = a.cloudflare(location)
-			}
-			if compressionErr != nil {
-				serveCompressionError(compressionErr)
-				return
-			}
-			// Overwrite location
-			if compressedLocation != "" {
-				location = compressedLocation
-			}
+		// Overwrite location
+		if compressedLocation != "" {
+			location = compressedLocation
 		}
 	}
 	http.Redirect(w, r, location, http.StatusCreated)
 }
+
+type fileUploadFunc func(filename string, f io.Reader) (location string, err error)
 
 func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
 	ms := a.cfg.Micropub.MediaStorage
@@ -135,28 +109,4 @@ func (a *goBlog) uploadToBunny(filename string, f io.Reader) (location string, e
 		return "", errors.New("failed to upload file to BunnyCDN")
 	}
 	return config.MediaURL + "/" + filename, nil
-}
-
-func compressionIsSupported(url string, allowed ...string) (string, bool) {
-	spliced := strings.Split(url, ".")
-	ext := spliced[len(spliced)-1]
-	sort.Strings(allowed)
-	if i := sort.SearchStrings(allowed, strings.ToLower(ext)); i >= len(allowed) || allowed[i] != strings.ToLower(ext) {
-		return ext, false
-	}
-	return ext, true
-}
-
-func getSHA256(file io.ReadSeeker) (filename string, err error) {
-	if _, err = file.Seek(0, 0); err != nil {
-		return "", err
-	}
-	h := sha256.New()
-	if _, err = io.Copy(h, file); err != nil {
-		return "", err
-	}
-	if _, err = file.Seek(0, 0); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

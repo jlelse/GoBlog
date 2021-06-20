@@ -83,3 +83,16 @@ func Test_allLinksFromHTMLString(t *testing.T) {
 		t.Errorf("Wrong result, got: %v", result)
 	}
 }
+
+func Test_urlHasExt(t *testing.T) {
+	t.Run("Simple", func(t *testing.T) {
+		ext, res := urlHasExt("https://example.com/test.jpg", "png", "jpg", "webp")
+		assert.True(t, res)
+		assert.Equal(t, "jpg", ext)
+	})
+	t.Run("Strange case", func(t *testing.T) {
+		ext, res := urlHasExt("https://example.com/test.jpG", "PnG", "JPg", "WEBP")
+		assert.True(t, res)
+		assert.Equal(t, "jpg", ext)
+	})
+}

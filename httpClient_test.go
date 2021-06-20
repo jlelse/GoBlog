@@ -1,35 +1,43 @@
 package main
 
 import (
-	"io"
 	"net/http"
-	"strings"
+	"net/http/httptest"
 )
 
 type fakeHttpClient struct {
-	req *http.Request
-	res *http.Response
-	err error
+	req     *http.Request
+	res     *http.Response
+	handler http.Handler
 }
 
 func (c *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
+	if c.handler == nil {
+		return nil, nil
+	}
+	rec := httptest.NewRecorder()
+	c.handler.ServeHTTP(rec, req)
 	c.req = req
-	return c.res, c.err
+	c.res = rec.Result()
+	return c.res, nil
 }
 
 func (c *fakeHttpClient) clean() {
 	c.req = nil
-	c.err = nil
 	c.res = nil
+	c.handler = nil
 }
 
-func (c *fakeHttpClient) setFakeResponse(statusCode int, body string, err error) {
+func (c *fakeHttpClient) setHandler(handler http.Handler) {
 	c.clean()
-	c.err = err
-	c.res = &http.Response{
-		StatusCode: statusCode,
-		Body:       io.NopCloser(strings.NewReader(body)),
-	}
+	c.handler = handler
+}
+
+func (c *fakeHttpClient) setFakeResponse(statusCode int, body string) {
+	c.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(statusCode)
+		rw.Write([]byte(body))
+	}))
 }
 
 func getFakeHTTPClient() *fakeHttpClient {
