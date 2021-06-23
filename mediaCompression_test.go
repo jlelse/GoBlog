@@ -32,7 +32,7 @@ func Test_compress(t *testing.T) {
 			assert.Equal(t, "https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=2000,h=3000/https://example.com/original.jpg", r.URL.String())
 
 			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(fakeFileContent))
+			_, _ = rw.Write([]byte(fakeFileContent))
 		}))
 
 		cf := &cloudflare{}
@@ -59,7 +59,7 @@ func Test_compress(t *testing.T) {
 			assert.Equal(t, "https://example.com/original.jpg", requestJson["url"])
 
 			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(fakeFileContent))
+			_, _ = rw.Write([]byte(fakeFileContent))
 		}))
 
 		cf := &shortpixel{"testkey"}

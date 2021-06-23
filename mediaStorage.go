@@ -40,10 +40,13 @@ type mediaStorage interface {
 
 type localMediaStorage struct {
 	mediaURL string // optional
+	path     string // required
 }
 
 func (a *goBlog) initLocalMediaStorage() mediaStorage {
-	ms := &localMediaStorage{}
+	ms := &localMediaStorage{
+		path: mediaFilePath,
+	}
 	if config := a.cfg.Micropub.MediaStorage; config != nil && config.MediaURL != "" {
 		ms.mediaURL = config.MediaURL
 	}
@@ -51,10 +54,10 @@ func (a *goBlog) initLocalMediaStorage() mediaStorage {
 }
 
 func (l *localMediaStorage) save(filename string, file io.Reader) (location string, err error) {
-	if err = os.MkdirAll(mediaFilePath, 0644); err != nil {
+	if err = os.MkdirAll(l.path, 0644); err != nil {
 		return "", err
 	}
-	newFile, err := os.Create(filepath.Join(mediaFilePath, filename))
+	newFile, err := os.Create(filepath.Join(l.path, filename))
 	if err != nil {
 		return "", err
 	}

@@ -112,42 +112,9 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, template string, data *renderData) {
 	// Server timing
 	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
+	defer t.Stop()
 	// Check render data
-	if data.User == nil {
-		data.User = a.cfg.User
-	}
-	if data.Blog == nil {
-		if len(data.BlogString) == 0 {
-			data.BlogString = a.cfg.DefaultBlog
-		}
-		data.Blog = a.cfg.Blogs[data.BlogString]
-	}
-	if data.BlogString == "" {
-		for s, b := range a.cfg.Blogs {
-			if b == data.Blog {
-				data.BlogString = s
-				break
-			}
-		}
-	}
-	if a.cfg.Server.Tor && a.torAddress != "" {
-		data.TorAddress = fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI)
-	}
-	if data.Data == nil {
-		data.Data = map[string]interface{}{}
-	}
-	// Check login
-	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
-		data.LoggedIn = true
-	}
-	// Check if comments enabled
-	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
-	// Check if able to receive webmentions
-	data.WebmentionReceivingEnabled = a.cfg.Webmention == nil || !a.cfg.Webmention.DisableReceiving
-	// Check if Tor request
-	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
-		data.TorUsed = true
-	}
+	a.checkRenderData(r, data)
 	// Set content type
 	w.Header().Set(contentType, contenttype.HTMLUTF8)
 	// Minify and write response
@@ -163,8 +130,47 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Server timing
-	t.Stop()
+}
+
+func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
+	// User
+	if data.User == nil {
+		data.User = a.cfg.User
+	}
+	// Blog
+	if data.Blog == nil {
+		if data.BlogString == "" {
+			data.BlogString = a.cfg.DefaultBlog
+		}
+		data.Blog = a.cfg.Blogs[data.BlogString]
+	}
+	if data.BlogString == "" {
+		for s, b := range a.cfg.Blogs {
+			if b == data.Blog {
+				data.BlogString = s
+				break
+			}
+		}
+	}
+	// Tor
+	if a.cfg.Server.Tor && a.torAddress != "" {
+		data.TorAddress = fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI)
+	}
+	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
+		data.TorUsed = true
+	}
+	// Check login
+	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		data.LoggedIn = true
+	}
+	// Check if comments enabled
+	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
+	// Check if able to receive webmentions
+	data.WebmentionReceivingEnabled = a.cfg.Webmention == nil || !a.cfg.Webmention.DisableReceiving
+	// Data
+	if data.Data == nil {
+		data.Data = map[string]interface{}{}
+	}
 }
 
 func (a *goBlog) includeRenderedTemplate(templateName string, data ...interface{}) (template.HTML, error) {

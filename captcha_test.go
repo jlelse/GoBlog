@@ -32,7 +32,7 @@ func Test_captchaMiddleware(t *testing.T) {
 	_ = app.initRendering()
 
 	h := app.captchaMiddleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("ABC Test"))
+		_, _ = rw.Write([]byte("ABC Test"))
 	}))
 
 	t.Run("Default", func(t *testing.T) {
@@ -58,7 +58,7 @@ func Test_captchaMiddleware(t *testing.T) {
 
 		session, _ := app.captchaSessions.Get(req, "c")
 		session.Values["captcha"] = true
-		session.Save(req, rec1)
+		_ = session.Save(req, rec1)
 
 		for _, cookie := range rec1.Result().Cookies() {
 			req.AddCookie(cookie)

@@ -82,22 +82,23 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Resource not found", http.StatusNotFound)
 		return
 	}
+	apIri := a.apIri(blog)
 	b, _ := json.Marshal(map[string]interface{}{
-		"subject": a.webfingerAccts[a.apIri(blog)],
+		"subject": a.webfingerAccts[apIri],
 		"aliases": []string{
-			a.webfingerAccts[a.apIri(blog)],
-			a.apIri(blog),
+			a.webfingerAccts[apIri],
+			apIri,
 		},
 		"links": []map[string]string{
 			{
 				"rel":  "self",
 				"type": contenttype.AS,
-				"href": a.apIri(blog),
+				"href": apIri,
 			},
 			{
 				"rel":  "http://webfinger.net/rel/profile-page",
 				"type": "text/html",
-				"href": a.apIri(blog),
+				"href": apIri,
 			},
 		},
 	})
@@ -107,8 +108,8 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	blogName := chi.URLParam(r, "blog")
-	blog := a.cfg.Blogs[blogName]
-	if blog == nil {
+	blog, ok := a.cfg.Blogs[blogName]
+	if !ok || blog == nil {
 		a.serveError(w, r, "Inbox not found", http.StatusNotFound)
 		return
 	}
@@ -159,31 +160,28 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case "Undo":
 		{
 			if object, ok := activity["object"].(map[string]interface{}); ok {
-				if objectType, ok := object["type"].(string); ok && objectType == "Follow" {
-					if iri, ok := object["actor"].(string); ok && iri == activityActor {
-						_ = a.db.apRemoveFollower(blogName, activityActor)
-					}
+				ot := cast.ToString(object["type"])
+				actor := cast.ToString(object["actor"])
+				if ot == "Follow" && actor == activityActor {
+					_ = a.db.apRemoveFollower(blogName, activityActor)
 				}
 			}
 		}
 	case "Create":
 		{
 			if object, ok := activity["object"].(map[string]interface{}); ok {
-				inReplyTo := cast.ToString(object["inReplyTo"])
-				objectId := cast.ToString(object["id"])
-				objectUrl := cast.ToString(object["url"])
-				baseUrl := objectId
-				if objectUrl != "" {
-					baseUrl = objectUrl
+				baseUrl := cast.ToString(object["id"])
+				if ou := cast.ToString(object["url"]); ou != "" {
+					baseUrl = ou
 				}
-				if inReplyTo != "" && objectId != "" && strings.Contains(inReplyTo, blogIri) {
+				if r := cast.ToString(object["inReplyTo"]); r != "" && baseUrl != "" && strings.HasPrefix(r, blogIri) {
 					// It's an ActivityPub reply; save reply as webmention
-					_ = a.createWebmention(baseUrl, inReplyTo)
-				} else if content, hasContent := object["content"].(string); hasContent && objectId != "" {
+					_ = a.createWebmention(baseUrl, r)
+				} else if content := cast.ToString(object["content"]); content != "" && baseUrl != "" {
 					// May be a mention; find links to blog and save them as webmentions
 					if links, err := allLinksFromHTMLString(content, baseUrl); err == nil {
 						for _, link := range links {
-							if strings.Contains(link, blogIri) {
+							if strings.HasPrefix(link, blogIri) {
 								_ = a.createWebmention(baseUrl, link)
 							}
 						}
@@ -191,25 +189,22 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	case "Delete":
-	case "Block":
+	case "Delete", "Block":
 		{
-			if object, ok := activity["object"].(string); ok && len(object) > 0 && object == activityActor {
+			if o := cast.ToString(activity["object"]); o == activityActor {
 				_ = a.db.apRemoveFollower(blogName, activityActor)
 			}
 		}
 	case "Like":
 		{
-			likeObject, likeObjectOk := activity["object"].(string)
-			if likeObjectOk && len(likeObject) > 0 && strings.Contains(likeObject, blogIri) {
-				a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeObject))
+			if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
+				a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, o))
 			}
 		}
 	case "Announce":
 		{
-			announceObject, announceObjectOk := activity["object"].(string)
-			if announceObjectOk && len(announceObject) > 0 && strings.Contains(announceObject, blogIri) {
-				a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceObject))
+			if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
+				a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, o))
 			}
 		}
 	}
@@ -230,11 +225,11 @@ func (a *goBlog) apVerifySignature(r *http.Request) (*asPerson, string, int, err
 		return nil, keyID, statusCode, err
 	}
 	if actor.PublicKey == nil || actor.PublicKey.PublicKeyPem == "" {
-		return nil, keyID, 0, errors.New("Actor has no public key")
+		return nil, keyID, 0, errors.New("actor has no public key")
 	}
 	block, _ := pem.Decode([]byte(actor.PublicKey.PublicKeyPem))
 	if block == nil {
-		return nil, keyID, 0, errors.New("Public key invalid")
+		return nil, keyID, 0, errors.New("public key invalid")
 	}
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {

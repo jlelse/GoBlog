@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
+	"gopkg.in/yaml.v3"
 )
 
 func (a *goBlog) fullPostURL(p *post) string {
@@ -115,6 +117,36 @@ func (a *goBlog) postTranslations(p *post) []*post {
 
 func (p *post) isPublishedSectionPost() bool {
 	return p.Published != "" && p.Section != "" && p.Status == statusPublished
+}
+
+func (a *goBlog) postToMfItem(p *post) *microformatItem {
+	params := p.Parameters
+	params["path"] = []string{p.Path}
+	params["section"] = []string{p.Section}
+	params["blog"] = []string{p.Blog}
+	params["published"] = []string{p.Published}
+	params["updated"] = []string{p.Updated}
+	params["status"] = []string{string(p.Status)}
+	pb, _ := yaml.Marshal(p.Parameters)
+	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
+	return &microformatItem{
+		Type: []string{"h-entry"},
+		Properties: &microformatProperties{
+			Name:       p.Parameters["title"],
+			Published:  []string{p.Published},
+			Updated:    []string{p.Updated},
+			PostStatus: []string{string(p.Status)},
+			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
+			Content:    []string{content},
+			URL:        []string{a.fullPostURL(p)},
+			InReplyTo:  p.Parameters[a.cfg.Micropub.ReplyParam],
+			LikeOf:     p.Parameters[a.cfg.Micropub.LikeParam],
+			BookmarkOf: p.Parameters[a.cfg.Micropub.BookmarkParam],
+			MpSlug:     []string{p.Slug},
+			Audio:      p.Parameters[a.cfg.Micropub.AudioParam],
+			// TODO: Photos
+		},
+	}
 }
 
 // Public because of rendering

@@ -36,7 +36,7 @@ func (c *fakeHttpClient) setHandler(handler http.Handler) {
 func (c *fakeHttpClient) setFakeResponse(statusCode int, body string) {
 	c.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(statusCode)
-		rw.Write([]byte(body))
+		_, _ = rw.Write([]byte(body))
 	}))
 }
 

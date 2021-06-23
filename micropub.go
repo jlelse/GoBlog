@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -45,7 +46,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			mf = a.toMfItem(p)
+			mf = a.postToMfItem(p)
 		} else {
 			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
@@ -59,7 +60,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			list := map[string][]*microformatItem{}
 			for _, p := range posts {
-				list["items"] = append(list["items"], a.toMfItem(p))
+				list["items"] = append(list["items"], a.postToMfItem(p))
 			}
 			mf = list
 		}
@@ -88,138 +89,73 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) toMfItem(p *post) *microformatItem {
-	params := p.Parameters
-	params["path"] = []string{p.Path}
-	params["section"] = []string{p.Section}
-	params["blog"] = []string{p.Blog}
-	params["published"] = []string{p.Published}
-	params["updated"] = []string{p.Updated}
-	params["status"] = []string{string(p.Status)}
-	pb, _ := yaml.Marshal(p.Parameters)
-	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
-	return &microformatItem{
-		Type: []string{"h-entry"},
-		Properties: &microformatProperties{
-			Name:       p.Parameters["title"],
-			Published:  []string{p.Published},
-			Updated:    []string{p.Updated},
-			PostStatus: []string{string(p.Status)},
-			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
-			Content:    []string{content},
-			URL:        []string{a.fullPostURL(p)},
-			InReplyTo:  p.Parameters[a.cfg.Micropub.ReplyParam],
-			LikeOf:     p.Parameters[a.cfg.Micropub.LikeParam],
-			BookmarkOf: p.Parameters[a.cfg.Micropub.BookmarkParam],
-			MpSlug:     []string{p.Slug},
-			Audio:      p.Parameters[a.cfg.Micropub.AudioParam],
-			// TODO: Photos
-		},
-	}
-}
-
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var p *post
-	if ct := r.Header.Get(contentType); strings.Contains(ct, contenttype.WWWForm) || strings.Contains(ct, contenttype.MultipartForm) {
-		var err error
-		if strings.Contains(ct, contenttype.MultipartForm) {
-			err = r.ParseMultipartForm(0)
-		} else {
-			err = r.ParseForm()
-		}
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+	switch mt, _, _ := mime.ParseMediaType(r.Header.Get(contentType)); mt {
+	case contenttype.WWWForm, contenttype.MultipartForm:
+		_ = r.ParseForm()
+		_ = r.ParseMultipartForm(0)
+		if r.Form == nil {
+			a.serveError(w, r, "Failed to parse form", http.StatusBadRequest)
 			return
 		}
 		if action := micropubAction(r.Form.Get("action")); action != "" {
-			u, err := url.Parse(r.Form.Get("url"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
+			switch action {
+			case actionDelete:
+				a.micropubDelete(w, r, r.Form.Get("url"))
+			default:
+				a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			}
-			if action == actionDelete {
-				a.micropubDelete(w, r, u)
-				return
-			}
-			a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
-		p, err = a.convertMPValueMapToPost(r.Form)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if strings.Contains(ct, contenttype.JSON) {
+		a.micropubCreatePostFromForm(w, r)
+	case contenttype.JSON:
 		parsedMfItem := &microformatItem{}
-		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		b, _ := io.ReadAll(io.LimitReader(r.Body, 10000000)) // 10 MB
+		if err := json.Unmarshal(b, parsedMfItem); err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if parsedMfItem.Action != "" {
-			u, err := url.Parse(parsedMfItem.URL)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
+			switch parsedMfItem.Action {
+			case actionDelete:
+				a.micropubDelete(w, r, parsedMfItem.URL)
+			case actionUpdate:
+				a.micropubUpdate(w, r, parsedMfItem.URL, parsedMfItem)
+			default:
+				a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			}
-			if parsedMfItem.Action == actionDelete {
-				a.micropubDelete(w, r, u)
-				return
-			}
-			if parsedMfItem.Action == actionUpdate {
-				a.micropubUpdate(w, r, u, parsedMfItem)
-				return
-			}
-			a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			return
 		}
-		p, err = a.convertMPMfToPost(parsedMfItem)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
+		a.micropubCreatePostFromJson(w, r, parsedMfItem)
+	default:
 		a.serveError(w, r, "wrong content type", http.StatusBadRequest)
-		return
 	}
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "create") {
-		a.serveError(w, r, "create scope missing", http.StatusForbidden)
-		return
-	}
-	err := a.createPost(p)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, a.fullPostURL(p), http.StatusAccepted)
 }
 
-func (a *goBlog) convertMPValueMapToPost(values map[string][]string) (*post, error) {
+func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[string][]string) error {
 	if h, ok := values["h"]; ok && (len(h) != 1 || h[0] != "entry") {
-		return nil, errors.New("only entry type is supported so far")
+		return errors.New("only entry type is supported so far")
 	}
 	delete(values, "h")
-	entry := &post{
-		Parameters: map[string][]string{},
-	}
-	if content, ok := values["content"]; ok {
+	entry.Parameters = map[string][]string{}
+	if content, ok := values["content"]; ok && len(content) > 0 {
 		entry.Content = content[0]
 		delete(values, "content")
 	}
-	if published, ok := values["published"]; ok {
+	if published, ok := values["published"]; ok && len(published) > 0 {
 		entry.Published = published[0]
 		delete(values, "published")
 	}
-	if updated, ok := values["updated"]; ok {
+	if updated, ok := values["updated"]; ok && len(updated) > 0 {
 		entry.Updated = updated[0]
 		delete(values, "updated")
 	}
-	if status, ok := values["post-status"]; ok {
+	if status, ok := values["post-status"]; ok && len(status) > 0 {
 		entry.Status = postStatus(status[0])
 		delete(values, "post-status")
 	}
-	if slug, ok := values["mp-slug"]; ok {
+	if slug, ok := values["mp-slug"]; ok && len(slug) > 0 {
 		entry.Slug = slug[0]
 		delete(values, "mp-slug")
 	}
@@ -275,11 +211,7 @@ func (a *goBlog) convertMPValueMapToPost(values map[string][]string) (*post, err
 	for n, p := range values {
 		entry.Parameters[n] = append(entry.Parameters[n], p...)
 	}
-	err := a.computeExtraPostParameters(entry)
-	if err != nil {
-		return nil, err
-	}
-	return entry, nil
+	return nil
 }
 
 type micropubAction string
@@ -315,40 +247,44 @@ type microformatProperties struct {
 	Audio      []string      `json:"audio,omitempty"`
 }
 
-func (a *goBlog) convertMPMfToPost(mf *microformatItem) (*post, error) {
+func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem) error {
 	if len(mf.Type) != 1 || mf.Type[0] != "h-entry" {
-		return nil, errors.New("only entry type is supported so far")
+		return errors.New("only entry type is supported so far")
 	}
-	entry := &post{
-		Parameters: map[string][]string{},
+	entry.Parameters = map[string][]string{}
+	if mf.Properties == nil {
+		return nil
 	}
 	// Content
-	if mf.Properties != nil && len(mf.Properties.Content) == 1 && len(mf.Properties.Content[0]) > 0 {
+	if len(mf.Properties.Content) > 0 && mf.Properties.Content[0] != "" {
 		entry.Content = mf.Properties.Content[0]
 	}
-	if len(mf.Properties.Published) == 1 {
+	if len(mf.Properties.Published) > 0 {
 		entry.Published = mf.Properties.Published[0]
 	}
-	if len(mf.Properties.Updated) == 1 {
+	if len(mf.Properties.Updated) > 0 {
 		entry.Updated = mf.Properties.Updated[0]
 	}
-	if len(mf.Properties.PostStatus) == 1 {
+	if len(mf.Properties.PostStatus) > 0 {
 		entry.Status = postStatus(mf.Properties.PostStatus[0])
 	}
+	if len(mf.Properties.MpSlug) > 0 {
+		entry.Slug = mf.Properties.MpSlug[0]
+	}
 	// Parameter
-	if len(mf.Properties.Name) == 1 {
+	if len(mf.Properties.Name) > 0 {
 		entry.Parameters["title"] = mf.Properties.Name
 	}
 	if len(mf.Properties.Category) > 0 {
 		entry.Parameters[a.cfg.Micropub.CategoryParam] = mf.Properties.Category
 	}
-	if len(mf.Properties.InReplyTo) == 1 {
+	if len(mf.Properties.InReplyTo) > 0 {
 		entry.Parameters[a.cfg.Micropub.ReplyParam] = mf.Properties.InReplyTo
 	}
-	if len(mf.Properties.LikeOf) == 1 {
+	if len(mf.Properties.LikeOf) > 0 {
 		entry.Parameters[a.cfg.Micropub.LikeParam] = mf.Properties.LikeOf
 	}
-	if len(mf.Properties.BookmarkOf) == 1 {
+	if len(mf.Properties.BookmarkOf) > 0 {
 		entry.Parameters[a.cfg.Micropub.BookmarkParam] = mf.Properties.BookmarkOf
 	}
 	if len(mf.Properties.Audio) > 0 {
@@ -365,15 +301,7 @@ func (a *goBlog) convertMPMfToPost(mf *microformatItem) (*post, error) {
 			}
 		}
 	}
-	if len(mf.Properties.MpSlug) == 1 {
-		entry.Slug = mf.Properties.MpSlug[0]
-	}
-	err := a.computeExtraPostParameters(entry)
-	if err != nil {
-		return nil, err
-	}
-	return entry, nil
-
+	return nil
 }
 
 func (a *goBlog) computeExtraPostParameters(p *post) error {
@@ -456,24 +384,70 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 	return nil
 }
 
-func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u *url.URL) {
+func (a *goBlog) micropubCreatePostFromForm(w http.ResponseWriter, r *http.Request) {
+	p := &post{}
+	err := a.micropubParseValuePostParamsValueMap(p, r.Form)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	a.micropubCreate(w, r, p)
+}
+
+func (a *goBlog) micropubCreatePostFromJson(w http.ResponseWriter, r *http.Request, parsedMfItem *microformatItem) {
+	p := &post{}
+	err := a.micropubParsePostParamsMfItem(p, parsedMfItem)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	a.micropubCreate(w, r, p)
+}
+
+func (a *goBlog) micropubCreate(w http.ResponseWriter, r *http.Request, p *post) {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "create") {
+		a.serveError(w, r, "create scope missing", http.StatusForbidden)
+		return
+	}
+	if err := a.computeExtraPostParameters(p); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := a.createPost(p); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, a.fullPostURL(p), http.StatusAccepted)
+}
+
+func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u string) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "delete") {
 		a.serveError(w, r, "delete scope missing", http.StatusForbidden)
 		return
 	}
-	if err := a.deletePost(u.Path); err != nil {
+	uu, err := url.Parse(u)
+	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, u.String(), http.StatusNoContent)
+	if err := a.deletePost(uu.Path); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, uu.String(), http.StatusNoContent)
 }
 
-func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u *url.URL, mf *microformatItem) {
+func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string, mf *microformatItem) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "update") {
 		a.serveError(w, r, "update scope missing", http.StatusForbidden)
 		return
 	}
-	p, err := a.db.getPost(u.Path)
+	uu, err := url.Parse(u)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	p, err := a.db.getPost(uu.Path)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
