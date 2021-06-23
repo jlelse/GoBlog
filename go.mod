@@ -27,6 +27,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
+	github.com/jlaffaye/ftp v0.0.0-20210307004419-5d4190119067
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/kr/text v0.2.0 // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/microcosm-cc/bluemonday v1.0.14
+	github.com/miekg/dns v1.1.43 // indirect
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0

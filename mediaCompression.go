@@ -16,18 +16,7 @@ const defaultCompressionWidth = 2000
 const defaultCompressionHeight = 3000
 
 type mediaCompression interface {
-	compress(url string, save fileUploadFunc, hc httpClient) (location string, err error)
-}
-
-type shortpixel struct {
-	key string
-}
-
-type tinify struct {
-	key string
-}
-
-type cloudflare struct {
+	compress(url string, save mediaStorageSaveFunc, hc httpClient) (location string, err error)
 }
 
 func (a *goBlog) compressMediaFile(url string) (location string, err error) {
@@ -35,7 +24,7 @@ func (a *goBlog) compressMediaFile(url string) (location string, err error) {
 	a.compressorsInit.Do(a.initMediaCompressors)
 	// Try all compressors until success
 	for _, c := range a.compressors {
-		location, err = c.compress(url, a.uploadFile, a.httpClient)
+		location, err = c.compress(url, a.saveMediaFile, a.httpClient)
 		if location != "" && err == nil {
 			break
 		}
@@ -60,7 +49,11 @@ func (a *goBlog) initMediaCompressors() {
 	}
 }
 
-func (sp *shortpixel) compress(url string, upload fileUploadFunc, hc httpClient) (location string, err error) {
+type shortpixel struct {
+	key string
+}
+
+func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -113,7 +106,11 @@ func (sp *shortpixel) compress(url string, upload fileUploadFunc, hc httpClient)
 	return
 }
 
-func (tf *tinify) compress(url string, upload fileUploadFunc, hc httpClient) (location string, err error) {
+type tinify struct {
+	key string
+}
+
+func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -189,7 +186,10 @@ func (tf *tinify) compress(url string, upload fileUploadFunc, hc httpClient) (lo
 	return
 }
 
-func (cf *cloudflare) compress(url string, upload fileUploadFunc, hc httpClient) (location string, err error) {
+type cloudflare struct {
+}
+
+func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url
 	_, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {

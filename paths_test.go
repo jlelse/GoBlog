@@ -3,6 +3,8 @@ package main
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_getFullAddress(t *testing.T) {
@@ -39,6 +41,9 @@ func Test_getFullAddress(t *testing.T) {
 	if got := cfg1.getFullAddress(""); !reflect.DeepEqual(got, "https://example.com") {
 		t.Errorf("Wrong full path, got: %v", got)
 	}
+
+	assert.Equal(t, "https://example.net", cfg1.getFullAddress("https://example.net"))
+	assert.Equal(t, "https://example.net", cfg2.getFullAddress("https://example.net"))
 }
 
 func Test_getRelativeBlogPath(t *testing.T) {

@@ -79,10 +79,15 @@ webmention:
 micropub:
   # Media configuration
   mediaStorage:
-    mediaUrl: https://media.example.com # Define external media URL (instead of /m subpath)
+    mediaUrl: https://media.example.com # Define external media URL (instead of /m subpath for local files), required for BunnyCDN and FTP
     # BunnyCDN storage (optional)
     bunnyStorageKey: BUNNY-STORAGE-KEY # Secret key for BunnyCDN storage
     bunnyStorageName: storagename # BunnyCDN storage name
+    bunnyStorageRegion: ny # required if BunnyCDN storage region isn't Falkenstein
+    # FTP storage (optional)
+    ftpAddress: ftp.example.com:21 # Host and port for FTP connection
+    ftpUser: ftpuser # Username of FTP user
+    ftpPassword: ftppassword # Password of FTP user
     # Image compression (optional, you can define no, one or multiple services, disabled when private mode enabled)
     shortPixelKey: SHORT-PIXEL-KEY # Secret key for the ShortPixel API
     tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API (first fallback)

@@ -87,7 +87,7 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 		res.Body.Close()
 	}()
 	if code := res.StatusCode; code < 200 || 300 <= code {
-		return nil, fmt.Errorf("opml request not successfull, status code: %d", code)
+		return nil, fmt.Errorf("opml request not successful, status code: %d", code)
 	}
 	o, err := opml.Parse(res.Body)
 	if err != nil {

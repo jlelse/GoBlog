@@ -1,12 +1,8 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"io"
 	"mime"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -55,7 +51,7 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	fileName += strings.ToLower(fileExtension)
 	// Save file
-	location, err := a.uploadFile(fileName, file)
+	location, err := a.saveMediaFile(fileName, file)
 	if err != nil {
 		a.serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -73,40 +69,4 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, location, http.StatusCreated)
-}
-
-type fileUploadFunc func(filename string, f io.Reader) (location string, err error)
-
-func (a *goBlog) uploadFile(filename string, f io.Reader) (string, error) {
-	ms := a.cfg.Micropub.MediaStorage
-	if ms != nil && ms.BunnyStorageKey != "" && ms.BunnyStorageName != "" {
-		return a.uploadToBunny(filename, f)
-	}
-	loc, err := saveMediaFile(filename, f)
-	if err != nil {
-		return "", err
-	}
-	if ms != nil && ms.MediaURL != "" {
-		return ms.MediaURL + loc, nil
-	}
-	return a.getFullAddress(loc), nil
-}
-
-func (a *goBlog) uploadToBunny(filename string, f io.Reader) (location string, err error) {
-	config := a.cfg.Micropub.MediaStorage
-	if config == nil || config.BunnyStorageName == "" || config.BunnyStorageKey == "" || config.MediaURL == "" {
-		return "", errors.New("Bunny storage not completely configured")
-	}
-	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("https://storage.bunnycdn.com/%s/%s", url.PathEscape(config.BunnyStorageName), url.PathEscape(filename)), f)
-	req.Header.Add("AccessKey", config.BunnyStorageKey)
-	resp, err := a.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
-	if resp.StatusCode != http.StatusCreated {
-		return "", errors.New("failed to upload file to BunnyCDN")
-	}
-	return config.MediaURL + "/" + filename, nil
 }

@@ -22,7 +22,7 @@ func Test_compress(t *testing.T) {
 	fakeSha256, err := getSHA256(fakeFile)
 	require.Nil(t, err)
 
-	var uf fileUploadFunc = func(filename string, f io.Reader) (location string, err error) {
+	var uf mediaStorageSaveFunc = func(filename string, f io.Reader) (location string, err error) {
 		return "https://example.com/" + filename, nil
 	}
 

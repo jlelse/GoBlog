@@ -185,12 +185,21 @@ type configMicropub struct {
 }
 
 type configMicropubMedia struct {
-	MediaURL                     string `mapstructure:"mediaUrl"`
-	BunnyStorageKey              string `mapstructure:"bunnyStorageKey"`
-	BunnyStorageName             string `mapstructure:"bunnyStorageName"`
-	TinifyKey                    string `mapstructure:"tinifyKey"`
-	ShortPixelKey                string `mapstructure:"shortPixelKey"`
-	CloudflareCompressionEnabled bool   `mapstructure:"cloudflareCompressionEnabled"`
+	MediaURL string `mapstructure:"mediaUrl"`
+	// BunnyCDN
+	BunnyStorageKey    string `mapstructure:"bunnyStorageKey"`
+	BunnyStorageName   string `mapstructure:"bunnyStorageName"`
+	BunnyStorageRegion string `mapstructure:"bunnyStorageRegion"`
+	// FTP
+	FTPAddress  string `mapstructure:"ftpAddress"`
+	FTPUser     string `mapstructure:"ftpUser"`
+	FTPPassword string `mapstructure:"ftpPassword"`
+	// Tinify
+	TinifyKey string `mapstructure:"tinifyKey"`
+	// Shortpixel
+	ShortPixelKey string `mapstructure:"shortPixelKey"`
+	// Cloudflare
+	CloudflareCompressionEnabled bool `mapstructure:"cloudflareCompressionEnabled"`
 }
 
 type configRegexRedirect struct {

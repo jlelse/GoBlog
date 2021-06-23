@@ -35,6 +35,10 @@ func (a *goBlog) getFullAddress(path string) string {
 }
 
 func (cfg *configServer) getFullAddress(path string) string {
+	// Check if it is already an absolute URL
+	if isAbsoluteURL(path) {
+		return path
+	}
 	// Remove trailing slash
 	pa := strings.TrimSuffix(cfg.PublicAddress, "/")
 	// Check if path is root => blank path

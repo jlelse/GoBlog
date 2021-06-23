@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,22 +9,6 @@ import (
 )
 
 const mediaFilePath = "data/media"
-
-func saveMediaFile(filename string, mediaFile io.Reader) (string, error) {
-	err := os.MkdirAll(mediaFilePath, 0644)
-	if err != nil {
-		return "", err
-	}
-	newFile, err := os.Create(filepath.Join(mediaFilePath, filename))
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(newFile, mediaFile)
-	if err != nil {
-		return "", err
-	}
-	return "/m/" + filename, nil
-}
 
 func (a *goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 	f := filepath.Join(mediaFilePath, chi.URLParam(r, "file"))

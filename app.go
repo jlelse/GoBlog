@@ -76,8 +76,10 @@ type goBlog struct {
 	// Markdown
 	md, absoluteMd goldmark.Markdown
 	// Media
-	compressorsInit sync.Once
-	compressors     []mediaCompression
+	compressorsInit  sync.Once
+	compressors      []mediaCompression
+	mediaStorageInit sync.Once
+	mediaStorage     mediaStorage
 	// Minify
 	min minify.Minifier
 	// Regex Redirects
