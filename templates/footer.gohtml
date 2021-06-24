@@ -1,18 +1,15 @@
 {{ define "footer" }}
     <footer>
         {{ with index .Blog.Menus "footer" }}
-            <p>
-            {{ range $i, $item := .Items }}
-                {{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>
-            {{ end }}
-            </p>
+            <nav>{{ range $i, $item := .Items }}{{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ $item.Title }}</a>{{ end }}
+            </nav>
         {{ end }}
         <p translate="no">&copy; {{ dateformat now "2006" }} {{ with .User.Name }}{{ . }}{{ else }}{{ .Blog.Title }}{{ end }}</p>
         {{ if .TorUsed }}
-            <p>🔐 {{ string .Blog.Lang "connectedviator" }}</p>
+            <p id="tor">🔐 {{ string .Blog.Lang "connectedviator" }}</p>
         {{ else }}
             {{ if .TorAddress }}
-                <p>🔓 <a href="{{ .TorAddress }}">{{ string .Blog.Lang "connectviator" }}</a> <a href="https://www.torproject.org/" target="_blank" rel="nofollow noopener noreferrer">{{ string .Blog.Lang "whatistor" }}</a></p>
+                <p id="tor">🔓 <a href="{{ .TorAddress }}">{{ string .Blog.Lang "connectviator" }}</a> <a href="https://www.torproject.org/" target="_blank" rel="nofollow noopener noreferrer">{{ string .Blog.Lang "whatistor" }}</a></p>
             {{ end }}
         {{ end }}
     </footer>

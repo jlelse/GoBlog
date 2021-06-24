@@ -28,7 +28,7 @@
     {{ include "author" . }}
   </main>
   {{ if .LoggedIn }}
-    <div class="p">
+    <div id="posteditactions" class="p">
       <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}#update">
         <input type="hidden" name="editoraction" value="loadupdate">
         <input type="hidden" name="url" value="{{ .Canonical }}">

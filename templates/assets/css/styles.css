@@ -211,7 +211,17 @@ footer * {
   nav,
 #post-actions,
 #related,
-#interactions {
+#interactions,
+#posteditactions,
+#tor {
     display: none;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  .e-content a[href]:after {
+    content: " [" attr(href) "]";
   }
 }

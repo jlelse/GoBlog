@@ -245,7 +245,18 @@ footer {
   nav,
   #post-actions,
   #related,
-  #interactions {
+  #interactions,
+  #posteditactions,
+  #tor {
     display: none;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  // Show link
+  .e-content a[href]:after {
+    content: " [" attr(href) "]";
   }
 }
