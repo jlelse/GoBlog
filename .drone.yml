@@ -1,8 +1,9 @@
 kind: pipeline
 name: default
+type: docker
 
 steps:
-  - name: publish
+  - name: base
     image: plugins/docker
     settings:
       username: nologin
@@ -11,9 +12,19 @@ steps:
       repo: rg.fr-par.scw.cloud/jlelse/goblog
       registry: rg.fr-par.scw.cloud/jlelse
       tags: latest
-    when:
-      branch:
-        - master
-      event:
-        exclude:
-          - pull_request
+  - name: tools
+    image: plugins/docker
+    settings:
+      username: nologin
+      password:
+        from_secret: docker_password
+      repo: rg.fr-par.scw.cloud/jlelse/goblog
+      registry: rg.fr-par.scw.cloud/jlelse
+      tags: tools
+      dockerfile: Dockerfile.Tools
+
+trigger:
+  branch:
+    - master
+  event:
+    - push

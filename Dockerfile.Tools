@@ -1,0 +1,4 @@
+FROM rg.fr-par.scw.cloud/jlelse/goblog:latest
+
+RUN apk add --no-cache curl bash git
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite
