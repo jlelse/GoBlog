@@ -58,7 +58,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 					})
 					already[yearPath] = true
 				}
-				// Specific month
+				// Month
 				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
 				if !already[monthPath] {
 					sm.Add(&sitemap.URL{
@@ -66,7 +66,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 					})
 					already[monthPath] = true
 				}
-				// Specific day
+				// Day
 				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
 				if !already[dayPath] {
 					sm.Add(&sitemap.URL{
@@ -74,7 +74,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 					})
 					already[dayPath] = true
 				}
-				// Generic month
+				// XXXX-MM
 				genericMonthPath := bc.getRelativePath("/x/" + fmt.Sprintf("%02d", d.month))
 				if !already[genericMonthPath] {
 					sm.Add(&sitemap.URL{
@@ -82,13 +82,21 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 					})
 					already[genericMonthPath] = true
 				}
-				// Specific day
+				// XXXX-MM-DD
 				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
 				if !already[genericMonthDayPath] {
 					sm.Add(&sitemap.URL{
 						Loc: a.getFullAddress(genericMonthDayPath),
 					})
 					already[genericMonthDayPath] = true
+				}
+				// XXXX-XX-DD
+				genericDayPath := bc.getRelativePath("/x/x/" + fmt.Sprintf("%02d", d.day))
+				if !already[genericDayPath] {
+					sm.Add(&sitemap.URL{
+						Loc: a.getFullAddress(genericDayPath),
+					})
+					already[genericDayPath] = true
 				}
 			}
 		}
