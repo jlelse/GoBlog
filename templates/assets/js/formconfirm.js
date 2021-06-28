@@ -2,7 +2,7 @@
     Array.from(document.querySelectorAll('form input.confirm')).forEach(element => {
         let showed = false
         element.form.addEventListener('submit', event => {
-            if (!showed) {
+            if (event.submitter == element && !showed) {
                 event.preventDefault()
                 element.value = '…'
                 setTimeout(() => {
