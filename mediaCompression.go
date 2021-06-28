@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const defaultCompressionWidth = 2000

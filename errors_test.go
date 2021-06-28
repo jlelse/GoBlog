@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/stretchr/testify/assert"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func Test_errors(t *testing.T) {

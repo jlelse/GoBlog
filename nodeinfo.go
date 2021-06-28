@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,7 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 		"version": "2.1",
 		"software": map[string]interface{}{
 			"name":       "goblog",
-			"repository": "https://git.jlel.se/jlelse/GoBlog",
+			"repository": "https://go.goblog.app/app",
 		},
 		"usage": map[string]interface{}{
 			"users": map[string]interface{}{

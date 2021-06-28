@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/araddon/dateparse"
 	"github.com/gorilla/feeds"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 type feedType string

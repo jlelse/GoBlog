@@ -194,6 +194,9 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 	a.editorRouter.Use(a.authMiddleware)
 	a.editorRouter.Get("/", a.serveEditor)
 	a.editorRouter.Post("/", a.serveEditorPost)
+	a.editorRouter.Get("/files", a.serveEditorFiles)
+	a.editorRouter.Post("/files/view", a.serveEditorFilesView)
+	a.editorRouter.Post("/files/delete", a.serveEditorFilesDelete)
 
 	a.commentsRouter = chi.NewRouter()
 	a.commentsRouter.Use(a.privateModeHandler...)

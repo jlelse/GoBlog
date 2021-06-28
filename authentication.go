@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/pquerna/otp/totp"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {

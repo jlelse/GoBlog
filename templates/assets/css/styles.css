@@ -163,7 +163,7 @@ footer * {
   display: inline;
 }
 
-.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=submit], .fw-form input[type=button], .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form input[type=password], .fw-form textarea {
+.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=submit], .fw-form input[type=button], .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form input[type=password], .fw-form input[type=file], .fw-form textarea, .fw-form select {
   width: 100%;
 }
 

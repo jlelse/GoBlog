@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	ct "github.com/elnormous/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 type errorData struct {

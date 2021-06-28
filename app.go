@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"sync"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/minify"
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
 	ct "github.com/elnormous/contenttype"
@@ -14,6 +13,7 @@ import (
 	"github.com/go-fed/httpsig"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
+	"go.goblog.app/app/pkgs/minify"
 	"golang.org/x/sync/singleflight"
 )
 

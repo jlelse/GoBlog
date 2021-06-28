@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"strings"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/thoas/go-funk"
 	"github.com/tomnomnom/linkheader"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) sendWebmentions(p *post) error {

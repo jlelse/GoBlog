@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/dchest/captcha"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {

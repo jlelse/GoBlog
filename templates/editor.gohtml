@@ -47,14 +47,15 @@ tags:
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw-form p" method="post" enctype="multipart/form-data">
       <input type="hidden" name="editoraction" value="upload">
-      <input class="fw" type="file" name="file">
+      <input type="file" name="file">
       <input type="submit" value="{{ string .Blog.Lang "upload" }}">
     </form>
+    <p><a href="{{ .Blog.RelativePath "/editor/files" }}">{{ string .Blog.Lang "mediafiles" }}</a></p>
     {{ if .Data.Drafts }}
     <h2>{{ string .Blog.Lang "drafts" }}</h2>
     <form class="fw-form p" method="post">
       <input type="hidden" name="editoraction" value="viewdraft">
-      <select name="url" class="fw">
+      <select name="url">
         {{ range $i, $draft := .Data.Drafts }}
           <option value="{{ absolute $draft.Path }}">{{ with ($draft.Title) }}{{ . }}{{ else }}{{ $draft.Path }}{{ end }}</option>
         {{ end }}
@@ -64,7 +65,7 @@ tags:
     {{ end }}
     <h2>{{ string .Blog.Lang "location" }}</h2>
     <form class="fw-form p">
-      <input id="geobtn" type="button" class="fw" value="{{ string .Blog.Lang "locationget" }}" data-failed="{{ string .Blog.Lang "locationfailed" }}" data-notsupported="{{ string .Blog.Lang "locationnotsupported" }}">
+      <input id="geobtn" type="button" value="{{ string .Blog.Lang "locationget" }}" data-failed="{{ string .Blog.Lang "locationfailed" }}" data-notsupported="{{ string .Blog.Lang "locationnotsupported" }}">
       <input id="geostatus" type="text" class="hide" readonly>
     </form>
     <script defer src="{{ asset "js/geohelper.js" }}"></script>

@@ -15,6 +15,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
+	"github.com/c2h5oh/datasize"
 	"github.com/thoas/go-funk"
 )
 
@@ -225,4 +226,8 @@ func getSHA256(file io.ReadSeeker) (filename string, err error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+func mBytesString(size int64) string {
+	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes())
 }

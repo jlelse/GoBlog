@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/spf13/cast"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) initActivityPub() error {

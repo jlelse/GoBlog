@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	servertiming "github.com/mitchellh/go-server-timing"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const (
@@ -28,6 +28,7 @@ const (
 	templateSummary            = "summary"
 	templatePhotosSummary      = "photosummary"
 	templateEditor             = "editor"
+	templateEditorFiles        = "editorfiles"
 	templateLogin              = "login"
 	templateStaticHome         = "statichome"
 	templateBlogStats          = "blogstats"
@@ -68,6 +69,7 @@ func (a *goBlog) initRendering() error {
 		"geotitle":   a.geoTitle,
 		"geolink":    geoOSMLink,
 		"opensearch": openSearchUrl,
+		"mbytes":     mBytesString,
 	}
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
 	if err != nil {

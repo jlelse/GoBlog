@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/kaorimatz/go-opml"
 	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {

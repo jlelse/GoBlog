@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/spf13/cast"
+	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
 

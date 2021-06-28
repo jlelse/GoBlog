@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const editorPath = "/editor"

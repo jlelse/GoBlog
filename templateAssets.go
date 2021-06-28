@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const assetsFolder = "templates/assets"

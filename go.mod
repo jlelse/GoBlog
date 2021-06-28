@@ -1,4 +1,4 @@
-module git.jlel.se/jlelse/GoBlog
+module go.goblog.app/app
 
 go 1.16
 
@@ -11,6 +11,7 @@ require (
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/boombuler/barcode v1.0.1 // indirect
+	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
 	github.com/caddyserver/certmagic v0.14.0
 	github.com/cretz/bine v0.2.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
@@ -45,17 +46,18 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/viper v1.8.0
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tdewolff/minify/v2 v2.9.17
+	github.com/tdewolff/minify/v2 v2.9.18
 	github.com/thoas/go-funk v0.8.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.3.8
+	github.com/yuin/goldmark v1.3.9
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.18.1 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

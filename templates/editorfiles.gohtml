@@ -1,0 +1,28 @@
+{{ define "title" }}
+  <title>{{ string .Blog.Lang "mediafiles" }} - {{ .Blog.Title }}</title>
+{{ end }}
+
+{{ define "main" }}
+  <main>
+    {{ $blog := .Blog }}
+    <h2>{{ string .Blog.Lang "mediafiles" }}</h2>
+    {{ if .Data.Files }}
+      <form class="fw-form p" method="post">
+        <select name="filename">
+          {{ range $i, $file := .Data.Files }}
+            <option value="{{ $file.Name }}">{{ $file.Name }} ({{ isodate $file.Time.String }}, {{ mbytes $file.Size }})</option>
+          {{ end }}
+        </select>
+        <input type="submit" formaction="{{ .Blog.RelativePath "/editor/files/view" }}" value="{{ string .Blog.Lang "view" }}">
+        <input type="submit" formaction="{{ .Blog.RelativePath "/editor/files/delete" }}" value="{{ string .Blog.Lang "delete" }}" class="confirm" data-confirmmessage="{{ string .Blog.Lang "confirmdelete" }}">
+      </form>
+      <script defer src="{{ asset "js/formconfirm.js" }}"></script>
+    {{ else }}
+      <p>{{ string .Blog.Lang "nofiles" }}</p>
+    {{ end }}
+  </main>
+{{ end }}
+
+{{ define "editorfiles" }}
+    {{ template "base" . }}
+{{ end }}

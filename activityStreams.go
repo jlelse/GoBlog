@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const asContext = "https://www.w3.org/ns/activitystreams"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {

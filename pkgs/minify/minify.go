@@ -4,13 +4,13 @@ import (
 	"io"
 	"sync"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
 	"github.com/tdewolff/minify/v2"
 	mCss "github.com/tdewolff/minify/v2/css"
 	mHtml "github.com/tdewolff/minify/v2/html"
 	mJs "github.com/tdewolff/minify/v2/js"
 	mJson "github.com/tdewolff/minify/v2/json"
 	mXml "github.com/tdewolff/minify/v2/xml"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 type Minifier struct {

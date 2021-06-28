@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"time"
 
-	"git.jlel.se/jlelse/GoBlog/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 type apRequest struct {
