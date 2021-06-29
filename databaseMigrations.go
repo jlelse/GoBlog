@@ -181,6 +181,16 @@ func migrateDb(db *sql.DB, logging bool) error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00016",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create index index_queue_name on queue (name);
+					create index index_queue_schedule on queue (schedule);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

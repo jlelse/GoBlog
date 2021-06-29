@@ -177,7 +177,7 @@ type indexConfig struct {
 	summaryTemplate  string
 }
 
-const indexConfigKey requestContextKey = "indexConfig"
+const indexConfigKey contextKey = "indexConfig"
 
 func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	ic := r.Context().Value(indexConfigKey).(*indexConfig)

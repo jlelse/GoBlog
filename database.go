@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"log"
 	"os"
 	"sync"
 
+	"github.com/gchaincl/sqlhooks/v2"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
 	"golang.org/x/sync/singleflight"
@@ -49,7 +51,7 @@ func (a *goBlog) initDatabase() (err error) {
 func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	// Register driver
 	dbDriverName := generateRandomString(15)
-	sql.Register("goblog_db_"+dbDriverName, &sqlite.SQLiteDriver{
+	var dr driver.Driver = &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Depends on app
 			if err := c.RegisterFunc("mdtext", a.renderText, true); err != nil {
@@ -67,7 +69,11 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 			}
 			return nil
 		},
-	})
+	}
+	if a.cfg.Db.Debug {
+		dr = sqlhooks.Wrap(dr, &dbHooks{})
+	}
+	sql.Register("goblog_db_"+dbDriverName, dr)
 	// Open db
 	db, err := sql.Open("goblog_db_"+dbDriverName, file+"?cache=shared&mode=rwc&_journal_mode=WAL")
 	if err != nil {

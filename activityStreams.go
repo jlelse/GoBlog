@@ -15,7 +15,7 @@ import (
 
 const asContext = "https://www.w3.org/ns/activitystreams"
 
-const asRequestKey requestContextKey = "asRequest"
+const asRequestKey contextKey = "asRequest"
 
 func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	if len(a.asCheckMediaTypes) == 0 {

@@ -19,7 +19,7 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-type requestContextKey string
+type contextKey string
 
 func urlize(str string) string {
 	var sb strings.Builder

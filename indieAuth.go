@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const indieAuthScope requestContextKey = "scope"
+const indieAuthScope contextKey = "scope"
 
 func (a *goBlog) checkIndieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

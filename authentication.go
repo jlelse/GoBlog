@@ -69,7 +69,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-const loggedInKey requestContextKey = "loggedIn"
+const loggedInKey contextKey = "loggedIn"
 
 func (a *goBlog) checkLoggedIn(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

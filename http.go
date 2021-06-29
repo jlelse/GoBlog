@@ -557,8 +557,8 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	return r, nil
 }
 
-const blogContextKey requestContextKey = "blog"
-const pathContextKey requestContextKey = "httpPath"
+const blogContextKey contextKey = "blog"
+const pathContextKey contextKey = "httpPath"
 
 func (a *goBlog) refreshCSPDomains() {
 	a.cspDomains = ""

@@ -44,6 +44,7 @@ type configServer struct {
 type configDb struct {
 	File     string `mapstructure:"file"`
 	DumpFile string `mapstructure:"dumpFile"`
+	Debug    bool   `mapstructure:"debug"`
 }
 
 type configCache struct {
