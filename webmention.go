@@ -86,7 +86,7 @@ func extractMention(r *http.Request) (*mention, error) {
 
 func (db *database) webmentionExists(source, target string) bool {
 	result := 0
-	row, err := db.queryRow("select exists(select 1 from webmentions where source = ? and target = ?)", source, target)
+	row, err := db.queryRow("select exists(select 1 from webmentions where lower(source) = lower(@source) and lower(target) = lower(@target))", sql.Named("source", source), sql.Named("target", target))
 	if err != nil {
 		return false
 	}
@@ -143,7 +143,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	if config != nil {
 		filter = "where 1 = 1"
 		if config.target != "" {
-			filter += " and target = @target"
+			filter += " and lower(target) = lower(@target)"
 			args = append(args, sql.Named("target", config.target))
 		}
 		if config.status != "" {
@@ -151,8 +151,8 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 			args = append(args, sql.Named("status", config.status))
 		}
 		if config.sourcelike != "" {
-			filter += " and source like @sourcelike"
-			args = append(args, sql.Named("sourcelike", "%"+config.sourcelike+"%"))
+			filter += " and lower(source) like @sourcelike"
+			args = append(args, sql.Named("sourcelike", "%"+strings.ToLower(config.sourcelike)+"%"))
 		}
 		if config.id != 0 {
 			filter += " and id = @id"

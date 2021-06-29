@@ -98,7 +98,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	newStatus := webmentionStatusVerified
 	if a.db.webmentionExists(m.Source, m.Target) {
-		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where source = @source and target = @target",
+		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where lower(source) = lower(@source) and lower(target) = lower(@target)",
 			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))
 	} else {
 		_, err = a.db.exec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
@@ -156,7 +156,7 @@ func (m *mention) fill(mf *microformats.Microformat) bool {
 		// Check URL
 		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
 			if url0, ok := url[0].(string); ok {
-				if url0 != m.Source {
+				if strings.ToLower(url0) != strings.ToLower(m.Source) {
 					// Not correct URL
 					return false
 				}
