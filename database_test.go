@@ -10,7 +10,9 @@ func (a *goBlog) setInMemoryDatabase() {
 
 func Test_database(t *testing.T) {
 	t.Run("Basic Database Test", func(t *testing.T) {
-		app := &goBlog{}
+		app := &goBlog{
+			cfg: &config{},
+		}
 
 		db, err := app.openDatabase(":memory:", false)
 		if err != nil {

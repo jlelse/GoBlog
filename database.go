@@ -70,7 +70,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 			return nil
 		},
 	}
-	if a.cfg.Db.Debug {
+	if c := a.cfg.Db; c != nil && c.Debug {
 		dr = sqlhooks.Wrap(dr, &dbHooks{})
 	}
 	sql.Register("goblog_db_"+dbDriverName, dr)

@@ -155,7 +155,9 @@ func Test_postsDb(t *testing.T) {
 func Test_ftsWithoutTitle(t *testing.T) {
 	// Added because there was a bug where there were no search results without title
 
-	app := &goBlog{}
+	app := &goBlog{
+		cfg: &config{},
+	}
 	app.setInMemoryDatabase()
 
 	err := app.db.savePost(&post{
@@ -174,4 +176,50 @@ func Test_ftsWithoutTitle(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, ps, 1)
+}
+
+func Test_usesOfMediaFile(t *testing.T) {
+	app := &goBlog{
+		cfg: &config{},
+	}
+	app.setInMemoryDatabase()
+
+	err := app.db.savePost(&post{
+		Path:      "/test/abc",
+		Content:   "ABC test.jpg DEF",
+		Published: toLocalSafe(time.Now().String()),
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusDraft,
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.savePost(&post{
+		Path:      "/test/def",
+		Content:   "ABCDEF",
+		Published: toLocalSafe(time.Now().String()),
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusDraft,
+		Parameters: map[string][]string{
+			"test": {
+				"https://example.com/test.jpg",
+			},
+		},
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.savePost(&post{
+		Path:      "/test/hij",
+		Content:   "ABCDEF",
+		Published: toLocalSafe(time.Now().String()),
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusDraft,
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	count, err := app.db.usesOfMediaFile("test.jpg")
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
 }

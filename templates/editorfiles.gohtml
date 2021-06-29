@@ -10,7 +10,7 @@
       <form class="fw-form p" method="post">
         <select name="filename">
           {{ range $i, $file := .Data.Files }}
-            <option value="{{ $file.Name }}">{{ $file.Name }} ({{ isodate $file.Time.String }}, {{ mbytes $file.Size }})</option>
+            <option value="{{ $file.Name }}">{{ $file.Name }} ({{ isodate $file.Time.String }}, {{ mbytes $file.Size }}, ~{{ mediafileuses $file.Name }} {{ string $blog.Lang "fileuses" }})</option>
           {{ end }}
         </select>
         <input type="submit" formaction="{{ .Blog.RelativePath "/editor/files/view" }}" value="{{ string .Blog.Lang "view" }}">

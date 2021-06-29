@@ -428,3 +428,16 @@ func (d *database) allPublishedDates(blog string) (dates []publishedDate, err er
 	}
 	return
 }
+
+func (db *database) usesOfMediaFile(name string) (count int, err error) {
+	query := "select count(distinct path) from (select path from posts where instr(content, @name) > 0 union all select path from post_parameters where instr(value, @name) > 0)"
+	row, err := db.queryRow(query, sql.Named("name", name))
+	if err != nil {
+		return 0, err
+	}
+	err = row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
