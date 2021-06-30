@@ -12,11 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/caddyserver/certmagic"
 	"github.com/dchest/captcha"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	servertiming "github.com/mitchellh/go-server-timing"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
 )
 
@@ -66,10 +67,6 @@ func (a *goBlog) startServer() (err error) {
 	}
 	a.shutdown.Add(shutdownServer(s, "main server"))
 	if a.cfg.Server.PublicHTTPS {
-		// Configure
-		certmagic.Default.Storage = &certmagic.FileStorage{Path: "data/https"}
-		certmagic.DefaultACME.Email = a.cfg.Server.LetsEncryptMail
-		certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
 		// Start HTTP server for redirects
 		httpServer := &http.Server{
 			Addr:         ":http",
@@ -89,11 +86,15 @@ func (a *goBlog) startServer() (err error) {
 		if a.cfg.Server.shortPublicHostname != "" {
 			hosts = append(hosts, a.cfg.Server.shortPublicHostname)
 		}
-		listener, e := certmagic.Listen(hosts)
-		if e != nil {
-			return e
+		acmeDir := acme.LetsEncryptURL
+		// acmeDir := "https://acme-staging-v02.api.letsencrypt.org/directory"
+		m := &autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(hosts...),
+			Cache:      &httpsCache{db: a.db},
+			Client:     &acme.Client{DirectoryURL: acmeDir},
 		}
-		if err = s.Serve(listener); err != nil && err != http.ErrServerClosed {
+		if err = s.Serve(m.Listener()); err != nil && err != http.ErrServerClosed {
 			return err
 		}
 	} else {

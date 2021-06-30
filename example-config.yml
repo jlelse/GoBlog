@@ -18,7 +18,6 @@ server:
   shortPublicAddress: https://short.example.com # Optional short address, will redirect to main address
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
-  letsEncryptMail: blog@example.com # Email to use for Let's Encrypt
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
