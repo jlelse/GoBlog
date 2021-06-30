@@ -69,11 +69,11 @@ func (a *goBlog) verifyMention(m *mention) error {
 		return err
 	}
 	m.Source = u.String()
-	u, err = url.Parse(m.Target)
-	if err != nil {
-		return err
-	}
-	m.Target = u.String()
+	// u, err = url.Parse(m.Target)
+	// if err != nil {
+	// 	return err
+	// }
+	// m.Target = u.String()
 	// Do request
 	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
 	if err != nil {
