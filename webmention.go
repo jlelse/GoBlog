@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"time"
 
@@ -52,7 +51,7 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !isAllowedHost(httptest.NewRequest(http.MethodGet, m.Target, nil), a.cfg.Server.publicHostname) {
+	if !strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress) {
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -25,28 +23,6 @@ func Test_sortedStrings(t *testing.T) {
 func Test_generateRandomString(t *testing.T) {
 	if l := len(generateRandomString(30)); l != 30 {
 		t.Errorf("Wrong length: %v", l)
-	}
-}
-
-func Test_isAllowedHost(t *testing.T) {
-	req1 := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
-	req2 := httptest.NewRequest(http.MethodGet, "https://example.com:443", nil)
-	req3 := httptest.NewRequest(http.MethodGet, "http://example.com:80", nil)
-
-	if isAllowedHost(req1, "example.com") != true {
-		t.Error("Wrong result")
-	}
-
-	if isAllowedHost(req1, "example.net") != false {
-		t.Error("Wrong result")
-	}
-
-	if isAllowedHost(req2, "example.com") != true {
-		t.Error("Wrong result")
-	}
-
-	if isAllowedHost(req3, "example.com") != true {
-		t.Error("Wrong result")
 	}
 }
 

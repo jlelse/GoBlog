@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"net/http"
 	"net/url"
 	"path"
 	"sort"
@@ -44,25 +43,6 @@ const randomLetters = "abcdefghijklmnopqrstuvwxyz"
 
 func generateRandomString(chars int) string {
 	return funk.RandomString(chars, []rune(randomLetters))
-}
-
-func isAllowedHost(r *http.Request, hosts ...string) bool {
-	if r.URL == nil {
-		return false
-	}
-	rh := r.URL.Host
-	switch r.URL.Scheme {
-	case "http":
-		rh = strings.TrimSuffix(rh, ":80")
-	case "https":
-		rh = strings.TrimSuffix(rh, ":443")
-	}
-	for _, host := range hosts {
-		if rh == host {
-			return true
-		}
-	}
-	return false
 }
 
 func isAbsoluteURL(s string) bool {

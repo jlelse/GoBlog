@@ -63,6 +63,18 @@ func (a *goBlog) queueMention(m *mention) error {
 }
 
 func (a *goBlog) verifyMention(m *mention) error {
+	// Parse url -> string for source and target
+	u, err := url.Parse(m.Source)
+	if err != nil {
+		return err
+	}
+	m.Source = u.String()
+	u, err = url.Parse(m.Target)
+	if err != nil {
+		return err
+	}
+	m.Target = u.String()
+	// Do request
 	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
 	if err != nil {
 		return err
@@ -156,7 +168,7 @@ func (m *mention) fill(mf *microformats.Microformat) bool {
 		// Check URL
 		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
 			if url0, ok := url[0].(string); ok {
-				if strings.ToLower(url0) != strings.ToLower(m.Source) {
+				if !strings.EqualFold(url0, m.Source) {
 					// Not correct URL
 					return false
 				}
