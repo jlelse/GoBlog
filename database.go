@@ -15,11 +15,14 @@ import (
 )
 
 type database struct {
-	db    *sql.DB
-	stmts map[string]*sql.Stmt
-	g     singleflight.Group
-	pc    singleflight.Group
-	pcm   sync.Mutex
+	// Basic things
+	db *sql.DB            // database
+	em sync.Mutex         // command execution (insert, update, delete ...)
+	sg singleflight.Group // singleflight group for prepared statements
+	ps sync.Map           // map with prepared statements
+	// Other things
+	pc  singleflight.Group // persistant cache
+	pcm sync.Mutex         // post creation
 }
 
 func (a *goBlog) initDatabase() (err error) {
@@ -75,11 +78,13 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	}
 	sql.Register("goblog_db_"+dbDriverName, dr)
 	// Open db
-	db, err := sql.Open("goblog_db_"+dbDriverName, file+"?cache=shared&mode=rwc&_journal_mode=WAL")
+	db, err := sql.Open("goblog_db_"+dbDriverName, file+"?mode=rwc&_journal_mode=WAL&_busy_timeout=100&cache=shared")
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1)
+	numConns := 5
+	db.SetMaxOpenConns(numConns)
+	db.SetMaxIdleConns(numConns)
 	err = db.Ping()
 	if err != nil {
 		return nil, err
@@ -107,14 +112,17 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		return nil, err
 	}
 	return &database{
-		db:    db,
-		stmts: map[string]*sql.Stmt{},
+		db: db,
 	}, nil
 }
 
 // Main features
 
 func (db *database) dump(file string) {
+	// Lock execution
+	db.em.Lock()
+	defer db.em.Unlock()
+	// Dump database
 	f, err := os.Create(file)
 	if err != nil {
 		log.Println("Error while dump db:", err.Error())
@@ -130,17 +138,20 @@ func (db *database) close() error {
 }
 
 func (db *database) prepare(query string) (*sql.Stmt, error) {
-	stmt, err, _ := db.g.Do(query, func() (interface{}, error) {
-		stmt, ok := db.stmts[query]
-		if ok && stmt != nil {
-			return stmt, nil
+	stmt, err, _ := db.sg.Do(query, func() (interface{}, error) {
+		// Look if statement already exists
+		st, ok := db.ps.Load(query)
+		if ok {
+			return st, nil
 		}
-		stmt, err := db.db.Prepare(query)
+		// ... otherwise prepare ...
+		st, err := db.db.Prepare(query)
 		if err != nil {
 			return nil, err
 		}
-		db.stmts[query] = stmt
-		return stmt, nil
+		// ... and store it
+		db.ps.Store(query, st)
+		return st, nil
 	})
 	if err != nil {
 		return nil, err
@@ -148,33 +159,43 @@ func (db *database) prepare(query string) (*sql.Stmt, error) {
 	return stmt.(*sql.Stmt), nil
 }
 
-func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
-	stmt, err := db.prepare(query)
-	if err != nil {
-		return nil, err
-	}
-	return stmt.Exec(args...)
-}
+const dbNoCache = "nocache"
 
-func (db *database) execMulti(query string, args ...interface{}) (sql.Result, error) {
-	// Can't prepare the statement
+func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
+	// Lock execution
+	db.em.Lock()
+	defer db.em.Unlock()
+	// Check if prepared cache should be skipped
+	if len(args) > 0 && args[0] == dbNoCache {
+		return db.db.Exec(query, args[1:]...)
+	}
+	// Use prepared statement
+	st, _ := db.prepare(query)
+	if st != nil {
+		return st.Exec(args...)
+	}
+	// Or execute directly
 	return db.db.Exec(query, args...)
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
-	stmt, err := db.prepare(query)
-	if err != nil {
-		return nil, err
+	// Use prepared statement
+	st, _ := db.prepare(query)
+	if st != nil {
+		return st.Query(args...)
 	}
-	return stmt.Query(args...)
+	// Or query directly
+	return db.db.Query(query, args...)
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
-	stmt, err := db.prepare(query)
-	if err != nil {
-		return nil, err
+	// Use prepared statement
+	st, _ := db.prepare(query)
+	if st != nil {
+		return st.QueryRow(args...), nil
 	}
-	return stmt.QueryRow(args...), nil
+	// Or query directly
+	return db.db.QueryRow(query, args...), nil
 }
 
 // Other things

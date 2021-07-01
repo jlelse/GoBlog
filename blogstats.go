@@ -45,70 +45,134 @@ func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const blogStatsSql = `
+with filtered as (
+    select
+		path,
+		coalesce(published, '') as pub,
+		substr(published, 1, 4) as year,
+		substr(published, 6, 2) as month,
+		wordcount(coalesce(content, '')) as words,
+		charcount(coalesce(content, '')) as chars
+	from posts
+	where status = @status and blog = @blog
+)
+select *
+from (
+	select *
+	from (
+		select
+			year,
+			'A',
+			coalesce(count(path), 0) as pc,
+			coalesce(sum(words), 0) as wc,
+			coalesce(sum(chars), 0) as cc,
+			coalesce(round(sum(words)/count(path), 0), 0) as wpp
+		from filtered
+		where pub != ''
+		group by year
+		order by year desc
+	)
+	union all
+	select *
+	from (
+		select
+			year,
+			month,
+			coalesce(count(path), 0) as pc,
+			coalesce(sum(words), 0) as wc,
+			coalesce(sum(chars), 0) as cc,
+			coalesce(round(sum(words)/count(path), 0), 0) as wpp
+		from filtered
+		where pub != ''
+		group by year, month
+		order by year desc, month desc
+	)
+	union all
+	select *
+	from (
+		select
+			'N',
+			'N',
+			coalesce(count(path), 0) as pc,
+			coalesce(sum(words), 0) as wc,
+			coalesce(sum(chars), 0) as cc,
+			coalesce(round(sum(words)/count(path), 0), 0) as wpp
+		from filtered
+		where pub == ''
+	)
+	union all
+	select *
+	from (
+		select
+			'A',
+			'A',
+			coalesce(count(path), 0) as pc,
+			coalesce(sum(words), 0) as wc,
+			coalesce(sum(chars), 0) as cc,
+			coalesce(round(sum(words)/count(path), 0), 0) as wpp
+		from filtered
+	)
+);
+`
+
 func (db *database) getBlogStats(blog string) (data map[string]interface{}, err error) {
+	// Check cache
 	if stats := db.loadBlogStatsCache(blog); stats != nil {
 		return stats, nil
 	}
-	// Build query
-	prq := &postsRequestConfig{
-		blog:   blog,
-		status: statusPublished,
-	}
-	query, params := buildPostsQuery(prq)
-	query = "select path, mdtext(content) as content, published, substr(published, 1, 4) as year, substr(published, 6, 2) as month from (" + query + ")"
-	postCount := "coalesce(count(distinct path), 0) as postcount"
-	charCount := "coalesce(sum(coalesce(charcount(distinct content), 0)), 0)"
-	wordCount := "coalesce(sum(wordcount(distinct content)), 0) as wordcount"
-	wordsPerPost := "coalesce(round(wordcount/postcount,0), 0)"
+	// Prevent creating posts while getting stats
+	db.pcm.Lock()
+	defer db.pcm.Unlock()
+	// Stats type to hold the stats data for a single row
 	type statsTableType struct {
 		Name, Posts, Chars, Words, WordsPerPost string
 	}
-	// Count total posts
-	row, err := db.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+"))", params...)
-	if err != nil {
-		return nil, err
-	}
-	total := statsTableType{}
-	if err = row.Scan(&total.Posts, &total.Chars, &total.Words, &total.WordsPerPost); err != nil {
-		return nil, err
-	}
-	// Count posts per year
-	rows, err := db.query("select *, "+wordsPerPost+" from (select year, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' group by year order by year desc)", params...)
-	if err != nil {
-		return nil, err
-	}
+	// Scan objects
+	currentStats := statsTableType{}
+	var currentMonth, currentYear string
+	// Data to later return
+	var total statsTableType
+	var noDate statsTableType
 	var years []statsTableType
-	year := statsTableType{}
-	for rows.Next() {
-		if err = rows.Scan(&year.Name, &year.Posts, &year.Chars, &year.Words, &year.WordsPerPost); err == nil {
-			years = append(years, year)
-		} else {
-			return nil, err
-		}
-	}
-	// Count posts without date
-	row, err = db.queryRow("select *, "+wordsPerPost+" from (select "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published = '')", params...)
+	months := map[string][]statsTableType{}
+	// Query and scan
+	rows, err := db.query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
-	noDate := statsTableType{}
-	if err = row.Scan(&noDate.Posts, &noDate.Chars, &noDate.Words, &noDate.WordsPerPost); err != nil {
-		return nil, err
-	}
-	// Count posts per month per year
-	months := map[string][]statsTableType{}
-	month := statsTableType{}
-	for _, year := range years {
-		rows, err = db.query("select *, "+wordsPerPost+" from (select month, "+postCount+", "+charCount+", "+wordCount+" from ("+query+") where published != '' and year = @year group by month order by month desc)", append(params, sql.Named("year", year.Name))...)
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			if err = rows.Scan(&month.Name, &month.Posts, &month.Chars, &month.Words, &month.WordsPerPost); err == nil {
-				months[year.Name] = append(months[year.Name], month)
-			} else {
-				return nil, err
+	for rows.Next() {
+		err = rows.Scan(&currentYear, &currentMonth, &currentStats.Posts, &currentStats.Words, &currentStats.Chars, &currentStats.WordsPerPost)
+		if currentYear == "A" && currentMonth == "A" {
+			total = statsTableType{
+				Posts:        currentStats.Posts,
+				Words:        currentStats.Words,
+				Chars:        currentStats.Chars,
+				WordsPerPost: currentStats.WordsPerPost,
 			}
+		} else if currentYear == "N" && currentMonth == "N" {
+			noDate = statsTableType{
+				Posts:        currentStats.Posts,
+				Words:        currentStats.Words,
+				Chars:        currentStats.Chars,
+				WordsPerPost: currentStats.WordsPerPost,
+			}
+		} else if currentMonth == "A" {
+			years = append(years, statsTableType{
+				Name:         currentYear,
+				Posts:        currentStats.Posts,
+				Words:        currentStats.Words,
+				Chars:        currentStats.Chars,
+				WordsPerPost: currentStats.WordsPerPost,
+			})
+		} else {
+			months[currentYear] = append(months[currentYear], statsTableType{
+				Name:         currentMonth,
+				Posts:        currentStats.Posts,
+				Words:        currentStats.Words,
+				Chars:        currentStats.Chars,
+				WordsPerPost: currentStats.WordsPerPost,
+			})
 		}
 	}
 	data = map[string]interface{}{

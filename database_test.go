@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func (a *goBlog) setInMemoryDatabase() {
@@ -19,7 +21,7 @@ func Test_database(t *testing.T) {
 			t.Fatalf("Error: %v", err)
 		}
 
-		_, err = db.execMulti("create table test(test text);")
+		_, err = db.exec("create table test(test text);")
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
@@ -63,5 +65,42 @@ func Test_database(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
+	})
+}
+
+func Test_parallelDatabase(t *testing.T) {
+	t.Run("Test parallel db access", func(t *testing.T) {
+		// Test that parallel database access works without problems
+
+		t.Parallel()
+
+		app := &goBlog{
+			cfg: &config{},
+		}
+		app.setInMemoryDatabase()
+
+		_, err := app.db.exec("create table test(test text);")
+		require.NoError(t, err)
+
+		t.Run("1", func(t *testing.T) {
+			for i := 0; i < 10000; i++ {
+				_, e := app.db.exec("insert into test (test) values ('Test')")
+				require.NoError(t, e)
+			}
+		})
+
+		t.Run("2", func(t *testing.T) {
+			for i := 0; i < 10000; i++ {
+				_, e := app.db.exec("insert into test (test) values ('Test')")
+				require.NoError(t, e)
+			}
+		})
+
+		t.Run("3", func(t *testing.T) {
+			for i := 0; i < 10000; i++ {
+				_, e := app.db.queryRow("select count(test) from test")
+				require.NoError(t, e)
+			}
+		})
 	})
 }

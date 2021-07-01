@@ -105,7 +105,7 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 		http.Redirect(w, r, location, http.StatusFound)
 		return
 	}
-	if result.StatusCode >= 200 && result.StatusCode <= 400 {
+	if result.StatusCode >= 200 && result.StatusCode < 400 {
 		http.Redirect(w, r, editorPath, http.StatusFound)
 		return
 	}

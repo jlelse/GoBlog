@@ -150,6 +150,18 @@ func Test_postsDb(t *testing.T) {
 	if is.NoError(err) {
 		is.Equal(1, count)
 	}
+
+	// Check that post is already present
+	err = app.db.savePost(&post{
+		Path:      "/test/abc",
+		Content:   "ABCD",
+		Published: "2021-06-10 10:00:00",
+		Updated:   "2021-06-15 10:00:00",
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusPublished,
+	}, &postCreationOptions{new: true})
+	must.Error(err)
 }
 
 func Test_ftsWithoutTitle(t *testing.T) {

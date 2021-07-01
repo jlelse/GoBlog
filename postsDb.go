@@ -144,29 +144,18 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 
 // Save check post to database
 func (db *database) savePost(p *post, o *postCreationOptions) error {
-	// Prevent bad things
+	// Check
+	if !o.new && o.oldPath == "" {
+		return errors.New("old path required")
+	}
+	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
-	// Check if path is already in use
-	if o.new || (p.Path != o.oldPath) {
-		// Post is new or post path was changed
-		newPathExists := false
-		row, err := db.queryRow("select exists(select 1 from posts where path = @path)", sql.Named("path", p.Path))
-		if err != nil {
-			return err
-		}
-		err = row.Scan(&newPathExists)
-		if err != nil {
-			return err
-		}
-		if newPathExists {
-			// New path already exists
-			return errors.New("post already exists at given path")
-		}
-	}
 	// Build SQL
 	var sqlBuilder strings.Builder
-	var sqlArgs []interface{}
+	var sqlArgs = []interface{}{dbNoCache}
+	// Start transaction
+	sqlBuilder.WriteString("begin;")
 	// Delete old post
 	if !o.new {
 		sqlBuilder.WriteString("delete from posts where path = ?;")
@@ -184,8 +173,13 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 			}
 		}
 	}
+	// Commit transaction
+	sqlBuilder.WriteString("commit;")
 	// Execute
-	if _, err := db.execMulti(sqlBuilder.String(), sqlArgs...); err != nil {
+	if _, err := db.exec(sqlBuilder.String(), sqlArgs...); err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
+			return errors.New("post already exists at given path")
+		}
 		return err
 	}
 	// Update FTS index
