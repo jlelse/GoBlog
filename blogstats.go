@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
-	"encoding/json"
-	"log"
+	"encoding/gob"
 	"net/http"
+
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 func (a *goBlog) initBlogStats() {
@@ -31,9 +33,11 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
+	t := servertiming.FromContext(r.Context()).NewMetric("bs").Start()
 	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.db.getBlogStats(blog)
 	})
+	t.Stop()
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,13 +53,19 @@ const blogStatsSql = `
 with filtered as (
     select
 		path,
-		coalesce(published, '') as pub,
-		substr(published, 1, 4) as year,
-		substr(published, 6, 2) as month,
-		wordcount(coalesce(content, '')) as words,
-		charcount(coalesce(content, '')) as chars
-	from posts
-	where status = @status and blog = @blog
+		pub,
+		substr(pub, 1, 4) as year,
+		substr(pub, 6, 2) as month,
+		wordcount(content) as words,
+		charcount(content) as chars
+	from (
+		select
+			path,
+			coalesce(published, '') as pub,
+			mdtext(coalesce(content, '')) as content
+		from posts
+		where status = @status and blog = @blog
+	)
 )
 select *
 from (
@@ -116,7 +126,18 @@ from (
 );
 `
 
-func (db *database) getBlogStats(blog string) (data map[string]interface{}, err error) {
+type blogStatsRow struct {
+	Name, Posts, Chars, Words, WordsPerPost string
+}
+
+type blogStatsData struct {
+	Total  blogStatsRow
+	NoDate blogStatsRow
+	Years  []blogStatsRow
+	Months map[string][]blogStatsRow
+}
+
+func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 	// Check cache
 	if stats := db.loadBlogStatsCache(blog); stats != nil {
 		return stats, nil
@@ -124,18 +145,13 @@ func (db *database) getBlogStats(blog string) (data map[string]interface{}, err 
 	// Prevent creating posts while getting stats
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
-	// Stats type to hold the stats data for a single row
-	type statsTableType struct {
-		Name, Posts, Chars, Words, WordsPerPost string
-	}
 	// Scan objects
-	currentStats := statsTableType{}
+	currentStats := blogStatsRow{}
 	var currentMonth, currentYear string
 	// Data to later return
-	var total statsTableType
-	var noDate statsTableType
-	var years []statsTableType
-	months := map[string][]statsTableType{}
+	data = &blogStatsData{
+		Months: map[string][]blogStatsRow{},
+	}
 	// Query and scan
 	rows, err := db.query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("blog", blog))
 	if err != nil {
@@ -144,21 +160,21 @@ func (db *database) getBlogStats(blog string) (data map[string]interface{}, err 
 	for rows.Next() {
 		err = rows.Scan(&currentYear, &currentMonth, &currentStats.Posts, &currentStats.Words, &currentStats.Chars, &currentStats.WordsPerPost)
 		if currentYear == "A" && currentMonth == "A" {
-			total = statsTableType{
+			data.Total = blogStatsRow{
 				Posts:        currentStats.Posts,
 				Words:        currentStats.Words,
 				Chars:        currentStats.Chars,
 				WordsPerPost: currentStats.WordsPerPost,
 			}
 		} else if currentYear == "N" && currentMonth == "N" {
-			noDate = statsTableType{
+			data.NoDate = blogStatsRow{
 				Posts:        currentStats.Posts,
 				Words:        currentStats.Words,
 				Chars:        currentStats.Chars,
 				WordsPerPost: currentStats.WordsPerPost,
 			}
 		} else if currentMonth == "A" {
-			years = append(years, statsTableType{
+			data.Years = append(data.Years, blogStatsRow{
 				Name:         currentYear,
 				Posts:        currentStats.Posts,
 				Words:        currentStats.Words,
@@ -166,7 +182,7 @@ func (db *database) getBlogStats(blog string) (data map[string]interface{}, err 
 				WordsPerPost: currentStats.WordsPerPost,
 			})
 		} else {
-			months[currentYear] = append(months[currentYear], statsTableType{
+			data.Months[currentYear] = append(data.Months[currentYear], blogStatsRow{
 				Name:         currentMonth,
 				Posts:        currentStats.Posts,
 				Words:        currentStats.Words,
@@ -175,29 +191,25 @@ func (db *database) getBlogStats(blog string) (data map[string]interface{}, err 
 			})
 		}
 	}
-	data = map[string]interface{}{
-		"total":       total,
-		"years":       years,
-		"withoutdate": noDate,
-		"months":      months,
-	}
 	db.cacheBlogStats(blog, data)
 	return data, nil
 }
 
-func (db *database) cacheBlogStats(blog string, stats map[string]interface{}) {
-	jb, _ := json.Marshal(stats)
-	_ = db.cachePersistently("blogstats_"+blog, jb)
+func (db *database) cacheBlogStats(blog string, stats *blogStatsData) {
+	var buf bytes.Buffer
+	_ = gob.NewEncoder(&buf).Encode(stats)
+	_ = db.cachePersistently("blogstats_"+blog, buf.Bytes())
 }
 
-func (db *database) loadBlogStatsCache(blog string) (stats map[string]interface{}) {
+func (db *database) loadBlogStatsCache(blog string) (stats *blogStatsData) {
 	data, err := db.retrievePersistentCache("blogstats_" + blog)
 	if err != nil || data == nil {
 		return nil
 	}
-	err = json.Unmarshal(data, &stats)
+	stats = &blogStatsData{}
+	err = gob.NewDecoder(bytes.NewReader(data)).Decode(stats)
 	if err != nil {
-		log.Println(err)
+		return nil
 	}
 	return stats
 }

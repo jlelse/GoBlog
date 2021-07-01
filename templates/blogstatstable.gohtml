@@ -10,8 +10,8 @@
       </tr>
     </thead>
     <tbody>
-      {{ $months := .Data.months }}
-      {{ range $year := .Data.years }}
+      {{ $months := .Data.Months }}
+      {{ range $year := .Data.Years }}
         <tr class="statsyear" data-year="{{ $year.Name }}">
           <td class="tal">{{ $year.Name }}</td>
           <td class="tar">{{ $year.Posts }}</td>
@@ -31,17 +31,17 @@
       {{ end }}
       <tr>
         <td class="tal">{{ string .Blog.Lang "withoutdate" }}</td>
-        <td class="tar">{{ .Data.withoutdate.Posts }}</td>
-        <td class="tar">{{ .Data.withoutdate.Chars }}</td>
-        <td class="tar">{{ .Data.withoutdate.Words }}</td>
-        <td class="tar">{{ .Data.withoutdate.WordsPerPost }}</td>
+        <td class="tar">{{ .Data.NoDate.Posts }}</td>
+        <td class="tar">{{ .Data.NoDate.Chars }}</td>
+        <td class="tar">{{ .Data.NoDate.Words }}</td>
+        <td class="tar">{{ .Data.NoDate.WordsPerPost }}</td>
       </tr>
       <tr>
         <td class="tal"><b>{{ string .Blog.Lang "total" }}</b></td>
-        <td class="tar">{{ .Data.total.Posts }}</td>
-        <td class="tar">{{ .Data.total.Chars }}</td>
-        <td class="tar">{{ .Data.total.Words }}</td>
-        <td class="tar">{{ .Data.total.WordsPerPost }}</td>
+        <td class="tar">{{ .Data.Total.Posts }}</td>
+        <td class="tar">{{ .Data.Total.Chars }}</td>
+        <td class="tar">{{ .Data.Total.Words }}</td>
+        <td class="tar">{{ .Data.Total.WordsPerPost }}</td>
       </tr>
     </tbody>
   </table>
