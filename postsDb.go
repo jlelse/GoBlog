@@ -230,105 +230,124 @@ type postsRequestConfig struct {
 
 func buildPostsQuery(c *postsRequestConfig) (query string, args []interface{}) {
 	args = []interface{}{}
-	defaultSelection := "select p.path as path, coalesce(content, '') as content, coalesce(published, '') as published, coalesce(updated, '') as updated, coalesce(blog, '') as blog, coalesce(section, '') as section, coalesce(status, '') as status, coalesce(parameter, '') as parameter, coalesce(value, '') as value "
-	postsTable := "posts"
+	selection := "select p.path as path, coalesce(content, '') as content, coalesce(published, '') as published, coalesce(updated, '') as updated, coalesce(blog, '') as blog, coalesce(section, '') as section, coalesce(status, '') as status, coalesce(parameter, '') as parameter, coalesce(value, '') as value "
+	table := "posts"
 	if c.search != "" {
-		postsTable = "posts_fts(@search)"
+		table = "posts_fts(@search)"
 		args = append(args, sql.Named("search", c.search))
 	}
 	if c.status != "" && c.status != statusNil {
-		postsTable = "(select * from " + postsTable + " where status = @status)"
+		table = "(select * from " + table + " where status = @status)"
 		args = append(args, sql.Named("status", c.status))
 	}
 	if c.blog != "" {
-		postsTable = "(select * from " + postsTable + " where blog = @blog)"
+		table = "(select * from " + table + " where blog = @blog)"
 		args = append(args, sql.Named("blog", c.blog))
 	}
 	if c.parameter != "" {
-		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @param "
+		table = "(select distinct p.* from " + table + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @param "
 		args = append(args, sql.Named("param", c.parameter))
 		if c.parameterValue != "" {
-			postsTable += "and pp.value = @paramval)"
+			table += "and pp.value = @paramval)"
 			args = append(args, sql.Named("paramval", c.parameterValue))
 		} else {
-			postsTable += "and length(coalesce(pp.value, '')) > 1)"
+			table += "and length(coalesce(pp.value, '')) > 1)"
 		}
 	}
 	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
-		postsTable = "(select distinct p.* from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @taxname and lower(pp.value) = lower(@taxval))"
+		table = "(select distinct p.* from " + table + " p left outer join post_parameters pp on p.path = pp.path where pp.parameter = @taxname and lower(pp.value) = lower(@taxval))"
 		args = append(args, sql.Named("taxname", c.taxonomy.Name), sql.Named("taxval", c.taxonomyValue))
 	}
 	if len(c.sections) > 0 {
-		postsTable = "(select * from " + postsTable + " where"
+		table = "(select * from " + table + " where section in ("
 		for i, section := range c.sections {
 			if i > 0 {
-				postsTable += " or"
+				table += ", "
 			}
 			named := fmt.Sprintf("section%v", i)
-			postsTable += fmt.Sprintf(" section = @%v", named)
+			table += "@" + named
 			args = append(args, sql.Named(named, section))
 		}
-		postsTable += ")"
+		table += "))"
 	}
 	if c.publishedYear != 0 {
-		postsTable = "(select * from " + postsTable + " p where substr(p.published, 1, 4) = @publishedyear)"
+		table = "(select * from " + table + " p where substr(p.published, 1, 4) = @publishedyear)"
 		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", c.publishedYear)))
 	}
 	if c.publishedMonth != 0 {
-		postsTable = "(select * from " + postsTable + " p where substr(p.published, 6, 2) = @publishedmonth)"
+		table = "(select * from " + table + " p where substr(p.published, 6, 2) = @publishedmonth)"
 		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", c.publishedMonth)))
 	}
 	if c.publishedDay != 0 {
-		postsTable = "(select * from " + postsTable + " p where substr(p.published, 9, 2) = @publishedday)"
+		table = "(select * from " + table + " p where substr(p.published, 9, 2) = @publishedday)"
 		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", c.publishedDay)))
 	}
-	defaultTables := " from " + postsTable + " p left outer join post_parameters pp on p.path = pp.path "
-	defaultSorting := " order by p.published desc "
+	tables := " from " + table + " p left outer join post_parameters pp on p.path = pp.path "
+	sorting := " order by p.published desc "
 	if c.randomOrder {
-		defaultSorting = " order by random() "
+		sorting = " order by random() "
 	}
 	if c.path != "" {
-		query = defaultSelection + defaultTables + " where p.path = @path" + defaultSorting
+		query = selection + tables + " where p.path = @path" + sorting
 		args = append(args, sql.Named("path", c.path))
 	} else if c.limit != 0 || c.offset != 0 {
-		query = defaultSelection + " from (select * from " + postsTable + " p " + defaultSorting + " limit @limit offset @offset) p left outer join post_parameters pp on p.path = pp.path "
+		query = selection + " from (select * from " + table + " p " + sorting + " limit @limit offset @offset) p left outer join post_parameters pp on p.path = pp.path "
 		args = append(args, sql.Named("limit", c.limit), sql.Named("offset", c.offset))
 	} else {
-		query = defaultSelection + defaultTables + defaultSorting
+		query = selection + tables + sorting
 	}
 	return
 }
 
 func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err error) {
+	// Query posts
 	query, queryParams := buildPostsQuery(config)
 	rows, err := d.query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
-	paths := map[string]int{}
+	// Prepare row scanning (this is a bit dirty, but it's much faster)
+	postsMap := map[string]*post{}
+	var postsOrder []string
+	var path, parameterName, parameterValue string
+	columns, _ := rows.Columns()
+	rawBuffer := make([]sql.RawBytes, len(columns))
+	scanArgs := make([]interface{}, len(columns))
+	for i := range rawBuffer {
+		scanArgs[i] = &rawBuffer[i]
+	}
 	for rows.Next() {
-		p := &post{}
-		var parameterName, parameterValue string
-		err = rows.Scan(&p.Path, &p.Content, &p.Published, &p.Updated, &p.Blog, &p.Section, &p.Status, &parameterName, &parameterValue)
-		if err != nil {
+		if err = rows.Scan(scanArgs...); err != nil {
 			return nil, err
 		}
-		if paths[p.Path] == 0 {
-			index := len(posts)
-			paths[p.Path] = index + 1
-			p.Parameters = map[string][]string{}
-			// Fix dates
-			p.Published = toLocalSafe(p.Published)
-			p.Updated = toLocalSafe(p.Updated)
-			// Append
-			posts = append(posts, p)
+		path = string(rawBuffer[0])
+		parameterName = string(rawBuffer[7])
+		parameterValue = string(rawBuffer[8])
+		if p, ok := postsMap[path]; ok {
+			// Post already exists, add parameter
+			p.Parameters[parameterName] = append(p.Parameters[parameterName], parameterValue)
+		} else {
+			// Create new post, fill and add to map
+			p := &post{
+				Path:       path,
+				Content:    string(rawBuffer[1]),
+				Published:  toLocalSafe(string(rawBuffer[2])),
+				Updated:    toLocalSafe(string(rawBuffer[3])),
+				Blog:       string(rawBuffer[4]),
+				Section:    string(rawBuffer[5]),
+				Status:     postStatus(string(rawBuffer[6])),
+				Parameters: map[string][]string{},
+			}
+			if parameterName != "" {
+				p.Parameters[parameterName] = append(p.Parameters[parameterName], parameterValue)
+			}
+			postsMap[path] = p
+			postsOrder = append(postsOrder, path)
 		}
-		if parameterName != "" && posts != nil {
-			posts[paths[p.Path]-1].Parameters[parameterName] = append(posts[paths[p.Path]-1].Parameters[parameterName], parameterValue)
-		}
+	}
+	// Copy map items to list, because map has a random order
+	for _, path = range postsOrder {
+		posts = append(posts, postsMap[path])
 	}
 	return posts, nil
 }
@@ -365,8 +384,8 @@ func (d *database) allPostPaths(status postStatus) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	var path string
 	for rows.Next() {
-		var path string
 		_ = rows.Scan(&path)
 		if path != "" {
 			postPaths = append(postPaths, path)
