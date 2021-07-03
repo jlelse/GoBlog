@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -114,6 +115,9 @@ func Test_telegram(t *testing.T) {
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
 			cfg: &config{
+				Db: &configDb{
+					File: filepath.Join(t.TempDir(), "test.db"),
+				},
 				Server: &configServer{
 					PublicAddress: "https://example.com",
 				},
@@ -129,7 +133,7 @@ func Test_telegram(t *testing.T) {
 			},
 			httpClient: fakeClient,
 		}
-		app.setInMemoryDatabase()
+		app.initDatabase(false)
 
 		app.initTelegram()
 
@@ -161,6 +165,9 @@ func Test_telegram(t *testing.T) {
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
 			cfg: &config{
+				Db: &configDb{
+					File: filepath.Join(t.TempDir(), "test.db"),
+				},
 				Server: &configServer{
 					PublicAddress: "https://example.com",
 				},
@@ -170,7 +177,7 @@ func Test_telegram(t *testing.T) {
 			},
 			httpClient: fakeClient,
 		}
-		app.setInMemoryDatabase()
+		app.initDatabase(false)
 
 		app.initTelegram()
 

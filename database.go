@@ -23,12 +23,16 @@ type database struct {
 	// Other things
 	pc  singleflight.Group // persistant cache
 	pcm sync.Mutex         // post creation
+	sp  singleflight.Group // singleflight group for short path requests
+	spc sync.Map           // shortpath cache
 }
 
-func (a *goBlog) initDatabase() (err error) {
-	log.Println("Initialize database...")
+func (a *goBlog) initDatabase(logging bool) (err error) {
+	if logging {
+		log.Println("Initialize database...")
+	}
 	// Setup db
-	db, err := a.openDatabase(a.cfg.Db.File, true)
+	db, err := a.openDatabase(a.cfg.Db.File, logging)
 	if err != nil {
 		return err
 	}
@@ -47,7 +51,9 @@ func (a *goBlog) initDatabase() (err error) {
 		})
 		db.dump(a.cfg.Db.DumpFile)
 	}
-	log.Println("Initialized database")
+	if logging {
+		log.Println("Initialized database")
+	}
 	return nil
 }
 

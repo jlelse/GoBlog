@@ -191,6 +191,34 @@ func migrateDb(db *sql.DB, logging bool) error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00017",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					create index index_post_parameters on post_parameters (path, parameter, value);
+					create index index_queue on queue (name, schedule);
+					drop index index_pp_path;
+					drop index index_queue_name;
+					drop index index_queue_schedule;
+					drop view view_posts_with_title;
+					create table posts_new (path text not null primary key, content text, published text, updated text, blog text not null, section text, status text not null, priority integer not null default 0);
+					insert into posts_new select *, 0 from posts;
+					drop table posts;
+					alter table posts_new rename to posts;
+					create view view_posts_with_title as select p.rowid as id, p.path as path, coalesce(pp.value, '') as title, content, published, updated, blog, section, status, priority from posts p left outer join (select * from post_parameters pp where pp.parameter = 'title') pp on p.path = pp.path;
+					drop table posts_fts;
+					create virtual table posts_fts using fts5(path unindexed, title, content, published unindexed, updated unindexed, blog unindexed, section unindexed, status unindexed, priority unindexed, content=view_posts_with_title, content_rowid=id);
+					insert into posts_fts(posts_fts) values ('rebuild');
+					create index index_posts_status on posts (status);
+					create index index_posts_blog on posts (blog);
+					create index index_posts_section on posts (section);
+					create index index_posts_published on posts (published);
+					create index index_posts_priority on posts (published);
+					drop trigger if exists trigger_posts_delete_pp;
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {

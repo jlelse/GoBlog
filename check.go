@@ -12,7 +12,7 @@ import (
 )
 
 func (a *goBlog) checkAllExternalLinks() {
-	allPosts, err := a.db.getPosts(&postsRequestConfig{status: statusPublished})
+	allPosts, err := a.db.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true})
 	if err != nil {
 		log.Println(err.Error())
 		return
