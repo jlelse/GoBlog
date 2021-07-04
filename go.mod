@@ -24,14 +24,14 @@ require (
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
-	github.com/gorilla/feeds v1.1.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/jlaffaye/ftp v0.0.0-20210307004419-5d4190119067
+	// master
+	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/kr/text v0.2.0 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/lib/pq v1.9.0 // indirect

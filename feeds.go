@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/gorilla/feeds"
+	"github.com/jlelse/feeds"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
