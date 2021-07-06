@@ -195,6 +195,10 @@ footer * {
   transition: transform 2s ease;
 }
 
+#map {
+  height: 400px;
+}
+
 /* Print */
 @media print {
   html {

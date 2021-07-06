@@ -70,6 +70,7 @@ type configBlog struct {
 	PostAsHome     bool                `mapstructure:"postAsHome"`
 	RandomPost     *randomPost         `mapstructure:"randomPost"`
 	Comments       *comments           `mapstructure:"comments"`
+	Map            *configMap          `mapstructure:"map"`
 }
 
 type section struct {
@@ -143,6 +144,11 @@ type randomPost struct {
 
 type comments struct {
 	Enabled bool `mapstructure:"enabled"`
+}
+
+type configMap struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"`
 }
 
 type configUser struct {

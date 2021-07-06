@@ -538,6 +538,16 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 				r.Get(brPath+".opml", a.serveBlogrollExport)
 			})
 		}
+
+		// Geo map
+		if mc := blogConfig.Map; mc != nil && mc.Enabled {
+			mapPath := mc.Path
+			if mc.Path == "" {
+				mapPath = "/map"
+			}
+			r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware, sbm).Get(blogConfig.getRelativePath(mapPath), a.serveGeoMap)
+		}
+
 	}
 
 	// Sitemap
@@ -573,6 +583,8 @@ func (a *goBlog) refreshCSPDomains() {
 	}
 }
 
+const cspHeader = "Content-Security-Policy"
+
 func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	a.refreshCSPDomains()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -581,7 +593,7 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'"+a.cspDomains)
+		w.Header().Set(cspHeader, "default-src 'self'"+a.cspDomains)
 		if a.cfg.Server.Tor && a.torAddress != "" {
 			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI))
 		}

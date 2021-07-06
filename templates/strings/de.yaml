@@ -23,6 +23,7 @@ locationnotsupported: "Die Standort-API wird von diesem Browser nicht unterstüt
 mediafiles: "Medien-Dateien"
 next: "Weiter"
 nofiles: "Keine Dateien"
+nolocations: "Keine Posts mit Standorten"
 noposts: "Hier sind keine Posts."
 oldcontent: "⚠️ Dieser Eintrag ist bereits über ein Jahr alt. Er ist möglicherweise nicht mehr aktuell. Meinungen können sich geändert haben."
 posts: "Posts"

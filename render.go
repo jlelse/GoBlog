@@ -39,6 +39,7 @@ const (
 	templateNotificationsAdmin = "notificationsadmin"
 	templateWebmentionAdmin    = "webmentionadmin"
 	templateBlogroll           = "blogroll"
+	templateGeoMap             = "geomap"
 )
 
 func (a *goBlog) initRendering() error {

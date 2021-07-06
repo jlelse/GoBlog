@@ -227,6 +227,7 @@ type postsRequestConfig struct {
 	publishedYear, publishedMonth, publishedDay int
 	randomOrder                                 bool
 	withoutParameters                           bool
+	withOnlyParameters                          []string
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []interface{}) {
@@ -303,11 +304,28 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	return query, args
 }
 
-func (d *database) getPostParameters(path string) (params map[string][]string, err error) {
-	rows, err := d.query("select parameter, value from post_parameters where path = @path order by id", sql.Named("path", path))
+func (d *database) getPostParameters(path string, parameters ...string) (params map[string][]string, err error) {
+	var sqlArgs []interface{}
+	// Parameter filter
+	paramFilter := ""
+	if len(parameters) > 0 {
+		paramFilter = " and parameter in ("
+		for i, p := range parameters {
+			if i > 0 {
+				paramFilter += ", "
+			}
+			named := fmt.Sprintf("param%v", i)
+			paramFilter += "@" + named
+			sqlArgs = append(sqlArgs, sql.Named(named, p))
+		}
+		paramFilter += ")"
+	}
+	// Query
+	rows, err := d.query("select parameter, value from post_parameters where path = @path"+paramFilter+" order by id", append(sqlArgs, sql.Named("path", path))...)
 	if err != nil {
 		return nil, err
 	}
+	// Result
 	var name, value string
 	params = map[string][]string{}
 	for rows.Next() {
@@ -343,7 +361,7 @@ func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err erro
 			Status:    postStatus(status),
 		}
 		if !config.withoutParameters {
-			if p.Parameters, err = d.getPostParameters(path); err != nil {
+			if p.Parameters, err = d.getPostParameters(path, config.withOnlyParameters...); err != nil {
 				return nil, err
 			}
 		}
