@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
-	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210619211856-8953b4bd5490
+	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40
 	github.com/PuerkitoBio/goquery v1.7.0
@@ -47,8 +47,8 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tdewolff/minify/v2 v2.9.18
-	github.com/thoas/go-funk v0.8.0
+	github.com/tdewolff/minify/v2 v2.9.19
+	github.com/thoas/go-funk v0.9.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.4.0
