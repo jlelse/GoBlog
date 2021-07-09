@@ -37,7 +37,7 @@ require (
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.7
-	github.com/microcosm-cc/bluemonday v1.0.14
+	github.com/microcosm-cc/bluemonday v1.0.15
 	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0
