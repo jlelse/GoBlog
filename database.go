@@ -185,6 +185,10 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
+	// Check if prepared cache should be skipped
+	if len(args) > 0 && args[0] == dbNoCache {
+		return db.db.Query(query, args[1:]...)
+	}
 	// Use prepared statement
 	st, _ := db.prepare(query)
 	if st != nil {
@@ -195,6 +199,10 @@ func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) 
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
+	// Check if prepared cache should be skipped
+	if len(args) > 0 && args[0] == dbNoCache {
+		return db.db.QueryRow(query, args[1:]...), nil
+	}
 	// Use prepared statement
 	st, _ := db.prepare(query)
 	if st != nil {

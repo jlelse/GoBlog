@@ -471,15 +471,44 @@ func (d *database) allPublishedDates(blog string) (dates []publishedDate, err er
 	return
 }
 
-func (db *database) usesOfMediaFile(name string) (count int, err error) {
-	query := "select count(distinct path) from (select path from posts_fts where content match @fts_name union all select path from post_parameters where instr(value, @name) > 0)"
-	row, err := db.queryRow(query, sql.Named("fts_name", fmt.Sprintf("\"%s\"", name)), sql.Named("name", name))
-	if err != nil {
-		return 0, err
+const mediaUseSql = `
+with mediafiles (name) as (values %s)
+select name, count(path) as count from (
+    select distinct m.name, p.path
+    from mediafiles m, post_parameters p
+    where instr(p.value, m.name) > 0
+    union
+    select distinct m.name, p.path
+    from mediafiles m, posts_fts p
+    where p.content match '"' || m.name || '"'
+)
+group by name;
+`
+
+func (db *database) usesOfMediaFile(names ...string) (counts map[string]int, err error) {
+	sqlArgs := []interface{}{dbNoCache}
+	nameValues := ""
+	for i, n := range names {
+		if i > 0 {
+			nameValues += ", "
+		}
+		named := fmt.Sprintf("name%v", i)
+		nameValues += fmt.Sprintf("(@%s)", named)
+		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
-	err = row.Scan(&count)
+	rows, err := db.query(fmt.Sprintf(mediaUseSql, nameValues), sqlArgs...)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return count, nil
+	counts = map[string]int{}
+	var name string
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&name, &count)
+		if err != nil {
+			return nil, err
+		}
+		counts[name] = count
+	}
+	return counts, nil
 }
