@@ -16,6 +16,8 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+const defaultBlogrollPath = "/blogroll"
+
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	t := servertiming.FromContext(r.Context()).NewMetric("bg").Start()
@@ -32,13 +34,15 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
 	c := a.cfg.Blogs[blog].Blogroll
+	can := a.getRelativePath(blog, defaultIfEmpty(c.Path, defaultBlogrollPath))
 	a.render(w, r, templateBlogroll, &renderData{
 		BlogString: blog,
+		Canonical:  a.getFullAddress(can),
 		Data: map[string]interface{}{
 			"Title":       c.Title,
 			"Description": c.Description,
 			"Outlines":    outlines,
-			"Download":    c.Path + ".opml",
+			"Download":    can + ".opml",
 		},
 	})
 }

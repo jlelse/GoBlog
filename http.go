@@ -254,18 +254,21 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 			}
 		}
 
-		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
+		if pc := blogConfig.Photos; pc != nil && pc.Enabled {
 			a.photosMiddlewares[blog] = middleware.WithValue(indexConfigKey, &indexConfig{
-				path:            blogConfig.getRelativePath(blogConfig.Photos.Path),
-				parameter:       blogConfig.Photos.Parameter,
-				title:           blogConfig.Photos.Title,
-				description:     blogConfig.Photos.Description,
+				path:            blogConfig.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath)),
+				parameter:       pc.Parameter,
+				title:           pc.Title,
+				description:     pc.Description,
 				summaryTemplate: templatePhotosSummary,
 			})
 		}
 
-		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			a.searchMiddlewares[blog] = middleware.WithValue(pathContextKey, blogConfig.getRelativePath(blogConfig.Search.Path))
+		if bsc := blogConfig.Search; bsc != nil && bsc.Enabled {
+			a.searchMiddlewares[blog] = middleware.WithValue(
+				pathContextKey,
+				blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath)),
+			)
 		}
 
 		for _, cp := range blogConfig.CustomPages {
@@ -437,11 +440,11 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 		}
 
 		// Photos
-		if blogConfig.Photos != nil && blogConfig.Photos.Enabled {
+		if pc := blogConfig.Photos; pc != nil && pc.Enabled {
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm, a.photosMiddlewares[blog])
-				photoPath := blogConfig.getRelativePath(blogConfig.Photos.Path)
+				photoPath := blogConfig.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))
 				r.Get(photoPath, a.serveIndex)
 				r.Get(photoPath+feedPath, a.serveIndex)
 				r.Get(photoPath+paginationPath, a.serveIndex)
@@ -449,14 +452,13 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 		}
 
 		// Search
-		if blogConfig.Search != nil && blogConfig.Search.Enabled {
-			searchPath := blogConfig.getRelativePath(blogConfig.Search.Path)
-			r.With(sbm, a.searchMiddlewares[blog]).Mount(searchPath, a.searchRouter)
+		if bsc := blogConfig.Search; bsc != nil && bsc.Enabled {
+			r.With(sbm, a.searchMiddlewares[blog]).Mount(blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath)), a.searchRouter)
 		}
 
 		// Stats
-		if blogConfig.BlogStats != nil && blogConfig.BlogStats.Enabled {
-			statsPath := blogConfig.getRelativePath(blogConfig.BlogStats.Path)
+		if bsc := blogConfig.BlogStats; bsc != nil && bsc.Enabled {
+			statsPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm)
@@ -513,11 +515,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 
 		// Random post
 		if rp := blogConfig.RandomPost; rp != nil && rp.Enabled {
-			randomPath := rp.Path
-			if randomPath == "" {
-				randomPath = "/random"
-			}
-			r.With(a.privateModeHandler...).With(sbm).Get(blogConfig.getRelativePath(randomPath), a.redirectToRandomPost)
+			r.With(a.privateModeHandler...).With(sbm).Get(blogConfig.getRelativePath(defaultIfEmpty(rp.Path, "/random")), a.redirectToRandomPost)
 		}
 
 		// Editor
@@ -530,7 +528,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 
 		// Blogroll
 		if brConfig := blogConfig.Blogroll; brConfig != nil && brConfig.Enabled {
-			brPath := blogConfig.getRelativePath(brConfig.Path)
+			brPath := blogConfig.getRelativePath(defaultIfEmpty(brConfig.Path, defaultBlogrollPath))
 			r.Group(func(r chi.Router) {
 				r.Use(a.privateModeHandler...)
 				r.Use(a.cache.cacheMiddleware, sbm)
@@ -541,11 +539,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 
 		// Geo map
 		if mc := blogConfig.Map; mc != nil && mc.Enabled {
-			mapPath := mc.Path
-			if mc.Path == "" {
-				mapPath = "/map"
-			}
-			r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware, sbm).Get(blogConfig.getRelativePath(mapPath), a.serveGeoMap)
+			r.With(a.privateModeHandler...).With(a.cache.cacheMiddleware, sbm).Get(blogConfig.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath)), a.serveGeoMap)
 		}
 
 	}

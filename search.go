@@ -7,8 +7,11 @@ import (
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/microcosm-cc/bluemonday"
 )
 
+const defaultSearchPath = "/search"
 const searchPlaceholder = "{search}"
 
 func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +23,9 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if q := r.Form.Get("q"); q != "" {
+		// Clean query
+		q = htmlText([]byte(bluemonday.StrictPolicy().Sanitize(q)))
+		// Redirect to results
 		http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
 		return
 	}

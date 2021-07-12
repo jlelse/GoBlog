@@ -162,8 +162,8 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 		sqlArgs = append(sqlArgs, o.oldPath, o.oldPath)
 	}
 	// Insert new post
-	sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status) values (?, ?, ?, ?, ?, ?, ?);")
-	sqlArgs = append(sqlArgs, p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section, p.Status)
+	sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
+	sqlArgs = append(sqlArgs, p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section, p.Status, p.Priority)
 	// Insert post parameters
 	for param, value := range p.Parameters {
 		for _, value := range value {
@@ -220,12 +220,13 @@ type postsRequestConfig struct {
 	offset                                      int
 	sections                                    []string
 	status                                      postStatus
-	taxonomy                                    *taxonomy
+	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
 	parameter                                   string
 	parameterValue                              string
 	publishedYear, publishedMonth, publishedDay int
 	randomOrder                                 bool
+	priorityOrder                               bool
 	withoutParameters                           bool
 	withOnlyParameters                          []string
 }
@@ -294,6 +295,8 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	sorting := " order by published desc"
 	if c.randomOrder {
 		sorting = " order by random()"
+	} else if c.priorityOrder {
+		sorting = " order by priority desc, published desc"
 	}
 	table += sorting
 	if c.limit != 0 || c.offset != 0 {
@@ -339,15 +342,16 @@ func (d *database) getPostParameters(path string, parameters ...string) (params 
 
 func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
-	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status")
+	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, priority")
 	rows, err := d.query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
 	// Prepare row scanning
 	var path, content, published, updated, blog, section, status string
+	var priority int
 	for rows.Next() {
-		if err = rows.Scan(&path, &content, &published, &updated, &blog, &section, &status); err != nil {
+		if err = rows.Scan(&path, &content, &published, &updated, &blog, &section, &status, &priority); err != nil {
 			return nil, err
 		}
 		// Create new post, fill and add to list
@@ -359,6 +363,7 @@ func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err erro
 			Blog:      blog,
 			Section:   section,
 			Status:    postStatus(status),
+			Priority:  priority,
 		}
 		if !config.withoutParameters {
 			if p.Parameters, err = d.getPostParameters(path, config.withOnlyParameters...); err != nil {

@@ -101,27 +101,33 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		// Photos
-		if bc.Photos != nil && bc.Photos.Enabled {
+		if pc := bc.Photos; pc != nil && pc.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(bc.Photos.Path)),
+				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))),
 			})
 		}
 		// Search
-		if bc.Search != nil && bc.Search.Enabled {
+		if bsc := bc.Search; bsc != nil && bsc.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(bc.Search.Path)),
+				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))),
 			})
 		}
 		// Stats
-		if bc.BlogStats != nil && bc.BlogStats.Enabled {
+		if bsc := bc.BlogStats; bsc != nil && bsc.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(bc.BlogStats.Path)),
+				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))),
 			})
 		}
 		// Blogroll
-		if bc.Blogroll != nil && bc.Blogroll.Enabled {
+		if brc := bc.Blogroll; brc != nil && brc.Enabled {
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(bc.Blogroll.Path)),
+				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(brc.Path, defaultBlogrollPath))),
+			})
+		}
+		// Geo map
+		if mc := bc.Map; mc != nil && mc.Enabled {
+			sm.Add(&sitemap.URL{
+				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))),
 			})
 		}
 		// Custom pages

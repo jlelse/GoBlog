@@ -120,14 +120,22 @@ func (p *post) isPublishedSectionPost() bool {
 }
 
 func (a *goBlog) postToMfItem(p *post) *microformatItem {
-	params := p.Parameters
-	params["path"] = []string{p.Path}
-	params["section"] = []string{p.Section}
-	params["blog"] = []string{p.Blog}
-	params["published"] = []string{p.Published}
-	params["updated"] = []string{p.Updated}
-	params["status"] = []string{string(p.Status)}
-	pb, _ := yaml.Marshal(p.Parameters)
+	params := map[string]interface{}{}
+	for k, v := range p.Parameters {
+		if l := len(v); l == 1 {
+			params[k] = v[0]
+		} else if l > 1 {
+			params[k] = v
+		}
+	}
+	params["path"] = p.Path
+	params["section"] = p.Section
+	params["blog"] = p.Blog
+	params["published"] = p.Published
+	params["updated"] = p.Updated
+	params["status"] = string(p.Status)
+	params["priority"] = p.Priority
+	pb, _ := yaml.Marshal(params)
 	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
 	return &microformatItem{
 		Type: []string{"h-entry"},

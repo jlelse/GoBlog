@@ -52,50 +52,50 @@ type configCache struct {
 }
 
 type configBlog struct {
-	Path           string              `mapstructure:"path"`
-	Lang           string              `mapstructure:"lang"`
-	Title          string              `mapstructure:"title"`
-	Description    string              `mapstructure:"description"`
-	Pagination     int                 `mapstructure:"pagination"`
-	DefaultSection string              `mapstructure:"defaultsection"`
-	Sections       map[string]*section `mapstructure:"sections"`
-	Taxonomies     []*taxonomy         `mapstructure:"taxonomies"`
-	Menus          map[string]*menu    `mapstructure:"menus"`
-	Photos         *photos             `mapstructure:"photos"`
-	Search         *search             `mapstructure:"search"`
-	BlogStats      *blogStats          `mapstructure:"blogStats"`
-	Blogroll       *configBlogroll     `mapstructure:"blogroll"`
-	CustomPages    []*customPage       `mapstructure:"custompages"`
-	Telegram       *configTelegram     `mapstructure:"telegram"`
-	PostAsHome     bool                `mapstructure:"postAsHome"`
-	RandomPost     *randomPost         `mapstructure:"randomPost"`
-	Comments       *comments           `mapstructure:"comments"`
-	Map            *configMap          `mapstructure:"map"`
+	Path           string                    `mapstructure:"path"`
+	Lang           string                    `mapstructure:"lang"`
+	Title          string                    `mapstructure:"title"`
+	Description    string                    `mapstructure:"description"`
+	Pagination     int                       `mapstructure:"pagination"`
+	DefaultSection string                    `mapstructure:"defaultsection"`
+	Sections       map[string]*configSection `mapstructure:"sections"`
+	Taxonomies     []*configTaxonomy         `mapstructure:"taxonomies"`
+	Menus          map[string]*configMenu    `mapstructure:"menus"`
+	Photos         *configPhotos             `mapstructure:"photos"`
+	Search         *configSearch             `mapstructure:"search"`
+	BlogStats      *configBlogStats          `mapstructure:"blogStats"`
+	Blogroll       *configBlogroll           `mapstructure:"blogroll"`
+	CustomPages    []*configCustomPage       `mapstructure:"custompages"`
+	Telegram       *configTelegram           `mapstructure:"telegram"`
+	PostAsHome     bool                      `mapstructure:"postAsHome"`
+	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
+	Comments       *configComments           `mapstructure:"comments"`
+	Map            *configGeoMap             `mapstructure:"map"`
 }
 
-type section struct {
+type configSection struct {
 	Name         string `mapstructure:"name"`
 	Title        string `mapstructure:"title"`
 	Description  string `mapstructure:"description"`
 	PathTemplate string `mapstructure:"pathtemplate"`
 }
 
-type taxonomy struct {
+type configTaxonomy struct {
 	Name        string `mapstructure:"name"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
 }
 
-type menu struct {
-	Items []*menuItem `mapstructure:"items"`
+type configMenu struct {
+	Items []*configMenuItem `mapstructure:"items"`
 }
 
-type menuItem struct {
+type configMenuItem struct {
 	Title string `mapstructure:"title"`
 	Link  string `mapstructure:"link"`
 }
 
-type photos struct {
+type configPhotos struct {
 	Enabled     bool   `mapstructure:"enabled"`
 	Parameter   string `mapstructure:"parameter"`
 	Path        string `mapstructure:"path"`
@@ -103,7 +103,7 @@ type photos struct {
 	Description string `mapstructure:"description"`
 }
 
-type search struct {
+type configSearch struct {
 	Enabled     bool   `mapstructure:"enabled"`
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
@@ -111,7 +111,7 @@ type search struct {
 	Placeholder string `mapstructure:"placeholder"`
 }
 
-type blogStats struct {
+type configBlogStats struct {
 	Enabled     bool   `mapstructure:"enabled"`
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
@@ -129,7 +129,7 @@ type configBlogroll struct {
 	Description string   `mapstructure:"description"`
 }
 
-type customPage struct {
+type configCustomPage struct {
 	Path            string       `mapstructure:"path"`
 	Template        string       `mapstructure:"template"`
 	Cache           bool         `mapstructure:"cache"`
@@ -137,33 +137,33 @@ type customPage struct {
 	Data            *interface{} `mapstructure:"data"`
 }
 
-type randomPost struct {
+type configRandomPost struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
 }
 
-type comments struct {
+type configComments struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-type configMap struct {
+type configGeoMap struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
 }
 
 type configUser struct {
-	Nick         string         `mapstructure:"nick"`
-	Name         string         `mapstructure:"name"`
-	Password     string         `mapstructure:"password"`
-	TOTP         string         `mapstructure:"totp"`
-	AppPasswords []*appPassword `mapstructure:"appPasswords"`
-	Picture      string         `mapstructure:"picture"`
-	Email        string         `mapstructure:"email"`
-	Link         string         `mapstructure:"link"`
-	Identities   []string       `mapstructure:"identities"`
+	Nick         string               `mapstructure:"nick"`
+	Name         string               `mapstructure:"name"`
+	Password     string               `mapstructure:"password"`
+	TOTP         string               `mapstructure:"totp"`
+	AppPasswords []*configAppPassword `mapstructure:"appPasswords"`
+	Picture      string               `mapstructure:"picture"`
+	Email        string               `mapstructure:"email"`
+	Link         string               `mapstructure:"link"`
+	Identities   []string             `mapstructure:"identities"`
 }
 
-type appPassword struct {
+type configAppPassword struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }
@@ -315,7 +315,7 @@ func (a *goBlog) initConfig() error {
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		// Disable comments for all blogs
 		for _, b := range a.cfg.Blogs {
-			b.Comments = &comments{Enabled: false}
+			b.Comments = &configComments{Enabled: false}
 		}
 	}
 	// Check config for each blog

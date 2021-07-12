@@ -5,7 +5,7 @@ import "net/http"
 const customPageContextKey = "custompage"
 
 func (a *goBlog) serveCustomPage(w http.ResponseWriter, r *http.Request) {
-	page := r.Context().Value(customPageContextKey).(*customPage)
+	page := r.Context().Value(customPageContextKey).(*configCustomPage)
 	if a.cfg.Cache != nil && a.cfg.Cache.Enable && page.Cache {
 		if page.CacheExpiration != 0 {
 			setInternalCacheExpirationHeader(w, r, page.CacheExpiration)

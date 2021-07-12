@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"html/template"
@@ -210,4 +211,19 @@ func getSHA256(file io.ReadSeeker) (filename string, err error) {
 
 func mBytesString(size int64) string {
 	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes())
+}
+
+func htmlText(b []byte) string {
+	d, err := goquery.NewDocumentFromReader(bytes.NewReader(b))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(d.Text())
+}
+
+func defaultIfEmpty(s, d string) string {
+	if s != "" {
+		return s
+	}
+	return d
 }

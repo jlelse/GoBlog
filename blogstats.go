@@ -9,6 +9,8 @@ import (
 	servertiming "github.com/mitchellh/go-server-timing"
 )
 
+const defaultBlogStatsPath = "/statistics"
+
 func (a *goBlog) initBlogStats() {
 	f := func(p *post) {
 		a.db.resetBlogStats(p.Blog)
@@ -21,7 +23,7 @@ func (a *goBlog) initBlogStats() {
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	bc := a.cfg.Blogs[blog]
-	canonical := bc.getRelativePath(bc.BlogStats.Path)
+	canonical := bc.getRelativePath(defaultIfEmpty(bc.BlogStats.Path, defaultBlogStatsPath))
 	a.render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,
 		Canonical:  a.getFullAddress(canonical),

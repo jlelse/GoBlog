@@ -24,6 +24,9 @@
         <script defer src="{{ asset "js/geomap.js" }}"></script>
     {{ end }}
   </main>
+  {{ if .CommentsEnabled }}
+    {{ include "interactions" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "geomap" }}

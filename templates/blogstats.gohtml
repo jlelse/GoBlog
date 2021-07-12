@@ -9,6 +9,9 @@
     <p id="loading" data-table="{{.Data.TableUrl}}">{{ string .Blog.Lang "loading" }}</p>
     <script defer src="{{ asset "js/blogstats.js" }}"></script>
   </main>
+  {{ if .CommentsEnabled }}
+    {{ include "interactions" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "blogstats" }}

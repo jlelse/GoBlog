@@ -5,8 +5,11 @@ import (
 	"net/http"
 )
 
+const defaultGeoMapPath = "/map"
+
 func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
+	bc := a.cfg.Blogs[blog]
 
 	allPostsWithLocation, err := a.db.getPosts(&postsRequestConfig{
 		blog:               blog,
@@ -57,6 +60,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 
 	a.render(w, r, templateGeoMap, &renderData{
 		BlogString: blog,
+		Canonical:  a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))),
 		Data: map[string]interface{}{
 			"locations": string(jb),
 		},

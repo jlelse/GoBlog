@@ -360,6 +360,10 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 		p.Status = postStatus(status[0])
 		delete(p.Parameters, "status")
 	}
+	if priority := p.Parameters["priority"]; len(priority) == 1 {
+		p.Priority = cast.ToInt(priority[0])
+		delete(p.Parameters, "priority")
+	}
 	if p.Path == "" && p.Section == "" {
 		// Has no path or section -> default section
 		p.Section = a.cfg.Blogs[p.Blog].DefaultSection

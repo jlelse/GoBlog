@@ -19,16 +19,17 @@ import (
 var errPostNotFound = errors.New("post not found")
 
 type post struct {
-	Path       string              `json:"path"`
-	Content    string              `json:"content"`
-	Published  string              `json:"published"`
-	Updated    string              `json:"updated"`
-	Parameters map[string][]string `json:"parameters"`
-	Blog       string              `json:"blog"`
-	Section    string              `json:"section"`
-	Status     postStatus          `json:"status"`
+	Path       string
+	Content    string
+	Published  string
+	Updated    string
+	Parameters map[string][]string
+	Blog       string
+	Section    string
+	Status     postStatus
+	Priority   int
 	// Not persisted
-	Slug             string `json:"slug"`
+	Slug             string
 	rendered         template.HTML
 	absoluteRendered template.HTML
 }
@@ -167,8 +168,8 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 type indexConfig struct {
 	blog             string
 	path             string
-	section          *section
-	tax              *taxonomy
+	section          *configSection
+	tax              *configTaxonomy
 	taxValue         string
 	parameter        string
 	year, month, day int
@@ -176,6 +177,8 @@ type indexConfig struct {
 	description      string
 	summaryTemplate  string
 }
+
+const defaultPhotosPath = "/photos"
 
 const indexConfigKey contextKey = "indexConfig"
 
@@ -187,7 +190,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	search := chi.URLParam(r, "search")
 	if search != "" {
-		search = searchDecode(search)
+		// Decode and sanitize search
+		search = htmlText([]byte(bluemonday.StrictPolicy().Sanitize(searchDecode(search))))
 	}
 	pageNoString := chi.URLParam(r, "page")
 	pageNo, _ := strconv.Atoi(pageNoString)
@@ -210,6 +214,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
 		status:         statusPublished,
+		priorityOrder:  true,
 	}, db: a.db}, a.cfg.Blogs[blog].Pagination)
 	p.SetPage(pageNo)
 	var posts []*post
@@ -231,8 +236,6 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	} else if search != "" {
 		title = fmt.Sprintf("%s: %s", a.cfg.Blogs[blog].Search.Title, search)
 	}
-	// Clean title
-	title = bluemonday.StrictPolicy().Sanitize(title)
 	// Check if feed
 	if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
 		a.generateFeed(blog, ft, w, r, posts, title, description)

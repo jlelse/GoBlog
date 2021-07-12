@@ -21,6 +21,9 @@
         </ul>
     {{ end }}
   </main>
+  {{ if .CommentsEnabled }}
+    {{ include "interactions" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "blogroll" }}

@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"html/template"
-	"strings"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark/ast"
@@ -73,11 +71,7 @@ func (a *goBlog) renderText(s string) string {
 	if err != nil {
 		return ""
 	}
-	d, err := goquery.NewDocumentFromReader(bytes.NewReader(h))
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(d.Text())
+	return htmlText(h)
 }
 
 // Extensions etc...

@@ -6,7 +6,7 @@ const taxonomyContextKey = "taxonomy"
 
 func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	tax := r.Context().Value(taxonomyContextKey).(*taxonomy)
+	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
 	allValues, err := a.db.allTaxonomyValues(blog, tax.Name)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)

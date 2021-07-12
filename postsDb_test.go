@@ -20,8 +20,9 @@ func Test_postsDb(t *testing.T) {
 			},
 			Blogs: map[string]*configBlog{
 				"en": {
-					Sections: map[string]*section{
-						"test": {},
+					Sections: map[string]*configSection{
+						"test":  {},
+						"micro": {},
 					},
 				},
 			},
@@ -239,6 +240,57 @@ func Test_ftsWithoutTitle(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, ps, 1)
+}
+
+func Test_postsPriority(t *testing.T) {
+	// Added because there was a bug where there were no search results without title
+
+	app := &goBlog{
+		cfg: &config{
+			Db: &configDb{
+				File: filepath.Join(t.TempDir(), "test.db"),
+			},
+		},
+	}
+	app.initDatabase(false)
+
+	err := app.db.savePost(&post{
+		Path:      "/test/abc",
+		Content:   "ABC",
+		Published: toLocalSafe(time.Now().String()),
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusPublished,
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.savePost(&post{
+		Path:      "/test/def",
+		Content:   "DEF",
+		Published: toLocalSafe(time.Now().String()),
+		Blog:      "en",
+		Section:   "test",
+		Status:    statusPublished,
+		Priority:  1,
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	ps, err := app.db.getPosts(&postsRequestConfig{
+		priorityOrder: true,
+	})
+	require.NoError(t, err)
+
+	if assert.Len(t, ps, 2) {
+		post1 := ps[0]
+
+		assert.Equal(t, "/test/def", post1.Path)
+		assert.Equal(t, 1, post1.Priority)
+
+		post2 := ps[1]
+
+		assert.Equal(t, "/test/abc", post2.Path)
+		assert.Equal(t, 0, post2.Priority)
+	}
 }
 
 func Test_usesOfMediaFile(t *testing.T) {
