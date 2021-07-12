@@ -12,6 +12,7 @@ steps:
       repo: rg.fr-par.scw.cloud/jlelse/goblog
       registry: rg.fr-par.scw.cloud/jlelse
       tags: latest
+      mirror: https://mirror.gcr.io
   - name: tools
     image: plugins/docker
     settings:
