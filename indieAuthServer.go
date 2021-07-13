@@ -91,10 +91,10 @@ func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 		RedirectURI: r.Form.Get("redirect_uri"),
 		State:       r.Form.Get("state"),
 		Scopes:      r.Form["scopes"],
-		time:        time.Now(),
+		time:        time.Now().UTC(),
 	}
 	sha := sha1.New()
-	if _, err := sha.Write([]byte(data.time.String() + data.ClientID)); err != nil {
+	if _, err := sha.Write([]byte(data.time.Format(time.RFC3339) + data.ClientID)); err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -190,9 +190,9 @@ func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, "No scope", http.StatusBadRequest)
 				return
 			}
-			data.time = time.Now()
+			data.time = time.Now().UTC()
 			sha := sha1.New()
-			if _, err := sha.Write([]byte(data.time.String() + data.ClientID)); err != nil {
+			if _, err := sha.Write([]byte(data.time.Format(time.RFC3339) + data.ClientID)); err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}

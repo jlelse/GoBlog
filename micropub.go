@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/cast"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -370,7 +369,7 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 	}
 	if p.Published == "" && p.Section != "" {
 		// Has no published date, but section -> published now
-		p.Published = time.Now().Local().String()
+		p.Published = localNowString()
 	}
 	// Add images not in content
 	images := p.Parameters[a.cfg.Micropub.PhotoParam]

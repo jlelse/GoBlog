@@ -2,12 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"time"
 )
 
 func (db *database) cachePersistently(key string, data []byte) error {
-	date, _ := toLocal(time.Now().String())
-	_, err := db.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", date))
+	_, err := db.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", utcNowString()))
 	return err
 }
 

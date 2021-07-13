@@ -219,10 +219,29 @@ func migrateDb(db *sql.DB, logging bool) error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00018",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					update queue set schedule = toutc(schedule);
+					update persistent_cache set date = toutc(date);
+					update sessions set created = toutc(created), modified = toutc(modified), expires = toutc(expires);
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
 		return err
 	}
-	return m.Migrate(db)
+	err = m.Migrate(db)
+	if err != nil {
+		return err
+	}
+	// Update times in database to local time
+	_, err = db.Exec(`
+		update posts set published = tolocal(published), updated = tolocal(updated);
+	`)
+	return err
 }

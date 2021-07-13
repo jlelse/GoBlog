@@ -132,7 +132,23 @@ func toLocal(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return d.Local().String(), nil
+	return d.Local().Format(time.RFC3339), nil
+}
+
+func toUTCSafe(s string) string {
+	d, _ := toUTC(s)
+	return d
+}
+
+func toUTC(s string) (string, error) {
+	if s == "" {
+		return "", nil
+	}
+	d, err := dateparse.ParseLocal(s)
+	if err != nil {
+		return "", err
+	}
+	return d.UTC().Format(time.RFC3339), nil
 }
 
 func dateFormat(date string, format string) string {
@@ -148,11 +164,15 @@ func isoDateFormat(date string) string {
 }
 
 func unixToLocalDateString(unix int64) string {
-	return time.Unix(unix, 0).Local().String()
+	return time.Unix(unix, 0).Local().Format(time.RFC3339)
 }
 
 func localNowString() string {
-	return time.Now().Local().String()
+	return time.Now().Local().Format(time.RFC3339)
+}
+
+func utcNowString() string {
+	return time.Now().UTC().Format(time.RFC3339)
 }
 
 type stringPair struct {

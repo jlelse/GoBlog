@@ -21,8 +21,10 @@ const (
 
 func (a *goBlog) initSessions() {
 	deleteExpiredSessions := func() {
-		if _, err := a.db.exec("delete from sessions where expires < @now",
-			sql.Named("now", time.Now().Local().String())); err != nil {
+		if _, err := a.db.exec(
+			"delete from sessions where expires < @now",
+			sql.Named("now", utcNowString()),
+		); err != nil {
 			log.Println("Failed to delete expired sessions:", err.Error())
 		}
 	}
@@ -135,9 +137,9 @@ func (s *dbSessionStore) load(session *sessions.Session) (err error) {
 }
 
 func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
-	created := time.Now()
-	modified := time.Now()
-	expires := time.Now().Add(time.Second * time.Duration(session.Options.MaxAge))
+	created := time.Now().UTC()
+	modified := time.Now().UTC()
+	expires := time.Now().UTC().Add(time.Second * time.Duration(session.Options.MaxAge))
 	delete(session.Values, sessionCreatedOn)
 	delete(session.Values, sessionExpiresOn)
 	delete(session.Values, sessionModifiedOn)
@@ -146,7 +148,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 		return err
 	}
 	res, err := s.db.exec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
-		sql.Named("data", encoded), sql.Named("created", created.Local().String()), sql.Named("modified", modified.Local().String()), sql.Named("expires", expires.Local().String()))
+		sql.Named("data", encoded), sql.Named("created", created.Format(time.RFC3339)), sql.Named("modified", modified.Format(time.RFC3339)), sql.Named("expires", expires.Format(time.RFC3339)))
 	if err != nil {
 		return err
 	}
@@ -170,7 +172,7 @@ func (s *dbSessionStore) save(session *sessions.Session) (err error) {
 		return err
 	}
 	_, err = s.db.exec("update sessions set data = @data, modified = @modified where id = @id",
-		sql.Named("data", encoded), sql.Named("modified", time.Now().Local().String()), sql.Named("id", session.ID))
+		sql.Named("data", encoded), sql.Named("modified", utcNowString()), sql.Named("id", session.ID))
 	if err != nil {
 		return err
 	}
