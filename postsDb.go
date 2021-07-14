@@ -132,7 +132,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	}
 	// Trigger hooks
 	if p.Status == statusPublished {
-		if o.new || o.oldStatus == statusDraft {
+		if o.new || o.oldStatus != statusPublished {
 			defer a.postPostHooks(p)
 		} else {
 			defer a.postUpdateHooks(p)
@@ -163,7 +163,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	}
 	// Insert new post
 	sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
-	sqlArgs = append(sqlArgs, p.Path, p.Content, p.Published, p.Updated, p.Blog, p.Section, p.Status, p.Priority)
+	sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority)
 	// Insert post parameters
 	for param, value := range p.Parameters {
 		for _, value := range value {
@@ -278,15 +278,15 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		wheres = append(wheres, ws)
 	}
 	if c.publishedYear != 0 {
-		wheres = append(wheres, "substr(published, 1, 4) = @publishedyear")
+		wheres = append(wheres, "substr(tolocal(published), 1, 4) = @publishedyear")
 		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", c.publishedYear)))
 	}
 	if c.publishedMonth != 0 {
-		wheres = append(wheres, "substr(published, 6, 2) = @publishedmonth")
+		wheres = append(wheres, "substr(tolocal(published), 6, 2) = @publishedmonth")
 		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", c.publishedMonth)))
 	}
 	if c.publishedDay != 0 {
-		wheres = append(wheres, "substr(published, 9, 2) = @publishedday")
+		wheres = append(wheres, "substr(tolocal(published), 9, 2) = @publishedday")
 		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", c.publishedDay)))
 	}
 	if len(wheres) > 0 {
@@ -385,11 +385,6 @@ func (d *database) getPost(path string) (*post, error) {
 	return posts[0], nil
 }
 
-func (d *database) getDrafts(blog string) []*post {
-	ps, _ := d.getPosts(&postsRequestConfig{status: statusDraft, blog: blog})
-	return ps
-}
-
 func (d *database) countPosts(config *postsRequestConfig) (count int, err error) {
 	query, params := buildPostsQuery(config, "path")
 	row, err := d.queryRow("select count(distinct path) from ("+query+")", params...)
@@ -400,7 +395,7 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 	return
 }
 
-func (d *database) allPostPaths(status postStatus) ([]string, error) {
+func (d *database) getPostPaths(status postStatus) ([]string, error) {
 	var postPaths []string
 	rows, err := d.query("select path from posts where status = @status", sql.Named("status", status))
 	if err != nil {
@@ -456,7 +451,7 @@ type publishedDate struct {
 }
 
 func (d *database) allPublishedDates(blog string) (dates []publishedDate, err error) {
-	rows, err := d.query("select distinct substr(published, 1, 4) as year, substr(published, 6, 2) as month, substr(published, 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
+	rows, err := d.query("select distinct substr(tolocal(published), 1, 4) as year, substr(tolocal(published), 6, 2) as month, substr(tolocal(published), 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}

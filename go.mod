@@ -32,7 +32,7 @@ require (
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/lestrrat-go/strftime v1.0.4 // indirect
+	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.7

@@ -198,6 +198,15 @@ func (a *goBlog) buildStaticHandlersRouters() error {
 	a.editorRouter.Get("/files", a.serveEditorFiles)
 	a.editorRouter.Post("/files/view", a.serveEditorFilesView)
 	a.editorRouter.Post("/files/delete", a.serveEditorFilesDelete)
+	a.editorRouter.Get("/drafts", a.serveDrafts)
+	a.editorRouter.Get("/drafts"+feedPath, a.serveDrafts)
+	a.editorRouter.Get("/drafts"+paginationPath, a.serveDrafts)
+	a.editorRouter.Get("/private", a.servePrivate)
+	a.editorRouter.Get("/private"+feedPath, a.servePrivate)
+	a.editorRouter.Get("/private"+paginationPath, a.servePrivate)
+	a.editorRouter.Get("/unlisted", a.serveUnlisted)
+	a.editorRouter.Get("/unlisted"+feedPath, a.serveUnlisted)
+	a.editorRouter.Get("/unlisted"+paginationPath, a.serveUnlisted)
 
 	a.commentsRouter = chi.NewRouter()
 	a.commentsRouter.Use(a.privateModeHandler...)
@@ -331,7 +340,7 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 	r.Mount(notificationsPath, a.notificationsRouter)
 
 	// Posts
-	pp, err := a.db.allPostPaths(statusPublished)
+	pp, err := a.db.getPostPaths(statusPublished)
 	if err != nil {
 		return nil, err
 	}
@@ -343,8 +352,33 @@ func (a *goBlog) buildDynamicRouter() (*chi.Mux, error) {
 		}
 	})
 
-	// Drafts
-	dp, err := a.db.allPostPaths(statusDraft)
+	// Unlisted posts
+	up, err := a.db.getPostPaths(statusUnlisted)
+	if err != nil {
+		return nil, err
+	}
+	r.Group(func(r chi.Router) {
+		r.Use(a.privateModeHandler...)
+		r.Use(a.checkActivityStreamsRequest, a.cache.cacheMiddleware)
+		for _, path := range up {
+			r.Get(path, a.servePost)
+		}
+	})
+
+	// Private posts
+	priv, err := a.db.getPostPaths(statusPrivate)
+	if err != nil {
+		return nil, err
+	}
+	r.Group(func(r chi.Router) {
+		r.Use(a.authMiddleware)
+		for _, path := range priv {
+			r.Get(path, a.servePost)
+		}
+	})
+
+	// Draft posts
+	dp, err := a.db.getPostPaths(statusDraft)
 	if err != nil {
 		return nil, err
 	}

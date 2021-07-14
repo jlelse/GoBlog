@@ -28,7 +28,7 @@ func Test_postsDb(t *testing.T) {
 			},
 		},
 	}
-	app.initDatabase(false)
+	_ = app.initDatabase(false)
 
 	now := toLocalSafe(time.Now().String())
 	nowPlus1Hour := toLocalSafe(time.Now().Add(1 * time.Hour).String())
@@ -64,18 +64,21 @@ func Test_postsDb(t *testing.T) {
 	is.Equal([]string{"C", "A", "B"}, p.Parameters["tags"])
 
 	// Check number of post paths
-	pp, err := app.db.allPostPaths(statusDraft)
+	pp, err := app.db.getPostPaths(statusDraft)
 	must.NoError(err)
 	if is.Len(pp, 1) {
 		is.Equal("/test/abc", pp[0])
 	}
 
-	pp, err = app.db.allPostPaths(statusPublished)
+	pp, err = app.db.getPostPaths(statusPublished)
 	must.NoError(err)
 	is.Len(pp, 0)
 
 	// Check drafts
-	drafts := app.db.getDrafts("en")
+	drafts, _ := app.db.getPosts(&postsRequestConfig{
+		blog:   "en",
+		status: statusDraft,
+	})
 	is.Len(drafts, 1)
 
 	// Check by parameter
@@ -222,7 +225,7 @@ func Test_ftsWithoutTitle(t *testing.T) {
 			},
 		},
 	}
-	app.initDatabase(false)
+	_ = app.initDatabase(false)
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -252,7 +255,7 @@ func Test_postsPriority(t *testing.T) {
 			},
 		},
 	}
-	app.initDatabase(false)
+	_ = app.initDatabase(false)
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -301,7 +304,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 			},
 		},
 	}
-	app.initDatabase(false)
+	_ = app.initDatabase(false)
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",

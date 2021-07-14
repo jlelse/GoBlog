@@ -133,7 +133,7 @@ func Test_telegram(t *testing.T) {
 			},
 			httpClient: fakeClient,
 		}
-		app.initDatabase(false)
+		_ = app.initDatabase(false)
 
 		app.initTelegram()
 
@@ -177,7 +177,7 @@ func Test_telegram(t *testing.T) {
 			},
 			httpClient: fakeClient,
 		}
-		app.initDatabase(false)
+		_ = app.initDatabase(false)
 
 		app.initTelegram()
 

@@ -40,6 +40,8 @@ const (
 	statusNil       postStatus = ""
 	statusPublished postStatus = "published"
 	statusDraft     postStatus = "draft"
+	statusPrivate   postStatus = "private"
+	statusUnlisted  postStatus = "unlisted"
 )
 
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +123,33 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 	})))
 }
 
+func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:   a.getRelativePath(blog, "/editor/drafts"),
+		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "drafts"),
+		status: statusDraft,
+	})))
+}
+
+func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:   a.getRelativePath(blog, "/editor/private"),
+		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "privateposts"),
+		status: statusPrivate,
+	})))
+}
+
+func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:   a.getRelativePath(blog, "/editor/unlisted"),
+		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "unlistedposts"),
+		status: statusUnlisted,
+	})))
+}
+
 func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 	var year, month, day int
 	if ys := chi.URLParam(r, "year"); ys != "" && ys != "x" {
@@ -176,6 +205,7 @@ type indexConfig struct {
 	title            string
 	description      string
 	summaryTemplate  string
+	status           postStatus
 }
 
 const defaultPhotosPath = "/photos"
@@ -203,6 +233,10 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			sections = append(sections, sectionKey)
 		}
 	}
+	status := ic.status
+	if status == statusNil {
+		status = statusPublished
+	}
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
 		blog:           blog,
 		sections:       sections,
@@ -213,7 +247,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedYear:  ic.year,
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
-		status:         statusPublished,
+		status:         status,
 		priorityOrder:  true,
 	}, db: a.db}, a.cfg.Blogs[blog].Pagination)
 	p.SetPage(pageNo)

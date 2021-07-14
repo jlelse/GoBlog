@@ -34,9 +34,7 @@ type mention struct {
 func (a *goBlog) initWebmention() {
 	// Add hooks
 	hookFunc := func(p *post) {
-		if p.Status == statusPublished {
-			_ = a.sendWebmentions(p)
-		}
+		_ = a.sendWebmentions(p)
 	}
 	a.pPostHooks = append(a.pPostHooks, hookFunc)
 	a.pUpdateHooks = append(a.pUpdateHooks, hookFunc)

@@ -63,7 +63,7 @@ with filtered as (
 	from (
 		select
 			path,
-			coalesce(published, '') as pub,
+			tolocal(published) as pub,
 			mdtext(coalesce(content, '')) as content
 		from posts
 		where status = @status and blog = @blog

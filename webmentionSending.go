@@ -15,6 +15,10 @@ import (
 )
 
 func (a *goBlog) sendWebmentions(p *post) error {
+	if p.Status != statusPublished && p.Status != statusUnlisted {
+		// Not published or unlisted
+		return nil
+	}
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableSending {
 		// Just ignore the mentions
 		return nil
@@ -43,10 +47,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 			// Private mode, don't send external mentions
 			continue
 		}
-		if wm := a.cfg.Webmention; wm != nil && wm.DisableSending {
-			// Just ignore the mention
-			continue
-		}
+		// Send webmention
 		endpoint := a.discoverEndpoint(link)
 		if endpoint == "" {
 			continue

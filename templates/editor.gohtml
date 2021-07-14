@@ -44,6 +44,10 @@ tags:
         <input type="submit" value="{{ string .Blog.Lang "delete" }}">
       {{ end }}
     </form>
+    <h2>{{ string .Blog.Lang "posts" }}</h2>
+    <p><a href="{{ .Blog.RelativePath "/editor/drafts" }}">{{ string .Blog.Lang "drafts" }}</a></p>
+    <p><a href="{{ .Blog.RelativePath "/editor/private" }}">{{ string .Blog.Lang "privateposts" }}</a></p>
+    <p><a href="{{ .Blog.RelativePath "/editor/unlisted" }}">{{ string .Blog.Lang "unlistedposts" }}</a></p>
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw-form p" method="post" enctype="multipart/form-data">
       <input type="hidden" name="editoraction" value="upload">
@@ -51,18 +55,6 @@ tags:
       <input type="submit" value="{{ string .Blog.Lang "upload" }}">
     </form>
     <p><a href="{{ .Blog.RelativePath "/editor/files" }}">{{ string .Blog.Lang "mediafiles" }}</a></p>
-    {{ if .Data.Drafts }}
-    <h2>{{ string .Blog.Lang "drafts" }}</h2>
-    <form class="fw-form p" method="post">
-      <input type="hidden" name="editoraction" value="viewdraft">
-      <select name="url">
-        {{ range $i, $draft := .Data.Drafts }}
-          <option value="{{ absolute $draft.Path }}">{{ with ($draft.Title) }}{{ . }}{{ else }}{{ $draft.Path }}{{ end }}</option>
-        {{ end }}
-      </select>
-      <input type="submit" value="{{ string .Blog.Lang "view" }}">
-    </form>
-    {{ end }}
     <h2>{{ string .Blog.Lang "location" }}</h2>
     <form class="fw-form p">
       <input id="geobtn" type="button" value="{{ string .Blog.Lang "locationget" }}" data-failed="{{ string .Blog.Lang "locationfailed" }}" data-notsupported="{{ string .Blog.Lang "locationnotsupported" }}">

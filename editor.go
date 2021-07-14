@@ -17,9 +17,7 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
 	a.render(w, r, templateEditor, &renderData{
 		BlogString: blog,
-		Data: map[string]interface{}{
-			"Drafts": a.db.getDrafts(blog),
-		},
+		Data:       map[string]interface{}{},
 	})
 }
 
@@ -32,7 +30,6 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				BlogString: blog,
 				Data: map[string]interface{}{
 					"DeleteURL": r.FormValue("url"),
-					"Drafts":    a.db.getDrafts(blog),
 				},
 			})
 		case "loadupdate":
@@ -51,7 +48,6 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				Data: map[string]interface{}{
 					"UpdatePostURL":     parsedURL.String(),
 					"UpdatePostContent": a.postToMfItem(post).Properties.Content[0],
-					"Drafts":            a.db.getDrafts(blog),
 				},
 			})
 		case "updatepost":
@@ -77,14 +73,6 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			a.editorMicropubPost(w, req, false)
 		case "upload":
 			a.editorMicropubPost(w, r, true)
-		case "viewdraft":
-			parsedURL, err := url.Parse(r.FormValue("url"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			http.Redirect(w, r, parsedURL.Path, http.StatusFound)
-			return
 		default:
 			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}

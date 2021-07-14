@@ -230,18 +230,20 @@ func migrateDb(db *sql.DB, logging bool) error {
 					return err
 				},
 			},
+			&migrator.Migration{
+				Name: "00019",
+				Func: func(tx *sql.Tx) error {
+					_, err := tx.Exec(`
+					update posts set published = toutc(published), updated = toutc(updated);
+					insert into posts_fts(posts_fts) values ('rebuild');
+					`)
+					return err
+				},
+			},
 		),
 	)
 	if err != nil {
 		return err
 	}
-	err = m.Migrate(db)
-	if err != nil {
-		return err
-	}
-	// Update times in database to local time
-	_, err = db.Exec(`
-		update posts set published = tolocal(published), updated = tolocal(updated);
-	`)
-	return err
+	return m.Migrate(db)
 }

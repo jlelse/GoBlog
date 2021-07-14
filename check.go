@@ -22,7 +22,7 @@ func (a *goBlog) checkAllExternalLinks() {
 		log.Println(err.Error())
 		return
 	}
-	a.checkLinks(log.Writer(), posts...)
+	_ = a.checkLinks(log.Writer(), posts...)
 }
 
 func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {

@@ -30,7 +30,7 @@ func Test_captchaMiddleware(t *testing.T) {
 		},
 	}
 
-	app.initDatabase(false)
+	_ = app.initDatabase(false)
 	app.initSessions()
 	_ = app.initTemplateStrings()
 	_ = app.initRendering()
