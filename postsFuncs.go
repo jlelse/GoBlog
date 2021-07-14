@@ -137,13 +137,28 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	params["priority"] = p.Priority
 	pb, _ := yaml.Marshal(params)
 	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
+	var mfStatus, mfVisibility string
+	switch p.Status {
+	case statusDraft:
+		mfStatus = "draft"
+	case statusPublished:
+		mfStatus = "published"
+		mfVisibility = "public"
+	case statusUnlisted:
+		mfStatus = "published"
+		mfVisibility = "unlisted"
+	case statusPrivate:
+		mfStatus = "published"
+		mfVisibility = "private"
+	}
 	return &microformatItem{
 		Type: []string{"h-entry"},
 		Properties: &microformatProperties{
 			Name:       p.Parameters["title"],
 			Published:  []string{p.Published},
 			Updated:    []string{p.Updated},
-			PostStatus: []string{string(p.Status)},
+			PostStatus: []string{mfStatus},
+			Visibility: []string{mfVisibility},
 			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
 			Content:    []string{content},
 			URL:        []string{a.fullPostURL(p)},

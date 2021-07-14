@@ -150,13 +150,23 @@ func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[st
 		entry.Updated = updated[0]
 		delete(values, "updated")
 	}
-	if status, ok := values["post-status"]; ok && len(status) > 0 {
-		entry.Status = postStatus(status[0])
-		delete(values, "post-status")
-	}
 	if slug, ok := values["mp-slug"]; ok && len(slug) > 0 {
 		entry.Slug = slug[0]
 		delete(values, "mp-slug")
+	}
+	// Status
+	statusStr := ""
+	if status, ok := values["post-status"]; ok && len(status) > 0 {
+		statusStr = status[0]
+		delete(values, "post-status")
+	}
+	visibilityStr := ""
+	if visibility, ok := values["visibility"]; ok && len(visibility) > 0 {
+		visibilityStr = visibility[0]
+		delete(values, "visibility")
+	}
+	if finalStatus := micropubStatus(statusNil, statusStr, visibilityStr); finalStatus != statusNil {
+		entry.Status = finalStatus
 	}
 	// Parameter
 	if name, ok := values["name"]; ok {
@@ -235,6 +245,7 @@ type microformatProperties struct {
 	Published  []string      `json:"published,omitempty"`
 	Updated    []string      `json:"updated,omitempty"`
 	PostStatus []string      `json:"post-status,omitempty"`
+	Visibility []string      `json:"visibility,omitempty"`
 	Category   []string      `json:"category,omitempty"`
 	Content    []string      `json:"content,omitempty"`
 	URL        []string      `json:"url,omitempty"`
@@ -264,11 +275,20 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 	if len(mf.Properties.Updated) > 0 {
 		entry.Updated = mf.Properties.Updated[0]
 	}
-	if len(mf.Properties.PostStatus) > 0 {
-		entry.Status = postStatus(mf.Properties.PostStatus[0])
-	}
 	if len(mf.Properties.MpSlug) > 0 {
 		entry.Slug = mf.Properties.MpSlug[0]
+	}
+	// Status
+	status := ""
+	if len(mf.Properties.PostStatus) > 0 {
+		status = mf.Properties.PostStatus[0]
+	}
+	visibility := ""
+	if len(mf.Properties.Visibility) > 0 {
+		visibility = mf.Properties.Visibility[0]
+	}
+	if finalStatus := micropubStatus(statusNil, status, visibility); finalStatus != statusNil {
+		entry.Status = finalStatus
 	}
 	// Parameter
 	if len(mf.Properties.Name) > 0 {
@@ -457,63 +477,100 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 	}
 	oldPath := p.Path
 	oldStatus := p.Status
-	if mf.Replace != nil {
-		for key, value := range mf.Replace {
-			switch key {
-			case "content":
-				p.Content = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "published":
-				p.Published = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "updated":
-				p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "name":
-				p.Parameters["title"] = cast.ToStringSlice(value)
-			case "category":
-				p.Parameters[a.cfg.Micropub.CategoryParam] = cast.ToStringSlice(value)
-			case "in-reply-to":
-				p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
-			case "like-of":
-				p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
-			case "bookmark-of":
-				p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
-			case "audio":
-				p.Parameters[a.cfg.Micropub.AudioParam] = cast.ToStringSlice(value)
-				// TODO: photo
+	a.micropubUpdateReplace(p, mf.Replace)
+	a.micropubUpdateAdd(p, mf.Add)
+	a.micropubUpdateDelete(p, mf.Delete)
+	err = a.computeExtraPostParameters(p)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = a.replacePost(p, oldPath, oldStatus)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, a.fullPostURL(p), http.StatusNoContent)
+}
+
+func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]interface{}) {
+	if content, ok := replace["content"]; ok && len(content) > 0 {
+		p.Content = cast.ToStringSlice(content)[0]
+	}
+	if published, ok := replace["published"]; ok && len(published) > 0 {
+		p.Published = cast.ToStringSlice(published)[0]
+	}
+	if updated, ok := replace["updated"]; ok && len(updated) > 0 {
+		p.Updated = cast.ToStringSlice(updated)[0]
+	}
+	// Status
+	statusStr := ""
+	if status, ok := replace["post-status"]; ok && len(status) > 0 {
+		statusStr = cast.ToStringSlice(status)[0]
+	}
+	visibilityStr := ""
+	if visibility, ok := replace["visibility"]; ok && len(visibility) > 0 {
+		visibilityStr = cast.ToStringSlice(visibility)[0]
+	}
+	if finalStatus := micropubStatus(p.Status, statusStr, visibilityStr); finalStatus != statusNil {
+		p.Status = finalStatus
+	}
+	// Parameters
+	if name, ok := replace["name"]; ok && name != nil {
+		p.Parameters["title"] = cast.ToStringSlice(name)
+	}
+	if category, ok := replace["category"]; ok && category != nil {
+		p.Parameters[a.cfg.Micropub.CategoryParam] = cast.ToStringSlice(category)
+	}
+	if reply, ok := replace["in-reply-to"]; ok && reply != nil {
+		p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(reply)
+	}
+	if like, ok := replace["like-of"]; ok && like != nil {
+		p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(like)
+	}
+	if bookmark, ok := replace["bookmark-of"]; ok && bookmark != nil {
+		p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(bookmark)
+	}
+	if audio, ok := replace["audio"]; ok && audio != nil {
+		p.Parameters[a.cfg.Micropub.AudioParam] = cast.ToStringSlice(audio)
+	}
+	// TODO: photos
+}
+
+func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]interface{}) {
+	for key, value := range add {
+		switch key {
+		case "content":
+			p.Content += strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
+		case "published":
+			p.Published = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
+		case "updated":
+			p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
+		case "category":
+			category := p.Parameters[a.cfg.Micropub.CategoryParam]
+			if category == nil {
+				category = []string{}
 			}
+			p.Parameters[a.cfg.Micropub.CategoryParam] = append(category, cast.ToStringSlice(value)...)
+		case "in-reply-to":
+			p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
+		case "like-of":
+			p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
+		case "bookmark-of":
+			p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
+		case "audio":
+			audio := p.Parameters[a.cfg.Micropub.CategoryParam]
+			if audio == nil {
+				audio = []string{}
+			}
+			p.Parameters[a.cfg.Micropub.AudioParam] = append(audio, cast.ToStringSlice(value)...)
+			// TODO: photo
 		}
 	}
-	if mf.Add != nil {
-		for key, value := range mf.Add {
-			switch key {
-			case "content":
-				p.Content += strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "published":
-				p.Published = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "updated":
-				p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-			case "category":
-				category := p.Parameters[a.cfg.Micropub.CategoryParam]
-				if category == nil {
-					category = []string{}
-				}
-				p.Parameters[a.cfg.Micropub.CategoryParam] = append(category, cast.ToStringSlice(value)...)
-			case "in-reply-to":
-				p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
-			case "like-of":
-				p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
-			case "bookmark-of":
-				p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
-			case "audio":
-				audio := p.Parameters[a.cfg.Micropub.CategoryParam]
-				if audio == nil {
-					audio = []string{}
-				}
-				p.Parameters[a.cfg.Micropub.AudioParam] = append(audio, cast.ToStringSlice(value)...)
-				// TODO: photo
-			}
-		}
-	}
-	if del := mf.Delete; del != nil {
+}
+
+func (a *goBlog) micropubUpdateDelete(p *post, del interface{}) {
+	if del != nil {
 		if reflect.TypeOf(del).Kind() == reflect.Slice {
 			toDelete, ok := del.([]interface{})
 			if ok {
@@ -566,15 +623,26 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 			}
 		}
 	}
-	err = a.computeExtraPostParameters(p)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+}
+
+func micropubStatus(defaultStatus postStatus, status string, visibility string) (final postStatus) {
+	final = defaultStatus
+	switch status {
+	case "published":
+		final = statusPublished
+	case "draft":
+		final = statusDraft
 	}
-	err = a.replacePost(p, oldPath, oldStatus)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	if final != statusDraft {
+		// Only override status if it's not a draft
+		switch visibility {
+		case "public":
+			final = statusPublished
+		case "unlisted":
+			final = statusUnlisted
+		case "private":
+			final = statusPrivate
+		}
 	}
-	http.Redirect(w, r, a.fullPostURL(p), http.StatusNoContent)
+	return final
 }
