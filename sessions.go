@@ -37,6 +37,7 @@ func (a *goBlog) initSessions() {
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+			Path:     "/", // Cookie for all pages
 		},
 		db: a.db,
 	}
@@ -47,6 +48,7 @@ func (a *goBlog) initSessions() {
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((24 * time.Hour).Seconds()),
+			Path:     "/", // Cookie for all pages
 		},
 		db: a.db,
 	}
