@@ -131,8 +131,8 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 		return err
 	}
 	// Trigger hooks
-	if p.Status == statusPublished {
-		if o.new || o.oldStatus != statusPublished {
+	if p.Status == statusPublished || p.Status == statusUnlisted {
+		if o.new || (o.oldStatus != statusPublished && o.oldStatus != statusUnlisted) {
 			defer a.postPostHooks(p)
 		} else {
 			defer a.postUpdateHooks(p)
