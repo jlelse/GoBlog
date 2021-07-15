@@ -11,7 +11,7 @@ The goals of GoBlog are:
 - Flexibility
 - IndieWeb
 
-To configure GoBlog, take a look at the `example-config.yml` file and save your configuration to `config\config.yml`.
+To configure GoBlog, take a look at the `example-config.yml` file and save your configuration to `config\config.yml`. How to install and run GoBlog is explained in the [docs](docs/install.md).
 
 Administration paths:
 
@@ -21,7 +21,5 @@ Administration paths:
 - Notifications: `/notifications`
 - Webmentions: `/webmention`
 - Comments: `/comment`
-
-More detailed documentation on how to use GoBlog yourself will follow soon.
 
 [jlelse](https://jlelse.blog)
