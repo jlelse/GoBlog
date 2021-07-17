@@ -62,6 +62,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	dbDriverName := generateRandomString(15)
 	var dr driver.Driver = &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
+			// Register functions
 			// Depends on app
 			if err := c.RegisterFunc("mdtext", a.renderText, true); err != nil {
 				return err
@@ -77,6 +78,9 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 				return err
 			}
 			if err := c.RegisterFunc("charcount", charCount, true); err != nil {
+				return err
+			}
+			if err := c.RegisterFunc("urlize", urlize, true); err != nil {
 				return err
 			}
 			return nil

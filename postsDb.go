@@ -138,8 +138,9 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 			defer a.postUpdateHooks(p)
 		}
 	}
-	// Reload router
-	return a.reloadRouter()
+	// Purge cache
+	a.cache.purge()
+	return nil
 }
 
 // Save check post to database
@@ -192,8 +193,11 @@ func (a *goBlog) deletePost(path string) error {
 	if err != nil || p == nil {
 		return err
 	}
-	defer a.postDeleteHooks(p)
-	return a.reloadRouter()
+	// Purge cache
+	a.cache.purge()
+	// Trigger hooks
+	a.postDeleteHooks(p)
+	return nil
 }
 
 func (db *database) deletePost(path string) (*post, error) {

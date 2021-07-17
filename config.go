@@ -320,6 +320,7 @@ func (a *goBlog) initConfig() error {
 	}
 	// Check config for each blog
 	for _, blog := range a.cfg.Blogs {
+		// Blogroll
 		if br := blog.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false
 		}

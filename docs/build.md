@@ -31,7 +31,7 @@ Requirements:
 - Linux
 - git
 - go >= 1.16
-- libsqlite3 >= 3.31 (the newer the better)
+- libsqlite3 with FTS5 enabled >= 3.31 (the newer the better)
 
 Build command:
 
@@ -39,4 +39,12 @@ Build command:
 git clone https://git.jlel.se/jlelse/GoBlog.git
 cd GoBlog
 go build -tags=linux,libsqlite3,sqlite_fts5 -o GoBlog
+```
+
+Alternatively you can also compile sqlite3 directly into GoBlog. This doesn't require libsqlite3, but takes more time.
+
+```bash
+git clone https://git.jlel.se/jlelse/GoBlog.git
+cd GoBlog
+go build -tags=linux,sqlite_fts5 -o GoBlog
 ```
