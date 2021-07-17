@@ -140,49 +140,6 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		privateModeHandler = append(privateModeHandler, a.authMiddleware)
 	}
 
-	// Routers
-	editorRouter := chi.NewRouter()
-	editorRouter.Use(a.authMiddleware)
-	editorRouter.Get("/", a.serveEditor)
-	editorRouter.Post("/", a.serveEditorPost)
-	editorRouter.Get("/files", a.serveEditorFiles)
-	editorRouter.Post("/files/view", a.serveEditorFilesView)
-	editorRouter.Post("/files/delete", a.serveEditorFilesDelete)
-	editorRouter.Get("/drafts", a.serveDrafts)
-	editorRouter.Get("/drafts"+feedPath, a.serveDrafts)
-	editorRouter.Get("/drafts"+paginationPath, a.serveDrafts)
-	editorRouter.Get("/private", a.servePrivate)
-	editorRouter.Get("/private"+feedPath, a.servePrivate)
-	editorRouter.Get("/private"+paginationPath, a.servePrivate)
-	editorRouter.Get("/unlisted", a.serveUnlisted)
-	editorRouter.Get("/unlisted"+feedPath, a.serveUnlisted)
-	editorRouter.Get("/unlisted"+paginationPath, a.serveUnlisted)
-
-	commentsRouter := chi.NewRouter()
-	commentsRouter.Use(privateModeHandler...)
-	commentsRouter.With(a.cache.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
-	commentsRouter.With(a.captchaMiddleware).Post("/", a.createComment)
-	commentsRouter.Group(func(r chi.Router) {
-		// Admin
-		r.Use(a.authMiddleware)
-		r.Get("/", a.commentsAdmin)
-		r.Get(paginationPath, a.commentsAdmin)
-		r.Post("/delete", a.commentsAdminDelete)
-	})
-
-	searchRouter := chi.NewRouter()
-	searchRouter.Group(func(r chi.Router) {
-		r.Use(privateModeHandler...)
-		r.Use(a.cache.cacheMiddleware)
-		r.Get("/", a.serveSearch)
-		r.Post("/", a.serveSearch)
-		searchResultPath := "/" + searchPlaceholder
-		r.Get(searchResultPath, a.serveSearchResult)
-		r.Get(searchResultPath+feedPath, a.serveSearchResult)
-		r.Get(searchResultPath+paginationPath, a.serveSearchResult)
-	})
-	searchRouter.With(a.cache.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
-
 	// Basic middleware
 	r.Use(a.redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
@@ -229,10 +186,13 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Post("/inbox/{blog}", a.apHandleInbox)
 			r.Post("/{blog}/inbox", a.apHandleInbox)
 		})
-		r.With(a.cache.cacheMiddleware).Get("/.well-known/webfinger", a.apHandleWebfinger)
-		r.With(a.cache.cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
-		r.With(a.cache.cacheMiddleware).Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
-		r.With(a.cache.cacheMiddleware).Get("/nodeinfo", a.serveNodeInfo)
+		r.Group(func(r chi.Router) {
+			r.Use(a.cache.cacheMiddleware)
+			r.Get("/.well-known/webfinger", a.apHandleWebfinger)
+			r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
+			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
+			r.Get("/nodeinfo", a.serveNodeInfo)
+		})
 	}
 
 	// Webmentions
@@ -341,10 +301,23 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		// Search
 		if bsc := blogConfig.Search; bsc != nil && bsc.Enabled {
 			searchPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))
-			r.With(sbm, middleware.WithValue(
-				pathContextKey,
-				searchPath,
-			)).Mount(searchPath, searchRouter)
+			r.Route(searchPath, func(r chi.Router) {
+				r.Use(sbm, middleware.WithValue(
+					pathContextKey,
+					searchPath,
+				))
+				r.Group(func(r chi.Router) {
+					r.Use(privateModeHandler...)
+					r.Use(a.cache.cacheMiddleware)
+					r.Get("/", a.serveSearch)
+					r.Post("/", a.serveSearch)
+					searchResultPath := "/" + searchPlaceholder
+					r.Get(searchResultPath, a.serveSearchResult)
+					r.Get(searchResultPath+feedPath, a.serveSearchResult)
+					r.Get(searchResultPath+paginationPath, a.serveSearchResult)
+				})
+				r.With(a.cache.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
+			})
 		}
 
 		// Stats
@@ -410,12 +383,40 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		}
 
 		// Editor
-		r.With(sbm).Mount(blogConfig.getRelativePath("/editor"), editorRouter)
+		r.Route(blogConfig.getRelativePath("/editor"), func(r chi.Router) {
+			r.Use(sbm, a.authMiddleware)
+			r.Get("/", a.serveEditor)
+			r.Post("/", a.serveEditorPost)
+			r.Get("/files", a.serveEditorFiles)
+			r.Post("/files/view", a.serveEditorFilesView)
+			r.Post("/files/delete", a.serveEditorFilesDelete)
+			r.Get("/drafts", a.serveDrafts)
+			r.Get("/drafts"+feedPath, a.serveDrafts)
+			r.Get("/drafts"+paginationPath, a.serveDrafts)
+			r.Get("/private", a.servePrivate)
+			r.Get("/private"+feedPath, a.servePrivate)
+			r.Get("/private"+paginationPath, a.servePrivate)
+			r.Get("/unlisted", a.serveUnlisted)
+			r.Get("/unlisted"+feedPath, a.serveUnlisted)
+			r.Get("/unlisted"+paginationPath, a.serveUnlisted)
+		})
 
 		// Comments
 		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
 			commentsPath := blogConfig.getRelativePath("/comment")
-			r.With(sbm, middleware.WithValue(pathContextKey, commentsPath)).Mount(commentsPath, commentsRouter)
+			r.Route(commentsPath, func(r chi.Router) {
+				r.Use(sbm, middleware.WithValue(pathContextKey, commentsPath))
+				r.Use(privateModeHandler...)
+				r.With(a.cache.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
+				r.With(a.captchaMiddleware).Post("/", a.createComment)
+				r.Group(func(r chi.Router) {
+					// Admin
+					r.Use(a.authMiddleware)
+					r.Get("/", a.commentsAdmin)
+					r.Get(paginationPath, a.commentsAdmin)
+					r.Post("/delete", a.commentsAdminDelete)
+				})
+			})
 		}
 
 		// Blogroll
