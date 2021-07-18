@@ -8,9 +8,19 @@ import (
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogContextKey).(string)
+	// Get files
 	files, err := a.mediaFiles()
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Check if files at all
+	if len(files) == 0 {
+		a.render(w, r, templateEditorFiles, &renderData{
+			BlogString: blog,
+			Data:       map[string]interface{}{},
+		})
 		return
 	}
 	// Sort files time desc
@@ -31,7 +41,6 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Serve HTML
-	blog := r.Context().Value(blogContextKey).(string)
 	a.render(w, r, templateEditorFiles, &renderData{
 		BlogString: blog,
 		Data: map[string]interface{}{
