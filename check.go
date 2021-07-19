@@ -127,7 +127,7 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 
 func (a *goBlog) allLinks(posts ...*post) (allLinks []*stringPair, err error) {
 	for _, p := range posts {
-		links, err := allLinksFromHTMLString(string(a.absolutePostHTML(p)), a.fullPostURL(p))
+		links, err := allLinksFromHTMLString(string(a.postHtml(p, true)), a.fullPostURL(p))
 		if err != nil {
 			return nil, err
 		}

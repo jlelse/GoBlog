@@ -17,10 +17,6 @@ const (
 	rssFeed  feedType = "rss"
 	atomFeed feedType = "atom"
 	jsonFeed feedType = "json"
-
-	feedAudioURL    = "audio"
-	feedAudioType   = "audiomime"
-	feedAudioLength = "audiolength"
 )
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
@@ -47,23 +43,14 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	for _, p := range posts {
 		created, _ := dateparse.ParseLocal(p.Published)
 		updated, _ := dateparse.ParseLocal(p.Updated)
-		var enc *feeds.Enclosure
-		if p.firstParameter(feedAudioURL) != "" {
-			enc = &feeds.Enclosure{
-				Url:    p.firstParameter(feedAudioURL),
-				Type:   p.firstParameter(feedAudioType),
-				Length: p.firstParameter(feedAudioLength),
-			}
-		}
 		feed.Add(&feeds.Item{
 			Title:       p.Title(),
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
-			Content:     string(a.absolutePostHTML(p)),
+			Content:     string(a.postHtml(p, true)),
 			Created:     created,
 			Updated:     updated,
-			Enclosure:   enc,
 		})
 	}
 	var err error

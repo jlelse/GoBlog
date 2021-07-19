@@ -311,7 +311,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	return query, args
 }
 
-func (d *database) getPostParameters(path string, parameters ...string) (params map[string][]string, err error) {
+func (d *database) loadPostParameters(posts []*post, parameters ...string) (err error) {
 	var sqlArgs []interface{}
 	// Parameter filter
 	paramFilter := ""
@@ -327,21 +327,44 @@ func (d *database) getPostParameters(path string, parameters ...string) (params 
 		}
 		paramFilter += ")"
 	}
+	// Path filter
+	pathFilter := ""
+	if len(posts) > 0 {
+		pathFilter = " and path in ("
+		for i, p := range posts {
+			if i > 0 {
+				pathFilter += ", "
+			}
+			named := fmt.Sprintf("path%v", i)
+			pathFilter += "@" + named
+			sqlArgs = append(sqlArgs, sql.Named(named, p.Path))
+		}
+		pathFilter += ")"
+	}
 	// Query
-	rows, err := d.query("select parameter, value from post_parameters where path = @path"+paramFilter+" order by id", append(sqlArgs, sql.Named("path", path))...)
+	rows, err := d.query("select path, parameter, value from post_parameters where 1 = 1"+paramFilter+pathFilter+" order by id", sqlArgs...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Result
-	var name, value string
-	params = map[string][]string{}
+	var path, name, value string
+	params := map[string]map[string][]string{}
 	for rows.Next() {
-		if err = rows.Scan(&name, &value); err != nil {
-			return nil, err
+		if err = rows.Scan(&path, &name, &value); err != nil {
+			return err
 		}
-		params[name] = append(params[name], value)
+		m, ok := params[path]
+		if !ok {
+			m = map[string][]string{}
+		}
+		m[name] = append(m[name], value)
+		params[path] = m
 	}
-	return params, nil
+	// Add to posts
+	for _, p := range posts {
+		p.Parameters = params[p.Path]
+	}
+	return nil
 }
 
 func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err error) {
@@ -369,12 +392,13 @@ func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err erro
 			Status:    postStatus(status),
 			Priority:  priority,
 		}
-		if !config.withoutParameters {
-			if p.Parameters, err = d.getPostParameters(path, config.withOnlyParameters...); err != nil {
-				return nil, err
-			}
-		}
 		posts = append(posts, p)
+	}
+	if !config.withoutParameters {
+		err = d.loadPostParameters(posts, config.withOnlyParameters...)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return posts, nil
 }

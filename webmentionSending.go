@@ -24,7 +24,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		return nil
 	}
 	links := []string{}
-	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.postHtml(p))), a.fullPostURL(p))
+	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.postHtml(p, false))), a.fullPostURL(p))
 	if err != nil {
 		return err
 	}

@@ -14,13 +14,7 @@
       {{ if .Data.Content }}
         {{ include "oldcontentwarning" . }}
         <div class=e-content>
-          {{ with p .Data "audio" }}
-            <audio controls preload="none" class="fw"><source src="{{ . }}"/></audio>
-          {{ end }}
-          {{ content .Data }}
-          {{ with p .Data "link" }}
-            <p><a class="u-bookmark-of" href="{{ . }}" target="_blank" rel="noopener">{{ . }}</a></p>
-          {{ end }}
+          {{ content .Data false }}
         </div>
       {{ end }}
       {{ include "posttax" . }}

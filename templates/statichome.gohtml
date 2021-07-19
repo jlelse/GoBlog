@@ -9,7 +9,7 @@
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
       {{ if .Data.Content }}
         <div class=e-content>
-          {{ content .Data }}
+          {{ content .Data false }}
         </div>
       {{ end }}
     </article>

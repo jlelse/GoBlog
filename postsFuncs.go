@@ -47,30 +47,40 @@ func firstPostParameter(p *post, parameter string) string {
 	return p.firstParameter(parameter)
 }
 
-func (a *goBlog) postHtml(p *post) template.HTML {
-	if p.rendered != "" {
-		return p.rendered
+func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
+	p.renderMutex.Lock()
+	defer p.renderMutex.Unlock()
+	// Check cache
+	if r, ok := p.renderCache.Load(absolute); ok && r != nil {
+		return r.(template.HTML)
 	}
-	htmlContent, err := a.renderMarkdown(p.Content, false)
+	// Render markdown
+	htmlContent, err := a.renderMarkdown(p.Content, absolute)
 	if err != nil {
 		log.Fatal(err)
 		return ""
 	}
-	p.rendered = template.HTML(htmlContent)
-	return p.rendered
-}
-
-func (a *goBlog) absolutePostHTML(p *post) template.HTML {
-	if p.absoluteRendered != "" {
-		return p.absoluteRendered
+	htmlContentStr := string(htmlContent)
+	// Add audio to the top
+	if audio, ok := p.Parameters["audio"]; ok && len(audio) > 0 {
+		audios := ""
+		for _, a := range audio {
+			audios += fmt.Sprintf(`<audio controls preload=none><source src="%s"/></audio>`, a)
+		}
+		htmlContentStr = audios + htmlContentStr
 	}
-	htmlContent, err := a.renderMarkdown(p.Content, true)
-	if err != nil {
-		log.Fatal(err)
-		return ""
+	// Add links to the bottom
+	if link, ok := p.Parameters["link"]; ok && len(link) > 0 {
+		links := ""
+		for _, l := range link {
+			links += fmt.Sprintf(`<p><a class=u-bookmark-of href="%s" target=_blank rel=noopener>%s</a></p>`, l, l)
+		}
+		htmlContentStr += links
 	}
-	p.absoluteRendered = template.HTML(htmlContent)
-	return p.absoluteRendered
+	// Cache
+	html := template.HTML(htmlContentStr)
+	p.renderCache.Store(absolute, html)
+	return html
 }
 
 const summaryDivider = "<!--more-->"
@@ -80,7 +90,7 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	if summary != "" {
 		return
 	}
-	html := string(a.postHtml(p))
+	html := string(a.postHtml(p, false))
 	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
 		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(splitted[0]))
 		summary = doc.Text()

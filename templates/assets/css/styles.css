@@ -54,10 +54,6 @@ h1 a, h2 a {
   text-decoration: none;
 }
 
-img {
-  width: 100%;
-}
-
 button, .button, input, textarea, select {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
@@ -163,7 +159,7 @@ footer * {
   display: inline;
 }
 
-.fw, .fw-form, .fw-form input:not([type]), .fw-form input[type=submit], .fw-form input[type=button], .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form input[type=password], .fw-form input[type=file], .fw-form textarea, .fw-form select {
+.fw, img, audio, .fw-form, .fw-form input:not([type]), .fw-form input[type=submit], .fw-form input[type=button], .fw-form input[type=text], .fw-form input[type=email], .fw-form input[type=url], .fw-form input[type=password], .fw-form input[type=file], .fw-form textarea, .fw-form select {
   width: 100%;
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/microcosm-cc/bluemonday"
@@ -29,9 +29,9 @@ type post struct {
 	Status     postStatus
 	Priority   int
 	// Not persisted
-	Slug             string
-	rendered         template.HTML
-	absoluteRendered template.HTML
+	Slug        string
+	renderCache sync.Map
+	renderMutex sync.Mutex
 }
 
 type postStatus string

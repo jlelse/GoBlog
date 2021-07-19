@@ -78,8 +78,8 @@ h1 a, h2 a {
   text-decoration: none;
 }
 
-img {
-  width: 100%;
+img, audio {
+  @extend .fw;
 }
 
 button, input, textarea, select {
