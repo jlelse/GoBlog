@@ -22,4 +22,5 @@ HEALTHCHECK --interval=1m --timeout=10s CMD GoBlog healthcheck
 RUN apk add --no-cache tzdata tor
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
 COPY templates/ /app/templates/
+COPY leaflet/ /app/leaflet/
 COPY --from=build /app/GoBlog /bin/

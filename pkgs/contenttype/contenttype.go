@@ -19,7 +19,9 @@ const (
 	XML           = "text/xml"
 
 	ASUTF8   = AS + CharsetUtf8Suffix
+	CSSUTF8  = CSS + CharsetUtf8Suffix
 	HTMLUTF8 = HTML + CharsetUtf8Suffix
+	JSUTF8   = JS + CharsetUtf8Suffix
 	JSONUTF8 = JSON + CharsetUtf8Suffix
 	XMLUTF8  = XML + CharsetUtf8Suffix
 )

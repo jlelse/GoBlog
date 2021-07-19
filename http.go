@@ -432,7 +432,16 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 
 		// Geo map
 		if mc := blogConfig.Map; mc != nil && mc.Enabled {
-			r.With(privateModeHandler...).With(a.cache.cacheMiddleware, sbm).Get(blogConfig.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath)), a.serveGeoMap)
+			mapPath := blogConfig.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))
+			r.Route(mapPath, func(r chi.Router) {
+				r.Use(privateModeHandler...)
+				r.Group(func(r chi.Router) {
+					r.Use(a.cache.cacheMiddleware, sbm)
+					r.Get("/", a.serveGeoMap)
+					r.HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
+				})
+				r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles(mapPath+"/tiles"))
+			})
 		}
 
 	}
