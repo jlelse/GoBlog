@@ -9,9 +9,9 @@
     {{ if (or .Blog.Search.Title .Blog.Search.Description) }}
       <hr>
     {{ end }}
-    <form class="fw-form p" method="post">
+    <form class="fw p" method="post">
       <input type="text" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ . }}"{{ end }}>
-      <input class="fw" type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
+      <input type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
     </form>
   </main>
 {{ end }}

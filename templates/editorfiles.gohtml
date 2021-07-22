@@ -7,7 +7,7 @@
     {{ $blog := .Blog }}
     <h2>{{ string .Blog.Lang "mediafiles" }}</h2>
     {{ if .Data.Files }}
-      <form class="fw-form p" method="post">
+      <form class="fw p" method="post">
         <select name="filename">
           {{ $uses := .Data.Uses }}
           {{ range $i, $file := .Data.Files }}

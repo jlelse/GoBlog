@@ -444,6 +444,17 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			})
 		}
 
+		// Contact
+		if cc := blogConfig.Contact; cc != nil && cc.Enabled {
+			contactPath := blogConfig.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))
+			r.Route(contactPath, func(r chi.Router) {
+				r.Use(privateModeHandler...)
+				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Get("/", a.serveContactForm)
+				r.With(a.captchaMiddleware).Post("/", a.sendContactSubmission)
+			})
+		}
+
 	}
 
 	// Sitemap

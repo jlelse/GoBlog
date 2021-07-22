@@ -115,7 +115,7 @@ form {
   }
 }
 
-.fw-form {
+form.fw {
   @extend .fw;
 
   input:not([type]), input[type="submit"], input[type="button"], input[type="text"], input[type="email"], input[type="url"], input[type="password"], input[type="file"], textarea, select {

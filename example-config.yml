@@ -216,4 +216,16 @@ blogs:
     # Map
     map:
       enabled: true # Enable the map feature (shows a map with all post locations)
-      path: /map # (Optional) Set a custom path (relative to blog path)
+      path: /map # (Optional) Set a custom path (relative to blog path), default is /map
+    # Contact form
+    contact:
+      enabled: true # Enable a contact form
+      title: "Contact me!" # (Optional) Title to show above the form
+      description: "Feel free to send me a message" # (Optional) Description to show above the form
+      path: /contact # (Optional) Set a custom path (relative to blog path), default is /contact
+      smtpHost: smtp.example.com # SMTP host
+      smtpPort: 587 # (Optional) SMTP port, default is 587
+      smtpUser: mail@example.com # SMTP user
+      smtpPassword: secret # SMTP password
+      emailFrom: blog@example.com # Email sender
+      emailTo: mail@example.com # Email recipient

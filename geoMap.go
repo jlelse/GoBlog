@@ -91,13 +91,13 @@ func (a *goBlog) serveLeaflet(basePath string) http.HandlerFunc {
 		switch path.Ext(fileName) {
 		case ".js":
 			w.Header().Set(contentType, contenttype.JS)
-			a.min.Write(w, contenttype.JSUTF8, fb)
+			_, _ = a.min.Write(w, contenttype.JSUTF8, fb)
 		case ".css":
 			w.Header().Set(contentType, contenttype.CSS)
-			a.min.Write(w, contenttype.CSSUTF8, fb)
+			_, _ = a.min.Write(w, contenttype.CSSUTF8, fb)
 		default:
 			w.Header().Set(contentType, http.DetectContentType(fb))
-			w.Write(fb)
+			_, _ = w.Write(fb)
 		}
 	}
 }
@@ -137,7 +137,7 @@ func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {
 			w.Header().Set(k, res.Header.Get(k))
 		}
 		w.WriteHeader(res.StatusCode)
-		io.Copy(w, res.Body)
+		_, _ = io.Copy(w, res.Body)
 		_ = res.Body.Close()
 	}
 }

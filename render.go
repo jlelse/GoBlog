@@ -40,6 +40,7 @@ const (
 	templateWebmentionAdmin    = "webmentionadmin"
 	templateBlogroll           = "blogroll"
 	templateGeoMap             = "geomap"
+	templateContact            = "contact"
 )
 
 func (a *goBlog) initRendering() error {

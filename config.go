@@ -71,6 +71,7 @@ type configBlog struct {
 	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
 	Comments       *configComments           `mapstructure:"comments"`
 	Map            *configGeoMap             `mapstructure:"map"`
+	Contact        *configContact            `mapstructure:"contact"`
 }
 
 type configSection struct {
@@ -149,6 +150,19 @@ type configComments struct {
 type configGeoMap struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
+}
+
+type configContact struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	Path         string `mapstructure:"path"`
+	Title        string `mapstructure:"title"`
+	Description  string `mapstructure:"description"`
+	SMTPHost     string `mapstructure:"smtpHost"`
+	SMTPPort     int    `mapstructure:"smtpPort"`
+	SMTPUser     string `mapstructure:"smtpUser"`
+	SMTPPassword string `mapstructure:"smtpPassword"`
+	EmailFrom    string `mapstructure:"emailFrom"`
+	EmailTo      string `mapstructure:"emailTo"`
 }
 
 type configUser struct {

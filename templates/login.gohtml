@@ -5,7 +5,7 @@
 {{ define "main" }}
   <main>
     <h1>{{ string .Blog.Lang "login" }}</h1>
-    <form class="fw-form p" method="post">
+    <form class="fw p" method="post">
       <input type="hidden" name="loginaction" value="login">
       <input type="hidden" name="loginmethod" value="{{ .Data.loginmethod }}">
       <input type="hidden" name="loginheaders" value="{{ .Data.loginheaders }}">
@@ -15,7 +15,7 @@
       {{ if .Data.totp }}
         <input type="text" name="token" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="{{ string .Blog.Lang "totp" }}">
       {{ end }}
-      <input class="fw" type="submit" value="{{ string .Blog.Lang "login" }}">
+      <input type="submit" value="{{ string .Blog.Lang "login" }}">
     </form>
     {{ include "author" . }}
   </main>
