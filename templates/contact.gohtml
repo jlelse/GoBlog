@@ -14,7 +14,12 @@
             <input type="url" name="website" placeholder="{{ string .Blog.Lang "websiteopt" }}">
             <input type="email" name="email" placeholder="{{ string .Blog.Lang "emailopt" }}">
             <textarea name="message" required placeholder="{{ string .Blog.Lang "message" }}"></textarea>
-            <input type="submit" value="{{ string .Blog.Lang "contactsend" }}">
+            {{ if .Data.privacy }}
+              {{ md .Data.privacy }}
+              <input type="submit" value="{{ string .Blog.Lang "contactagreesend" }}">
+            {{ else }}
+              <input type="submit" value="{{ string .Blog.Lang "contactsend" }}">
+            {{ end }}
         </form>
     {{ end }}
   </main>

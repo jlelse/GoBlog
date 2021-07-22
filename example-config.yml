@@ -220,9 +220,10 @@ blogs:
     # Contact form
     contact:
       enabled: true # Enable a contact form
-      title: "Contact me!" # (Optional) Title to show above the form
-      description: "Feel free to send me a message" # (Optional) Description to show above the form
       path: /contact # (Optional) Set a custom path (relative to blog path), default is /contact
+      title: "Contact me!" # (Optional) Title to show above the form
+      description: "Feel free to send me a message" # (Optional) Description to show above the form, supports markdown
+      privacyPolicy: "By submitting this form, I agree to the privacy policy." # (Optional) Require agreement to the privacy policy, supports markdown
       smtpHost: smtp.example.com # SMTP host
       smtpPort: 587 # (Optional) SMTP port, default is 587
       smtpUser: mail@example.com # SMTP user

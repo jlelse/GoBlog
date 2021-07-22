@@ -23,6 +23,7 @@ func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
 		Data: map[string]interface{}{
 			"title":       cc.Title,
 			"description": cc.Description,
+			"privacy":     cc.PrivacyPolicy,
 		},
 	})
 }

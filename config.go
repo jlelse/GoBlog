@@ -153,16 +153,17 @@ type configGeoMap struct {
 }
 
 type configContact struct {
-	Enabled      bool   `mapstructure:"enabled"`
-	Path         string `mapstructure:"path"`
-	Title        string `mapstructure:"title"`
-	Description  string `mapstructure:"description"`
-	SMTPHost     string `mapstructure:"smtpHost"`
-	SMTPPort     int    `mapstructure:"smtpPort"`
-	SMTPUser     string `mapstructure:"smtpUser"`
-	SMTPPassword string `mapstructure:"smtpPassword"`
-	EmailFrom    string `mapstructure:"emailFrom"`
-	EmailTo      string `mapstructure:"emailTo"`
+	Enabled       bool   `mapstructure:"enabled"`
+	Path          string `mapstructure:"path"`
+	Title         string `mapstructure:"title"`
+	Description   string `mapstructure:"description"`
+	PrivacyPolicy string `mapstructure:"privacyPolicy"`
+	SMTPHost      string `mapstructure:"smtpHost"`
+	SMTPPort      int    `mapstructure:"smtpPort"`
+	SMTPUser      string `mapstructure:"smtpUser"`
+	SMTPPassword  string `mapstructure:"smtpPassword"`
+	EmailFrom     string `mapstructure:"emailFrom"`
+	EmailTo       string `mapstructure:"emailTo"`
 }
 
 type configUser struct {
