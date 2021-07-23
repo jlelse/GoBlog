@@ -546,15 +546,18 @@ const blogContextKey contextKey = "blog"
 const pathContextKey contextKey = "httpPath"
 
 func (a *goBlog) refreshCSPDomains() {
-	a.cspDomains = ""
+	var cspBuilder strings.Builder
 	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
-			a.cspDomains += " " + u.Hostname()
+			cspBuilder.WriteByte(' ')
+			cspBuilder.WriteString(u.Hostname())
 		}
 	}
 	if len(a.cfg.Server.CSPDomains) > 0 {
-		a.cspDomains += " " + strings.Join(a.cfg.Server.CSPDomains, " ")
+		cspBuilder.WriteByte(' ')
+		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
 	}
+	a.cspDomains = cspBuilder.String()
 }
 
 const cspHeader = "Content-Security-Policy"

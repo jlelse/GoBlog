@@ -48,11 +48,25 @@ func firstPostParameter(p *post, parameter string) string {
 }
 
 func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
+	p.renderMutex.RLock()
+	// Check cache
+	if r, ok := p.renderCache[absolute]; ok && r != "" {
+		p.renderMutex.RUnlock()
+		return r
+	}
+	p.renderMutex.RUnlock()
+	// No cache, build it...
 	p.renderMutex.Lock()
 	defer p.renderMutex.Unlock()
-	// Check cache
-	if r, ok := p.renderCache.Load(absolute); ok && r != nil {
-		return r.(template.HTML)
+	// Build HTML
+	var htmlBuilder strings.Builder
+	// Add audio to the top
+	if audio, ok := p.Parameters["audio"]; ok && len(audio) > 0 {
+		for _, a := range audio {
+			htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
+			htmlBuilder.WriteString(a)
+			htmlBuilder.WriteString(`"/></audio>`)
+		}
 	}
 	// Render markdown
 	htmlContent, err := a.renderMarkdown(p.Content, absolute)
@@ -60,26 +74,23 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 		log.Fatal(err)
 		return ""
 	}
-	htmlContentStr := string(htmlContent)
-	// Add audio to the top
-	if audio, ok := p.Parameters["audio"]; ok && len(audio) > 0 {
-		audios := ""
-		for _, a := range audio {
-			audios += fmt.Sprintf(`<audio controls preload=none><source src="%s"/></audio>`, a)
-		}
-		htmlContentStr = audios + htmlContentStr
-	}
+	htmlBuilder.Write(htmlContent)
 	// Add links to the bottom
 	if link, ok := p.Parameters["link"]; ok && len(link) > 0 {
-		links := ""
 		for _, l := range link {
-			links += fmt.Sprintf(`<p><a class=u-bookmark-of href="%s" target=_blank rel=noopener>%s</a></p>`, l, l)
+			htmlBuilder.WriteString(`<p><a class=u-bookmark-of href="`)
+			htmlBuilder.WriteString(l)
+			htmlBuilder.WriteString(`" target=_blank rel=noopener>`)
+			htmlBuilder.WriteString(l)
+			htmlBuilder.WriteString(`</a></p>`)
 		}
-		htmlContentStr += links
 	}
 	// Cache
-	html := template.HTML(htmlContentStr)
-	p.renderCache.Store(absolute, html)
+	html := template.HTML(htmlBuilder.String())
+	if p.renderCache == nil {
+		p.renderCache = map[bool]template.HTML{}
+	}
+	p.renderCache[absolute] = html
 	return html
 }
 

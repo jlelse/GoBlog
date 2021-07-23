@@ -8,15 +8,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
-	"unsafe"
 
 	"github.com/araddon/dateparse"
 	"github.com/dgraph-io/ristretto"
-	servertiming "github.com/mitchellh/go-server-timing"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -36,23 +33,9 @@ func (a *goBlog) initCache() (err error) {
 		return nil
 	}
 	a.cache.c, err = ristretto.NewCache(&ristretto.Config{
-		NumCounters: 5000,
-		MaxCost:     20000000, // 20 MB
-		BufferItems: 16,
-		Cost: func(value interface{}) (cost int64) {
-			if cacheItem, ok := value.(*cacheItem); ok {
-				cost = int64(binary.Size(cacheItem.body)) // Byte size of body
-				for h, hv := range cacheItem.header {
-					cost += int64(binary.Size([]byte(h))) // Byte size of header name
-					for _, hvi := range hv {
-						cost += int64(binary.Size([]byte(hvi))) // byte size of each header value item
-					}
-				}
-			} else {
-				cost = int64(unsafe.Sizeof(cacheItem))
-			}
-			return cost
-		},
+		NumCounters: 40 * 1000,        // 4000 items when full with 5 KB items -> x10 = 40.000
+		MaxCost:     20 * 1000 * 1000, // 20 MB
+		BufferItems: 64,               // recommended
 	})
 	return
 }
@@ -110,24 +93,21 @@ func (c *cache) cacheMiddleware(next http.Handler) http.Handler {
 }
 
 func cacheKey(r *http.Request) string {
-	key := cacheURLString(r.URL)
+	var buf strings.Builder
 	// Special cases
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
-		key = "as-" + key
+		buf.WriteString("as-")
 	}
 	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
-		key = "tor-" + key
+		buf.WriteString("tor-")
 	}
-	return key
-}
-
-func cacheURLString(u *url.URL) string {
-	var buf strings.Builder
-	_, _ = buf.WriteString(u.EscapedPath())
-	if q := u.Query(); len(q) > 0 {
+	// Add cache URL
+	_, _ = buf.WriteString(r.URL.EscapedPath())
+	if q := r.URL.Query(); len(q) > 0 {
 		_ = buf.WriteByte('?')
 		_, _ = buf.WriteString(q.Encode())
 	}
+	// Return string
 	return buf.String()
 }
 
@@ -152,13 +132,21 @@ type cacheItem struct {
 	body         []byte
 }
 
+// Calculate byte size of cache item using size of body and header
+func (ci *cacheItem) cost() int64 {
+	var headerBuf strings.Builder
+	_ = ci.header.Write(&headerBuf)
+	headerSize := int64(binary.Size(headerBuf.String()))
+	bodySize := int64(binary.Size(ci.body))
+	return headerSize + bodySize
+}
+
 func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *cacheItem) {
 	if rItem, ok := c.c.Get(key); ok {
 		item = rItem.(*cacheItem)
 	}
 	if item == nil {
 		// No cache available
-		servertiming.FromContext(r.Context()).NewMetric("cm")
 		// Remove problematic headers
 		r.Header.Del("If-Modified-Since")
 		r.Header.Del("If-Unmodified-Since")
@@ -202,16 +190,13 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 			body:         body,
 		}
 		// Save cache
-		if cch := item.header.Get("Cache-Control"); !strings.Contains(cch, "no-store") && !strings.Contains(cch, "private") && !strings.Contains(cch, "no-cache") {
+		if cch := item.header.Get("Cache-Control"); !containsStrings(cch, "no-store", "private", "no-cache") {
 			if exp == 0 {
-				c.c.Set(key, item, 0)
+				c.c.Set(key, item, item.cost())
 			} else {
-				ttl := time.Duration(exp) * time.Second
-				c.c.SetWithTTL(key, item, 0, ttl)
+				c.c.SetWithTTL(key, item, item.cost(), time.Duration(exp)*time.Second)
 			}
 		}
-	} else {
-		servertiming.FromContext(r.Context()).NewMetric("c")
 	}
 	return item
 }

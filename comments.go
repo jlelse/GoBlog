@@ -105,13 +105,13 @@ type commentsRequestConfig struct {
 }
 
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []interface{}) {
-	args = []interface{}{}
-	query = "select id, target, name, website, comment from comments order by id desc"
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("select id, target, name, website, comment from comments order by id desc")
 	if config.limit != 0 || config.offset != 0 {
-		query += " limit @limit offset @offset"
+		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
 	}
-	return
+	return queryBuilder.String(), args
 }
 
 func (db *database) getComments(config *commentsRequestConfig) ([]*comment, error) {

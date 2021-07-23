@@ -247,3 +247,12 @@ func defaultIfEmpty(s, d string) string {
 	}
 	return d
 }
+
+func containsStrings(s string, subStrings ...string) bool {
+	for _, ss := range subStrings {
+		if strings.Contains(s, ss) {
+			return true
+		}
+	}
+	return false
+}

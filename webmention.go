@@ -135,37 +135,38 @@ type webmentionsRequestConfig struct {
 }
 
 func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []interface{}) {
-	args = []interface{}{}
-	filter := ""
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("select id, source, target, created, title, content, author, status from webmentions ")
 	if config != nil {
-		filter = "where 1 = 1"
+		queryBuilder.WriteString("where 1")
 		if config.target != "" {
-			filter += " and lower(target) = lower(@target)"
+			queryBuilder.WriteString(" and lower(target) = lower(@target)")
 			args = append(args, sql.Named("target", config.target))
 		}
 		if config.status != "" {
-			filter += " and status = @status"
+			queryBuilder.WriteString(" and status = @status")
 			args = append(args, sql.Named("status", config.status))
 		}
 		if config.sourcelike != "" {
-			filter += " and lower(source) like @sourcelike"
+			queryBuilder.WriteString(" and lower(source) like @sourcelike")
 			args = append(args, sql.Named("sourcelike", "%"+strings.ToLower(config.sourcelike)+"%"))
 		}
 		if config.id != 0 {
-			filter += " and id = @id"
+			queryBuilder.WriteString(" and id = @id")
 			args = append(args, sql.Named("id", config.id))
 		}
 	}
-	order := "desc"
+	queryBuilder.WriteString(" order by created ")
 	if config.asc {
-		order = "asc"
+		queryBuilder.WriteString("asc")
+	} else {
+		queryBuilder.WriteString("desc")
 	}
-	query = "select id, source, target, created, title, content, author, status from webmentions " + filter + " order by created " + order
 	if config.limit != 0 || config.offset != 0 {
-		query += " limit @limit offset @offset"
+		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
 	}
-	return query, args
+	return queryBuilder.String(), args
 }
 
 func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {

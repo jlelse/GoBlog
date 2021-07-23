@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -245,113 +246,125 @@ type postsRequestConfig struct {
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []interface{}) {
-	args = []interface{}{}
-	table := "posts"
+	var queryBuilder strings.Builder
+	// Selection
+	queryBuilder.WriteString("select ")
+	queryBuilder.WriteString(selection)
+	queryBuilder.WriteString(" from ")
+	// Table
 	if c.search != "" {
-		table = "posts_fts(@search)"
+		queryBuilder.WriteString("posts_fts(@search)")
 		args = append(args, sql.Named("search", c.search))
+	} else {
+		queryBuilder.WriteString("posts")
 	}
-	var wheres []string
+	// Filter
+	queryBuilder.WriteString(" where 1")
 	if c.path != "" {
-		wheres = append(wheres, "path = @path")
+		queryBuilder.WriteString(" and path = @path")
 		args = append(args, sql.Named("path", c.path))
 	}
 	if c.status != "" && c.status != statusNil {
-		wheres = append(wheres, "status = @status")
+		queryBuilder.WriteString(" and status = @status")
 		args = append(args, sql.Named("status", c.status))
 	}
 	if c.blog != "" {
-		wheres = append(wheres, "blog = @blog")
+		queryBuilder.WriteString(" and blog = @blog")
 		args = append(args, sql.Named("blog", c.blog))
 	}
 	if c.parameter != "" {
 		if c.parameterValue != "" {
-			wheres = append(wheres, "path in (select path from post_parameters where parameter = @param and value = @paramval)")
+			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @param and value = @paramval)")
 			args = append(args, sql.Named("param", c.parameter), sql.Named("paramval", c.parameterValue))
 		} else {
-			wheres = append(wheres, "path in (select path from post_parameters where parameter = @param and length(coalesce(value, '')) > 0)")
+			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @param and length(coalesce(value, '')) > 0)")
 			args = append(args, sql.Named("param", c.parameter))
 		}
 	}
 	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
-		wheres = append(wheres, "path in (select path from post_parameters where parameter = @taxname and lower(value) = lower(@taxval))")
+		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @taxname and lower(value) = lower(@taxval))")
 		args = append(args, sql.Named("taxname", c.taxonomy.Name), sql.Named("taxval", c.taxonomyValue))
 	}
 	if len(c.sections) > 0 {
-		ws := "section in ("
+		queryBuilder.WriteString(" and section in (")
 		for i, section := range c.sections {
 			if i > 0 {
-				ws += ", "
+				queryBuilder.WriteString(", ")
 			}
-			named := fmt.Sprintf("section%v", i)
-			ws += "@" + named
+			named := "section" + strconv.Itoa(i)
+			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString(named)
 			args = append(args, sql.Named(named, section))
 		}
-		ws += ")"
-		wheres = append(wheres, ws)
+		queryBuilder.WriteByte(')')
 	}
 	if c.publishedYear != 0 {
-		wheres = append(wheres, "substr(tolocal(published), 1, 4) = @publishedyear")
+		queryBuilder.WriteString(" and substr(tolocal(published), 1, 4) = @publishedyear")
 		args = append(args, sql.Named("publishedyear", fmt.Sprintf("%0004d", c.publishedYear)))
 	}
 	if c.publishedMonth != 0 {
-		wheres = append(wheres, "substr(tolocal(published), 6, 2) = @publishedmonth")
+		queryBuilder.WriteString(" and substr(tolocal(published), 6, 2) = @publishedmonth")
 		args = append(args, sql.Named("publishedmonth", fmt.Sprintf("%02d", c.publishedMonth)))
 	}
 	if c.publishedDay != 0 {
-		wheres = append(wheres, "substr(tolocal(published), 9, 2) = @publishedday")
+		queryBuilder.WriteString(" and substr(tolocal(published), 9, 2) = @publishedday")
 		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", c.publishedDay)))
 	}
-	if len(wheres) > 0 {
-		table += " where " + strings.Join(wheres, " and ")
-	}
-	sorting := " order by published desc"
+	// Order
+	queryBuilder.WriteString(" order by ")
 	if c.randomOrder {
-		sorting = " order by random()"
+		queryBuilder.WriteString("random()")
 	} else if c.priorityOrder {
-		sorting = " order by priority desc, published desc"
+		queryBuilder.WriteString("priority desc, published desc")
+	} else {
+		queryBuilder.WriteString("published desc")
 	}
-	table += sorting
+	// Limit & Offset
 	if c.limit != 0 || c.offset != 0 {
-		table += " limit @limit offset @offset"
+		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", c.limit), sql.Named("offset", c.offset))
 	}
-	query = "select " + selection + " from " + table
-	return query, args
+	return queryBuilder.String(), args
 }
 
 func (d *database) loadPostParameters(posts []*post, parameters ...string) (err error) {
+	if len(posts) == 0 {
+		return nil
+	}
+	// Build query
 	var sqlArgs []interface{}
-	// Parameter filter
-	paramFilter := ""
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
+	// Paths
+	queryBuilder.WriteString(" path in (")
+	for i, p := range posts {
+		if i > 0 {
+			queryBuilder.WriteString(", ")
+		}
+		named := "path" + strconv.Itoa(i)
+		queryBuilder.WriteByte('@')
+		queryBuilder.WriteString(named)
+		sqlArgs = append(sqlArgs, sql.Named(named, p.Path))
+	}
+	queryBuilder.WriteByte(')')
+	// Parameters
 	if len(parameters) > 0 {
-		paramFilter = " and parameter in ("
+		queryBuilder.WriteString(" and parameter in (")
 		for i, p := range parameters {
 			if i > 0 {
-				paramFilter += ", "
+				queryBuilder.WriteString(", ")
 			}
-			named := fmt.Sprintf("param%v", i)
-			paramFilter += "@" + named
+			named := "param" + strconv.Itoa(i)
+			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString(named)
 			sqlArgs = append(sqlArgs, sql.Named(named, p))
 		}
-		paramFilter += ")"
+		queryBuilder.WriteByte(')')
 	}
-	// Path filter
-	pathFilter := ""
-	if len(posts) > 0 {
-		pathFilter = " and path in ("
-		for i, p := range posts {
-			if i > 0 {
-				pathFilter += ", "
-			}
-			named := fmt.Sprintf("path%v", i)
-			pathFilter += "@" + named
-			sqlArgs = append(sqlArgs, sql.Named(named, p.Path))
-		}
-		pathFilter += ")"
-	}
+	// Order
+	queryBuilder.WriteString(" order by id")
 	// Query
-	rows, err := d.query("select path, parameter, value from post_parameters where 1 = 1"+paramFilter+pathFilter+" order by id", sqlArgs...)
+	rows, err := d.query(queryBuilder.String(), sqlArgs...)
 	if err != nil {
 		return err
 	}
@@ -519,16 +532,18 @@ group by name;
 
 func (db *database) usesOfMediaFile(names ...string) (counts map[string]int, err error) {
 	sqlArgs := []interface{}{dbNoCache}
-	nameValues := ""
+	var nameValues strings.Builder
 	for i, n := range names {
 		if i > 0 {
-			nameValues += ", "
+			nameValues.WriteString(", ")
 		}
-		named := fmt.Sprintf("name%v", i)
-		nameValues += fmt.Sprintf("(@%s)", named)
+		named := "name" + strconv.Itoa(i)
+		nameValues.WriteString("(@")
+		nameValues.WriteString(named)
+		nameValues.WriteByte(')')
 		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
-	rows, err := db.query(fmt.Sprintf(mediaUseSql, nameValues), sqlArgs...)
+	rows, err := db.query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
 	if err != nil {
 		return nil, err
 	}

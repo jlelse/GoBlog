@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -54,13 +55,13 @@ type notificationsRequestConfig struct {
 }
 
 func buildNotificationsQuery(config *notificationsRequestConfig) (query string, args []interface{}) {
-	args = []interface{}{}
-	query = "select id, time, text from notifications order by id desc"
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("select id, time, text from notifications order by id desc")
 	if config.limit != 0 || config.offset != 0 {
-		query += " limit @limit offset @offset"
+		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
 	}
-	return
+	return queryBuilder.String(), args
 }
 
 func (db *database) getNotifications(config *notificationsRequestConfig) ([]*notification, error) {

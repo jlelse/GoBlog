@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -30,8 +31,8 @@ type post struct {
 	Priority   int
 	// Not persisted
 	Slug        string
-	renderCache sync.Map
-	renderMutex sync.Mutex
+	renderCache map[bool]template.HTML
+	renderMutex sync.RWMutex
 }
 
 type postStatus string
