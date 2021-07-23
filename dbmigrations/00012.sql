@@ -1,0 +1,1 @@
+create table persistent_cache (key text primary key, data blob, date text not null);

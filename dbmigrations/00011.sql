@@ -1,0 +1,1 @@
+create table notifications (id integer primary key autoincrement, time integer not null, text text not null);

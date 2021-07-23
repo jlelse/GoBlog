@@ -1,0 +1,1 @@
+update posts set published = tolocal(published), updated = tolocal(updated);

@@ -2,255 +2,49 @@ package main
 
 import (
 	"database/sql"
+	"embed"
+	"io/fs"
 	"log"
+	"strings"
 
 	"github.com/lopezator/migrator"
 )
 
+//go:embed dbmigrations/*
+var dbMigrations embed.FS
+
 func migrateDb(db *sql.DB, logging bool) error {
+	var sqlMigrations []interface{}
+	err := fs.WalkDir(dbMigrations, "dbmigrations", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.Type().IsDir() {
+			return err
+		}
+		mig := &migrator.Migration{}
+		mig.Name = strings.TrimSuffix(d.Name(), ".sql")
+		fd, fe := dbMigrations.ReadFile(path)
+		if fe != nil {
+			return fe
+		}
+		if len(fd) == 0 {
+			return nil
+		}
+		mig.Func = func(t *sql.Tx) error {
+			_, txe := t.Exec(string(fd))
+			return txe
+		}
+		sqlMigrations = append(sqlMigrations, mig)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	m, err := migrator.New(
 		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...interface{}) {
 			if logging {
 				log.Printf(s, i)
 			}
 		})),
-		migrator.Migrations(
-			&migrator.Migration{
-				Name: "00001",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table posts (path text not null primary key, content text, published text, updated text, blog text not null, section text);
-					create table post_parameters (id integer primary key autoincrement, path text not null, parameter text not null, value text);
-					create index index_pp_path on post_parameters (path);
-					create trigger after delete on posts begin delete from post_parameters where path = old.path; end;
-					create table indieauthauth (time text not null, code text not null, me text not null, client text not null, redirect text not null, scope text not null);
-					create table indieauthtoken (time text not null, token text not null, me text not null, client text not null, scope text not null);
-					create index index_iat_token on indieauthtoken (token);
-					create table autocert (key text not null primary key, data blob not null, created text not null);
-					create table activitypub_followers (blog text not null, follower text not null, inbox text not null, primary key (blog, follower));
-					create table webmentions (id integer primary key autoincrement, source text not null, target text not null, created integer not null, status text not null default "new", title text, content text, author text, type text, unique(source, target));
-					create index index_wm_target on webmentions (target);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00002",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					drop table autocert;
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00003",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					drop trigger AFTER;
-					create trigger trigger_posts_delete_pp after delete on posts begin delete from post_parameters where path = old.path; end;
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00004",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create view view_posts_with_title as select id, path, title, content, published, updated, blog, section from (select p.rowid as id, p.path as path, pp.value as title, content, published, updated, blog, section from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = 'title');
-					create virtual table posts_fts using fts5(path unindexed, title, content, published unindexed, updated unindexed, blog unindexed, section unindexed, content=view_posts_with_title, content_rowid=id);
-					insert into posts_fts(posts_fts) values ('rebuild');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00005",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					drop view view_posts_with_title;
-					create view view_posts_with_title as select id, path, title, content, published, updated, blog, section from (select p.rowid as id, p.path as path, pp.value as title, content, published, updated, blog, section from posts p left outer join (select * from post_parameters where parameter = 'title') pp on p.path = pp.path);
-					insert into posts_fts(posts_fts) values ('rebuild');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00006",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table indieauthauthnew (time text not null, code text not null, client text not null, redirect text not null, scope text not null);
-					insert into indieauthauthnew (time, code, client, redirect, scope) select time, code, client, redirect, scope from indieauthauth;
-					drop table indieauthauth;
-					alter table indieauthauthnew rename to indieauthauth;
-					create table indieauthtokennew (time text not null, token text not null, client text not null, scope text not null);
-					insert into indieauthtokennew (time, token, client, scope) select time, token, client, scope from indieauthtoken;
-					drop table indieauthtoken;
-					alter table indieauthtokennew rename to indieauthtoken;
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00007",
-				Func: func(tx *sql.Tx) error {
-					// Change all dates to local
-					_, err := tx.Exec(`
-					update posts set published = tolocal(published), updated = tolocal(updated);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00008",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table shortpath (id integer primary key autoincrement, path text not null, unique(path));
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00009",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					alter table posts add status text;
-					update posts set status = 'published';
-					drop view view_posts_with_title;
-					drop table posts_fts;
-					create view view_posts_with_title as select id, path, title, content, published, updated, blog, section, status from (select p.rowid as id, p.path as path, pp.value as title, content, published, updated, blog, section, status from posts p left outer join post_parameters pp on p.path = pp.path where pp.parameter = 'title');
-					create virtual table posts_fts using fts5(path unindexed, title, content, published unindexed, updated unindexed, blog unindexed, section unindexed, status unindexed, content=view_posts_with_title, content_rowid=id);
-					insert into posts_fts(posts_fts) values ('rebuild');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00010",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table comments (id integer primary key autoincrement, target text not null, name text not null, website text not null, comment text not null);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00011",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table notifications (id integer primary key autoincrement, time integer not null, text text not null);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00012",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table persistent_cache (key text primary key, data blob, date text not null);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00013",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table sessions (id integer primary key autoincrement, data text default '', created text default '', modified datetime default '', expires text default '');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00014",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table queue (id integer primary key autoincrement, name text not null, content blob, schedule text not null);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00015",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					drop view view_posts_with_title;
-					create view view_posts_with_title as select p.rowid as id, p.path as path, coalesce(pp.value, '') as title, content, published, updated, blog, section, status from posts p left outer join (select * from post_parameters pp where pp.parameter = 'title') pp on p.path = pp.path;
-					insert into posts_fts(posts_fts) values ('rebuild');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00016",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create index index_queue_name on queue (name);
-					create index index_queue_schedule on queue (schedule);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00017",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create index index_post_parameters on post_parameters (path, parameter, value);
-					create index index_queue on queue (name, schedule);
-					drop index index_pp_path;
-					drop index index_queue_name;
-					drop index index_queue_schedule;
-					drop view view_posts_with_title;
-					create table posts_new (path text not null primary key, content text, published text, updated text, blog text not null, section text, status text not null, priority integer not null default 0);
-					insert into posts_new select *, 0 from posts;
-					drop table posts;
-					alter table posts_new rename to posts;
-					create view view_posts_with_title as select p.rowid as id, p.path as path, coalesce(pp.value, '') as title, content, published, updated, blog, section, status, priority from posts p left outer join (select * from post_parameters pp where pp.parameter = 'title') pp on p.path = pp.path;
-					drop table posts_fts;
-					create virtual table posts_fts using fts5(path unindexed, title, content, published unindexed, updated unindexed, blog unindexed, section unindexed, status unindexed, priority unindexed, content=view_posts_with_title, content_rowid=id);
-					insert into posts_fts(posts_fts) values ('rebuild');
-					create index index_posts_status on posts (status);
-					create index index_posts_blog on posts (blog);
-					create index index_posts_section on posts (section);
-					create index index_posts_published on posts (published);
-					create index index_posts_priority on posts (published);
-					drop trigger if exists trigger_posts_delete_pp;
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00018",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					update queue set schedule = toutc(schedule);
-					update persistent_cache set date = toutc(date);
-					update sessions set created = toutc(created), modified = toutc(modified), expires = toutc(expires);
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00019",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					update posts set published = toutc(published), updated = toutc(updated);
-					insert into posts_fts(posts_fts) values ('rebuild');
-					`)
-					return err
-				},
-			},
-			&migrator.Migration{
-				Name: "00020",
-				Func: func(tx *sql.Tx) error {
-					_, err := tx.Exec(`
-					create table deleted (path text primary key);
-					create index index_post_parameters_par_val_pat on post_parameters (parameter, value, path);
-					`)
-					return err
-				},
-			},
-		),
+		migrator.Migrations(sqlMigrations...),
 	)
 	if err != nil {
 		return err

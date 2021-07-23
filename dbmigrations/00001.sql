@@ -1,0 +1,11 @@
+create table posts (path text not null primary key, content text, published text, updated text, blog text not null, section text);
+create table post_parameters (id integer primary key autoincrement, path text not null, parameter text not null, value text);
+create index index_pp_path on post_parameters (path);
+create trigger after delete on posts begin delete from post_parameters where path = old.path; end;
+create table indieauthauth (time text not null, code text not null, me text not null, client text not null, redirect text not null, scope text not null);
+create table indieauthtoken (time text not null, token text not null, me text not null, client text not null, scope text not null);
+create index index_iat_token on indieauthtoken (token);
+create table autocert (key text not null primary key, data blob not null, created text not null);
+create table activitypub_followers (blog text not null, follower text not null, inbox text not null, primary key (blog, follower));
+create table webmentions (id integer primary key autoincrement, source text not null, target text not null, created integer not null, status text not null default "new", title text, content text, author text, type text, unique(source, target));
+create index index_wm_target on webmentions (target);

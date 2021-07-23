@@ -1,0 +1,1 @@
+create table queue (id integer primary key autoincrement, name text not null, content blob, schedule text not null);

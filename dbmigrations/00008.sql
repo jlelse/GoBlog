@@ -1,0 +1,1 @@
+create table shortpath (id integer primary key autoincrement, path text not null, unique(path));

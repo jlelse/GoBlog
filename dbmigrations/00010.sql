@@ -1,0 +1,1 @@
+create table comments (id integer primary key autoincrement, target text not null, name text not null, website text not null, comment text not null);

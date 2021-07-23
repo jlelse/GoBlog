@@ -1,0 +1,1 @@
+create table sessions (id integer primary key autoincrement, data text default '', created text default '', modified datetime default '', expires text default '');

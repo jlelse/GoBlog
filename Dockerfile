@@ -8,6 +8,7 @@ ADD pkgs/ /app/pkgs/
 ADD testdata/ /app/testdata/
 ADD templates/ /app/templates/
 ADD leaflet/ /app/leaflet/
+ADD dbmigrations/ /app/dbmigrations/
 RUN go test -cover ./...
 RUN go build -ldflags '-w -s' -o GoBlog
 

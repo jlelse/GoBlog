@@ -1,0 +1,1 @@
+create index index_posts_sta_blo_sec on posts(status, blog, section);
