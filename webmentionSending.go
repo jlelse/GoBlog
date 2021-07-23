@@ -14,6 +14,8 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+const postParamWebmention = "webmention"
+
 func (a *goBlog) sendWebmentions(p *post) error {
 	if p.Status != statusPublished && p.Status != statusUnlisted {
 		// Not published or unlisted
@@ -21,6 +23,10 @@ func (a *goBlog) sendWebmentions(p *post) error {
 	}
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableSending {
 		// Just ignore the mentions
+		return nil
+	}
+	if pp, ok := p.Parameters[postParamWebmention]; ok && len(pp) > 0 && pp[0] == "false" {
+		// Ignore this post
 		return nil
 	}
 	links := []string{}
