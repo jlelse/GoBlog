@@ -107,6 +107,7 @@ type renderData struct {
 	CommentsEnabled            bool
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
+	EasterEgg                  bool
 }
 
 func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
@@ -171,6 +172,10 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
 	// Check if able to receive webmentions
 	data.WebmentionReceivingEnabled = a.cfg.Webmention == nil || !a.cfg.Webmention.DisableReceiving
+	// Easter egg
+	if ee := a.cfg.EasterEgg; ee != nil && ee.Enabled {
+		data.EasterEgg = true
+	}
 	// Data
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}

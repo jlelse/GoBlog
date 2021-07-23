@@ -23,6 +23,7 @@ type config struct {
 	Webmention    *configWebmention      `mapstructure:"webmention"`
 	Notifications *configNotifications   `mapstructure:"notifications"`
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
+	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 }
 
 type configServer struct {
@@ -247,6 +248,10 @@ type configTelegram struct {
 }
 
 type configPrivateMode struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type configEasterEgg struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

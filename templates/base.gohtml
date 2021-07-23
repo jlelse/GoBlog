@@ -23,6 +23,8 @@
     {{ include "header" . }}
     {{ block "main" . }}{{ end }}
     {{ include "footer" . }}
-    <script defer src="{{ asset "js/easteregg.js" }}"></script>
+    {{ if .EasterEgg }}
+      <script defer src="{{ asset "js/easteregg.js" }}"></script>
+    {{ end }}
   </html>
 {{ end }}
