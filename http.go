@@ -493,6 +493,8 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 		select 'post', status from posts where path = @path
 		union all
 		select 'alias', path from post_parameters where parameter = 'aliases' and value = @path
+		union all
+		select 'deleted', '' from deleted where path = @path
 		limit 1
 		`, sql.Named("path", path))
 		if err != nil {
@@ -525,6 +527,12 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 				// Is alias, redirect
 				alicePrivate.Append(a.cache.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, value, http.StatusFound)
+				}).ServeHTTP(w, r)
+				return
+			case "deleted":
+				// Is deleted, serve 410
+				alicePrivate.Append(a.cache.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+					a.serve410(w, r)
 				}).ServeHTTP(w, r)
 				return
 			}

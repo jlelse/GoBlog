@@ -204,11 +204,20 @@ func (db *database) deletePost(path string) (*post, error) {
 	if path == "" {
 		return nil, nil
 	}
+	db.pcm.Lock()
+	defer db.pcm.Unlock()
 	p, err := db.getPost(path)
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.exec("begin;delete from posts where path = ?;delete from post_parameters where path = ?;commit;", dbNoCache, p.Path, p.Path)
+	_, err = db.exec(
+		`begin;
+		delete from posts where path = ?;
+		delete from post_parameters where path = ?;
+		insert or ignore into deleted (path) values (?);
+		commit;`,
+		dbNoCache, p.Path, p.Path, p.Path,
+	)
 	if err != nil {
 		return nil, err
 	}
