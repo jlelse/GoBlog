@@ -40,7 +40,8 @@ func (a *goBlog) initCache() (err error) {
 	return
 }
 
-func (c *cache) cacheMiddleware(next http.Handler) http.Handler {
+func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
+	c := a.cache
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c.c == nil {
 			// No cache configured
@@ -56,7 +57,7 @@ func (c *cache) cacheMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		if a.isLoggedIn(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -179,7 +180,6 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		result.Header.Del("Accept-Ranges")
 		result.Header.Del("ETag")
 		result.Header.Del("Last-Modified")
-		result.Header.Del("Server-Timing")
 		// Create cache item
 		item = &cacheItem{
 			expiration:   exp,
@@ -205,8 +205,8 @@ func (c *cache) purge() {
 	c.c.Clear()
 }
 
-func setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {
-	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+func (a *goBlog) setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {
+	if a.isLoggedIn(r) {
 		return
 	}
 	w.Header().Set(cacheInternalExpirationHeader, strconv.Itoa(expiration))

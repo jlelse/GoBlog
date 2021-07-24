@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	servertiming "github.com/mitchellh/go-server-timing"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -115,9 +114,6 @@ func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string,
 }
 
 func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, template string, data *renderData) {
-	// Server timing
-	t := servertiming.FromContext(r.Context()).NewMetric("r").Start()
-	defer t.Stop()
 	// Check render data
 	a.checkRenderData(r, data)
 	// Set content type
@@ -165,7 +161,7 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 		data.TorUsed = true
 	}
 	// Check login
-	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+	if a.isLoggedIn(r) {
 		data.LoggedIn = true
 	}
 	// Check if comments enabled

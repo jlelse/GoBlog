@@ -7,17 +7,22 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/pquerna/otp/totp"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+const loggedInKey contextKey = "loggedIn"
+
+// Check if credentials are correct
 func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {
 	return username == a.cfg.User.Nick &&
 		password == a.cfg.User.Password &&
 		(a.cfg.User.TOTP == "" || totp.Validate(totpPasscode, a.cfg.User.TOTP))
 }
 
+// Check if app passwords are correct
 func (a *goBlog) checkAppPasswords(username, password string) bool {
 	for _, apw := range a.cfg.User.AppPasswords {
 		if apw.Username == username && apw.Password == password {
@@ -27,31 +32,29 @@ func (a *goBlog) checkAppPasswords(username, password string) bool {
 	return false
 }
 
-func (a *goBlog) jwtKey() []byte {
-	return []byte(a.cfg.Server.JWTSecret)
+// Check if cookie is known and logged in
+func (a *goBlog) checkLoginCookie(r *http.Request) bool {
+	ses, err := a.loginSessions.Get(r, "l")
+	if err == nil && ses != nil {
+		if login, ok := ses.Values["login"]; ok && login.(bool) {
+			return true
+		}
+	}
+	return false
 }
 
+// Middleware to force login
 func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check if already logged in
-		if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		// Check if already logged in
+		if a.isLoggedIn(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// 2. Check BasicAuth (just for app passwords)
-		if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
-			next.ServeHTTP(w, r)
-			return
-		}
-		// 3. Check login cookie
-		if a.checkLoginCookie(r) {
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), loggedInKey, true)))
-			return
-		}
-		// 4. Show login form
+		// Show login form
 		w.Header().Set("Cache-Control", "no-store,max-age=0")
-		h, _ := json.Marshal(r.Header.Clone())
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
+		h, _ := json.Marshal(r.Header)
+		b, _ := io.ReadAll(io.LimitReader(r.Body, 20*1000*1000)) // Only allow 20 MB
 		_ = r.Body.Close()
 		if len(b) == 0 {
 			// Maybe it's a form
@@ -69,28 +72,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-const loggedInKey contextKey = "loggedIn"
-
-func (a *goBlog) checkLoggedIn(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if a.checkLoginCookie(r) {
-			next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), loggedInKey, true)))
-			return
-		}
-		next.ServeHTTP(rw, r)
-	})
-}
-
-func (a *goBlog) checkLoginCookie(r *http.Request) bool {
-	ses, err := a.loginSessions.Get(r, "l")
-	if err == nil && ses != nil {
-		if login, ok := ses.Values["login"]; ok && login.(bool) {
-			return true
-		}
-	}
-	return false
-}
-
+// Middleware to check if the request is a login request
 func (a *goBlog) checkIsLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if !a.checkLogin(rw, r) {
@@ -99,11 +81,12 @@ func (a *goBlog) checkIsLogin(next http.Handler) http.Handler {
 	})
 }
 
+// Checks login and returns true if it already served an error
 func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
-	if r.Header.Get(contentType) != contenttype.WWWForm {
+	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return false
 	}
 	if r.FormValue("loginaction") != "login" {
@@ -131,22 +114,49 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	ses.Values["login"] = true
-	cookie, err := a.loginSessions.SaveGetCookie(r, w, ses)
+	err = a.loginSessions.Save(r, w, ses)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return true
 	}
-	req.AddCookie(cookie)
 	// Serve original request
+	setLoggedIn(req)
 	a.d.ServeHTTP(w, req)
 	return true
 }
 
+func (a *goBlog) isLoggedIn(r *http.Request) bool {
+	// Check if context key already set
+	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
+		return true
+	}
+	// Check app passwords
+	if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
+		setLoggedIn(r)
+		return true
+	}
+	// Check session cookie
+	if a.checkLoginCookie(r) {
+		setLoggedIn(r)
+		return true
+	}
+	// Not logged in
+	return false
+}
+
+// Set request context value
+func setLoggedIn(r *http.Request) {
+	newRequest := r.WithContext(context.WithValue(r.Context(), loggedInKey, true))
+	(*r) = *newRequest
+}
+
+// HandlerFunc to redirect to home after login
 // Need to set auth middleware!
 func serveLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// HandlerFunc to delete login session and cookie
 func (a *goBlog) serveLogout(w http.ResponseWriter, r *http.Request) {
 	if ses, err := a.loginSessions.Get(r, "l"); err == nil && ses != nil {
 		_ = a.loginSessions.Delete(r, w, ses)

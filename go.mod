@@ -20,7 +20,6 @@ require (
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
-	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/gorilla/handlers v1.5.1
@@ -38,7 +37,6 @@ require (
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/microcosm-cc/bluemonday v1.0.15
-	github.com/mitchellh/go-server-timing v1.0.1
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0
 	github.com/schollz/sqlite3dump v1.3.0

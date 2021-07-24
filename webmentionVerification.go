@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/gob"
 	"errors"
@@ -86,7 +85,8 @@ func (a *goBlog) verifyMention(m *mention) error {
 			// Server not yet started
 			time.Sleep(1 * time.Second)
 		}
-		a.d.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), loggedInKey, true)))
+		setLoggedIn(req)
+		a.d.ServeHTTP(rec, req)
 		resp = rec.Result()
 	} else {
 		req.Header.Set(userAgent, appUserAgent)

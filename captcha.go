@@ -2,28 +2,38 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/dchest/captcha"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+const captchaSolvedKey contextKey = "captchaSolved"
+
 func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check Cookie
+		// Check if captcha already solved
+		if solved, ok := r.Context().Value(captchaSolvedKey).(bool); ok && solved {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Check Cookie
 		ses, err := a.captchaSessions.Get(r, "c")
 		if err == nil && ses != nil {
 			if captcha, ok := ses.Values["captcha"]; ok && captcha.(bool) {
-				next.ServeHTTP(w, r)
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), captchaSolvedKey, true)))
 				return
 			}
 		}
-		// 2. Show Captcha
-		h, _ := json.Marshal(r.Header.Clone())
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 2000000)) // Only allow 20 Megabyte
+		// Show Captcha
+		w.Header().Set("Cache-Control", "no-store,max-age=0")
+		h, _ := json.Marshal(r.Header)
+		b, _ := io.ReadAll(io.LimitReader(r.Body, 20*1000*1000)) // Only allow 20 MB
 		_ = r.Body.Close()
 		if len(b) == 0 {
 			// Maybe it's a form
@@ -53,7 +63,7 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}
-	if r.Header.Get(contentType) != contenttype.WWWForm {
+	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return false
 	}
 	if r.FormValue("captchaaction") != "captcha" {
@@ -77,12 +87,12 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		ses.Values["captcha"] = true
-		cookie, err := a.captchaSessions.SaveGetCookie(r, w, ses)
+		err = a.captchaSessions.Save(r, w, ses)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return true
 		}
-		req.AddCookie(cookie)
+		req = req.WithContext(context.WithValue(req.Context(), captchaSolvedKey, true))
 	}
 	// Serve original request
 	a.d.ServeHTTP(w, req)

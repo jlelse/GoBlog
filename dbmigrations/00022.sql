@@ -1,0 +1,1 @@
+create index sessions_exp on sessions (expires);

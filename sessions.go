@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -31,7 +30,7 @@ func (a *goBlog) initSessions() {
 	deleteExpiredSessions()
 	a.hourlyHooks = append(a.hourlyHooks, deleteExpiredSessions)
 	a.loginSessions = &dbSessionStore{
-		codecs: securecookie.CodecsFromPairs(a.jwtKey()),
+		codecs: securecookie.CodecsFromPairs([]byte(a.cfg.Server.JWTSecret)),
 		options: &sessions.Options{
 			Secure:   a.httpsConfigured(),
 			HttpOnly: true,
@@ -42,7 +41,7 @@ func (a *goBlog) initSessions() {
 		db: a.db,
 	}
 	a.captchaSessions = &dbSessionStore{
-		codecs: securecookie.CodecsFromPairs(a.jwtKey()),
+		codecs: securecookie.CodecsFromPairs([]byte(a.cfg.Server.JWTSecret)),
 		options: &sessions.Options{
 			Secure:   a.httpsConfigured(),
 			HttpOnly: true,
@@ -77,25 +76,19 @@ func (s *dbSessionStore) New(r *http.Request, name string) (session *sessions.Se
 	return session, err
 }
 
-func (s *dbSessionStore) Save(r *http.Request, w http.ResponseWriter, ss *sessions.Session) error {
-	_, err := s.SaveGetCookie(r, w, ss)
-	return err
-}
-
-func (s *dbSessionStore) SaveGetCookie(r *http.Request, w http.ResponseWriter, ss *sessions.Session) (cookie *http.Cookie, err error) {
+func (s *dbSessionStore) Save(r *http.Request, w http.ResponseWriter, ss *sessions.Session) (err error) {
 	if ss.ID == "" {
 		if err = s.insert(ss); err != nil {
-			return nil, err
+			return err
 		}
 	} else if err = s.save(ss); err != nil {
-		return nil, err
+		return err
 	}
 	if encoded, err := securecookie.EncodeMulti(ss.Name(), ss.ID, s.codecs...); err != nil {
-		return nil, err
+		return err
 	} else {
-		cookie = sessions.NewCookie(ss.Name(), encoded, ss.Options)
-		http.SetCookie(w, cookie)
-		return cookie, nil
+		http.SetCookie(w, sessions.NewCookie(ss.Name(), encoded, ss.Options))
+		return nil
 	}
 }
 
@@ -113,22 +106,17 @@ func (s *dbSessionStore) Delete(r *http.Request, w http.ResponseWriter, session 
 }
 
 func (s *dbSessionStore) load(session *sessions.Session) (err error) {
-	row, err := s.db.queryRow("select data, created, modified, expires from sessions where id = @id", sql.Named("id", session.ID))
+	row, err := s.db.queryRow("select data, created, modified, expires from sessions where id = @id and expires > @now", sql.Named("id", session.ID), sql.Named("now", utcNowString()))
 	if err != nil {
 		return err
 	}
 	var data, createdStr, modifiedStr, expiresStr string
-	if err = row.Scan(&data, &createdStr, &modifiedStr, &expiresStr); err == sql.ErrNoRows {
-		return nil
-	} else if err != nil {
+	if err = row.Scan(&data, &createdStr, &modifiedStr, &expiresStr); err != nil {
 		return err
 	}
 	created, _ := dateparse.ParseLocal(createdStr)
 	modified, _ := dateparse.ParseLocal(modifiedStr)
 	expires, _ := dateparse.ParseLocal(expiresStr)
-	if expires.Before(time.Now()) {
-		return errors.New("session expired")
-	}
 	if err = securecookie.DecodeMulti(session.Name(), data, &session.Values, s.codecs...); err != nil {
 		return err
 	}
@@ -149,7 +137,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	if err != nil {
 		return err
 	}
-	res, err := s.db.exec("insert into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
+	res, err := s.db.exec("insert or replace into sessions(data, created, modified, expires) values(@data, @created, @modified, @expires)",
 		sql.Named("data", encoded), sql.Named("created", created.Format(time.RFC3339)), sql.Named("modified", modified.Format(time.RFC3339)), sql.Named("expires", expires.Format(time.RFC3339)))
 	if err != nil {
 		return err

@@ -4,7 +4,6 @@ import (
 	"embed"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -82,7 +81,6 @@ var leafletFiles embed.FS
 func (a *goBlog) serveLeaflet(basePath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fileName := strings.TrimPrefix(r.URL.Path, basePath)
-		log.Println(basePath, fileName)
 		fb, err := leafletFiles.ReadFile(fileName)
 		if err != nil {
 			a.serve404(w, r)

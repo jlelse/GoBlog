@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"net/http"
-
-	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 const defaultBlogStatsPath = "/statistics"
@@ -35,11 +33,9 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	t := servertiming.FromContext(r.Context()).NewMetric("bs").Start()
 	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.db.getBlogStats(blog)
 	})
-	t.Stop()
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return

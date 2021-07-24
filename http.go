@@ -17,7 +17,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
-	servertiming "github.com/mitchellh/go-server-timing"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
@@ -38,17 +37,15 @@ func (a *goBlog) startServer() (err error) {
 	}
 	a.d = fixHTTPHandler(router)
 	// Set basic middlewares
-	var finalHandler http.Handler = a.d
-	if a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders {
-		finalHandler = a.securityHeaders(finalHandler)
-	}
-	finalHandler = servertiming.Middleware(finalHandler, nil)
-	finalHandler = middleware.Heartbeat("/ping")(finalHandler)
-	finalHandler = middleware.Compress(flate.DefaultCompression)(finalHandler)
-	finalHandler = middleware.Recoverer(finalHandler)
+	h := alice.New()
 	if a.cfg.Server.Logging {
-		finalHandler = a.logMiddleware(finalHandler)
+		h = h.Append(a.logMiddleware)
 	}
+	h = h.Append(middleware.Recoverer, middleware.Compress(flate.DefaultCompression), middleware.Heartbeat("/ping"))
+	if a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders {
+		h = h.Append(a.securityHeaders)
+	}
+	finalHandler := h.Then(a.d)
 	// Start Onion service
 	if a.cfg.Server.Tor {
 		go func() {
@@ -154,10 +151,9 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		r.Use(noIndexHeader)
 	}
 
-	// Login middleware etc.
+	// Login and captcha middleware
 	r.Use(a.checkIsLogin)
 	r.Use(a.checkIsCaptcha)
-	r.Use(a.checkLoggedIn)
 
 	// Logout
 	r.With(a.authMiddleware).Get("/login", serveLogin)
@@ -187,7 +183,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Post("/{blog}/inbox", a.apHandleInbox)
 		})
 		r.Group(func(r chi.Router) {
-			r.Use(a.cache.cacheMiddleware)
+			r.Use(a.cacheMiddleware)
 			r.Get("/.well-known/webfinger", a.apHandleWebfinger)
 			r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
 			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
@@ -236,7 +232,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 	r.Handle("/captcha/*", captcha.Server(500, 250))
 
 	// Short paths
-	r.With(privateModeHandler...).With(a.cache.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
+	r.With(privateModeHandler...).With(a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
 
 	for blog, blogConfig := range a.cfg.Blogs {
 		sbm := middleware.WithValue(blogContextKey, blog)
@@ -244,7 +240,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		// Sections
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
-			r.Use(a.cache.cacheMiddleware, sbm)
+			r.Use(a.cacheMiddleware, sbm)
 			for _, section := range blogConfig.Sections {
 				if section.Name != "" {
 					r.Group(func(r chi.Router) {
@@ -264,7 +260,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		// Taxonomies
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
-			r.Use(a.cache.cacheMiddleware, sbm)
+			r.Use(a.cacheMiddleware, sbm)
 			for _, taxonomy := range blogConfig.Taxonomies {
 				if taxonomy.Name != "" {
 					r.Group(func(r chi.Router) {
@@ -285,7 +281,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Group(func(r chi.Router) {
 				photoPath := blogConfig.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))
 				r.Use(privateModeHandler...)
-				r.Use(a.cache.cacheMiddleware, sbm, middleware.WithValue(indexConfigKey, &indexConfig{
+				r.Use(a.cacheMiddleware, sbm, middleware.WithValue(indexConfigKey, &indexConfig{
 					path:            photoPath,
 					parameter:       pc.Parameter,
 					title:           pc.Title,
@@ -308,7 +304,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 				))
 				r.Group(func(r chi.Router) {
 					r.Use(privateModeHandler...)
-					r.Use(a.cache.cacheMiddleware)
+					r.Use(a.cacheMiddleware)
 					r.Get("/", a.serveSearch)
 					r.Post("/", a.serveSearch)
 					searchResultPath := "/" + searchPlaceholder
@@ -316,7 +312,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 					r.Get(searchResultPath+feedPath, a.serveSearchResult)
 					r.Get(searchResultPath+paginationPath, a.serveSearchResult)
 				})
-				r.With(a.cache.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
+				r.With(a.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
 			})
 		}
 
@@ -325,7 +321,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			statsPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Use(a.cacheMiddleware, sbm)
 				r.Get(statsPath, a.serveBlogStats)
 				r.Get(statsPath+".table.html", a.serveBlogStatsTable)
 			})
@@ -334,7 +330,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		// Date archives
 		r.Group(func(r chi.Router) {
 			r.Use(privateModeHandler...)
-			r.Use(a.cache.cacheMiddleware, sbm)
+			r.Use(a.cacheMiddleware, sbm)
 
 			yearRegex := `/{year:x|\d\d\d\d}`
 			monthRegex := `/{month:x|\d\d}`
@@ -361,9 +357,9 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
 				r.Use(sbm)
-				r.With(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(""), a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath("")+feedPath, a.serveHome)
-				r.With(a.cache.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
+				r.With(a.checkActivityStreamsRequest, a.cacheMiddleware).Get(blogConfig.getRelativePath(""), a.serveHome)
+				r.With(a.cacheMiddleware).Get(blogConfig.getRelativePath("")+feedPath, a.serveHome)
+				r.With(a.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
 			})
 		}
 
@@ -371,7 +367,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		for _, cp := range blogConfig.CustomPages {
 			scp := middleware.WithValue(customPageContextKey, cp)
 			if cp.Cache {
-				r.With(privateModeHandler...).With(a.cache.cacheMiddleware, sbm, scp).Get(cp.Path, a.serveCustomPage)
+				r.With(privateModeHandler...).With(a.cacheMiddleware, sbm, scp).Get(cp.Path, a.serveCustomPage)
 			} else {
 				r.With(privateModeHandler...).With(sbm, scp).Get(cp.Path, a.serveCustomPage)
 			}
@@ -407,7 +403,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Route(commentsPath, func(r chi.Router) {
 				r.Use(sbm, middleware.WithValue(pathContextKey, commentsPath))
 				r.Use(privateModeHandler...)
-				r.With(a.cache.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
+				r.With(a.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
 				r.With(a.captchaMiddleware).Post("/", a.createComment)
 				r.Group(func(r chi.Router) {
 					// Admin
@@ -424,7 +420,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			brPath := blogConfig.getRelativePath(defaultIfEmpty(brConfig.Path, defaultBlogrollPath))
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Use(a.cacheMiddleware, sbm)
 				r.Get(brPath, a.serveBlogroll)
 				r.Get(brPath+".opml", a.serveBlogrollExport)
 			})
@@ -436,7 +432,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Route(mapPath, func(r chi.Router) {
 				r.Use(privateModeHandler...)
 				r.Group(func(r chi.Router) {
-					r.Use(a.cache.cacheMiddleware, sbm)
+					r.Use(a.cacheMiddleware, sbm)
 					r.Get("/", a.serveGeoMap)
 					r.HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
 				})
@@ -449,7 +445,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			contactPath := blogConfig.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))
 			r.Route(contactPath, func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(a.cache.cacheMiddleware, sbm)
+				r.Use(a.cacheMiddleware, sbm)
 				r.Get("/", a.serveContactForm)
 				r.With(a.captchaMiddleware).Post("/", a.sendContactSubmission)
 			})
@@ -458,7 +454,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 	}
 
 	// Sitemap
-	r.With(privateModeHandler...).With(a.cache.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
+	r.With(privateModeHandler...).With(a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
 	// Robots.txt - doesn't need cache, because it's too simple
 	if !privateMode {
@@ -517,7 +513,7 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 				// Is post, check status
 				switch postStatus(value) {
 				case statusPublished, statusUnlisted:
-					alicePrivate.Append(a.checkActivityStreamsRequest, a.cache.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
+					alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
 				case statusDraft, statusPrivate:
 					alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
@@ -525,20 +521,20 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 				}
 			case "alias":
 				// Is alias, redirect
-				alicePrivate.Append(a.cache.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+				alicePrivate.Append(a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, value, http.StatusFound)
 				}).ServeHTTP(w, r)
 				return
 			case "deleted":
 				// Is deleted, serve 410
-				alicePrivate.Append(a.cache.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+				alicePrivate.Append(a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 					a.serve410(w, r)
 				}).ServeHTTP(w, r)
 				return
 			}
 		}
 		// No post, check regex redirects or serve 404 error
-		alice.New(a.cache.cacheMiddleware, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
+		alice.New(a.cacheMiddleware, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/kaorimatz/go-opml"
-	servertiming "github.com/mitchellh/go-server-timing"
 	"github.com/thoas/go-funk"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -20,18 +19,16 @@ const defaultBlogrollPath = "/blogroll"
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogContextKey).(string)
-	t := servertiming.FromContext(r.Context()).NewMetric("bg").Start()
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.getBlogrollOutlines(blog)
 	})
-	t.Stop()
 	if err != nil {
 		log.Printf("Failed to get outlines: %v", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
-		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
+		a.setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
 	c := a.cfg.Blogs[blog].Blogroll
 	can := a.getRelativePath(blog, defaultIfEmpty(c.Path, defaultBlogrollPath))
@@ -58,7 +55,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
-		setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
+		a.setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
 	var opmlBytes bytes.Buffer
