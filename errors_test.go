@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,9 @@ import (
 func Test_errors(t *testing.T) {
 	app := &goBlog{
 		cfg: &config{
+			Db: &configDb{
+				File: filepath.Join(t.TempDir(), "test.db"),
+			},
 			Server: &configServer{
 				PublicAddress: "https://example.com",
 			},
@@ -26,7 +30,9 @@ func Test_errors(t *testing.T) {
 		},
 	}
 
+	_ = app.initDatabase(false)
 	app.initMarkdown()
+	app.initSessions()
 	_ = app.initTemplateStrings()
 	_ = app.initRendering()
 
