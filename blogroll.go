@@ -27,9 +27,6 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
-		a.setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
-	}
 	c := a.cfg.Blogs[blog].Blogroll
 	can := a.getRelativePath(blog, defaultIfEmpty(c.Path, defaultBlogrollPath))
 	a.render(w, r, templateBlogroll, &renderData{
@@ -53,9 +50,6 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to get outlines: %v", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
-	}
-	if a.cfg.Cache != nil && a.cfg.Cache.Enable {
-		a.setInternalCacheExpirationHeader(w, r, int(a.cfg.Cache.Expiration))
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
 	var opmlBytes bytes.Buffer

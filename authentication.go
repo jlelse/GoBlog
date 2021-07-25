@@ -120,24 +120,24 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	// Serve original request
-	setLoggedIn(req)
+	setLoggedIn(req, true)
 	a.d.ServeHTTP(w, req)
 	return true
 }
 
 func (a *goBlog) isLoggedIn(r *http.Request) bool {
 	// Check if context key already set
-	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok && loggedIn {
-		return true
+	if loggedIn, ok := r.Context().Value(loggedInKey).(bool); ok {
+		return loggedIn
 	}
 	// Check app passwords
 	if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
-		setLoggedIn(r)
+		setLoggedIn(r, true)
 		return true
 	}
 	// Check session cookie
 	if a.checkLoginCookie(r) {
-		setLoggedIn(r)
+		setLoggedIn(r, true)
 		return true
 	}
 	// Not logged in
@@ -145,9 +145,9 @@ func (a *goBlog) isLoggedIn(r *http.Request) bool {
 }
 
 // Set request context value
-func setLoggedIn(r *http.Request) {
-	newRequest := r.WithContext(context.WithValue(r.Context(), loggedInKey, true))
-	(*r) = *newRequest
+func setLoggedIn(r *http.Request, loggedIn bool) {
+	// Overwrite the value of r (r is a pointer)
+	(*r) = *(r.WithContext(context.WithValue(r.Context(), loggedInKey, loggedIn)))
 }
 
 // HandlerFunc to redirect to home after login

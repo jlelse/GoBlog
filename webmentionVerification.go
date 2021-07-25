@@ -85,7 +85,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 			// Server not yet started
 			time.Sleep(1 * time.Second)
 		}
-		setLoggedIn(req)
+		setLoggedIn(req, true)
 		a.d.ServeHTTP(rec, req)
 		resp = rec.Result()
 	} else {

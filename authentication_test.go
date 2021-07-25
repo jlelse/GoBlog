@@ -187,8 +187,14 @@ func Test_authMiddleware(t *testing.T) {
 
 func Test_setLoggedIn(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/abc", nil)
-	setLoggedIn(req)
+	setLoggedIn(req, true)
 	loggedIn, ok := req.Context().Value(loggedInKey).(bool)
 	assert.True(t, ok)
 	assert.True(t, loggedIn)
+
+	req = httptest.NewRequest(http.MethodGet, "/abc", nil)
+	setLoggedIn(req, false)
+	loggedIn, ok = req.Context().Value(loggedInKey).(bool)
+	assert.True(t, ok)
+	assert.False(t, loggedIn)
 }

@@ -183,7 +183,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Post("/{blog}/inbox", a.apHandleInbox)
 		})
 		r.Group(func(r chi.Router) {
-			r.Use(a.cacheMiddleware)
+			r.Use(cacheLoggedIn, a.cacheMiddleware)
 			r.Get("/.well-known/webfinger", a.apHandleWebfinger)
 			r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
 			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
@@ -232,7 +232,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 	r.Handle("/captcha/*", captcha.Server(500, 250))
 
 	// Short paths
-	r.With(privateModeHandler...).With(a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
+	r.With(privateModeHandler...).With(cacheLoggedIn, a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
 
 	for blog, blogConfig := range a.cfg.Blogs {
 		sbm := middleware.WithValue(blogContextKey, blog)
@@ -321,9 +321,8 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			statsPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
-				r.Use(a.cacheMiddleware, sbm)
-				r.Get(statsPath, a.serveBlogStats)
-				r.Get(statsPath+".table.html", a.serveBlogStatsTable)
+				r.With(a.cacheMiddleware, sbm).Get(statsPath, a.serveBlogStats)
+				r.With(cacheLoggedIn, a.cacheMiddleware, sbm).Get(statsPath+".table.html", a.serveBlogStatsTable)
 			})
 		}
 
@@ -364,14 +363,28 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 		}
 
 		// Custom pages
-		for _, cp := range blogConfig.CustomPages {
-			scp := middleware.WithValue(customPageContextKey, cp)
-			if cp.Cache {
-				r.With(privateModeHandler...).With(a.cacheMiddleware, sbm, scp).Get(cp.Path, a.serveCustomPage)
-			} else {
-				r.With(privateModeHandler...).With(sbm, scp).Get(cp.Path, a.serveCustomPage)
+		r.Group(func(r chi.Router) {
+			r.Use(privateModeHandler...)
+			r.Use(sbm)
+			for _, cp := range blogConfig.CustomPages {
+				r.Group(func(r chi.Router) {
+					scp := middleware.WithValue(customPageContextKey, cp)
+					if cp.Cache {
+						ce := cp.CacheExpiration
+						if ce == 0 {
+							ce = a.defaultCacheExpiration()
+						}
+						r.With(
+							a.cacheMiddleware,
+							middleware.WithValue(cacheExpirationKey, ce),
+							scp,
+						).Get(cp.Path, a.serveCustomPage)
+					} else {
+						r.With(scp).Get(cp.Path, a.serveCustomPage)
+					}
+				})
 			}
-		}
+		})
 
 		// Random post
 		if rp := blogConfig.RandomPost; rp != nil && rp.Enabled {
@@ -420,6 +433,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			brPath := blogConfig.getRelativePath(defaultIfEmpty(brConfig.Path, defaultBlogrollPath))
 			r.Group(func(r chi.Router) {
 				r.Use(privateModeHandler...)
+				r.Use(middleware.WithValue(cacheExpirationKey, a.defaultCacheExpiration()))
 				r.Use(a.cacheMiddleware, sbm)
 				r.Get(brPath, a.serveBlogroll)
 				r.Get(brPath+".opml", a.serveBlogrollExport)
@@ -432,9 +446,8 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 			r.Route(mapPath, func(r chi.Router) {
 				r.Use(privateModeHandler...)
 				r.Group(func(r chi.Router) {
-					r.Use(a.cacheMiddleware, sbm)
-					r.Get("/", a.serveGeoMap)
-					r.HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
+					r.With(a.cacheMiddleware, sbm).Get("/", a.serveGeoMap)
+					r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
 				})
 				r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles(mapPath+"/tiles"))
 			})
@@ -454,7 +467,7 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 	}
 
 	// Sitemap
-	r.With(privateModeHandler...).With(a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
+	r.With(privateModeHandler...).With(cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
 	// Robots.txt - doesn't need cache, because it's too simple
 	if !privateMode {
@@ -521,7 +534,7 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 				}
 			case "alias":
 				// Is alias, redirect
-				alicePrivate.Append(a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+				alicePrivate.Append(cacheLoggedIn, a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, value, http.StatusFound)
 				}).ServeHTTP(w, r)
 				return

@@ -2,13 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +17,10 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-const cacheInternalExpirationHeader = "Goblog-Expire"
+const (
+	cacheLoggedInKey   contextKey = "cacheLoggedIn"
+	cacheExpirationKey contextKey = "cacheExpiration"
+)
 
 type cache struct {
 	g   singleflight.Group
@@ -40,10 +43,15 @@ func (a *goBlog) initCache() (err error) {
 	return
 }
 
-func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
-	c := a.cache
+func cacheLoggedIn(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if c.c == nil {
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), cacheLoggedInKey, true)))
+	})
+}
+
+func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if a.cache.c == nil {
 			// No cache configured
 			next.ServeHTTP(w, r)
 			return
@@ -57,22 +65,28 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if a.isLoggedIn(r) {
-			next.ServeHTTP(w, r)
-			return
+		// Check login
+		if cli, ok := r.Context().Value(cacheLoggedInKey).(bool); ok && cli {
+			// Continue caching, but remove login
+			setLoggedIn(r, false)
+		} else {
+			if a.isLoggedIn(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 		// Search and serve cache
 		key := cacheKey(r)
 		// Get cache or render it
-		cacheInterface, _, _ := c.g.Do(key, func() (interface{}, error) {
-			return c.getCache(key, next, r), nil
+		cacheInterface, _, _ := a.cache.g.Do(key, func() (interface{}, error) {
+			return a.cache.getCache(key, next, r), nil
 		})
 		ci := cacheInterface.(*cacheItem)
 		// copy cached headers
 		for k, v := range ci.header {
 			w.Header()[k] = v
 		}
-		c.setCacheHeaders(w, ci)
+		a.cache.setCacheHeaders(w, ci)
 		// check conditional request
 		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == ci.eTag {
 			// send 304
@@ -148,16 +162,18 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 	}
 	if item == nil {
 		// No cache available
+		// Make and use copy of r
+		cr := r.Clone(r.Context())
 		// Remove problematic headers
-		r.Header.Del("If-Modified-Since")
-		r.Header.Del("If-Unmodified-Since")
-		r.Header.Del("If-None-Match")
-		r.Header.Del("If-Match")
-		r.Header.Del("If-Range")
-		r.Header.Del("Range")
+		cr.Header.Del("If-Modified-Since")
+		cr.Header.Del("If-Unmodified-Since")
+		cr.Header.Del("If-None-Match")
+		cr.Header.Del("If-Match")
+		cr.Header.Del("If-Range")
+		cr.Header.Del("Range")
 		// Record request
 		recorder := httptest.NewRecorder()
-		next.ServeHTTP(recorder, r)
+		next.ServeHTTP(recorder, cr)
 		// Cache values from recorder
 		result := recorder.Result()
 		body, _ := io.ReadAll(result.Body)
@@ -174,9 +190,8 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 				lastMod = parsedTime
 			}
 		}
-		exp, _ := strconv.Atoi(result.Header.Get(cacheInternalExpirationHeader))
+		exp, _ := cr.Context().Value(cacheExpirationKey).(int)
 		// Remove problematic headers
-		result.Header.Del(cacheInternalExpirationHeader)
 		result.Header.Del("Accept-Ranges")
 		result.Header.Del("ETag")
 		result.Header.Del("Last-Modified")
@@ -205,9 +220,9 @@ func (c *cache) purge() {
 	c.c.Clear()
 }
 
-func (a *goBlog) setInternalCacheExpirationHeader(w http.ResponseWriter, r *http.Request, expiration int) {
-	if a.isLoggedIn(r) {
-		return
+func (a *goBlog) defaultCacheExpiration() int {
+	if a.cfg.Cache != nil {
+		return a.cfg.Cache.Expiration
 	}
-	w.Header().Set(cacheInternalExpirationHeader, strconv.Itoa(expiration))
+	return 0
 }

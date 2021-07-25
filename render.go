@@ -102,11 +102,17 @@ type renderData struct {
 	Blog                       *configBlog
 	User                       *configUser
 	Data                       interface{}
-	LoggedIn                   bool
 	CommentsEnabled            bool
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
 	EasterEgg                  bool
+	// Not directly accessible
+	app *goBlog
+	req *http.Request
+}
+
+func (d *renderData) LoggedIn() bool {
+	return d.app.isLoggedIn(d.req)
 }
 
 func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
@@ -134,6 +140,12 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
+	if data.app == nil {
+		data.app = a
+	}
+	if data.req == nil {
+		data.req = r
+	}
 	// User
 	if data.User == nil {
 		data.User = a.cfg.User
@@ -159,10 +171,6 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	}
 	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
 		data.TorUsed = true
-	}
-	// Check login
-	if a.isLoggedIn(r) {
-		data.LoggedIn = true
 	}
 	// Check if comments enabled
 	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
