@@ -8,7 +8,7 @@ import (
 )
 
 func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	b := a.cfg.Blogs[blog]
 	title := b.Title
 	sURL := a.getFullAddress(b.getRelativePath(defaultIfEmpty(b.Search.Path, defaultSearchPath)))

@@ -14,7 +14,7 @@ import (
 const editorPath = "/editor"
 
 func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	a.render(w, r, templateEditor, &renderData{
 		BlogString: blog,
 		Data:       map[string]interface{}{},
@@ -22,7 +22,7 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
 		case "loaddelete":

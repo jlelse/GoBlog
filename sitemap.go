@@ -143,16 +143,16 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	// Posts
+	// Published posts
 	if posts, err := a.db.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true}); err == nil {
 		for _, p := range posts {
 			item := &sitemap.URL{Loc: a.fullPostURL(p)}
 			var lastMod time.Time
 			if p.Updated != "" {
-				lastMod, _ = dateparse.ParseLocal(p.Updated)
+				lastMod = timeNoErr(dateparse.ParseLocal(p.Updated))
 			}
 			if p.Published != "" && lastMod.IsZero() {
-				lastMod, _ = dateparse.ParseLocal(p.Published)
+				lastMod = timeNoErr(dateparse.ParseLocal(p.Published))
 			}
 			if !lastMod.IsZero() {
 				item.LastMod = &lastMod

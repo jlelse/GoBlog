@@ -26,7 +26,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 		}
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
+		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled && !a.isPrivate() {
 			// Check if accepted media type is not HTML
 			if mt, _, err := ct.GetAcceptableMediaType(r, a.asCheckMediaTypes); err == nil && mt.String() != a.asCheckMediaTypes[0].String() {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))

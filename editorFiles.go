@@ -8,7 +8,7 @@ import (
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	// Get files
 	files, err := a.mediaFiles()
 	if err != nil {
@@ -69,5 +69,5 @@ func (a *goBlog) serveEditorFilesDelete(w http.ResponseWriter, r *http.Request) 
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, a.getRelativePath(r.Context().Value(blogContextKey).(string), "/editor/files"), http.StatusFound)
+	http.Redirect(w, r, a.getRelativePath(r.Context().Value(blogKey).(string), "/editor/files"), http.StatusFound)
 }

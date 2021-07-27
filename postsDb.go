@@ -79,7 +79,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			random := generateRandomString(5)
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
-		published, _ := dateparse.ParseLocal(p.Published)
+		published := timeNoErr(dateparse.ParseLocal(p.Published))
 		pathTmplString := a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate
 		if pathTmplString == "" {
 			return errors.New("path template empty")

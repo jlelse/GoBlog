@@ -114,15 +114,12 @@ func (s *dbSessionStore) load(session *sessions.Session) (err error) {
 	if err = row.Scan(&data, &createdStr, &modifiedStr, &expiresStr); err != nil {
 		return err
 	}
-	created, _ := dateparse.ParseLocal(createdStr)
-	modified, _ := dateparse.ParseLocal(modifiedStr)
-	expires, _ := dateparse.ParseLocal(expiresStr)
 	if err = securecookie.DecodeMulti(session.Name(), data, &session.Values, s.codecs...); err != nil {
 		return err
 	}
-	session.Values[sessionCreatedOn] = created
-	session.Values[sessionModifiedOn] = modified
-	session.Values[sessionExpiresOn] = expires
+	session.Values[sessionCreatedOn] = timeNoErr(dateparse.ParseLocal(createdStr))
+	session.Values[sessionModifiedOn] = timeNoErr(dateparse.ParseLocal(modifiedStr))
+	session.Values[sessionExpiresOn] = timeNoErr(dateparse.ParseLocal(expiresStr))
 	return nil
 }
 

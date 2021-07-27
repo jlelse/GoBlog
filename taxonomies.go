@@ -13,7 +13,7 @@ import (
 const taxonomyContextKey = "taxonomy"
 
 func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
 	allValues, err := a.db.allTaxonomyValues(blog, tax.Name)
 	if err != nil {
@@ -31,7 +31,7 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveTaxonomyValue(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
 	taxValueParam := chi.URLParam(r, "taxValue")
 	if taxValueParam == "" {

@@ -49,7 +49,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 			continue
 		}
 		// External mention
-		if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
+		if a.isPrivate() {
 			// Private mode, don't send external mentions
 			continue
 		}

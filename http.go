@@ -8,9 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dchest/captcha"
@@ -26,16 +24,18 @@ const (
 	contentType  = "Content-Type"
 	userAgent    = "User-Agent"
 	appUserAgent = "GoBlog"
+
+	blogKey contextKey = "blog"
+	pathKey contextKey = "httpPath"
 )
 
 func (a *goBlog) startServer() (err error) {
 	log.Println("Start server(s)...")
 	// Load router
-	router, err := a.buildRouter()
+	a.d, err = a.buildRouter()
 	if err != nil {
 		return err
 	}
-	a.d = fixHTTPHandler(router)
 	// Set basic middlewares
 	h := alice.New()
 	if a.cfg.Server.Logging {
@@ -126,28 +126,21 @@ const (
 	feedPath       = ".{feed:rss|json|atom}"
 )
 
-func (a *goBlog) buildRouter() (*chi.Mux, error) {
-	r := chi.NewRouter()
-
-	// Private mode
-	privateMode := false
-	var privateModeHandler []func(http.Handler) http.Handler
-	if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
-		privateMode = true
-		privateModeHandler = append(privateModeHandler, a.authMiddleware)
-	}
+func (a *goBlog) buildRouter() (http.Handler, error) {
+	r := chi.NewMux()
 
 	// Basic middleware
+	r.Use(fixHTTPHandler)
 	r.Use(a.redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.GetHead)
-	if !a.cfg.Cache.Enable {
+	if cache := a.cfg.Cache; cache != nil && !cache.Enable {
 		r.Use(middleware.NoCache)
 	}
 
 	// No Index Header
-	if privateMode {
+	if a.isPrivate() {
 		r.Use(noIndexHeader)
 	}
 
@@ -155,340 +148,60 @@ func (a *goBlog) buildRouter() (*chi.Mux, error) {
 	r.Use(a.checkIsLogin)
 	r.Use(a.checkIsCaptcha)
 
-	// Logout
-	r.With(a.authMiddleware).Get("/login", serveLogin)
-	r.With(a.authMiddleware).Get("/logout", a.serveLogout)
+	// Login
+	r.Group(a.loginRouter)
 
 	// Micropub
-	r.Route(micropubPath, func(r chi.Router) {
-		r.Use(a.checkIndieAuth)
-		r.Get("/", a.serveMicropubQuery)
-		r.Post("/", a.serveMicropubPost)
-		r.Post(micropubMediaSubPath, a.serveMicropubMedia)
-	})
+	r.Route(micropubPath, a.micropubRouter)
 
 	// IndieAuth
-	r.Route("/indieauth", func(r chi.Router) {
-		r.Get("/", a.indieAuthRequest)
-		r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
-		r.Post("/", a.indieAuthVerification)
-		r.Get("/token", a.indieAuthToken)
-		r.Post("/token", a.indieAuthToken)
-	})
+	r.Route("/indieauth", a.indieAuthRouter)
 
 	// ActivityPub and stuff
-	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
-		r.Route("/activitypub", func(r chi.Router) {
-			r.Post("/inbox/{blog}", a.apHandleInbox)
-			r.Post("/{blog}/inbox", a.apHandleInbox)
-		})
-		r.Group(func(r chi.Router) {
-			r.Use(cacheLoggedIn, a.cacheMiddleware)
-			r.Get("/.well-known/webfinger", a.apHandleWebfinger)
-			r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
-			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
-			r.Get("/nodeinfo", a.serveNodeInfo)
-		})
-	}
+	r.Group(a.activityPubRouter)
 
 	// Webmentions
-	if wm := a.cfg.Webmention; wm != nil && !wm.DisableReceiving {
-		r.Route(webmentionPath, func(r chi.Router) {
-			r.Post("/", a.handleWebmention)
-			r.Group(func(r chi.Router) {
-				// Authenticated routes
-				r.Use(a.authMiddleware)
-				r.Get("/", a.webmentionAdmin)
-				r.Get(paginationPath, a.webmentionAdmin)
-				r.Post("/delete", a.webmentionAdminDelete)
-				r.Post("/approve", a.webmentionAdminApprove)
-				r.Post("/reverify", a.webmentionAdminReverify)
-			})
-		})
-	}
+	r.Route(webmentionPath, a.webmentionsRouter)
 
 	// Notifications
-	r.Route(notificationsPath, func(r chi.Router) {
-		r.Use(a.authMiddleware)
-		r.Get("/", a.notificationsAdmin)
-		r.Get(paginationPath, a.notificationsAdmin)
-		r.Post("/delete", a.notificationsAdminDelete)
-	})
+	r.Route(notificationsPath, a.notificationsRouter)
 
 	// Assets
-	for _, path := range a.allAssetPaths() {
-		r.Get(path, a.serveAsset)
-	}
+	r.Group(a.assetsRouter)
 
 	// Static files
-	for _, path := range allStaticPaths() {
-		r.With(privateModeHandler...).Get(path, a.serveStaticFile)
-	}
+	r.Group(a.staticFilesRouter)
 
 	// Media files
-	r.With(privateModeHandler...).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, a.serveMediaFile)
+	r.With(a.privateModeHandler).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, a.serveMediaFile)
 
 	// Captcha
 	r.Handle("/captcha/*", captcha.Server(500, 250))
 
 	// Short paths
-	r.With(privateModeHandler...).With(cacheLoggedIn, a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
+	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
 
+	// Blogs
 	for blog, blogConfig := range a.cfg.Blogs {
-		sbm := middleware.WithValue(blogContextKey, blog)
-
-		// Sections
-		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(a.cacheMiddleware, sbm)
-			for _, section := range blogConfig.Sections {
-				if section.Name != "" {
-					r.Group(func(r chi.Router) {
-						secPath := blogConfig.getRelativePath(section.Name)
-						r.Use(middleware.WithValue(indexConfigKey, &indexConfig{
-							path:    secPath,
-							section: section,
-						}))
-						r.Get(secPath, a.serveIndex)
-						r.Get(secPath+feedPath, a.serveIndex)
-						r.Get(secPath+paginationPath, a.serveIndex)
-					})
-				}
-			}
-		})
-
-		// Taxonomies
-		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(a.cacheMiddleware, sbm)
-			for _, taxonomy := range blogConfig.Taxonomies {
-				if taxonomy.Name != "" {
-					r.Group(func(r chi.Router) {
-						r.Use(middleware.WithValue(taxonomyContextKey, taxonomy))
-						taxBasePath := blogConfig.getRelativePath(taxonomy.Name)
-						r.Get(taxBasePath, a.serveTaxonomy)
-						taxValPath := taxBasePath + "/{taxValue}"
-						r.Get(taxValPath, a.serveTaxonomyValue)
-						r.Get(taxValPath+feedPath, a.serveTaxonomyValue)
-						r.Get(taxValPath+paginationPath, a.serveTaxonomyValue)
-					})
-				}
-			}
-		})
-
-		// Photos
-		if pc := blogConfig.Photos; pc != nil && pc.Enabled {
-			r.Group(func(r chi.Router) {
-				photoPath := blogConfig.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))
-				r.Use(privateModeHandler...)
-				r.Use(a.cacheMiddleware, sbm, middleware.WithValue(indexConfigKey, &indexConfig{
-					path:            photoPath,
-					parameter:       pc.Parameter,
-					title:           pc.Title,
-					description:     pc.Description,
-					summaryTemplate: templatePhotosSummary,
-				}))
-				r.Get(photoPath, a.serveIndex)
-				r.Get(photoPath+feedPath, a.serveIndex)
-				r.Get(photoPath+paginationPath, a.serveIndex)
-			})
-		}
-
-		// Search
-		if bsc := blogConfig.Search; bsc != nil && bsc.Enabled {
-			searchPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))
-			r.Route(searchPath, func(r chi.Router) {
-				r.Use(sbm, middleware.WithValue(
-					pathContextKey,
-					searchPath,
-				))
-				r.Group(func(r chi.Router) {
-					r.Use(privateModeHandler...)
-					r.Use(a.cacheMiddleware)
-					r.Get("/", a.serveSearch)
-					r.Post("/", a.serveSearch)
-					searchResultPath := "/" + searchPlaceholder
-					r.Get(searchResultPath, a.serveSearchResult)
-					r.Get(searchResultPath+feedPath, a.serveSearchResult)
-					r.Get(searchResultPath+paginationPath, a.serveSearchResult)
-				})
-				r.With(a.cacheMiddleware).Get("/opensearch.xml", a.serveOpenSearch)
-			})
-		}
-
-		// Stats
-		if bsc := blogConfig.BlogStats; bsc != nil && bsc.Enabled {
-			statsPath := blogConfig.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))
-			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.With(a.cacheMiddleware, sbm).Get(statsPath, a.serveBlogStats)
-				r.With(cacheLoggedIn, a.cacheMiddleware, sbm).Get(statsPath+".table.html", a.serveBlogStatsTable)
-			})
-		}
-
-		// Date archives
-		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(a.cacheMiddleware, sbm)
-
-			yearRegex := `/{year:x|\d\d\d\d}`
-			monthRegex := `/{month:x|\d\d}`
-			dayRegex := `/{day:\d\d}`
-
-			yearPath := blogConfig.getRelativePath(yearRegex)
-			r.Get(yearPath, a.serveDate)
-			r.Get(yearPath+feedPath, a.serveDate)
-			r.Get(yearPath+paginationPath, a.serveDate)
-
-			monthPath := yearPath + monthRegex
-			r.Get(monthPath, a.serveDate)
-			r.Get(monthPath+feedPath, a.serveDate)
-			r.Get(monthPath+paginationPath, a.serveDate)
-
-			dayPath := monthPath + dayRegex
-			r.Get(dayPath, a.serveDate)
-			r.Get(dayPath+feedPath, a.serveDate)
-			r.Get(dayPath+paginationPath, a.serveDate)
-		})
-
-		// Blog
-		if !blogConfig.PostAsHome {
-			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(sbm)
-				r.With(a.checkActivityStreamsRequest, a.cacheMiddleware).Get(blogConfig.getRelativePath(""), a.serveHome)
-				r.With(a.cacheMiddleware).Get(blogConfig.getRelativePath("")+feedPath, a.serveHome)
-				r.With(a.cacheMiddleware).Get(blogConfig.getRelativePath(paginationPath), a.serveHome)
-			})
-		}
-
-		// Custom pages
-		r.Group(func(r chi.Router) {
-			r.Use(privateModeHandler...)
-			r.Use(sbm)
-			for _, cp := range blogConfig.CustomPages {
-				r.Group(func(r chi.Router) {
-					scp := middleware.WithValue(customPageContextKey, cp)
-					if cp.Cache {
-						ce := cp.CacheExpiration
-						if ce == 0 {
-							ce = a.defaultCacheExpiration()
-						}
-						r.With(
-							a.cacheMiddleware,
-							middleware.WithValue(cacheExpirationKey, ce),
-							scp,
-						).Get(cp.Path, a.serveCustomPage)
-					} else {
-						r.With(scp).Get(cp.Path, a.serveCustomPage)
-					}
-				})
-			}
-		})
-
-		// Random post
-		if rp := blogConfig.RandomPost; rp != nil && rp.Enabled {
-			r.With(privateModeHandler...).With(sbm).Get(blogConfig.getRelativePath(defaultIfEmpty(rp.Path, "/random")), a.redirectToRandomPost)
-		}
-
-		// Editor
-		r.Route(blogConfig.getRelativePath("/editor"), func(r chi.Router) {
-			r.Use(sbm, a.authMiddleware)
-			r.Get("/", a.serveEditor)
-			r.Post("/", a.serveEditorPost)
-			r.Get("/files", a.serveEditorFiles)
-			r.Post("/files/view", a.serveEditorFilesView)
-			r.Post("/files/delete", a.serveEditorFilesDelete)
-			r.Get("/drafts", a.serveDrafts)
-			r.Get("/drafts"+feedPath, a.serveDrafts)
-			r.Get("/drafts"+paginationPath, a.serveDrafts)
-			r.Get("/private", a.servePrivate)
-			r.Get("/private"+feedPath, a.servePrivate)
-			r.Get("/private"+paginationPath, a.servePrivate)
-			r.Get("/unlisted", a.serveUnlisted)
-			r.Get("/unlisted"+feedPath, a.serveUnlisted)
-			r.Get("/unlisted"+paginationPath, a.serveUnlisted)
-		})
-
-		// Comments
-		if commentsConfig := blogConfig.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsPath := blogConfig.getRelativePath("/comment")
-			r.Route(commentsPath, func(r chi.Router) {
-				r.Use(sbm, middleware.WithValue(pathContextKey, commentsPath))
-				r.Use(privateModeHandler...)
-				r.With(a.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
-				r.With(a.captchaMiddleware).Post("/", a.createComment)
-				r.Group(func(r chi.Router) {
-					// Admin
-					r.Use(a.authMiddleware)
-					r.Get("/", a.commentsAdmin)
-					r.Get(paginationPath, a.commentsAdmin)
-					r.Post("/delete", a.commentsAdminDelete)
-				})
-			})
-		}
-
-		// Blogroll
-		if brConfig := blogConfig.Blogroll; brConfig != nil && brConfig.Enabled {
-			brPath := blogConfig.getRelativePath(defaultIfEmpty(brConfig.Path, defaultBlogrollPath))
-			r.Group(func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(middleware.WithValue(cacheExpirationKey, a.defaultCacheExpiration()))
-				r.Use(a.cacheMiddleware, sbm)
-				r.Get(brPath, a.serveBlogroll)
-				r.Get(brPath+".opml", a.serveBlogrollExport)
-			})
-		}
-
-		// Geo map
-		if mc := blogConfig.Map; mc != nil && mc.Enabled {
-			mapPath := blogConfig.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))
-			r.Route(mapPath, func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Group(func(r chi.Router) {
-					r.With(a.cacheMiddleware, sbm).Get("/", a.serveGeoMap)
-					r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
-				})
-				r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles(mapPath+"/tiles"))
-			})
-		}
-
-		// Contact
-		if cc := blogConfig.Contact; cc != nil && cc.Enabled {
-			contactPath := blogConfig.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))
-			r.Route(contactPath, func(r chi.Router) {
-				r.Use(privateModeHandler...)
-				r.Use(a.cacheMiddleware, sbm)
-				r.Get("/", a.serveContactForm)
-				r.With(a.captchaMiddleware).Post("/", a.sendContactSubmission)
-			})
-		}
-
+		r.Group(a.blogRouter(blog, blogConfig))
 	}
 
 	// Sitemap
-	r.With(privateModeHandler...).With(cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
+	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
-	// Robots.txt - doesn't need cache, because it's too simple
-	if !privateMode {
-		r.Get("/robots.txt", a.serveRobotsTXT)
-	} else {
-		r.Get("/robots.txt", servePrivateRobotsTXT)
-	}
+	// Robots.txt
+	r.With(cacheLoggedIn, a.cacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
 
-	r.NotFound(a.servePostsAliasesRedirects(privateModeHandler...))
+	r.NotFound(a.servePostsAliasesRedirects())
 
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	return r, nil
 }
 
-func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handler) http.HandlerFunc {
+func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 	// Private mode
-	alicePrivate := alice.New()
-	for _, h := range pmh {
-		alicePrivate = alicePrivate.Append(h)
-	}
+	alicePrivate := alice.New(a.privateModeHandler)
 	// Return handler func
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET requests
@@ -549,54 +262,4 @@ func (a *goBlog) servePostsAliasesRedirects(pmh ...func(http.Handler) http.Handl
 		// No post, check regex redirects or serve 404 error
 		alice.New(a.cacheMiddleware, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
 	}
-}
-
-const blogContextKey contextKey = "blog"
-const pathContextKey contextKey = "httpPath"
-
-func (a *goBlog) refreshCSPDomains() {
-	var cspBuilder strings.Builder
-	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
-		if u, err := url.Parse(mp.MediaURL); err == nil {
-			cspBuilder.WriteByte(' ')
-			cspBuilder.WriteString(u.Hostname())
-		}
-	}
-	if len(a.cfg.Server.CSPDomains) > 0 {
-		cspBuilder.WriteByte(' ')
-		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
-	}
-	a.cspDomains = cspBuilder.String()
-}
-
-const cspHeader = "Content-Security-Policy"
-
-func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
-	a.refreshCSPDomains()
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set(cspHeader, "default-src 'self'"+a.cspDomains)
-		if a.cfg.Server.Tor && a.torAddress != "" {
-			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI))
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func noIndexHeader(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Robots-Tag", "noindex")
-		next.ServeHTTP(w, r)
-	})
-}
-
-func fixHTTPHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL.RawPath = ""
-		next.ServeHTTP(w, r)
-	})
 }

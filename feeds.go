@@ -41,16 +41,14 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		},
 	}
 	for _, p := range posts {
-		created, _ := dateparse.ParseLocal(p.Published)
-		updated, _ := dateparse.ParseLocal(p.Updated)
 		feed.Add(&feeds.Item{
 			Title:       p.Title(),
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
 			Content:     string(a.postHtml(p, true)),
-			Created:     created,
-			Updated:     updated,
+			Created:     timeNoErr(dateparse.ParseLocal(p.Published)),
+			Updated:     timeNoErr(dateparse.ParseLocal(p.Updated)),
 		})
 	}
 	var err error

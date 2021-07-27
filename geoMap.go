@@ -17,7 +17,7 @@ import (
 const defaultGeoMapPath = "/map"
 
 func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	bc := a.cfg.Blogs[blog]
 
 	allPostsWithLocation, err := a.db.getPosts(&postsRequestConfig{

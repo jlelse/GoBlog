@@ -35,8 +35,8 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) 
 }
 
 func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
-	commentsPath := r.Context().Value(pathContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
+	commentsPath := r.Context().Value(pathKey).(string)
 	// Adapter
 	pageNoString := chi.URLParam(r, "page")
 	pageNo, _ := strconv.Atoi(pageNoString)

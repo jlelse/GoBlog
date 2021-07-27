@@ -57,7 +57,7 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Try to compress file (only when not in private mode)
-	if pm := a.cfg.PrivateMode; pm == nil || !pm.Enabled {
+	if !a.isPrivate() {
 		compressedLocation, compressionErr := a.compressMediaFile(location)
 		if compressionErr != nil {
 			a.serveError(w, r, "failed to compress file: "+compressionErr.Error(), http.StatusInternalServerError)

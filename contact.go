@@ -16,7 +16,7 @@ import (
 const defaultContactPath = "/contact"
 
 func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	cc := a.cfg.Blogs[blog].Contact
 	a.render(w, r, templateContact, &renderData{
 		BlogString: blog,
@@ -62,7 +62,7 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	_, _ = message.WriteString(formMessage)
 	// Send submission
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	if cc := a.cfg.Blogs[blog].Contact; cc != nil && cc.SMTPHost != "" && cc.EmailFrom != "" && cc.EmailTo != "" {
 		// Build email
 		var email bytes.Buffer

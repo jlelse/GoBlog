@@ -45,8 +45,6 @@ type goBlog struct {
 	pUpdateHooks []postHookFunc
 	pDeleteHooks []postHookFunc
 	hourlyHooks  []hourlyHookFunc
-	// HTTP
-	cspDomains string
 	// HTTP Client
 	httpClient httpClient
 	// HTTP Routers

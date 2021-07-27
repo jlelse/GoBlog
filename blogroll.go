@@ -18,7 +18,7 @@ import (
 const defaultBlogrollPath = "/blogroll"
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.getBlogrollOutlines(blog)
 	})
@@ -42,7 +42,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.getBlogrollOutlines(blog)
 	})

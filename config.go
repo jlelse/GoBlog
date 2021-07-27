@@ -290,8 +290,6 @@ func (a *goBlog) initConfig() error {
 	viper.SetDefault("micropub.locationParam", "location")
 	viper.SetDefault("activityPub.keyPath", "data/private.pem")
 	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
-	viper.SetDefault("webmention.disableSending", false)
-	viper.SetDefault("webmention.disableReceiving", false)
 	// Unmarshal config
 	a.cfg = &config{}
 	err = viper.Unmarshal(a.cfg)
@@ -328,9 +326,6 @@ func (a *goBlog) initConfig() error {
 			a.cfg.Micropub.MediaStorage.BunnyStorageName = ""
 		}
 		a.cfg.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(a.cfg.Micropub.MediaStorage.MediaURL, "/")
-	}
-	if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
-		a.cfg.ActivityPub = &configActivityPub{Enabled: false}
 	}
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		// Disable comments for all blogs

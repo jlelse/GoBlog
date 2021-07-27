@@ -78,7 +78,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
-	randomPath, err := a.getRandomPostPath(r.Context().Value(blogContextKey).(string))
+	randomPath, err := a.getRandomPostPath(r.Context().Value(blogKey).(string))
 	if err != nil {
 		a.serveError(rw, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -111,7 +111,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 }
 
 func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		a.serveActivityStreams(blog, w, r)
 		return
@@ -122,7 +122,7 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
 		path:   a.getRelativePath(blog, "/editor/drafts"),
 		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "drafts"),
@@ -131,7 +131,7 @@ func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
 		path:   a.getRelativePath(blog, "/editor/private"),
 		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "privateposts"),
@@ -140,7 +140,7 @@ func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
 		path:   a.getRelativePath(blog, "/editor/unlisted"),
 		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "unlistedposts"),
@@ -184,7 +184,7 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		dPath.WriteString(fmt.Sprintf("/%02d", day))
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:  a.getRelativePath(r.Context().Value(blogContextKey).(string), dPath.String()),
+		path:  a.getRelativePath(r.Context().Value(blogKey).(string), dPath.String()),
 		year:  year,
 		month: month,
 		day:   day,
@@ -214,7 +214,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	ic := r.Context().Value(indexConfigKey).(*indexConfig)
 	blog := ic.blog
 	if blog == "" {
-		blog, _ = r.Context().Value(blogContextKey).(string)
+		blog, _ = r.Context().Value(blogKey).(string)
 	}
 	search := chi.URLParam(r, "search")
 	if search != "" {

@@ -256,3 +256,7 @@ func containsStrings(s string, subStrings ...string) bool {
 	}
 	return false
 }
+
+func timeNoErr(t time.Time, _ error) time.Time {
+	return t
+}

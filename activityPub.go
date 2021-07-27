@@ -22,7 +22,12 @@ import (
 )
 
 func (a *goBlog) initActivityPub() error {
-	if !a.cfg.ActivityPub.Enabled {
+	if a.isPrivate() {
+		// Private mode, no AP
+		return nil
+	}
+	if apc := a.cfg.ActivityPub; apc == nil || !apc.Enabled {
+		// Disabled
 		return nil
 	}
 	// Add hooks

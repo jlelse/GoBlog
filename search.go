@@ -15,8 +15,8 @@ const defaultSearchPath = "/search"
 const searchPlaceholder = "{search}"
 
 func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
-	servePath := r.Context().Value(pathContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
+	servePath := r.Context().Value(pathKey).(string)
 	err := r.ParseForm()
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
@@ -37,7 +37,7 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveSearchResult(w http.ResponseWriter, r *http.Request) {
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path: r.Context().Value(pathContextKey).(string) + "/" + searchPlaceholder,
+		path: r.Context().Value(pathKey).(string) + "/" + searchPlaceholder,
 	})))
 }
 

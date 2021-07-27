@@ -7,7 +7,10 @@ import (
 	"net/http"
 )
 
-const defaultBlogStatsPath = "/statistics"
+const (
+	defaultBlogStatsPath = "/statistics"
+	blogStatsTablePath   = ".table.html"
+)
 
 func (a *goBlog) initBlogStats() {
 	f := func(p *post) {
@@ -19,20 +22,20 @@ func (a *goBlog) initBlogStats() {
 }
 
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	bc := a.cfg.Blogs[blog]
 	canonical := bc.getRelativePath(defaultIfEmpty(bc.BlogStats.Path, defaultBlogStatsPath))
 	a.render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,
 		Canonical:  a.getFullAddress(canonical),
 		Data: map[string]interface{}{
-			"TableUrl": canonical + ".table.html",
+			"TableUrl": canonical + blogStatsTablePath,
 		},
 	})
 }
 
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogContextKey).(string)
+	blog := r.Context().Value(blogKey).(string)
 	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.db.getBlogStats(blog)
 	})
