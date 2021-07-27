@@ -52,19 +52,21 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 
 // Webmentions
 func (a *goBlog) webmentionsRouter(r chi.Router) {
-	if wm := a.cfg.Webmention; wm != nil && !wm.DisableReceiving {
-		// Endpoint
-		r.Post("/", a.handleWebmention)
-		// Authenticated routes
-		r.Group(func(r chi.Router) {
-			r.Use(a.authMiddleware)
-			r.Get("/", a.webmentionAdmin)
-			r.Get(paginationPath, a.webmentionAdmin)
-			r.Post("/delete", a.webmentionAdminDelete)
-			r.Post("/approve", a.webmentionAdminApprove)
-			r.Post("/reverify", a.webmentionAdminReverify)
-		})
+	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
+		// Disabled
+		return
 	}
+	// Endpoint
+	r.Post("/", a.handleWebmention)
+	// Authenticated routes
+	r.Group(func(r chi.Router) {
+		r.Use(a.authMiddleware)
+		r.Get("/", a.webmentionAdmin)
+		r.Get(paginationPath, a.webmentionAdmin)
+		r.Post("/delete", a.webmentionAdminDelete)
+		r.Post("/approve", a.webmentionAdminApprove)
+		r.Post("/reverify", a.webmentionAdminReverify)
+	})
 }
 
 // Notifications
