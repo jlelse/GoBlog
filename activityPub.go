@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"database/sql"
 	"encoding/json"
@@ -11,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -54,15 +55,7 @@ func (a *goBlog) initActivityPub() error {
 		a.webfingerAccts[a.apIri(blog)] = acct
 	}
 	// Read key and prepare signing
-	pkfile, err := os.ReadFile(a.cfg.ActivityPub.KeyPath)
-	if err != nil {
-		return err
-	}
-	privateKeyDecoded, _ := pem.Decode(pkfile)
-	if privateKeyDecoded == nil {
-		return errors.New("failed to decode private key")
-	}
-	a.apPrivateKey, err = x509.ParsePKCS1PrivateKey(privateKeyDecoded.Bytes)
+	err := a.loadActivityPubPrivateKey()
 	if err != nil {
 		return err
 	}
@@ -421,4 +414,40 @@ func (a *goBlog) apIri(b *configBlog) string {
 
 func apRequestIsSuccess(code int) bool {
 	return code == http.StatusOK || code == http.StatusCreated || code == http.StatusAccepted || code == http.StatusNoContent
+}
+
+// Load or generate key for ActivityPub communication
+func (a *goBlog) loadActivityPubPrivateKey() error {
+	// Check if already loaded
+	if a.apPrivateKey != nil {
+		return nil
+	}
+	// Check if already generated
+	if keyData, err := a.db.retrievePersistentCache("activitypub_key"); err == nil && keyData != nil {
+		privateKeyDecoded, _ := pem.Decode(keyData)
+		if privateKeyDecoded == nil {
+			log.Println("failed to decode cached private key")
+			// continue
+		} else {
+			key, err := x509.ParsePKCS1PrivateKey(privateKeyDecoded.Bytes)
+			if err == nil && key != nil {
+				a.apPrivateKey = key
+				return nil
+			}
+		}
+	}
+	// Generate and cache key
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+	encodedKey := x509.MarshalPKCS1PrivateKey(key)
+	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: encodedKey})
+	err = a.db.cachePersistently("activitypub_key", pemEncoded)
+	if err != nil {
+		return err
+	}
+	a.apPrivateKey = key
+	// Return key
+	return nil
 }

@@ -69,6 +69,8 @@ hooks:
 # ActivityPub
 activityPub:
   enabled: true # Enable ActivityPub
+  tagsTaxonomies: # Post taxonomies to use as "Hashtags"
+    - tags
 
 # Webmention
 webmention:

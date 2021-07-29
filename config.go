@@ -232,7 +232,6 @@ type configRegexRedirect struct {
 
 type configActivityPub struct {
 	Enabled        bool     `mapstructure:"enabled"`
-	KeyPath        string   `mapstructure:"keyPath"`
 	TagsTaxonomies []string `mapstructure:"tagsTaxonomies"`
 }
 
@@ -288,7 +287,6 @@ func (a *goBlog) initConfig() error {
 	viper.SetDefault("micropub.photoParam", "images")
 	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
 	viper.SetDefault("micropub.locationParam", "location")
-	viper.SetDefault("activityPub.keyPath", "data/private.pem")
 	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
 	// Unmarshal config
 	a.cfg = &config{}
