@@ -31,10 +31,7 @@ func Test_errors(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initMarkdown()
-	app.initSessions()
-	_ = app.initTemplateStrings()
-	_ = app.initRendering()
+	app.initComponents()
 
 	t.Run("Test 404, no HTML", func(t *testing.T) {
 		h := http.HandlerFunc(app.serve404)

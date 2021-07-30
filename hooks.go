@@ -21,13 +21,15 @@ type postHookFunc func(*post)
 
 func (a *goBlog) postPostHooks(p *post) {
 	// Hooks after post published
-	for _, cmdTmplString := range a.cfg.Hooks.PostPost {
-		go func(p *post, cmdTmplString string) {
-			a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
-				"URL":  a.fullPostURL(p),
-				"Post": p,
-			})
-		}(p, cmdTmplString)
+	if hc := a.cfg.Hooks; hc != nil {
+		for _, cmdTmplString := range hc.PostPost {
+			go func(p *post, cmdTmplString string) {
+				a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
+					"URL":  a.fullPostURL(p),
+					"Post": p,
+				})
+			}(p, cmdTmplString)
+		}
 	}
 	for _, f := range a.pPostHooks {
 		go f(p)
@@ -36,13 +38,15 @@ func (a *goBlog) postPostHooks(p *post) {
 
 func (a *goBlog) postUpdateHooks(p *post) {
 	// Hooks after post updated
-	for _, cmdTmplString := range a.cfg.Hooks.PostUpdate {
-		go func(p *post, cmdTmplString string) {
-			a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
-				"URL":  a.fullPostURL(p),
-				"Post": p,
-			})
-		}(p, cmdTmplString)
+	if hc := a.cfg.Hooks; hc != nil {
+		for _, cmdTmplString := range hc.PostUpdate {
+			go func(p *post, cmdTmplString string) {
+				a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
+					"URL":  a.fullPostURL(p),
+					"Post": p,
+				})
+			}(p, cmdTmplString)
+		}
 	}
 	for _, f := range a.pUpdateHooks {
 		go f(p)
@@ -50,13 +54,15 @@ func (a *goBlog) postUpdateHooks(p *post) {
 }
 
 func (a *goBlog) postDeleteHooks(p *post) {
-	for _, cmdTmplString := range a.cfg.Hooks.PostDelete {
-		go func(p *post, cmdTmplString string) {
-			a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
-				"URL":  a.fullPostURL(p),
-				"Post": p,
-			})
-		}(p, cmdTmplString)
+	if hc := a.cfg.Hooks; hc != nil {
+		for _, cmdTmplString := range hc.PostDelete {
+			go func(p *post, cmdTmplString string) {
+				a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
+					"URL":  a.fullPostURL(p),
+					"Post": p,
+				})
+			}(p, cmdTmplString)
+		}
 	}
 	for _, f := range a.pDeleteHooks {
 		go f(p)

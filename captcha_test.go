@@ -31,9 +31,7 @@ func Test_captchaMiddleware(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initSessions()
-	_ = app.initTemplateStrings()
-	_ = app.initRendering()
+	app.initComponents()
 
 	h := app.captchaMiddleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("ABC Test"))

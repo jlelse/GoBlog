@@ -35,7 +35,10 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		return err
 	}
 	links = append(links, contentLinks...)
-	links = append(links, p.firstParameter("link"), p.firstParameter(a.cfg.Micropub.LikeParam), p.firstParameter(a.cfg.Micropub.ReplyParam), p.firstParameter(a.cfg.Micropub.BookmarkParam))
+	links = append(links, p.firstParameter("link"))
+	if mpc := a.cfg.Micropub; mpc != nil {
+		links = append(links, p.firstParameter(a.cfg.Micropub.LikeParam), p.firstParameter(a.cfg.Micropub.ReplyParam), p.firstParameter(a.cfg.Micropub.BookmarkParam))
+	}
 	for _, link := range funk.UniqString(links) {
 		if link == "" {
 			continue

@@ -17,7 +17,3 @@ func getHTTPClient() httpClient {
 		},
 	}
 }
-
-func (a *goBlog) initHTTPClient() {
-	a.httpClient = getHTTPClient()
-}

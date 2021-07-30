@@ -46,8 +46,12 @@ func main() {
 		}()
 	}
 
-	app := &goBlog{}
-	app.initHTTPClient()
+	// Init regular garbage collection
+	initGC()
+
+	app := &goBlog{
+		httpClient: getHTTPClient(),
+	}
 
 	// Initialize config
 	if err = app.initConfig(); err != nil {
@@ -79,9 +83,6 @@ func main() {
 		return
 	}
 
-	// Init regular garbage collection
-	initGC()
-
 	// Execute pre-start hooks
 	app.preStartHooks()
 
@@ -91,18 +92,36 @@ func main() {
 		return
 	}
 
-	log.Println("Initialize components...")
-
-	app.initMarkdown()
-
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
+		app.initMarkdown()
 		app.checkAllExternalLinks()
 		app.shutdown.ShutdownAndWait()
 		return
 	}
 
-	// More initializations
+	// Initialize components
+	app.initComponents()
+
+	// Start cron hooks
+	app.startHourlyHooks()
+
+	// Start the server
+	err = app.startServer()
+	if err != nil {
+		app.logErrAndQuit("Failed to start server(s):", err.Error())
+		return
+	}
+
+	// Wait till everything is shutdown
+	app.shutdown.Wait()
+}
+
+func (app *goBlog) initComponents() {
+	var err error
+	// Log start
+	log.Println("Initialize components...")
+	app.initMarkdown()
 	if err = app.initTemplateAssets(); err != nil { // Needs minify
 		app.logErrAndQuit("Failed to init template assets:", err.Error())
 		return
@@ -135,21 +154,8 @@ func main() {
 	app.initTelegram()
 	app.initBlogStats()
 	app.initSessions()
-
-	// Start cron hooks
-	app.startHourlyHooks()
-
+	// Log finish
 	log.Println("Initialized components")
-
-	// Start the server
-	err = app.startServer()
-	if err != nil {
-		app.logErrAndQuit("Failed to start server(s):", err.Error())
-		return
-	}
-
-	// Wait till everything is shutdown
-	app.shutdown.Wait()
 }
 
 func (a *goBlog) logErrAndQuit(v ...interface{}) {

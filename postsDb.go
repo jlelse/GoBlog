@@ -80,10 +80,10 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
 		}
 		published := timeNoErr(dateparse.ParseLocal(p.Published))
-		pathTmplString := a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate
-		if pathTmplString == "" {
-			return errors.New("path template empty")
-		}
+		pathTmplString := defaultIfEmpty(
+			a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate,
+			"{{printf \""+a.getRelativePath(p.Blog, "/%v/%02d/%02d/%v")+"\" .Section .Year .Month .Slug}}",
+		)
 		pathTmpl, err := template.New("location").Parse(pathTmplString)
 		if err != nil {
 			return errors.New("failed to parse location template")

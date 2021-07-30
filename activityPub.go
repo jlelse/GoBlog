@@ -267,14 +267,13 @@ func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {
 	return actor, 0, nil
 }
 
-func (db *database) apGetAllInboxes(blog string) ([]string, error) {
+func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
 	rows, err := db.query("select distinct inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
-	inboxes := []string{}
+	var inbox string
 	for rows.Next() {
-		var inbox string
 		err = rows.Scan(&inbox)
 		if err != nil {
 			return nil, err
