@@ -128,9 +128,10 @@ func (a *goBlog) editorPostTemplate(blog string) string {
 
 func (a *goBlog) editorMoreParams(blog string) string {
 	var builder strings.Builder
-	builder.WriteString(a.ts.GetTemplateStringVariant(blog, "emptyparams"))
+	bc := a.cfg.Blogs[blog]
+	builder.WriteString(a.ts.GetTemplateStringVariant(bc.Lang, "emptyparams"))
 	builder.WriteByte(' ')
-	builder.WriteString(a.ts.GetTemplateStringVariant(blog, "moreparams"))
+	builder.WriteString(a.ts.GetTemplateStringVariant(bc.Lang, "moreparams"))
 	for i, param := range []string{
 		"summary",
 		"translationkey",
