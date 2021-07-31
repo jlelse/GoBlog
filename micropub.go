@@ -7,12 +7,12 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
+	"github.com/thoas/go-funk"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
@@ -547,11 +547,7 @@ func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]interface{}) {
 		case "updated":
 			p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
 		case "category":
-			category := p.Parameters[a.cfg.Micropub.CategoryParam]
-			if category == nil {
-				category = []string{}
-			}
-			p.Parameters[a.cfg.Micropub.CategoryParam] = append(category, cast.ToStringSlice(value)...)
+			p.Parameters[a.cfg.Micropub.CategoryParam] = append(p.Parameters[a.cfg.Micropub.CategoryParam], cast.ToStringSlice(value)...)
 		case "in-reply-to":
 			p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
 		case "like-of":
@@ -559,67 +555,74 @@ func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]interface{}) {
 		case "bookmark-of":
 			p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
 		case "audio":
-			audio := p.Parameters[a.cfg.Micropub.CategoryParam]
-			if audio == nil {
-				audio = []string{}
-			}
-			p.Parameters[a.cfg.Micropub.AudioParam] = append(audio, cast.ToStringSlice(value)...)
+			p.Parameters[a.cfg.Micropub.AudioParam] = append(p.Parameters[a.cfg.Micropub.AudioParam], cast.ToStringSlice(value)...)
 			// TODO: photo
 		}
 	}
 }
 
 func (a *goBlog) micropubUpdateDelete(p *post, del interface{}) {
-	if del != nil {
-		if reflect.TypeOf(del).Kind() == reflect.Slice {
-			toDelete, ok := del.([]interface{})
-			if ok {
-				for _, key := range toDelete {
-					switch key {
-					case "content":
-						p.Content = ""
-					case "published":
-						p.Published = ""
-					case "updated":
-						p.Updated = ""
-					case "category":
-						delete(p.Parameters, a.cfg.Micropub.CategoryParam)
-					case "in-reply-to":
-						delete(p.Parameters, a.cfg.Micropub.ReplyParam)
-					case "like-of":
-						delete(p.Parameters, a.cfg.Micropub.LikeParam)
-					case "bookmark-of":
-						delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
-					case "audio":
-						delete(p.Parameters, a.cfg.Micropub.AudioParam)
-					case "photo":
-						delete(p.Parameters, a.cfg.Micropub.PhotoParam)
-						delete(p.Parameters, a.cfg.Micropub.PhotoDescriptionParam)
-					}
-				}
+	if del == nil {
+		return
+	}
+	deleteProperties, ok := del.([]interface{})
+	if ok {
+		// Completely remove properties
+		for _, prop := range deleteProperties {
+			switch prop {
+			case "content":
+				p.Content = ""
+			case "published":
+				p.Published = ""
+			case "updated":
+				p.Updated = ""
+			case "category":
+				delete(p.Parameters, a.cfg.Micropub.CategoryParam)
+			case "in-reply-to":
+				delete(p.Parameters, a.cfg.Micropub.ReplyParam)
+				delete(p.Parameters, a.cfg.Micropub.ReplyTitleParam)
+			case "like-of":
+				delete(p.Parameters, a.cfg.Micropub.LikeParam)
+				delete(p.Parameters, a.cfg.Micropub.LikeTitleParam)
+			case "bookmark-of":
+				delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
+			case "audio":
+				delete(p.Parameters, a.cfg.Micropub.AudioParam)
+			case "photo":
+				delete(p.Parameters, a.cfg.Micropub.PhotoParam)
+				delete(p.Parameters, a.cfg.Micropub.PhotoDescriptionParam)
 			}
-		} else {
-			toDelete, ok := del.(map[string]interface{})
-			if ok {
-				for key := range toDelete {
-					if ok {
-						switch key {
-						case "content":
-							p.Content = ""
-						case "published":
-							p.Published = ""
-						case "updated":
-							p.Updated = ""
-						case "in-reply-to":
-							delete(p.Parameters, a.cfg.Micropub.ReplyParam)
-						case "like-of":
-							delete(p.Parameters, a.cfg.Micropub.LikeParam)
-						case "bookmark-of":
-							delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
-							// Use content to edit other parameters
-						}
-					}
-				}
+		}
+		// Return
+		return
+	}
+	toDelete, ok := del.(map[string]interface{})
+	if ok {
+		// Only delete parts of properties
+		for key, values := range toDelete {
+			switch key {
+			// Properties to completely delete
+			case "content":
+				p.Content = ""
+			case "published":
+				p.Published = ""
+			case "updated":
+				p.Updated = ""
+			case "in-reply-to":
+				delete(p.Parameters, a.cfg.Micropub.ReplyParam)
+				delete(p.Parameters, a.cfg.Micropub.ReplyTitleParam)
+			case "like-of":
+				delete(p.Parameters, a.cfg.Micropub.LikeParam)
+				delete(p.Parameters, a.cfg.Micropub.LikeTitleParam)
+			case "bookmark-of":
+				delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
+			// Properties to delete part of
+			// TODO: Support partial deletes of more properties
+			case "category":
+				delValues := cast.ToStringSlice(values)
+				p.Parameters[a.cfg.Micropub.CategoryParam] = funk.FilterString(p.Parameters[a.cfg.Micropub.CategoryParam], func(s string) bool {
+					return !funk.ContainsString(delValues, s)
+				})
 			}
 		}
 	}

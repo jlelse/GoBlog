@@ -12,8 +12,6 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-const geoParam = "location"
-
 func (a *goBlog) geoTitle(g *gogeouri.Geo, lang string) string {
 	if name, ok := g.Parameters["name"]; ok && len(name) > 0 && name[0] != "" {
 		return name[0]

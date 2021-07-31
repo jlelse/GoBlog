@@ -32,19 +32,11 @@ func postParameter(p *post, parameter string) []string {
 	return p.Parameters[parameter]
 }
 
-func postHasParameter(p *post, parameter string) bool {
-	return len(p.Parameters[parameter]) > 0
-}
-
 func (p *post) firstParameter(parameter string) (result string) {
 	if pp := p.Parameters[parameter]; len(pp) > 0 {
 		result = pp[0]
 	}
 	return
-}
-
-func firstPostParameter(p *post, parameter string) string {
-	return p.firstParameter(parameter)
 }
 
 func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
@@ -61,7 +53,7 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 	// Build HTML
 	var htmlBuilder strings.Builder
 	// Add audio to the top
-	if audio, ok := p.Parameters["audio"]; ok && len(audio) > 0 {
+	if audio, ok := p.Parameters[a.cfg.Micropub.AudioParam]; ok && len(audio) > 0 {
 		for _, a := range audio {
 			htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
 			htmlBuilder.WriteString(a)
@@ -75,8 +67,8 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 		return ""
 	}
 	htmlBuilder.Write(htmlContent)
-	// Add links to the bottom
-	if link, ok := p.Parameters["link"]; ok && len(link) > 0 {
+	// Add bookmark links to the bottom
+	if link, ok := p.Parameters[a.cfg.Micropub.BookmarkParam]; ok && len(link) > 0 {
 		for _, l := range link {
 			htmlBuilder.WriteString(`<p><a class=u-bookmark-of href="`)
 			htmlBuilder.WriteString(l)
@@ -193,19 +185,47 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	}
 }
 
-// Public because of rendering
-
-func (p *post) Title() string {
-	return p.firstParameter("title")
+func (a *goBlog) showFull(p *post) bool {
+	if p.Section == "" {
+		return false
+	}
+	sec, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]
+	return ok && sec != nil && sec.ShowFull
 }
 
-func (p *post) GeoURI() *gogeouri.Geo {
-	loc := p.firstParameter("location")
+func (a *goBlog) geoURI(p *post) *gogeouri.Geo {
+	loc := p.firstParameter(a.cfg.Micropub.LocationParam)
 	if loc == "" {
 		return nil
 	}
 	g, _ := gogeouri.Parse(loc)
 	return g
+}
+
+func (a *goBlog) replyLink(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.ReplyParam)
+}
+
+func (a *goBlog) replyTitle(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.ReplyTitleParam)
+}
+
+func (a *goBlog) likeLink(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.LikeParam)
+}
+
+func (a *goBlog) likeTitle(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.LikeTitleParam)
+}
+
+func (a *goBlog) photoLinks(p *post) []string {
+	return p.Parameters[a.cfg.Micropub.PhotoParam]
+}
+
+// Public because of rendering
+
+func (p *post) Title() string {
+	return p.firstParameter("title")
 }
 
 func (p *post) Old() bool {

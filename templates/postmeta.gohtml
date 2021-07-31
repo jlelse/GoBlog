@@ -1,15 +1,6 @@
 {{ define "postmeta" }}
     <div class="p">
         {{ include "summaryandpostmeta" . }}
-        {{ $bloglang := .Blog.Lang }}
-        {{ $geo := .Data.GeoURI }}
-        {{ if $geo }}
-            <div>📍 <a class="p-location h-geo" href="{{ geolink $geo }}" target="_blank" rel="nofollow noopener noreferrer">
-            <span class="p-name">{{ geotitle $geo .Blog.Lang }}</span>
-            <data class="p-longitude" value="{{ $geo.Longitude }}" />
-            <data class="p-latitude" value="{{ $geo.Latitude }}" />
-            </a></div>
-        {{ end }}
         {{ $translations := (translations .Data) }}
         {{ if gt (len $translations) 0 }}
             <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ $t.Title }}</a>{{ $delimiter = ", " }}{{ end }}</div>

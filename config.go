@@ -80,6 +80,7 @@ type configSection struct {
 	Title        string `mapstructure:"title"`
 	Description  string `mapstructure:"description"`
 	PathTemplate string `mapstructure:"pathtemplate"`
+	ShowFull     bool   `mapstructure:"showFull"`
 }
 
 type configTaxonomy struct {
@@ -99,7 +100,6 @@ type configMenuItem struct {
 
 type configPhotos struct {
 	Enabled     bool   `mapstructure:"enabled"`
-	Parameter   string `mapstructure:"parameter"`
 	Path        string `mapstructure:"path"`
 	Title       string `mapstructure:"title"`
 	Description string `mapstructure:"description"`
@@ -197,7 +197,9 @@ type configHooks struct {
 type configMicropub struct {
 	CategoryParam         string               `mapstructure:"categoryParam"`
 	ReplyParam            string               `mapstructure:"replyParam"`
+	ReplyTitleParam       string               `mapstructure:"replyTitleParam"`
 	LikeParam             string               `mapstructure:"likeParam"`
+	LikeTitleParam        string               `mapstructure:"likeTitleParam"`
 	BookmarkParam         string               `mapstructure:"bookmarkParam"`
 	AudioParam            string               `mapstructure:"audioParam"`
 	PhotoParam            string               `mapstructure:"photoParam"`
@@ -281,7 +283,9 @@ func (a *goBlog) initConfig() error {
 	viper.SetDefault("hooks.shell", "/bin/bash")
 	viper.SetDefault("micropub.categoryParam", "tags")
 	viper.SetDefault("micropub.replyParam", "replylink")
+	viper.SetDefault("micropub.replyTitleParam", "replytitle")
 	viper.SetDefault("micropub.likeParam", "likelink")
+	viper.SetDefault("micropub.likeTitleParam", "liketitle")
 	viper.SetDefault("micropub.bookmarkParam", "link")
 	viper.SetDefault("micropub.audioParam", "audio")
 	viper.SetDefault("micropub.photoParam", "images")

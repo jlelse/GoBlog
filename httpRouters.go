@@ -237,7 +237,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 				a.cacheMiddleware,
 				middleware.WithValue(indexConfigKey, &indexConfig{
 					path:            photoPath,
-					parameter:       pc.Parameter,
+					parameter:       a.cfg.Micropub.PhotoParam,
 					title:           pc.Title,
 					description:     pc.Description,
 					summaryTemplate: templatePhotosSummary,

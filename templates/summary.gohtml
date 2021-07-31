@@ -1,15 +1,19 @@
 {{ define "summary" }}
   <article class="h-entry border-bottom">
     {{ if gt .Data.Priority 0 }}<p>📌 {{ string .Blog.Lang "pinned" }}</p>{{ end }}
-    {{ if p .Data "title" }}
+    {{ if .Data.Title }}
       <h2 class="p-name">
         <a class="u-url" href="{{ .Data.Path }}">
-          {{ p .Data "title" }}
+          {{ .Data.Title }}
         </a>
       </h2>
     {{ end }}
     {{ include "summarymeta" . }}
-    <p class="p-summary">{{ summary .Data }}</p>
-    <p>{{ if (hasp .Data "images") }}🖼️ {{ end }}<a class="u-url" href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a></p>
+    {{ if showfull .Data }}
+      <div class=e-content>{{ content .Data false }}</div>
+    {{ else }}
+      <p class=p-summary>{{ summary .Data }}</p>
+    {{ end }}
+    <p>{{ if (photolinks .Data) }}🖼️ {{ end }}<a class="u-url" href="{{ .Data.Path }}">{{ string .Blog.Lang "view" }}</a></p>
   </article>
 {{ end }}

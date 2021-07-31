@@ -19,7 +19,7 @@
     {{ with .Data.Updated }}
         <meta itemprop="dateModified" content="{{ dateformat . $ISO8601 }}">
     {{ end }}
-    {{ range $key, $image := ps .Data "images" }}
+    {{ range $key, $image := photolinks .Data }}
         <meta itemprop="image" content="{{ $image }}">
         <meta property="og:image" content="{{ $image }}">
         <meta property="twitter:image" content="{{ $image }}">

@@ -98,11 +98,14 @@ micropub:
   # You can set parameters via the UI of your MicroPub editor or via front matter in the content
   categoryParam: tags
   replyParam: replylink
+  replyTitleParam: replytitle
   likeParam: likelink
+  likeTitleParam: liketitle
   bookmarkParam: link
   audioParam: audio
   photoParam: images
   photoDescriptionParam: imagealts
+  locationParam: location
 
 # Notifications
 notifications:
@@ -142,6 +145,7 @@ blogs:
         title: Micro
         description: "You can also use **Markdown** here." # Section description, can also use Markdown
         pathtemplate: "{{printf \"/%v/%02d/%02d/%v\" .Section .Year .Month .Slug}}"
+        showFull: true # Show full post content instead of just the summary on index pages
     # Taxonomies
     taxonomies:
       - name: tags # Code of taxonomy (used via post parameters)
@@ -166,7 +170,6 @@ blogs:
     # Index page which shows all posts with photos
     photos:
       enabled: true # Enable
-      parameter: images # Parameter which includes photo links
       path: /photos # (Optional) Set a custom path (relative to blog path)
       title: Photos # Title
       description: Instead of using Instagram, I prefer uploading pictures to my blog. # Description

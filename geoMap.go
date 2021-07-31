@@ -23,8 +23,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	allPostsWithLocation, err := a.db.getPosts(&postsRequestConfig{
 		blog:               blog,
 		status:             statusPublished,
-		parameter:          geoParam,
-		withOnlyParameters: []string{geoParam},
+		parameter:          a.cfg.Micropub.LocationParam,
+		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
 	})
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 
 	var locations []*templateLocation
 	for _, p := range allPostsWithLocation {
-		if g := p.GeoURI(); g != nil {
+		if g := a.geoURI(p); g != nil {
 			locations = append(locations, &templateLocation{
 				Lat:  g.Latitude,
 				Lon:  g.Longitude,
