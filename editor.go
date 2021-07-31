@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 
 	"go.goblog.app/app/pkgs/contenttype"
+	"gopkg.in/yaml.v3"
 )
 
 const editorPath = "/editor"
@@ -100,4 +102,59 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 	w.WriteHeader(result.StatusCode)
 	_, _ = io.Copy(w, result.Body)
 	_ = result.Body.Close()
+}
+
+func (a *goBlog) editorPostTemplate(blog string) string {
+	var builder strings.Builder
+	marsh := func(param string, i interface{}) {
+		_ = yaml.NewEncoder(&builder).Encode(map[string]interface{}{
+			param: i,
+		})
+	}
+	bc := a.cfg.Blogs[blog]
+	builder.WriteString("---\n")
+	marsh("blog", blog)
+	marsh("section", bc.DefaultSection)
+	marsh("status", statusDraft)
+	marsh("priority", 0)
+	marsh("slug", "")
+	marsh("title", "")
+	for _, t := range bc.Taxonomies {
+		marsh(t.Name, []string{""})
+	}
+	builder.WriteString("---\n")
+	return builder.String()
+}
+
+func (a *goBlog) editorMoreParams(blog string) string {
+	var builder strings.Builder
+	builder.WriteString(a.ts.GetTemplateStringVariant(blog, "emptyparams"))
+	builder.WriteByte(' ')
+	builder.WriteString(a.ts.GetTemplateStringVariant(blog, "moreparams"))
+	for i, param := range []string{
+		"summary",
+		"translationkey",
+		"original",
+		a.cfg.Micropub.AudioParam,
+		a.cfg.Micropub.BookmarkParam,
+		a.cfg.Micropub.LikeParam,
+		a.cfg.Micropub.LikeTitleParam,
+		a.cfg.Micropub.LocationParam,
+		a.cfg.Micropub.PhotoParam,
+		a.cfg.Micropub.PhotoDescriptionParam,
+		a.cfg.Micropub.ReplyParam,
+		a.cfg.Micropub.ReplyTitleParam,
+	} {
+		if param == "" {
+			continue
+		}
+		if i > 0 {
+			builder.WriteString(", ")
+		}
+		builder.WriteByte('`')
+		builder.WriteString(param)
+		builder.WriteByte('`')
+	}
+	builder.WriteByte('.')
+	return builder.String()
 }
