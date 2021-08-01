@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -126,12 +127,10 @@ func (a *goBlog) editorPostTemplate(blog string) string {
 	return builder.String()
 }
 
-func (a *goBlog) editorMoreParams(blog string) string {
-	var builder strings.Builder
+func (a *goBlog) editorPostDesc(blog string) string {
 	bc := a.cfg.Blogs[blog]
-	builder.WriteString(a.ts.GetTemplateStringVariant(bc.Lang, "emptyparams"))
-	builder.WriteByte(' ')
-	builder.WriteString(a.ts.GetTemplateStringVariant(bc.Lang, "moreparams"))
+	t := a.ts.GetTemplateStringVariant(bc.Lang, "editorpostdesc")
+	var paramBuilder, statusBuilder strings.Builder
 	for i, param := range []string{
 		"summary",
 		"translationkey",
@@ -150,12 +149,21 @@ func (a *goBlog) editorMoreParams(blog string) string {
 			continue
 		}
 		if i > 0 {
-			builder.WriteString(", ")
+			paramBuilder.WriteString(", ")
 		}
-		builder.WriteByte('`')
-		builder.WriteString(param)
-		builder.WriteByte('`')
+		paramBuilder.WriteByte('`')
+		paramBuilder.WriteString(param)
+		paramBuilder.WriteByte('`')
 	}
-	builder.WriteByte('.')
-	return builder.String()
+	for i, status := range []postStatus{
+		statusDraft, statusPublished, statusUnlisted, statusPrivate,
+	} {
+		if i > 0 {
+			statusBuilder.WriteString(", ")
+		}
+		statusBuilder.WriteByte('`')
+		statusBuilder.WriteString(string(status))
+		statusBuilder.WriteByte('`')
+	}
+	return fmt.Sprintf(t, paramBuilder.String(), "status", statusBuilder.String())
 }

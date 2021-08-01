@@ -6,7 +6,7 @@
   <main>
     <h1>{{ string .Blog.Lang "editor" }}</h1>
     <h2>{{ string .Blog.Lang "create" }}</h2>
-    {{ md (editormoreparams .BlogString) }}
+    {{ md (editorpostdesc .BlogString) }}
     <form class="fw p" method="post">
       <input type="hidden" name="h" value="entry">
       <textarea name="content" class="monospace h400p formcache" id="create-input">{{ editortemplate .BlogString }}</textarea>
