@@ -42,6 +42,12 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (a *goBlog) addOnionLocation(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.torAddress != "" {
 			w.Header().Set("Onion-Location", a.torAddress+r.RequestURI)
 		}

@@ -157,6 +157,13 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.GetHead)
+
+	// Tor
+	if a.cfg.Server.Tor {
+		r.Use(a.addOnionLocation)
+	}
+
+	// Cache
 	if cache := a.cfg.Cache; cache != nil && !cache.Enable {
 		r.Use(middleware.NoCache)
 	}
