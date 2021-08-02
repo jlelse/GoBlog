@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -72,8 +73,10 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		return err
 	}
 	defer onion.Close()
-	a.torAddress = onion.String()
-	log.Println("Onion service published on http://" + a.torAddress)
+	a.torAddress = "http://" + onion.String()
+	torUrl, _ := url.Parse(a.torAddress)
+	a.torHostname = torUrl.Hostname()
+	log.Println("Onion service published on " + a.torAddress)
 	// Clear cache
 	a.cache.purge()
 	// Serve handler

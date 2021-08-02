@@ -17,6 +17,7 @@ server:
   port: 8080
   publicAddress: https://example.com # Public address to use for the blog
   shortPublicAddress: https://short.example.com # Optional short address, will redirect to main address
+  mediaAddress: https://media.example.com # Optional domain to use for serving media files
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)

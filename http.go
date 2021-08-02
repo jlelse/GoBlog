@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
+	"go.goblog.app/app/pkgs/maprouter"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
@@ -78,8 +79,11 @@ func (a *goBlog) startServer() (err error) {
 		// Start HTTPS
 		s.Addr = ":https"
 		hosts := []string{a.cfg.Server.publicHostname}
-		if a.cfg.Server.shortPublicHostname != "" {
-			hosts = append(hosts, a.cfg.Server.shortPublicHostname)
+		if shn := a.cfg.Server.shortPublicHostname; shn != "" {
+			hosts = append(hosts, shn)
+		}
+		if mhn := a.cfg.Server.mediaHostname; mhn != "" {
+			hosts = append(hosts, mhn)
 		}
 		acmeDir := acme.LetsEncryptURL
 		// acmeDir := "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -127,11 +131,29 @@ const (
 )
 
 func (a *goBlog) buildRouter() (http.Handler, error) {
+	mapRouter := &maprouter.MapRouter{
+		Handlers: map[string]http.Handler{},
+	}
+	if shn := a.cfg.Server.shortPublicHostname; shn != "" {
+		mapRouter.Handlers[shn] = http.HandlerFunc(a.redirectShortDomain)
+	}
+	if mhn := a.cfg.Server.mediaHostname; mhn != "" && !a.isPrivate() {
+		mr := chi.NewMux()
+
+		mr.Use(middleware.RedirectSlashes)
+		mr.Use(middleware.CleanPath)
+		mr.Use(middleware.GetHead)
+
+		mr.Group(a.mediaFilesRouter)
+
+		mapRouter.Handlers[mhn] = mr
+	}
+
+	// Default router
 	r := chi.NewMux()
 
 	// Basic middleware
 	r.Use(fixHTTPHandler)
-	r.Use(a.redirectShortDomain)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.GetHead)
@@ -173,7 +195,7 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.Group(a.staticFilesRouter)
 
 	// Media files
-	r.With(a.privateModeHandler).Get(`/m/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`, a.serveMediaFile)
+	r.Route("/m", a.mediaFilesRouter)
 
 	// Captcha
 	r.Handle("/captcha/*", captcha.Server(500, 250))
@@ -196,7 +218,8 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 
 	r.MethodNotAllowed(a.serveNotAllowed)
 
-	return r, nil
+	mapRouter.DefaultHandler = r
+	return mapRouter, nil
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {

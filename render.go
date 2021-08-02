@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -174,7 +173,7 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	}
 	// Tor
 	if a.cfg.Server.Tor && a.torAddress != "" {
-		data.TorAddress = fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI)
+		data.TorAddress = a.torAddress + r.RequestURI
 	}
 	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
 		data.TorUsed = true

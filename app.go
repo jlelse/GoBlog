@@ -71,5 +71,6 @@ type goBlog struct {
 	// Template strings
 	ts *ts.TemplateStrings
 	// Tor
-	torAddress string
+	torAddress  string
+	torHostname string
 }

@@ -92,6 +92,12 @@ func (a *goBlog) staticFilesRouter(r chi.Router) {
 	}
 }
 
+// Media files
+func (a *goBlog) mediaFilesRouter(r chi.Router) {
+	r.Use(a.privateModeHandler)
+	r.Get(mediaFileRoute, a.serveMediaFile)
+}
+
 // Blog
 func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {

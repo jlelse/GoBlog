@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -43,8 +42,8 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains)
-		if a.cfg.Server.Tor && a.torAddress != "" {
-			w.Header().Set("Onion-Location", fmt.Sprintf("http://%v%v", a.torAddress, r.RequestURI))
+		if a.torAddress != "" {
+			w.Header().Set("Onion-Location", a.torAddress+r.RequestURI)
 		}
 		next.ServeHTTP(w, r)
 	})

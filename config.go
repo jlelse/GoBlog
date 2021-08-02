@@ -32,6 +32,7 @@ type configServer struct {
 	Port                int      `mapstructure:"port"`
 	PublicAddress       string   `mapstructure:"publicAddress"`
 	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
+	MediaAddress        string   `mapstructure:"mediaAddress"`
 	PublicHTTPS         bool     `mapstructure:"publicHttps"`
 	Tor                 bool     `mapstructure:"tor"`
 	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
@@ -39,6 +40,7 @@ type configServer struct {
 	JWTSecret           string   `mapstructure:"jwtSecret"`
 	publicHostname      string
 	shortPublicHostname string
+	mediaHostname       string
 }
 
 type configDb struct {
@@ -304,12 +306,19 @@ func (a *goBlog) initConfig() error {
 		return err
 	}
 	a.cfg.Server.publicHostname = publicURL.Hostname()
-	if a.cfg.Server.ShortPublicAddress != "" {
-		shortPublicURL, err := url.Parse(a.cfg.Server.ShortPublicAddress)
+	if sa := a.cfg.Server.ShortPublicAddress; sa != "" {
+		shortPublicURL, err := url.Parse(sa)
 		if err != nil {
 			return err
 		}
 		a.cfg.Server.shortPublicHostname = shortPublicURL.Hostname()
+	}
+	if ma := a.cfg.Server.MediaAddress; ma != "" {
+		mediaUrl, err := url.Parse(ma)
+		if err != nil {
+			return err
+		}
+		a.cfg.Server.mediaHostname = mediaUrl.Hostname()
 	}
 	if a.cfg.Server.JWTSecret == "" {
 		return errors.New("no JWT secret configured")

@@ -4,12 +4,6 @@ import (
 	"net/http"
 )
 
-func (a *goBlog) redirectShortDomain(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if a.cfg.Server.shortPublicHostname != "" && r.Host == a.cfg.Server.shortPublicHostname {
-			http.Redirect(rw, r, a.getFullAddress(r.RequestURI), http.StatusMovedPermanently)
-			return
-		}
-		next.ServeHTTP(rw, r)
-	})
+func (a *goBlog) redirectShortDomain(rw http.ResponseWriter, r *http.Request) {
+	http.Redirect(rw, r, a.getFullAddress(r.RequestURI), http.StatusMovedPermanently)
 }
