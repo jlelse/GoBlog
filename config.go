@@ -24,6 +24,7 @@ type config struct {
 	Notifications *configNotifications   `mapstructure:"notifications"`
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
+	Debug         bool                   `mapstructure:"debug"`
 }
 
 type configServer struct {

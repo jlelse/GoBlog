@@ -44,25 +44,30 @@ func (a *goBlog) initWebmention() {
 }
 
 func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
-	m, err := extractMention(r)
+	m, err := a.extractMention(r)
 	if err != nil {
+		a.debug("Error extracting webmention:", err.Error())
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if !strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress) {
+		a.debug("Webmention target not allowed:", m.Target)
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
 	if err = a.queueMention(m); err != nil {
+		a.debug("Failed to queue webmention", err.Error())
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = fmt.Fprint(w, "Webmention accepted")
+	a.debug("Accepted webmention:", m.Source, m.Target)
 }
 
-func extractMention(r *http.Request) (*mention, error) {
-	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
+func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
+	if ct := r.Header.Get(contentType); !strings.Contains(ct, contenttype.WWWForm) {
+		a.debug("New webmention request with wrong content type:", ct)
 		return nil, errors.New("unsupported Content-Type")
 	}
 	err := r.ParseForm()
@@ -72,6 +77,7 @@ func extractMention(r *http.Request) (*mention, error) {
 	source := r.Form.Get("source")
 	target := unescapedPath(r.Form.Get("target"))
 	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
+		a.debug("Invalid webmention request, source:", source, "target:", target)
 		return nil, errors.New("invalid request")
 	}
 	return &mention{
