@@ -6,11 +6,11 @@
     <link rel="stylesheet" href="{{ asset "css/styles.css" }}">
     {{ with .Canonical }}<link rel="canonical" href="{{ . }}">{{ end }}
     {{ block "title" . }}
-      <title>{{ .Blog.Title }}</title>
+      <title>{{ mdtext .Blog.Title }}</title>
     {{ end }}
-    <link rel="alternate" type="application/rss+xml" title="RSS ({{ .Blog.Title }})" href="{{ .Blog.Path }}.rss"/>
-    <link rel="alternate" type="application/atom+xml" title="Atom ({{ .Blog.Title }})" href="{{ .Blog.Path }}.atom"/>
-    <link rel="alternate" type="application/feed+json" title="JSON Feed ({{ .Blog.Title }})" href="{{ .Blog.Path }}.json"/>
+    <link rel="alternate" type="application/rss+xml" title="RSS ({{ mdtext .Blog.Title }})" href="{{ .Blog.Path }}.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom ({{ mdtext .Blog.Title }})" href="{{ .Blog.Path }}.atom"/>
+    <link rel="alternate" type="application/feed+json" title="JSON Feed ({{ mdtext .Blog.Title }})" href="{{ .Blog.Path }}.json"/>
     <link rel="webmention" href="{{ absolute "/webmention" }}" />
     <link rel="micropub" href="/micropub" />
     <link rel="authorization_endpoint" href="/indieauth" />
@@ -18,7 +18,7 @@
     {{ with .User }}{{ range .Identities }}<link rel="me" href="{{ . }}" />{{ end }}{{ end }}
     {{ $os := opensearch .Blog }}
     {{ if $os }}
-      <link rel="search" type="application/opensearchdescription+xml" href="{{ $os }}" title="{{ .Blog.Title }}" />
+      <link rel="search" type="application/opensearchdescription+xml" href="{{ $os }}" title="{{ mdtext .Blog.Title }}" />
     {{ end }}
     {{ include "header" . }}
     {{ block "main" . }}{{ end }}

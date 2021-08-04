@@ -44,8 +44,9 @@ const (
 func (a *goBlog) initRendering() error {
 	a.templates = map[string]*template.Template{}
 	templateFunctions := template.FuncMap{
-		"md":   a.safeRenderMarkdownAsHTML,
-		"html": wrapStringAsHTML,
+		"md":     a.safeRenderMarkdownAsHTML,
+		"mdtext": a.renderText,
+		"html":   wrapStringAsHTML,
 		// Post specific
 		"ps":           postParameter,
 		"content":      a.postHtml,

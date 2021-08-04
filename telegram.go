@@ -16,7 +16,7 @@ const telegramBaseURL = "https://api.telegram.org/bot"
 func (a *goBlog) initTelegram() {
 	a.pPostHooks = append(a.pPostHooks, func(p *post) {
 		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() && p.isPublishedSectionPost() {
-			if html := tg.generateHTML(p.Title(), a.fullPostURL(p), a.shortPostURL(p)); html != "" {
+			if html := tg.generateHTML(a.renderText(p.Title()), a.fullPostURL(p), a.shortPostURL(p)); html != "" {
 				if err := a.send(tg, html, "HTML"); err != nil {
 					log.Printf("Failed to send post to Telegram: %v", err)
 				}

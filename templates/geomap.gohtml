@@ -1,5 +1,5 @@
 {{ define "title" }}
-    <title>{{ .Blog.Title }}</title>
+    <title>{{ mdtext .Blog.Title }}</title>
     {{ if not .Data.nolocations }}
         <link rel="stylesheet" href="{{ .Data.mappath }}/leaflet/leaflet.css"/>
         <script src="{{ .Data.mappath }}/leaflet/leaflet.js"></script>

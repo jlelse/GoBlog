@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ string .Blog.Lang "mediafiles" }} - {{ .Blog.Title }}</title>
+  <title>{{ string .Blog.Lang "mediafiles" }} - {{ mdtext .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}

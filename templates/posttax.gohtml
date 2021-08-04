@@ -4,9 +4,9 @@
     {{ range $i, $tax := $blog.Taxonomies }}
         {{ $tvs := sort (ps $post $tax.Name) }}
         {{ if $tvs }}
-            <p><b>{{ $tax.Title }}</b>:
+            <p><b>{{ mdtext $tax.Title }}</b>:
                 {{ range $j, $tv := $tvs }}
-                    <a class="p-category" rel="tag" href="{{ $blog.RelativePath ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ $tv }}</a>
+                    <a class="p-category" rel="tag" href="{{ $blog.RelativePath ( printf "/%s/%s" $tax.Name (urlize $tv) ) }}">{{ mdtext $tv }}</a>
                 {{ end }}
             </p>
         {{ end }}

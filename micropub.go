@@ -324,6 +324,9 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 }
 
 func (a *goBlog) computeExtraPostParameters(p *post) error {
+	if p.Parameters == nil {
+		p.Parameters = map[string][]string{}
+	}
 	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
 	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && len(strings.TrimSpace(split[0])) == 0 {
 		// Contains frontmatter

@@ -7,7 +7,7 @@
     {{ if .Data.sent }}
         <p>{{ string .Blog.Lang "messagesent" }}</p>
     {{ else }}
-        {{ with .Data.title }}<h1>{{ . }}</h1>{{ end }}
+        {{ with .Data.title }}<h1>{{ mdtext . }}</h1>{{ end }}
         {{ with .Data.description }}{{ md . }}{{ end }}
         <form class="fw p" method="post">
             <input type="text" name="name" placeholder="{{ string .Blog.Lang "nameopt" }}">

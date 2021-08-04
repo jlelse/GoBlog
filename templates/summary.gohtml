@@ -4,7 +4,7 @@
     {{ if .Data.Title }}
       <h2 class="p-name">
         <a class="u-url" href="{{ .Data.Path }}">
-          {{ .Data.Title }}
+          {{ mdtext .Data.Title }}
         </a>
       </h2>
     {{ end }}

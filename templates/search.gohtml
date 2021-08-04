@@ -1,16 +1,16 @@
 {{ define "title" }}
-  <title>{{ with .Blog.Search.Title }}{{ . }} - {{ end }}{{ .Blog.Title }}</title>
+  <title>{{ with .Blog.Search.Title }}{{ mdtext . }} - {{ end }}{{ mdtext .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
-    {{ with .Blog.Search.Title }}<h1>{{ . }}</h1>{{ end }}
+    {{ with .Blog.Search.Title }}<h1>{{ mdtext . }}</h1>{{ end }}
     {{ with .Blog.Search.Description }}{{ md . }}{{ end }}
     {{ if (or .Blog.Search.Title .Blog.Search.Description) }}
       <hr>
     {{ end }}
     <form class="fw p" method="post">
-      <input type="text" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ . }}"{{ end }}>
+      <input type="text" name="q" {{ with .Blog.Search.Placeholder }}placeholder="{{ mdtext . }}"{{ end }}>
       <input type="submit" value="🔍 {{ string .Blog.Lang "search" }}">
     </form>
   </main>

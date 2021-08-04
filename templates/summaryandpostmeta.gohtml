@@ -1,6 +1,6 @@
 {{ define "summaryandpostmeta" }}
     {{ $section := (index .Blog.Sections .Data.Section) }}
-    {{ if .Data.Published }}<div>{{ string .Blog.Lang "publishedon" }} <time class="dt-published" datetime="{{ dateformat .Data.Published "2006-01-02T15:04:05Z07:00"}}">{{ isodate .Data.Published }}</time>{{ if $section }} in <a href="{{ .Blog.RelativePath $section.Name }}">{{ $section.Title }}</a>{{ end }}</div>{{ end }}
+    {{ if .Data.Published }}<div>{{ string .Blog.Lang "publishedon" }} <time class="dt-published" datetime="{{ dateformat .Data.Published "2006-01-02T15:04:05Z07:00"}}">{{ isodate .Data.Published }}</time>{{ if $section }} in <a href="{{ .Blog.RelativePath $section.Name }}">{{ mdtext $section.Title }}</a>{{ end }}</div>{{ end }}
     {{ if .Data.Updated }}<div>{{ string .Blog.Lang "updatedon" }} <time class="dt-updated" datetime="{{ dateformat .Data.Updated "2006-01-02T15:04:05Z07:00"}}">{{ isodate .Data.Updated }}</time></div>{{ end }}
     {{ if replylink .Data }}
         <div>{{ string .Blog.Lang "replyto" }}: <a class="u-in-reply-to" href="{{ replylink .Data }}" target="_blank" rel="noopener">{{ with (replytitle .Data) }}{{ . }}{{ else }}{{ replylink .Data }}{{ end }}</a></div>
