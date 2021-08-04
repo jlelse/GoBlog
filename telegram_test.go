@@ -135,6 +135,7 @@ func Test_telegram(t *testing.T) {
 		}
 		_ = app.initDatabase(false)
 
+		app.initMarkdown()
 		app.initTelegram()
 
 		p := &post{
