@@ -51,12 +51,17 @@ func (a *goBlog) compileAsset(name string) (string, error) {
 	m := a.min.Get()
 	switch ext {
 	case ".js":
-		content, err = m.Bytes("application/javascript", content)
+		content, err = m.Bytes(contenttype.JS, content)
 		if err != nil {
 			return "", err
 		}
 	case ".css":
-		content, err = m.Bytes("text/css", content)
+		content, err = m.Bytes(contenttype.CSS, content)
+		if err != nil {
+			return "", err
+		}
+	case ".xml", ".xsl":
+		content, err = m.Bytes(contenttype.XML, content)
 		if err != nil {
 			return "", err
 		}

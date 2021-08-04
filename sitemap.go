@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"encoding/xml"
 	"net/http"
 
 	"github.com/araddon/dateparse"
@@ -28,7 +29,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	// Write sitemap
-	a.writeSitemapIndex(w, sm)
+	a.writeSitemapXML(w, sm)
 }
 
 func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +47,7 @@ func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
 		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogPostsPath)),
 	})
 	// Write sitemap
-	a.writeSitemapIndex(w, sm)
+	a.writeSitemapXML(w, sm)
 }
 
 func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +102,7 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 		})
 	}
 	// Write sitemap
-	a.writeSitemap(w, sm)
+	a.writeSitemapXML(w, sm)
 }
 
 func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +145,7 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 		})
 	}
 	// Write sitemap
-	a.writeSitemap(w, sm)
+	a.writeSitemapXML(w, sm)
 }
 
 // Serve sitemap with all the blog's posts
@@ -167,23 +168,17 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 		sm.Add(item)
 	}
 	// Write sitemap
-	a.writeSitemap(w, sm)
+	a.writeSitemapXML(w, sm)
 }
 
-func (a *goBlog) writeSitemap(w http.ResponseWriter, sm *sitemap.Sitemap) {
-	var buf bytes.Buffer
-	sm.WriteTo(&buf)
-	a.writeSitemapXML(w, &buf)
-}
-
-func (a *goBlog) writeSitemapIndex(w http.ResponseWriter, sm *sitemap.SitemapIndex) {
-	var buf bytes.Buffer
-	sm.WriteTo(&buf)
-	a.writeSitemapXML(w, &buf)
-}
-
-func (a *goBlog) writeSitemapXML(w http.ResponseWriter, buf *bytes.Buffer) {
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm interface{}) {
 	w.Header().Set(contentType, contenttype.XMLUTF8)
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	buf.WriteString(`<?xml-stylesheet type="text/xsl" href="`)
+	buf.WriteString(a.assetFileName("sitemap.xsl"))
+	buf.WriteString(`" ?>`)
+	xml.NewEncoder(&buf).Encode(sm)
 	a.min.Write(w, contenttype.XML, buf.Bytes())
 }
 
