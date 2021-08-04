@@ -146,6 +146,10 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 
 		// Contact
 		r.Group(a.blogContactRouter(conf))
+
+		// Sitemap
+		r.Group(a.blogSitemapRouter(conf))
+
 	}
 }
 
@@ -418,5 +422,16 @@ func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 				r.With(a.captchaMiddleware).Post("/", a.sendContactSubmission)
 			})
 		}
+	}
+}
+
+// Blog - Sitemap
+func (a *goBlog) blogSitemapRouter(conf *configBlog) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware)
+		r.Get(conf.RelativePath(sitemapBlogPath), a.serveSitemapBlog)
+		r.Get(conf.RelativePath(sitemapBlogFeaturesPath), a.serveSitemapBlogFeatures)
+		r.Get(conf.RelativePath(sitemapBlogArchivesPath), a.serveSitemapBlogArchives)
+		r.Get(conf.RelativePath(sitemapBlogPostsPath), a.serveSitemapBlogPosts)
 	}
 }

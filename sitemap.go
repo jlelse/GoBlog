@@ -1,165 +1,229 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"database/sql"
 	"net/http"
-	"time"
 
 	"github.com/araddon/dateparse"
 	"github.com/snabb/sitemap"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
-const sitemapPath = "/sitemap.xml"
+const (
+	sitemapPath             = "/sitemap.xml"
+	sitemapBlogPath         = "/sitemap-blog.xml"
+	sitemapBlogFeaturesPath = "/sitemap-blog-features.xml"
+	sitemapBlogArchivesPath = "/sitemap-blog-archives.xml"
+	sitemapBlogPostsPath    = "/sitemap-blog-posts.xml"
+)
 
 func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
-	sm := sitemap.New()
-	sm.Minify = true
-	// Blogs
-	for b, bc := range a.cfg.Blogs {
-		// Blog
+	// Create sitemap
+	sm := sitemap.NewSitemapIndex()
+	// Add blog sitemap indices
+	for _, bc := range a.cfg.Blogs {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath("")),
+			Loc: a.getFullAddress(bc.getRelativePath(sitemapBlogPath)),
 		})
-		// Sections
-		for _, section := range bc.Sections {
-			if section.Name != "" {
-				sm.Add(&sitemap.URL{
-					Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
-				})
-			}
-		}
-		// Taxonomies
-		for _, taxonomy := range bc.Taxonomies {
-			if taxonomy.Name != "" {
-				// Taxonomy
-				taxPath := bc.getRelativePath("/" + taxonomy.Name)
-				sm.Add(&sitemap.URL{
-					Loc: a.getFullAddress(taxPath),
-				})
-				// Values
-				if taxValues, err := a.db.allTaxonomyValues(b, taxonomy.Name); err == nil {
-					for _, tv := range taxValues {
-						sm.Add(&sitemap.URL{
-							Loc: a.getFullAddress(taxPath + "/" + urlize(tv)),
-						})
-					}
-				}
-			}
-		}
-		// Year / month archives
-		if dates, err := a.db.allPublishedDates(b); err == nil {
-			already := map[string]bool{}
-			for _, d := range dates {
-				// Year
-				yearPath := bc.getRelativePath("/" + fmt.Sprintf("%0004d", d.year))
-				if !already[yearPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(yearPath),
-					})
-					already[yearPath] = true
-				}
-				// Month
-				monthPath := yearPath + "/" + fmt.Sprintf("%02d", d.month)
-				if !already[monthPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(monthPath),
-					})
-					already[monthPath] = true
-				}
-				// Day
-				dayPath := monthPath + "/" + fmt.Sprintf("%02d", d.day)
-				if !already[dayPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(dayPath),
-					})
-					already[dayPath] = true
-				}
-				// XXXX-MM
-				genericMonthPath := bc.getRelativePath("/x/" + fmt.Sprintf("%02d", d.month))
-				if !already[genericMonthPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(genericMonthPath),
-					})
-					already[genericMonthPath] = true
-				}
-				// XXXX-MM-DD
-				genericMonthDayPath := genericMonthPath + "/" + fmt.Sprintf("%02d", d.day)
-				if !already[genericMonthDayPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(genericMonthDayPath),
-					})
-					already[genericMonthDayPath] = true
-				}
-				// XXXX-XX-DD
-				genericDayPath := bc.getRelativePath("/x/x/" + fmt.Sprintf("%02d", d.day))
-				if !already[genericDayPath] {
-					sm.Add(&sitemap.URL{
-						Loc: a.getFullAddress(genericDayPath),
-					})
-					already[genericDayPath] = true
-				}
-			}
-		}
-		// Photos
-		if pc := bc.Photos; pc != nil && pc.Enabled {
+	}
+	// Write sitemap
+	a.writeSitemapIndex(w, sm)
+}
+
+func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
+	// Create sitemap
+	sm := sitemap.NewSitemapIndex()
+	// Add blog sitemaps
+	b := r.Context().Value(blogKey).(string)
+	sm.Add(&sitemap.URL{
+		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogFeaturesPath)),
+	})
+	sm.Add(&sitemap.URL{
+		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogArchivesPath)),
+	})
+	sm.Add(&sitemap.URL{
+		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogPostsPath)),
+	})
+	// Write sitemap
+	a.writeSitemapIndex(w, sm)
+}
+
+func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request) {
+	// Create sitemap
+	sm := sitemap.New()
+	// Add features to sitemap
+	bc := a.cfg.Blogs[r.Context().Value(blogKey).(string)]
+	// Home
+	sm.Add(&sitemap.URL{
+		Loc: a.getFullAddress(bc.getRelativePath("")),
+	})
+	// Photos
+	if pc := bc.Photos; pc != nil && pc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))),
+		})
+	}
+	// Search
+	if bsc := bc.Search; bsc != nil && bsc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))),
+		})
+	}
+	// Stats
+	if bsc := bc.BlogStats; bsc != nil && bsc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))),
+		})
+	}
+	// Blogroll
+	if brc := bc.Blogroll; brc != nil && brc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(brc.Path, defaultBlogrollPath))),
+		})
+	}
+	// Geo map
+	if mc := bc.Map; mc != nil && mc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))),
+		})
+	}
+	// Contact
+	if cc := bc.Contact; cc != nil && cc.Enabled {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))),
+		})
+	}
+	// Custom pages
+	for _, cp := range bc.CustomPages {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(cp.Path),
+		})
+	}
+	// Write sitemap
+	a.writeSitemap(w, sm)
+}
+
+func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request) {
+	// Create sitemap
+	sm := sitemap.New()
+	// Add archives to sitemap
+	b := r.Context().Value(blogKey).(string)
+	bc := a.cfg.Blogs[b]
+	// Sections
+	for _, section := range bc.Sections {
+		if section.Name != "" {
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))),
-			})
-		}
-		// Search
-		if bsc := bc.Search; bsc != nil && bsc.Enabled {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))),
-			})
-		}
-		// Stats
-		if bsc := bc.BlogStats; bsc != nil && bsc.Enabled {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))),
-			})
-		}
-		// Blogroll
-		if brc := bc.Blogroll; brc != nil && brc.Enabled {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(brc.Path, defaultBlogrollPath))),
-			})
-		}
-		// Geo map
-		if mc := bc.Map; mc != nil && mc.Enabled {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))),
-			})
-		}
-		// Contact
-		if cc := bc.Contact; cc != nil && cc.Enabled {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))),
-			})
-		}
-		// Custom pages
-		for _, cp := range bc.CustomPages {
-			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(cp.Path),
+				Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
 			})
 		}
 	}
-	// Published posts
-	if posts, err := a.db.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true}); err == nil {
-		for _, p := range posts {
-			item := &sitemap.URL{Loc: a.fullPostURL(p)}
-			var lastMod time.Time
-			if p.Updated != "" {
-				lastMod = timeNoErr(dateparse.ParseLocal(p.Updated))
+	// Taxonomies
+	for _, taxonomy := range bc.Taxonomies {
+		if taxonomy.Name != "" {
+			// Taxonomy
+			taxPath := bc.getRelativePath("/" + taxonomy.Name)
+			sm.Add(&sitemap.URL{
+				Loc: a.getFullAddress(taxPath),
+			})
+			// Values
+			if taxValues, err := a.db.allTaxonomyValues(b, taxonomy.Name); err == nil {
+				for _, tv := range taxValues {
+					sm.Add(&sitemap.URL{
+						Loc: a.getFullAddress(taxPath + "/" + urlize(tv)),
+					})
+				}
 			}
-			if p.Published != "" && lastMod.IsZero() {
-				lastMod = timeNoErr(dateparse.ParseLocal(p.Published))
-			}
-			if !lastMod.IsZero() {
-				item.LastMod = &lastMod
-			}
-			sm.Add(item)
 		}
 	}
-	// Write...
-	_, _ = sm.WriteTo(w) // Already minified
+	// Date based archives
+	datePaths, _ := a.sitemapDatePaths(b)
+	for _, p := range datePaths {
+		sm.Add(&sitemap.URL{
+			Loc: a.getFullAddress(bc.getRelativePath(p)),
+		})
+	}
+	// Write sitemap
+	a.writeSitemap(w, sm)
+}
+
+// Serve sitemap with all the blog's posts
+func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
+	// Create sitemap
+	sm := sitemap.New()
+	// Request posts
+	posts, _ := a.db.getPosts(&postsRequestConfig{
+		status:            statusPublished,
+		blog:              r.Context().Value(blogKey).(string),
+		withoutParameters: true,
+	})
+	// Add posts to sitemap
+	for _, p := range posts {
+		item := &sitemap.URL{Loc: a.fullPostURL(p)}
+		lastMod := timeNoErr(dateparse.ParseLocal(defaultIfEmpty(p.Updated, p.Published)))
+		if !lastMod.IsZero() {
+			item.LastMod = &lastMod
+		}
+		sm.Add(item)
+	}
+	// Write sitemap
+	a.writeSitemap(w, sm)
+}
+
+func (a *goBlog) writeSitemap(w http.ResponseWriter, sm *sitemap.Sitemap) {
+	var buf bytes.Buffer
+	sm.WriteTo(&buf)
+	a.writeSitemapXML(w, &buf)
+}
+
+func (a *goBlog) writeSitemapIndex(w http.ResponseWriter, sm *sitemap.SitemapIndex) {
+	var buf bytes.Buffer
+	sm.WriteTo(&buf)
+	a.writeSitemapXML(w, &buf)
+}
+
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, buf *bytes.Buffer) {
+	w.Header().Set(contentType, contenttype.XMLUTF8)
+	a.min.Write(w, contenttype.XML, buf.Bytes())
+}
+
+const sitemapDatePathsSql = `
+with alldates as (
+    select distinct 
+        substr(published, 1, 4) as year,
+        substr(published, 6, 2) as month,
+        substr(published, 9, 2) as day
+    from (
+            select tolocal(coalesce(published, '')) as published
+            from posts
+            where blog = @blog and status = @status and published != ''
+        )
+)
+select distinct '/' || year from alldates
+union
+select distinct '/' || year || '/' || month from alldates
+union
+select distinct '/' || year || '/' || month || '/' || day from alldates
+union
+select distinct '/x/' || month from alldates
+union
+select distinct '/x/' || month || '/' || day from alldates
+union
+select distinct '/x/x/' || day from alldates;
+`
+
+func (a *goBlog) sitemapDatePaths(blog string) (paths []string, err error) {
+	rows, err := a.db.query(sitemapDatePathsSql, sql.Named("blog", blog), sql.Named("status", statusPublished))
+	if err != nil {
+		return nil, err
+	}
+	var path string
+	for rows.Next() {
+		err = rows.Scan(&path)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, path)
+	}
+	return
 }

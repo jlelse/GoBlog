@@ -179,12 +179,6 @@ func Test_postsDb(t *testing.T) {
 		is.Equal(1, count)
 	}
 
-	// Check dates
-	dates, err := app.db.allPublishedDates("en")
-	if is.NoError(err) && is.NotEmpty(dates) {
-		is.Equal(publishedDate{year: 2021, month: 6, day: 10}, dates[0])
-	}
-
 	// Check based on tags
 	count, err = app.db.countPosts(&postsRequestConfig{
 		parameter:      "tags",

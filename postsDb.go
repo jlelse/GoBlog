@@ -496,26 +496,6 @@ func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, er
 	return values, nil
 }
 
-type publishedDate struct {
-	year, month, day int
-}
-
-func (d *database) allPublishedDates(blog string) (dates []publishedDate, err error) {
-	rows, err := d.query("select distinct substr(tolocal(published), 1, 4) as year, substr(tolocal(published), 6, 2) as month, substr(tolocal(published), 9, 2) as day from posts where blog = @blog and status = @status and year != '' and month != '' and day != ''", sql.Named("blog", blog), sql.Named("status", statusPublished))
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var year, month, day int
-		err = rows.Scan(&year, &month, &day)
-		if err != nil {
-			return nil, err
-		}
-		dates = append(dates, publishedDate{year, month, day})
-	}
-	return
-}
-
 const mediaUseSql = `
 with mediafiles (name) as (values %s)
 select name, count(path) as count from (
