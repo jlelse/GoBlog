@@ -52,7 +52,7 @@ type goBlog struct {
 	// Logs
 	logf *rotatelogs.RotateLogs
 	// Markdown
-	md, absoluteMd goldmark.Markdown
+	md, absoluteMd, titleMd goldmark.Markdown
 	// Media
 	compressorsInit  sync.Once
 	compressors      []mediaCompression

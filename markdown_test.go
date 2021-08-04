@@ -68,6 +68,13 @@ func Test_markdown(t *testing.T) {
 			t.Errorf("Wrong result, got \"%v\"", renderedText)
 		}
 
+		// Title
+
+		renderedTitle := app.renderMdTitle("3. **Test**")
+		if renderedTitle != "3. Test" {
+			t.Errorf("Wrong result, got \"%v\"", renderedTitle)
+		}
+
 		// Template func
 
 		renderedText = string(app.safeRenderMarkdownAsHTML("[Relative](/relative)"))

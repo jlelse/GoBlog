@@ -1,13 +1,13 @@
 {{ define "title" }}
-    <title>{{ with .Data.Title }}{{ mdtext . }} - {{ end }}{{ mdtext .Blog.Title }}</title>
-    <link rel="alternate" type="application/rss+xml" title="RSS{{ with .Data.Title }} ({{ mdtext . }}){{ end }}" href="{{ .Data.First }}.rss"/>
-    <link rel="alternate" type="application/atom+xml" title="Atom{{ with .Data.Title }} ({{ mdtext . }}){{ end }}" href="{{ .Data.First }}.atom"/>
-    <link rel="alternate" type="application/feed+json" title="JSON Feed{{ with .Data.Title }} ({{ mdtext . }}){{ end }}" href="{{ .Data.First }}.json"/>
+    <title>{{ with .Data.Title }}{{ mdtitle . }} - {{ end }}{{ mdtitle .Blog.Title }}</title>
+    <link rel="alternate" type="application/rss+xml" title="RSS{{ with .Data.Title }} ({{ mdtitle . }}){{ end }}" href="{{ .Data.First }}.rss"/>
+    <link rel="alternate" type="application/atom+xml" title="Atom{{ with .Data.Title }} ({{ mdtitle . }}){{ end }}" href="{{ .Data.First }}.atom"/>
+    <link rel="alternate" type="application/feed+json" title="JSON Feed{{ with .Data.Title }} ({{ mdtitle . }}){{ end }}" href="{{ .Data.First }}.json"/>
 {{ end }}
 
 {{ define "main" }}
   <main class="h-feed">
-      {{ with .Data.Title }}<h1 class="p-name">{{ mdtext . }}</h1>{{ end }}
+      {{ with .Data.Title }}<h1 class="p-name">{{ mdtitle . }}</h1>{{ end }}
       {{ with .Data.Description }}{{ md . }}{{ end }}
       {{ if (or .Data.Title .Data.Description) }}
         <hr>

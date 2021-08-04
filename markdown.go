@@ -41,6 +41,33 @@ func (a *goBlog) initMarkdown() {
 		absoluteLinks: true,
 		publicAddress: a.cfg.Server.PublicAddress,
 	}))...)
+	a.titleMd = goldmark.New(
+		goldmark.WithParser(
+			// Override to disable lists
+			parser.NewParser(
+				parser.WithBlockParsers(
+					// util.Prioritized(parser.NewSetextHeadingParser(), 100),
+					util.Prioritized(parser.NewThematicBreakParser(), 200),
+					// util.Prioritized(parser.NewListParser(), 300),
+					// util.Prioritized(parser.NewListItemParser(), 400),
+					util.Prioritized(parser.NewCodeBlockParser(), 500),
+					// util.Prioritized(parser.NewATXHeadingParser(), 600),
+					util.Prioritized(parser.NewFencedCodeBlockParser(), 700),
+					util.Prioritized(parser.NewBlockquoteParser(), 800),
+					util.Prioritized(parser.NewHTMLBlockParser(), 900),
+					util.Prioritized(parser.NewParagraphParser(), 1000)),
+				parser.WithInlineParsers(parser.DefaultInlineParsers()...),
+				parser.WithParagraphTransformers(parser.DefaultParagraphTransformers()...),
+			),
+		),
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+		goldmark.WithExtensions(
+			extension.Typographer,
+			emoji.Emoji,
+		),
+	)
 }
 
 func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
@@ -72,6 +99,15 @@ func (a *goBlog) renderText(s string) string {
 		return ""
 	}
 	return htmlText(h)
+}
+
+func (a *goBlog) renderMdTitle(s string) string {
+	var buffer bytes.Buffer
+	err := a.titleMd.Convert([]byte(s), &buffer)
+	if err != nil {
+		return ""
+	}
+	return htmlText(buffer.Bytes())
 }
 
 // Extensions etc...

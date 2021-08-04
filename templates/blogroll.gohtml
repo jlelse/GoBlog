@@ -1,10 +1,10 @@
 {{ define "title" }}
-    <title>{{ mdtext .Data.Title }} - {{ mdtext .Blog.Title }}</title>
+    <title>{{ mdtitle .Data.Title }} - {{ mdtitle .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
-    {{ with .Data.Title }}<h1>{{ mdtext . }}</h1>{{ end }}
+    {{ with .Data.Title }}<h1>{{ mdtitle . }}</h1>{{ end }}
     {{ with .Data.Description }}{{ md . }}{{ end }}
     <p><a href="{{ .Blog.RelativePath .Data.Download }}" class="button" download>{{ string .Blog.Lang "download" }}</a></p>
     {{ $lang := .Blog.Lang }}

@@ -3,7 +3,7 @@
         {{ include "summaryandpostmeta" . }}
         {{ $translations := (translations .Data) }}
         {{ if gt (len $translations) 0 }}
-            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ mdtext $t.Title }}</a>{{ $delimiter = ", " }}{{ end }}</div>
+            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ mdtitle $t.Title }}</a>{{ $delimiter = ", " }}{{ end }}</div>
         {{ end }}
         {{ $short := shorturl .Data }}
         {{ if $short }}<div>{{ string .Blog.Lang "shorturl" }} <a href="{{ $short }}" rel="shortlink">{{ $short }}</a></div>{{ end }}

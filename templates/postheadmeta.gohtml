@@ -4,8 +4,8 @@
         <meta property="twitter:url" content="{{ . }}">
     {{ end }}
     {{ with .Data.Title }}
-        <meta property="og:title" content="{{ mdtext . }}">
-        <meta property="twitter:title" content="{{ mdtext . }}">
+        <meta property="og:title" content="{{ mdtitle . }}">
+        <meta property="twitter:title" content="{{ mdtitle . }}">
     {{ end }}
     {{ with summary .Data }}
         <meta name="description" content="{{ . }}">
