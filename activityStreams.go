@@ -164,7 +164,7 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 		Type:              "Person",
 		ID:                a.apIri(b),
 		URL:               a.apIri(b),
-		Name:              b.Title,
+		Name:              a.renderMdTitle(b.Title),
 		Summary:           b.Description,
 		PreferredUsername: blog,
 		Inbox:             a.getFullAddress("/activitypub/inbox/" + blog),

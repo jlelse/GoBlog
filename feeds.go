@@ -24,6 +24,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	if title == "" {
 		title = a.cfg.Blogs[blog].Title
 	}
+	title = a.renderMdTitle(title)
 	if description == "" {
 		description = a.cfg.Blogs[blog].Description
 	}
