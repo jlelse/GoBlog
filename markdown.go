@@ -43,21 +43,15 @@ func (a *goBlog) initMarkdown() {
 	}))...)
 	a.titleMd = goldmark.New(
 		goldmark.WithParser(
-			// Override to disable lists
+			// Override, no need for special Markdown parsers
 			parser.NewParser(
 				parser.WithBlockParsers(
-					// util.Prioritized(parser.NewSetextHeadingParser(), 100),
-					util.Prioritized(parser.NewThematicBreakParser(), 200),
-					// util.Prioritized(parser.NewListParser(), 300),
-					// util.Prioritized(parser.NewListItemParser(), 400),
-					util.Prioritized(parser.NewCodeBlockParser(), 500),
-					// util.Prioritized(parser.NewATXHeadingParser(), 600),
-					util.Prioritized(parser.NewFencedCodeBlockParser(), 700),
-					util.Prioritized(parser.NewBlockquoteParser(), 800),
 					util.Prioritized(parser.NewHTMLBlockParser(), 900),
 					util.Prioritized(parser.NewParagraphParser(), 1000)),
-				parser.WithInlineParsers(parser.DefaultInlineParsers()...),
-				parser.WithParagraphTransformers(parser.DefaultParagraphTransformers()...),
+				parser.WithInlineParsers(
+					util.Prioritized(parser.NewRawHTMLParser(), 400),
+				),
+				parser.WithParagraphTransformers(),
 			),
 		),
 		goldmark.WithRendererOptions(

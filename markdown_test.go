@@ -70,10 +70,9 @@ func Test_markdown(t *testing.T) {
 
 		// Title
 
-		renderedTitle := app.renderMdTitle("3. **Test**")
-		if renderedTitle != "3. Test" {
-			t.Errorf("Wrong result, got \"%v\"", renderedTitle)
-		}
+		assert.Equal(t, "3. **Test**", app.renderMdTitle("3. **Test**"))
+		assert.Equal(t, "Test’s", app.renderMdTitle("Test's"))
+		assert.Equal(t, "😂", app.renderMdTitle(":joy:"))
 
 		// Template func
 
