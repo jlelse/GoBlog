@@ -153,7 +153,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.New()
 	// Request posts
-	posts, _ := a.db.getPosts(&postsRequestConfig{
+	posts, _ := a.getPosts(&postsRequestConfig{
 		status:            statusPublished,
 		blog:              r.Context().Value(blogKey).(string),
 		withoutParameters: true,

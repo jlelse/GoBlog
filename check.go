@@ -17,7 +17,7 @@ import (
 
 func (a *goBlog) checkAllExternalLinks() {
 	// Get all published posts without parameters
-	posts, err := a.db.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true})
+	posts, err := a.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true})
 	if err != nil {
 		log.Println(err.Error())
 		return

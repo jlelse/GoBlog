@@ -33,29 +33,27 @@ func (a *goBlog) initMarkdown() {
 			emoji.Emoji,
 		),
 	}
+	publicAddress := ""
+	if srv := a.cfg.Server; srv != nil {
+		publicAddress = srv.PublicAddress
+	}
 	a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
 		absoluteLinks: false,
-		publicAddress: a.cfg.Server.PublicAddress,
+		publicAddress: publicAddress,
 	}))...)
 	a.absoluteMd = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
 		absoluteLinks: true,
-		publicAddress: a.cfg.Server.PublicAddress,
+		publicAddress: publicAddress,
 	}))...)
 	a.titleMd = goldmark.New(
 		goldmark.WithParser(
 			// Override, no need for special Markdown parsers
 			parser.NewParser(
 				parser.WithBlockParsers(
-					util.Prioritized(parser.NewHTMLBlockParser(), 900),
 					util.Prioritized(parser.NewParagraphParser(), 1000)),
-				parser.WithInlineParsers(
-					util.Prioritized(parser.NewRawHTMLParser(), 400),
-				),
+				parser.WithInlineParsers(),
 				parser.WithParagraphTransformers(),
 			),
-		),
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
 		),
 		goldmark.WithExtensions(
 			extension.Typographer,

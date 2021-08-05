@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ with .Data.Title }}{{ mdtitle . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
+  <title>{{ with .Data.RenderedTitle }}{{ . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
 {{ end }}
@@ -8,7 +8,7 @@
   <main class=h-entry>
     <article>
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
-      {{ with .Data.Title }}<h1 class=p-name>{{ mdtitle . }}</h1>{{ end }}
+      {{ with .Data.RenderedTitle }}<h1 class=p-name>{{ . }}</h1>{{ end }}
       {{ include "postmeta" . }}
       {{ include "postactions" . }}
       {{ if .Data.Content }}

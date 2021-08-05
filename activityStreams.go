@@ -106,7 +106,7 @@ func (a *goBlog) toASNote(p *post) *asNote {
 		AttributedTo: a.apIri(a.cfg.Blogs[p.Blog]),
 	}
 	// Name and Type
-	if title := a.renderMdTitle(p.Title()); title != "" {
+	if title := p.RenderedTitle; title != "" {
 		as.Name = title
 		as.Type = "Article"
 	} else {

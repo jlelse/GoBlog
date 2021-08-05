@@ -41,7 +41,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			post, err := a.db.getPost(parsedURL.Path)
+			post, err := a.getPost(parsedURL.Path)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return

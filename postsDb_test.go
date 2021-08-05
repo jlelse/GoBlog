@@ -29,6 +29,7 @@ func Test_postsDb(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	app.initMarkdown()
 
 	now := toLocalSafe(time.Now().String())
 	nowPlus1Hour := toLocalSafe(time.Now().Add(1 * time.Hour).String())
@@ -51,7 +52,7 @@ func Test_postsDb(t *testing.T) {
 	must.NoError(err)
 
 	// Check post
-	p, err := app.db.getPost("/test/abc")
+	p, err := app.getPost("/test/abc")
 	must.NoError(err)
 	is.Equal("/test/abc", p.Path)
 	is.Equal("ABC", p.Content)
@@ -75,7 +76,7 @@ func Test_postsDb(t *testing.T) {
 	is.Len(pp, 0)
 
 	// Check drafts
-	drafts, _ := app.db.getPosts(&postsRequestConfig{
+	drafts, _ := app.getPosts(&postsRequestConfig{
 		blog:   "en",
 		status: statusDraft,
 	})
@@ -90,7 +91,7 @@ func Test_postsDb(t *testing.T) {
 	is.Equal(0, count)
 
 	// Delete post
-	_, err = app.db.deletePost("/test/abc")
+	_, err = app.deletePostFromDb("/test/abc")
 	must.NoError(err)
 
 	// Check that there is no post
@@ -220,6 +221,7 @@ func Test_ftsWithoutTitle(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	app.initMarkdown()
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -232,7 +234,7 @@ func Test_ftsWithoutTitle(t *testing.T) {
 	}, &postCreationOptions{new: true})
 	require.NoError(t, err)
 
-	ps, err := app.db.getPosts(&postsRequestConfig{
+	ps, err := app.getPosts(&postsRequestConfig{
 		search: "ABC",
 	})
 	assert.NoError(t, err)
@@ -250,6 +252,7 @@ func Test_postsPriority(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	app.initMarkdown()
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -272,7 +275,7 @@ func Test_postsPriority(t *testing.T) {
 	}, &postCreationOptions{new: true})
 	require.NoError(t, err)
 
-	ps, err := app.db.getPosts(&postsRequestConfig{
+	ps, err := app.getPosts(&postsRequestConfig{
 		priorityOrder: true,
 	})
 	require.NoError(t, err)

@@ -190,7 +190,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 }
 
 func (a *goBlog) deletePost(path string) error {
-	p, err := a.db.deletePost(path)
+	p, err := a.deletePostFromDb(path)
 	if err != nil || p == nil {
 		return err
 	}
@@ -201,17 +201,17 @@ func (a *goBlog) deletePost(path string) error {
 	return nil
 }
 
-func (db *database) deletePost(path string) (*post, error) {
+func (a *goBlog) deletePostFromDb(path string) (*post, error) {
 	if path == "" {
 		return nil, nil
 	}
-	db.pcm.Lock()
-	defer db.pcm.Unlock()
-	p, err := db.getPost(path)
+	a.db.pcm.Lock()
+	defer a.db.pcm.Unlock()
+	p, err := a.getPost(path)
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.exec(
+	_, err = a.db.exec(
 		`begin;
 		delete from posts where path = ?;
 		delete from post_parameters where path = ?;
@@ -222,7 +222,7 @@ func (db *database) deletePost(path string) (*post, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.rebuildFTSIndex()
+	a.db.rebuildFTSIndex()
 	return p, nil
 }
 
@@ -389,10 +389,10 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	return nil
 }
 
-func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err error) {
+func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
 	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, priority")
-	rows, err := d.query(query, queryParams...)
+	rows, err := a.db.query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -417,16 +417,22 @@ func (d *database) getPosts(config *postsRequestConfig) (posts []*post, err erro
 		posts = append(posts, p)
 	}
 	if !config.withoutParameters {
-		err = d.loadPostParameters(posts, config.withOnlyParameters...)
+		err = a.db.loadPostParameters(posts, config.withOnlyParameters...)
 		if err != nil {
 			return nil, err
+		}
+	}
+	// Render post title
+	for _, p := range posts {
+		if t := p.Title(); t != "" {
+			p.RenderedTitle = a.renderMdTitle(t)
 		}
 	}
 	return posts, nil
 }
 
-func (d *database) getPost(path string) (*post, error) {
-	posts, err := d.getPosts(&postsRequestConfig{path: path, limit: 1})
+func (a *goBlog) getPost(path string) (*post, error) {
+	posts, err := a.getPosts(&postsRequestConfig{path: path, limit: 1})
 	if err != nil {
 		return nil, err
 	} else if len(posts) == 0 {

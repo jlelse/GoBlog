@@ -139,14 +139,12 @@ func Test_telegram(t *testing.T) {
 		app.initTelegram()
 
 		p := &post{
-			Path: "/test",
-			Parameters: map[string][]string{
-				"title": {"Title"},
-			},
-			Published: time.Now().String(),
-			Section:   "test",
-			Blog:      "en",
-			Status:    statusPublished,
+			Path:          "/test",
+			RenderedTitle: "Title",
+			Published:     time.Now().String(),
+			Section:       "test",
+			Blog:          "en",
+			Status:        statusPublished,
 		}
 
 		app.pPostHooks[0](p)

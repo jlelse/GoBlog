@@ -20,7 +20,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogKey).(string)
 	bc := a.cfg.Blogs[blog]
 
-	allPostsWithLocation, err := a.db.getPosts(&postsRequestConfig{
+	allPostsWithLocation, err := a.getPosts(&postsRequestConfig{
 		blog:               blog,
 		status:             statusPublished,
 		parameter:          a.cfg.Micropub.LocationParam,

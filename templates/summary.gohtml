@@ -1,10 +1,10 @@
 {{ define "summary" }}
   <article class="h-entry border-bottom">
     {{ if gt .Data.Priority 0 }}<p>📌 {{ string .Blog.Lang "pinned" }}</p>{{ end }}
-    {{ if .Data.Title }}
+    {{ if .Data.RenderedTitle }}
       <h2 class="p-name">
         <a class="u-url" href="{{ .Data.Path }}">
-          {{ mdtitle .Data.Title }}
+          {{ .Data.RenderedTitle }}
         </a>
       </h2>
     {{ end }}

@@ -29,9 +29,10 @@ type post struct {
 	Status     postStatus
 	Priority   int
 	// Not persisted
-	Slug        string
-	renderCache map[bool]template.HTML
-	renderMutex sync.RWMutex
+	Slug          string
+	RenderedTitle string
+	renderCache   map[bool]template.HTML
+	renderMutex   sync.RWMutex
 }
 
 type postStatus string
@@ -45,7 +46,7 @@ const (
 )
 
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
-	p, err := a.db.getPost(r.URL.Path)
+	p, err := a.getPost(r.URL.Path)
 	if err == errPostNotFound {
 		a.serve404(w, r)
 		return
@@ -89,12 +90,12 @@ func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
 type postPaginationAdapter struct {
 	config *postsRequestConfig
 	nums   int64
-	db     *database
+	a      *goBlog
 }
 
 func (p *postPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		nums, _ := p.db.countPosts(p.config)
+		nums, _ := p.a.db.countPosts(p.config)
 		p.nums = int64(nums)
 	}
 	return p.nums, nil
@@ -105,7 +106,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length
 
-	posts, err := p.db.getPosts(&modifiedConfig)
+	posts, err := p.a.getPosts(&modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&posts).Elem())
 	return err
 }
@@ -247,7 +248,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedDay:   ic.day,
 		status:         status,
 		priorityOrder:  true,
-	}, db: a.db}, a.cfg.Blogs[blog].Pagination)
+	}, a: a}, a.cfg.Blogs[blog].Pagination)
 	p.SetPage(pageNo)
 	var posts []*post
 	err := p.Results(&posts)

@@ -73,6 +73,7 @@ func Test_markdown(t *testing.T) {
 		assert.Equal(t, "3. **Test**", app.renderMdTitle("3. **Test**"))
 		assert.Equal(t, "Test’s", app.renderMdTitle("Test's"))
 		assert.Equal(t, "😂", app.renderMdTitle(":joy:"))
+		assert.Equal(t, "<b></b>", app.renderMdTitle("<b></b>"))
 
 		// Template func
 

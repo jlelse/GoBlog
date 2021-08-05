@@ -109,7 +109,7 @@ func (a *goBlog) postTranslations(p *post) []*post {
 	if translationkey == "" {
 		return nil
 	}
-	posts, err := a.db.getPosts(&postsRequestConfig{
+	posts, err := a.getPosts(&postsRequestConfig{
 		parameter:      "translationkey",
 		parameterValue: translationkey,
 	})

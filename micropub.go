@@ -40,7 +40,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			p, err := a.db.getPost(u.Path)
+			p, err := a.getPost(u.Path)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
@@ -49,7 +49,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		} else {
 			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-			posts, err := a.db.getPosts(&postsRequestConfig{
+			posts, err := a.getPosts(&postsRequestConfig{
 				limit:  limit,
 				offset: offset,
 			})
@@ -473,7 +473,7 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	p, err := a.db.getPost(uu.Path)
+	p, err := a.getPost(uu.Path)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
