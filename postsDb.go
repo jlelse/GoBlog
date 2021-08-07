@@ -131,6 +131,12 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	if err := a.db.savePost(p, o); err != nil {
 		return err
 	}
+	// Reload post from database
+	p, err := a.getPost(p.Path)
+	if err != nil {
+		// Failed to reload post from database
+		return err
+	}
 	// Trigger hooks
 	if p.Status == statusPublished || p.Status == statusUnlisted {
 		if o.new || (o.oldStatus != statusPublished && o.oldStatus != statusUnlisted) {
