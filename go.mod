@@ -16,7 +16,6 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/elnormous/contenttype v1.0.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/gchaincl/sqlhooks/v2 v2.0.1
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0 // indirect

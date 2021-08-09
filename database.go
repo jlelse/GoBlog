@@ -1,15 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"log"
 	"os"
 	"strings"
 	"sync"
 
-	"github.com/gchaincl/sqlhooks/v2"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
 	"golang.org/x/sync/singleflight"
@@ -22,10 +21,11 @@ type database struct {
 	sg singleflight.Group // singleflight group for prepared statements
 	ps sync.Map           // map with prepared statements
 	// Other things
-	pc  singleflight.Group // persistant cache
-	pcm sync.Mutex         // post creation
-	sp  singleflight.Group // singleflight group for short path requests
-	spc sync.Map           // shortpath cache
+	pc    singleflight.Group // persistant cache
+	pcm   sync.Mutex         // post creation
+	sp    singleflight.Group // singleflight group for short path requests
+	spc   sync.Map           // shortpath cache
+	debug bool
 }
 
 func (a *goBlog) initDatabase(logging bool) (err error) {
@@ -60,8 +60,8 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 
 func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	// Register driver
-	dbDriverName := generateRandomString(15)
-	var dr driver.Driver = &sqlite.SQLiteDriver{
+	dbDriverName := "goblog_db_" + generateRandomString(15)
+	sql.Register(dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions
 			for n, f := range map[string]interface{}{
@@ -79,13 +79,9 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 			}
 			return nil
 		},
-	}
-	if c := a.cfg.Db; c != nil && c.Debug {
-		dr = sqlhooks.Wrap(dr, &dbHooks{})
-	}
-	sql.Register("goblog_db_"+dbDriverName, dr)
+	})
 	// Open db
-	db, err := sql.Open("goblog_db_"+dbDriverName, file+"?mode=rwc&_journal_mode=WAL&_busy_timeout=100&cache=shared")
+	db, err := sql.Open(dbDriverName, file+"?mode=rwc&_journal_mode=WAL&_busy_timeout=100&cache=shared")
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +114,14 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Debug
+	debug := false
+	if c := a.cfg.Db; c != nil && c.Debug {
+		debug = true
+	}
 	return &database{
-		db: db,
+		db:    db,
+		debug: debug,
 	}, nil
 }
 
@@ -161,6 +163,9 @@ func (db *database) prepare(query string) (*sql.Stmt, error) {
 		return st, nil
 	})
 	if err != nil {
+		if db.debug {
+			log.Printf(`Failed to prepare query "%s": %s`, query, err.Error())
+		}
 		return nil, err
 	}
 	return stmt.(*sql.Stmt), nil
@@ -172,45 +177,69 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 	// Lock execution
 	db.em.Lock()
 	defer db.em.Unlock()
-	// Check if prepared cache should be skipped
+	// Check if no cache arg set
+	cache := true
 	if len(args) > 0 && args[0] == dbNoCache {
-		return db.db.Exec(query, args[1:]...)
+		cache = false
+		args = args[1:]
 	}
-	// Use prepared statement
-	st, _ := db.prepare(query)
+	// Maybe prepare
+	var st *sql.Stmt
+	if cache {
+		st, _ = db.prepare(query)
+	}
+	// Prepare context, call hook
+	ctx := db.dbBefore(context.Background(), query, args...)
+	defer db.dbAfter(ctx, query, args...)
+	// Execute
 	if st != nil {
-		return st.Exec(args...)
+		return st.ExecContext(ctx, args...)
 	}
-	// Or execute directly
-	return db.db.Exec(query, args...)
+	return db.db.ExecContext(ctx, query, args...)
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
-	// Check if prepared cache should be skipped
+	// Check if no cache arg set
+	cache := true
 	if len(args) > 0 && args[0] == dbNoCache {
-		return db.db.Query(query, args[1:]...)
+		cache = false
+		args = args[1:]
 	}
-	// Use prepared statement
-	st, _ := db.prepare(query)
+	// Maybe prepare
+	var st *sql.Stmt
+	if cache {
+		st, _ = db.prepare(query)
+	}
+	// Prepare context, call hook
+	ctx := db.dbBefore(context.Background(), query, args...)
+	defer db.dbAfter(ctx, query, args...)
+	// Query
 	if st != nil {
-		return st.Query(args...)
+		return st.QueryContext(ctx, args...)
 	}
-	// Or query directly
-	return db.db.Query(query, args...)
+	return db.db.QueryContext(ctx, query, args...)
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
-	// Check if prepared cache should be skipped
+	// Check if no cache arg set
+	cache := true
 	if len(args) > 0 && args[0] == dbNoCache {
-		return db.db.QueryRow(query, args[1:]...), nil
+		cache = false
+		args = args[1:]
 	}
-	// Use prepared statement
-	st, _ := db.prepare(query)
+	// Maybe prepare
+	var st *sql.Stmt
+	if cache {
+		st, _ = db.prepare(query)
+	}
+	// Prepare context, call hook
+	ctx := db.dbBefore(context.Background(), query, args...)
+	defer db.dbAfter(ctx, query, args...)
+	// Query
 	if st != nil {
-		return st.QueryRow(args...), nil
+		return st.QueryRowContext(ctx, args...), nil
 	}
-	// Or query directly
-	return db.db.QueryRow(query, args...), nil
+	return db.db.QueryRowContext(ctx, query, args...), nil
 }
 
 // Other things
