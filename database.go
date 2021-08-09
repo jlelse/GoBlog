@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gchaincl/sqlhooks/v2"
@@ -63,25 +64,18 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	var dr driver.Driver = &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions
-			// Depends on app
-			if err := c.RegisterFunc("mdtext", a.renderText, true); err != nil {
-				return err
-			}
-			// Independent
-			if err := c.RegisterFunc("tolocal", toLocalSafe, true); err != nil {
-				return err
-			}
-			if err := c.RegisterFunc("toutc", toUTCSafe, true); err != nil {
-				return err
-			}
-			if err := c.RegisterFunc("wordcount", wordCount, true); err != nil {
-				return err
-			}
-			if err := c.RegisterFunc("charcount", charCount, true); err != nil {
-				return err
-			}
-			if err := c.RegisterFunc("urlize", urlize, true); err != nil {
-				return err
+			for n, f := range map[string]interface{}{
+				"mdtext":    a.renderText,
+				"tolocal":   toLocalSafe,
+				"toutc":     toUTCSafe,
+				"wordcount": wordCount,
+				"charcount": charCount,
+				"urlize":    urlize,
+				"lowerx":    strings.ToLower,
+			} {
+				if err := c.RegisterFunc(n, f, true); err != nil {
+					return err
+				}
 			}
 			return nil
 		},

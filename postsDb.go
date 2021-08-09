@@ -288,7 +288,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		}
 	}
 	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
-		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @taxname and lower(value) = lower(@taxval))")
+		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @taxname and lowerx(value) = lowerx(@taxval))")
 		args = append(args, sql.Named("taxname", c.taxonomy.Name), sql.Named("taxval", c.taxonomyValue))
 	}
 	if len(c.sections) > 0 {

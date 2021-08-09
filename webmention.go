@@ -89,7 +89,7 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 
 func (db *database) webmentionExists(source, target string) bool {
 	result := 0
-	row, err := db.queryRow("select exists(select 1 from webmentions where lower(source) = lower(@source) and lower(target) = lower(@target))", sql.Named("source", source), sql.Named("target", target))
+	row, err := db.queryRow("select exists(select 1 from webmentions where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target))", sql.Named("source", source), sql.Named("target", target))
 	if err != nil {
 		return false
 	}
@@ -105,6 +105,23 @@ func (a *goBlog) createWebmention(source, target string) (err error) {
 		Target:  unescapedPath(target),
 		Created: time.Now().Unix(),
 	})
+}
+
+func (db *database) insertWebmention(m *mention, status webmentionStatus) error {
+	_, err := db.exec(
+		`
+		insert into webmentions (source, target, created, status, title, content, author) 
+		values (@source, @target, @created, @status, @title, @content, @author)
+		`,
+		sql.Named("source", m.Source),
+		sql.Named("target", m.Target),
+		sql.Named("created", m.Created),
+		sql.Named("status", status),
+		sql.Named("title", m.Title),
+		sql.Named("content", m.Content),
+		sql.Named("author", m.Author),
+	)
+	return err
 }
 
 func (db *database) deleteWebmention(id int) error {
@@ -146,7 +163,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	if config != nil {
 		queryBuilder.WriteString("where 1")
 		if config.target != "" {
-			queryBuilder.WriteString(" and lower(target) = lower(@target)")
+			queryBuilder.WriteString(" and lowerx(target) = lowerx(@target)")
 			args = append(args, sql.Named("target", config.target))
 		}
 		if config.status != "" {
@@ -154,8 +171,8 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 			args = append(args, sql.Named("status", config.status))
 		}
 		if config.sourcelike != "" {
-			queryBuilder.WriteString(" and lower(source) like @sourcelike")
-			args = append(args, sql.Named("sourcelike", "%"+strings.ToLower(config.sourcelike)+"%"))
+			queryBuilder.WriteString(" and lowerx(source) like ('%' || lowerx(@sourcelike) || '%')")
+			args = append(args, sql.Named("sourcelike", config.sourcelike))
 		}
 		if config.id != 0 {
 			queryBuilder.WriteString(" and id = @id")

@@ -110,11 +110,10 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	newStatus := webmentionStatusVerified
 	if a.db.webmentionExists(m.Source, m.Target) {
-		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where lower(source) = lower(@source) and lower(target) = lower(@target)",
+		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
 			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))
 	} else {
-		_, err = a.db.exec("insert into webmentions (source, target, created, status, title, content, author) values (@source, @target, @created, @status, @title, @content, @author)",
-			sql.Named("source", m.Source), sql.Named("target", m.Target), sql.Named("created", m.Created), sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author))
+		a.db.insertWebmention(m, newStatus)
 		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
 	return err
