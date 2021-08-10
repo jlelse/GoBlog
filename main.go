@@ -100,6 +100,21 @@ func main() {
 		return
 	}
 
+	// Markdown export
+	if len(os.Args) >= 2 && os.Args[1] == "export" {
+		var dir string
+		if len(os.Args) >= 3 {
+			dir = os.Args[2]
+		}
+		err = app.exportMarkdownFiles(dir)
+		if err != nil {
+			app.logErrAndQuit("Failed to export markdown files:", err.Error())
+			return
+		}
+		app.shutdown.ShutdownAndWait()
+		return
+	}
+
 	// Initialize components
 	app.initComponents()
 

@@ -131,6 +131,10 @@ footer * {
   margin-bottom: 0;
 }
 
+details summary > *:first-child {
+  display: inline;
+}
+
 .border-top, footer {
   border-top: 1px solid #000;
   border-top: 1px solid var(--primary, #000);
@@ -195,7 +199,6 @@ footer * {
   height: 400px;
 }
 
-/* Print */
 @media print {
   html {
     --background: #fff;

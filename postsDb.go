@@ -249,6 +249,7 @@ type postsRequestConfig struct {
 	priorityOrder                               bool
 	withoutParameters                           bool
 	withOnlyParameters                          []string
+	withoutRenderedTitle                        bool
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []interface{}) {
@@ -429,9 +430,11 @@ func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error)
 		}
 	}
 	// Render post title
-	for _, p := range posts {
-		if t := p.Title(); t != "" {
-			p.RenderedTitle = a.renderMdTitle(t)
+	if !config.withoutRenderedTitle {
+		for _, p := range posts {
+			if t := p.Title(); t != "" {
+				p.RenderedTitle = a.renderMdTitle(t)
+			}
 		}
 	}
 	return posts, nil

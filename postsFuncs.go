@@ -133,23 +133,6 @@ func (p *post) isPublishedSectionPost() bool {
 }
 
 func (a *goBlog) postToMfItem(p *post) *microformatItem {
-	params := map[string]interface{}{}
-	for k, v := range p.Parameters {
-		if l := len(v); l == 1 {
-			params[k] = v[0]
-		} else if l > 1 {
-			params[k] = v
-		}
-	}
-	params["path"] = p.Path
-	params["section"] = p.Section
-	params["blog"] = p.Blog
-	params["published"] = p.Published
-	params["updated"] = p.Updated
-	params["status"] = string(p.Status)
-	params["priority"] = p.Priority
-	pb, _ := yaml.Marshal(params)
-	content := fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
 	var mfStatus, mfVisibility string
 	switch p.Status {
 	case statusDraft:
@@ -173,7 +156,7 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 			PostStatus: []string{mfStatus},
 			Visibility: []string{mfVisibility},
 			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
-			Content:    []string{content},
+			Content:    []string{p.contentWithParams()},
 			URL:        []string{a.fullPostURL(p)},
 			InReplyTo:  p.Parameters[a.cfg.Micropub.ReplyParam],
 			LikeOf:     p.Parameters[a.cfg.Micropub.LikeParam],
@@ -220,6 +203,26 @@ func (a *goBlog) likeTitle(p *post) string {
 
 func (a *goBlog) photoLinks(p *post) []string {
 	return p.Parameters[a.cfg.Micropub.PhotoParam]
+}
+
+func (p *post) contentWithParams() string {
+	params := map[string]interface{}{}
+	for k, v := range p.Parameters {
+		if l := len(v); l == 1 {
+			params[k] = v[0]
+		} else if l > 1 {
+			params[k] = v
+		}
+	}
+	params["path"] = p.Path
+	params["section"] = p.Section
+	params["blog"] = p.Blog
+	params["published"] = p.Published
+	params["updated"] = p.Updated
+	params["status"] = string(p.Status)
+	params["priority"] = p.Priority
+	pb, _ := yaml.Marshal(params)
+	return fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
 }
 
 // Public because of rendering

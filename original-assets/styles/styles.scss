@@ -173,6 +173,13 @@ footer {
   }
 }
 
+details summary {
+  // Show first child of summary inline
+  > *:first-child {
+    display: inline;
+  }
+}
+
 .border-top {
   @include color-border(border-top, 1px, solid, primary);
 }
@@ -235,7 +242,7 @@ footer {
   height: 400px;
 }
 
-/* Print */
+// Print
 @media print {
   html {
     @include lightmode;
