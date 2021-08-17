@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine3.14 as build
+FROM golang:1.17-alpine3.14 as build
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
