@@ -16,11 +16,8 @@ func (a *goBlog) exportMarkdownFiles(dir string) error {
 	for _, p := range posts {
 		filename := filepath.Join(dir, p.Path+".md")
 		filedir := filepath.Dir(filename)
-		err = os.MkdirAll(filedir, 0644)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(filename, []byte(p.contentWithParams()), 0644)
+		_ = os.MkdirAll(filedir, 0777)
+		err = os.WriteFile(filename, []byte(p.contentWithParams()), 0666)
 		if err != nil {
 			return err
 		}

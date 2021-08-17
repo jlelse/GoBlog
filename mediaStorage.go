@@ -92,7 +92,7 @@ func (a *goBlog) initLocalMediaStorage() mediaStorage {
 }
 
 func (l *localMediaStorage) save(filename string, file io.Reader) (location string, err error) {
-	if err = os.MkdirAll(l.path, 0644); err != nil {
+	if err = os.MkdirAll(l.path, 0777); err != nil {
 		return "", err
 	}
 	newFile, err := os.Create(filepath.Join(l.path, filename))
@@ -106,14 +106,14 @@ func (l *localMediaStorage) save(filename string, file io.Reader) (location stri
 }
 
 func (l *localMediaStorage) delete(filename string) (err error) {
-	if err = os.MkdirAll(l.path, 0644); err != nil {
+	if err = os.MkdirAll(l.path, 0777); err != nil {
 		return err
 	}
 	return os.Remove(filepath.Join(l.path, filename))
 }
 
 func (l *localMediaStorage) files() (files []*mediaFile, err error) {
-	if err = os.MkdirAll(l.path, 0644); err != nil {
+	if err = os.MkdirAll(l.path, 0777); err != nil {
 		return nil, err
 	}
 	entries, err := os.ReadDir(l.path)

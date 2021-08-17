@@ -15,7 +15,7 @@ import (
 func Test_compress(t *testing.T) {
 	fakeFileContent := "Test"
 	fakeFileName := filepath.Join(t.TempDir(), "test.jpg")
-	err := os.WriteFile(fakeFileName, []byte(fakeFileContent), 0777)
+	err := os.WriteFile(fakeFileName, []byte(fakeFileContent), 0666)
 	require.Nil(t, err)
 	fakeFile, err := os.Open(fakeFileName)
 	require.Nil(t, err)

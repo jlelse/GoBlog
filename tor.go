@@ -24,7 +24,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(torDataPath, 0644)
+	err = os.MkdirAll(torDataPath, 0777)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 			return err
 		}
 		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-		_ = os.WriteFile(torKeyPath, pemEncoded, os.ModePerm)
+		_ = os.WriteFile(torKeyPath, pemEncoded, 0666)
 	} else {
 		d, _ := os.ReadFile(torKeyPath)
 		block, _ := pem.Decode(d)
