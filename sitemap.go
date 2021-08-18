@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"net/http"
+	"time"
 
 	"github.com/araddon/dateparse"
 	"github.com/snabb/sitemap"
@@ -23,9 +24,11 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.NewSitemapIndex()
 	// Add blog sitemap indices
+	now := time.Now().UTC()
 	for _, bc := range a.cfg.Blogs {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(sitemapBlogPath)),
+			Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogPath)),
+			LastMod: &now,
 		})
 	}
 	// Write sitemap
@@ -37,14 +40,18 @@ func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
 	sm := sitemap.NewSitemapIndex()
 	// Add blog sitemaps
 	b := r.Context().Value(blogKey).(string)
+	now := time.Now().UTC()
 	sm.Add(&sitemap.URL{
-		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogFeaturesPath)),
+		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogFeaturesPath)),
+		LastMod: &now,
 	})
 	sm.Add(&sitemap.URL{
-		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogArchivesPath)),
+		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogArchivesPath)),
+		LastMod: &now,
 	})
 	sm.Add(&sitemap.URL{
-		Loc: a.getFullAddress(a.getRelativePath(b, sitemapBlogPostsPath)),
+		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogPostsPath)),
+		LastMod: &now,
 	})
 	// Write sitemap
 	a.writeSitemapXML(w, sm)
