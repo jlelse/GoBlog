@@ -31,7 +31,7 @@ func Test_webmentions(t *testing.T) {
 	_ = app.initDatabase(false)
 	app.initComponents()
 
-	app.db.insertWebmention(&mention{
+	_ = app.db.insertWebmention(&mention{
 		Source:  "https://example.net/test",
 		Target:  "https://example.com/täst",
 		Created: time.Now().Unix(),
@@ -63,9 +63,7 @@ func Test_webmentions(t *testing.T) {
 	})
 	require.NoError(t, err)
 	if assert.Len(t, mentions, 1) {
-
-		app.db.approveWebmention(mentions[0].ID)
-
+		_ = app.db.approveWebmention(mentions[0].ID)
 	}
 
 	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
