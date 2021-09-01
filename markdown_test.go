@@ -2,10 +2,10 @@ package main
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_markdown(t *testing.T) {
@@ -23,50 +23,55 @@ func Test_markdown(t *testing.T) {
 		// Relative / absolute links
 
 		rendered, err := app.renderMarkdown("[Relative](/relative)", false)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		if !strings.Contains(string(rendered), `href="/relative"`) {
-			t.Errorf("Wrong result, got %v", string(rendered))
-		}
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `href="/relative"`)
 
 		rendered, err = app.renderMarkdown("[Relative](/relative)", true)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		if !strings.Contains(string(rendered), `href="https://example.com/relative"`) {
-			t.Errorf("Wrong result, got %v", string(rendered))
-		}
-		if strings.Contains(string(rendered), `target="_blank"`) {
-			t.Errorf("Wrong result, got %v", string(rendered))
-		}
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `href="https://example.com/relative"`)
+		assert.NotContains(t, string(rendered), `target="_blank"`)
+
+		// Images
+
+		rendered, err = app.renderMarkdown("![](/relative)", false)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `src="/relative"`)
+		assert.Contains(t, string(rendered), `href="/relative"`)
+
+		rendered, err = app.renderMarkdown("![](/relative)", true)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `src="https://example.com/relative"`)
+		assert.Contains(t, string(rendered), `href="https://example.com/relative"`)
+
+		// Image title
+
+		rendered, err = app.renderMarkdown(`![](/test "Test-Title")`, false)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `title="Test-Title"`)
 
 		// External links
 
 		rendered, err = app.renderMarkdown("[External](https://example.com)", true)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		if !strings.Contains(string(rendered), `target="_blank"`) {
-			t.Errorf("Wrong result, got %v", string(rendered))
-		}
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `target="_blank"`)
 
 		// Link title
 
 		rendered, err = app.renderMarkdown(`[With title](https://example.com "Test-Title")`, true)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		if !strings.Contains(string(rendered), `title="Test-Title"`) {
-			t.Errorf("Wrong result, got %v", string(rendered))
-		}
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `title="Test-Title"`)
 
 		// Text
 
 		renderedText := app.renderText("**This** *is* [text](/)")
-		if renderedText != "This is text" {
-			t.Errorf("Wrong result, got \"%v\"", renderedText)
-		}
+		assert.Equal(t, "This is text", renderedText)
 
 		// Title
 

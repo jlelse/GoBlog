@@ -164,7 +164,7 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	n := node.(*ast.Image)
 	// Make URL absolute if it's relative
 	destination := util.URLEscape(n.Destination, true)
-	if c.publicAddress != "" && bytes.HasPrefix(destination, []byte("/")) {
+	if c.absoluteLinks && c.publicAddress != "" && bytes.HasPrefix(destination, []byte("/")) {
 		destination = util.EscapeHTML(append([]byte(c.publicAddress), destination...))
 	} else {
 		destination = util.EscapeHTML(destination)
