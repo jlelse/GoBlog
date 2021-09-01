@@ -2,15 +2,16 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/microcosm-cc/bluemonday"
 )
+
+const commentPath = "/comment"
 
 type comment struct {
 	ID      int
@@ -42,7 +43,7 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogKey).(string)
 	a.render(w, r, templateComment, &renderData{
 		BlogString: blog,
-		Canonical:  a.getFullAddress(a.cfg.Blogs[blog].getRelativePath(fmt.Sprintf("/comment/%d", id))),
+		Canonical:  a.getFullAddress(a.getRelativePath(blog, path.Join(commentPath, strconv.Itoa(id)))),
 		Data:       comment,
 	})
 }
@@ -54,17 +55,13 @@ func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Check and clean comment
-	strict := bluemonday.StrictPolicy()
-	comment := strings.TrimSpace(strict.Sanitize(r.FormValue("comment")))
+	comment := cleanHTMLText(r.FormValue("comment"))
 	if comment == "" {
 		a.serveError(w, r, "Comment is empty", http.StatusBadRequest)
 		return
 	}
-	name := strings.TrimSpace(strict.Sanitize(r.FormValue("name")))
-	if name == "" {
-		name = "Anonymous"
-	}
-	website := strings.TrimSpace(strict.Sanitize(r.FormValue("website")))
+	name := defaultIfEmpty(cleanHTMLText(r.FormValue("name")), "Anonymous")
+	website := cleanHTMLText(r.FormValue("website"))
 	// Insert
 	result, err := a.db.exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
 	if err != nil {
@@ -75,7 +72,8 @@ func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
 		// Serve error
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 	} else {
-		commentAddress := fmt.Sprintf("%s/%d", a.getRelativePath(r.Context().Value(blogKey).(string), "/comment"), commentID)
+		blog := r.Context().Value(blogKey).(string)
+		commentAddress := a.getRelativePath(blog, path.Join(commentPath, strconv.Itoa(int(commentID))))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 		// Redirect to comment

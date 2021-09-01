@@ -122,7 +122,7 @@ func Test_authMiddleware(t *testing.T) {
 		data.Add("password", "pass")
 
 		req := httptest.NewRequest(http.MethodPost, "/abc", strings.NewReader(data.Encode()))
-		req.Header.Add("Content-Type", contenttype.WWWForm)
+		req.Header.Add(contentType, contenttype.WWWForm)
 
 		rec := httptest.NewRecorder()
 

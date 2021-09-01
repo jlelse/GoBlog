@@ -346,7 +346,7 @@ func (a *goBlog) blogEditorRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if commentsConfig := conf.Comments; commentsConfig != nil && commentsConfig.Enabled {
-			commentsPath := conf.getRelativePath("/comment")
+			commentsPath := conf.getRelativePath(commentPath)
 			r.Route(commentsPath, func(r chi.Router) {
 				r.Use(
 					a.privateModeHandler,

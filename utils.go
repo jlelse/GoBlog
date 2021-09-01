@@ -22,15 +22,21 @@ import (
 type contextKey string
 
 func urlize(str string) string {
-	var sb strings.Builder
-	for _, c := range strings.ToLower(str) {
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
-			_, _ = sb.WriteRune(c)
+	return strings.Map(func(c rune) rune {
+		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
+			// Is lower case ASCII or number, return unmodified
+			return c
+		} else if c >= 'A' && c <= 'Z' {
+			// Is upper case ASCII, make lower case
+			return c + 'a' - 'A'
 		} else if c == ' ' {
-			_, _ = sb.WriteRune('-')
+			// Space, replace with '-'
+			return '-'
+		} else {
+			// Drop character
+			return -1
 		}
-	}
-	return sb.String()
+	}, str)
 }
 
 func sortedStrings(s []string) []string {
