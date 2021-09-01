@@ -7,10 +7,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"strconv"
-	"strings"
 	"time"
-
-	"github.com/microcosm-cc/bluemonday"
 )
 
 const defaultContactPath = "/contact"
@@ -30,15 +27,14 @@ func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	// Get form values
-	strict := bluemonday.StrictPolicy()
 	// Name
-	formName := strings.TrimSpace(strict.Sanitize(r.FormValue("name")))
+	formName := cleanHTMLText(r.FormValue("name"))
 	// Email
-	formEmail := strings.TrimSpace(strict.Sanitize(r.FormValue("email")))
+	formEmail := cleanHTMLText(r.FormValue("email"))
 	// Website
-	formWebsite := strings.TrimSpace(strict.Sanitize(r.FormValue("website")))
+	formWebsite := cleanHTMLText(r.FormValue("website"))
 	// Message
-	formMessage := strings.TrimSpace(strict.Sanitize(r.FormValue("message")))
+	formMessage := cleanHTMLText(r.FormValue("message"))
 	if formMessage == "" {
 		a.serveError(w, r, "Message is empty", http.StatusBadRequest)
 		return

@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/vcraescu/go-paginator"
 )
 
@@ -220,7 +219,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	search := chi.URLParam(r, "search")
 	if search != "" {
 		// Decode and sanitize search
-		search = htmlText([]byte(bluemonday.StrictPolicy().Sanitize(searchDecode(search))))
+		search = cleanHTMLText(searchDecode(search))
 	}
 	pageNoString := chi.URLParam(r, "page")
 	pageNo, _ := strconv.Atoi(pageNoString)

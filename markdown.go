@@ -90,7 +90,7 @@ func (a *goBlog) renderText(s string) string {
 	if err != nil {
 		return ""
 	}
-	return htmlText(h)
+	return htmlText(string(h))
 }
 
 func (a *goBlog) renderMdTitle(s string) string {
@@ -99,7 +99,7 @@ func (a *goBlog) renderMdTitle(s string) string {
 	if err != nil {
 		return ""
 	}
-	return htmlText(buffer.Bytes())
+	return htmlText(buffer.String())
 }
 
 // Extensions etc...

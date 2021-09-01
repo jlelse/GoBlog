@@ -72,3 +72,8 @@ func Test_urlHasExt(t *testing.T) {
 		assert.Equal(t, "jpg", ext)
 	})
 }
+
+func Test_cleanHTMLText(t *testing.T) {
+	assert.Equal(t, `"This is a 'test'" 😁`, cleanHTMLText(`"This is a 'test'" 😁`))
+	assert.Equal(t, `Test`, cleanHTMLText(`<b>Test</b>`))
+}

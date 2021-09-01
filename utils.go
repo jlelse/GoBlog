@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"html/template"
@@ -16,6 +15,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
 	"github.com/c2h5oh/datasize"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/thoas/go-funk"
 )
 
@@ -233,12 +233,16 @@ func mBytesString(size int64) string {
 	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes())
 }
 
-func htmlText(b []byte) string {
-	d, err := goquery.NewDocumentFromReader(bytes.NewReader(b))
+func htmlText(s string) string {
+	d, err := goquery.NewDocumentFromReader(strings.NewReader(s))
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(d.Text())
+}
+
+func cleanHTMLText(s string) string {
+	return htmlText(bluemonday.StrictPolicy().Sanitize(s))
 }
 
 func defaultIfEmpty(s, d string) string {
