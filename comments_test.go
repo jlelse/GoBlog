@@ -37,7 +37,7 @@ func Test_comments(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	t.Run("Successful comment", func(t *testing.T) {
 

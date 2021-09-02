@@ -29,7 +29,7 @@ func Test_webmentions(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	_ = app.db.insertWebmention(&mention{
 		Source:  "https://example.net/test",

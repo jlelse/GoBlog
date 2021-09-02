@@ -44,7 +44,7 @@ func Test_authMiddleware(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	app.d = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("ABC Test"))

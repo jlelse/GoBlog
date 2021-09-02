@@ -32,7 +32,7 @@ func Test_captchaMiddleware(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	h := app.captchaMiddleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("ABC Test"))

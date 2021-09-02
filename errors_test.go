@@ -31,7 +31,7 @@ func Test_errors(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	t.Run("Test 404, no HTML", func(t *testing.T) {
 		h := http.HandlerFunc(app.serve404)

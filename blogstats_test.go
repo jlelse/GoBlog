@@ -43,7 +43,7 @@ func Test_blogStats(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
-	app.initComponents()
+	app.initComponents(false)
 
 	// Insert post
 
