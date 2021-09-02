@@ -41,6 +41,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			b = []byte(r.PostForm.Encode())
 		}
 		a.renderWithStatusCode(w, r, http.StatusUnauthorized, templateCaptcha, &renderData{
+			BlogString: r.Context().Value(blogKey).(string),
 			Data: map[string]string{
 				"captchamethod":  r.Method,
 				"captchaheaders": base64.StdEncoding.EncodeToString(h),

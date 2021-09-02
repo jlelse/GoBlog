@@ -12,30 +12,15 @@
       <textarea name="content" class="monospace h400p formcache" id="create-input">{{ editortemplate .BlogString }}</textarea>
       <input type="submit" value="{{ string .Blog.Lang "create" }}">
     </form>
+    {{ if .Data.UpdatePostURL }}
     <h2 id="update">{{ string .Blog.Lang "update" }}</h2>
     <form class="fw p" method="post" action="#update">
-      {{ if .Data.UpdatePostURL }}
-        <input type="hidden" name="editoraction" value="updatepost">
-        <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
-        <textarea name="content" class="monospace h400p">{{ .Data.UpdatePostContent }}</textarea>
-      {{ else }}
-        <input type="hidden" name="editoraction" value="loadupdate">
-        <input type="url" name="url" placeholder="URL">
-      {{ end }}
+      <input type="hidden" name="editoraction" value="updatepost">
+      <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
+      <textarea name="content" class="monospace h400p">{{ .Data.UpdatePostContent }}</textarea>
       <input type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
-    <h2 id="delete">{{ string .Blog.Lang "delete" }}</h2>
-    <form class="fw p" method="post" action="#delete">
-      {{ if .Data.DeleteURL }}
-        <input type="hidden" name="action" value="delete">
-        <input type="url" name="url" placeholder="URL" value="{{ .Data.DeleteURL }}">
-        <input type="submit" value="{{ string .Blog.Lang "confirmdelete" }}">
-      {{ else }}
-        <input type="hidden" name="editoraction" value="loaddelete">
-        <input type="url" name="url" placeholder="URL">
-        <input type="submit" value="{{ string .Blog.Lang "delete" }}">
-      {{ end }}
-    </form>
+    {{ end }}
     <h2>{{ string .Blog.Lang "posts" }}</h2>
     <p><a href="{{ .Blog.RelativePath "/editor/drafts" }}">{{ string .Blog.Lang "drafts" }}</a></p>
     <p><a href="{{ .Blog.RelativePath "/editor/private" }}">{{ string .Blog.Lang "privateposts" }}</a></p>

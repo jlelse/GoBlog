@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -42,7 +43,7 @@ func Test_captchaMiddleware(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 
-		h.ServeHTTP(rec, req)
+		h.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		res := rec.Result()
 		resBody, _ := io.ReadAll(res.Body)

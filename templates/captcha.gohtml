@@ -1,11 +1,10 @@
 {{ define "title" }}
-  <title>{{ string .Blog.Lang "captcha" }} - {{ mdtitle .Blog.Title }}</title>
+  <title>{{ mdtitle .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
   <main>
-    <h1>{{ string .Blog.Lang "captcha" }}</h1>
-    <img src="/captcha/{{ .Data.captchaid }}.png" class="captchaimg">
+    <p><img src="/captcha/{{ .Data.captchaid }}.png" class="captchaimg"></p>
     <form class="fw p" method="post">
       <input type="hidden" name="captchaaction" value="captcha">
       <input type="hidden" name="captchamethod" value="{{ .Data.captchamethod }}">

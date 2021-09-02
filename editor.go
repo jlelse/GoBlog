@@ -28,13 +28,6 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogKey).(string)
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
-		case "loaddelete":
-			a.render(w, r, templateEditor, &renderData{
-				BlogString: blog,
-				Data: map[string]interface{}{
-					"DeleteURL": r.FormValue("url"),
-				},
-			})
 		case "loadupdate":
 			parsedURL, err := url.Parse(r.FormValue("url"))
 			if err != nil {
