@@ -232,6 +232,36 @@ func (a *goBlog) deletePostFromDb(path string) (*post, error) {
 	return p, nil
 }
 
+func (db *database) replacePostParam(path, param string, values []string) error {
+	// Lock post creation
+	db.pcm.Lock()
+	defer db.pcm.Unlock()
+	// Build SQL
+	var sqlBuilder strings.Builder
+	var sqlArgs = []interface{}{dbNoCache}
+	// Start transaction
+	sqlBuilder.WriteString("begin;")
+	// Delete old post
+	sqlBuilder.WriteString("delete from post_parameters where path = ? and parameter = ?;")
+	sqlArgs = append(sqlArgs, path, param)
+	// Insert new post parameters
+	for _, value := range values {
+		if value != "" {
+			sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+			sqlArgs = append(sqlArgs, path, param, value)
+		}
+	}
+	// Commit transaction
+	sqlBuilder.WriteString("commit;")
+	// Execute
+	if _, err := db.exec(sqlBuilder.String(), sqlArgs...); err != nil {
+		return err
+	}
+	// Update FTS index
+	db.rebuildFTSIndex()
+	return nil
+}
+
 type postsRequestConfig struct {
 	search                                      string
 	blog                                        string

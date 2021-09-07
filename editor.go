@@ -69,6 +69,23 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			a.editorMicropubPost(w, req, false)
 		case "upload":
 			a.editorMicropubPost(w, r, true)
+		case "tts":
+			parsedURL, err := url.Parse(r.FormValue("url"))
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			post, err := a.getPost(parsedURL.Path)
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if err = a.createPostTTSAudio(post); err != nil {
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, post.Path, http.StatusFound)
+			return
 		default:
 			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}

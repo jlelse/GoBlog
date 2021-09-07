@@ -5,9 +5,9 @@
     let speech = window.speechSynthesis
 
     if (speech) {
-        speakButton.classList.remove('hide')
         speakButton.onclick = startSpeak
         speakButton.textContent = speakButton.dataset.speak
+        speakButton.classList.remove('hide')
     }
 
     function query(selector) {

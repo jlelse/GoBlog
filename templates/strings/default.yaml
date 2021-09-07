@@ -21,6 +21,7 @@ editorpostdesc: "Empty parameters are removed automatically. More possible param
 emailopt: "Email (optional)"
 feed: "Feed"
 fileuses: "file uses"
+gentts: "Generate Text-To-Speech audio"
 indieauth: "IndieAuth"
 interactions: "Interactions & Comments"
 interactionslabel: "Have you published a response to this? Paste the URL here."

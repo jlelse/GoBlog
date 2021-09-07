@@ -86,6 +86,9 @@ func (a *goBlog) safeRenderMarkdownAsHTML(source string) template.HTML {
 }
 
 func (a *goBlog) renderText(s string) string {
+	if s == "" {
+		return ""
+	}
 	h, err := a.renderMarkdown(s, false)
 	if err != nil {
 		return ""
@@ -94,6 +97,9 @@ func (a *goBlog) renderText(s string) string {
 }
 
 func (a *goBlog) renderMdTitle(s string) string {
+	if s == "" {
+		return ""
+	}
 	var buffer bytes.Buffer
 	err := a.titleMd.Convert([]byte(s), &buffer)
 	if err != nil {

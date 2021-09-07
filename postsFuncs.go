@@ -242,3 +242,7 @@ func (p *post) Old() bool {
 	}
 	return pubDate.AddDate(1, 0, 0).Before(time.Now())
 }
+
+func (p *post) TTS() string {
+	return p.firstParameter("tts")
+}

@@ -33,6 +33,11 @@
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "delete" }}" class="confirm" data-confirmmessage="{{ string .Blog.Lang "confirmdelete" }}">
       </form>
+      <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}">
+        <input type="hidden" name="editoraction" value="tts">
+        <input type="hidden" name="url" value="{{ .Canonical }}">
+        <input type="submit" value="{{ string .Blog.Lang "gentts" }}">
+      </form>
       <script defer src="{{ asset "js/formconfirm.js" }}"></script>
     </div>
   {{ end }}
