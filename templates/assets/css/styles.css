@@ -145,14 +145,10 @@ details summary > *:first-child {
   border-bottom: 1px solid var(--primary, #000);
 }
 
-.p, table {
+.p, #post-actions, table {
   display: block;
   margin-top: 1em;
   margin-bottom: 1em;
-}
-
-.flex {
-  display: flex;
 }
 
 .hide {
@@ -197,6 +193,15 @@ details summary > *:first-child {
 
 #map {
   height: 400px;
+}
+
+#post-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+#post-actions * {
+  text-align: center;
 }
 
 @media print {

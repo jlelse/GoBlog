@@ -194,10 +194,6 @@ details summary {
   margin-bottom: 1em;
 }
 
-.flex {
-  display: flex;
-}
-
 .hide {
   display: none;
 }
@@ -240,6 +236,17 @@ details summary {
 
 #map {
   height: 400px;
+}
+
+#post-actions {
+  @extend .p;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  * {
+    text-align: center;
+  }
 }
 
 // Print
