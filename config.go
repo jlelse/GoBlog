@@ -76,6 +76,7 @@ type configBlog struct {
 	Comments       *configComments           `mapstructure:"comments"`
 	Map            *configGeoMap             `mapstructure:"map"`
 	Contact        *configContact            `mapstructure:"contact"`
+	Announcement   *configAnnouncement       `mapstructure:"announcement"`
 }
 
 type configSection struct {
@@ -168,6 +169,10 @@ type configContact struct {
 	SMTPPassword  string `mapstructure:"smtpPassword"`
 	EmailFrom     string `mapstructure:"emailFrom"`
 	EmailTo       string `mapstructure:"emailTo"`
+}
+
+type configAnnouncement struct {
+	Text string `mapstructure:"text"`
 }
 
 type configUser struct {

@@ -1,4 +1,9 @@
 {{ define "header" }}
+  {{ with .Blog.Announcement }}{{ with .Text }}
+  <div id="announcement" data-nosnippet>
+  {{ md . }}
+  </div>
+  {{ end }}{{ end }}
   <header>
     <h1><a href="{{ .Blog.RelativePath "/" }}" rel="home" title="{{ mdtitle .Blog.Title }}" translate="no">{{ mdtitle .Blog.Title }}</a></h1>
       {{ with .Blog.Description }}<p><i>{{ . }}</i></p>{{ end }}

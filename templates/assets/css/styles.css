@@ -94,16 +94,6 @@ pre {
 
 mark, :not(pre) > code {
   font-size: 1rem;
-  color: #fff;
-  color: var(--background, #fff);
-  background: #000;
-  background: var(--primary, #000);
-}
-mark::selection, :not(pre) > code::selection {
-  color: #000;
-  color: var(--primary, #000);
-  background: #fff;
-  background: var(--background, #fff);
 }
 
 code {
@@ -191,6 +181,19 @@ details summary > *:first-child {
   transition: transform 2s ease;
 }
 
+.invert, #announcement *, #announcement, mark, :not(pre) > code {
+  color: #fff;
+  color: var(--background, #fff);
+  background: #000;
+  background: var(--primary, #000);
+}
+.invert::selection, #announcement ::selection, #announcement::selection, mark::selection, :not(pre) > code::selection {
+  color: #000;
+  color: var(--primary, #000);
+  background: #fff;
+  background: var(--background, #fff);
+}
+
 #map {
   height: 400px;
 }
@@ -204,6 +207,11 @@ details summary > *:first-child {
   text-align: center;
 }
 
+#announcement {
+  padding: 5px;
+  text-align: center;
+  margin-bottom: 10px;
+}
 @media print {
   html {
     --background: #fff;
@@ -222,7 +230,8 @@ details summary > *:first-child {
 #related,
 #interactions,
 #posteditactions,
-#tor {
+#tor,
+#announcement {
     display: none;
   }
 

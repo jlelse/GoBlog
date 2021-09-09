@@ -137,13 +137,7 @@ pre {
 
 mark, :not(pre) > code {
   font-size: 1rem;
-  // Invert
-  @include color(color, background);
-  @include color(background, primary);
-  &::selection {
-    @include color(color, primary);
-    @include color(background, background);
-  }
+  @extend .invert;
 }
 
 code {
@@ -234,6 +228,15 @@ details summary {
   transition: transform 2s ease;
 }
 
+.invert {
+  @include color(color, background);
+  @include color(background, primary);
+  &::selection {
+    @include color(color, primary);
+    @include color(background, background);
+  }
+}
+
 #map {
   height: 400px;
 }
@@ -246,6 +249,16 @@ details summary {
 
   * {
     text-align: center;
+  }
+}
+
+#announcement {
+  @extend .invert;
+	padding: 5px;
+	text-align: center;
+	margin-bottom: 10px;
+  * {
+    @extend .invert;
   }
 }
 
@@ -266,7 +279,8 @@ details summary {
   #related,
   #interactions,
   #posteditactions,
-  #tor {
+  #tor,
+  #announcement {
     display: none;
   }
 
