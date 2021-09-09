@@ -210,7 +210,6 @@ details summary > *:first-child {
 #announcement {
   padding: 5px;
   text-align: center;
-  margin-bottom: 10px;
 }
 @media print {
   html {
