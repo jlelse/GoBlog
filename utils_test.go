@@ -85,3 +85,8 @@ func Test_containsStrings(t *testing.T) {
 	assert.True(t, containsStrings("Test", "xx", "es", "st"))
 	assert.False(t, containsStrings("Test", "xx", "aa"))
 }
+
+func Test_defaultIfEmpty(t *testing.T) {
+	assert.Equal(t, "def", defaultIfEmpty("", "def"))
+	assert.Equal(t, "first", defaultIfEmpty("first", "def"))
+}

@@ -36,15 +36,15 @@ require (
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tdewolff/minify/v2 v2.9.21
-	github.com/thoas/go-funk v0.9.0
+	github.com/tdewolff/minify/v2 v2.9.22
+	github.com/thoas/go-funk v0.9.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.0
+	github.com/yuin/goldmark v1.4.1
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-	golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f
+	golang.org/x/net v0.0.0-20210913180222-943fd674d43e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	willnorris.com/go/microformats v1.1.1
@@ -74,8 +74,8 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tdewolff/parse/v2 v2.5.19 // indirect
-	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
+	github.com/tdewolff/parse/v2 v2.5.21 // indirect
+	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.63.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

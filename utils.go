@@ -252,10 +252,7 @@ func cleanHTMLText(s string) string {
 }
 
 func defaultIfEmpty(s, d string) string {
-	if s != "" {
-		return s
-	}
-	return d
+	return funk.ShortIf(s != "", s, d).(string)
 }
 
 func containsStrings(s string, subStrings ...string) bool {
