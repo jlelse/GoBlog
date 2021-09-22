@@ -35,6 +35,7 @@ type configServer struct {
 	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
 	MediaAddress        string   `mapstructure:"mediaAddress"`
 	PublicHTTPS         bool     `mapstructure:"publicHttps"`
+	TailscaleHTTPS      bool     `mapstructure:"tailscaleHttps"`
 	Tor                 bool     `mapstructure:"tor"`
 	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
 	CSPDomains          []string `mapstructure:"cspDomains"`

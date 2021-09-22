@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/flate"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
+	"tailscale.com/client/tailscale"
 )
 
 const (
@@ -62,7 +64,7 @@ func (a *goBlog) startServer() (err error) {
 		WriteTimeout: 5 * time.Minute,
 	}
 	a.shutdown.Add(shutdownServer(s, "main server"))
-	if a.cfg.Server.PublicHTTPS {
+	if a.cfg.Server.PublicHTTPS || a.cfg.Server.TailscaleHTTPS {
 		// Start HTTP server for redirects
 		httpServer := &http.Server{
 			Addr:         ":http",
@@ -78,23 +80,34 @@ func (a *goBlog) startServer() (err error) {
 		}()
 		// Start HTTPS
 		s.Addr = ":https"
-		hosts := []string{a.cfg.Server.publicHostname}
-		if shn := a.cfg.Server.shortPublicHostname; shn != "" {
-			hosts = append(hosts, shn)
-		}
-		if mhn := a.cfg.Server.mediaHostname; mhn != "" {
-			hosts = append(hosts, mhn)
-		}
-		acmeDir := acme.LetsEncryptURL
-		// acmeDir := "https://acme-staging-v02.api.letsencrypt.org/directory"
-		m := &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(hosts...),
-			Cache:      &httpsCache{db: a.db},
-			Client:     &acme.Client{DirectoryURL: acmeDir},
-		}
-		if err = s.Serve(m.Listener()); err != nil && err != http.ErrServerClosed {
-			return err
+		if a.cfg.Server.TailscaleHTTPS {
+			// HTTPS via Tailscale
+			s.TLSConfig = &tls.Config{
+				GetCertificate: tailscale.GetCertificate,
+			}
+			if err = s.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				return err
+			}
+		} else {
+			// Public HTTPS via Let's Encrypt
+			hosts := []string{a.cfg.Server.publicHostname}
+			if shn := a.cfg.Server.shortPublicHostname; shn != "" {
+				hosts = append(hosts, shn)
+			}
+			if mhn := a.cfg.Server.mediaHostname; mhn != "" {
+				hosts = append(hosts, mhn)
+			}
+			acmeDir := acme.LetsEncryptURL
+			// acmeDir := "https://acme-staging-v02.api.letsencrypt.org/directory"
+			m := &autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist(hosts...),
+				Cache:      &httpsCache{db: a.db},
+				Client:     &acme.Client{DirectoryURL: acmeDir},
+			}
+			if err = s.Serve(m.Listener()); err != nil && err != http.ErrServerClosed {
+				return err
+			}
 		}
 	} else {
 		s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
