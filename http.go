@@ -2,7 +2,6 @@ package main
 
 import (
 	"compress/flate"
-	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -20,7 +19,6 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
-	"tailscale.com/client/tailscale"
 )
 
 const (
@@ -45,7 +43,7 @@ func (a *goBlog) startServer() (err error) {
 		h = h.Append(a.logMiddleware)
 	}
 	h = h.Append(middleware.Recoverer, middleware.Compress(flate.DefaultCompression), middleware.Heartbeat("/ping"))
-	if a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders {
+	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}
 	finalHandler := h.Then(a.d)
@@ -82,10 +80,7 @@ func (a *goBlog) startServer() (err error) {
 		s.Addr = ":https"
 		if a.cfg.Server.TailscaleHTTPS {
 			// HTTPS via Tailscale
-			s.TLSConfig = &tls.Config{
-				GetCertificate: tailscale.GetCertificate,
-			}
-			if err = s.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			if err = a.startTailscaleHttps(s); err != nil {
 				return err
 			}
 		} else {

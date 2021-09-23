@@ -362,6 +362,9 @@ func (a *goBlog) initConfig() error {
 	return nil
 }
 
-func (a *goBlog) httpsConfigured() bool {
-	return a.cfg.Server.PublicHTTPS || a.cfg.Server.SecurityHeaders || strings.HasPrefix(a.cfg.Server.PublicAddress, "https")
+func (a *goBlog) httpsConfigured(checkAddress bool) bool {
+	return a.cfg.Server.PublicHTTPS ||
+		a.cfg.Server.TailscaleHTTPS ||
+		a.cfg.Server.SecurityHeaders ||
+		(checkAddress && strings.HasPrefix(a.cfg.Server.PublicAddress, "https"))
 }

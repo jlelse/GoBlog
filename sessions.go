@@ -32,7 +32,7 @@ func (a *goBlog) initSessions() {
 	a.loginSessions = &dbSessionStore{
 		codecs: securecookie.CodecsFromPairs([]byte(a.cfg.Server.JWTSecret)),
 		options: &sessions.Options{
-			Secure:   a.httpsConfigured(),
+			Secure:   a.httpsConfigured(true),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((7 * 24 * time.Hour).Seconds()),
@@ -43,7 +43,7 @@ func (a *goBlog) initSessions() {
 	a.captchaSessions = &dbSessionStore{
 		codecs: securecookie.CodecsFromPairs([]byte(a.cfg.Server.JWTSecret)),
 		options: &sessions.Options{
-			Secure:   a.httpsConfigured(),
+			Secure:   a.httpsConfigured(true),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((24 * time.Hour).Seconds()),
