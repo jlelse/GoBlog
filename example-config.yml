@@ -20,6 +20,7 @@ server:
   mediaAddress: https://media.example.com # Optional domain to use for serving media files
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
+  tailscaleHttps: true # Use an Let's Encrypt certificate from Tailscale (see https://goblog.app/s/7)
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
