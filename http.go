@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -123,9 +124,13 @@ func shutdownServer(s *http.Server, name string) func() {
 	}
 }
 
-func (a *goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
+func (*goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
+	requestHost, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		requestHost = r.Host
+	}
 	w.Header().Set("Connection", "close")
-	http.Redirect(w, r, fmt.Sprintf("https://%s%s", a.cfg.Server.publicHostname, r.URL.RequestURI()), http.StatusMovedPermanently)
+	http.Redirect(w, r, fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI()), http.StatusMovedPermanently)
 }
 
 const (
