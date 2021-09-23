@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -66,7 +65,7 @@ func (a *goBlog) startServer() (err error) {
 		// Start HTTP server for redirects
 		httpServer := &http.Server{
 			Addr:         ":http",
-			Handler:      http.HandlerFunc(redirectToHttps),
+			Handler:      http.HandlerFunc(a.redirectToHttps),
 			ReadTimeout:  5 * time.Minute,
 			WriteTimeout: 5 * time.Minute,
 		}
@@ -124,13 +123,9 @@ func shutdownServer(s *http.Server, name string) func() {
 	}
 }
 
-func redirectToHttps(w http.ResponseWriter, r *http.Request) {
-	requestHost, _, err := net.SplitHostPort(r.Host)
-	if err != nil {
-		requestHost = r.Host
-	}
+func (a *goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
-	http.Redirect(w, r, fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI()), http.StatusMovedPermanently)
+	http.Redirect(w, r, fmt.Sprintf("https://%s%s", a.cfg.Server.publicHostname, r.URL.RequestURI()), http.StatusMovedPermanently)
 }
 
 const (
