@@ -1,1 +1,7 @@
 theme: jekyll-theme-cayman
+
+title: GoBlog
+description: Simple blogging system written in Go
+
+github:
+  is_project_page: false
