@@ -4,14 +4,15 @@ With GoBlog [I](https://jlelse.blog) created my own blogging system, because it 
 
 License: MIT License
 
-Blog: https://goblog.app/  
-Documentation: https://docs.goblog.app  
-Main repository: https://git.jlel.se/jlelse/GoBlog  
-GitHub mirror: https://github.com/jlelse/GoBlog  
-Codeberg mirror: https://codeberg.org/jlelse/GoBlog
+[Blog](https://goblog.app/)  
+[Documentation](https://docs.goblog.app)  
+[Main repository](https://git.jlel.se/jlelse/GoBlog)  
+[GitHub mirror](https://github.com/jlelse/GoBlog)  
+[Codeberg mirror](https://codeberg.org/jlelse/GoBlog)
 
 More information about GoBlog:
 
 - [How to install and run GoBlog](./install.md)
 - [How to build GoBlog](./build.md)
 - [Administration paths](./admin-paths.md)
+- [GoBlog's storage system](./storage.md)
