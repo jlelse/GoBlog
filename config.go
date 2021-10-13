@@ -28,21 +28,28 @@ type config struct {
 }
 
 type configServer struct {
-	Logging             bool     `mapstructure:"logging"`
-	LogFile             string   `mapstructure:"logFile"`
-	Port                int      `mapstructure:"port"`
-	PublicAddress       string   `mapstructure:"publicAddress"`
-	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
-	MediaAddress        string   `mapstructure:"mediaAddress"`
-	PublicHTTPS         bool     `mapstructure:"publicHttps"`
-	TailscaleHTTPS      bool     `mapstructure:"tailscaleHttps"`
-	Tor                 bool     `mapstructure:"tor"`
-	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
-	CSPDomains          []string `mapstructure:"cspDomains"`
-	JWTSecret           string   `mapstructure:"jwtSecret"`
+	Logging             bool             `mapstructure:"logging"`
+	LogFile             string           `mapstructure:"logFile"`
+	Port                int              `mapstructure:"port"`
+	PublicAddress       string           `mapstructure:"publicAddress"`
+	ShortPublicAddress  string           `mapstructure:"shortPublicAddress"`
+	MediaAddress        string           `mapstructure:"mediaAddress"`
+	PublicHTTPS         bool             `mapstructure:"publicHttps"`
+	TailscaleHTTPS      bool             `mapstructure:"tailscaleHttps"`
+	Tailscale           *configTailscale `mapstructure:"tailscale"`
+	Tor                 bool             `mapstructure:"tor"`
+	SecurityHeaders     bool             `mapstructure:"securityHeaders"`
+	CSPDomains          []string         `mapstructure:"cspDomains"`
+	JWTSecret           string           `mapstructure:"jwtSecret"`
 	publicHostname      string
 	shortPublicHostname string
 	mediaHostname       string
+}
+
+type configTailscale struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	AuthKey  string `mapstructure:"authKey"`
+	Hostname string `mapstructure:"Hostname"`
 }
 
 type configDb struct {

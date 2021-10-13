@@ -20,7 +20,6 @@ server:
   mediaAddress: https://media.example.com # Optional domain to use for serving media files
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
-  tailscaleHttps: true # Use an Let's Encrypt certificate from Tailscale (see https://goblog.app/s/7)
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
@@ -28,6 +27,12 @@ server:
   jwtSecret: changeThisWeakSecret # secret to use for cookies (login and captcha)
   # Tor
   tor: true # Publish onion service, requires Tor to be installed and available in path
+  # Tailscale (see https://tailscale.com)
+  tailscaleHttps: true # Use an Let's Encrypt certificate from Tailscale (see https://goblog.app/s/7), requires publicHttps to be disabled
+  tailscale:
+    enabled: true # Enable the integrated Tailscale support
+    hostname: goblog # The hostname to use for Tailscale
+    authKey: "tskey-XXX" # The authentication key for Tailscale
 
 # Cache
 cache:

@@ -44,28 +44,43 @@ require (
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
+	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	tailscale.com v1.14.3
+	// main
+	tailscale.com v1.1.1-0.20211013042314-f01ff18b6f81
 	willnorris.com/go/microformats v1.1.1
 )
 
 require (
+	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/coreos/go-iptables v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/go-multierror/multierror v1.0.2 // indirect
+	github.com/go-ole/go-ole v1.2.6-0.20210915003542-8b1f7f90f6b1 // indirect
+	github.com/godbus/dbus/v5 v5.0.5 // indirect
 	github.com/golang/glog v1.0.0 // indirect
+	github.com/google/btree v1.0.1 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/insomniacslk/dhcp v0.0.0-20210827173440-b95caade3eac // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/josharian/native v0.0.0-20200817173448-b6b71def0850 // indirect
+	github.com/jsimonetti/rtnetlink v0.0.0-20211011072024-e34540a94caa // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/mdlayher/netlink v1.4.1 // indirect
+	github.com/mdlayher/sdnotify v0.0.0-20210228150836-ea3ec207d697 // indirect
+	github.com/mdlayher/socket v0.0.0-20211007213009-516dcbdf0267 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
@@ -76,13 +91,21 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tdewolff/parse/v2 v2.5.21 // indirect
+	github.com/tailscale/certstore v0.0.0-20210528134328-066c94b793d3 // indirect
+	github.com/tailscale/goupnp v1.0.1-0.20210804011211-c64d0f06ea05 // indirect
+	github.com/tcnksm/go-httpstat v0.2.0 // indirect
+	github.com/tdewolff/parse/v2 v2.5.22 // indirect
+	github.com/u-root/uio v0.0.0-20210528151154-e40b768296a7 // indirect
 	go4.org/intern v0.0.0-20210108033219-3eb7198706b2 // indirect
 	go4.org/mem v0.0.0-20210711025021-927187094b94 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20201222180813-1025295fd063 // indirect
-	golang.org/x/sys v0.0.0-20210921065528-437939a70204 // indirect
+	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
+	golang.zx2c4.com/wireguard v0.0.0-20211012180210-dfd688b6aa7b // indirect
+	golang.zx2c4.com/wireguard/windows v0.4.11 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
+	inet.af/netstack v0.0.0-20210622165351-29b14ebc044e // indirect
 )

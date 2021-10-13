@@ -16,8 +16,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
 	"go.goblog.app/app/pkgs/maprouter"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/context"
 )
 
@@ -63,50 +61,27 @@ func (a *goBlog) startServer() (err error) {
 	}
 	a.shutdown.Add(shutdownServer(s, "main server"))
 	if a.cfg.Server.PublicHTTPS || a.cfg.Server.TailscaleHTTPS {
-		// Start HTTP server for redirects
-		httpServer := &http.Server{
-			Addr:         ":http",
-			Handler:      http.HandlerFunc(a.redirectToHttps),
-			ReadTimeout:  5 * time.Minute,
-			WriteTimeout: 5 * time.Minute,
-		}
-		a.shutdown.Add(shutdownServer(httpServer, "http server"))
 		go func() {
-			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			// Start HTTP server for redirects
+			httpServer := &http.Server{
+				Addr:         ":80",
+				Handler:      http.HandlerFunc(a.redirectToHttps),
+				ReadTimeout:  5 * time.Minute,
+				WriteTimeout: 5 * time.Minute,
+			}
+			a.shutdown.Add(shutdownServer(httpServer, "http server"))
+			if err := a.listenAndServe(httpServer); err != nil && err != http.ErrServerClosed {
 				log.Println("Failed to start HTTP server:", err.Error())
 			}
 		}()
 		// Start HTTPS
-		s.Addr = ":https"
-		if a.cfg.Server.TailscaleHTTPS {
-			// HTTPS via Tailscale
-			if err = a.startTailscaleHttps(s); err != nil {
-				return err
-			}
-		} else {
-			// Public HTTPS via Let's Encrypt
-			hosts := []string{a.cfg.Server.publicHostname}
-			if shn := a.cfg.Server.shortPublicHostname; shn != "" {
-				hosts = append(hosts, shn)
-			}
-			if mhn := a.cfg.Server.mediaHostname; mhn != "" {
-				hosts = append(hosts, mhn)
-			}
-			acmeDir := acme.LetsEncryptURL
-			// acmeDir := "https://acme-staging-v02.api.letsencrypt.org/directory"
-			m := &autocert.Manager{
-				Prompt:     autocert.AcceptTOS,
-				HostPolicy: autocert.HostWhitelist(hosts...),
-				Cache:      &httpsCache{db: a.db},
-				Client:     &acme.Client{DirectoryURL: acmeDir},
-			}
-			if err = s.Serve(m.Listener()); err != nil && err != http.ErrServerClosed {
-				return err
-			}
+		s.Addr = ":443"
+		if err = a.listenAndServe(s); err != nil && err != http.ErrServerClosed {
+			return err
 		}
 	} else {
 		s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
-		if err = s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = a.listenAndServe(s); err != nil && err != http.ErrServerClosed {
 			return err
 		}
 	}

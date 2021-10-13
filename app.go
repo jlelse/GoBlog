@@ -14,6 +14,7 @@ import (
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
 	"golang.org/x/sync/singleflight"
+	"tailscale.com/tsnet"
 )
 
 type goBlog struct {
@@ -70,6 +71,9 @@ type goBlog struct {
 	shutdown shutdowner.Shutdowner
 	// Template strings
 	ts *ts.TemplateStrings
+	// Tailscale
+	tsinit sync.Once
+	tss    *tsnet.Server
 	// Tor
 	torAddress  string
 	torHostname string
