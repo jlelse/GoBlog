@@ -28,7 +28,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.8
-	github.com/microcosm-cc/bluemonday v1.0.15
+	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0
 	github.com/schollz/sqlite3dump v1.3.0
@@ -48,7 +48,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	// main
-	tailscale.com v1.1.1-0.20211013042314-f01ff18b6f81
+	tailscale.com v1.16.0
 	willnorris.com/go/microformats v1.1.1
 )
 
