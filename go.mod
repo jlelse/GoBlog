@@ -27,11 +27,11 @@ require (
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.0
-	github.com/mattn/go-sqlite3 v1.14.8
+	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/pquerna/otp v1.3.0
-	github.com/schollz/sqlite3dump v1.3.0
+	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.9.0
@@ -40,15 +40,15 @@ require (
 	github.com/thoas/go-funk v0.9.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.1
+	github.com/yuin/goldmark v1.4.2
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0
+	golang.org/x/net v0.0.0-20211020060615-d418f374d309
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	// main
-	tailscale.com v1.16.0
+	tailscale.com v1.1.1-0.20211021173707-c209278a9b44
 	willnorris.com/go/microformats v1.1.1
 )
 
@@ -64,14 +64,14 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-multierror/multierror v1.0.2 // indirect
-	github.com/go-ole/go-ole v1.2.6-0.20210915003542-8b1f7f90f6b1 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.0.5 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/insomniacslk/dhcp v0.0.0-20210827173440-b95caade3eac // indirect
+	github.com/insomniacslk/dhcp v0.0.0-20211021111121-509557e9f781 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/josharian/native v0.0.0-20200817173448-b6b71def0850 // indirect
 	github.com/jsimonetti/rtnetlink v0.0.0-20211011072024-e34540a94caa // indirect
@@ -99,11 +99,11 @@ require (
 	go4.org/intern v0.0.0-20210108033219-3eb7198706b2 // indirect
 	go4.org/mem v0.0.0-20210711025021-927187094b94 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20201222180813-1025295fd063 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.0.0-20211020174200-9d6173849985 // indirect
+	golang.org/x/text v0.3.8-0.20211004125949-5bd84dd9b33b // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20211012180210-dfd688b6aa7b // indirect
-	golang.zx2c4.com/wireguard/windows v0.4.11 // indirect
+	golang.zx2c4.com/wireguard v0.0.0-20211020205005-82e0b734e5d2 // indirect
+	golang.zx2c4.com/wireguard/windows v0.4.12 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
