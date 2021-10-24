@@ -473,7 +473,12 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	p, err := a.getPost(uu.Path)
+	ppath := uu.Path
+	if ppath == "" {
+		// Probably homepage "/"
+		ppath = "/"
+	}
+	p, err := a.getPost(ppath)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
