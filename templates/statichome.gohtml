@@ -19,7 +19,7 @@
     <div id="posteditactions" class="p">
       <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}#update">
         <input type="hidden" name="editoraction" value="loadupdate">
-        <input type="hidden" name="url" value="{{ .Canonical }}">
+        <input type="hidden" name="path" value="{{ .Data.Path }}">
         <input type="submit" value="{{ string .Blog.Lang "update" }}">
       </form>
     </div>

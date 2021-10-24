@@ -29,12 +29,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
 		case "loadupdate":
-			parsedURL, err := url.Parse(r.FormValue("url"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			post, err := a.getPost(parsedURL.Path)
+			post, err := a.getPost(r.FormValue("path"))
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
@@ -42,7 +37,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			a.render(w, r, templateEditor, &renderData{
 				BlogString: blog,
 				Data: map[string]interface{}{
-					"UpdatePostURL":     parsedURL.String(),
+					"UpdatePostURL":     a.fullPostURL(post),
 					"UpdatePostContent": a.postToMfItem(post).Properties.Content[0],
 				},
 			})
