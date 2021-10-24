@@ -48,7 +48,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	// main
-	tailscale.com v1.1.1-0.20211021173707-c209278a9b44
+	tailscale.com v1.1.1-0.20211022195130-505f844a43bf
 	willnorris.com/go/microformats v1.1.1
 )
 
@@ -74,7 +74,7 @@ require (
 	github.com/insomniacslk/dhcp v0.0.0-20211021111121-509557e9f781 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/josharian/native v0.0.0-20200817173448-b6b71def0850 // indirect
-	github.com/jsimonetti/rtnetlink v0.0.0-20211011072024-e34540a94caa // indirect
+	github.com/jsimonetti/rtnetlink v0.0.0-20211022192332-93da33804786 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -99,13 +99,14 @@ require (
 	go4.org/intern v0.0.0-20210108033219-3eb7198706b2 // indirect
 	go4.org/mem v0.0.0-20210711025021-927187094b94 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20201222180813-1025295fd063 // indirect
-	golang.org/x/sys v0.0.0-20211020174200-9d6173849985 // indirect
+	golang.org/x/sys v0.0.0-20211023085530-d6a326fbbf70 // indirect
 	golang.org/x/text v0.3.8-0.20211004125949-5bd84dd9b33b // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20211020205005-82e0b734e5d2 // indirect
+	golang.zx2c4.com/wireguard v0.0.0-20211022192229-f1f626090e3b // indirect
 	golang.zx2c4.com/wireguard/windows v0.4.12 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
+	inet.af/netaddr v0.0.0-20211022222605-2e4260506ddd // indirect
 	inet.af/netstack v0.0.0-20210622165351-29b14ebc044e // indirect
+	nhooyr.io/websocket v1.8.7 // indirect
 )

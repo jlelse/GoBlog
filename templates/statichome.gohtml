@@ -15,6 +15,15 @@
     </article>
     {{ include "author" . }}
   </main>
+  {{ if .LoggedIn }}
+    <div id="posteditactions" class="p">
+      <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}#update">
+        <input type="hidden" name="editoraction" value="loadupdate">
+        <input type="hidden" name="url" value="{{ .Canonical }}">
+        <input type="submit" value="{{ string .Blog.Lang "update" }}">
+      </form>
+    </div>
+  {{ end }}
 {{ end }}
 
 {{ define "statichome" }}
