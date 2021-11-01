@@ -8,11 +8,10 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
-	"path"
-	"strings"
-
-	"go.goblog.app/app/pkgs/contenttype"
 )
+
+//go:embed leaflet/*
+var leafletFiles embed.FS
 
 const defaultGeoMapPath = "/map"
 
@@ -73,31 +72,6 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 			"locations": string(jb),
 		},
 	})
-}
-
-//go:embed leaflet/*
-var leafletFiles embed.FS
-
-func (a *goBlog) serveLeaflet(basePath string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fileName := strings.TrimPrefix(r.URL.Path, basePath)
-		fb, err := leafletFiles.ReadFile(fileName)
-		if err != nil {
-			a.serve404(w, r)
-			return
-		}
-		switch path.Ext(fileName) {
-		case ".js":
-			w.Header().Set(contentType, contenttype.JS)
-			_, _ = a.min.Write(w, contenttype.JSUTF8, fb)
-		case ".css":
-			w.Header().Set(contentType, contenttype.CSS)
-			_, _ = a.min.Write(w, contenttype.CSSUTF8, fb)
-		default:
-			w.Header().Set(contentType, http.DetectContentType(fb))
-			_, _ = w.Write(fb)
-		}
-	}
 }
 
 func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {

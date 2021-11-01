@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gorilla/websocket"
+	"github.com/microcosm-cc/bluemonday"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
@@ -22,6 +24,51 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 		BlogString: blog,
 		Data:       map[string]interface{}{},
 	})
+}
+
+var upgrader = websocket.Upgrader{
+	EnableCompression: true,
+}
+
+func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer c.Close()
+	for {
+		// Retrieve content
+		mt, message, err := c.ReadMessage()
+		if err != nil {
+			break
+		}
+		// Create preview
+		preview, err := a.createMarkdownPreview(message)
+		if err != nil {
+			continue
+		}
+		// Write preview to socket
+		err = c.WriteMessage(mt, preview)
+		if err != nil {
+			break
+		}
+	}
+}
+
+func (a *goBlog) createMarkdownPreview(markdown []byte) (rendered []byte, err error) {
+	mdString := string(markdown)
+	if split := strings.Split(mdString, "---\n"); len(split) >= 3 && len(strings.TrimSpace(split[0])) == 0 {
+		// Remove frontmatter from content
+		mdString = strings.Join(split[2:], "---\n")
+	}
+	// Render markdown
+	rendered, err = a.renderMarkdown(mdString, true)
+	if err != nil {
+		return nil, err
+	}
+	// Sanitize HTML
+	rendered = bluemonday.UGCPolicy().SanitizeBytes(rendered)
+	return
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {

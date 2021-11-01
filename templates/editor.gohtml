@@ -9,22 +9,27 @@
     {{ md (editorpostdesc .BlogString) }}
     <form class="fw p" method="post">
       <input type="hidden" name="h" value="entry">
-      <textarea name="content" class="monospace h400p formcache" id="create-input">{{ editortemplate .BlogString }}</textarea>
+      <textarea name="content" class="monospace h400p formcache mdpreview" id="create-input" data-preview="post-preview" data-previewws="{{ .Blog.RelativePath "/editor/preview" }}">{{ editortemplate .BlogString }}</textarea>
+      <div id="post-preview" class="hide"></div>
       <input type="submit" value="{{ string .Blog.Lang "create" }}">
     </form>
+
     {{ if .Data.UpdatePostURL }}
     <h2 id="update">{{ string .Blog.Lang "update" }}</h2>
     <form class="fw p" method="post" action="#update">
       <input type="hidden" name="editoraction" value="updatepost">
       <input type="hidden" name="url" value="{{ .Data.UpdatePostURL }}">
-      <textarea name="content" class="monospace h400p">{{ .Data.UpdatePostContent }}</textarea>
+      <textarea name="content" class="monospace h400p mdpreview" data-preview="update-preview" data-previewws="{{ .Blog.RelativePath "/editor/preview" }}">{{ .Data.UpdatePostContent }}</textarea>
+      <div id="update-preview" class="hide"></div>
       <input type="submit" value="{{ string .Blog.Lang "update" }}">
     </form>
     {{ end }}
+
     <h2>{{ string .Blog.Lang "posts" }}</h2>
     <p><a href="{{ .Blog.RelativePath "/editor/drafts" }}">{{ string .Blog.Lang "drafts" }}</a></p>
     <p><a href="{{ .Blog.RelativePath "/editor/private" }}">{{ string .Blog.Lang "privateposts" }}</a></p>
     <p><a href="{{ .Blog.RelativePath "/editor/unlisted" }}">{{ string .Blog.Lang "unlistedposts" }}</a></p>
+
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw p" method="post" enctype="multipart/form-data">
       <input type="hidden" name="editoraction" value="upload">
@@ -32,11 +37,14 @@
       <input type="submit" value="{{ string .Blog.Lang "upload" }}">
     </form>
     <p><a href="{{ .Blog.RelativePath "/editor/files" }}">{{ string .Blog.Lang "mediafiles" }}</a></p>
+
     <h2>{{ string .Blog.Lang "location" }}</h2>
     <form class="fw p">
       <input id="geobtn" type="button" value="{{ string .Blog.Lang "locationget" }}" data-failed="{{ string .Blog.Lang "locationfailed" }}" data-notsupported="{{ string .Blog.Lang "locationnotsupported" }}">
       <input id="geostatus" type="text" class="hide" readonly>
     </form>
+
+    <script defer src="{{ asset "js/mdpreview.js" }}"></script>
     <script defer src="{{ asset "js/geohelper.js" }}"></script>
     <script defer src="{{ asset "js/formcache.js" }}"></script>
   </main>

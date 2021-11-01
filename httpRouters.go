@@ -339,6 +339,7 @@ func (a *goBlog) blogEditorRouter(conf *configBlog) func(r chi.Router) {
 		r.Get("/unlisted", a.serveUnlisted)
 		r.Get("/unlisted"+feedPath, a.serveUnlisted)
 		r.Get("/unlisted"+paginationPath, a.serveUnlisted)
+		r.HandleFunc("/preview", a.serveEditorPreview)
 	}
 }
 
@@ -403,7 +404,7 @@ func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 				r.Use(a.privateModeHandler)
 				r.Group(func(r chi.Router) {
 					r.With(a.cacheMiddleware).Get("/", a.serveGeoMap)
-					r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveLeaflet(mapPath+"/"))
+					r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, mapPath+"/"))
 				})
 				r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles(mapPath+"/tiles"))
 			})

@@ -194,6 +194,13 @@ details summary > *:first-child {
   background: var(--background, #fff);
 }
 
+.preview {
+  padding: 10px;
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+  margin-bottom: 5px;
+}
+
 #map {
   height: 400px;
 }

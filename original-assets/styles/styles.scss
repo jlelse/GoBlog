@@ -237,6 +237,12 @@ details summary {
   }
 }
 
+.preview {
+  padding: 10px;
+  @include color-border(border, 1px, solid, primary);
+  margin-bottom: 5px;
+}
+
 #map {
   height: 400px;
 }
