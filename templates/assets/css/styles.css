@@ -77,6 +77,9 @@ button:focus, .button:focus, input:focus, textarea:focus, select:focus {
 form input, form textarea, form select {
   margin-bottom: 5px;
 }
+form textarea {
+  display: block;
+}
 
 blockquote {
   border-left: 5px solid #000;

@@ -39,6 +39,7 @@ const (
 	templateBlogroll           = "blogroll"
 	templateGeoMap             = "geomap"
 	templateContact            = "contact"
+	templateEditorPreview      = "editorpreview"
 )
 
 func (a *goBlog) initRendering() error {

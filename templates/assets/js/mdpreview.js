@@ -24,6 +24,7 @@
             console.log("Preview-Websocket closed")
             previewContainer.classList.add('hide')
             previewContainer.classList.remove('preview')
+            previewContainer.innerHTML = ''
             ws = null
         }
         ws.onmessage = function (evt) {
@@ -34,10 +35,14 @@
             console.log("Preview-Websocket error: " + evt.data)
         }
         // Add listener
+        let timeout = null
         element.addEventListener('input', function () {
-            if (ws) {
-                ws.send(element.value)
-            }
+            clearTimeout(timeout)
+            timeout = setTimeout(function () {
+                if (ws) {
+                    ws.send(element.value)
+                }
+            }, 500)
         })
     })
 })()

@@ -407,6 +407,12 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 			}
 		}
 	}
+	// Remove all parameters where there are just empty strings
+	for pk, pvs := range p.Parameters {
+		if len(pvs) == 0 || strings.Join(pvs, "") == "" {
+			delete(p.Parameters, pk)
+		}
+	}
 	return nil
 }
 

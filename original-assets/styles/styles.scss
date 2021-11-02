@@ -113,6 +113,9 @@ form {
   input, textarea, select {
     margin-bottom: 5px;
   }
+  textarea {
+    display: block;
+  }
 }
 
 form.fw {

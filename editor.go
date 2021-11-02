@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gorilla/websocket"
 	"github.com/microcosm-cc/bluemonday"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
@@ -26,12 +26,9 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-var upgrader = websocket.Upgrader{
-	EnableCompression: true,
-}
-
 func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
+	blog := r.Context().Value(blogKey).(string)
+	c, err := a.webSocketUpgrader().Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
@@ -43,9 +40,9 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		// Create preview
-		preview, err := a.createMarkdownPreview(message)
+		preview, err := a.createMarkdownPreview(blog, message)
 		if err != nil {
-			continue
+			preview = []byte(err.Error())
 		}
 		// Write preview to socket
 		err = c.WriteMessage(mt, preview)
@@ -55,14 +52,33 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) createMarkdownPreview(markdown []byte) (rendered []byte, err error) {
-	mdString := string(markdown)
-	if split := strings.Split(mdString, "---\n"); len(split) >= 3 && len(strings.TrimSpace(split[0])) == 0 {
-		// Remove frontmatter from content
-		mdString = strings.Join(split[2:], "---\n")
+func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered []byte, err error) {
+	p := post{
+		Content:   string(markdown),
+		Blog:      blog,
+		Path:      "/editor/preview",
+		Published: localNowString(),
 	}
-	// Render markdown
-	rendered, err = a.renderMarkdown(mdString, true)
+	err = a.computeExtraPostParameters(&p)
+	if err != nil {
+		return nil, err
+	}
+	if t := p.Title(); t != "" {
+		p.RenderedTitle = a.renderMdTitle(t)
+	}
+	// Render post
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/editor/preview", nil)
+	a.render(rec, req, templateEditorPreview, &renderData{
+		BlogString: p.Blog,
+		Data:       &p,
+	})
+	res := rec.Result()
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to render preview")
+	}
+	defer res.Body.Close()
+	rendered, err = io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
