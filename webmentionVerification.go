@@ -96,7 +96,6 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 	}
 	err = m.verifyReader(resp.Body)
-	_, _ = io.Copy(io.Discard, resp.Body)
 	_ = resp.Body.Close()
 	if err != nil {
 		_, err := a.db.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))

@@ -161,10 +161,7 @@ func (a *goBlog) downloadTTSAudio(ctx context.Context, lang, text, outputFile st
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_, _ = io.Copy(io.Discard, res.Body)
-		_ = res.Body.Close()
-	}()
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("TTS: got status: %s, text: %s", res.Status, text)
 	}

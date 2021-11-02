@@ -84,7 +84,6 @@ func (a *goBlog) sendWebmention(endpoint, source, target string) error {
 		return err
 	}
 	defer res.Body.Close()
-	_, _ = io.Copy(io.Discard, res.Body)
 	if code := res.StatusCode; code < 200 || 300 <= code {
 		return fmt.Errorf("response error: %v", res.StatusCode)
 	}
@@ -104,12 +103,10 @@ func (a *goBlog) discoverEndpoint(urlStr string) string {
 		}
 		defer resp.Body.Close()
 		if code := resp.StatusCode; code < 200 || 300 <= code {
-			_, _ = io.Copy(io.Discard, resp.Body)
 			return ""
 		}
 		endpoint, err := extractEndpoint(resp)
 		if err != nil || endpoint == "" {
-			_, _ = io.Copy(io.Discard, resp.Body)
 			return ""
 		}
 		if urls, err := resolveURLReferences(urlStr, endpoint); err == nil && len(urls) > 0 && urls[0] != "" {

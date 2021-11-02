@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -77,10 +76,7 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_, _ = io.Copy(io.Discard, res.Body)
-		res.Body.Close()
-	}()
+	defer res.Body.Close()
 	if code := res.StatusCode; code < 200 || 300 <= code {
 		return nil, fmt.Errorf("opml request not successful, status code: %d", code)
 	}

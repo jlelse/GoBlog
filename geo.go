@@ -55,10 +55,7 @@ func (a *goBlog) photonReverse(lat, lon float64, lang string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("response status code: %v", resp.StatusCode)
 	}

@@ -81,12 +81,10 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpC
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", fmt.Errorf("shortpixel failed to compress image, status code %d", resp.StatusCode)
 	}
 	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	defer func() {
@@ -94,7 +92,6 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpC
 		_ = os.Remove(tmpFile.Name())
 	}()
 	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	fileName, err := getSHA256(tmpFile)
@@ -133,7 +130,6 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClien
 		return "", err
 	}
 	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("failed to compress image, status code %d", resp.StatusCode)
 	}
@@ -161,12 +157,10 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClien
 	}
 	defer downloadResp.Body.Close()
 	if downloadResp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, downloadResp.Body)
 		return "", fmt.Errorf("tinify failed to resize image, status code %d", downloadResp.StatusCode)
 	}
 	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
-		_, _ = io.Copy(io.Discard, downloadResp.Body)
 		return "", err
 	}
 	defer func() {
@@ -174,7 +168,6 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClien
 		_ = os.Remove(tmpFile.Name())
 	}()
 	if _, err = io.Copy(tmpFile, downloadResp.Body); err != nil {
-		_, _ = io.Copy(io.Discard, downloadResp.Body)
 		return "", err
 	}
 	fileName, err := getSHA256(tmpFile)
@@ -208,12 +201,10 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc httpC
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", fmt.Errorf("cloudflare failed to compress image, status code %d", resp.StatusCode)
 	}
 	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
 	if err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	defer func() {
@@ -221,7 +212,6 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc httpC
 		_ = os.Remove(tmpFile.Name())
 	}()
 	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return "", err
 	}
 	fileName, err := getSHA256(tmpFile)

@@ -98,7 +98,6 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 				if err != nil {
 					return nil, err
 				}
-				_, _ = io.Copy(io.Discard, resp.Body)
 				_ = resp.Body.Close()
 				// Cache result
 				sm.Store(link.Second, resp.StatusCode)

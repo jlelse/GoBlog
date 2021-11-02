@@ -9,7 +9,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -255,13 +254,11 @@ func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {
 	}
 	defer resp.Body.Close()
 	if !apRequestIsSuccess(resp.StatusCode) {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, resp.StatusCode, nil
 	}
 	actor := &asPerson{}
 	err = json.NewDecoder(resp.Body).Decode(actor)
 	if err != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, 0, err
 	}
 	return actor, 0, nil

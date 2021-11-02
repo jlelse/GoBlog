@@ -122,8 +122,6 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	if !apRequestIsSuccess(resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
-	} else {
-		_, _ = io.Copy(io.Discard, resp.Body)
 	}
 	return nil
 }
