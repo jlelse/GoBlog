@@ -220,17 +220,17 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 			a.cacheMiddleware,
 		)
 
-		yearPath := conf.getRelativePath(`/{year:x|\d\d\d\d}`)
+		yearPath := conf.getRelativePath(`/{year:(x|\d{4})}`)
 		r.Get(yearPath, a.serveDate)
 		r.Get(yearPath+feedPath, a.serveDate)
 		r.Get(yearPath+paginationPath, a.serveDate)
 
-		monthPath := yearPath + `/{month:x|\d\d}`
+		monthPath := yearPath + `/{month:(x|\d{2})}`
 		r.Get(monthPath, a.serveDate)
 		r.Get(monthPath+feedPath, a.serveDate)
 		r.Get(monthPath+paginationPath, a.serveDate)
 
-		dayPath := monthPath + `/{day:\d\d}`
+		dayPath := monthPath + `/{day:(\d{2})}`
 		r.Get(dayPath, a.serveDate)
 		r.Get(dayPath+feedPath, a.serveDate)
 		r.Get(dayPath+paginationPath, a.serveDate)
