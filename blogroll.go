@@ -17,7 +17,7 @@ import (
 const defaultBlogrollPath = "/blogroll"
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	blog, bc := a.getBlog(r)
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.getBlogrollOutlines(blog)
 	})
@@ -26,7 +26,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	c := a.cfg.Blogs[blog].Blogroll
+	c := bc.Blogroll
 	can := a.getRelativePath(blog, defaultIfEmpty(c.Path, defaultBlogrollPath))
 	a.render(w, r, templateBlogroll, &renderData{
 		BlogString: blog,
@@ -41,7 +41,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	blog, _ := a.getBlog(r)
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
 		return a.getBlogrollOutlines(blog)
 	})

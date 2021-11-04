@@ -8,8 +8,7 @@ import (
 )
 
 func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
-	b := a.cfg.Blogs[blog]
+	_, b := a.getBlog(r)
 	title := a.renderMdTitle(b.Title)
 	sURL := a.getFullAddress(b.getRelativePath(defaultIfEmpty(b.Search.Path, defaultSearchPath)))
 	xml := fmt.Sprintf("<?xml version=\"1.0\"?><OpenSearchDescription xmlns=\"http://a9.com/-/spec/opensearch/1.1/\" xmlns:moz=\"http://www.mozilla.org/2006/browser/search/\">"+

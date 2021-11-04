@@ -8,6 +8,9 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// Make sure the httpsCache type implements the Cache interface
+var _ autocert.Cache = &httpsCache{}
+
 type httpsCache struct {
 	db *database
 }

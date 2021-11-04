@@ -13,8 +13,8 @@ import (
 const defaultContactPath = "/contact"
 
 func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
-	cc := a.cfg.Blogs[blog].Contact
+	blog, bc := a.getBlog(r)
+	cc := bc.Contact
 	a.render(w, r, templateContact, &renderData{
 		BlogString: blog,
 		Data: map[string]interface{}{
@@ -58,12 +58,12 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	_, _ = message.WriteString(formMessage)
 	// Send submission
-	blog := r.Context().Value(blogKey).(string)
-	if cc := a.cfg.Blogs[blog].Contact; cc != nil && cc.SMTPHost != "" && cc.EmailFrom != "" && cc.EmailTo != "" {
+	blog, bc := a.getBlog(r)
+	if cc := bc.Contact; cc != nil && cc.SMTPHost != "" && cc.EmailFrom != "" && cc.EmailTo != "" {
 		// Build email
 		var email bytes.Buffer
 		if ef := cc.EmailFrom; ef != "" {
-			_, _ = fmt.Fprintf(&email, "From: %s <%s>", defaultIfEmpty(a.cfg.Blogs[blog].Title, "GoBlog"), cc.EmailFrom)
+			_, _ = fmt.Fprintf(&email, "From: %s <%s>", defaultIfEmpty(bc.Title, "GoBlog"), cc.EmailFrom)
 			_, _ = fmt.Fprintln(&email)
 		}
 		_, _ = fmt.Fprintf(&email, "To: %s", cc.EmailTo)

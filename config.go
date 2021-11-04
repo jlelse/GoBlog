@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -374,4 +375,15 @@ func (a *goBlog) httpsConfigured(checkAddress bool) bool {
 		a.cfg.Server.TailscaleHTTPS ||
 		a.cfg.Server.SecurityHeaders ||
 		(checkAddress && strings.HasPrefix(a.cfg.Server.PublicAddress, "https"))
+}
+
+func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
+	if r == nil {
+		return a.cfg.DefaultBlog, a.cfg.Blogs[a.cfg.DefaultBlog]
+	}
+	blog := r.Context().Value(blogKey).(string)
+	if blog == "" {
+		return a.cfg.DefaultBlog, a.cfg.Blogs[a.cfg.DefaultBlog]
+	}
+	return blog, a.cfg.Blogs[blog]
 }

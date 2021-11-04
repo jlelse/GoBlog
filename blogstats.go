@@ -22,8 +22,7 @@ func (a *goBlog) initBlogStats() {
 }
 
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
-	bc := a.cfg.Blogs[blog]
+	blog, bc := a.getBlog(r)
 	canonical := bc.getRelativePath(defaultIfEmpty(bc.BlogStats.Path, defaultBlogStatsPath))
 	a.render(w, r, templateBlogStats, &renderData{
 		BlogString: blog,

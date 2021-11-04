@@ -10,7 +10,47 @@ License: MIT License
 [GitHub mirror](https://github.com/jlelse/GoBlog)  
 [Codeberg mirror](https://codeberg.org/jlelse/GoBlog)
 
-More information about GoBlog:
+## Features
+
+Here's an (incomplete) list of features:
+
+- Single user with multiple blogs
+- Publish, edit and delete Markdown posts using Micropub or the web-based editor
+    - Editor with live preview
+    - Drafts, private and unlisted posts
+- SQLite database for storing posts and data
+    - Built-in full-text search
+- Micropub with media endpoint for uploads
+    - Local storage for uploads or remote storage via FTP or BunnyCDN
+    - Automatic image resizing and compression
+    - Uploads possible via the web-based editor
+- Send and receive Webmentions
+    - Webmention-based commenting
+- IndieAuth
+    - Login with your own blog as an identity on the internet
+    - Two-factor authentication
+- ActivityPub
+    - Publish posts to the Fediverse (Mastodon etc.)
+    - ActivityPub-based commenting
+- Web feeds
+    - Multiple feed formats: RSS, Atom, JSON
+    - Feeds on any archive page
+- Sitemap
+- Automatic HTTPS using Let's Encrypt
+- Tor Hidden Service
+- Tailscale integration for private blogs with HTTPS
+- Fast in-memory caching for even faster performance
+- Automatic asset minification of HTML, CSS and JavaScript
+- Statistics page with information about posts
+- Map page with a map of all posts with a location
+- Option to create post aliases for automatic redirects
+- Redirects using regular expressions
+- Hooks to execute custom commands on certain events
+- Short URLs with option for a separate short domain
+- Command to check for broken links
+- Command to export all posts to Markdown files
+
+## More information about GoBlog:
 
 - [How to install and run GoBlog](./install.md)
 - [How to build GoBlog](./build.md)

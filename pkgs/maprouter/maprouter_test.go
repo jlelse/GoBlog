@@ -12,14 +12,14 @@ import (
 func TestMapRouter(t *testing.T) {
 	router := &MapRouter{
 		DefaultHandler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-			rw.Write([]byte("Default"))
+			_, _ = rw.Write([]byte("Default"))
 		}),
 		Handlers: map[string]http.Handler{
 			"a.example.org": http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				rw.Write([]byte("a"))
+				_, _ = rw.Write([]byte("a"))
 			}),
 			"b.example.org": http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				rw.Write([]byte("b"))
+				_, _ = rw.Write([]byte("b"))
 			}),
 		},
 	}
