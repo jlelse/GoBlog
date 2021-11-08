@@ -15,6 +15,8 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.0
+	github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac
+	github.com/emersion/go-smtp v0.15.0
 	github.com/go-chi/chi/v5 v5.0.5
 	github.com/go-fed/httpsig v1.1.0
 	github.com/gorilla/handlers v1.5.1

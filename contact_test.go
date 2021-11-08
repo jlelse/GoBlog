@@ -18,8 +18,9 @@ import (
 func Test_contact(t *testing.T) {
 
 	// Start the SMTP server
-	port, rd, err := mocksmtp.StartMockSMTPServer()
+	port, rd, cancel, err := mocksmtp.StartMockSMTPServer()
 	require.NoError(t, err)
+	defer cancel()
 
 	// Init everything
 	app := &goBlog{
@@ -42,6 +43,7 @@ func Test_contact(t *testing.T) {
 						SMTPPassword: "pass",
 						EmailTo:      "to@example.org",
 						EmailFrom:    "from@example.org",
+						EmailSubject: "Neue Kontaktnachricht",
 					},
 				},
 			},
@@ -65,11 +67,16 @@ func Test_contact(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
 
 	// Check sent mail
-	received, err := rd()
-	require.NoError(t, err)
-	assert.Contains(t, received, "This is a test contact message")
-	assert.Contains(t, received, "test@example.net")
-	assert.Contains(t, received, "https://test.example.com")
-	assert.Contains(t, received, "Test User")
+	assert.Contains(t, rd.Usernames, "user")
+	assert.Contains(t, rd.Passwords, "pass")
+	assert.Contains(t, rd.Froms, "from@example.org")
+	assert.Contains(t, rd.Rcpts, "to@example.org")
+	if assert.Len(t, rd.Datas, 1) {
+		assert.Contains(t, string(rd.Datas[0]), "This is a test contact message")
+		assert.Contains(t, string(rd.Datas[0]), "test@example.net")
+		assert.Contains(t, string(rd.Datas[0]), "https://test.example.com")
+		assert.Contains(t, string(rd.Datas[0]), "Test User")
+		assert.Contains(t, string(rd.Datas[0]), "Neue Kontaktnachricht")
+	}
 
 }

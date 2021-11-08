@@ -242,6 +242,7 @@ blogs:
       smtpPassword: secret # SMTP password
       emailFrom: blog@example.com # Email sender
       emailTo: mail@example.com # Email recipient
+      emailSubject: "New contact message" # (Optional) Email subject
     # Announcement
     announcement:
       text: This is an **announcement**! # Can be markdown with links etc.

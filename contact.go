@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/smtp"
 	"strconv"
 	"time"
+
+	"github.com/emersion/go-sasl"
+	"github.com/emersion/go-smtp"
 )
 
 const defaultContactPath = "/contact"
@@ -82,13 +84,18 @@ func (a *goBlog) sendContactEmail(cc *configContact, body, replyTo string) error
 		_, _ = fmt.Fprintf(&email, "Reply-To: %s\n", replyTo)
 	}
 	_, _ = fmt.Fprintf(&email, "Date: %s\n", time.Now().UTC().Format(time.RFC1123Z))
-	_, _ = fmt.Fprintf(&email, "Subject: New message\n\n")
+	_, _ = fmt.Fprintf(&email, "From: %s\n", cc.EmailFrom)
+	subject := cc.EmailSubject
+	if subject == "" {
+		subject = "New contact message"
+	}
+	_, _ = fmt.Fprintf(&email, "Subject: %s\n\n", subject)
 	_, _ = fmt.Fprintf(&email, "%s\n", body)
 	// Send email using SMTP
-	auth := smtp.PlainAuth("", cc.SMTPUser, cc.SMTPPassword, cc.SMTPHost)
+	auth := sasl.NewPlainClient("", cc.SMTPUser, cc.SMTPPassword)
 	port := cc.SMTPPort
 	if port == 0 {
 		port = 587
 	}
-	return smtp.SendMail(cc.SMTPHost+":"+strconv.Itoa(port), auth, cc.EmailFrom, []string{cc.EmailTo}, email.Bytes())
+	return smtp.SendMail(cc.SMTPHost+":"+strconv.Itoa(port), auth, cc.EmailFrom, []string{cc.EmailTo}, bytes.NewReader(email.Bytes()))
 }

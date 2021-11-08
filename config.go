@@ -178,6 +178,7 @@ type configContact struct {
 	SMTPPassword  string `mapstructure:"smtpPassword"`
 	EmailFrom     string `mapstructure:"emailFrom"`
 	EmailTo       string `mapstructure:"emailTo"`
+	EmailSubject  string `mapstructure:"emailSubject"`
 }
 
 type configAnnouncement struct {

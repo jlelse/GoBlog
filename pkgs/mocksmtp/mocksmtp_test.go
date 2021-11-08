@@ -11,22 +11,26 @@ import (
 
 func Test_mocksmtp(t *testing.T) {
 	// Start mock SMTP server
-	port, getRecievedData, err := StartMockSMTPServer()
+	port, rd, cancel, err := StartMockSMTPServer()
 	require.NoError(t, err)
+	defer cancel()
 
 	// Send mail
 	err = smtp.SendMail(
 		fmt.Sprintf("127.0.0.1:%d", port),
 		smtp.PlainAuth("", "user", "pass", "127.0.0.1"),
-		"admin@smtp.example.com",
-		[]string{"user@smtp.example.com"},
-		[]byte("From: admin@smtp.example.com\nTo: user@smtp.example.com\nSubject: Test\nMIME-version: 1.0\nContent-Type: text/html; charset=\"UTF-8\"\n\nThis is a test mail."),
+		"admin@example.com",
+		[]string{"user@example.com"},
+		[]byte("From: admin@example.com\nTo: user@example.com\nSubject: Test\nMIME-version: 1.0\nContent-Type: text/html; charset=\"UTF-8\"\n\nThis is a test mail."),
 	)
 	require.NoError(t, err)
 
 	// Get received data
-	recievedData, err := getRecievedData()
-	require.NoError(t, err)
-	assert.Contains(t, recievedData, "From:")
-	assert.Contains(t, recievedData, "This is a test mail")
+	assert.Contains(t, rd.Froms, "admin@example.com")
+	assert.Contains(t, rd.Rcpts, "user@example.com")
+	assert.Contains(t, rd.Usernames, "user")
+	assert.Contains(t, rd.Passwords, "pass")
+	if assert.Len(t, rd.Froms, 1) {
+		assert.Contains(t, string(rd.Datas[0]), "This is a test mail")
+	}
 }

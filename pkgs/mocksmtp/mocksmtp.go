@@ -3,116 +3,62 @@
 package mocksmtp
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
+	"log"
 	"net"
-	"net/textproto"
 	"strconv"
+
+	"github.com/emersion/go-smtp"
 )
 
-// Inspired by https://play.golang.org/p/8mfrqNVWTPK
-
-type ReceivedGetter func() (string, error)
-
-func StartMockSMTPServer() (port int, rg ReceivedGetter, err error) {
-
-	// Default server responses
-	serverResponses := []string{
-		"220 smtp.example.com Service ready",
-		"250-ELHO -> ok",
-		"250-Show Options for ESMTP",
-		"250-8BITMIME",
-		"250-SIZE",
-		"250-AUTH LOGIN PLAIN",
-		"250 HELP",
-		"235 AUTH -> ok",
-		"250 MAIL FROM -> ok",
-		"250 RCPT TO -> ok",
-		"354 DATA",
-		"250 ... -> ok",
-		"221 QUIT",
-	}
-
-	// Channel to check if error occured or done
-	var errOrDone = make(chan error)
-
-	// Received data buffer
-	var buffer bytes.Buffer
-	bufferWriter := bufio.NewWriter(&buffer)
+// Start a mock SMTP server on a random port
+//
+// Returns:
+// port: the port the server is listening on,
+// receivedValues: struct to read the received values like username, password, data,
+// cancelFunc: function to stop the server,
+// err: something went wrong
+func StartMockSMTPServer() (port int, receivedValues *ReceivedValues, cancelFunc func(), err error) {
 
 	// Start server on random port
 	mockSmtpServer, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 
 	// Get port from listener
 	_, portStr, err := net.SplitHostPort(mockSmtpServer.Addr().String())
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 	port, err = strconv.Atoi(portStr)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 
-	// Run mock SMTP server
+	// Define received values
+	receivedValues = &ReceivedValues{}
+
+	// Init SMTP server
+	s := smtp.NewServer(&backend{
+		values: receivedValues,
+	})
+	s.Addr = mockSmtpServer.Addr().String()
+	s.Domain = "127.0.0.1"
+	s.AllowInsecureAuth = true
+
+	// Start SMTP server
 	go func() {
-		defer close(errOrDone)
-		defer bufferWriter.Flush()
-		defer mockSmtpServer.Close()
-
-		conn, err := mockSmtpServer.Accept()
-		if err != nil {
-			errOrDone <- err
-			return
-		}
-		defer conn.Close()
-
-		tc := textproto.NewConn(conn)
-		defer tc.Close()
-
-		for _, res := range serverResponses {
-			if res == "" {
-				break
-			}
-
-			_ = tc.PrintfLine("%s", res)
-
-			if len(res) >= 4 && res[3] == '-' {
-				continue
-			}
-
-			if res == "221 QUIT" {
-				return
-			}
-
-			for {
-				msg, err := tc.ReadLine()
-				if err != nil {
-					errOrDone <- err
-					return
-				}
-
-				_, _ = fmt.Fprintf(bufferWriter, "%s\n", msg)
-
-				if res != "354 DATA" || msg == "." {
-					break
-				}
-			}
+		if err := s.Serve(mockSmtpServer); err != nil {
+			log.Fatal(err)
 		}
 	}()
 
-	// Define function to get received data
-	getReceivedData := func() (string, error) {
-		err, hasErr := <-errOrDone
-		if hasErr {
-			return "", err
-		}
-		return buffer.String(), nil
+	// Create cancel function
+	cancelFunc = func() {
+		_ = s.Close()
 	}
 
 	// Return port and function
-	return port, getReceivedData, nil
+	return port, receivedValues, cancelFunc, nil
+
 }
