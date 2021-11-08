@@ -17,6 +17,8 @@ type webmentionPaginationAdapter struct {
 	db     *database
 }
 
+var _ paginator.Adapter = &webmentionPaginationAdapter{}
+
 func (p *webmentionPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
 		nums, _ := p.db.countWebmentions(p.config)
@@ -36,8 +38,7 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data interface{}
 }
 
 func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
-	pageNoString := chi.URLParam(r, "page")
-	pageNo, _ := strconv.Atoi(pageNoString)
+	pageNo, _ := strconv.Atoi(chi.URLParam(r, "page"))
 	var status webmentionStatus = ""
 	switch webmentionStatus(r.URL.Query().Get("status")) {
 	case webmentionStatusVerified:
@@ -49,7 +50,7 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{
 		status:     status,
 		sourcelike: sourcelike,
-	}, db: a.db}, 10)
+	}, db: a.db}, 5)
 	p.SetPage(pageNo)
 	var mentions []*mention
 	err := p.Results(&mentions)
@@ -59,8 +60,8 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	// Navigation
 	var hasPrev, hasNext bool
-	var prevPage, nextPage int
-	var prevPath, nextPath string
+	var prevPage, currentPage, nextPage int
+	var prevPath, currentPath, nextPath string
 	hasPrev, _ = p.HasPrev()
 	if hasPrev {
 		prevPage, _ = p.PrevPage()
@@ -72,6 +73,8 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	} else {
 		prevPath = fmt.Sprintf("%s/page/%d", webmentionPath, prevPage)
 	}
+	currentPage, _ = p.Page()
+	currentPath = fmt.Sprintf("%s/page/%d", webmentionPath, currentPage)
 	hasNext, _ = p.HasNext()
 	if hasNext {
 		nextPage, _ = p.NextPage()
@@ -98,51 +101,41 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 			"HasPrev":  hasPrev,
 			"HasNext":  hasNext,
 			"Prev":     prevPath + query,
+			"Current":  currentPath + query,
 			"Next":     nextPath + query,
 		},
 	})
 }
 
-func (a *goBlog) webmentionAdminDelete(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {
+	action := chi.URLParam(r, "action")
+	if action != "delete" && action != "approve" && action != "reverify" {
+		a.serveError(w, r, "Invalid action", http.StatusBadRequest)
+		return
+	}
 	id, err := strconv.Atoi(r.FormValue("mentionid"))
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = a.db.deleteWebmention(id)
+	switch action {
+	case "delete":
+		err = a.db.deleteWebmention(id)
+	case "approve":
+		err = a.db.approveWebmention(id)
+	case "reverify":
+		err = a.reverifyWebmention(id)
+	}
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.cache.purge()
-	http.Redirect(w, r, ".", http.StatusFound)
-}
-
-func (a *goBlog) webmentionAdminApprove(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.FormValue("mentionid"))
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
+	if action == "delete" || action == "approve" {
+		a.cache.purge()
 	}
-	err = a.db.approveWebmention(id)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	redirectTo := r.FormValue("redir")
+	if redirectTo == "" {
+		redirectTo = "."
 	}
-	a.cache.purge()
-	http.Redirect(w, r, ".", http.StatusFound)
-}
-
-func (a *goBlog) webmentionAdminReverify(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.FormValue("mentionid"))
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err = a.reverifyWebmention(id)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, ".", http.StatusFound)
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }

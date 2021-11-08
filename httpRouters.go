@@ -63,9 +63,7 @@ func (a *goBlog) webmentionsRouter(r chi.Router) {
 		r.Use(a.authMiddleware)
 		r.Get("/", a.webmentionAdmin)
 		r.Get(paginationPath, a.webmentionAdmin)
-		r.Post("/delete", a.webmentionAdminDelete)
-		r.Post("/approve", a.webmentionAdminApprove)
-		r.Post("/reverify", a.webmentionAdminReverify)
+		r.Post("/{action:(delete|approve|reverify)}", a.webmentionAdminAction)
 	})
 }
 

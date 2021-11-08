@@ -6,15 +6,20 @@
   <main>
     <h1>{{ string .Blog.Lang "webmentions" }}</h1>
     {{ $blog := .Blog }}
+    {{ $current := .Data.Current }}
     {{ range $i, $mention := .Data.Mentions }}
-      <div class="p">
+      <div id="mention-{{ $mention.ID }}" class="p">
         <p>
           From: <a href="{{ $mention.Source }}" target="_blank" rel="noopener noreferrer">{{ $mention.Source }}</a><br/>
           To: <a href="{{ $mention.Target }}" target="_blank">{{ $mention.Target }}</a><br/>
-          Created: {{ unixtodate $mention.Created }}
+          Created: {{ unixtodate $mention.Created }}<br/><br/>
+          {{ if $mention.Author }}{{ $mention.Author }}<br/>{{ end }}
+          {{ with $mention.Title }}<b>{{.}}</b><br/>{{ end }}
+          {{ with $mention.Content }}<i>{{.}}</i>{{ end }}
         </p>
         <form method="post">
           <input type="hidden" name="mentionid" value="{{ $mention.ID }}">
+          <input type="hidden" name="redir" value="{{ $current }}#mention-{{ $mention.ID }}">
           {{ if eq $mention.Status "verified" }}
             <input type="submit" formaction="/webmention/approve" value="{{ string $blog.Lang "approve" }}">
           {{ end }}
