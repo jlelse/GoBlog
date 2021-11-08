@@ -72,7 +72,7 @@ func Test_configTelegram_generateHTML(t *testing.T) {
 }
 
 func Test_configTelegram_send(t *testing.T) {
-	fakeClient := getFakeHTTPClient()
+	fakeClient := &fakeHttpClient{}
 
 	tg := &configTelegram{
 		Enabled:  true,
@@ -108,7 +108,7 @@ func Test_goBlog_initTelegram(t *testing.T) {
 
 func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
-		fakeClient := getFakeHTTPClient()
+		fakeClient := &fakeHttpClient{}
 
 		fakeClient.setFakeResponse(200, "")
 
@@ -157,7 +157,7 @@ func Test_telegram(t *testing.T) {
 	})
 
 	t.Run("Telegram disabled", func(t *testing.T) {
-		fakeClient := getFakeHTTPClient()
+		fakeClient := &fakeHttpClient{}
 
 		fakeClient.setFakeResponse(200, "")
 

@@ -53,6 +53,8 @@ type shortpixel struct {
 	key string
 }
 
+var _ mediaCompression = &shortpixel{}
+
 func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
@@ -106,6 +108,8 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpC
 type tinify struct {
 	key string
 }
+
+var _ mediaCompression = &tinify{}
 
 func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url
@@ -181,6 +185,8 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClien
 
 type cloudflare struct {
 }
+
+var _ mediaCompression = &cloudflare{}
 
 func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
 	// Check url

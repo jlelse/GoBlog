@@ -6,10 +6,13 @@ import (
 )
 
 type fakeHttpClient struct {
+	httpClient
 	req     *http.Request
 	res     *http.Response
 	handler http.Handler
 }
+
+var _ httpClient = &fakeHttpClient{}
 
 func (c *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
 	if c.handler == nil {
@@ -38,8 +41,4 @@ func (c *fakeHttpClient) setFakeResponse(statusCode int, body string) {
 		rw.WriteHeader(statusCode)
 		_, _ = rw.Write([]byte(body))
 	}))
-}
-
-func getFakeHTTPClient() *fakeHttpClient {
-	return &fakeHttpClient{}
 }

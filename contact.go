@@ -26,68 +26,38 @@ func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
-	// Get form values
-	// Name
-	formName := cleanHTMLText(r.FormValue("name"))
-	// Email
-	formEmail := cleanHTMLText(r.FormValue("email"))
-	// Website
-	formWebsite := cleanHTMLText(r.FormValue("website"))
+	// Get blog
+	blog, bc := a.getBlog(r)
+	// Get form values and build message
+	var message bytes.Buffer
 	// Message
 	formMessage := cleanHTMLText(r.FormValue("message"))
 	if formMessage == "" {
 		a.serveError(w, r, "Message is empty", http.StatusBadRequest)
 		return
 	}
-	// Build message
-	var message bytes.Buffer
-	if formName != "" {
-		_, _ = fmt.Fprintf(&message, "Name: %s", formName)
-		_, _ = fmt.Fprintln(&message)
+	// Name
+	if formName := cleanHTMLText(r.FormValue("name")); formName != "" {
+		_, _ = fmt.Fprintf(&message, "Name: %s\n", formName)
 	}
+	// Email
+	formEmail := cleanHTMLText(r.FormValue("email"))
 	if formEmail != "" {
-		_, _ = fmt.Fprintf(&message, "Email: %s", formEmail)
-		_, _ = fmt.Fprintln(&message)
+		_, _ = fmt.Fprintf(&message, "Email: %s\n", formEmail)
 	}
-	if formWebsite != "" {
-		_, _ = fmt.Fprintf(&message, "Website: %s", formWebsite)
-		_, _ = fmt.Fprintln(&message)
+	// Website
+	if formWebsite := cleanHTMLText(r.FormValue("website")); formWebsite != "" {
+		_, _ = fmt.Fprintf(&message, "Website: %s\n", formWebsite)
 	}
+	// Add line break if message is not empty
 	if message.Len() > 0 {
-		_, _ = fmt.Fprintln(&message)
+		_, _ = fmt.Fprintf(&message, "\n")
 	}
+	// Add message text to message
 	_, _ = message.WriteString(formMessage)
 	// Send submission
-	blog, bc := a.getBlog(r)
-	if cc := bc.Contact; cc != nil && cc.SMTPHost != "" && cc.EmailFrom != "" && cc.EmailTo != "" {
-		// Build email
-		var email bytes.Buffer
-		if ef := cc.EmailFrom; ef != "" {
-			_, _ = fmt.Fprintf(&email, "From: %s <%s>", defaultIfEmpty(bc.Title, "GoBlog"), cc.EmailFrom)
-			_, _ = fmt.Fprintln(&email)
-		}
-		_, _ = fmt.Fprintf(&email, "To: %s", cc.EmailTo)
-		_, _ = fmt.Fprintln(&email)
-		if formEmail != "" {
-			_, _ = fmt.Fprintf(&email, "Reply-To: %s", formEmail)
-			_, _ = fmt.Fprintln(&email)
-		}
-		_, _ = fmt.Fprintf(&email, "Date: %s", time.Now().UTC().Format(time.RFC1123Z))
-		_, _ = fmt.Fprintln(&email)
-		_, _ = fmt.Fprintln(&email, "Subject: New message")
-		_, _ = fmt.Fprintln(&email)
-		_, _ = fmt.Fprintln(&email, message.String())
-		// Send email
-		auth := smtp.PlainAuth("", cc.SMTPUser, cc.SMTPPassword, cc.SMTPHost)
-		port := cc.SMTPPort
-		if port == 0 {
-			port = 587
-		}
-		if err := smtp.SendMail(cc.SMTPHost+":"+strconv.Itoa(port), auth, cc.EmailFrom, []string{cc.EmailTo}, email.Bytes()); err != nil {
-			log.Println("Failed to send mail:", err.Error())
-		}
-	} else {
-		log.Println("New contact submission not send as email, config missing")
+	if err := a.sendContactEmail(bc.Contact, message.String(), formEmail); err != nil {
+		log.Println(err.Error())
 	}
 	// Send notification
 	a.sendNotification(message.String())
@@ -98,4 +68,27 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 			"sent": true,
 		},
 	})
+}
+
+func (a *goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
+	// Check required config
+	if cc == nil || cc.SMTPHost == "" || cc.EmailFrom == "" || cc.EmailTo == "" {
+		return fmt.Errorf("email not send as config is missing")
+	}
+	// Build email
+	var email bytes.Buffer
+	_, _ = fmt.Fprintf(&email, "To: %s\n", cc.EmailTo)
+	if replyTo != "" {
+		_, _ = fmt.Fprintf(&email, "Reply-To: %s\n", replyTo)
+	}
+	_, _ = fmt.Fprintf(&email, "Date: %s\n", time.Now().UTC().Format(time.RFC1123Z))
+	_, _ = fmt.Fprintf(&email, "Subject: New message\n\n")
+	_, _ = fmt.Fprintf(&email, "%s\n", body)
+	// Send email using SMTP
+	auth := smtp.PlainAuth("", cc.SMTPUser, cc.SMTPPassword, cc.SMTPHost)
+	port := cc.SMTPPort
+	if port == 0 {
+		port = 587
+	}
+	return smtp.SendMail(cc.SMTPHost+":"+strconv.Itoa(port), auth, cc.EmailFrom, []string{cc.EmailTo}, email.Bytes())
 }
