@@ -226,7 +226,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		select 'post', status, 200 from posts where path = @path
 		union all
 		-- short paths
-		select 'alias', path, 301 from shortpath where printf('/s/`+"%"+`x', id) = @path
+		select 'alias', path, 301 from shortpath where printf('/s/%x', id) = @path
 		union all
 		-- post aliases
 		select 'alias', path, 302 from post_parameters where parameter = 'aliases' and value = @path
