@@ -190,9 +190,6 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	// Captcha
 	r.Handle("/captcha/*", captcha.Server(500, 250))
 
-	// Short paths
-	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get("/s/{id:[0-9a-fA-F]+}", a.redirectToLongPath)
-
 	// Blogs
 	for blog, blogConfig := range a.cfg.Blogs {
 		r.Group(a.blogRouter(blog, blogConfig))
@@ -225,19 +222,27 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		// Check if post or alias
 		path := r.URL.Path
 		row, err := a.db.queryRow(`
-		select 'post', status from posts where path = @path
+		-- normal posts
+		select 'post', status, 200 from posts where path = @path
 		union all
-		select 'alias', path from post_parameters where parameter = 'aliases' and value = @path
+		-- short paths
+		select 'alias', path, 301 from shortpath where printf('/s/`+"%"+`x', id) = @path
 		union all
-		select 'deleted', '' from deleted where path = @path
+		-- post aliases
+		select 'alias', path, 302 from post_parameters where parameter = 'aliases' and value = @path
+		union all
+		-- deleted posts
+		select 'deleted', '', 401 from deleted where path = @path
+		-- just select the first result
 		limit 1
 		`, sql.Named("path", path))
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var postAliasType, value string
-		err = row.Scan(&postAliasType, &value)
+		var pathType, value string
+		var status int
+		err = row.Scan(&pathType, &value, &status)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				// Error
@@ -247,7 +252,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 			// No result, continue...
 		} else {
 			// Found post or alias
-			switch postAliasType {
+			switch pathType {
 			case "post":
 				// Is post, check status
 				switch postStatus(value) {
@@ -261,7 +266,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 			case "alias":
 				// Is alias, redirect
 				alicePrivate.Append(cacheLoggedIn, a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
-					http.Redirect(w, r, value, http.StatusFound)
+					http.Redirect(w, r, value, status)
 				}).ServeHTTP(w, r)
 				return
 			case "deleted":
