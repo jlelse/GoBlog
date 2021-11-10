@@ -85,9 +85,10 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 	}
 	// Check if source has a redirect
-	ru := resp.Request.URL
-	if m.Source != ru.String() {
-		m.NewSource = ru.String()
+	if respReq := resp.Request; respReq != nil {
+		if ru := respReq.URL; m.Source != ru.String() {
+			m.NewSource = ru.String()
+		}
 	}
 	// Parse response body
 	err = m.verifyReader(resp.Body)
@@ -105,6 +106,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	if cr := []rune(m.Content); len(cr) > 500 {
 		m.Content = string(cr[0:497]) + "…"
 	}
+	m.Content = strings.ReplaceAll(m.Content, "\n", " ")
 	if tr := []rune(m.Title); len(tr) > 60 {
 		m.Title = string(tr[0:57]) + "…"
 	}
@@ -132,11 +134,17 @@ func (a *goBlog) verifyMention(m *mention) error {
 			sql.Named("source", m.Source),
 			sql.Named("target", m.Target),
 		)
+		if err != nil {
+			return err
+		}
 	} else {
 		if m.NewSource != "" {
 			m.Source = m.NewSource
 		}
-		_ = a.db.insertWebmention(m, newStatus)
+		err = a.db.insertWebmention(m, newStatus)
+		if err != nil {
+			return err
+		}
 		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
 	return err
@@ -223,8 +231,8 @@ func (m *mention) fillTitle(mf *microformats.Microformat) {
 func (m *mention) fillContent(mf *microformats.Microformat) {
 	if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
 		if content, ok := contents[0].(map[string]string); ok {
-			if contentValue, ok := content["value"]; ok {
-				m.Content = strings.TrimSpace(contentValue)
+			if contentHTML, ok := content["html"]; ok {
+				m.Content = cleanHTMLText(contentHTML)
 			}
 		}
 	}

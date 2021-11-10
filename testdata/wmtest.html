@@ -1,0 +1,33 @@
+<!-- Modified from https://jan.boddez.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms -->
+<!doctype html>
+<html lang="en-us">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Test’s Blog &mdash; Micropub, Crossposting to Twitter, and Enabling &#8220;Tweetstorms&#8221;</title>
+<meta property="og:title" content="Micropub, Crossposting to Twitter, and Enabling &#8220;Tweetstorms&#8221;">
+<meta property="og:url" content="https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms">
+<meta property="og:type" content="website">
+</head>
+<body class="single">
+<main id="content" class="site-content">
+<article class="h-entry post">
+<header class="entry-header">
+<h1 class="entry-title p-name">Micropub, Crossposting to Twitter, and Enabling &#8220;Tweetstorms&#8221;</h1>
+<div class="p-author h-card vcard sr-only">
+By <a class="u-uid u-url url" href="https://example.net/" rel="me"><img class="u-photo" src="/images/photo.jpg" alt="Test’s photo" width="75" height="75"> <span class="p-name fn">Test Blogger</span></a>
+</div>
+<div class="entry-meta">On <a class="u-url" href="https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms" rel="bookmark"><time datetime="2021-02-22T19:17:05+01:00" class="dt-published">Feb 22, 2021</time></a></div>
+</header>
+<div class="e-content">
+<p>I&#8217;ve previously talked about how I <a href="https://example.org/articles/micropub-syndication-targets-and-crossposting-to-mastodon">crosspost from this blog to my Mastodon account</a> without the need for a third-party service, and how I leverage WordPress&#8217;s hook system to even enable toot threading.</p>
+<p>In this post, I&#8217;m going to really quickly explain my (extremely similar) Twitter setup. (Note: I don&#8217;t actually syndicate <em>this</em> blog&#8217;s posts to Twitter, but I <em>do</em> use this very setup on another site of mine.)</p>
+<p>I liked the idea of a dead-simple Twitter plugin, so I forked my Mastodon plugin and tweaked a few things here and there. Once I&#8217;ve installed it, and created a developer account, generated the necessary keys, and let WordPress know about them, things look, well, <em>very</em> familiar. In fact, crossposting should now <em>just work</em>.</p>
+<p>Now, to enable this when posting through Micropub rather than WordPress&#8217;s admin interface! Again, since posting through Micropub means no WordPress interface, and thus no &#8220;meta box&#8221; and no checkbox, and no way for WordPress to know if I wanted to crosspost a certain article or not, I&#8217;m going to have to use &#8230; <em>syndication targets</em> (which were invented precisely for this reason).</p>
+</div>
+<footer class="entry-footer">
+<p class="entry-meta tags">Tagged: <a href="https://example.net/articles/tag/wordpress" rel="tag" class="p-category">wordpress</a>, <a href="https://example.net/articles/tag/indieweb" rel="tag" class="p-category">indieweb</a></p>
+</footer>
+</article>
+</main>
+</body>
+</html>
