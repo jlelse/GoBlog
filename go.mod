@@ -33,6 +33,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/paulmach/go.geojson v1.4.0
+	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0

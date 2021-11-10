@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"github.com/microcosm-cc/bluemonday"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
@@ -39,13 +40,16 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
+		if mt != websocket.TextMessage {
+			continue
+		}
 		// Create preview
 		preview, err := a.createMarkdownPreview(blog, message)
 		if err != nil {
 			preview = []byte(err.Error())
 		}
 		// Write preview to socket
-		err = c.WriteMessage(mt, preview)
+		err = c.WriteMessage(websocket.TextMessage, preview)
 		if err != nil {
 			break
 		}
