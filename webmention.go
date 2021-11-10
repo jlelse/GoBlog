@@ -21,14 +21,15 @@ const (
 )
 
 type mention struct {
-	ID      int
-	Source  string
-	Target  string
-	Created int64
-	Title   string
-	Content string
-	Author  string
-	Status  webmentionStatus
+	ID        int
+	Source    string
+	NewSource string
+	Target    string
+	Created   int64
+	Title     string
+	Content   string
+	Author    string
+	Status    webmentionStatus
 }
 
 func (a *goBlog) initWebmention() {

@@ -62,17 +62,6 @@ func (a *goBlog) queueMention(m *mention) error {
 }
 
 func (a *goBlog) verifyMention(m *mention) error {
-	// Parse url -> string for source and target
-	u, err := url.Parse(m.Source)
-	if err != nil {
-		return err
-	}
-	m.Source = u.String()
-	// u, err = url.Parse(m.Target)
-	// if err != nil {
-	// 	return err
-	// }
-	// m.Target = u.String()
 	// Do request
 	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
 	if err != nil {
@@ -95,10 +84,22 @@ func (a *goBlog) verifyMention(m *mention) error {
 			return err
 		}
 	}
+	// Check if source has a redirect
+	ru := resp.Request.URL
+	if m.Source != ru.String() {
+		m.NewSource = ru.String()
+	}
+	// Parse response body
 	err = m.verifyReader(resp.Body)
 	_ = resp.Body.Close()
 	if err != nil {
-		_, err := a.db.exec("delete from webmentions where source = @source and target = @target", sql.Named("source", m.Source), sql.Named("target", m.Target))
+		// Delete webmentions with old or new source
+		_, err := a.db.exec(
+			"delete from webmentions where lowerx(source) in (lowerx(@source), lowerx(@newsource)) and lowerx(target) = lowerx(@target)",
+			sql.Named("source", m.Source),
+			sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+			sql.Named("target", m.Target),
+		)
 		return err
 	}
 	if cr := []rune(m.Content); len(cr) > 500 {
@@ -109,9 +110,32 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	newStatus := webmentionStatusVerified
 	if a.db.webmentionExists(m.Source, m.Target) {
-		_, err = a.db.exec("update webmentions set status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
-			sql.Named("status", newStatus), sql.Named("title", m.Title), sql.Named("content", m.Content), sql.Named("author", m.Author), sql.Named("source", m.Source), sql.Named("target", m.Target))
+		// Check if webmention also has webmention with new source
+		if m.NewSource != "" && a.db.webmentionExists(m.NewSource, m.Target) {
+			// Delete it
+			_, err = a.db.exec(
+				"delete from webmentions where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
+				sql.Named("source", m.NewSource), sql.Named("target", m.Target),
+			)
+			if err != nil {
+				return err
+			}
+		}
+		// Update webmention
+		_, err = a.db.exec(
+			"update webmentions set url = @newsource, status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
+			sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+			sql.Named("status", newStatus),
+			sql.Named("title", m.Title),
+			sql.Named("content", m.Content),
+			sql.Named("author", m.Author),
+			sql.Named("source", m.Source),
+			sql.Named("target", m.Target),
+		)
 	} else {
+		if m.NewSource != "" {
+			m.Source = m.NewSource
+		}
 		_ = a.db.insertWebmention(m, newStatus)
 		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
 	}
@@ -124,7 +148,7 @@ func (m *mention) verifyReader(body io.Reader) error {
 		return err
 	}
 	// Check if source mentions target
-	links, err := allLinksFromHTML(&linksBuffer, m.Source)
+	links, err := allLinksFromHTML(&linksBuffer, defaultIfEmpty(m.NewSource, m.Source))
 	if err != nil {
 		return err
 	}
@@ -134,7 +158,7 @@ func (m *mention) verifyReader(body io.Reader) error {
 		return errors.New("target not found in source")
 	}
 	// Fill mention attributes
-	sourceURL, err := url.Parse(m.Source)
+	sourceURL, err := url.Parse(defaultIfEmpty(m.NewSource, m.Source))
 	if err != nil {
 		return err
 	}
@@ -166,7 +190,7 @@ func (m *mention) fill(mf *microformats.Microformat) bool {
 		// Check URL
 		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
 			if url0, ok := url[0].(string); ok {
-				if !strings.EqualFold(url0, m.Source) {
+				if !strings.EqualFold(url0, defaultIfEmpty(m.NewSource, m.Source)) {
 					// Not correct URL
 					return false
 				}
