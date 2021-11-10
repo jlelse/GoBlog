@@ -61,7 +61,7 @@ func (a *goBlog) initRendering() error {
 		"likelink":     a.likeLink,
 		"liketitle":    a.likeTitle,
 		"photolinks":   a.photoLinks,
-		"rendertrip":   a.renderTrip,
+		"gettrack":     a.getTrack,
 		// Others
 		"dateformat":     dateFormat,
 		"isodate":        isoDateFormat,

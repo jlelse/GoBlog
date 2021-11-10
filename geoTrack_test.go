@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_renderTrip(t *testing.T) {
+func Test_geoTrack(t *testing.T) {
 	app := &goBlog{
 		cfg: &config{
 			Db: &configDb{
@@ -41,7 +41,7 @@ func Test_renderTrip(t *testing.T) {
 		},
 	}
 
-	resEn, err := app.renderTrip(post)
+	resEn, err := app.getTrack(post)
 	require.NoError(t, err)
 
 	assert.True(t, resEn.HasPoints)
@@ -50,7 +50,7 @@ func Test_renderTrip(t *testing.T) {
 
 	post.Blog = "de"
 
-	resDe, err := app.renderTrip(post)
+	resDe, err := app.getTrack(post)
 	require.NoError(t, err)
 
 	assert.True(t, resDe.HasPoints)

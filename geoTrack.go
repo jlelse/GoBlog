@@ -11,27 +11,27 @@ import (
 	"golang.org/x/text/message"
 )
 
-func (p *post) HasTrip() bool {
+func (p *post) HasTrack() bool {
 	return p.firstParameter("gpx") != ""
 }
 
-type tripRenderResult struct {
+type trackResult struct {
 	HasPoints  bool
-	Paths      [][]*tripPoint
+	Paths      [][]*trackPoint
 	PathsJSON  string
 	Kilometers string
 	Hours      string
 	Name       string
 }
 
-func (a *goBlog) renderTrip(p *post) (result *tripRenderResult, err error) {
+func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	gpxString := p.firstParameter("gpx")
 	if gpxString == "" {
 		return nil, errors.New("no gpx parameter in post")
 	}
 
 	// Parse GPX
-	parseResult, err := tripParseGPX(gpxString)
+	parseResult, err := trackParseGPX(gpxString)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (a *goBlog) renderTrip(p *post) (result *tripRenderResult, err error) {
 		return nil, err
 	}
 
-	result = &tripRenderResult{
+	result = &trackResult{
 		HasPoints:  len(parseResult.paths) > 0 && len(parseResult.paths[0]) > 0,
 		Paths:      parseResult.paths,
 		PathsJSON:  string(pathsJSON),
@@ -63,25 +63,25 @@ func (a *goBlog) renderTrip(p *post) (result *tripRenderResult, err error) {
 	return result, nil
 }
 
-type tripPoint struct {
+type trackPoint struct {
 	Lat, Lon float64
 }
 
-type tripParseResult struct {
-	paths   [][]*tripPoint
+type trackParseResult struct {
+	paths   [][]*trackPoint
 	gpxData *gpx.GPX
 	md      *gpx.MovingData
 }
 
-func tripParseGPX(gpxString string) (result *tripParseResult, err error) {
-	result = &tripParseResult{}
+func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
+	result = &trackParseResult{}
 
-	type tripPath struct {
+	type trackPath struct {
 		gpxMovingData *gpx.MovingData
-		points        []*tripPoint
+		points        []*trackPoint
 	}
 
-	var paths []*tripPath
+	var paths []*trackPath
 
 	result.gpxData, err = gpx.ParseString(gpxString)
 	if err != nil {
@@ -90,11 +90,11 @@ func tripParseGPX(gpxString string) (result *tripParseResult, err error) {
 	for _, track := range result.gpxData.Tracks {
 		for _, segment := range track.Segments {
 			md := segment.MovingData()
-			path := &tripPath{
+			path := &trackPath{
 				gpxMovingData: &md,
 			}
 			for _, point := range segment.Points {
-				path.points = append(path.points, &tripPoint{
+				path.points = append(path.points, &trackPoint{
 					Lat: point.GetLatitude(), Lon: point.GetLongitude(),
 				})
 			}

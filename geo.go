@@ -81,8 +81,9 @@ func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {
 	osmUrl, _ := url.Parse("https://tile.openstreetmap.org/")
 	tileProxy := http.StripPrefix(basePath, httputil.NewSingleHostReverseProxy(osmUrl))
 	return func(w http.ResponseWriter, r *http.Request) {
-		proxyTarget := "https://tile.openstreetmap.org" + r.URL.Path
-		proxyRequest, _ := http.NewRequest(http.MethodGet, proxyTarget, nil)
+		targetUrl := *osmUrl
+		targetUrl.Path = r.URL.Path
+		proxyRequest, _ := http.NewRequest(http.MethodGet, targetUrl.String(), nil)
 		// Copy request headers
 		for _, k := range []string{
 			"Accept-Encoding",
