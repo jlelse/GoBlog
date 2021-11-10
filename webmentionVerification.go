@@ -123,7 +123,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 		// Update webmention
 		_, err = a.db.exec(
-			"update webmentions set url = @newsource, status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
+			"update webmentions set source = @newsource, status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
 			sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
 			sql.Named("status", newStatus),
 			sql.Named("title", m.Title),
