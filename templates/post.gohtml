@@ -2,6 +2,7 @@
   <title>{{ with .Data.RenderedTitle }}{{ . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
+  {{ include "tripheader" . }}
 {{ end }}
 
 {{ define "main" }}
@@ -17,6 +18,7 @@
           {{ content .Data false }}
         </div>
       {{ end }}
+      {{ include "tripdetails" . }}
       {{ include "posttax" . }}
     </article>
     {{ include "author" . }}

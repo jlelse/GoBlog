@@ -1,8 +1,8 @@
 {{ define "title" }}
     <title>{{ mdtitle .Blog.Title }}</title>
     {{ if not .Data.nolocations }}
-        <link rel="stylesheet" href="{{ .Data.mappath }}/leaflet/leaflet.css"/>
-        <script src="{{ .Data.mappath }}/leaflet/leaflet.js"></script>
+        <link rel="stylesheet" href="/x/leaflet/leaflet.css"/>
+        <script src="/x/leaflet/leaflet.js"></script>
     {{ end }}
 {{ end }}
 
@@ -11,7 +11,7 @@
     {{ if .Data.nolocations }}
         <p>{{ string .Blog.Lang "nolocations" }}</p>
     {{ else }}
-        <div class="p" id="map" data-locations="{{ .Data.locations }}" data-tiles="{{ .Data.mappath }}/tiles/{z}/{x}/{y}.png"></div>
+        <div class="p" id="map" data-locations="{{ .Data.locations }}"></div>
         <script defer src="{{ asset "js/geomap.js" }}"></script>
     {{ end }}
   </main>

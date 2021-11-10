@@ -4,7 +4,7 @@
 
     let map = L.map('map')
 
-    L.tileLayer(mapEl.dataset.tiles, {
+    L.tileLayer("/x/tiles/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map)
 
@@ -16,7 +16,5 @@
         })
         markers.push(marker)
     })
-
-    map.fitBounds(markers)
-    map.zoomOut(2, { animate: false })
+    map.fitBounds(markers, { padding: [5, 5] })
 })()

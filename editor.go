@@ -143,7 +143,29 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			http.Redirect(w, r, post.Path, http.StatusFound)
-			return
+		case "helpgpx":
+			file, _, err := r.FormFile("file")
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			gpx, err := io.ReadAll(file)
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			var gpxBuffer bytes.Buffer
+			_, _ = a.min.Write(&gpxBuffer, contenttype.XML, gpx)
+			resultMap := map[string]string{
+				"gpx": gpxBuffer.String(),
+			}
+			resultBytes, err := yaml.Marshal(resultMap)
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			w.Header().Set(contentType, contenttype.TextUTF8)
+			_, _ = w.Write(resultBytes)
 		default:
 			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}

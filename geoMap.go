@@ -1,17 +1,9 @@
 package main
 
 import (
-	"embed"
 	"encoding/json"
-	"io"
 	"net/http"
-	"net/http/httptest"
-	"net/http/httputil"
-	"net/url"
 )
-
-//go:embed leaflet/*
-var leafletFiles embed.FS
 
 const defaultGeoMapPath = "/map"
 
@@ -68,48 +60,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		BlogString: blog,
 		Canonical:  a.getFullAddress(mapPath),
 		Data: map[string]interface{}{
-			"mappath":   mapPath,
 			"locations": string(jb),
 		},
 	})
-}
-
-func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {
-	osmUrl, _ := url.Parse("https://tile.openstreetmap.org/")
-	tileProxy := http.StripPrefix(basePath, httputil.NewSingleHostReverseProxy(osmUrl))
-	return func(w http.ResponseWriter, r *http.Request) {
-		proxyTarget := "https://tile.openstreetmap.org" + r.URL.Path
-		proxyRequest, _ := http.NewRequest(http.MethodGet, proxyTarget, nil)
-		// Copy request headers
-		for _, k := range []string{
-			"Accept-Encoding",
-			"Accept-Language",
-			"Accept",
-			"Cache-Control",
-			"If-Modified-Since",
-			"If-None-Match",
-			"User-Agent",
-		} {
-			proxyRequest.Header.Set(k, r.Header.Get(k))
-		}
-		rec := httptest.NewRecorder()
-		tileProxy.ServeHTTP(rec, proxyRequest)
-		res := rec.Result()
-		// Copy result headers
-		for _, k := range []string{
-			"Accept-Ranges",
-			"Access-Control-Allow-Origin",
-			"Age",
-			"Cache-Control",
-			"Content-Length",
-			"Content-Type",
-			"Etag",
-			"Expires",
-		} {
-			w.Header().Set(k, res.Header.Get(k))
-		}
-		w.WriteHeader(res.StatusCode)
-		_, _ = io.Copy(w, res.Body)
-		_ = res.Body.Close()
-	}
 }

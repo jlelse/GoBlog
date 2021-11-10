@@ -44,6 +44,14 @@
       <input id="geostatus" type="text" class="hide" readonly>
     </form>
 
+    <h2>{{ string .Blog.Lang "gpxhelper" }}</h2>
+    <p>{{ string .Blog.Lang "gpxhelperdesc" }}</p>
+    <form class="fw p" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="editoraction" value="helpgpx">
+      <input type="file" name="file">
+      <input type="submit" value="{{ string .Blog.Lang "upload" }}">
+    </form>
+
     <script defer src="{{ asset "js/mdpreview.js" }}"></script>
     <script defer src="{{ asset "js/geohelper.js" }}"></script>
     <script defer src="{{ asset "js/formcache.js" }}"></script>

@@ -220,8 +220,8 @@ func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
 	return ext, funk.ContainsString(allowed, strings.ToLower(ext))
 }
 
-// Get SHA-256 hash of file
-func getSHA256(file io.ReadSeeker) (filename string, err error) {
+// Get SHA-256 hash
+func getSHA256(file io.ReadSeeker) (hash string, err error) {
 	if _, err = file.Seek(0, 0); err != nil {
 		return "", err
 	}

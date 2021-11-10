@@ -96,6 +96,13 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 	r.Get(mediaFileRoute, a.serveMediaFile)
 }
 
+// Various other routes
+func (a *goBlog) xRouter(r chi.Router) {
+	r.Use(a.privateModeHandler)
+	r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles("/x/tiles"))
+	r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/x/"))
+}
+
 // Blog
 func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
@@ -398,14 +405,7 @@ func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if mc := conf.Map; mc != nil && mc.Enabled {
 			mapPath := conf.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))
-			r.Route(mapPath, func(r chi.Router) {
-				r.Use(a.privateModeHandler)
-				r.Group(func(r chi.Router) {
-					r.With(a.cacheMiddleware).Get("/", a.serveGeoMap)
-					r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, mapPath+"/"))
-				})
-				r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles(mapPath+"/tiles"))
-			})
+			r.With(a.privateModeHandler, a.cacheMiddleware).Get(mapPath, a.serveGeoMap)
 		}
 	}
 }
