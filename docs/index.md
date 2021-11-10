@@ -43,6 +43,7 @@ Here's an (incomplete) list of features:
 - Automatic asset minification of HTML, CSS and JavaScript
 - Statistics page with information about posts
 - Map page with a map of all posts with a location
+- Posts can have a `gpx` paramter to include and show a GPX track
 - Option to create post aliases for automatic redirects
 - Redirects using regular expressions
 - Hooks to execute custom commands on certain events
