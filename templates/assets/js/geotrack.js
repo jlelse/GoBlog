@@ -9,14 +9,10 @@
     }).addTo(map)
 
     let polylines = []
+
     paths.forEach(path => {
-        let pathPoints = []
-        path.forEach(point => {
-            pathPoints.push([point.Lat, point.Lon])
-        })
-        let pl = L.polyline(pathPoints, { color: 'blue' }).addTo(map)
-        polylines.push(pl)
+        polylines.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map))
     })
-    let fgb = L.featureGroup(polylines).getBounds()
-    map.fitBounds(fgb, { padding: [5, 5] })
+
+    map.fitBounds(L.featureGroup(polylines).getBounds(), { padding: [5, 5] })
 })()

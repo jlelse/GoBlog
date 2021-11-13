@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math"
 
 	"github.com/tkrajina/gpxgo/gpx"
@@ -11,8 +10,10 @@ import (
 	"golang.org/x/text/message"
 )
 
+const gpxParameter = "gpx"
+
 func (p *post) HasTrack() bool {
-	return p.firstParameter("gpx") != ""
+	return p.firstParameter(gpxParameter) != ""
 }
 
 type trackResult struct {
@@ -25,7 +26,7 @@ type trackResult struct {
 }
 
 func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
-	gpxString := p.firstParameter("gpx")
+	gpxString := p.firstParameter(gpxParameter)
 	if gpxString == "" {
 		return nil, errors.New("no gpx parameter in post")
 	}
@@ -57,8 +58,6 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 			math.Floor(math.Mod(parseResult.md.MovingTime, 60)),      // Seconds
 		),
 	}
-
-	log.Println(string(pathsJSON))
 
 	return result, nil
 }

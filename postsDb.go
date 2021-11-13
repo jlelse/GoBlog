@@ -272,7 +272,8 @@ type postsRequestConfig struct {
 	status                                      postStatus
 	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
-	parameter                                   string
+	parameters                                  []string // Ignores parameterValue
+	parameter                                   string   // Ignores parameters
 	parameterValue                              string
 	publishedYear, publishedMonth, publishedDay int
 	randomOrder                                 bool
@@ -317,6 +318,18 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @param and length(coalesce(value, '')) > 0)")
 			args = append(args, sql.Named("param", c.parameter))
 		}
+	} else if len(c.parameters) > 0 {
+		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter in (")
+		for i, param := range c.parameters {
+			if i > 0 {
+				queryBuilder.WriteString(", ")
+			}
+			named := "param" + strconv.Itoa(i)
+			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString(named)
+			args = append(args, param)
+		}
+		queryBuilder.WriteString(") and length(coalesce(value, '')) > 0)")
 	}
 	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
 		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @taxname and lowerx(value) = lowerx(@taxval))")

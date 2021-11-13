@@ -1,6 +1,7 @@
 (function () {
     let mapEl = document.getElementById('map')
     let locations = JSON.parse(mapEl.dataset.locations)
+    let tracks = JSON.parse(mapEl.dataset.tracks)
 
     let map = L.map('map')
 
@@ -8,13 +9,21 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map)
 
-    let markers = []
+    let mapFeatures = []
+
     locations.forEach(loc => {
-        let marker = [loc.Lat, loc.Lon]
-        L.marker(marker).addTo(map).on('click', function () {
+        mapFeatures.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
             window.open(loc.Post, '_blank').focus()
-        })
-        markers.push(marker)
+        }))
     })
-    map.fitBounds(markers, { padding: [5, 5] })
+
+    tracks.forEach(track => {
+        track.Paths.forEach(path => {
+            mapFeatures.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
+                window.open(track.Post, '_blank').focus()
+            }))
+        })
+    })
+
+    map.fitBounds(L.featureGroup(mapFeatures).getBounds(), { padding: [5, 5] })
 })()

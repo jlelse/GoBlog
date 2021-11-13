@@ -90,6 +90,11 @@ func Test_postsDb(t *testing.T) {
 	must.NoError(err)
 	is.Equal(0, count)
 
+	// Check by multiple parameters
+	count, err = app.db.countPosts(&postsRequestConfig{parameters: []string{"tags", "title"}})
+	must.NoError(err)
+	is.Equal(1, count)
+
 	// Delete post
 	_, err = app.deletePostFromDb("/test/abc")
 	must.NoError(err)

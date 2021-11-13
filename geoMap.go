@@ -14,8 +14,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	allPostsWithLocation, err := a.getPosts(&postsRequestConfig{
 		blog:               blog,
 		status:             statusPublished,
-		parameter:          a.cfg.Micropub.LocationParam,
-		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
+		parameters:         []string{a.cfg.Micropub.LocationParam, gpxParameter},
+		withOnlyParameters: []string{a.cfg.Micropub.LocationParam, gpxParameter},
 	})
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -38,7 +38,13 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		Post string
 	}
 
+	type templateTrack struct {
+		Paths [][]*trackPoint
+		Post  string
+	}
+
 	var locations []*templateLocation
+	var tracks []*templateTrack
 	for _, p := range allPostsWithLocation {
 		if g := a.geoURI(p); g != nil {
 			locations = append(locations, &templateLocation{
@@ -47,9 +53,21 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 				Post: p.Path,
 			})
 		}
+		if t, err := a.getTrack(p); err == nil && t != nil {
+			tracks = append(tracks, &templateTrack{
+				Paths: t.Paths,
+				Post:  p.Path,
+			})
+		}
 	}
 
-	jb, err := json.Marshal(locations)
+	locationsJsonBytes, err := json.Marshal(locations)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tracksJsonBytes, err := json.Marshal(tracks)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +78,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		BlogString: blog,
 		Canonical:  a.getFullAddress(mapPath),
 		Data: map[string]interface{}{
-			"locations": string(jb),
+			"locations": string(locationsJsonBytes),
+			"tracks":    string(tracksJsonBytes),
 		},
 	})
 }
