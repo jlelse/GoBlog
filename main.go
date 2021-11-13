@@ -13,9 +13,12 @@ import (
 func main() {
 	var err error
 
-	// Init CPU and memory profiling
+	// Command line flags
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
 	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
+	configfile := flag.String("config", "", "use a specific config file")
+
+	// Init CPU and memory profiling
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -54,7 +57,7 @@ func main() {
 	}
 
 	// Initialize config
-	if err = app.initConfig(); err != nil {
+	if err = app.initConfig(*configfile); err != nil {
 		app.logErrAndQuit("Failed to init config:", err.Error())
 		return
 	}

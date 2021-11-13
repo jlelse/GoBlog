@@ -279,10 +279,15 @@ type configWebmention struct {
 	DisableReceiving bool `mapstructure:"disableReceiving"`
 }
 
-func (a *goBlog) initConfig() error {
+func (a *goBlog) initConfig(file string) error {
 	log.Println("Initialize configuration...")
-	viper.SetConfigName("config")
-	viper.AddConfigPath("./config/")
+	if file != "" {
+		// Use config file from the flag
+		viper.SetConfigFile(file)
+	} else {
+		viper.SetConfigName("config")
+		viper.AddConfigPath("./config/")
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		return err
