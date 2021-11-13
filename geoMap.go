@@ -61,16 +61,24 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	locationsJsonBytes, err := json.Marshal(locations)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	locationsJson := ""
+	if len(locations) > 0 {
+		locationsJsonBytes, err := json.Marshal(locations)
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		locationsJson = string(locationsJsonBytes)
 	}
 
-	tracksJsonBytes, err := json.Marshal(tracks)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	tracksJson := ""
+	if len(tracks) > 0 {
+		tracksJsonBytes, err := json.Marshal(tracks)
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tracksJson = string(tracksJsonBytes)
 	}
 
 	mapPath := bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))
@@ -78,8 +86,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		BlogString: blog,
 		Canonical:  a.getFullAddress(mapPath),
 		Data: map[string]interface{}{
-			"locations": string(locationsJsonBytes),
-			"tracks":    string(tracksJsonBytes),
+			"locations": locationsJson,
+			"tracks":    tracksJson,
 		},
 	})
 }

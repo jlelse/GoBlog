@@ -1,7 +1,7 @@
 (function () {
     let mapEl = document.getElementById('map')
-    let locations = JSON.parse(mapEl.dataset.locations)
-    let tracks = JSON.parse(mapEl.dataset.tracks)
+    let locations = (mapEl.dataset.locations == "") ? [] : JSON.parse(mapEl.dataset.locations)
+    let tracks = (mapEl.dataset.tracks == "") ? [] : JSON.parse(mapEl.dataset.tracks)
 
     let map = L.map('map')
 
