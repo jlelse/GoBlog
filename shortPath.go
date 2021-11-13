@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func (db *database) shortenPath(p string) (string, error) {
@@ -15,9 +17,11 @@ func (db *database) shortenPath(p string) (string, error) {
 			return spi.(string), nil
 		}
 		// Insert in case it isn't shortened yet
-		_, err := db.exec("insert or ignore into shortpath (path) values (@path)", sql.Named("path", p))
+		_, err := db.exec("insert or rollback into shortpath (path) values (@path)", sql.Named("path", p))
 		if err != nil {
-			return nil, err
+			if no, ok := err.(sqlite3.Error); !ok || no.Code != sqlite3.ErrConstraint {
+				return nil, err
+			}
 		}
 		// Query short path
 		row, err := db.queryRow("select printf('/s/%x', id) from shortpath where path = @path", sql.Named("path", p))
