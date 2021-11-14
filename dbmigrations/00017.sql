@@ -11,7 +11,7 @@ alter table posts_new rename to posts;
 create view view_posts_with_title as select p.rowid as id, p.path as path, coalesce(pp.value, '') as title, content, published, updated, blog, section, status, priority from posts p left outer join (select * from post_parameters pp where pp.parameter = 'title') pp on p.path = pp.path;
 drop table posts_fts;
 create virtual table posts_fts using fts5(path unindexed, title, content, published unindexed, updated unindexed, blog unindexed, section unindexed, status unindexed, priority unindexed, content=view_posts_with_title, content_rowid=id);
-insert into posts_fts(posts_fts) values ('rebuild');
+-- insert into posts_fts(posts_fts) values ('rebuild');
 create index index_posts_status on posts (status);
 create index index_posts_blog on posts (blog);
 create index index_posts_section on posts (section);

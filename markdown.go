@@ -16,6 +16,10 @@ import (
 )
 
 func (a *goBlog) initMarkdown() {
+	if a.md != nil && a.absoluteMd != nil && a.titleMd != nil {
+		// Already initialized
+		return
+	}
 	defaultGoldmarkOptions := []goldmark.Option{
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),

@@ -89,7 +89,7 @@ func main() {
 	// Execute pre-start hooks
 	app.preStartHooks()
 
-	// Initialize database and markdown
+	// Initialize database
 	if err = app.initDatabase(true); err != nil {
 		app.logErrAndQuit("Failed to init database:", err.Error())
 		return

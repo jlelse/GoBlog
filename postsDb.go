@@ -291,7 +291,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	queryBuilder.WriteString(" from ")
 	// Table
 	if c.search != "" {
-		queryBuilder.WriteString("posts_fts(@search)")
+		queryBuilder.WriteString("(select p.* from posts_fts(@search) ps, posts p where ps.path = p.path)")
 		args = append(args, sql.Named("search", c.search))
 	} else {
 		queryBuilder.WriteString("posts")
