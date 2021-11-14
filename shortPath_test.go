@@ -35,4 +35,11 @@ func Test_shortenPath(t *testing.T) {
 
 	assert.NotEqual(t, res1, res3)
 	assert.Equal(t, "/s/2", res3)
+
+	db.spc.Delete("/a")
+	db.exec("delete from shortpath where id = 1")
+
+	res4, err := db.shortenPath("/c")
+	require.NoError(t, err)
+	assert.Equal(t, "/s/1", res4)
 }

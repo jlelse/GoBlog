@@ -17,9 +17,16 @@ func (db *database) shortenPath(p string) (string, error) {
 			return spi.(string), nil
 		}
 		// Insert in case it isn't shortened yet
-		_, err := db.exec("insert or rollback into shortpath (path) values (@path)", sql.Named("path", p))
+		_, err := db.exec(`
+		insert or rollback into shortpath (id, path)
+		values (
+			-- next available id (reuse skipped ids due to bug)
+			(select min(id) + 1 from (select id from shortpath union all select 0) where id + 1 not in (select id from shortpath)),
+			@path
+		)`, sql.Named("path", p))
 		if err != nil {
-			if no, ok := err.(sqlite3.Error); !ok || no.Code != sqlite3.ErrConstraint {
+			if no, ok := err.(sqlite3.Error); !ok || sqlite3.ErrNo(no.ExtendedCode) != sqlite3.ErrNo(sqlite3.ErrConstraintUnique) {
+				// Some other error than unique constraint violation because path is already shortened
 				return nil, err
 			}
 		}

@@ -95,6 +95,16 @@ func Test_postsDb(t *testing.T) {
 	must.NoError(err)
 	is.Equal(1, count)
 
+	// Check by taxonomy
+	count, err = app.db.countPosts(&postsRequestConfig{taxonomy: &configTaxonomy{Name: "tags"}})
+	must.NoError(err)
+	is.Equal(1, count)
+
+	// Check by taxonomy value
+	count, err = app.db.countPosts(&postsRequestConfig{taxonomy: &configTaxonomy{Name: "tags"}, taxonomyValue: "A"})
+	must.NoError(err)
+	is.Equal(1, count)
+
 	// Delete post
 	_, err = app.deletePostFromDb("/test/abc")
 	must.NoError(err)
