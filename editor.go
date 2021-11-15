@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/microcosm-cc/bluemonday"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
@@ -86,8 +85,6 @@ func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered [
 	if err != nil {
 		return nil, err
 	}
-	// Sanitize HTML
-	rendered = bluemonday.UGCPolicy().SanitizeBytes(rendered)
 	return
 }
 
