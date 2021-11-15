@@ -1,4 +1,5 @@
 {{ define "title" }}
+  <link rel="stylesheet" href="{{ asset "css/chroma.css" }}">
   <title>{{ with .Data.RenderedTitle }}{{ . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	chromahtml "github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/styles"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -35,6 +37,11 @@ func (a *goBlog) initTemplateAssets() (err error) {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	// Add syntax highlighting CSS
+	err = a.initChromaCSS()
 	if err != nil {
 		return err
 	}
@@ -106,4 +113,39 @@ func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public,max-age=31536000,immutable")
 	w.Header().Set(contentType, af.contentType+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write(af.body)
+}
+
+func (a *goBlog) initChromaCSS() error {
+	// Check if file already exists
+	if _, ok := a.assetFiles["css/chroma.css"]; ok {
+		return nil
+	}
+	// Initialize the style
+	chromaStyleBuilder := styles.Get("monokai").Builder()
+	chromaStyle, err := chromaStyleBuilder.Build()
+	if err != nil {
+		return err
+	}
+	// Create a temporary file
+	chromaTempFile, err := os.CreateTemp("", "chroma-*.css")
+	if err != nil {
+		return err
+	}
+	chromaTempFileName := chromaTempFile.Name()
+	// Write the CSS to the file
+	chromahtml.New(
+		chromahtml.ClassPrefix("c-"),
+	).WriteCSS(chromaTempFile, chromaStyle)
+	// Close the file
+	_ = chromaTempFile.Close()
+	// Compile asset
+	compiled, err := a.compileAsset(chromaTempFileName)
+	_ = os.Remove(chromaTempFileName)
+	if err != nil {
+		return err
+	}
+	if compiled != "" {
+		a.assetFileNames["css/chroma.css"] = compiled
+	}
+	return nil
 }

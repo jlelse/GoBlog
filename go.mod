@@ -8,6 +8,7 @@ require (
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/alecthomas/chroma v0.9.4
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
 	github.com/cretz/bine v0.2.0
@@ -48,6 +49,7 @@ require (
 	github.com/yuin/goldmark v1.4.4
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
+	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
@@ -58,6 +60,9 @@ require (
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
 
+// Override some modules with own forks
+replace github.com/yuin/goldmark-highlighting => github.com/jlelse/goldmark-highlighting v0.0.0-20211115195757-39f0fea96680
+
 require (
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
@@ -66,6 +71,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coreos/go-iptables v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
