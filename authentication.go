@@ -53,6 +53,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 		}
 		// Show login form
 		w.Header().Set("Cache-Control", "no-store,max-age=0")
+		w.Header().Set("X-Robots-Tag", "noindex")
 		h, _ := json.Marshal(r.Header)
 		b, _ := io.ReadAll(io.LimitReader(r.Body, 20*1000*1000)) // Only allow 20 MB
 		_ = r.Body.Close()
