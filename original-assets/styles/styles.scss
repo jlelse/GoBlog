@@ -53,14 +53,15 @@ body {
   word-break: break-word;
   overflow-wrap: break-word;
 
-  * {
+  *:not([class*='c-']) {
     @include color(color, primary);
+  }
+  * {
     max-width: 100%;
-
-    &::selection {
-      @include color(color, background);
-      @include color(background, primary);
-    }
+  }
+  *::selection {
+    @include color(color, background);
+    @include color(background, primary);
   }
 }
 
