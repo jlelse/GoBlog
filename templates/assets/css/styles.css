@@ -30,12 +30,13 @@ body {
   word-break: break-word;
   overflow-wrap: break-word;
 }
-body *:not([class*=c-]) {
+body * {
   color: #000;
   color: var(--primary, #000);
-}
-body * {
   max-width: 100%;
+}
+body [class*=c-] {
+  color: #fff;
 }
 body *::selection {
   color: #fff;

@@ -53,11 +53,13 @@ body {
   word-break: break-word;
   overflow-wrap: break-word;
 
-  *:not([class*='c-']) {
-    @include color(color, primary);
-  }
   * {
+    @include color(color, primary);
     max-width: 100%;
+  }
+  [class*='c-'] {
+    // monokai is dark, so we need to use light color for text
+    color: #{map-get($colors, primary-dark)};
   }
   *::selection {
     @include color(color, background);
