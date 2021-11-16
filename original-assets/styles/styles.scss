@@ -46,25 +46,26 @@ html {
 body {
   @extend .sans-serif;
   @include color(background, background);
+  @include color(color, primary);
   line-height: 1.5;
   margin: 0 auto;
   max-width: 700px;
   padding: 10px;
   word-break: break-word;
   overflow-wrap: break-word;
-
+  
   * {
-    @include color(color, primary);
     max-width: 100%;
   }
-  [class*='c-'] {
-    // monokai is dark, so we need to use light color for text
-    color: #{map-get($colors, primary-dark)};
-  }
-  *::selection {
-    @include color(color, background);
-    @include color(background, primary);
-  }
+}
+
+a, hr {
+  @include color(color, primary);
+}
+
+*::selection {
+  @include color(color, background);
+  @include color(background, primary);
 }
 
 header {

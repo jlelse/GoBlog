@@ -38,7 +38,7 @@ func (a *goBlog) initMarkdown() {
 			marktag.Mark,
 			emoji.Emoji,
 			highlighting.NewHighlighting(
-				highlighting.WithStyle("monokai"),
+				highlighting.WithCustomStyle(chromaGoBlogStyle),
 				highlighting.WithFormatOptions(
 					chromahtml.ClassPrefix("c-"),
 					chromahtml.WithClasses(true),

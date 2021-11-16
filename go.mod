@@ -18,7 +18,7 @@ require (
 	github.com/elnormous/contenttype v1.0.0
 	github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac
 	github.com/emersion/go-smtp v0.15.0
-	github.com/go-chi/chi/v5 v5.0.5
+	github.com/go-chi/chi/v5 v5.0.6
 	github.com/go-fed/httpsig v1.1.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/securecookie v1.1.1
@@ -50,7 +50,7 @@ require (
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
-	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
+	golang.org/x/crypto v0.0.0-20211115234514-b4de73f9ece8
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7

@@ -23,6 +23,8 @@ html {
 body {
   background: #fff;
   background: var(--background, #fff);
+  color: #000;
+  color: var(--primary, #000);
   line-height: 1.5;
   margin: 0 auto;
   max-width: 700px;
@@ -31,14 +33,15 @@ body {
   overflow-wrap: break-word;
 }
 body * {
-  color: #000;
-  color: var(--primary, #000);
   max-width: 100%;
 }
-body [class*=c-] {
-  color: #fff;
+
+a, hr {
+  color: #000;
+  color: var(--primary, #000);
 }
-body *::selection {
+
+*::selection {
   color: #fff;
   color: var(--background, #fff);
   background: #000;

@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
-	"github.com/alecthomas/chroma/styles"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -121,7 +120,7 @@ func (a *goBlog) initChromaCSS() error {
 		return nil
 	}
 	// Initialize the style
-	chromaStyleBuilder := styles.Get("monokai").Builder()
+	chromaStyleBuilder := chromaGoBlogStyle.Builder()
 	chromaStyle, err := chromaStyleBuilder.Build()
 	if err != nil {
 		return err
@@ -135,6 +134,7 @@ func (a *goBlog) initChromaCSS() error {
 	// Write the CSS to the file
 	chromahtml.New(
 		chromahtml.ClassPrefix("c-"),
+		chromahtml.WithAllClasses(true),
 	).WriteCSS(chromaTempFile, chromaStyle)
 	// Close the file
 	_ = chromaTempFile.Close()
@@ -144,8 +144,6 @@ func (a *goBlog) initChromaCSS() error {
 	if err != nil {
 		return err
 	}
-	if compiled != "" {
-		a.assetFileNames["css/chroma.css"] = compiled
-	}
+	a.assetFileNames["css/chroma.css"] = compiled
 	return nil
 }
