@@ -235,6 +235,7 @@ func (a *goBlog) editorPostDesc(blog string) string {
 		a.cfg.Micropub.PhotoDescriptionParam,
 		a.cfg.Micropub.ReplyParam,
 		a.cfg.Micropub.ReplyTitleParam,
+		gpxParameter,
 	} {
 		if param == "" {
 			continue

@@ -1,11 +1,13 @@
 {{ define "trackdetails" }}
     {{ if .Data.HasTrack }}
     {{ $track := (gettrack .Data) }}
+    {{ if $track }}
     {{ if $track.HasPoints }}
     {{ $lang := .Blog.Lang }}
     <p>{{ with $track.Name }}<b>{{ . }}</b> {{ end }}{{ with $track.Kilometers }}🏁 {{ . }} {{ string $lang "kilometers" }} {{ end }}{{ with $track.Hours }}⌛ {{ . }}{{ end }}</p>
-    <div class="p" id="map" data-paths="{{ $track.PathsJSON }}" data-tiles="/tiles/{z}/{x}/{y}.png"></div>
+    <div class="p" id="map" data-paths="{{ $track.PathsJSON }}" data-points="{{ $track.PointsJSON }}"></div>
     <script defer src="{{ asset "js/geotrack.js" }}"></script>
+    {{ end }}
     {{ end }}
     {{ end }}
 {{ end }}

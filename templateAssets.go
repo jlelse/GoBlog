@@ -134,7 +134,6 @@ func (a *goBlog) initChromaCSS() error {
 	// Write the CSS to the file
 	chromahtml.New(
 		chromahtml.ClassPrefix("c-"),
-		chromahtml.WithAllClasses(true),
 	).WriteCSS(chromaTempFile, chromaStyle)
 	// Close the file
 	_ = chromaTempFile.Close()

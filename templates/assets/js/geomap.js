@@ -9,21 +9,26 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map)
 
-    let mapFeatures = []
+    let features = []
 
     locations.forEach(loc => {
-        mapFeatures.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
+        features.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
             window.open(loc.Post, '_blank').focus()
         }))
     })
 
     tracks.forEach(track => {
         track.Paths.forEach(path => {
-            mapFeatures.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
+            features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
+                window.open(track.Post, '_blank').focus()
+            }))
+        })
+        track.Points.forEach(point => {
+            features.push(L.marker([point.Lat, point.Lon]).addTo(map).on('click', function () {
                 window.open(track.Post, '_blank').focus()
             }))
         })
     })
 
-    map.fitBounds(L.featureGroup(mapFeatures).getBounds(), { padding: [5, 5] })
+    map.fitBounds(L.featureGroup(features).getBounds(), { padding: [5, 5] })
 })()

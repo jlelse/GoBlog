@@ -39,8 +39,9 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type templateTrack struct {
-		Paths [][]*trackPoint
-		Post  string
+		Paths  [][]*trackPoint
+		Points []*trackPoint
+		Post   string
 	}
 
 	var locations []*templateLocation
@@ -55,8 +56,9 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		}
 		if t, err := a.getTrack(p); err == nil && t != nil {
 			tracks = append(tracks, &templateTrack{
-				Paths: t.Paths,
-				Post:  p.Path,
+				Paths:  t.Paths,
+				Points: t.Points,
+				Post:   p.Path,
 			})
 		}
 	}
