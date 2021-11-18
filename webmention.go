@@ -21,15 +21,16 @@ const (
 )
 
 type mention struct {
-	ID        int
-	Source    string
-	NewSource string
-	Target    string
-	Created   int64
-	Title     string
-	Content   string
-	Author    string
-	Status    webmentionStatus
+	ID          int
+	Source      string
+	NewSource   string
+	Target      string
+	Created     int64
+	Title       string
+	Content     string
+	Author      string
+	Status      webmentionStatus
+	Submentions []*mention
 }
 
 func (a *goBlog) initWebmention() {
@@ -156,6 +157,7 @@ type webmentionsRequestConfig struct {
 	id            int
 	asc           bool
 	offset, limit int
+	submentions   bool
 }
 
 func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []interface{}) {
@@ -206,6 +208,17 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 		if err != nil {
 			return nil, err
 		}
+		if config.submentions {
+			m.Submentions, err = db.getWebmentions(&webmentionsRequestConfig{
+				target:      m.Source,
+				submentions: true,
+				asc:         config.asc,
+				status:      config.status,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
 		mentions = append(mentions, m)
 	}
 	return mentions, nil
@@ -213,9 +226,10 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 
 func (db *database) getWebmentionsByAddress(address string) []*mention {
 	mentions, _ := db.getWebmentions(&webmentionsRequestConfig{
-		target: address,
-		status: webmentionStatusApproved,
-		asc:    true,
+		target:      address,
+		status:      webmentionStatusApproved,
+		asc:         true,
+		submentions: true,
 	})
 	return mentions
 }

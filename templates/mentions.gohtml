@@ -1,0 +1,19 @@
+{{ define "mentions" }}
+    {{ $rd := . }}
+    <ul>
+        {{ range $i, $mention := .Data }}
+        <li>
+            <a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer ugc">
+                {{ if $mention.Author }}
+                    {{ $mention.Author }}
+                {{ else }}
+                    {{ $mention.Source }}
+                {{ end }}
+            </a>
+            {{ with $mention.Title }} <b>{{.}}</b>{{ end }}
+            {{ with $mention.Content }} <i>{{.}}</i>{{ end }}
+            {{ with $mention.Submentions }}{{ include "mentions" $rd . }}{{ end }}
+        </li>
+        {{ end }}
+    </ul>
+{{ end }}

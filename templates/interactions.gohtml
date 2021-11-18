@@ -1,18 +1,9 @@
 {{ define "interactions" }}
     <details class="p" id="interactions">
         <summary><b>{{ string .Blog.Lang "interactions" }}</b></summary>
+        {{ $rd := . }}
         {{ with ( mentions .Canonical ) }}
-            <ul>
-            {{ range $i, $mention := . }}
-                <li><a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer ugc">
-                    {{ if $mention.Author }}
-                        {{ $mention.Author }}
-                    {{ else }}
-                        {{ $mention.Source }}
-                    {{ end }}
-                </a>{{ with $mention.Title }} <b>{{.}}</b>{{ end }}{{ with $mention.Content }} <i>{{.}}</i>{{ end }}</li>
-            {{ end }}
-            </ul>
+            {{ include "mentions" $rd . }}
         {{ end }}
         <form class="fw p" method="post" action="/webmention">
             <label for="wm-source" class="p">{{ string .Blog.Lang "interactionslabel" }}</label>
