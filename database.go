@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
 	"golang.org/x/sync/singleflight"
@@ -60,7 +61,7 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 
 func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	// Register driver
-	dbDriverName := "goblog_db_" + generateRandomString(15)
+	dbDriverName := "goblog_db_" + uuid.NewString()
 	sql.Register(dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions

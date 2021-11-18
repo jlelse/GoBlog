@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
+	"github.com/google/uuid"
 	"github.com/spf13/cast"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -370,17 +371,16 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]i
 	if err = a.db.apAddFollower(blogName, follower.ID, inbox); err != nil {
 		return
 	}
-	// remove @context from the inner activity
-	delete(follow, "@context")
+	// Send accept response to the new follower
 	accept := map[string]interface{}{
 		"@context": []string{asContext},
+		"type":     "Accept",
 		"to":       follow["actor"],
 		"actor":    a.apIri(blog),
 		"object":   follow,
-		"type":     "Accept",
 	}
 	_, accept["id"] = a.apNewID(blog)
-	_ = a.db.apQueueSendSigned(a.apIri(blog), follower.Inbox, accept)
+	_ = a.db.apQueueSendSigned(a.apIri(blog), inbox, accept)
 }
 
 func (a *goBlog) apSendToAllFollowers(blog string, activity interface{}) {
@@ -401,7 +401,7 @@ func (db *database) apSendTo(blogIri string, activity interface{}, inboxes []str
 }
 
 func (a *goBlog) apNewID(blog *configBlog) (hash string, url string) {
-	return hash, a.apIri(blog) + generateRandomString(16)
+	return hash, a.apIri(blog) + "#" + uuid.NewString()
 }
 
 func (a *goBlog) apIri(b *configBlog) string {

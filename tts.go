@@ -14,6 +14,7 @@ import (
 	"sync"
 	"unicode"
 
+	"github.com/google/uuid"
 	"go.goblog.app/app/pkgs/mp3merge"
 )
 
@@ -105,7 +106,7 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 		if s == "" {
 			continue
 		}
-		fileName := filepath.Join(tmpDir, generateRandomString(10)+".mp3")
+		fileName := filepath.Join(tmpDir, uuid.NewString()+".mp3")
 		allFiles = append(allFiles, fileName)
 		wg.Add(1)
 		go func() {
