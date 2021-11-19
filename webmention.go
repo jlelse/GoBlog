@@ -211,7 +211,7 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 		if config.submentions {
 			m.Submentions, err = db.getWebmentions(&webmentionsRequestConfig{
 				target:      m.Source,
-				submentions: true,
+				submentions: false, // prevent infinite recursion
 				asc:         config.asc,
 				status:      config.status,
 			})
