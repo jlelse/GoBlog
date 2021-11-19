@@ -10,7 +10,6 @@ import (
 	ts "git.jlel.se/jlelse/template-strings"
 	ct "github.com/elnormous/contenttype"
 	"github.com/go-fed/httpsig"
-	"github.com/gorilla/websocket"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
@@ -78,6 +77,4 @@ type goBlog struct {
 	// Tor
 	torAddress  string
 	torHostname string
-	// WebSockets
-	wsUpgrader *websocket.Upgrader
 }

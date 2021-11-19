@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,10 +11,11 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"time"
 
-	"github.com/gorilla/websocket"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
+	ws "nhooyr.io/websocket"
 )
 
 const editorPath = "/editor"
@@ -28,18 +30,20 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	blog := r.Context().Value(blogKey).(string)
-	c, err := a.webSocketUpgrader().Upgrade(w, r, nil)
+	c, err := ws.Accept(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer c.Close()
+	defer c.Close(ws.StatusNormalClosure, "")
+	ctx, cancel := context.WithTimeout(r.Context(), time.Minute*60)
+	defer cancel()
 	for {
 		// Retrieve content
-		mt, message, err := c.ReadMessage()
+		mt, message, err := c.Read(ctx)
 		if err != nil {
 			break
 		}
-		if mt != websocket.TextMessage {
+		if mt != ws.MessageText {
 			continue
 		}
 		// Create preview
@@ -48,7 +52,7 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 			preview = []byte(err.Error())
 		}
 		// Write preview to socket
-		err = c.WriteMessage(websocket.TextMessage, preview)
+		err = c.Write(ctx, ws.MessageText, preview)
 		if err != nil {
 			break
 		}
