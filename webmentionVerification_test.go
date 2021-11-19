@@ -101,3 +101,46 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	require.Equal(t, "comment test", m.Content)
 	require.Equal(t, "m4rk", m.Author)
 }
+
+func Test_verifyMentionColin(t *testing.T) {
+
+	testHtmlBytes, err := os.ReadFile("testdata/colin.html")
+	require.NoError(t, err)
+	testHtml := string(testHtmlBytes)
+
+	mockClient := &fakeHttpClient{}
+	mockClient.setFakeResponse(http.StatusOK, testHtml)
+
+	app := &goBlog{
+		httpClient: mockClient,
+		cfg: &config{
+			Db: &configDb{
+				File: filepath.Join(t.TempDir(), "test.db"),
+			},
+			Server: &configServer{
+				PublicAddress: "https://jlelse.blog",
+			},
+		},
+		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// do nothing
+		}),
+	}
+
+	_ = app.initDatabase(false)
+	app.initComponents(false)
+
+	m := &mention{
+		Source: "https://colinwalker.blog/?date=2021-11-14#p3",
+		Target: "https://jlelse.blog/micro/2021/11/2021-11-13-lrhvj",
+	}
+
+	err = app.verifyMention(m)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://jlelse.blog/micro/2021/11/2021-11-13-lrhvj", m.Target)
+	require.Equal(t, "https://colinwalker.blog/?date=2021-11-14#p3", m.Source)
+	require.Equal(t, "https://colinwalker.blog/?date=2021-11-14#p3", m.Url)
+	require.True(t, strings.HasPrefix(m.Title, "Congratulations"))
+	require.True(t, strings.HasPrefix(m.Content, "Congratulations"))
+	require.Equal(t, "Colin Walker", m.Author)
+}
