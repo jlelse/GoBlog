@@ -304,5 +304,8 @@ func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, 
 	client := &http.Client{
 		Transport: &handlerRoundTripper{handler: handler},
 	}
+	if req.URL.Path == "" {
+		req.URL.Path = "/"
+	}
 	return client.Do(req)
 }

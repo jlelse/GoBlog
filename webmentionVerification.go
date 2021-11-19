@@ -75,7 +75,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	// Check if target has a valid status code
 	if targetResp.StatusCode != http.StatusOK {
 		if a.cfg.Debug {
-			a.debug("Webmention for unknown path: %s\n", m.Target)
+			a.debug(fmt.Sprintf("Webmention for unknown path: %s", m.Target))
 		}
 		return a.db.deleteWebmention(m)
 	}
@@ -106,7 +106,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	// Check if source has a valid status code
 	if sourceResp.StatusCode != http.StatusOK {
 		if a.cfg.Debug {
-			a.debug("Delete webmention because source doesn't have valid status code: %s\n", m.Source)
+			a.debug(fmt.Sprintf("Delete webmention because source doesn't have valid status code: %s", m.Source))
 		}
 		return a.db.deleteWebmention(m)
 	}
@@ -121,7 +121,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	_ = sourceResp.Body.Close()
 	if err != nil {
 		if a.cfg.Debug {
-			a.debug("Delete webmention because verifying %s threw error: %s\n", m.Source, err.Error())
+			a.debug(fmt.Sprintf("Delete webmention because verifying %s threw error: %s", m.Source, err.Error()))
 		}
 		return a.db.deleteWebmention(m)
 	}
@@ -135,7 +135,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	// Update or insert webmention
 	if a.db.webmentionExists(m) {
 		if a.cfg.Debug {
-			a.debug("Update webmention: %s => %s\n", m.Source, m.Target)
+			a.debug(fmt.Sprintf("Update webmention: %s => %s", m.Source, m.Target))
 		}
 		// Update webmention
 		err = a.db.updateWebmention(m, newStatus)
