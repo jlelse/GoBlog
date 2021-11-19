@@ -201,7 +201,12 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	m.Title = ""
 	m.Content = ""
 	m.Author = ""
+	m.Url = ""
+	m.hasUrl = false
 	m.fillFromData(microformats.Parse(&mfBuffer, sourceURL))
+	if m.Url == "" {
+		m.Url = m.Source
+	}
 	// Set title when content is empty as well
 	if m.Title == "" && m.Content == "" {
 		doc, err := goquery.NewDocumentFromReader(&gqBuffer)
@@ -216,8 +221,11 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 }
 
 func (m *mention) fillFromData(mf *microformats.Data) {
+	// Fill data
 	for _, i := range mf.Items {
-		m.fill(i)
+		if m.fill(i) {
+			break
+		}
 	}
 }
 
@@ -226,8 +234,22 @@ func (m *mention) fill(mf *microformats.Microformat) bool {
 		// Check URL
 		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
 			if url0, ok := url[0].(string); ok {
-				if !strings.EqualFold(url0, defaultIfEmpty(m.NewSource, m.Source)) {
-					// Not correct URL
+				if strings.EqualFold(url0, defaultIfEmpty(m.NewSource, m.Source)) {
+					// Is searched entry
+					m.hasUrl = true
+					m.Url = url0
+					// Reset attributes to refill
+					m.Author = ""
+					m.Title = ""
+					m.Content = ""
+				} else if m.hasUrl {
+					// Already found entry
+					return false
+				} else if m.Url == "" {
+					// Is the first entry
+					m.Url = url0
+				} else {
+					// Is not the first entry
 					return false
 				}
 			}

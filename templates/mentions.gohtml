@@ -3,11 +3,11 @@
     <ul>
         {{ range $i, $mention := .Data }}
         <li>
-            <a href="{{$mention.Source}}" target="_blank" rel="nofollow noopener noreferrer ugc">
+            <a href="{{ $mention.Url }}" target="_blank" rel="nofollow noopener noreferrer ugc">
                 {{ if $mention.Author }}
                     {{ $mention.Author }}
                 {{ else }}
-                    {{ $mention.Source }}
+                    {{ $mention.Url }}
                 {{ end }}
             </a>
             {{ with $mention.Title }} <b>{{.}}</b>{{ end }}

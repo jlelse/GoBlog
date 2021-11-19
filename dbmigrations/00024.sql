@@ -1,0 +1,1 @@
+alter table webmentions add url text not null default "";

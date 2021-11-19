@@ -26,12 +26,14 @@ type mention struct {
 	NewSource   string
 	Target      string
 	NewTarget   string
+	Url         string
 	Created     int64
 	Title       string
 	Content     string
 	Author      string
 	Status      webmentionStatus
 	Submentions []*mention
+	hasUrl      bool
 }
 
 func (a *goBlog) initWebmention() {
@@ -127,11 +129,12 @@ func (a *goBlog) createWebmention(source, target string) (err error) {
 func (db *database) insertWebmention(m *mention, status webmentionStatus) error {
 	_, err := db.exec(
 		`
-		insert into webmentions (source, target, created, status, title, content, author) 
-		values (@source, @target, @created, @status, @title, @content, @author)
+		insert into webmentions (source, target, url, created, status, title, content, author) 
+		values (@source, @target, @url, @created, @status, @title, @content, @author)
 		`,
 		sql.Named("source", m.Source),
 		sql.Named("target", m.Target),
+		sql.Named("url", m.Url),
 		sql.Named("created", m.Created),
 		sql.Named("status", status),
 		sql.Named("title", m.Title),
@@ -147,6 +150,7 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 			set 
 				source = @newsource,
 				target = @newtarget,
+				url = @url,
 				status = @status,
 				title = @title,
 				content = @content,
@@ -157,6 +161,7 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 			`,
 		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
 		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("url", m.Url),
 		sql.Named("status", newStatus),
 		sql.Named("title", m.Title),
 		sql.Named("content", m.Content),
@@ -216,7 +221,7 @@ type webmentionsRequestConfig struct {
 
 func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []interface{}) {
 	var queryBuilder strings.Builder
-	queryBuilder.WriteString("select id, source, target, created, title, content, author, status from webmentions ")
+	queryBuilder.WriteString("select id, source, target, url, created, title, content, author, status from webmentions ")
 	if config != nil {
 		queryBuilder.WriteString("where 1")
 		if config.target != "" {
@@ -258,9 +263,12 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 	}
 	for rows.Next() {
 		m := &mention{}
-		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)
+		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Url, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)
 		if err != nil {
 			return nil, err
+		}
+		if m.Url == "" {
+			m.Url = m.Source
 		}
 		if config.submentions {
 			m.Submentions, err = db.getWebmentions(&webmentionsRequestConfig{
