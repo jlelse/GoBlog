@@ -120,11 +120,11 @@ func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {
 	}
 	switch action {
 	case "delete":
-		err = a.db.deleteWebmention(id)
+		err = a.db.deleteWebmentionId(id)
 	case "approve":
-		err = a.db.approveWebmention(id)
+		err = a.db.approveWebmentionId(id)
 	case "reverify":
-		err = a.reverifyWebmention(id)
+		err = a.reverifyWebmentionId(id)
 	}
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)

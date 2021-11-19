@@ -25,6 +25,7 @@ type mention struct {
 	Source      string
 	NewSource   string
 	Target      string
+	NewTarget   string
 	Created     int64
 	Title       string
 	Content     string
@@ -52,7 +53,9 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress) {
+	hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Target, a.cfg.Server.ShortPublicAddress)
+	hasLongPrefix := strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress)
+	if !hasShortPrefix && !hasLongPrefix {
 		a.debug("Webmention target not allowed:", m.Target)
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
@@ -89,9 +92,21 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 	}, nil
 }
 
-func (db *database) webmentionExists(source, target string) bool {
+func (db *database) webmentionExists(m *mention) bool {
 	result := 0
-	row, err := db.queryRow("select exists(select 1 from webmentions where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target))", sql.Named("source", source), sql.Named("target", target))
+	row, err := db.queryRow(
+		`
+		select exists(
+			select 1
+			from webmentions
+			where
+				lowerx(source) in (lowerx(@source), lowerx(@newsource))
+				and lowerx(target) in (lowerx(@target), lowerx(@newtarget))
+		)
+		`,
+		sql.Named("source", m.Source), sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("target", m.Target), sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+	)
 	if err != nil {
 		return false
 	}
@@ -126,17 +141,56 @@ func (db *database) insertWebmention(m *mention, status webmentionStatus) error 
 	return err
 }
 
-func (db *database) deleteWebmention(id int) error {
+func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) error {
+	_, err := db.exec(`
+			update webmentions
+			set 
+				source = @newsource,
+				target = @newtarget,
+				status = @status,
+				title = @title,
+				content = @content,
+				author = @author
+			where
+				lowerx(source) in (lowerx(@source), lowerx(@newsource2))
+				and lowerx(target) in (lowerx(@target), lowerx(@newtarget2))
+			`,
+		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("status", newStatus),
+		sql.Named("title", m.Title),
+		sql.Named("content", m.Content),
+		sql.Named("author", m.Author),
+		sql.Named("source", m.Source),
+		sql.Named("newsource2", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("target", m.Target),
+		sql.Named("newtarget2", defaultIfEmpty(m.NewTarget, m.Target)),
+	)
+	return err
+}
+
+func (db *database) deleteWebmentionId(id int) error {
 	_, err := db.exec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 
-func (db *database) approveWebmention(id int) error {
+func (db *database) deleteWebmention(m *mention) error {
+	_, err := db.exec(
+		"delete from webmentions where lowerx(source) in (lowerx(@source), lowerx(@newsource)) and lowerx(target) in (lowerx(@target), lowerx(@newtarget))",
+		sql.Named("source", m.Source),
+		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("target", m.Target),
+		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+	)
+	return err
+}
+
+func (db *database) approveWebmentionId(id int) error {
 	_, err := db.exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
-func (a *goBlog) reverifyWebmention(id int) error {
+func (a *goBlog) reverifyWebmentionId(id int) error {
 	m, err := a.db.getWebmentions(&webmentionsRequestConfig{
 		id:    id,
 		limit: 1,

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,11 @@ func Test_verifyMention(t *testing.T) {
 				PublicAddress: "https://example.org",
 			},
 		},
+		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/") {
+				http.Redirect(w, r, r.URL.Path[:len(r.URL.Path)-1], http.StatusFound)
+			}
+		}),
 	}
 
 	_ = app.initDatabase(false)
@@ -35,7 +41,7 @@ func Test_verifyMention(t *testing.T) {
 
 	m := &mention{
 		Source: "https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms",
-		Target: "https://example.org/articles/micropub-syndication-targets-and-crossposting-to-mastodon",
+		Target: "https://example.org/articles/micropub-syndication-targets-and-crossposting-to-mastodon/",
 	}
 
 	err = app.verifyMention(m)

@@ -79,6 +79,10 @@ func Test_urlHasExt(t *testing.T) {
 func Test_cleanHTMLText(t *testing.T) {
 	assert.Equal(t, `"This is a 'test'" 😁`, cleanHTMLText(`"This is a 'test'" 😁`))
 	assert.Equal(t, `Test`, cleanHTMLText(`<b>Test</b>`))
+	assert.Equal(t, "Test\n\nTest", cleanHTMLText(`<p>Test</p><p>Test</p>`))
+	assert.Equal(t, "Test\n\nTest", cleanHTMLText("<p>Test</p>\n<p>Test</p>"))
+	assert.Equal(t, "Test\n\nTest", cleanHTMLText("<div><p>Test</p>\n<p>Test</p></div>"))
+	assert.Equal(t, "Test test\n\nTest", cleanHTMLText(`<p>Test <b>test</b></p><p>Test</p>`))
 }
 
 func Test_containsStrings(t *testing.T) {

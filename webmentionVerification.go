@@ -2,20 +2,19 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/contenttype"
 	"willnorris.com/go/microformats"
 )
 
@@ -62,78 +61,72 @@ func (a *goBlog) queueMention(m *mention) error {
 }
 
 func (a *goBlog) verifyMention(m *mention) error {
-	// Do request
-	req, err := http.NewRequest(http.MethodGet, m.Source, nil)
+	// Request target
+	targetReq, err := http.NewRequest(http.MethodGet, m.Target, nil)
 	if err != nil {
 		return err
 	}
-	var resp *http.Response
-	if strings.HasPrefix(m.Source, a.cfg.Server.PublicAddress) {
-		rec := httptest.NewRecorder()
-		for a.d == nil {
-			// Server not yet started
-			time.Sleep(1 * time.Second)
-		}
-		setLoggedIn(req, true)
-		a.d.ServeHTTP(rec, req)
-		resp = rec.Result()
-	} else {
-		req.Header.Set(userAgent, appUserAgent)
-		resp, err = a.httpClient.Do(req)
-		if err != nil {
-			return err
+	targetReq.Header.Set("Accept", contenttype.HTMLUTF8)
+	setLoggedIn(targetReq, true)
+	targetResp, err := doHandlerRequest(targetReq, a.getAppRouter())
+	if err != nil {
+		return err
+	}
+	// Check if target has a valid status code
+	if targetResp.StatusCode != http.StatusOK {
+		return a.db.deleteWebmention(m)
+	}
+	// Check if target has a redirect
+	if respReq := targetResp.Request; respReq != nil {
+		if ru := respReq.URL; m.Target != ru.String() {
+			m.NewTarget = ru.String()
 		}
 	}
+	// Request source
+	sourceReq, err := http.NewRequest(http.MethodGet, m.Source, nil)
+	if err != nil {
+		return err
+	}
+	sourceReq.Header.Set("Accept", contenttype.HTMLUTF8)
+	var sourceResp *http.Response
+	if strings.HasPrefix(m.Source, a.cfg.Server.PublicAddress) ||
+		(a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Source, a.cfg.Server.ShortPublicAddress)) {
+		setLoggedIn(sourceReq, true)
+		sourceResp, err = doHandlerRequest(sourceReq, a.getAppRouter())
+	} else {
+		sourceReq.Header.Set(userAgent, appUserAgent)
+		sourceResp, err = a.httpClient.Do(sourceReq)
+	}
+	if err != nil {
+		return err
+	}
+	// Check if source has a valid status code
+	if sourceResp.StatusCode != http.StatusOK {
+		return a.db.deleteWebmention(m)
+	}
 	// Check if source has a redirect
-	if respReq := resp.Request; respReq != nil {
+	if respReq := sourceResp.Request; respReq != nil {
 		if ru := respReq.URL; m.Source != ru.String() {
 			m.NewSource = ru.String()
 		}
 	}
 	// Parse response body
-	err = m.verifyReader(resp.Body)
-	_ = resp.Body.Close()
+	err = m.verifyReader(sourceResp.Body)
+	_ = sourceResp.Body.Close()
 	if err != nil {
-		// Delete webmentions with old or new source
-		_, err := a.db.exec(
-			"delete from webmentions where lowerx(source) in (lowerx(@source), lowerx(@newsource)) and lowerx(target) = lowerx(@target)",
-			sql.Named("source", m.Source),
-			sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
-			sql.Named("target", m.Target),
-		)
-		return err
+		return a.db.deleteWebmention(m)
 	}
 	if cr := []rune(m.Content); len(cr) > 500 {
 		m.Content = string(cr[0:497]) + "…"
 	}
-	m.Content = strings.ReplaceAll(m.Content, "\n", " ")
 	if tr := []rune(m.Title); len(tr) > 60 {
 		m.Title = string(tr[0:57]) + "…"
 	}
 	newStatus := webmentionStatusVerified
-	if a.db.webmentionExists(m.Source, m.Target) {
-		// Check if webmention also has webmention with new source
-		if m.NewSource != "" && a.db.webmentionExists(m.NewSource, m.Target) {
-			// Delete it
-			_, err = a.db.exec(
-				"delete from webmentions where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
-				sql.Named("source", m.NewSource), sql.Named("target", m.Target),
-			)
-			if err != nil {
-				return err
-			}
-		}
+	// Update or insert webmention
+	if a.db.webmentionExists(m) {
 		// Update webmention
-		_, err = a.db.exec(
-			"update webmentions set source = @newsource, status = @status, title = @title, content = @content, author = @author where lowerx(source) = lowerx(@source) and lowerx(target) = lowerx(@target)",
-			sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
-			sql.Named("status", newStatus),
-			sql.Named("title", m.Title),
-			sql.Named("content", m.Content),
-			sql.Named("author", m.Author),
-			sql.Named("source", m.Source),
-			sql.Named("target", m.Target),
-		)
+		err = a.db.updateWebmention(m, newStatus)
 		if err != nil {
 			return err
 		}
@@ -141,11 +134,14 @@ func (a *goBlog) verifyMention(m *mention) error {
 		if m.NewSource != "" {
 			m.Source = m.NewSource
 		}
+		if m.NewTarget != "" {
+			m.Target = m.NewTarget
+		}
 		err = a.db.insertWebmention(m, newStatus)
 		if err != nil {
 			return err
 		}
-		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", m.Source, m.Target))
+		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", defaultIfEmpty(m.NewSource, m.Source), defaultIfEmpty(m.NewTarget, m.Target)))
 	}
 	return err
 }
@@ -161,7 +157,7 @@ func (m *mention) verifyReader(body io.Reader) error {
 		return err
 	}
 	if _, hasLink := funk.FindString(links, func(s string) bool {
-		return unescapedPath(s) == unescapedPath(m.Target)
+		return unescapedPath(s) == unescapedPath(m.Target) || unescapedPath(s) == unescapedPath(m.NewTarget)
 	}); !hasLink {
 		return errors.New("target not found in source")
 	}
@@ -233,6 +229,12 @@ func (m *mention) fillContent(mf *microformats.Microformat) {
 		if content, ok := contents[0].(map[string]string); ok {
 			if contentHTML, ok := content["html"]; ok {
 				m.Content = cleanHTMLText(contentHTML)
+				// Replace newlines with spaces
+				m.Content = strings.ReplaceAll(m.Content, "\n", " ")
+				// Collapse double spaces
+				m.Content = strings.Join(strings.Fields(m.Content), " ")
+				// Trim spaces
+				m.Content = strings.TrimSpace(m.Content)
 			}
 		}
 	}

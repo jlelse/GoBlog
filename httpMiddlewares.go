@@ -20,6 +20,15 @@ func fixHTTPHandler(next http.Handler) http.Handler {
 	})
 }
 
+func headAsGetHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			r.Method = http.MethodGet
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	// Build CSP domains list
 	var cspBuilder strings.Builder

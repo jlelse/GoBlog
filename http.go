@@ -40,7 +40,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	h = h.Append(middleware.Recoverer, middleware.Compress(flate.DefaultCompression), middleware.Heartbeat("/ping"))
+	h = h.Append(middleware.Recoverer, middleware.Compress(flate.DefaultCompression), middleware.Heartbeat("/ping"), headAsGetHandler)
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}
@@ -125,7 +125,6 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 
 		mr.Use(middleware.RedirectSlashes)
 		mr.Use(middleware.CleanPath)
-		mr.Use(middleware.GetHead)
 
 		mr.Group(a.mediaFilesRouter)
 
@@ -139,7 +138,6 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.Use(fixHTTPHandler)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
-	r.Use(middleware.GetHead)
 
 	// Tor
 	if a.cfg.Server.Tor {
@@ -283,4 +281,15 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		// No post, check regex redirects or serve 404 error
 		alice.New(a.cacheMiddleware, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
 	}
+}
+
+func (a *goBlog) getAppRouter() http.Handler {
+	for {
+		// Wait until router is ready
+		if a.d != nil {
+			break
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+	return a.d
 }

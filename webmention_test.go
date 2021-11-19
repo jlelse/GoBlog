@@ -52,7 +52,7 @@ func Test_webmentions(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 
-	exists := app.db.webmentionExists("Https://Example.net/test", "Https://Example.com/TÄst")
+	exists := app.db.webmentionExists(&mention{Source: "Https://Example.net/test", Target: "Https://Example.com/TÄst"})
 	assert.True(t, exists)
 
 	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
@@ -63,7 +63,7 @@ func Test_webmentions(t *testing.T) {
 	})
 	require.NoError(t, err)
 	if assert.Len(t, mentions, 1) {
-		_ = app.db.approveWebmention(mentions[0].ID)
+		_ = app.db.approveWebmentionId(mentions[0].ID)
 	}
 
 	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")

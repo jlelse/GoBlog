@@ -2,9 +2,12 @@ package main
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"path"
 	"sort"
@@ -240,15 +243,26 @@ func mBytesString(size int64) string {
 }
 
 func htmlText(s string) string {
-	d, err := goquery.NewDocumentFromReader(strings.NewReader(s))
-	if err != nil {
-		return ""
+	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(s))
+	var text strings.Builder
+	paragraphs := doc.Find("p")
+	if paragraphs.Length() == 0 {
+		text.WriteString(doc.Text())
+	} else {
+		paragraphs.Each(func(i int, s *goquery.Selection) {
+			if i > 0 {
+				text.WriteString("\n\n")
+			}
+			text.WriteString(s.Text())
+		})
 	}
-	return strings.TrimSpace(d.Text())
+	r := strings.TrimSpace(text.String())
+	return r
 }
 
 func cleanHTMLText(s string) string {
-	return htmlText(bluemonday.StrictPolicy().Sanitize(s))
+	s = bluemonday.UGCPolicy().Sanitize(s)
+	return htmlText(s)
 }
 
 func defaultIfEmpty(s, d string) string {
@@ -266,4 +280,29 @@ func containsStrings(s string, subStrings ...string) bool {
 
 func timeNoErr(t time.Time, _ error) time.Time {
 	return t
+}
+
+type handlerRoundTripper struct {
+	http.RoundTripper
+	handler http.Handler
+}
+
+func (rt *handlerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if rt.handler != nil {
+		// Fake request with handler
+		rec := httptest.NewRecorder()
+		rt.handler.ServeHTTP(rec, req)
+		resp := rec.Result()
+		// Copy request to response
+		resp.Request = req
+		return resp, nil
+	}
+	return nil, errors.New("no handler")
+}
+
+func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, error) {
+	client := &http.Client{
+		Transport: &handlerRoundTripper{handler: handler},
+	}
+	return client.Do(req)
 }
