@@ -74,7 +74,12 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	// Check if target has a valid status code
 	if targetResp.StatusCode != http.StatusOK {
-		return a.db.deleteWebmention(m)
+		// Ignore for now
+		// TODO: Reject if target is not found
+		// return a.db.deleteWebmention(m)
+		if a.cfg.Debug {
+			log.Printf("Webmention for unknown path: %s\n", m.Target)
+		}
 	}
 	// Check if target has a redirect
 	if respReq := targetResp.Request; respReq != nil {
@@ -102,6 +107,9 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	// Check if source has a valid status code
 	if sourceResp.StatusCode != http.StatusOK {
+		if a.cfg.Debug {
+			log.Printf("Delete webmention because source doesn't have valid status code: %s\n", m.Source)
+		}
 		return a.db.deleteWebmention(m)
 	}
 	// Check if source has a redirect
@@ -114,6 +122,9 @@ func (a *goBlog) verifyMention(m *mention) error {
 	err = m.verifyReader(sourceResp.Body)
 	_ = sourceResp.Body.Close()
 	if err != nil {
+		if a.cfg.Debug {
+			log.Printf("Delete webmention because verifying %s threw error: %s\n", m.Source, err.Error())
+		}
 		return a.db.deleteWebmention(m)
 	}
 	if cr := []rune(m.Content); len(cr) > 500 {
@@ -125,6 +136,9 @@ func (a *goBlog) verifyMention(m *mention) error {
 	newStatus := webmentionStatusVerified
 	// Update or insert webmention
 	if a.db.webmentionExists(m) {
+		if a.cfg.Debug {
+			log.Printf("Update webmention: %s => %s\n", m.Source, m.Target)
+		}
 		// Update webmention
 		err = a.db.updateWebmention(m, newStatus)
 		if err != nil {
@@ -157,7 +171,7 @@ func (m *mention) verifyReader(body io.Reader) error {
 		return err
 	}
 	if _, hasLink := funk.FindString(links, func(s string) bool {
-		return unescapedPath(s) == unescapedPath(m.Target) || unescapedPath(s) == unescapedPath(m.NewTarget)
+		return unescapedPath(s) == unescapedPath(m.Target) || unescapedPath(s) == unescapedPath(defaultIfEmpty(m.NewTarget, m.Target))
 	}); !hasLink {
 		return errors.New("target not found in source")
 	}
