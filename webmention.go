@@ -287,6 +287,9 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 }
 
 func (db *database) getWebmentionsByAddress(address string) []*mention {
+	if address == "" {
+		return nil
+	}
 	mentions, _ := db.getWebmentions(&webmentionsRequestConfig{
 		target:      address,
 		status:      webmentionStatusApproved,

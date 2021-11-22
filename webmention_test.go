@@ -58,6 +58,9 @@ func Test_webmentions(t *testing.T) {
 	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
 	assert.Len(t, mentions, 0)
 
+	mentions = app.db.getWebmentionsByAddress("")
+	assert.Len(t, mentions, 0)
+
 	mentions, err = app.db.getWebmentions(&webmentionsRequestConfig{
 		sourcelike: "example.net",
 	})
