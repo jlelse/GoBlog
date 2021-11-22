@@ -136,7 +136,7 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	b, _ := json.Marshal(tokenResponse{
-		Me: a.cfg.Server.PublicAddress,
+		Me: a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
 	})
 	w.Header().Set(contentType, contenttype.JSONUTF8)
 	_, _ = a.min.Write(w, contenttype.JSON, b)
@@ -152,7 +152,7 @@ func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
 		}
 		res := &tokenResponse{
 			Scope:    strings.Join(data.Scopes, " "),
-			Me:       a.cfg.Server.PublicAddress,
+			Me:       a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
 			ClientID: data.ClientID,
 		}
 		b, _ := json.Marshal(res)
@@ -206,7 +206,7 @@ func (a *goBlog) indieAuthToken(w http.ResponseWriter, r *http.Request) {
 				TokenType:   "Bearer",
 				AccessToken: data.token,
 				Scope:       strings.Join(data.Scopes, " "),
-				Me:          a.cfg.Server.PublicAddress,
+				Me:          a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
 			}
 			b, _ := json.Marshal(res)
 			w.Header().Set(contentType, contenttype.JSONUTF8)
