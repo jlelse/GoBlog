@@ -26,6 +26,7 @@ type config struct {
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 	Debug         bool                   `mapstructure:"debug"`
+	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
 }
 
 type configServer struct {
@@ -277,6 +278,13 @@ type configEasterEgg struct {
 type configWebmention struct {
 	DisableSending   bool `mapstructure:"disableSending"`
 	DisableReceiving bool `mapstructure:"disableReceiving"`
+}
+
+type configMapTiles struct {
+	Source      string `mapstructure:"source"`
+	Attribution string `mapstructure:"attribution"`
+	MinZoom     int    `mapstructure:"minZoom"`
+	MaxZoom     int    `mapstructure:"maxZoom"`
 }
 
 func (a *goBlog) initConfig(file string) error {

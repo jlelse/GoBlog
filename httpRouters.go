@@ -99,7 +99,7 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 // Various other routes
 func (a *goBlog) xRouter(r chi.Router) {
 	r.Use(a.privateModeHandler)
-	r.Get("/tiles/{z}/{x}/{y}.png", a.proxyTiles("/x/tiles"))
+	r.Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles("/x/tiles"))
 	r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/x/"))
 }
 

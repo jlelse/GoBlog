@@ -11,7 +11,13 @@
     {{ if .Data.nolocations }}
         <p>{{ string .Blog.Lang "nolocations" }}</p>
     {{ else }}
-        <div class="p" id="map" data-locations="{{ .Data.locations }}" data-tracks="{{ .Data.tracks }}"></div>
+        <div class="p" id="map"
+          data-locations="{{ .Data.locations }}"
+          data-tracks="{{ .Data.tracks }}"
+          data-minzoom={{ .Data.minzoom }}
+          data-maxzoom={{ .Data.maxzoom }}
+          data-attribution="{{ .Data.attribution }}"
+        ></div>
         <script defer src="{{ asset "js/geomap.js" }}"></script>
     {{ end }}
   </main>

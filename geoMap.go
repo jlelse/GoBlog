@@ -88,8 +88,11 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		BlogString: blog,
 		Canonical:  a.getFullAddress(mapPath),
 		Data: map[string]interface{}{
-			"locations": locationsJson,
-			"tracks":    tracksJson,
+			"locations":   locationsJson,
+			"tracks":      tracksJson,
+			"attribution": a.getMapAttribution(),
+			"minzoom":     a.getMinZoom(),
+			"maxzoom":     a.getMaxZoom(),
 		},
 	})
 }

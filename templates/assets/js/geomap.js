@@ -3,10 +3,13 @@
     let locations = (mapEl.dataset.locations == "") ? [] : JSON.parse(mapEl.dataset.locations)
     let tracks = (mapEl.dataset.tracks == "") ? [] : JSON.parse(mapEl.dataset.tracks)
 
-    let map = L.map('map')
+    let map = L.map('map', {
+        minZoom: mapEl.dataset.minzoom,
+        maxZoom: mapEl.dataset.maxzoom
+    })
 
-    L.tileLayer("/x/tiles/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    L.tileLayer("/x/tiles/{s}/{z}/{x}/{y}.png", {
+        attribution: mapEl.dataset.attribution,
     }).addTo(map)
 
     let features = []

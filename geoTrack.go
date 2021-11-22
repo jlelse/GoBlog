@@ -18,14 +18,16 @@ func (p *post) HasTrack() bool {
 }
 
 type trackResult struct {
-	HasPoints  bool
-	Paths      [][]*trackPoint
-	PathsJSON  string
-	Points     []*trackPoint
-	PointsJSON string
-	Kilometers string
-	Hours      string
-	Name       string
+	HasPoints        bool
+	Paths            [][]*trackPoint
+	PathsJSON        string
+	Points           []*trackPoint
+	PointsJSON       string
+	Kilometers       string
+	Hours            string
+	Name             string
+	MapAttribution   string
+	MinZoom, MaxZoom int
 }
 
 func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
@@ -56,12 +58,15 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	}
 
 	result = &trackResult{
-		HasPoints:  len(parseResult.paths) > 0 && len(parseResult.paths[0]) > 0,
-		Paths:      parseResult.paths,
-		PathsJSON:  string(pathsJSON),
-		Points:     parseResult.points,
-		PointsJSON: string(pointsJSON),
-		Name:       parseResult.gpxData.Name,
+		HasPoints:      len(parseResult.paths) > 0 && len(parseResult.paths[0]) > 0,
+		Paths:          parseResult.paths,
+		PathsJSON:      string(pathsJSON),
+		Points:         parseResult.points,
+		PointsJSON:     string(pointsJSON),
+		Name:           parseResult.gpxData.Name,
+		MapAttribution: a.getMapAttribution(),
+		MinZoom:        a.getMinZoom(),
+		MaxZoom:        a.getMaxZoom(),
 	}
 
 	if parseResult.md != nil {

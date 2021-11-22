@@ -131,6 +131,13 @@ pathRedirects:
     to: "/$1$2"
     type: 301 # custom redirect type
 
+# Map tiles
+mapTiles:
+  source: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" # (Optional) URL to use for map tiles
+  attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors" # (Optional) Attribution for map tiles
+  minZoom: 0 # (Optional) Minimum zoom level
+  maxZoom: 20 # (Optional) Maximum zoom level
+
 # Blogs
 defaultBlog: en # Default blog (needed because you can define multiple blogs)
 blogs:

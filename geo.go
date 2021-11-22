@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 
@@ -76,44 +74,3 @@ func geoOSMLink(g *gogeouri.Geo) string {
 
 //go:embed leaflet/*
 var leafletFiles embed.FS
-
-func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {
-	osmUrl, _ := url.Parse("https://tile.openstreetmap.org/")
-	tileProxy := http.StripPrefix(basePath, httputil.NewSingleHostReverseProxy(osmUrl))
-	return func(w http.ResponseWriter, r *http.Request) {
-		targetUrl := *osmUrl
-		targetUrl.Path = r.URL.Path
-		proxyRequest, _ := http.NewRequest(http.MethodGet, targetUrl.String(), nil)
-		// Copy request headers
-		for _, k := range []string{
-			"Accept-Encoding",
-			"Accept-Language",
-			"Accept",
-			"Cache-Control",
-			"If-Modified-Since",
-			"If-None-Match",
-			"User-Agent",
-		} {
-			proxyRequest.Header.Set(k, r.Header.Get(k))
-		}
-		rec := httptest.NewRecorder()
-		tileProxy.ServeHTTP(rec, proxyRequest)
-		res := rec.Result()
-		// Copy result headers
-		for _, k := range []string{
-			"Accept-Ranges",
-			"Access-Control-Allow-Origin",
-			"Age",
-			"Cache-Control",
-			"Content-Length",
-			"Content-Type",
-			"Etag",
-			"Expires",
-		} {
-			w.Header().Set(k, res.Header.Get(k))
-		}
-		w.WriteHeader(res.StatusCode)
-		_, _ = io.Copy(w, res.Body)
-		_ = res.Body.Close()
-	}
-}
