@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -25,6 +26,15 @@ func allStaticPaths() (paths []string) {
 		return
 	}
 	return
+}
+
+func hasStaticPath(path string) bool {
+	// Check if file exists
+	_, err := os.Stat(filepath.Join(staticFolder, path))
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
 
 // Gets only called by registered paths
