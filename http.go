@@ -204,7 +204,7 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 
 	// Favicon
 	if !hasStaticPath("favicon.ico") {
-		r.With(cacheLoggedIn, a.cacheMiddleware).Get("/favicon.ico", a.serve404)
+		r.With(a.cacheMiddleware).Get("/favicon.ico", a.serve404)
 	}
 
 	r.NotFound(a.servePostsAliasesRedirects())
