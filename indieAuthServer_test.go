@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"github.com/hacdias/indieauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func Test_indieAuthServer(t *testing.T) {
@@ -79,66 +81,104 @@ func Test_indieAuthServer(t *testing.T) {
 		assert.Equal(t, "https://example.org/indieauth/token", endpoints.Token)
 	}
 
-	authinfo, redirect, err := iac.Authenticate("https://example.org/", "create")
-	require.NoError(t, err)
-	assert.NotNil(t, authinfo)
-	assert.NotEmpty(t, redirect)
+	for _, test := range []int{1, 2} {
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, redirect, nil)
-	app.d.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Body.String(), "https://example.com/redirect")
+		authinfo, redirect, err := iac.Authenticate("https://example.org/", "create")
+		require.NoError(t, err)
+		assert.NotNil(t, authinfo)
+		assert.NotEmpty(t, redirect)
 
-	parsedHtml, err := goquery.NewDocumentFromReader(strings.NewReader(rec.Body.String()))
-	require.NoError(t, err)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, redirect, nil)
+		app.d.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "https://example.com/redirect")
 
-	indieauthForm := parsedHtml.Find("form[action='/indieauth/accept']")
-	assert.Equal(t, 1, indieauthForm.Length())
-	indieAuthFormRedirectUri := indieauthForm.Find("input[name='redirect_uri']").AttrOr("value", "")
-	assert.Equal(t, "https://example.com/redirect", indieAuthFormRedirectUri)
-	indieAuthFormClientId := indieauthForm.Find("input[name='client_id']").AttrOr("value", "")
-	assert.Equal(t, "https://example.com/", indieAuthFormClientId)
-	indieAuthFormScopes := indieauthForm.Find("input[name='scopes']").AttrOr("value", "")
-	assert.Equal(t, "create", indieAuthFormScopes)
-	indieAuthFormCodeChallenge := indieauthForm.Find("input[name='code_challenge']").AttrOr("value", "")
-	assert.NotEmpty(t, indieAuthFormCodeChallenge)
-	indieAuthFormCodeChallengeMethod := indieauthForm.Find("input[name='code_challenge_method']").AttrOr("value", "")
-	assert.Equal(t, "S256", indieAuthFormCodeChallengeMethod)
-	indieAuthFormState := indieauthForm.Find("input[name='state']").AttrOr("value", "")
-	assert.NotEmpty(t, indieAuthFormState)
+		parsedHtml, err := goquery.NewDocumentFromReader(strings.NewReader(rec.Body.String()))
+		require.NoError(t, err)
 
-	rec = httptest.NewRecorder()
-	reqBody := url.Values{
-		"redirect_uri":          {indieAuthFormRedirectUri},
-		"client_id":             {indieAuthFormClientId},
-		"scopes":                {indieAuthFormScopes},
-		"code_challenge":        {indieAuthFormCodeChallenge},
-		"code_challenge_method": {indieAuthFormCodeChallengeMethod},
-		"state":                 {indieAuthFormState},
+		indieauthForm := parsedHtml.Find("form[action='/indieauth/accept']")
+		assert.Equal(t, 1, indieauthForm.Length())
+		indieAuthFormRedirectUri := indieauthForm.Find("input[name='redirect_uri']").AttrOr("value", "")
+		assert.Equal(t, "https://example.com/redirect", indieAuthFormRedirectUri)
+		indieAuthFormClientId := indieauthForm.Find("input[name='client_id']").AttrOr("value", "")
+		assert.Equal(t, "https://example.com/", indieAuthFormClientId)
+		indieAuthFormScopes := indieauthForm.Find("input[name='scopes']").AttrOr("value", "")
+		assert.Equal(t, "create", indieAuthFormScopes)
+		indieAuthFormCodeChallenge := indieauthForm.Find("input[name='code_challenge']").AttrOr("value", "")
+		assert.NotEmpty(t, indieAuthFormCodeChallenge)
+		indieAuthFormCodeChallengeMethod := indieauthForm.Find("input[name='code_challenge_method']").AttrOr("value", "")
+		assert.Equal(t, "S256", indieAuthFormCodeChallengeMethod)
+		indieAuthFormState := indieauthForm.Find("input[name='state']").AttrOr("value", "")
+		assert.NotEmpty(t, indieAuthFormState)
+
+		rec = httptest.NewRecorder()
+		reqBody := url.Values{
+			"redirect_uri":          {indieAuthFormRedirectUri},
+			"client_id":             {indieAuthFormClientId},
+			"scopes":                {indieAuthFormScopes},
+			"code_challenge":        {indieAuthFormCodeChallenge},
+			"code_challenge_method": {indieAuthFormCodeChallengeMethod},
+			"state":                 {indieAuthFormState},
+		}
+		req = httptest.NewRequest(http.MethodPost, "https://example.org/indieauth/accept?"+reqBody.Encode(), nil)
+		setLoggedIn(req, true)
+		app.d.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusFound, rec.Code)
+
+		redirectLocation := rec.Header().Get("Location")
+		assert.NotEmpty(t, redirectLocation)
+		redirectUrl, err := url.Parse(redirectLocation)
+		require.NoError(t, err)
+		assert.NotEmpty(t, redirectUrl.Query().Get("code"))
+		assert.NotEmpty(t, redirectUrl.Query().Get("state"))
+
+		validateReq := httptest.NewRequest(http.MethodGet, redirectLocation, nil)
+		code, err := iac.ValidateCallback(authinfo, validateReq)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		if test == 1 {
+
+			profile, err := iac.FetchProfile(authinfo, code)
+			require.NoError(t, err)
+			assert.NotNil(t, profile)
+			assert.Equal(t, "https://example.org/", profile.Me)
+
+		} else if test == 2 {
+
+			o := iac.GetOAuth2(&authinfo.Endpoints)
+			ctx := context.WithValue(context.Background(), oauth2.HTTPClient, iac.Client)
+			token, err := o.Exchange(
+				ctx,
+				code,
+				oauth2.SetAuthURLParam("client_id", iac.ClientID),
+				oauth2.SetAuthURLParam("code_verifier", authinfo.CodeVerifier),
+			)
+			require.NoError(t, err)
+			assert.NotNil(t, token)
+			assert.NotEqual(t, "", token.AccessToken)
+
+			rec = httptest.NewRecorder()
+			req = httptest.NewRequest(http.MethodGet, "https://example.org/indieauth/token", nil)
+			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+			app.d.ServeHTTP(rec, req)
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			rec = httptest.NewRecorder()
+			req = httptest.NewRequest(http.MethodPost, "https://example.org/indieauth/token?action=revoke&token="+token.AccessToken, nil)
+			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+			app.d.ServeHTTP(rec, req)
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			rec = httptest.NewRecorder()
+			req = httptest.NewRequest(http.MethodGet, "https://example.org/indieauth/token", nil)
+			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+			app.d.ServeHTTP(rec, req)
+			assert.Equal(t, http.StatusUnauthorized, rec.Code)
+
+		}
+
 	}
-	req = httptest.NewRequest(http.MethodPost, "https://example.org/indieauth/accept?"+reqBody.Encode(), nil)
-	setLoggedIn(req, true)
-	app.d.ServeHTTP(rec, req)
-	assert.Equal(t, http.StatusFound, rec.Code)
-
-	redirectLocation := rec.Header().Get("Location")
-	assert.NotEmpty(t, redirectLocation)
-	redirectUrl, err := url.Parse(redirectLocation)
-	require.NoError(t, err)
-	assert.NotEmpty(t, redirectUrl.Query().Get("code"))
-	assert.NotEmpty(t, redirectUrl.Query().Get("state"))
-
-	validateReq := httptest.NewRequest(http.MethodGet, redirectLocation, nil)
-	code, err := iac.ValidateCallback(authinfo, validateReq)
-	require.NoError(t, err)
-	assert.NotEmpty(t, code)
-
-	profile, err := iac.FetchProfile(authinfo, code)
-	require.NoError(t, err)
-	assert.NotNil(t, profile)
-	assert.Equal(t, "https://example.org/", profile.Me)
-
-	// TODO: Somehow test token endpoint. I can't find a to change the round tripper of the oauth2 http.Client.
 
 }
