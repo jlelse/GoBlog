@@ -40,6 +40,7 @@ const (
 	templateGeoMap             = "geomap"
 	templateContact            = "contact"
 	templateEditorPreview      = "editorpreview"
+	templateIndieAuth          = "indieauth"
 )
 
 func (a *goBlog) initRendering() error {

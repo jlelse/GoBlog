@@ -10,6 +10,7 @@ import (
 	ts "git.jlel.se/jlelse/template-strings"
 	ct "github.com/elnormous/contenttype"
 	"github.com/go-fed/httpsig"
+	"github.com/hacdias/indieauth"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
@@ -50,6 +51,8 @@ type goBlog struct {
 	httpClient httpClient
 	// HTTP Routers
 	d http.Handler
+	// IndieAuth
+	ias *indieauth.Server
 	// Logs
 	logf *rotatelogs.RotateLogs
 	// Markdown

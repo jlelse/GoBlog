@@ -174,6 +174,7 @@ func (app *goBlog) initComponents(logging bool) {
 	app.initTelegram()
 	app.initBlogStats()
 	app.initSessions()
+	app.initIndieAuth()
 	// Log finish
 	if logging {
 		log.Println("Initialized components")

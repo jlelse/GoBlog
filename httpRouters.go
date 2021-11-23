@@ -24,9 +24,9 @@ func (a *goBlog) micropubRouter(r chi.Router) {
 func (a *goBlog) indieAuthRouter(r chi.Router) {
 	r.Get("/", a.indieAuthRequest)
 	r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
-	r.Post("/", a.indieAuthVerification)
-	r.Get("/token", a.indieAuthToken)
-	r.Post("/token", a.indieAuthToken)
+	r.Post("/", a.indieAuthVerificationAuth)
+	r.Post("/token", a.indieAuthVerificationToken)
+	r.Get("/token", a.indieAuthTokenVerification)
 }
 
 // ActivityPub

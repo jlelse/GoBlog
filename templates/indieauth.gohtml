@@ -19,7 +19,9 @@
         <p><strong>redirect_uri:</strong> {{ .Data.RedirectURI }}</p>
         <input type="hidden" name="redirect_uri" value="{{ .Data.RedirectURI }}">
         <input type="hidden" name="state" value="{{ .Data.State }}">
-        <input type="hidden" id="client_id" name="client_id" value="{{ .Data.ClientID }}">
+        <input type="hidden" name="client_id" value="{{ .Data.ClientID }}">
+        <input type="hidden" name="code_challenge" value="{{ .Data.CodeChallenge }}">
+        <input type="hidden" name="code_challenge_method" value="{{ .Data.CodeChallengeMethod }}">
         <input type="submit" value="{{ string .Blog.Lang "authenticate" }}">
       </form>
     </div>
