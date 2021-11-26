@@ -1,5 +1,5 @@
 {{ define "title" }}
-  <title>{{ .Data.Name }}</title>
+  <title>{{ with .Data.title }}{{ mdtitle . }} - {{ end }}{{ mdtitle .Blog.Title }}</title>
 {{ end }}
 
 {{ define "main" }}
