@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,7 +13,6 @@ import (
 	"github.com/hacdias/indieauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2"
 )
 
 func Test_indieAuthServer(t *testing.T) {
@@ -147,14 +145,7 @@ func Test_indieAuthServer(t *testing.T) {
 
 		} else if test == 2 {
 
-			o := iac.GetOAuth2(&authinfo.Endpoints)
-			ctx := context.WithValue(context.Background(), oauth2.HTTPClient, iac.Client)
-			token, err := o.Exchange(
-				ctx,
-				code,
-				oauth2.SetAuthURLParam("client_id", iac.ClientID),
-				oauth2.SetAuthURLParam("code_verifier", authinfo.CodeVerifier),
-			)
+			token, _, err := iac.GetToken(authinfo, code)
 			require.NoError(t, err)
 			assert.NotNil(t, token)
 			assert.NotEqual(t, "", token.AccessToken)
