@@ -25,7 +25,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.4.2
-	github.com/hacdias/indieauth v1.5.0
+	github.com/hacdias/indieauth v1.6.0
 	github.com/jlaffaye/ftp v0.0.0-20211117213618-11820403398b
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
@@ -53,7 +53,7 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
-	golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9
+	golang.org/x/net v0.0.0-20211201190559-0a0e4e1bb54c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
@@ -64,10 +64,7 @@ require (
 )
 
 // Override some modules with own forks
-replace (
-	github.com/hacdias/indieauth => github.com/jlelse/indieauth v1.5.1-0.20211130162540-343ab6d928fa
-	github.com/yuin/goldmark-highlighting => github.com/jlelse/goldmark-highlighting v0.0.0-20211115195757-39f0fea96680
-)
+replace github.com/yuin/goldmark-highlighting => github.com/jlelse/goldmark-highlighting v0.0.0-20211115195757-39f0fea96680
 
 require (
 	github.com/akutz/memconn v0.1.0 // indirect
