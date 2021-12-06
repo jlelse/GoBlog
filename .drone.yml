@@ -3,14 +3,6 @@ name: default
 type: docker
 
 steps:
-  - name: testdocker
-    image: docker:dind
-    volumes:
-      - name: dockersock
-        path: /var/run
-    commands:
-      - sleep 5 # give docker enough time to start
-      - docker ps -a
   - name: build
     image: docker:dind
     volumes:
@@ -20,9 +12,10 @@ steps:
       DOCKER_PASSWORD:
         from_secret: docker_password
     commands:
+      - sleep 5 # give docker enough time to start
       - echo $DOCKER_PASSWORD | docker login --username nologin --password-stdin rg.fr-par.scw.cloud/jlelse
-      - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
-      - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
+      - DOCKER_BUILDKIT=1 docker build -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
+      - DOCKER_BUILDKIT=1 docker build -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
       - docker push --all-tags rg.fr-par.scw.cloud/jlelse/goblog
 
 services:

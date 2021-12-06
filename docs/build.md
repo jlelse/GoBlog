@@ -15,13 +15,13 @@ Build command:
 ```bash
 git clone https://git.jlel.se/jlelse/GoBlog.git
 cd GoBlog
-docker build -f Dockerfile -t rg.fr-par.scw.cloud/jlelse/goblog:latest .
+docker build -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
 ```
 
-If you want to build and use the advanced image (with additional tools), also execute:
+If you want to build and use the advanced image (with additional tools), execute:
 
 ```bash
-docker build -f Dockerfile.Tools -t rg.fr-par.scw.cloud/jlelse/goblog:tools .
+docker build -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
 ```
 
 ## With Go installed
