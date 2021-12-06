@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.14 as build
+FROM golang:1.17-alpine3.15 as build
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
@@ -12,7 +12,7 @@ ADD dbmigrations/ /app/dbmigrations/
 RUN go test -cover ./...
 RUN go build -ldflags '-w -s' -o GoBlog
 
-FROM alpine:3.14
+FROM alpine:3.15
 WORKDIR /app
 VOLUME /app/config
 VOLUME /app/data
