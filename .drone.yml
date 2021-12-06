@@ -3,26 +3,39 @@ name: default
 type: docker
 
 steps:
-  - name: base
-    image: plugins/docker
-    settings:
-      username: nologin
-      password:
+  - name: testdocker
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run
+    commands:
+      - sleep 5 # give docker enough time to start
+      - docker ps -a
+  - name: build
+    image: docker:dind
+    volumes:
+      - name: dockersock
+        path: /var/run
+    environment:
+      DOCKER_PASSWORD:
         from_secret: docker_password
-      repo: rg.fr-par.scw.cloud/jlelse/goblog
-      registry: rg.fr-par.scw.cloud/jlelse
-      tags: latest
-      mirror: https://mirror.gcr.io
-  - name: tools
-    image: plugins/docker
-    settings:
-      username: nologin
-      password:
-        from_secret: docker_password
-      repo: rg.fr-par.scw.cloud/jlelse/goblog
-      registry: rg.fr-par.scw.cloud/jlelse
-      tags: tools
-      dockerfile: Dockerfile.Tools
+    commands:
+      - echo $DOCKER_PASSWORD | docker login --username nologin --password-stdin rg.fr-par.scw.cloud/jlelse
+      - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
+      - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
+      - docker push --all-tags rg.fr-par.scw.cloud/jlelse/goblog
+
+services:
+  - name: docker
+    image: docker:dind
+    privileged: true
+    volumes:
+      - name: dockersock
+        path: /var/run
+
+volumes:
+  - name: dockersock
+    temp: {}
 
 trigger:
   branch:
