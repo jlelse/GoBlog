@@ -82,7 +82,7 @@ func Test_configTelegram_send(t *testing.T) {
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-		rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
+		rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
 	}))
 
 	tg := &configTelegram{
@@ -95,10 +95,11 @@ func Test_configTelegram_send(t *testing.T) {
 		httpClient: fakeClient.Client,
 	}
 
-	msgId, err := app.send(tg, "Message", "HTML")
+	chatId, msgId, err := app.send(tg, "Message", "HTML")
 	require.Nil(t, err)
 
 	assert.Equal(t, 123, msgId)
+	assert.Equal(t, int64(789), chatId)
 
 	assert.NotNil(t, fakeClient.req)
 	assert.Equal(t, http.MethodPost, fakeClient.req.Method)
