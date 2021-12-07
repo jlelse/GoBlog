@@ -40,7 +40,7 @@ func (a *goBlog) initTelegram() {
 		}
 	})
 	a.pUpdateHooks = append(a.pUpdateHooks, func(p *post) {
-		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() && p.isPublishedSectionPost() {
+		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
 			tgChat := p.firstParameter("telegramchat")
 			tgMsg := p.firstParameter("telegrammsg")
 			if tgChat == "" || tgMsg == "" {
@@ -65,9 +65,36 @@ func (a *goBlog) initTelegram() {
 				return
 			}
 			// Send update
-			err = a.sendUpdate(tg, chatId, messageId, html, "HTML")
+			err = a.update(tg, chatId, messageId, html, "HTML")
 			if err != nil {
 				log.Printf("Failed to send update to Telegram: %v", err)
+			}
+		}
+	})
+	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
+		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
+			tgChat := p.firstParameter("telegramchat")
+			tgMsg := p.firstParameter("telegrammsg")
+			if tgChat == "" || tgMsg == "" {
+				// Not send to Telegram
+				return
+			}
+			// Parse tgChat to int64
+			chatId, err := strconv.ParseInt(tgChat, 10, 64)
+			if err != nil {
+				log.Printf("Failed to parse Telegram chat ID: %v", err)
+				return
+			}
+			// Parse tgMsg to int
+			messageId, err := strconv.Atoi(tgMsg)
+			if err != nil {
+				log.Printf("Failed to parse Telegram message ID: %v", err)
+				return
+			}
+			// Delete message
+			err = a.delete(tg, chatId, messageId)
+			if err != nil {
+				log.Printf("Failed to delete Telegram message: %v", err)
 			}
 		}
 	})
@@ -123,7 +150,40 @@ func (a *goBlog) send(tg *configTelegram, message, mode string) (int64, int, err
 	return res.Chat.ID, res.MessageID, nil
 }
 
-func (a *goBlog) sendUpdate(tg *configTelegram, chatId int64, messageId int, message, mode string) error {
+func (a *goBlog) update(tg *configTelegram, chatId int64, messageId int, message, mode string) error {
+	if !tg.enabled() {
+		return nil
+	}
+	bot, err := tgbotapi.NewBotAPIWithClient(tg.BotToken, tgbotapi.APIEndpoint, a.httpClient)
+	if err != nil {
+		return err
+	}
+	// Check if chat is still the configured one
+	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
+		ChatConfig: tgbotapi.ChatConfig{
+			SuperGroupUsername: tg.ChatID,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if chat.ID != chatId {
+		return errors.New("chat id mismatch")
+	}
+	// Send update
+	msg := tgbotapi.EditMessageTextConfig{
+		BaseEdit: tgbotapi.BaseEdit{
+			ChatID:    chatId,
+			MessageID: messageId,
+		},
+		Text:      message,
+		ParseMode: mode,
+	}
+	_, err = bot.Send(msg)
+	return err
+}
+
+func (a *goBlog) delete(tg *configTelegram, chatId int64, messageId int) error {
 	if !tg.enabled() {
 		return nil
 	}
@@ -142,17 +202,10 @@ func (a *goBlog) sendUpdate(tg *configTelegram, chatId int64, messageId int, mes
 	if chat.ID != chatId {
 		return errors.New("chat id mismatch")
 	}
-	msg := tgbotapi.EditMessageTextConfig{
-		BaseEdit: tgbotapi.BaseEdit{
-			ChatID:    chatId,
-			MessageID: messageId,
-		},
-		Text:      message,
-		ParseMode: mode,
+	msg := tgbotapi.DeleteMessageConfig{
+		ChatID:    chatId,
+		MessageID: messageId,
 	}
 	_, err = bot.Send(msg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
