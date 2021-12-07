@@ -16,7 +16,7 @@ func Test_proxyTiles(t *testing.T) {
 
 	hc := &fakeHttpClient{
 		handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Hello, World!"))
+			_, _ = w.Write([]byte("Hello, World!"))
 		}),
 	}
 	app.httpClient = hc

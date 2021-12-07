@@ -1,0 +1,12 @@
+run:
+  timeout: 5m
+  issue-exit-code: 0
+  skip-tests: true
+  build-tags:
+    - linux
+    - libsqlite3
+    - sqlite_fts5
+linters:
+  enable:
+    - dupl
+    - gofmt

@@ -132,9 +132,10 @@ func (a *goBlog) initChromaCSS() error {
 	}
 	chromaTempFileName := chromaTempFile.Name()
 	// Write the CSS to the file
-	chromahtml.New(
-		chromahtml.ClassPrefix("c-"),
-	).WriteCSS(chromaTempFile, chromaStyle)
+	err = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(chromaTempFile, chromaStyle)
+	if err != nil {
+		return err
+	}
 	// Close the file
 	_ = chromaTempFile.Close()
 	// Compile asset
