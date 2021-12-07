@@ -14,12 +14,11 @@ func Test_proxyTiles(t *testing.T) {
 		cfg: &config{},
 	}
 
-	hc := &fakeHttpClient{
-		handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, _ = w.Write([]byte("Hello, World!"))
-		}),
-	}
-	app.httpClient = hc
+	hc := newFakeHttpClient()
+	hc.setHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("Hello, World!"))
+	}))
+	app.httpClient = hc.Client
 
 	// Default tile source
 

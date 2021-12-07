@@ -12,10 +12,10 @@ import (
 
 func Test_blogroll(t *testing.T) {
 
-	fc := &fakeHttpClient{}
+	fc := newFakeHttpClient()
 
 	app := &goBlog{
-		httpClient: fc,
+		httpClient: fc.Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),

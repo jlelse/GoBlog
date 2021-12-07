@@ -21,7 +21,7 @@ func Test_indieAuthServer(t *testing.T) {
 	var err error
 
 	app := &goBlog{
-		httpClient: &fakeHttpClient{},
+		httpClient: newFakeHttpClient().Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),

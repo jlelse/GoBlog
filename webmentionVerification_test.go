@@ -16,11 +16,11 @@ func Test_verifyMention(t *testing.T) {
 	require.NoError(t, err)
 	testHtml := string(testHtmlBytes)
 
-	mockClient := &fakeHttpClient{}
+	mockClient := newFakeHttpClient()
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient: mockClient,
+		httpClient: mockClient.Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),
@@ -65,11 +65,11 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	require.NoError(t, err)
 	testHtml := string(testHtmlBytes)
 
-	mockClient := &fakeHttpClient{}
+	mockClient := newFakeHttpClient()
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient: mockClient,
+		httpClient: mockClient.Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),
@@ -108,11 +108,11 @@ func Test_verifyMentionColin(t *testing.T) {
 	require.NoError(t, err)
 	testHtml := string(testHtmlBytes)
 
-	mockClient := &fakeHttpClient{}
+	mockClient := newFakeHttpClient()
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient: mockClient,
+		httpClient: mockClient.Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),

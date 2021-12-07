@@ -1,28 +1,40 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 )
 
 type fakeHttpClient struct {
-	httpClient
+	*http.Client
 	req     *http.Request
 	res     *http.Response
 	handler http.Handler
 }
 
-var _ httpClient = &fakeHttpClient{}
-
-func (c *fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
-	if c.handler == nil {
-		return nil, nil
+func newFakeHttpClient() *fakeHttpClient {
+	fc := &fakeHttpClient{}
+	fc.Client = &http.Client{
+		Transport: &handlerRoundTripper{
+			handler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				fc.req = r
+				if fc.handler != nil {
+					rec := httptest.NewRecorder()
+					fc.handler.ServeHTTP(rec, r)
+					fc.res = rec.Result()
+					// Copy the headers from the response recorder
+					for k, v := range rec.Header() {
+						rw.Header()[k] = v
+					}
+					// Copy result status code and body
+					rw.WriteHeader(fc.res.StatusCode)
+					io.Copy(rw, rec.Body)
+				}
+			}),
+		},
 	}
-	rec := httptest.NewRecorder()
-	c.handler.ServeHTTP(rec, req)
-	c.req = req
-	c.res = rec.Result()
-	return c.res, nil
+	return fc
 }
 
 func (c *fakeHttpClient) clean() {

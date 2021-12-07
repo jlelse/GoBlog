@@ -64,17 +64,6 @@ func Test_postsDb(t *testing.T) {
 	is.Equal("Title", p.Title())
 	is.Equal([]string{"C", "A", "B"}, p.Parameters["tags"])
 
-	// Check number of post paths
-	pp, err := app.db.getPostPaths(statusDraft)
-	must.NoError(err)
-	if is.Len(pp, 1) {
-		is.Equal("/test/abc", pp[0])
-	}
-
-	pp, err = app.db.getPostPaths(statusPublished)
-	must.NoError(err)
-	is.Len(pp, 0)
-
 	// Check drafts
 	drafts, _ := app.getPosts(&postsRequestConfig{
 		blog:   "en",

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_configTelegram_enabled(t *testing.T) {
@@ -72,7 +73,17 @@ func Test_configTelegram_generateHTML(t *testing.T) {
 }
 
 func Test_configTelegram_send(t *testing.T) {
-	fakeClient := &fakeHttpClient{}
+	fakeClient := newFakeHttpClient()
+
+	fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
+	}))
 
 	tg := &configTelegram{
 		Enabled:  true,
@@ -81,17 +92,22 @@ func Test_configTelegram_send(t *testing.T) {
 	}
 
 	app := &goBlog{
-		httpClient: fakeClient,
+		httpClient: fakeClient.Client,
 	}
 
-	fakeClient.setFakeResponse(200, "")
+	msgId, err := app.send(tg, "Message", "HTML")
+	require.Nil(t, err)
 
-	err := app.send(tg, "Message", "HTML")
-	assert.Nil(t, err)
+	assert.Equal(t, 123, msgId)
 
 	assert.NotNil(t, fakeClient.req)
 	assert.Equal(t, http.MethodPost, fakeClient.req.Method)
-	assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Message", fakeClient.req.URL.String())
+	assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage", fakeClient.req.URL.String())
+
+	req := fakeClient.req
+	assert.Equal(t, "chatid", req.FormValue("chat_id"))
+	assert.Equal(t, "HTML", req.FormValue("parse_mode"))
+	assert.Equal(t, "Message", req.FormValue("text"))
 }
 
 func Test_goBlog_initTelegram(t *testing.T) {
@@ -108,9 +124,17 @@ func Test_goBlog_initTelegram(t *testing.T) {
 
 func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
-		fakeClient := &fakeHttpClient{}
+		fakeClient := newFakeHttpClient()
 
-		fakeClient.setFakeResponse(200, "")
+		fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
+				rw.WriteHeader(http.StatusOK)
+				rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
+				return
+			}
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
+		}))
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
@@ -131,7 +155,7 @@ func Test_telegram(t *testing.T) {
 					},
 				},
 			},
-			httpClient: fakeClient,
+			httpClient: fakeClient.Client,
 		}
 		_ = app.initDatabase(false)
 
@@ -149,17 +173,16 @@ func Test_telegram(t *testing.T) {
 
 		app.pPostHooks[0](p)
 
-		assert.Equal(
-			t,
-			"https://api.telegram.org/botbottoken/sendMessage?chat_id=chatid&parse_mode=HTML&text=Title%0A%0A%3Ca+href%3D%22https%3A%2F%2Fexample.com%2Fs%2F1%22%3Ehttps%3A%2F%2Fexample.com%2Fs%2F1%3C%2Fa%3E",
-			fakeClient.req.URL.String(),
-		)
+		assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage", fakeClient.req.URL.String())
+
+		req := fakeClient.req
+		assert.Equal(t, "chatid", req.FormValue("chat_id"))
+		assert.Equal(t, "HTML", req.FormValue("parse_mode"))
+		assert.Equal(t, "Title\n\n<a href=\"https://example.com/s/1\">https://example.com/s/1</a>", req.FormValue("text"))
 	})
 
 	t.Run("Telegram disabled", func(t *testing.T) {
-		fakeClient := &fakeHttpClient{}
-
-		fakeClient.setFakeResponse(200, "")
+		fakeClient := newFakeHttpClient()
 
 		app := &goBlog{
 			pPostHooks: []postHookFunc{},
@@ -174,7 +197,7 @@ func Test_telegram(t *testing.T) {
 					"en": {},
 				},
 			},
-			httpClient: fakeClient,
+			httpClient: fakeClient.Client,
 		}
 		_ = app.initDatabase(false)
 

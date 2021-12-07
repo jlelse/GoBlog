@@ -53,7 +53,7 @@ func main() {
 	initGC()
 
 	app := &goBlog{
-		httpClient: &appHttpClient{},
+		httpClient: newHttpClient(),
 	}
 
 	// Initialize config

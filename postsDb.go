@@ -503,22 +503,6 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 	return
 }
 
-func (d *database) getPostPaths(status postStatus) ([]string, error) {
-	var postPaths []string
-	rows, err := d.query("select path from posts where status = @status", sql.Named("status", status))
-	if err != nil {
-		return nil, err
-	}
-	var path string
-	for rows.Next() {
-		_ = rows.Scan(&path)
-		if path != "" {
-			postPaths = append(postPaths, path)
-		}
-	}
-	return postPaths, nil
-}
-
 func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	sections, ok := funk.Keys(a.cfg.Blogs[blog].Sections).([]string)
 	if !ok {

@@ -16,7 +16,7 @@ const defaultCompressionWidth = 2000
 const defaultCompressionHeight = 3000
 
 type mediaCompression interface {
-	compress(url string, save mediaStorageSaveFunc, hc httpClient) (location string, err error)
+	compress(url string, save mediaStorageSaveFunc, hc *http.Client) (location string, err error)
 }
 
 func (a *goBlog) compressMediaFile(url string) (location string, err error) {
@@ -55,7 +55,7 @@ type shortpixel struct {
 
 var _ mediaCompression = &shortpixel{}
 
-func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
+func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -111,7 +111,7 @@ type tinify struct {
 
 var _ mediaCompression = &tinify{}
 
-func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
+func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -188,7 +188,7 @@ type cloudflare struct {
 
 var _ mediaCompression = &cloudflare{}
 
-func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc httpClient) (location string, err error) {
+func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
 	// Check url
 	_, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {

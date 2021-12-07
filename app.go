@@ -48,7 +48,7 @@ type goBlog struct {
 	pDeleteHooks []postHookFunc
 	hourlyHooks  []hourlyHookFunc
 	// HTTP Client
-	httpClient httpClient
+	httpClient *http.Client
 	// HTTP Routers
 	d http.Handler
 	// IndieAuth

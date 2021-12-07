@@ -14,7 +14,7 @@ import (
 func Test_checkIndieAuth(t *testing.T) {
 
 	app := &goBlog{
-		httpClient: &fakeHttpClient{},
+		httpClient: newFakeHttpClient().Client,
 		cfg: &config{
 			Db: &configDb{
 				File: filepath.Join(t.TempDir(), "test.db"),
