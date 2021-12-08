@@ -62,6 +62,11 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
+	if m.Target == m.Source {
+		a.debug("Webmention target and source are the same:", m.Target)
+		a.serveError(w, r, "target and source are the same", http.StatusBadRequest)
+		return
+	}
 	if err = a.queueMention(m); err != nil {
 		a.debug("Failed to queue webmention", err.Error())
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
