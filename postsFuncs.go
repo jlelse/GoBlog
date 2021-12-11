@@ -137,7 +137,7 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	switch p.Status {
 	case statusDraft:
 		mfStatus = "draft"
-	case statusPublished:
+	case statusPublished, statusScheduled:
 		mfStatus = "published"
 		mfVisibility = "public"
 	case statusUnlisted:

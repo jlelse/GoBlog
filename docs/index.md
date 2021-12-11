@@ -55,5 +55,6 @@ Here's an (incomplete) list of features:
 
 - [How to install and run GoBlog](./install.md)
 - [How to build GoBlog](./build.md)
+- [How to use GoBlog](./usage.md)
 - [Administration paths](./admin-paths.md)
 - [GoBlog's storage system](./storage.md)

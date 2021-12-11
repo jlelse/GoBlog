@@ -13,6 +13,12 @@ import (
 func (a *goBlog) initTelegram() {
 	a.pPostHooks = append(a.pPostHooks, func(p *post) {
 		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() && p.isPublishedSectionPost() {
+			tgChat := p.firstParameter("telegramchat")
+			tgMsg := p.firstParameter("telegrammsg")
+			if tgChat != "" && tgMsg != "" {
+				// Already posted
+				return
+			}
 			// Generate HTML
 			html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
 			if html == "" {

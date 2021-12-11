@@ -227,6 +227,8 @@ func (a *goBlog) editorPostDesc(blog string) string {
 	t := a.ts.GetTemplateStringVariant(bc.Lang, "editorpostdesc")
 	var paramBuilder, statusBuilder strings.Builder
 	for i, param := range []string{
+		"published",
+		"updated",
 		"summary",
 		"translationkey",
 		"original",
@@ -252,7 +254,7 @@ func (a *goBlog) editorPostDesc(blog string) string {
 		paramBuilder.WriteByte('`')
 	}
 	for i, status := range []postStatus{
-		statusDraft, statusPublished, statusUnlisted, statusPrivate,
+		statusDraft, statusPublished, statusUnlisted, statusScheduled, statusPrivate,
 	} {
 		if i > 0 {
 			statusBuilder.WriteString(", ")

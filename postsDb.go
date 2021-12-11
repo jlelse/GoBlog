@@ -276,6 +276,7 @@ type postsRequestConfig struct {
 	parameter                                   string   // Ignores parameters
 	parameterValue                              string
 	publishedYear, publishedMonth, publishedDay int
+	publishedBefore                             time.Time
 	randomOrder                                 bool
 	priorityOrder                               bool
 	withoutParameters                           bool
@@ -359,6 +360,10 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	if c.publishedDay != 0 {
 		queryBuilder.WriteString(" and substr(tolocal(published), 9, 2) = @publishedday")
 		args = append(args, sql.Named("publishedday", fmt.Sprintf("%02d", c.publishedDay)))
+	}
+	if !c.publishedBefore.IsZero() {
+		queryBuilder.WriteString(" and toutc(published) < @publishedbefore")
+		args = append(args, sql.Named("publishedbefore", c.publishedBefore.UTC().Format(time.RFC3339)))
 	}
 	// Order
 	queryBuilder.WriteString(" order by ")

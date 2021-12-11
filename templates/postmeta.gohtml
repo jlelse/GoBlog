@@ -7,5 +7,6 @@
         {{ end }}
         {{ $short := shorturl .Data }}
         {{ if $short }}<div>{{ string .Blog.Lang "shorturl" }} <a href="{{ $short }}" rel="shortlink">{{ $short }}</a></div>{{ end }}
+        {{ if ne .Data.Status "published" }}<div>{{ string .Blog.Lang "status" }}: {{ .Data.Status }}</div>{{ end }}
     </div>
 {{ end }}

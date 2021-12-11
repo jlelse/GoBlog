@@ -42,6 +42,7 @@ const (
 	statusDraft     postStatus = "draft"
 	statusPrivate   postStatus = "private"
 	statusUnlisted  postStatus = "unlisted"
+	statusScheduled postStatus = "scheduled"
 )
 
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {

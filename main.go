@@ -175,6 +175,7 @@ func (app *goBlog) initComponents(logging bool) {
 	app.initBlogStats()
 	app.initSessions()
 	app.initIndieAuth()
+	app.startPostsScheduler()
 	// Log finish
 	if logging {
 		log.Println("Initialized components")

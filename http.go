@@ -265,7 +265,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				case statusPublished, statusUnlisted:
 					alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
-				case statusDraft, statusPrivate:
+				default: // private, draft, scheduled
 					alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
 				}
