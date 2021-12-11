@@ -149,6 +149,15 @@ func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
 	})))
 }
 
+func (a *goBlog) serveScheduled(w http.ResponseWriter, r *http.Request) {
+	blog := r.Context().Value(blogKey).(string)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:   a.getRelativePath(blog, "/editor/scheduled"),
+		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "scheduledposts"),
+		status: statusScheduled,
+	})))
+}
+
 func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 	var year, month, day int
 	if ys := chi.URLParam(r, "year"); ys != "" && ys != "x" {

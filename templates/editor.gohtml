@@ -30,6 +30,7 @@
     <p><a href="{{ .Blog.RelativePath "/editor/drafts" }}">{{ string .Blog.Lang "drafts" }}</a></p>
     <p><a href="{{ .Blog.RelativePath "/editor/private" }}">{{ string .Blog.Lang "privateposts" }}</a></p>
     <p><a href="{{ .Blog.RelativePath "/editor/unlisted" }}">{{ string .Blog.Lang "unlistedposts" }}</a></p>
+    <p><a href="{{ .Blog.RelativePath "/editor/scheduled" }}">{{ string .Blog.Lang "scheduledposts" }}</a></p>
 
     <h2>{{ string .Blog.Lang "upload" }}</h2>
     <form class="fw p" method="post" enctype="multipart/form-data">
