@@ -186,7 +186,7 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.Route("/m", a.mediaFilesRouter)
 
 	// Other routes
-	r.Route("/x", a.xRouter)
+	r.Route("/-", a.otherRoutesRouter)
 
 	// Captcha
 	r.Handle("/captcha/*", captcha.Server(500, 250))

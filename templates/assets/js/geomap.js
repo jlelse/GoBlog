@@ -8,7 +8,7 @@
         maxZoom: mapEl.dataset.maxzoom
     })
 
-    L.tileLayer("/x/tiles/{s}/{z}/{x}/{y}.png", {
+    L.tileLayer("/-/tiles/{s}/{z}/{x}/{y}.png", {
         attribution: mapEl.dataset.attribution,
     }).addTo(map)
 

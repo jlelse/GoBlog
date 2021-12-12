@@ -23,9 +23,9 @@ func Test_proxyTiles(t *testing.T) {
 	// Default tile source
 
 	m := chi.NewMux()
-	m.Get("/x/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/x/tiles"))
+	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/-/tiles"))
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.org/x/tiles/c/8/134/84.png", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
 	require.NoError(t, err)
 	resp, err := doHandlerRequest(req, m)
 	require.NoError(t, err)
@@ -40,9 +40,9 @@ func Test_proxyTiles(t *testing.T) {
 	}
 
 	m = chi.NewMux()
-	m.Get("/x/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/x/tiles"))
+	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/-/tiles"))
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.org/x/tiles/c/8/134/84.png", nil)
+	req, err = http.NewRequest(http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
 	require.NoError(t, err)
 	resp, err = doHandlerRequest(req, m)
 	require.NoError(t, err)
