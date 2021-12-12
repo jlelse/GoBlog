@@ -147,7 +147,10 @@ func (db *database) close() error {
 	return db.db.Close()
 }
 
-func (db *database) prepare(query string) (*sql.Stmt, error) {
+func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []interface{}, error) {
+	if len(args) > 0 && args[0] == dbNoCache {
+		return nil, args[1:], nil
+	}
 	stmt, err, _ := db.sg.Do(query, func() (interface{}, error) {
 		// Look if statement already exists
 		st, ok := db.ps.Load(query)
@@ -167,28 +170,19 @@ func (db *database) prepare(query string) (*sql.Stmt, error) {
 		if db.debug {
 			log.Printf(`Failed to prepare query "%s": %s`, query, err.Error())
 		}
-		return nil, err
+		return nil, args, err
 	}
-	return stmt.(*sql.Stmt), nil
+	return stmt.(*sql.Stmt), args, nil
 }
 
 const dbNoCache = "nocache"
 
 func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
+	// Maybe prepare
+	st, args, _ := db.prepare(query, args...)
 	// Lock execution
 	db.em.Lock()
 	defer db.em.Unlock()
-	// Check if no cache arg set
-	cache := true
-	if len(args) > 0 && args[0] == dbNoCache {
-		cache = false
-		args = args[1:]
-	}
-	// Maybe prepare
-	var st *sql.Stmt
-	if cache {
-		st, _ = db.prepare(query)
-	}
 	// Prepare context, call hook
 	ctx := db.dbBefore(context.Background(), query, args...)
 	defer db.dbAfter(ctx, query, args...)
@@ -200,17 +194,8 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
-	// Check if no cache arg set
-	cache := true
-	if len(args) > 0 && args[0] == dbNoCache {
-		cache = false
-		args = args[1:]
-	}
 	// Maybe prepare
-	var st *sql.Stmt
-	if cache {
-		st, _ = db.prepare(query)
-	}
+	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook
 	ctx := db.dbBefore(context.Background(), query, args...)
 	defer db.dbAfter(ctx, query, args...)
@@ -222,17 +207,8 @@ func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) 
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
-	// Check if no cache arg set
-	cache := true
-	if len(args) > 0 && args[0] == dbNoCache {
-		cache = false
-		args = args[1:]
-	}
 	// Maybe prepare
-	var st *sql.Stmt
-	if cache {
-		st, _ = db.prepare(query)
-	}
+	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook
 	ctx := db.dbBefore(context.Background(), query, args...)
 	defer db.dbAfter(ctx, query, args...)
