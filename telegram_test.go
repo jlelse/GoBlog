@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,42 +10,15 @@ import (
 )
 
 func Test_configTelegram_enabled(t *testing.T) {
-	if (&configTelegram{}).enabled() == true {
-		t.Error("Telegram shouldn't be enabled")
-	}
-
+	assert.False(t, (&configTelegram{}).enabled())
 	var tg *configTelegram
-	if tg.enabled() == true {
-		t.Error("Telegram shouldn't be enabled")
-	}
+	assert.False(t, tg.enabled())
 
-	if (&configTelegram{
-		Enabled: true,
-	}).enabled() == true {
-		t.Error("Telegram shouldn't be enabled")
-	}
+	assert.False(t, (&configTelegram{Enabled: true}).enabled())
+	assert.False(t, (&configTelegram{Enabled: true, ChatID: "abc"}).enabled())
+	assert.False(t, (&configTelegram{Enabled: true, BotToken: "abc"}).enabled())
 
-	if (&configTelegram{
-		Enabled: true,
-		ChatID:  "abc",
-	}).enabled() == true {
-		t.Error("Telegram shouldn't be enabled")
-	}
-
-	if (&configTelegram{
-		Enabled:  true,
-		BotToken: "abc",
-	}).enabled() == true {
-		t.Error("Telegram shouldn't be enabled")
-	}
-
-	if (&configTelegram{
-		Enabled:  true,
-		BotToken: "abc",
-		ChatID:   "abc",
-	}).enabled() != true {
-		t.Error("Telegram should be enabled")
-	}
+	assert.True(t, (&configTelegram{Enabled: true, ChatID: "abc", BotToken: "abc"}).enabled())
 }
 
 func Test_configTelegram_generateHTML(t *testing.T) {
@@ -78,11 +50,11 @@ func Test_configTelegram_send(t *testing.T) {
 	fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
 			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
+			_, _ = rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-		rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
+		_, _ = rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
 	}))
 
 	tg := &configTelegram{
@@ -126,38 +98,31 @@ func Test_goBlog_initTelegram(t *testing.T) {
 func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
 		fakeClient := newFakeHttpClient()
-
 		fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
 				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
+				_, _ = rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
 				return
 			}
 			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
+			_, _ = rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
 		}))
 
+		cfg := createDefaultTestConfig(t)
+		cfg.Blogs = map[string]*configBlog{
+			"en": createDefaultBlog(),
+		}
+		cfg.Blogs["en"].Telegram = &configTelegram{
+			Enabled:  true,
+			ChatID:   "chatid",
+			BotToken: "bottoken",
+		}
+
 		app := &goBlog{
-			pPostHooks: []postHookFunc{},
-			cfg: &config{
-				Db: &configDb{
-					File: filepath.Join(t.TempDir(), "test.db"),
-				},
-				Server: &configServer{
-					PublicAddress: "https://example.com",
-				},
-				Blogs: map[string]*configBlog{
-					"en": {
-						Telegram: &configTelegram{
-							Enabled:  true,
-							ChatID:   "chatid",
-							BotToken: "bottoken",
-						},
-					},
-				},
-			},
+			cfg:        cfg,
 			httpClient: fakeClient.Client,
 		}
+		_ = app.initConfig()
 		_ = app.initDatabase(false)
 
 		app.initMarkdown()
@@ -179,43 +144,32 @@ func Test_telegram(t *testing.T) {
 		req := fakeClient.req
 		assert.Equal(t, "chatid", req.FormValue("chat_id"))
 		assert.Equal(t, "HTML", req.FormValue("parse_mode"))
-		assert.Equal(t, "Title\n\n<a href=\"https://example.com/s/1\">https://example.com/s/1</a>", req.FormValue("text"))
+		assert.Equal(t, "Title\n\n<a href=\"http://localhost:8080/s/1\">http://localhost:8080/s/1</a>", req.FormValue("text"))
 	})
 
 	t.Run("Telegram disabled", func(t *testing.T) {
 		fakeClient := newFakeHttpClient()
 
 		app := &goBlog{
-			pPostHooks: []postHookFunc{},
-			cfg: &config{
-				Db: &configDb{
-					File: filepath.Join(t.TempDir(), "test.db"),
-				},
-				Server: &configServer{
-					PublicAddress: "https://example.com",
-				},
-				Blogs: map[string]*configBlog{
-					"en": {},
-				},
-			},
+			cfg:        createDefaultTestConfig(t),
 			httpClient: fakeClient.Client,
 		}
+
+		_ = app.initConfig()
 		_ = app.initDatabase(false)
 
 		app.initTelegram()
 
-		p := &post{
+		app.postPostHooks(&post{
 			Path: "/test",
 			Parameters: map[string][]string{
 				"title": {"Title"},
 			},
 			Published: time.Now().String(),
 			Section:   "test",
-			Blog:      "en",
+			Blog:      "default",
 			Status:    statusPublished,
-		}
-
-		app.pPostHooks[0](p)
+		})
 
 		assert.Nil(t, fakeClient.req)
 	})

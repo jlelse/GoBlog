@@ -29,7 +29,7 @@ func newFakeHttpClient() *fakeHttpClient {
 					}
 					// Copy result status code and body
 					rw.WriteHeader(fc.res.StatusCode)
-					io.Copy(rw, rec.Body)
+					_, _ = io.Copy(rw, rec.Body)
 				}
 			}),
 		},

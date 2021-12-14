@@ -57,7 +57,11 @@ func main() {
 	}
 
 	// Initialize config
-	if err = app.initConfig(*configfile); err != nil {
+	if err = app.loadConfigFile(*configfile); err != nil {
+		app.logErrAndQuit("Failed to load config file:", err.Error())
+		return
+	}
+	if err = app.initConfig(); err != nil {
 		app.logErrAndQuit("Failed to init config:", err.Error())
 		return
 	}

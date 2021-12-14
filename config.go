@@ -27,6 +27,7 @@ type config struct {
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 	Debug         bool                   `mapstructure:"debug"`
 	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
+	initialized   bool
 }
 
 type configServer struct {
@@ -42,7 +43,6 @@ type configServer struct {
 	Tor                 bool             `mapstructure:"tor"`
 	SecurityHeaders     bool             `mapstructure:"securityHeaders"`
 	CSPDomains          []string         `mapstructure:"cspDomains"`
-	JWTSecret           string           `mapstructure:"jwtSecret"`
 	publicHostname      string
 	shortPublicHostname string
 	mediaHostname       string
@@ -287,86 +287,83 @@ type configMapTiles struct {
 	MaxZoom     int    `mapstructure:"maxZoom"`
 }
 
-func (a *goBlog) initConfig(file string) error {
-	log.Println("Initialize configuration...")
+func (a *goBlog) loadConfigFile(file string) error {
+	// Use viper to load the config file
+	v := viper.New()
 	if file != "" {
 		// Use config file from the flag
-		viper.SetConfigFile(file)
+		v.SetConfigFile(file)
 	} else {
-		viper.SetConfigName("config")
-		viper.AddConfigPath("./config/")
+		// Search in default locations
+		v.SetConfigName("config")
+		v.AddConfigPath("./config/")
 	}
-	err := viper.ReadInConfig()
-	if err != nil {
+	// Read config
+	if err := v.ReadInConfig(); err != nil {
 		return err
 	}
-	// Defaults
-	viper.SetDefault("server.logging", false)
-	viper.SetDefault("server.logFile", "data/access.log")
-	viper.SetDefault("server.port", 8080)
-	viper.SetDefault("server.publicAddress", "http://localhost:8080")
-	viper.SetDefault("server.publicHttps", false)
-	viper.SetDefault("database.file", "data/db.sqlite")
-	viper.SetDefault("cache.enable", true)
-	viper.SetDefault("cache.expiration", 600)
-	viper.SetDefault("user.nick", "admin")
-	viper.SetDefault("user.password", "secret")
-	viper.SetDefault("hooks.shell", "/bin/bash")
-	viper.SetDefault("micropub.categoryParam", "tags")
-	viper.SetDefault("micropub.replyParam", "replylink")
-	viper.SetDefault("micropub.replyTitleParam", "replytitle")
-	viper.SetDefault("micropub.likeParam", "likelink")
-	viper.SetDefault("micropub.likeTitleParam", "liketitle")
-	viper.SetDefault("micropub.bookmarkParam", "link")
-	viper.SetDefault("micropub.audioParam", "audio")
-	viper.SetDefault("micropub.photoParam", "images")
-	viper.SetDefault("micropub.photoDescriptionParam", "imagealts")
-	viper.SetDefault("micropub.locationParam", "location")
-	viper.SetDefault("activityPub.tagsTaxonomies", []string{"tags"})
 	// Unmarshal config
-	a.cfg = &config{}
-	err = viper.Unmarshal(a.cfg)
-	if err != nil {
-		return err
+	a.cfg = createDefaultConfig()
+	return v.Unmarshal(a.cfg)
+}
+
+func (a *goBlog) initConfig() error {
+	if a.cfg == nil {
+		a.cfg = createDefaultConfig()
+	}
+	if a.cfg.initialized {
+		return nil
 	}
 	// Check config
+	// Parse addresses and hostnames
+	if a.cfg.Server.PublicAddress == "" {
+		return errors.New("no public address configured")
+	}
 	publicURL, err := url.Parse(a.cfg.Server.PublicAddress)
 	if err != nil {
-		return err
+		return errors.New("Invalid public address: " + err.Error())
 	}
 	a.cfg.Server.publicHostname = publicURL.Hostname()
 	if sa := a.cfg.Server.ShortPublicAddress; sa != "" {
 		shortPublicURL, err := url.Parse(sa)
 		if err != nil {
-			return err
+			return errors.New("Invalid short public address: " + err.Error())
 		}
 		a.cfg.Server.shortPublicHostname = shortPublicURL.Hostname()
 	}
 	if ma := a.cfg.Server.MediaAddress; ma != "" {
 		mediaUrl, err := url.Parse(ma)
 		if err != nil {
-			return err
+			return errors.New("Invalid media address: " + err.Error())
 		}
 		a.cfg.Server.mediaHostname = mediaUrl.Hostname()
 	}
-	if a.cfg.Server.JWTSecret == "" {
-		return errors.New("no JWT secret configured")
-	}
-	if len(a.cfg.Blogs) == 0 {
-		return errors.New("no blog configured")
-	}
-	if len(a.cfg.DefaultBlog) == 0 || a.cfg.Blogs[a.cfg.DefaultBlog] == nil {
-		return errors.New("no default blog or default blog not present")
-	}
-	if a.cfg.Micropub.MediaStorage != nil {
-		if a.cfg.Micropub.MediaStorage.MediaURL == "" ||
-			a.cfg.Micropub.MediaStorage.BunnyStorageKey == "" ||
-			a.cfg.Micropub.MediaStorage.BunnyStorageName == "" {
-			a.cfg.Micropub.MediaStorage.BunnyStorageKey = ""
-			a.cfg.Micropub.MediaStorage.BunnyStorageName = ""
+	// Check if any blog is configured
+	if a.cfg.Blogs == nil || len(a.cfg.Blogs) == 0 {
+		a.cfg.Blogs = map[string]*configBlog{
+			"default": createDefaultBlog(),
 		}
-		a.cfg.Micropub.MediaStorage.MediaURL = strings.TrimSuffix(a.cfg.Micropub.MediaStorage.MediaURL, "/")
 	}
+	// Check if default blog is set
+	if a.cfg.DefaultBlog == "" {
+		if len(a.cfg.Blogs) == 1 {
+			// Set default blog to the only blog that is configured
+			for k := range a.cfg.Blogs {
+				a.cfg.DefaultBlog = k
+			}
+		} else {
+			return errors.New("no default blog configured")
+		}
+	}
+	// Check if default blog exists
+	if a.cfg.Blogs[a.cfg.DefaultBlog] == nil {
+		return errors.New("default blog does not exist")
+	}
+	// Check media storage config
+	if ms := a.cfg.Micropub.MediaStorage; ms != nil && ms.MediaURL != "" {
+		ms.MediaURL = strings.TrimSuffix(ms.MediaURL, "/")
+	}
+	// Check if webmention receiving is disabled
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		// Disable comments for all blogs
 		for _, b := range a.cfg.Blogs {
@@ -380,8 +377,63 @@ func (a *goBlog) initConfig(file string) error {
 			br.Enabled = false
 		}
 	}
+	// Log success
+	a.cfg.initialized = true
 	log.Println("Initialized configuration")
 	return nil
+}
+
+func createDefaultConfig() *config {
+	return &config{
+		Server: &configServer{
+			Port:          8080,
+			PublicAddress: "http://localhost:8080",
+		},
+		Db: &configDb{
+			File: "data/db.sqlite",
+		},
+		Cache: &configCache{
+			Enable:     true,
+			Expiration: 600,
+		},
+		User: &configUser{
+			Nick:     "admin",
+			Password: "secret",
+		},
+		Hooks: &configHooks{
+			Shell: "/bin/bash",
+		},
+		Micropub: &configMicropub{
+			CategoryParam:         "tags",
+			ReplyParam:            "replylink",
+			ReplyTitleParam:       "replytitle",
+			LikeParam:             "likelink",
+			LikeTitleParam:        "liketitle",
+			BookmarkParam:         "link",
+			AudioParam:            "audio",
+			PhotoParam:            "images",
+			PhotoDescriptionParam: "imagealts",
+			LocationParam:         "location",
+		},
+		ActivityPub: &configActivityPub{
+			TagsTaxonomies: []string{"tags"},
+		},
+	}
+}
+
+func createDefaultBlog() *configBlog {
+	return &configBlog{
+		Path:        "/",
+		Lang:        "en",
+		Title:       "My Blog",
+		Description: "Welcome to my blog.",
+		Sections: map[string]*configSection{
+			"posts": {
+				Title: "Posts",
+			},
+		},
+		DefaultSection: "posts",
+	}
 }
 
 func (a *goBlog) httpsConfigured(checkAddress bool) bool {

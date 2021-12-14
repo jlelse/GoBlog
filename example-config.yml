@@ -23,8 +23,6 @@ server:
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
-  # Cookies
-  jwtSecret: changeThisWeakSecret # secret to use for cookies (login and captcha)
   # Tor
   tor: true # Publish onion service, requires Tor to be installed and available in path
   # Tailscale (see https://tailscale.com)

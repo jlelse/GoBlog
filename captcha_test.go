@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,23 +12,10 @@ import (
 
 func Test_captchaMiddleware(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
 
+	_ = app.initConfig()
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 
@@ -39,11 +24,9 @@ func Test_captchaMiddleware(t *testing.T) {
 	}))
 
 	t.Run("Default", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/abc", nil)
-
 		rec := httptest.NewRecorder()
 
-		h.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
+		h.ServeHTTP(rec, reqWithDefaultBlog(httptest.NewRequest(http.MethodPost, "/abc", nil)))
 
 		res := rec.Result()
 		resBody, _ := io.ReadAll(res.Body)

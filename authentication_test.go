@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -17,32 +16,20 @@ import (
 
 func Test_authMiddleware(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			DefaultBlog: "en",
-			User: &configUser{
-				Nick:     "test",
-				Password: "pass",
-				AppPasswords: []*configAppPassword{
-					{
-						Username: "app1",
-						Password: "pass1",
-					},
-				},
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.User = &configUser{
+		Nick:     "test",
+		Password: "pass",
+		AppPasswords: []*configAppPassword{
+			{
+				Username: "app1",
+				Password: "pass1",
 			},
 		},
 	}
 
+	_ = app.initConfig()
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 

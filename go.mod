@@ -20,10 +20,9 @@ require (
 	github.com/emersion/go-smtp v0.15.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-fed/httpsig v1.1.0
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
-	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hacdias/indieauth v1.7.1
@@ -44,7 +43,7 @@ require (
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.10.0
 	github.com/stretchr/testify v1.7.0
-	github.com/tdewolff/minify/v2 v2.9.22
+	github.com/tdewolff/minify/v2 v2.9.23
 	github.com/thoas/go-funk v0.9.1
 	github.com/tkrajina/gpxgo v1.1.2
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -87,6 +86,7 @@ require (
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
+	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20210621130208-1cac67f12b1e // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
@@ -112,7 +112,7 @@ require (
 	github.com/tailscale/goupnp v1.0.1-0.20210804011211-c64d0f06ea05 // indirect
 	github.com/tailscale/netlink v1.1.1-0.20211101221916-cabfb018fe85 // indirect
 	github.com/tcnksm/go-httpstat v0.2.0 // indirect
-	github.com/tdewolff/parse/v2 v2.5.21 // indirect
+	github.com/tdewolff/parse/v2 v2.5.24 // indirect
 	github.com/u-root/uio v0.0.0-20210528114334-82958018845c // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20211101163509-b10eb8fe5cf6 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
