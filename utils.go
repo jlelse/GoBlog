@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -308,4 +310,20 @@ func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, 
 		req.URL.Path = "/"
 	}
 	return client.Do(req)
+}
+
+func saveToFile(reader io.Reader, fileName string) error {
+	// Create folder path if not exists
+	if err := os.MkdirAll(filepath.Dir(fileName), os.ModePerm); err != nil {
+		return err
+	}
+	// Create file
+	out, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	// Copy response to file
+	defer out.Close()
+	_, err = io.Copy(out, reader)
+	return err
 }

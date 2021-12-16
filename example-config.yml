@@ -136,6 +136,13 @@ mapTiles:
   minZoom: 0 # (Optional) Minimum zoom level
   maxZoom: 20 # (Optional) Maximum zoom level
 
+# Text-to-Speech (not just using the browser API, but Google Cloud's TTS-API)
+# If enabled, it will automatically generate a TTS audio file after publishing a public post that has a section as well
+# It's possible to regenerate the audio at any time. That will also try and delete previously generated TTS audio files
+tts:
+  enabled: true
+  googleApiKey: "xxxxxxxx"
+
 # Blogs
 defaultBlog: en # Default blog (needed because you can define multiple blogs)
 blogs:

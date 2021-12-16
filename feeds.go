@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"strings"
 	"time"
@@ -42,12 +43,14 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		},
 	}
 	for _, p := range posts {
+		var contentBuf bytes.Buffer
+		a.min.Write(&contentBuf, contenttype.HTML, []byte(a.feedHtml(p)))
 		feed.Add(&feeds.Item{
 			Title:       p.RenderedTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
-			Content:     string(a.postHtml(p, true)),
+			Content:     contentBuf.String(),
 			Created:     timeNoErr(dateparse.ParseLocal(p.Published)),
 			Updated:     timeNoErr(dateparse.ParseLocal(p.Updated)),
 		})

@@ -81,6 +81,7 @@ func (a *goBlog) initRendering() error {
 		"mbytes":         mBytesString,
 		"editortemplate": a.editorPostTemplate,
 		"editorpostdesc": a.editorPostDesc,
+		"ttsenabled":     a.ttsEnabled,
 	}
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
 	if err != nil {

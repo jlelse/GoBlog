@@ -53,12 +53,10 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 	// Build HTML
 	var htmlBuilder strings.Builder
 	// Add audio to the top
-	if audio, ok := p.Parameters[a.cfg.Micropub.AudioParam]; ok && len(audio) > 0 {
-		for _, a := range audio {
-			htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
-			htmlBuilder.WriteString(a)
-			htmlBuilder.WriteString(`"/></audio>`)
-		}
+	for _, a := range p.Parameters[a.cfg.Micropub.AudioParam] {
+		htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
+		htmlBuilder.WriteString(a)
+		htmlBuilder.WriteString(`"/></audio>`)
 	}
 	// Render markdown
 	htmlContent, err := a.renderMarkdown(p.Content, absolute)
@@ -68,14 +66,12 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 	}
 	htmlBuilder.Write(htmlContent)
 	// Add bookmark links to the bottom
-	if link, ok := p.Parameters[a.cfg.Micropub.BookmarkParam]; ok && len(link) > 0 {
-		for _, l := range link {
-			htmlBuilder.WriteString(`<p><a class=u-bookmark-of href="`)
-			htmlBuilder.WriteString(l)
-			htmlBuilder.WriteString(`" target=_blank rel=noopener>`)
-			htmlBuilder.WriteString(l)
-			htmlBuilder.WriteString(`</a></p>`)
-		}
+	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
+		htmlBuilder.WriteString(`<p><a class=u-bookmark-of href="`)
+		htmlBuilder.WriteString(l)
+		htmlBuilder.WriteString(`" target=_blank rel=noopener>`)
+		htmlBuilder.WriteString(l)
+		htmlBuilder.WriteString(`</a></p>`)
 	}
 	// Cache
 	html := template.HTML(htmlBuilder.String())
@@ -84,6 +80,28 @@ func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
 	}
 	p.renderCache[absolute] = html
 	return html
+}
+
+func (a *goBlog) feedHtml(p *post) string {
+	var htmlBuilder strings.Builder
+	// Add TTS audio to the top
+	for _, a := range p.Parameters[ttsParameter] {
+		htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
+		htmlBuilder.WriteString(a)
+		htmlBuilder.WriteString(`"/></audio>`)
+	}
+	// Add post HTML
+	htmlBuilder.WriteString(string(a.postHtml(p, true)))
+	// Add link to interactions and comments
+	blogConfig := a.cfg.Blogs[defaultIfEmpty(p.Blog, a.cfg.DefaultBlog)]
+	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
+		htmlBuilder.WriteString(`<p><a href="`)
+		htmlBuilder.WriteString(a.getFullAddress(p.Path))
+		htmlBuilder.WriteString(`#interactions">`)
+		htmlBuilder.WriteString(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
+		htmlBuilder.WriteString(`</a></p>`)
+	}
+	return htmlBuilder.String()
 }
 
 const summaryDivider = "<!--more-->"
@@ -244,5 +262,5 @@ func (p *post) Old() bool {
 }
 
 func (p *post) TTS() string {
-	return p.firstParameter("tts")
+	return p.firstParameter(ttsParameter)
 }

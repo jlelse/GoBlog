@@ -27,6 +27,7 @@ type config struct {
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 	Debug         bool                   `mapstructure:"debug"`
 	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
+	TTS           *configTTS             `mapstructure:"tts"`
 	initialized   bool
 }
 
@@ -287,6 +288,11 @@ type configMapTiles struct {
 	MaxZoom     int    `mapstructure:"maxZoom"`
 }
 
+type configTTS struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	GoogleAPIKey string `mapstructure:"googleApiKey"`
+}
+
 func (a *goBlog) loadConfigFile(file string) error {
 	// Use viper to load the config file
 	v := viper.New()
@@ -372,6 +378,10 @@ func (a *goBlog) initConfig() error {
 	}
 	// Check config for each blog
 	for _, blog := range a.cfg.Blogs {
+		// Check if language is set
+		if blog.Lang == "" {
+			blog.Lang = "en"
+		}
 		// Blogroll
 		if br := blog.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false

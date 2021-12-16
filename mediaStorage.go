@@ -24,6 +24,11 @@ func (a *goBlog) initMediaStorage() {
 	})
 }
 
+func (a *goBlog) mediaStorageEnabled() bool {
+	a.initMediaStorage()
+	return a.mediaStorage != nil
+}
+
 type mediaStorageSaveFunc func(filename string, file io.Reader) (location string, err error)
 
 func (a *goBlog) saveMediaFile(filename string, f io.Reader) (string, error) {
@@ -92,14 +97,7 @@ func (a *goBlog) initLocalMediaStorage() mediaStorage {
 }
 
 func (l *localMediaStorage) save(filename string, file io.Reader) (location string, err error) {
-	if err = os.MkdirAll(l.path, 0777); err != nil {
-		return "", err
-	}
-	newFile, err := os.Create(filepath.Join(l.path, filename))
-	if err != nil {
-		return "", err
-	}
-	if _, err = io.Copy(newFile, file); err != nil {
+	if err = saveToFile(file, filepath.Join(l.path, filename)); err != nil {
 		return "", err
 	}
 	return l.location(filename), nil

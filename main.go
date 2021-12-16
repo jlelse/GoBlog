@@ -177,6 +177,7 @@ func (app *goBlog) initComponents(logging bool) {
 	app.initWebmention()
 	app.initTelegram()
 	app.initBlogStats()
+	app.initTTS()
 	app.initSessions()
 	app.initIndieAuth()
 	app.startPostsScheduler()
