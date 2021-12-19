@@ -10,7 +10,6 @@
       <input type="hidden" name="captchamethod" value="{{ .Data.captchamethod }}">
       <input type="hidden" name="captchaheaders" value="{{ .Data.captchaheaders }}">
       <input type="hidden" name="captchabody" value="{{ .Data.captchabody }}">
-      <input type="hidden" name="captchaid" value="{{ .Data.captchaid }}">
       <input type="text" name="digits" placeholder="{{ string .Blog.Lang "captchainstructions" }}" required>
       <input type="submit" value="{{ string .Blog.Lang "submit" }}">
     </form>
