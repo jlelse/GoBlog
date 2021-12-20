@@ -21,15 +21,13 @@ import (
 const editorPath = "/editor"
 
 func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
 	a.render(w, r, templateEditor, &renderData{
-		BlogString: blog,
-		Data:       map[string]interface{}{},
+		Data: map[string]interface{}{},
 	})
 }
 
 func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	blog, _ := a.getBlog(r)
 	c, err := ws.Accept(w, r, nil)
 	if err != nil {
 		return
@@ -93,7 +91,6 @@ func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered [
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
 	if action := r.FormValue("editoraction"); action != "" {
 		switch action {
 		case "loadupdate":
@@ -103,7 +100,6 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			a.render(w, r, templateEditor, &renderData{
-				BlogString: blog,
 				Data: map[string]interface{}{
 					"UpdatePostURL":     a.fullPostURL(post),
 					"UpdatePostContent": a.postToMfItem(post).Properties.Content[0],

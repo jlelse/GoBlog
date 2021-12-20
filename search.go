@@ -13,7 +13,6 @@ const defaultSearchPath = "/search"
 const searchPlaceholder = "{search}"
 
 func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
 	servePath := r.Context().Value(pathKey).(string)
 	err := r.ParseForm()
 	if err != nil {
@@ -28,8 +27,7 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, r, templateSearch, &renderData{
-		BlogString: blog,
-		Canonical:  a.getFullAddress(servePath),
+		Canonical: a.getFullAddress(servePath),
 	})
 }
 

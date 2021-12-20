@@ -40,11 +40,10 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	a.render(w, r, templateComment, &renderData{
-		BlogString: blog,
-		Canonical:  a.getFullAddress(a.getRelativePath(blog, path.Join(commentPath, strconv.Itoa(id)))),
-		Data:       comment,
+		Canonical: a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id)))),
+		Data:      comment,
 	})
 }
 
@@ -72,8 +71,8 @@ func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
 		// Serve error
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 	} else {
-		blog := r.Context().Value(blogKey).(string)
-		commentAddress := a.getRelativePath(blog, path.Join(commentPath, strconv.Itoa(int(commentID))))
+		_, bc := a.getBlog(r)
+		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(int(commentID))))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 		// Redirect to comment

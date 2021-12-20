@@ -39,18 +39,18 @@ func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.NewSitemapIndex()
 	// Add blog sitemaps
-	b := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	now := time.Now().UTC()
 	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogFeaturesPath)),
+		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogFeaturesPath)),
 		LastMod: &now,
 	})
 	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogArchivesPath)),
+		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogArchivesPath)),
 		LastMod: &now,
 	})
 	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(a.getRelativePath(b, sitemapBlogPostsPath)),
+		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogPostsPath)),
 		LastMod: &now,
 	})
 	// Write sitemap
@@ -61,7 +61,7 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 	// Create sitemap
 	sm := sitemap.New()
 	// Add features to sitemap
-	bc := a.cfg.Blogs[r.Context().Value(blogKey).(string)]
+	_, bc := a.getBlog(r)
 	// Home
 	sm.Add(&sitemap.URL{
 		Loc: a.getFullAddress(bc.getRelativePath("")),
@@ -116,8 +116,7 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 	// Create sitemap
 	sm := sitemap.New()
 	// Add archives to sitemap
-	b := r.Context().Value(blogKey).(string)
-	bc := a.cfg.Blogs[b]
+	b, bc := a.getBlog(r)
 	// Sections
 	for _, section := range bc.Sections {
 		if section.Name != "" {
@@ -160,9 +159,10 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.New()
 	// Request posts
+	blog, _ := a.getBlog(r)
 	posts, _ := a.getPosts(&postsRequestConfig{
 		status:            statusPublished,
-		blog:              r.Context().Value(blogKey).(string),
+		blog:              blog,
 		withoutParameters: true,
 	})
 	// Add posts to sitemap

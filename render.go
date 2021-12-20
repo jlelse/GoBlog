@@ -162,16 +162,14 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 		data.User = a.cfg.User
 	}
 	// Blog
-	if data.Blog == nil {
-		if data.BlogString == "" {
-			data.BlogString = a.cfg.DefaultBlog
-		}
+	if data.Blog == nil && data.BlogString == "" {
+		data.BlogString, data.Blog = a.getBlog(r)
+	} else if data.Blog == nil {
 		data.Blog = a.cfg.Blogs[data.BlogString]
-	}
-	if data.BlogString == "" {
-		for s, b := range a.cfg.Blogs {
-			if b == data.Blog {
-				data.BlogString = s
+	} else if data.BlogString == "" {
+		for name, blog := range a.cfg.Blogs {
+			if blog == data.Blog {
+				data.BlogString = name
 				break
 			}
 		}

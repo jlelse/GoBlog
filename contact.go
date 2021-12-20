@@ -15,10 +15,9 @@ import (
 const defaultContactPath = "/contact"
 
 func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
-	blog, bc := a.getBlog(r)
+	_, bc := a.getBlog(r)
 	cc := bc.Contact
 	a.render(w, r, templateContact, &renderData{
-		BlogString: blog,
 		Data: map[string]interface{}{
 			"title":       cc.Title,
 			"description": cc.Description,
@@ -29,7 +28,7 @@ func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	// Get blog
-	blog, bc := a.getBlog(r)
+	_, bc := a.getBlog(r)
 	// Get form values and build message
 	var message bytes.Buffer
 	// Message
@@ -65,7 +64,6 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	a.sendNotification(message.String())
 	// Give feedback
 	a.render(w, r, templateContact, &renderData{
-		BlogString: blog,
 		Data: map[string]interface{}{
 			"sent": true,
 		},

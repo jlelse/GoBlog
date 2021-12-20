@@ -8,12 +8,19 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dchest/captcha"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const captchaSolvedKey contextKey = "captchaSolved"
+
+var captchaStore = captcha.NewMemoryStore(100, 10*time.Minute)
+
+func init() {
+	captcha.SetCustomStore(captchaStore)
+}
 
 func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,10 +63,9 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			b = []byte(r.PostForm.Encode())
 		}
 		// Render captcha
-		ses.Save(r, w)
+		_ = ses.Save(r, w)
 		w.Header().Set("Cache-Control", "no-store,max-age=0")
 		a.renderWithStatusCode(w, r, http.StatusUnauthorized, templateCaptcha, &renderData{
-			BlogString: r.Context().Value(blogKey).(string),
 			Data: map[string]string{
 				"captchamethod":  r.Method,
 				"captchaheaders": base64.StdEncoding.EncodeToString(h),

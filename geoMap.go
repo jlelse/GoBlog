@@ -8,8 +8,7 @@ import (
 const defaultGeoMapPath = "/map"
 
 func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
-	bc := a.cfg.Blogs[blog]
+	blog, bc := a.getBlog(r)
 
 	mapPath := bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))
 	canonical := a.getFullAddress(mapPath)
@@ -27,8 +26,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 
 	if len(allPostsWithLocation) == 0 {
 		a.render(w, r, templateGeoMap, &renderData{
-			BlogString: blog,
-			Canonical:  canonical,
+			Canonical: canonical,
 			Data: map[string]interface{}{
 				"nolocations": true,
 			},
@@ -88,8 +86,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.render(w, r, templateGeoMap, &renderData{
-		BlogString: blog,
-		Canonical:  canonical,
+		Canonical: canonical,
 		Data: map[string]interface{}{
 			"locations":   locationsJson,
 			"tracks":      tracksJson,

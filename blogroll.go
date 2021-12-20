@@ -27,10 +27,9 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := bc.Blogroll
-	can := a.getRelativePath(blog, defaultIfEmpty(c.Path, defaultBlogrollPath))
+	can := bc.getRelativePath(defaultIfEmpty(c.Path, defaultBlogrollPath))
 	a.render(w, r, templateBlogroll, &renderData{
-		BlogString: blog,
-		Canonical:  a.getFullAddress(can),
+		Canonical: a.getFullAddress(can),
 		Data: map[string]interface{}{
 			"Title":       c.Title,
 			"Description": c.Description,

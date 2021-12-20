@@ -35,7 +35,6 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) 
 }
 
 func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
 	commentsPath := r.Context().Value(pathKey).(string)
 	// Adapter
 	pageNoString := chi.URLParam(r, "page")
@@ -72,7 +71,6 @@ func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 	nextPath = fmt.Sprintf("%s/page/%d", commentsPath, nextPage)
 	// Render
 	a.render(w, r, templateCommentsAdmin, &renderData{
-		BlogString: blog,
 		Data: map[string]interface{}{
 			"Comments": comments,
 			"HasPrev":  hasPrev,

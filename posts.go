@@ -79,7 +79,8 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
-	randomPath, err := a.getRandomPostPath(r.Context().Value(blogKey).(string))
+	blog, _ := a.getBlog(r)
+	randomPath, err := a.getRandomPostPath(blog)
 	if err != nil {
 		a.serveError(rw, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -112,7 +113,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) erro
 }
 
 func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	blog, _ := a.getBlog(r)
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		a.serveActivityStreams(blog, w, r)
 		return
@@ -123,37 +124,37 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   a.getRelativePath(blog, "/editor/drafts"),
-		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "drafts"),
+		path:   bc.getRelativePath("/editor/drafts"),
+		title:  a.ts.GetTemplateStringVariant(bc.Lang, "drafts"),
 		status: statusDraft,
 	})))
 }
 
 func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   a.getRelativePath(blog, "/editor/private"),
-		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "privateposts"),
+		path:   bc.getRelativePath("/editor/private"),
+		title:  a.ts.GetTemplateStringVariant(bc.Lang, "privateposts"),
 		status: statusPrivate,
 	})))
 }
 
 func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   a.getRelativePath(blog, "/editor/unlisted"),
-		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "unlistedposts"),
+		path:   bc.getRelativePath("/editor/unlisted"),
+		title:  a.ts.GetTemplateStringVariant(bc.Lang, "unlistedposts"),
 		status: statusUnlisted,
 	})))
 }
 
 func (a *goBlog) serveScheduled(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   a.getRelativePath(blog, "/editor/scheduled"),
-		title:  a.ts.GetTemplateStringVariant(a.cfg.Blogs[blog].Lang, "scheduledposts"),
+		path:   bc.getRelativePath("/editor/scheduled"),
+		title:  a.ts.GetTemplateStringVariant(bc.Lang, "scheduledposts"),
 		status: statusScheduled,
 	})))
 }
@@ -193,8 +194,9 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		title.WriteString(fmt.Sprintf("-%02d", day))
 		dPath.WriteString(fmt.Sprintf("/%02d", day))
 	}
+	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:  a.getRelativePath(r.Context().Value(blogKey).(string), dPath.String()),
+		path:  bc.getRelativePath(dPath.String()),
 		year:  year,
 		month: month,
 		day:   day,
@@ -203,7 +205,6 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 }
 
 type indexConfig struct {
-	blog             string
 	path             string
 	section          *configSection
 	tax              *configTaxonomy
@@ -222,10 +223,7 @@ const indexConfigKey contextKey = "indexConfig"
 
 func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	ic := r.Context().Value(indexConfigKey).(*indexConfig)
-	blog := ic.blog
-	if blog == "" {
-		blog, _ = r.Context().Value(blogKey).(string)
-	}
+	blog, bc := a.getBlog(r)
 	search := chi.URLParam(r, "search")
 	if search != "" {
 		// Decode and sanitize search
@@ -237,7 +235,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	if ic.section != nil {
 		sections = []string{ic.section.Name}
 	} else {
-		for sectionKey := range a.cfg.Blogs[blog].Sections {
+		for sectionKey := range bc.Sections {
 			sections = append(sections, sectionKey)
 		}
 	}
@@ -257,7 +255,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedDay:   ic.day,
 		status:         status,
 		priorityOrder:  true,
-	}, a: a}, a.cfg.Blogs[blog].Pagination)
+	}, a: a}, bc.Pagination)
 	p.SetPage(pageNo)
 	var posts []*post
 	err := p.Results(&posts)
@@ -274,7 +272,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		title = ic.section.Title
 		description = ic.section.Description
 	} else if search != "" {
-		title = fmt.Sprintf("%s: %s", a.cfg.Blogs[blog].Search.Title, search)
+		title = fmt.Sprintf("%s: %s", bc.Search.Title, search)
 	}
 	// Check if feed
 	if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
@@ -313,8 +311,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		summaryTemplate = templateSummary
 	}
 	a.render(w, r, templateIndex, &renderData{
-		BlogString: blog,
-		Canonical:  a.getFullAddress(path),
+		Canonical: a.getFullAddress(path),
 		Data: map[string]interface{}{
 			"Title":           title,
 			"Description":     description,

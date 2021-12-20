@@ -44,7 +44,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	}
 	for _, p := range posts {
 		var contentBuf bytes.Buffer
-		a.min.Write(&contentBuf, contenttype.HTML, []byte(a.feedHtml(p)))
+		_, _ = a.min.Write(&contentBuf, contenttype.HTML, []byte(a.feedHtml(p)))
 		feed.Add(&feeds.Item{
 			Title:       p.RenderedTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},

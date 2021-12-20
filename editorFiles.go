@@ -8,7 +8,6 @@ import (
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
 	// Get files
 	files, err := a.mediaFiles()
 	if err != nil {
@@ -18,8 +17,7 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 	// Check if files at all
 	if len(files) == 0 {
 		a.render(w, r, templateEditorFiles, &renderData{
-			BlogString: blog,
-			Data:       map[string]interface{}{},
+			Data: map[string]interface{}{},
 		})
 		return
 	}
@@ -42,7 +40,6 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	// Serve HTML
 	a.render(w, r, templateEditorFiles, &renderData{
-		BlogString: blog,
 		Data: map[string]interface{}{
 			"Files": files,
 			"Uses":  uses,
@@ -69,5 +66,6 @@ func (a *goBlog) serveEditorFilesDelete(w http.ResponseWriter, r *http.Request) 
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, a.getRelativePath(r.Context().Value(blogKey).(string), "/editor/files"), http.StatusFound)
+	_, bc := a.getBlog(r)
+	http.Redirect(w, r, bc.getRelativePath("/editor/files"), http.StatusFound)
 }

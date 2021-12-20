@@ -457,9 +457,11 @@ func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
 	if r == nil {
 		return a.cfg.DefaultBlog, a.cfg.Blogs[a.cfg.DefaultBlog]
 	}
-	blog := r.Context().Value(blogKey).(string)
-	if blog == "" {
-		return a.cfg.DefaultBlog, a.cfg.Blogs[a.cfg.DefaultBlog]
+	blog := a.cfg.DefaultBlog
+	if ctxBlog := r.Context().Value(blogKey); ctxBlog != nil {
+		if ctxBlogString, ok := ctxBlog.(string); ok {
+			blog = ctxBlogString
+		}
 	}
 	return blog, a.cfg.Blogs[blog]
 }

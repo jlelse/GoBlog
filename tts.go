@@ -198,8 +198,7 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 	if encoded, ok := content["audioContent"]; ok {
 		if encodedStr, ok := encoded.(string); ok {
 			if audio, err := base64.StdEncoding.DecodeString(encodedStr); err == nil {
-				os.WriteFile(outputFile, audio, os.ModePerm)
-				return nil
+				return os.WriteFile(outputFile, audio, os.ModePerm)
 			} else {
 				return err
 			}

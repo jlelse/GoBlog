@@ -13,7 +13,7 @@ import (
 const taxonomyContextKey = "taxonomy"
 
 func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	blog, _ := a.getBlog(r)
 	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
 	allValues, err := a.db.allTaxonomyValues(blog, tax.Name)
 	if err != nil {
@@ -21,8 +21,7 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, r, templateTaxonomy, &renderData{
-		BlogString: blog,
-		Canonical:  a.getFullAddress(r.URL.Path),
+		Canonical: a.getFullAddress(r.URL.Path),
 		Data: map[string]interface{}{
 			"Taxonomy":    tax,
 			"ValueGroups": groupStrings(allValues),
@@ -31,7 +30,7 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveTaxonomyValue(w http.ResponseWriter, r *http.Request) {
-	blog := r.Context().Value(blogKey).(string)
+	_, bc := a.getBlog(r)
 	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
 	taxValueParam := chi.URLParam(r, "taxValue")
 	if taxValueParam == "" {
@@ -59,7 +58,7 @@ func (a *goBlog) serveTaxonomyValue(w http.ResponseWriter, r *http.Request) {
 	}
 	// Serve index
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:     a.getRelativePath(blog, fmt.Sprintf("/%s/%s", tax.Name, taxValueParam)),
+		path:     bc.getRelativePath(fmt.Sprintf("/%s/%s", tax.Name, taxValueParam)),
 		tax:      tax,
 		taxValue: taxValue,
 	})))
