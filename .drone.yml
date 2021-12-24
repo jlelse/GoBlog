@@ -13,10 +13,10 @@ steps:
         from_secret: docker_password
     commands:
       - sleep 5 # give docker enough time to start
-      - echo $DOCKER_PASSWORD | docker login --username nologin --password-stdin rg.fr-par.scw.cloud/jlelse
-      - DOCKER_BUILDKIT=1 docker build -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
-      - DOCKER_BUILDKIT=1 docker build -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
-      - docker push --all-tags rg.fr-par.scw.cloud/jlelse/goblog
+      - echo $DOCKER_PASSWORD | docker login --username jlelse --password-stdin ghcr.io
+      - DOCKER_BUILDKIT=1 docker build -t ghcr.io/jlelse/goblog:latest . --target base
+      - DOCKER_BUILDKIT=1 docker build -t ghcr.io/jlelse/goblog:tools . --target tools
+      - docker push --all-tags ghcr.io/jlelse/goblog
 
 services:
   - name: docker

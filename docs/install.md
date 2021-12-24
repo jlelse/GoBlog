@@ -1,6 +1,6 @@
 # How to install and run GoBlog
 
-It's recommended to install GoBlog using Docker (Compose). You can simply pull the latest image from `rg.fr-par.scw.cloud/jlelse/goblog:latest` (basic image) or `rg.fr-par.scw.cloud/jlelse/goblog:tools` (for when you want to use `sqlite3`, `bash` or `curl` in hook commands) when there are updates. Those images are tested and contain all necessary libraries and tools.
+It's recommended to install GoBlog using Docker (Compose). You can simply pull the latest image from `ghcr.io/jlelse/goblog:latest` (basic image) or `ghcr.io/jlelse/goblog:tools` (for when you want to use `sqlite3`, `bash` or `curl` in hook commands) when there are updates. Those images are tested and contain all necessary libraries and tools.
 
 Create your config file (`./config/config.yml`) with inspiration from `example-config.yml` and create a new data directory (`./data`). For static files, you can also create a directory at `./static`.
 
@@ -11,7 +11,7 @@ version: "3"
 services:
     goblog:
         container_name: goblog
-        image: rg.fr-par.scw.cloud/jlelse/goblog:latest # or :tools
+        image: ghcr.io/jlelse/goblog:latest # or :tools
         restart: unless-stopped # auto restart the container
         volumes:
             - ./config:/app/config # Config directory

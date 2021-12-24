@@ -4,7 +4,7 @@ There are two ways to build GoBlog:
 
 ## With Docker
 
-(There are already pre-built images available at `rg.fr-par.scw.cloud/jlelse/goblog:latest` and `rg.fr-par.scw.cloud/jlelse/goblog:tools`)
+(There are already pre-built images available at `ghcr.io/jlelse/goblog:latest` and `ghcr.io/jlelse/goblog:tools`)
 
 - Linux
 - git
@@ -15,13 +15,13 @@ Build command:
 ```bash
 git clone https://git.jlel.se/jlelse/GoBlog.git
 cd GoBlog
-docker build -t rg.fr-par.scw.cloud/jlelse/goblog:latest . --target base
+docker build -t ghcr.io/jlelse/goblog:latest . --target base
 ```
 
 If you want to build and use the advanced image (with additional tools), execute:
 
 ```bash
-docker build -t rg.fr-par.scw.cloud/jlelse/goblog:tools . --target tools
+docker build -t ghcr.io/jlelse/goblog:tools . --target tools
 ```
 
 ## With Go installed
