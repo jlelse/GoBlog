@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
-	"os"
 
-	"go.goblog.app/app/pkgs/contenttype"
+	"github.com/carlmjohnson/requests"
 )
 
 const defaultCompressionWidth = 2000
@@ -34,10 +33,10 @@ func (a *goBlog) compressMediaFile(url string) (location string, err error) {
 }
 
 func (a *goBlog) initMediaCompressors() {
-	config := a.cfg.Micropub.MediaStorage
-	if config == nil {
+	if a.cfg.Micropub == nil || a.cfg.Micropub.MediaStorage == nil {
 		return
 	}
+	config := a.cfg.Micropub.MediaStorage
 	if key := config.ShortPixelKey; key != "" {
 		a.compressors = append(a.compressors, &shortpixel{key})
 	}
@@ -53,178 +52,130 @@ type shortpixel struct {
 	key string
 }
 
-var _ mediaCompression = &shortpixel{}
-
-func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
+func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
 		return "", nil
 	}
 	// Compress
-	j, _ := json.Marshal(map[string]interface{}{
-		"key":            sp.key,
-		"plugin_version": "GB001",
-		"lossy":          1,
-		"resize":         3,
-		"resize_width":   defaultCompressionWidth,
-		"resize_height":  defaultCompressionHeight,
-		"cmyk2rgb":       1,
-		"keep_exif":      0,
-		"url":            url,
-	})
-	req, err := http.NewRequest(http.MethodPut, "https://api.shortpixel.com/v2/reducer-sync.php", bytes.NewReader(j))
+	var imgBuffer bytes.Buffer
+	err := requests.
+		URL("https://api.shortpixel.com/v2/reducer-sync.php").
+		Client(hc).
+		Post().
+		BodyJSON(map[string]interface{}{
+			"key":            sp.key,
+			"plugin_version": "GB001",
+			"lossy":          1,
+			"resize":         3,
+			"resize_width":   defaultCompressionWidth,
+			"resize_height":  defaultCompressionHeight,
+			"cmyk2rgb":       1,
+			"keep_exif":      0,
+			"url":            url,
+		}).
+		ToBytesBuffer(&imgBuffer).
+		Fetch(context.Background())
 	if err != nil {
-		return "", err
-	}
-	resp, err := hc.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("shortpixel failed to compress image, status code %d", resp.StatusCode)
-	}
-	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
-		return "", err
-	}
-	fileName, err := getSHA256(tmpFile)
-	if err != nil {
-		return "", err
+		log.Println("Shortpixel error:", err.Error())
+		return "", errors.New("failed to compress image using shortpixel")
 	}
 	// Upload compressed file
-	location, err = upload(fileName+"."+fileExtension, tmpFile)
-	return
+	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
 }
 
 type tinify struct {
 	key string
 }
 
-var _ mediaCompression = &tinify{}
-
-func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
+func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
 		return "", nil
 	}
 	// Compress
-	j, _ := json.Marshal(map[string]interface{}{
-		"source": map[string]interface{}{
-			"url": url,
-		},
-	})
-	req, err := http.NewRequest(http.MethodPost, "https://api.tinify.com/shrink", bytes.NewReader(j))
+	compressedLocation := ""
+	err := requests.
+		URL("https://api.tinify.com/shrink").
+		Client(hc).
+		Post().
+		BasicAuth("api", tf.key).
+		BodyJSON(map[string]interface{}{
+			"source": map[string]interface{}{
+				"url": url,
+			},
+		}).
+		Handle(func(r *http.Response) error {
+			compressedLocation = r.Header.Get("Location")
+			if compressedLocation == "" {
+				return errors.New("location header missing")
+			}
+			return nil
+		}).
+		Fetch(context.Background())
 	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth("api", tf.key)
-	req.Header.Set(contentType, contenttype.JSON)
-	resp, err := hc.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("failed to compress image, status code %d", resp.StatusCode)
-	}
-	compressedLocation := resp.Header.Get("Location")
-	if compressedLocation == "" {
-		return "", errors.New("tinify didn't return compressed location")
+		log.Println("Tinify error:", err.Error())
+		return "", errors.New("failed to compress image using tinify")
 	}
 	// Resize and download image
-	j, _ = json.Marshal(map[string]interface{}{
-		"resize": map[string]interface{}{
-			"method": "fit",
-			"width":  defaultCompressionWidth,
-			"height": defaultCompressionHeight,
-		},
-	})
-	downloadReq, err := http.NewRequest(http.MethodPost, compressedLocation, bytes.NewReader(j))
+	var imgBuffer bytes.Buffer
+	err = requests.
+		URL(compressedLocation).
+		Client(hc).
+		Post().
+		BasicAuth("api", tf.key).
+		BodyJSON(map[string]interface{}{
+			"resize": map[string]interface{}{
+				"method": "fit",
+				"width":  defaultCompressionWidth,
+				"height": defaultCompressionHeight,
+			},
+		}).
+		ToBytesBuffer(&imgBuffer).
+		Fetch(context.Background())
 	if err != nil {
-		return "", err
-	}
-	downloadReq.SetBasicAuth("api", tf.key)
-	downloadReq.Header.Set(contentType, contenttype.JSON)
-	downloadResp, err := hc.Do(downloadReq)
-	if err != nil {
-		return "", err
-	}
-	defer downloadResp.Body.Close()
-	if downloadResp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("tinify failed to resize image, status code %d", downloadResp.StatusCode)
-	}
-	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-	if _, err = io.Copy(tmpFile, downloadResp.Body); err != nil {
-		return "", err
-	}
-	fileName, err := getSHA256(tmpFile)
-	if err != nil {
-		return "", err
+		log.Println("Tinify error:", err.Error())
+		return "", errors.New("failed to compress image using tinify")
 	}
 	// Upload compressed file
-	location, err = upload(fileName+"."+fileExtension, tmpFile)
-	return
+	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
 }
 
-type cloudflare struct {
-}
+type cloudflare struct{}
 
-var _ mediaCompression = &cloudflare{}
-
-func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (location string, err error) {
+func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
 	// Check url
-	_, allowed := urlHasExt(url, "jpg", "jpeg", "png")
-	if !allowed {
+	if _, allowed := urlHasExt(url, "jpg", "jpeg", "png"); !allowed {
 		return "", nil
 	}
 	// Force jpeg
 	fileExtension := "jpeg"
 	// Compress
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url), nil)
+	var imgBuffer bytes.Buffer
+	err := requests.
+		URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
+		Client(hc).
+		Get().
+		ToBytesBuffer(&imgBuffer).
+		Fetch(context.Background())
 	if err != nil {
-		return "", err
+		log.Println("Cloudflare error:", err.Error())
+		return "", errors.New("failed to compress image using cloudflare")
 	}
-	resp, err := hc.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("cloudflare failed to compress image, status code %d", resp.StatusCode)
-	}
-	tmpFile, err := os.CreateTemp("", "tiny-*."+fileExtension)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
-	}()
-	if _, err = io.Copy(tmpFile, resp.Body); err != nil {
-		return "", err
-	}
-	fileName, err := getSHA256(tmpFile)
+	// Upload compressed file
+	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
+}
+
+func uploadCompressedFile(fileExtension string, imgBuffer *bytes.Buffer, upload mediaStorageSaveFunc) (string, error) {
+	// Create reader from buffer
+	imgReader := bytes.NewReader(imgBuffer.Bytes())
+	// Get hash of compressed file
+	fileName, err := getSHA256(imgReader)
 	if err != nil {
 		return "", err
 	}
 	// Upload compressed file
-	location, err = upload(fileName+"."+fileExtension, tmpFile)
-	return
+	return upload(fileName+"."+fileExtension, imgReader)
 }
