@@ -1,20 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 
-	"go.goblog.app/app/pkgs/contenttype"
+	"github.com/carlmjohnson/requests"
 )
 
 const ttsParameter = "tts"
@@ -167,35 +163,24 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 			"languageCode": lang,
 		},
 	}
-	jb, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
-
-	// Create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://texttospeech.googleapis.com/v1beta1/text:synthesize?key="+gctts.GoogleAPIKey, bytes.NewReader(jb))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(contentType, contenttype.JSON)
-	req.Header.Set(userAgent, appUserAgent)
 
 	// Do request
-	res, err := a.httpClient.Do(req)
+	var response map[string]interface{}
+	err := requests.
+		URL("https://texttospeech.googleapis.com/v1beta1/text:synthesize").
+		Param("key", gctts.GoogleAPIKey).
+		Client(a.httpClient).
+		UserAgent(appUserAgent).
+		Post().
+		BodyJSON(body).
+		ToJSON(&response).
+		Fetch(context.Background())
 	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("got status: %s, text: %s", res.Status, text)
+		return errors.New("tts request failed: " + err.Error())
 	}
 
 	// Decode response
-	var content map[string]interface{}
-	if err = json.NewDecoder(res.Body).Decode(&content); err != nil {
-		return err
-	}
-	if encoded, ok := content["audioContent"]; ok {
+	if encoded, ok := response["audioContent"]; ok {
 		if encodedStr, ok := encoded.(string); ok {
 			if audio, err := base64.StdEncoding.DecodeString(encodedStr); err == nil {
 				return os.WriteFile(outputFile, audio, os.ModePerm)

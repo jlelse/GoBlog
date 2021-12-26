@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/carlmjohnson/requests"
 	"github.com/thoas/go-funk"
 	"github.com/tomnomnom/linkheader"
-	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const postParamWebmention = "webmention"
@@ -70,43 +72,40 @@ func (a *goBlog) sendWebmentions(p *post) error {
 }
 
 func (a *goBlog) sendWebmention(endpoint, source, target string) error {
-	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(url.Values{
-		"source": []string{source},
-		"target": []string{target},
-	}.Encode()))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(contentType, contenttype.WWWForm)
-	req.Header.Set(userAgent, appUserAgent)
-	res, err := a.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if code := res.StatusCode; code < 200 || 300 <= code {
-		return fmt.Errorf("response error: %v", res.StatusCode)
-	}
-	return nil
+	// TODO: Pass all tests from https://webmention.rocks/
+	return requests.URL(endpoint).Client(a.httpClient).Post().UserAgent(appUserAgent).
+		BodyForm(url.Values{
+			"source": []string{source},
+			"target": []string{target},
+		}).
+		AddValidator(func(r *http.Response) error {
+			if r.StatusCode < 200 || 300 <= r.StatusCode {
+				return fmt.Errorf("HTTP %d", r.StatusCode)
+			}
+			return nil
+		}).
+		Fetch(context.Background())
 }
 
 func (a *goBlog) discoverEndpoint(urlStr string) string {
 	doRequest := func(method, urlStr string) string {
-		req, err := http.NewRequest(method, urlStr, nil)
-		if err != nil {
-			return ""
-		}
-		req.Header.Set(userAgent, appUserAgent)
-		resp, err := a.httpClient.Do(req)
-		if err != nil {
-			return ""
-		}
-		defer resp.Body.Close()
-		if code := resp.StatusCode; code < 200 || 300 <= code {
-			return ""
-		}
-		endpoint, err := extractEndpoint(resp)
-		if err != nil || endpoint == "" {
+		endpoint := ""
+		if err := requests.URL(urlStr).Client(a.httpClient).Method(method).UserAgent(appUserAgent).
+			AddValidator(func(r *http.Response) error {
+				if r.StatusCode < 200 || 300 <= r.StatusCode {
+					return fmt.Errorf("HTTP %d", r.StatusCode)
+				}
+				return nil
+			}).
+			Handle(func(r *http.Response) error {
+				end, err := extractEndpoint(r)
+				if err != nil || end == "" {
+					return errors.New("no webmention endpoint found")
+				}
+				endpoint = end
+				return nil
+			}).
+			Fetch(context.Background()); err != nil {
 			return ""
 		}
 		if urls, err := resolveURLReferences(urlStr, endpoint); err == nil && len(urls) > 0 && urls[0] != "" {
@@ -114,12 +113,10 @@ func (a *goBlog) discoverEndpoint(urlStr string) string {
 		}
 		return ""
 	}
-	headEndpoint := doRequest(http.MethodHead, urlStr)
-	if headEndpoint != "" {
+	if headEndpoint := doRequest(http.MethodHead, urlStr); headEndpoint != "" {
 		return headEndpoint
 	}
-	getEndpoint := doRequest(http.MethodGet, urlStr)
-	if getEndpoint != "" {
+	if getEndpoint := doRequest(http.MethodGet, urlStr); getEndpoint != "" {
 		return getEndpoint
 	}
 	return ""
