@@ -12,6 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_httpLogsConfig(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig()
+
+	assert.Equal(t, false, app.cfg.Server.Logging)
+	assert.Equal(t, "data/access.log", app.cfg.Server.LogFile)
+}
+
 func initTestHttpLogs(logFile string) (http.Handler, error) {
 
 	app := &goBlog{

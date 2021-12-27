@@ -398,6 +398,7 @@ func createDefaultConfig() *config {
 		Server: &configServer{
 			Port:          8080,
 			PublicAddress: "http://localhost:8080",
+			LogFile:       "data/access.log",
 		},
 		Db: &configDb{
 			File: "data/db.sqlite",

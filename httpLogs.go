@@ -9,7 +9,7 @@ import (
 )
 
 func (a *goBlog) initHTTPLog() (err error) {
-	if !a.cfg.Server.Logging {
+	if !a.cfg.Server.Logging || a.cfg.Server.LogFile == "" {
 		return nil
 	}
 	a.logf, err = rotatelogs.New(
