@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"net/http"
 	"strings"
 	"time"
@@ -22,13 +21,8 @@ const (
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
 	now := time.Now()
-	if title == "" {
-		title = a.cfg.Blogs[blog].Title
-	}
-	title = a.renderMdTitle(title)
-	if description == "" {
-		description = a.cfg.Blogs[blog].Description
-	}
+	title = a.renderMdTitle(defaultIfEmpty(title, a.cfg.Blogs[blog].Title))
+	description = defaultIfEmpty(description, a.cfg.Blogs[blog].Description)
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
@@ -43,15 +37,13 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		},
 	}
 	for _, p := range posts {
-		var contentBuf bytes.Buffer
-		// _, _ = a.min.Write(&contentBuf, contenttype.HTML, []byte(a.feedHtml(p)))
-		contentBuf.WriteString(a.feedHtml(p)) // Don't minify for now, might break some feed readers
+		content, _ := a.min.MinifyString(contenttype.HTML, a.feedHtml(p))
 		feed.Add(&feeds.Item{
 			Title:       p.RenderedTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
-			Content:     contentBuf.String(),
+			Content:     content,
 			Created:     timeNoErr(dateparse.ParseLocal(p.Published)),
 			Updated:     timeNoErr(dateparse.ParseLocal(p.Updated)),
 		})

@@ -38,8 +38,15 @@ func (m *Minifier) Get() *minify.M {
 }
 
 func (m *Minifier) Write(w io.Writer, mediatype string, b []byte) (int, error) {
-	m.init()
-	mw := m.m.Writer(mediatype, w)
+	mw := m.Get().Writer(mediatype, w)
 	defer func() { _ = mw.Close() }()
 	return mw.Write(b)
+}
+
+func (m *Minifier) MinifyBytes(mediatype string, b []byte) ([]byte, error) {
+	return m.Get().Bytes(mediatype, b)
+}
+
+func (m *Minifier) MinifyString(mediatype string, s string) (string, error) {
+	return m.Get().String(mediatype, s)
 }

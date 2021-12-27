@@ -54,20 +54,19 @@ func (a *goBlog) compileAsset(name string) (string, error) {
 	}
 	ext := path.Ext(name)
 	compiledExt := ext
-	m := a.min.Get()
 	switch ext {
 	case ".js":
-		content, err = m.Bytes(contenttype.JS, content)
+		content, err = a.min.MinifyBytes(contenttype.JS, content)
 		if err != nil {
 			return "", err
 		}
 	case ".css":
-		content, err = m.Bytes(contenttype.CSS, content)
+		content, err = a.min.MinifyBytes(contenttype.CSS, content)
 		if err != nil {
 			return "", err
 		}
 	case ".xml", ".xsl":
-		content, err = m.Bytes(contenttype.XML, content)
+		content, err = a.min.MinifyBytes(contenttype.XML, content)
 		if err != nil {
 			return "", err
 		}
