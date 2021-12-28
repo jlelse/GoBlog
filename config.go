@@ -91,11 +91,11 @@ type configBlog struct {
 }
 
 type configSection struct {
-	Name         string `mapstructure:"name"`
 	Title        string `mapstructure:"title"`
 	Description  string `mapstructure:"description"`
 	PathTemplate string `mapstructure:"pathtemplate"`
 	ShowFull     bool   `mapstructure:"showFull"`
+	Name         string
 }
 
 type configTaxonomy struct {
@@ -378,6 +378,10 @@ func (a *goBlog) initConfig() error {
 	}
 	// Check config for each blog
 	for _, blog := range a.cfg.Blogs {
+		// Copy sections key to section name
+		for k, s := range blog.Sections {
+			s.Name = k
+		}
 		// Check if language is set
 		if blog.Lang == "" {
 			blog.Lang = "en"

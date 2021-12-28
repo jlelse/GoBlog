@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/mmcdole/gofeed"
@@ -10,16 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_generateFeeds(t *testing.T) {
+func Test_feeds(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
 	app.initComponents(false)
+	app.d, _ = app.buildRouter()
 
-	app.createPost(&post{
+	err := app.createPost(&post{
 		Path:       "/testpost",
 		Section:    "posts",
 		Status:     "published",
@@ -27,19 +26,14 @@ func Test_generateFeeds(t *testing.T) {
 		Parameters: map[string][]string{"title": {"Test Post"}},
 		Content:    "Test Content",
 	})
-	posts, err := app.getPosts(&postsRequestConfig{
-		status: "published",
-	})
+
 	require.NoError(t, err)
-	require.Len(t, posts, 1)
 
 	for _, typ := range []feedType{rssFeed, atomFeed, jsonFeed} {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/test", nil)
+		req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/posts."+string(typ), nil)
+		res, err := doHandlerRequest(req, app.d)
 
-		app.generateFeed("default", typ, rec, req, posts, "Test-Title", "Test-Description")
-
-		res := rec.Result()
+		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -50,17 +44,7 @@ func Test_generateFeeds(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, feed)
 
-		switch typ {
-		case rssFeed:
-			assert.Equal(t, "rss", feed.FeedType)
-		case atomFeed:
-			assert.Equal(t, "atom", feed.FeedType)
-		case jsonFeed:
-			assert.Equal(t, "json", feed.FeedType)
-		}
-
-		assert.Equal(t, "Test-Title", feed.Title)
-		assert.Equal(t, "Test-Description", feed.Description)
+		assert.Equal(t, string(typ), feed.FeedType)
 
 		if assert.Len(t, feed.Items, 1) {
 			assert.Equal(t, "Test Post", feed.Items[0].Title)

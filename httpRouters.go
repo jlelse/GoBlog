@@ -178,18 +178,16 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 			a.cacheMiddleware,
 		)
 		for _, section := range conf.Sections {
-			if section.Name != "" {
-				r.Group(func(r chi.Router) {
-					secPath := conf.getRelativePath(section.Name)
-					r.Use(middleware.WithValue(indexConfigKey, &indexConfig{
-						path:    secPath,
-						section: section,
-					}))
-					r.Get(secPath, a.serveIndex)
-					r.Get(secPath+feedPath, a.serveIndex)
-					r.Get(secPath+paginationPath, a.serveIndex)
-				})
-			}
+			r.Group(func(r chi.Router) {
+				secPath := conf.getRelativePath(section.Name)
+				r.Use(middleware.WithValue(indexConfigKey, &indexConfig{
+					path:    secPath,
+					section: section,
+				}))
+				r.Get(secPath, a.serveIndex)
+				r.Get(secPath+feedPath, a.serveIndex)
+				r.Get(secPath+paginationPath, a.serveIndex)
+			})
 		}
 	}
 }

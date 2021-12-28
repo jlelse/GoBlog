@@ -156,11 +156,9 @@ blogs:
     defaultsection: micro # Default section
     sections:
       posts: # Section code
-        name: posts # Section code again
         title: Posts # Section title
         pathtemplate: "{{printf \"/%v/%v\" .Section .Slug}}" # Template to generate post paths (available: .Section, .Slug, .Year, .Month, .Day, .BlogPath (useful for blogs on sub-paths))
       micro:
-        name: micro
         title: Micro
         description: "You can also use **Markdown** here." # Section description, can also use Markdown
         pathtemplate: "{{printf \"/%v/%02d/%02d/%v\" .Section .Year .Month .Slug}}"
