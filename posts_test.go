@@ -1,15 +1,17 @@
 package main
 
 import (
-	"io"
+	"context"
 	"net/http"
 	"testing"
 
+	"github.com/carlmjohnson/requests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_serveDate(t *testing.T) {
+	var err error
 
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
@@ -17,9 +19,11 @@ func Test_serveDate(t *testing.T) {
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
 	app.initComponents(false)
-	app.d, _ = app.buildRouter()
 
-	err := app.createPost(&post{
+	app.d, err = app.buildRouter()
+	require.NoError(t, err)
+
+	err = app.createPost(&post{
 		Path:       "/testpost",
 		Section:    "posts",
 		Status:     "published",
@@ -30,70 +34,68 @@ func Test_serveDate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/2020/10/15", nil)
-	res, err := doHandlerRequest(req, app.d)
+	client := &http.Client{
+		Transport: &handlerRoundTripper{
+			handler: app.d,
+		},
+	}
 
+	var resString string
+
+	err = requests.
+		URL("http://localhost:8080/2020/10/15").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	resBody, _ := io.ReadAll(res.Body)
-	resString := string(resBody)
 
 	assert.Contains(t, resString, "Test Post")
 	assert.Contains(t, resString, "<h1 class=p-name>2020-10-15</h1>")
 
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost:8080/2020/10", nil)
-	res, err = doHandlerRequest(req, app.d)
-
+	err = requests.
+		URL("http://localhost:8080/2020/10").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	resBody, _ = io.ReadAll(res.Body)
-	resString = string(resBody)
 
 	assert.Contains(t, resString, "Test Post")
 	assert.Contains(t, resString, "<h1 class=p-name>2020-10</h1>")
 
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost:8080/2020", nil)
-	res, err = doHandlerRequest(req, app.d)
-
+	err = requests.
+		URL("http://localhost:8080/2020").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	resBody, _ = io.ReadAll(res.Body)
-	resString = string(resBody)
 
 	assert.Contains(t, resString, "Test Post")
 	assert.Contains(t, resString, "<h1 class=p-name>2020</h1>")
 
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost:8080/x/10", nil)
-	res, err = doHandlerRequest(req, app.d)
-
+	err = requests.
+		URL("http://localhost:8080/x/10").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	resBody, _ = io.ReadAll(res.Body)
-	resString = string(resBody)
 
 	assert.Contains(t, resString, "Test Post")
 	assert.Contains(t, resString, "<h1 class=p-name>XXXX-10</h1>")
 
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost:8080/x/x/15", nil)
-	res, err = doHandlerRequest(req, app.d)
-
+	err = requests.
+		URL("http://localhost:8080/x/x/15").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	resBody, _ = io.ReadAll(res.Body)
-	resString = string(resBody)
 
 	assert.Contains(t, resString, "Test Post")
 	assert.Contains(t, resString, "<h1 class=p-name>XXXX-XX-15</h1>")
 
-	req, _ = http.NewRequest(http.MethodGet, "http://localhost:8080/x", nil)
-	res, err = doHandlerRequest(req, app.d)
-
+	err = requests.
+		URL("http://localhost:8080/x").
+		CheckStatus(http.StatusNotFound).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, res.StatusCode)
-
 }

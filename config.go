@@ -447,6 +447,12 @@ func createDefaultBlog() *configBlog {
 				Title: "Posts",
 			},
 		},
+		Taxonomies: []*configTaxonomy{
+			{
+				Name:  "tags",
+				Title: "Tags",
+			},
+		},
 		DefaultSection: "posts",
 	}
 }
