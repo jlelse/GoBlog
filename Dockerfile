@@ -11,13 +11,13 @@ ADD templates/ /app/templates/
 ADD leaflet/ /app/leaflet/
 ADD dbmigrations/ /app/dbmigrations/
 
-FROM buildbase as test
-
-RUN go test -cover ./...
-
 FROM buildbase as build
 
 RUN go build -ldflags '-w -s' -o GoBlog
+
+FROM build as test
+
+RUN go test -cover ./...
 
 FROM alpine:3.15 as base
 
