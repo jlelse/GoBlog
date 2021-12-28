@@ -14,6 +14,7 @@ steps:
     commands:
       - sleep 5 # give docker enough time to start
       - echo $DOCKER_PASSWORD | docker login --username jlelse --password-stdin ghcr.io
+      - DOCKER_BUILDKIT=1 docker build -t temptest . --target test
       - DOCKER_BUILDKIT=1 docker build -t ghcr.io/jlelse/goblog:latest . --target base
       - DOCKER_BUILDKIT=1 docker build -t ghcr.io/jlelse/goblog:tools . --target tools
       - docker push --all-tags ghcr.io/jlelse/goblog

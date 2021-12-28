@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.15 as build
+FROM golang:1.17-alpine3.15 as buildbase
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
@@ -10,7 +10,13 @@ ADD testdata/ /app/testdata/
 ADD templates/ /app/templates/
 ADD leaflet/ /app/leaflet/
 ADD dbmigrations/ /app/dbmigrations/
+
+FROM buildbase as test
+
 RUN go test -cover ./...
+
+FROM buildbase as build
+
 RUN go build -ldflags '-w -s' -o GoBlog
 
 FROM alpine:3.15 as base
