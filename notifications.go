@@ -30,10 +30,12 @@ func (a *goBlog) sendNotification(text string) {
 	if err := a.db.saveNotification(n); err != nil {
 		log.Println("Failed to save notification:", err.Error())
 	}
-	if an := a.cfg.Notifications; an != nil {
-		_, _, err := a.send(an.Telegram, n.Text, "")
-		if err != nil {
-			log.Println("Failed to send Telegram notification:", err.Error())
+	if cfg := a.cfg.Notifications; cfg != nil {
+		if err := a.sendNtfy(cfg.Ntfy, n.Text); err != nil {
+			log.Println("Failed to send notification to Ntfy:", err.Error())
+		}
+		if _, _, err := a.sendTelegram(cfg.Telegram, n.Text, ""); err != nil {
+			log.Println("Failed to send notification to Telegram:", err.Error())
 		}
 	}
 }

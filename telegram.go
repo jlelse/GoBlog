@@ -25,7 +25,7 @@ func (a *goBlog) initTelegram() {
 				return
 			}
 			// Send message
-			chatId, msgId, err := a.send(tg, html, tgbotapi.ModeHTML)
+			chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML)
 			if err != nil {
 				log.Printf("Failed to send post to Telegram: %v", err)
 				return
@@ -71,7 +71,7 @@ func (a *goBlog) initTelegram() {
 				return
 			}
 			// Send update
-			err = a.update(tg, chatId, messageId, html, "HTML")
+			err = a.updateTelegram(tg, chatId, messageId, html, "HTML")
 			if err != nil {
 				log.Printf("Failed to send update to Telegram: %v", err)
 			}
@@ -98,7 +98,7 @@ func (a *goBlog) initTelegram() {
 				return
 			}
 			// Delete message
-			err = a.delete(tg, chatId, messageId)
+			err = a.deleteTelegram(tg, chatId, messageId)
 			if err != nil {
 				log.Printf("Failed to delete Telegram message: %v", err)
 			}
@@ -134,7 +134,7 @@ func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) string {
 	return message.String()
 }
 
-func (a *goBlog) send(tg *configTelegram, message, mode string) (int64, int, error) {
+func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string) (int64, int, error) {
 	if !tg.enabled() {
 		return 0, 0, nil
 	}
@@ -156,7 +156,7 @@ func (a *goBlog) send(tg *configTelegram, message, mode string) (int64, int, err
 	return res.Chat.ID, res.MessageID, nil
 }
 
-func (a *goBlog) update(tg *configTelegram, chatId int64, messageId int, message, mode string) error {
+func (a *goBlog) updateTelegram(tg *configTelegram, chatId int64, messageId int, message, mode string) error {
 	if !tg.enabled() {
 		return nil
 	}
@@ -189,7 +189,7 @@ func (a *goBlog) update(tg *configTelegram, chatId int64, messageId int, message
 	return err
 }
 
-func (a *goBlog) delete(tg *configTelegram, chatId int64, messageId int) error {
+func (a *goBlog) deleteTelegram(tg *configTelegram, chatId int64, messageId int) error {
 	if !tg.enabled() {
 		return nil
 	}

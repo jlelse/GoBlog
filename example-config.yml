@@ -114,8 +114,11 @@ micropub:
 
 # Notifications
 notifications:
+  ntfy: # Receive notifications using Ntfy.sh
+    enabled: true # Enable it
+    topic: ntfy.sh/mynotificationstopic # The topic for the notifications
   telegram: # Receive notifications via Telegram
-    enabled: true
+    enabled: true # Enable it
     chatId: 123456 # Telegram chat ID (usually the user id on Telegram)
     botToken: BOT-TOKEN # Telegram bot token
 

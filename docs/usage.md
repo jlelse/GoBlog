@@ -35,3 +35,9 @@ It is possible to configure multiple compression providers. If one fails, the ne
 GoBlog features a button on each post that allows you to read the post's content aloud. By default, that uses an API from the browser to generate the speech. But it's not available on all browsers and on some operating systems it sounds horrible.
 
 There's also the possibility to configure GoBlog to use Google Cloud's Text-to-Speech API. For that take a look at the `example-config.yml` file. If configured and enabled, after publishing a post, GoBlog will automatically generate an audio file, save it to the configured media storage (local file storage by default) and safe the audio file URL to the post's `tts` parameter. After updating a post, you can manually regenerate the audio file by using the button on the post. When deleting a post or regenerating the audio, GoBlog tries to delete the old audio file as well.
+
+## Notifications
+
+On receiving a webmention, a new comment or a contact form submission, GoBlog will create a new notification. Notifications are displayed on `/notifications` and can be deleted by the user.
+
+If configured, GoBlog will also send a notification using a Telegram Bot or [Ntfy.sh](https://ntfy.sh/). See the `example-config.yml` file for how to configure the notification providers.

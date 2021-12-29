@@ -258,7 +258,13 @@ type configActivityPub struct {
 }
 
 type configNotifications struct {
+	Ntfy     *configNtfy     `mapstructure:"ntfy"`
 	Telegram *configTelegram `mapstructure:"telegram"`
+}
+
+type configNtfy struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Topic   string `mapstructure:"topic"`
 }
 
 type configTelegram struct {

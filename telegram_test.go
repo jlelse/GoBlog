@@ -67,7 +67,7 @@ func Test_configTelegram_send(t *testing.T) {
 		httpClient: fakeClient.Client,
 	}
 
-	chatId, msgId, err := app.send(tg, "Message", "HTML")
+	chatId, msgId, err := app.sendTelegram(tg, "Message", "HTML")
 	require.Nil(t, err)
 
 	assert.Equal(t, 123, msgId)
