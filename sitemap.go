@@ -186,7 +186,7 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm interface{}) {
 	buf.WriteString(a.assetFileName("sitemap.xsl"))
 	buf.WriteString(`" ?>`)
 	_ = xml.NewEncoder(&buf).Encode(sm)
-	_, _ = a.min.Write(w, contenttype.XML, buf.Bytes())
+	_ = a.min.Minify(contenttype.XML, w, &buf)
 }
 
 const sitemapDatePathsSql = `

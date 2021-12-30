@@ -50,3 +50,7 @@ func (m *Minifier) MinifyBytes(mediatype string, b []byte) ([]byte, error) {
 func (m *Minifier) MinifyString(mediatype string, s string) (string, error) {
 	return m.Get().String(mediatype, s)
 }
+
+func (m *Minifier) Minify(mediatype string, w io.Writer, r io.Reader) error {
+	return m.Get().Minify(mediatype, w, r)
+}

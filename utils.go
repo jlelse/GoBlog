@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -263,8 +264,7 @@ func htmlText(s string) string {
 }
 
 func cleanHTMLText(s string) string {
-	s = bluemonday.UGCPolicy().Sanitize(s)
-	return htmlText(s)
+	return htmlText(bluemonday.UGCPolicy().Sanitize(s))
 }
 
 func defaultIfEmpty(s, d string) string {
@@ -326,4 +326,20 @@ func saveToFile(reader io.Reader, fileName string) error {
 	defer out.Close()
 	_, err = io.Copy(out, reader)
 	return err
+}
+
+type valueOnlyContext struct {
+	context.Context
+}
+
+func (valueOnlyContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (valueOnlyContext) Done() <-chan struct{} {
+	return nil
+}
+
+func (valueOnlyContext) Err() error {
+	return nil
 }

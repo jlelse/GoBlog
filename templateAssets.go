@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crypto/sha1"
-	"fmt"
+	"bytes"
+	"io"
 	"mime"
 	"net/http"
 	"os"
@@ -26,10 +26,18 @@ func (a *goBlog) initTemplateAssets() (err error) {
 	a.assetFiles = map[string]*assetFile{}
 	err = filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsRegular() {
-			compiled, err := a.compileAsset(path)
+			// Open file
+			file, err := os.Open(path)
 			if err != nil {
 				return err
 			}
+			// Compile asset and close file
+			compiled, err := a.compileAsset(path, file)
+			_ = file.Close()
+			if err != nil {
+				return err
+			}
+			// Add to map
 			if compiled != "" {
 				a.assetFileNames[strings.TrimPrefix(path, assetsFolder+"/")] = compiled
 			}
@@ -47,43 +55,39 @@ func (a *goBlog) initTemplateAssets() (err error) {
 	return nil
 }
 
-func (a *goBlog) compileAsset(name string) (string, error) {
-	content, err := os.ReadFile(name)
-	if err != nil {
-		return "", err
-	}
+func (a *goBlog) compileAsset(name string, read io.Reader) (string, error) {
 	ext := path.Ext(name)
 	compiledExt := ext
+	var contentBuffer bytes.Buffer
 	switch ext {
 	case ".js":
-		content, err = a.min.MinifyBytes(contenttype.JS, content)
-		if err != nil {
+		if err := a.min.Minify(contenttype.JS, &contentBuffer, read); err != nil {
 			return "", err
 		}
 	case ".css":
-		content, err = a.min.MinifyBytes(contenttype.CSS, content)
-		if err != nil {
+		if err := a.min.Minify(contenttype.CSS, &contentBuffer, read); err != nil {
 			return "", err
 		}
 	case ".xml", ".xsl":
-		content, err = a.min.MinifyBytes(contenttype.XML, content)
-		if err != nil {
+		if err := a.min.Minify(contenttype.XML, &contentBuffer, read); err != nil {
 			return "", err
 		}
 	default:
-		// Do nothing
+		if _, err := io.Copy(&contentBuffer, read); err != nil {
+			return "", err
+		}
 	}
 	// Hashes
-	sha1Hash := sha1.New()
-	if _, err := sha1Hash.Write(content); err != nil {
+	hash, err := getSHA256(bytes.NewReader(contentBuffer.Bytes()))
+	if err != nil {
 		return "", err
 	}
 	// File name
-	compiledFileName := fmt.Sprintf("%x", sha1Hash.Sum(nil)) + compiledExt
+	compiledFileName := hash + compiledExt
 	// Create struct
 	a.assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(compiledExt),
-		body:        content,
+		body:        contentBuffer.Bytes(),
 	}
 	return compiledFileName, err
 }
@@ -114,8 +118,9 @@ func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) initChromaCSS() error {
+	chromaPath := "css/chroma.css"
 	// Check if file already exists
-	if _, ok := a.assetFiles["css/chroma.css"]; ok {
+	if _, ok := a.assetFiles[chromaPath]; ok {
 		return nil
 	}
 	// Initialize the style
@@ -124,25 +129,17 @@ func (a *goBlog) initChromaCSS() error {
 	if err != nil {
 		return err
 	}
-	// Create a temporary file
-	chromaTempFile, err := os.CreateTemp("", "chroma-*.css")
-	if err != nil {
+	// Write the CSS to a buffer
+	var cssBuffer bytes.Buffer
+	if err = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(&cssBuffer, chromaStyle); err != nil {
 		return err
 	}
-	chromaTempFileName := chromaTempFile.Name()
-	// Write the CSS to the file
-	err = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(chromaTempFile, chromaStyle)
-	if err != nil {
-		return err
-	}
-	// Close the file
-	_ = chromaTempFile.Close()
 	// Compile asset
-	compiled, err := a.compileAsset(chromaTempFileName)
-	_ = os.Remove(chromaTempFileName)
+	compiled, err := a.compileAsset(chromaPath, &cssBuffer)
 	if err != nil {
 		return err
 	}
-	a.assetFileNames["css/chroma.css"] = compiled
+	// Add to map
+	a.assetFileNames[chromaPath] = compiled
 	return nil
 }

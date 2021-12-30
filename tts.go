@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
+	"html"
+	"io"
 	"log"
 	"net/url"
-	"os"
 	"path"
-	"path/filepath"
+	"strings"
 
 	"github.com/carlmjohnson/requests"
 )
@@ -54,32 +56,29 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	if lang == "" {
 		lang = "en"
 	}
-	text := a.renderMdTitle(p.Title()) + "\n\n" + cleanHTMLText(string(a.postHtml(p, false)))
 
-	// Generate audio file
-	tmpDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = os.RemoveAll(tmpDir)
-	}()
-	outputFileName := filepath.Join(tmpDir, "audio.mp3")
-	err = a.createTTSAudio(lang, text, outputFileName)
+	// Build SSML
+	var ssml strings.Builder
+	ssml.WriteString("<speak>")
+	ssml.WriteString(html.EscapeString(a.renderMdTitle(p.Title())))
+	ssml.WriteString("<break time=\"1s\"/>")
+	ssml.WriteString(html.EscapeString(cleanHTMLText(string(a.postHtml(p, false)))))
+	ssml.WriteString("</speak>")
+
+	// Generate audio
+	var audioBuffer bytes.Buffer
+	err := a.createTTSAudio(lang, ssml.String(), &audioBuffer)
 	if err != nil {
 		return err
 	}
 
-	// Save new audio file
-	file, err := os.Open(outputFileName)
+	// Save audio
+	audioReader := bytes.NewReader(audioBuffer.Bytes())
+	fileHash, err := getSHA256(audioReader)
 	if err != nil {
 		return err
 	}
-	fileHash, err := getSHA256(file)
-	if err != nil {
-		return err
-	}
-	loc, err := a.saveMediaFile(fileHash+".mp3", file)
+	loc, err := a.saveMediaFile(fileHash+".mp3", audioReader)
 	if err != nil {
 		return err
 	}
@@ -133,7 +132,7 @@ func (a *goBlog) deletePostTTSAudio(p *post) bool {
 	return true
 }
 
-func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
+func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 	// Check if Google Cloud TTS is enabled
 	gctts := a.cfg.TTS
 	if !gctts.Enabled || gctts.GoogleAPIKey == "" {
@@ -144,12 +143,18 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 	if lang == "" {
 		return errors.New("language not provided")
 	}
-	if text == "" {
+	if ssml == "" {
 		return errors.New("empty text")
 	}
-	if outputFile == "" {
-		return errors.New("output file not provided")
+	if w == nil {
+		return errors.New("writer not provided")
 	}
+
+	// Check max length
+	// TODO: Support longer texts by splitting into multiple requests
+	// if len(ssml) > 5000 {
+	//	return errors.New("text is too long")
+	// }
 
 	// Create request body
 	body := map[string]interface{}{
@@ -157,7 +162,7 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 			"audioEncoding": "MP3",
 		},
 		"input": map[string]interface{}{
-			"text": text,
+			"ssml": ssml,
 		},
 		"voice": map[string]interface{}{
 			"languageCode": lang,
@@ -183,7 +188,8 @@ func (a *goBlog) createTTSAudio(lang, text, outputFile string) error {
 	if encoded, ok := response["audioContent"]; ok {
 		if encodedStr, ok := encoded.(string); ok {
 			if audio, err := base64.StdEncoding.DecodeString(encodedStr); err == nil {
-				return os.WriteFile(outputFile, audio, os.ModePerm)
+				_, err := w.Write(audio)
+				return err
 			} else {
 				return err
 			}

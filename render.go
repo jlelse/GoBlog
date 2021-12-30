@@ -135,16 +135,14 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	a.checkRenderData(r, data)
 	// Set content type
 	w.Header().Set(contentType, contenttype.HTMLUTF8)
-	// Minify and write response
-	var tw bytes.Buffer
-	err := a.templates[template].ExecuteTemplate(&tw, template, data)
-	if err != nil {
+	// Render template and write minified HTML
+	var templateBuffer bytes.Buffer
+	if err := a.templates[template].ExecuteTemplate(&templateBuffer, template, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(statusCode)
-	_, err = a.min.Write(w, contenttype.HTML, tw.Bytes())
-	if err != nil {
+	if err := a.min.Minify(contenttype.HTML, w, &templateBuffer); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

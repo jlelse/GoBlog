@@ -50,13 +50,13 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	var opmlBytes bytes.Buffer
-	_ = opml.Render(&opmlBytes, &opml.OPML{
+	var opmlBuffer bytes.Buffer
+	_ = opml.Render(&opmlBuffer, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines.([]*opml.Outline),
 	})
-	_, _ = a.min.Write(w, contenttype.XML, opmlBytes.Bytes())
+	_ = a.min.Minify(contenttype.XML, w, &opmlBuffer)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

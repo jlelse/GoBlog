@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -57,11 +56,7 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		// Do checks
-		if !(r.Method == http.MethodGet || r.Method == http.MethodHead) {
-			next.ServeHTTP(w, r)
-			return
-		}
-		if r.URL.Query().Get("cache") == "0" || r.URL.Query().Get("cache") == "false" {
+		if !cacheable(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -71,6 +66,7 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 			setLoggedIn(r, false)
 		} else {
 			if a.isLoggedIn(r) {
+				// Don't cache logged in requests
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -82,11 +78,8 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 			return a.cache.getCache(key, next, r), nil
 		})
 		ci := cacheInterface.(*cacheItem)
-		// copy cached headers
-		for k, v := range ci.header {
-			w.Header()[k] = v
-		}
-		a.cache.setCacheHeaders(w, ci)
+		// copy and set headers
+		a.cache.setHeaders(w, ci)
 		// check conditional request
 		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == ci.eTag {
 			// send 304
@@ -105,6 +98,16 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 		// write cached body
 		_, _ = w.Write(ci.body)
 	})
+}
+
+func cacheable(r *http.Request) bool {
+	if !(r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		return false
+	}
+	if r.URL.Query().Get("cache") == "0" || r.URL.Query().Get("cache") == "false" {
+		return false
+	}
+	return true
 }
 
 func cacheKey(r *http.Request) string {
@@ -126,7 +129,12 @@ func cacheKey(r *http.Request) string {
 	return buf.String()
 }
 
-func (c *cache) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
+func (c *cache) setHeaders(w http.ResponseWriter, cache *cacheItem) {
+	// Copy headers
+	for k, v := range cache.header.Clone() {
+		w.Header()[k] = v
+	}
+	// Set cache headers
 	w.Header().Set("ETag", cache.eTag)
 	w.Header().Set("Last-Modified", cache.creationTime.UTC().Format(http.TimeFormat))
 	if w.Header().Get("Cache-Control") == "" {
@@ -163,7 +171,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 	if item == nil {
 		// No cache available
 		// Make and use copy of r
-		cr := r.Clone(r.Context())
+		cr := r.Clone(valueOnlyContext{r.Context()})
 		// Remove problematic headers
 		cr.Header.Del("If-Modified-Since")
 		cr.Header.Del("If-Unmodified-Since")
@@ -180,9 +188,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		_ = result.Body.Close()
 		eTag := result.Header.Get("ETag")
 		if eTag == "" {
-			h := sha256.New()
-			_, _ = io.Copy(h, bytes.NewReader(body))
-			eTag = fmt.Sprintf("%x", h.Sum(nil))
+			eTag, _ = getSHA256(bytes.NewReader(body))
 		}
 		lastMod := time.Now()
 		if lm := result.Header.Get("Last-Modified"); lm != "" {
@@ -190,12 +196,12 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 				lastMod = parsedTime
 			}
 		}
-		exp, _ := cr.Context().Value(cacheExpirationKey).(int)
 		// Remove problematic headers
 		result.Header.Del("Accept-Ranges")
 		result.Header.Del("ETag")
 		result.Header.Del("Last-Modified")
 		// Create cache item
+		exp, _ := cr.Context().Value(cacheExpirationKey).(int)
 		item = &cacheItem{
 			expiration:   exp,
 			creationTime: lastMod,

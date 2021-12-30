@@ -150,17 +150,19 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			gpx, err := io.ReadAll(file)
+			originalGpx, err := io.ReadAll(file)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			var gpxBuffer bytes.Buffer
-			_, _ = a.min.Write(&gpxBuffer, contenttype.XML, gpx)
-			resultMap := map[string]string{
-				"gpx": gpxBuffer.String(),
+			minifiedGpx, err := a.min.MinifyString(contenttype.XML, string(originalGpx))
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
 			}
-			resultBytes, err := yaml.Marshal(resultMap)
+			resultBytes, err := yaml.Marshal(map[string]string{
+				"gpx": minifiedGpx,
+			})
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
