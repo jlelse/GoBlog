@@ -238,7 +238,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		select 'alias', path, 302 from post_parameters where parameter = 'aliases' and value = @path
 		union all
 		-- deleted posts
-		select 'deleted', '', 401 from deleted where path = @path
+		select 'deleted', '', 410 from deleted where path = @path
 		-- just select the first result
 		limit 1
 		`, sql.Named("path", path))
