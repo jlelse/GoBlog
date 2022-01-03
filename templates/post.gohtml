@@ -36,6 +36,13 @@
         <input type="hidden" name="url" value="{{ .Canonical }}">
         <input type="submit" value="{{ string .Blog.Lang "delete" }}" class="confirm" data-confirmmessage="{{ string .Blog.Lang "confirmdelete" }}">
       </form>
+      {{ if .Data.Deleted }}
+        <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}">
+          <input type="hidden" name="action" value="undelete">
+          <input type="hidden" name="url" value="{{ .Canonical }}">
+          <input type="submit" value="{{ string .Blog.Lang "undelete" }}">
+        </form>
+      {{ end }}
       {{ if ttsenabled }}
         <form class="in" method="post" action="{{ .Blog.RelativePath "/editor" }}">
           <input type="hidden" name="editoraction" value="tts">

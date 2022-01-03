@@ -37,17 +37,24 @@ type post struct {
 type postStatus string
 
 const (
-	statusNil       postStatus = ""
-	statusPublished postStatus = "published"
-	statusDraft     postStatus = "draft"
-	statusPrivate   postStatus = "private"
-	statusUnlisted  postStatus = "unlisted"
-	statusScheduled postStatus = "scheduled"
+	statusDeletedSuffix string = "-deleted"
+
+	statusNil              postStatus = ""
+	statusPublished        postStatus = "published"
+	statusPublishedDeleted postStatus = "published-deleted"
+	statusDraft            postStatus = "draft"
+	statusDraftDeleted     postStatus = "draft-deleted"
+	statusPrivate          postStatus = "private"
+	statusPrivateDeleted   postStatus = "private-deleted"
+	statusUnlisted         postStatus = "unlisted"
+	statusUnlistedDeleted  postStatus = "unlisted-deleted"
+	statusScheduled        postStatus = "scheduled"
+	statusScheduledDeleted postStatus = "scheduled-deleted"
 )
 
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	p, err := a.getPost(r.URL.Path)
-	if err == errPostNotFound {
+	if errors.Is(err, errPostNotFound) {
 		a.serve404(w, r)
 		return
 	} else if err != nil {
@@ -71,7 +78,11 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		template = templateStaticHome
 	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))
-	a.render(w, r, template, &renderData{
+	status := http.StatusOK
+	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+		status = http.StatusGone
+	}
+	a.renderWithStatusCode(w, r, status, template, &renderData{
 		BlogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
@@ -126,36 +137,50 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   bc.getRelativePath("/editor/drafts"),
-		title:  a.ts.GetTemplateStringVariant(bc.Lang, "drafts"),
-		status: statusDraft,
+		path:        bc.getRelativePath("/editor/drafts"),
+		title:       a.ts.GetTemplateStringVariant(bc.Lang, "drafts"),
+		description: a.ts.GetTemplateStringVariant(bc.Lang, "draftsdesc"),
+		status:      statusDraft,
 	})))
 }
 
 func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   bc.getRelativePath("/editor/private"),
-		title:  a.ts.GetTemplateStringVariant(bc.Lang, "privateposts"),
-		status: statusPrivate,
+		path:        bc.getRelativePath("/editor/private"),
+		title:       a.ts.GetTemplateStringVariant(bc.Lang, "privateposts"),
+		description: a.ts.GetTemplateStringVariant(bc.Lang, "privatepostsdesc"),
+		status:      statusPrivate,
 	})))
 }
 
 func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   bc.getRelativePath("/editor/unlisted"),
-		title:  a.ts.GetTemplateStringVariant(bc.Lang, "unlistedposts"),
-		status: statusUnlisted,
+		path:        bc.getRelativePath("/editor/unlisted"),
+		title:       a.ts.GetTemplateStringVariant(bc.Lang, "unlistedposts"),
+		description: a.ts.GetTemplateStringVariant(bc.Lang, "unlistedpostsdesc"),
+		status:      statusUnlisted,
 	})))
 }
 
 func (a *goBlog) serveScheduled(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path:   bc.getRelativePath("/editor/scheduled"),
-		title:  a.ts.GetTemplateStringVariant(bc.Lang, "scheduledposts"),
-		status: statusScheduled,
+		path:        bc.getRelativePath("/editor/scheduled"),
+		title:       a.ts.GetTemplateStringVariant(bc.Lang, "scheduledposts"),
+		description: a.ts.GetTemplateStringVariant(bc.Lang, "scheduledpostsdesc"),
+		status:      statusScheduled,
+	})))
+}
+
+func (a *goBlog) serveDeleted(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:        bc.getRelativePath("/editor/deleted"),
+		title:       a.ts.GetTemplateStringVariant(bc.Lang, "deletedposts"),
+		description: a.ts.GetTemplateStringVariant(bc.Lang, "deletedpostsdesc"),
+		statusse:    []postStatus{statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted, statusPrivateDeleted, statusUnlistedDeleted},
 	})))
 }
 
@@ -215,6 +240,7 @@ type indexConfig struct {
 	description      string
 	summaryTemplate  string
 	status           postStatus
+	statusse         []postStatus
 }
 
 const defaultPhotosPath = "/photos"
@@ -239,9 +265,12 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			sections = append(sections, sectionKey)
 		}
 	}
-	status := ic.status
-	if status == statusNil {
-		status = statusPublished
+	statusse := ic.statusse
+	if ic.status != statusNil {
+		statusse = []postStatus{ic.status}
+	}
+	if len(statusse) == 0 {
+		statusse = []postStatus{statusPublished}
 	}
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
 		blog:           blog,
@@ -253,7 +282,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedYear:  ic.year,
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
-		status:         status,
+		statusse:       statusse,
 		priorityOrder:  true,
 	}, a: a}, bc.Pagination)
 	p.SetPage(pageNo)

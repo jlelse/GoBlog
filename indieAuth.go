@@ -40,6 +40,6 @@ func (a *goBlog) checkIndieAuth(next http.Handler) http.Handler {
 
 func addAllScopes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), indieAuthScope, "create update delete media")))
+		next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), indieAuthScope, "create update delete undelete media")))
 	})
 }

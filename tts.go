@@ -38,6 +38,7 @@ func (a *goBlog) initTTS() {
 	}
 	a.pPostHooks = append(a.pPostHooks, createOrUpdate)
 	a.pUpdateHooks = append(a.pUpdateHooks, createOrUpdate)
+	a.pUndeleteHooks = append(a.pUndeleteHooks, createOrUpdate)
 	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
 		// Try to delete the audio file
 		_ = a.deletePostTTSAudio(p)

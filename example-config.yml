@@ -70,6 +70,8 @@ hooks:
   - echo Updated post at {{.URL}}
   postdelete: # Commands to execute after deleting a post
   - echo Deleted post at {{.URL}}
+  postundelete: # Commands to execute after undeleting a post
+  - echo Undeleted post at {{.URL}}
 
 # ActivityPub
 activityPub:

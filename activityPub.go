@@ -45,6 +45,9 @@ func (a *goBlog) initActivityPub() error {
 	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
 		a.apDelete(p)
 	})
+	a.pUndeleteHooks = append(a.pUndeleteHooks, func(p *post) {
+		a.apUndelete(p)
+	})
 	// Prepare webfinger
 	a.webfingerResources = map[string]*configBlog{}
 	a.webfingerAccts = map[string]string{}
@@ -339,11 +342,21 @@ func (a *goBlog) apDelete(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
 		"@context": []string{asContext},
 		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
-		"id":       a.fullPostURL(p) + "#delete",
 		"type":     "Delete",
-		"object": map[string]string{
-			"id":   a.fullPostURL(p),
-			"type": "Tombstone",
+		"object":   a.fullPostURL(p),
+	})
+}
+
+func (a *goBlog) apUndelete(p *post) {
+	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
+		"@context": []string{asContext},
+		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
+		"type":     "Undo",
+		"object": map[string]interface{}{
+			"@context": []string{asContext},
+			"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
+			"type":     "Delete",
+			"object":   a.fullPostURL(p),
 		},
 	})
 }

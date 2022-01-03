@@ -102,8 +102,18 @@ func (a *goBlog) initTelegram() {
 			if err != nil {
 				log.Printf("Failed to delete Telegram message: %v", err)
 			}
+			// Delete chat and message id from post
+			err = a.db.replacePostParam(p.Path, "telegramchat", []string{})
+			if err != nil {
+				log.Printf("Failed to remove Telegram chat id: %v", err)
+			}
+			err = a.db.replacePostParam(p.Path, "telegrammsg", []string{})
+			if err != nil {
+				log.Printf("Failed to remove Telegram message id: %v", err)
+			}
 		}
 	})
+	// TODO: Handle undelete
 }
 
 func (tg *configTelegram) enabled() bool {

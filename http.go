@@ -265,7 +265,14 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				case statusPublished, statusUnlisted:
 					alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
-				default: // private, draft, scheduled
+				case statusPublishedDeleted, statusUnlistedDeleted:
+					if a.isLoggedIn(r) {
+						a.servePost(w, r)
+						return
+					}
+					alicePrivate.Append(a.cacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
+					return
+				default: // private, draft, scheduled, etc.
 					alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
 				}
@@ -277,9 +284,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				return
 			case "deleted":
 				// Is deleted, serve 410
-				alicePrivate.Append(a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
-					a.serve410(w, r)
-				}).ServeHTTP(w, r)
+				alicePrivate.Append(a.cacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
 				return
 			}
 		}

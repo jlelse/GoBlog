@@ -196,40 +196,86 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 }
 
 func (a *goBlog) deletePost(path string) error {
-	p, err := a.deletePostFromDb(path)
-	if err != nil || p == nil {
+	if path == "" {
+		return errors.New("path required")
+	}
+	// Lock post creation
+	a.db.pcm.Lock()
+	defer a.db.pcm.Unlock()
+	// Check if post exists
+	p, err := a.getPost(path)
+	if err != nil {
 		return err
 	}
-	// Purge cache
-	a.cache.purge()
-	// Trigger hooks
-	a.postDeleteHooks(p)
+	// Post exists, check if it's already marked as deleted
+	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+		// Post is already marked as deleted, delete it from database
+		if _, err = a.db.exec(
+			`begin;	delete from posts where path = ?; delete from post_parameters where path = ?; insert or ignore into deleted (path) values (?); commit;`,
+			dbNoCache, p.Path, p.Path, p.Path,
+		); err != nil {
+			return err
+		}
+		// Rebuild FTS index
+		a.db.rebuildFTSIndex()
+		// Purge cache
+		a.cache.purge()
+	} else {
+		// Update post status
+		p.Status = postStatus(string(p.Status) + statusDeletedSuffix)
+		// Add parameter
+		deletedTime := utcNowString()
+		if p.Parameters == nil {
+			p.Parameters = map[string][]string{}
+		}
+		p.Parameters["deleted"] = []string{deletedTime}
+		// Mark post as deleted
+		if _, err = a.db.exec(
+			`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and value = 'deleted'; insert into post_parameters (path, parameter, value) values (?, 'deleted', ?); commit;`,
+			dbNoCache, p.Status, p.Path, p.Path, p.Path, deletedTime,
+		); err != nil {
+			return err
+		}
+		// Rebuild FTS index
+		a.db.rebuildFTSIndex()
+		// Purge cache
+		a.cache.purge()
+		// Trigger hooks
+		a.postDeleteHooks(p)
+	}
 	return nil
 }
 
-func (a *goBlog) deletePostFromDb(path string) (*post, error) {
+func (a *goBlog) undeletePost(path string) error {
 	if path == "" {
-		return nil, nil
+		return errors.New("path required")
 	}
+	// Lock post creation
 	a.db.pcm.Lock()
 	defer a.db.pcm.Unlock()
+	// Check if post exists
 	p, err := a.getPost(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	_, err = a.db.exec(
-		`begin;
-		delete from posts where path = ?;
-		delete from post_parameters where path = ?;
-		insert or ignore into deleted (path) values (?);
-		commit;`,
-		dbNoCache, p.Path, p.Path, p.Path,
-	)
-	if err != nil {
-		return nil, err
+	// Post exists, update status and parameters
+	p.Status = postStatus(strings.TrimSuffix(string(p.Status), statusDeletedSuffix))
+	// Remove parameter
+	p.Parameters["deleted"] = nil
+	// Update database
+	if _, err = a.db.exec(
+		`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; commit;`,
+		dbNoCache, p.Status, p.Path, p.Path,
+	); err != nil {
+		return err
 	}
+	// Rebuild FTS index
 	a.db.rebuildFTSIndex()
-	return p, nil
+	// Purge cache
+	a.cache.purge()
+	// Trigger hooks
+	a.postUndeleteHooks(p)
+	return nil
 }
 
 func (db *database) replacePostParam(path, param string, values []string) error {
@@ -270,6 +316,7 @@ type postsRequestConfig struct {
 	offset                                      int
 	sections                                    []string
 	status                                      postStatus
+	statusse                                    []postStatus
 	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
 	parameters                                  []string // Ignores parameterValue
@@ -306,6 +353,19 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	if c.status != "" && c.status != statusNil {
 		queryBuilder.WriteString(" and status = @status")
 		args = append(args, sql.Named("status", c.status))
+	}
+	if c.statusse != nil && len(c.statusse) > 0 {
+		queryBuilder.WriteString(" and status in (")
+		for i, status := range c.statusse {
+			if i > 0 {
+				queryBuilder.WriteString(", ")
+			}
+			named := "status" + strconv.Itoa(i)
+			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString(named)
+			args = append(args, sql.Named(named, status))
+		}
+		queryBuilder.WriteByte(')')
 	}
 	if c.blog != "" {
 		queryBuilder.WriteString(" and blog = @blog")
@@ -529,6 +589,7 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 
 func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
 	var values []string
+	// TODO: Query posts the normal way
 	rows, err := d.query("select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status) order by value", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err

@@ -19,6 +19,7 @@ func (a *goBlog) initBlogStats() {
 	a.pPostHooks = append(a.pPostHooks, f)
 	a.pUpdateHooks = append(a.pUpdateHooks, f)
 	a.pDeleteHooks = append(a.pDeleteHooks, f)
+	a.pUndeleteHooks = append(a.pUndeleteHooks, f)
 }
 
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {

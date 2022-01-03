@@ -69,6 +69,22 @@ func (a *goBlog) postDeleteHooks(p *post) {
 	}
 }
 
+func (a *goBlog) postUndeleteHooks(p *post) {
+	if hc := a.cfg.Hooks; hc != nil {
+		for _, cmdTmplString := range hc.PostUndelete {
+			go func(p *post, cmdTmplString string) {
+				a.cfg.Hooks.executeTemplateCommand("post-undelete", cmdTmplString, map[string]interface{}{
+					"URL":  a.fullPostURL(p),
+					"Post": p,
+				})
+			}(p, cmdTmplString)
+		}
+	}
+	for _, f := range a.pUndeleteHooks {
+		go f(p)
+	}
+}
+
 func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {

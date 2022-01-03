@@ -44,6 +44,7 @@ func (a *goBlog) initWebmention() {
 	a.pPostHooks = append(a.pPostHooks, hookFunc)
 	a.pUpdateHooks = append(a.pUpdateHooks, hookFunc)
 	a.pDeleteHooks = append(a.pDeleteHooks, hookFunc)
+	a.pUndeleteHooks = append(a.pUndeleteHooks, hookFunc)
 	// Start verifier
 	a.initWebmentionQueue()
 }

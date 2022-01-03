@@ -102,6 +102,8 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			switch action {
 			case actionDelete:
 				a.micropubDelete(w, r, r.Form.Get("url"))
+			case actionUndelete:
+				a.micropubUndelete(w, r, r.Form.Get("url"))
 			default:
 				a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
 			}
@@ -119,6 +121,8 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			switch parsedMfItem.Action {
 			case actionDelete:
 				a.micropubDelete(w, r, parsedMfItem.URL)
+			case actionUndelete:
+				a.micropubUndelete(w, r, parsedMfItem.URL)
 			case actionUpdate:
 				a.micropubUpdate(w, r, parsedMfItem.URL, parsedMfItem)
 			default:
@@ -226,8 +230,9 @@ func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[st
 type micropubAction string
 
 const (
-	actionUpdate micropubAction = "update"
-	actionDelete micropubAction = "delete"
+	actionUpdate   micropubAction = "update"
+	actionDelete   micropubAction = "delete"
+	actionUndelete micropubAction = "undelete"
 )
 
 type microformatItem struct {
@@ -469,6 +474,23 @@ func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u string
 	http.Redirect(w, r, uu.String(), http.StatusNoContent)
 }
 
+func (a *goBlog) micropubUndelete(w http.ResponseWriter, r *http.Request, u string) {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "undelete") {
+		a.serveError(w, r, "undelete scope missing", http.StatusForbidden)
+		return
+	}
+	uu, err := url.Parse(u)
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := a.undeletePost(uu.Path); err != nil {
+		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, uu.String(), http.StatusNoContent)
+}
+
 func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string, mf *microformatItem) {
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "update") {
 		a.serveError(w, r, "update scope missing", http.StatusForbidden)
@@ -489,6 +511,12 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// Check if post is marked as deleted
+	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+		a.serveError(w, r, "post is marked as deleted, undelete it first", http.StatusBadRequest)
+		return
+	}
+	// Update post
 	oldPath := p.Path
 	oldStatus := p.Status
 	a.micropubUpdateReplace(p, mf.Replace)

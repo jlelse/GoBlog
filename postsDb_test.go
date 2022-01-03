@@ -14,22 +14,19 @@ func Test_postsDb(t *testing.T) {
 	must := require.New(t)
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Sections: map[string]*configSection{
-						"test":  {},
-						"micro": {},
-					},
-				},
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Sections: map[string]*configSection{
+				"test":  {},
+				"micro": {},
 			},
 		},
 	}
+	_ = app.initConfig()
 	_ = app.initDatabase(false)
-	app.initMarkdown()
+	app.initComponents(false)
 
 	now := toLocalSafe(time.Now().String())
 	nowPlus1Hour := toLocalSafe(time.Now().Add(1 * time.Hour).String())
@@ -95,7 +92,19 @@ func Test_postsDb(t *testing.T) {
 	is.Equal(1, count)
 
 	// Delete post
-	_, err = app.deletePostFromDb("/test/abc")
+	err = app.deletePost("/test/abc")
+	must.NoError(err)
+
+	// Check if post is marked as deleted
+	count, err = app.db.countPosts(&postsRequestConfig{status: statusDraft})
+	must.NoError(err)
+	is.Equal(0, count)
+	count, err = app.db.countPosts(&postsRequestConfig{status: statusDraftDeleted})
+	must.NoError(err)
+	is.Equal(1, count)
+
+	// Delete post again
+	err = app.deletePost("/test/abc")
 	must.NoError(err)
 
 	// Check that there is no post

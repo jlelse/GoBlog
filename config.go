@@ -209,9 +209,10 @@ type configHooks struct {
 	Hourly   []string `mapstructure:"hourly"`
 	PreStart []string `mapstructure:"prestart"`
 	// Can use template
-	PostPost   []string `mapstructure:"postpost"`
-	PostUpdate []string `mapstructure:"postupdate"`
-	PostDelete []string `mapstructure:"postdelete"`
+	PostPost     []string `mapstructure:"postpost"`
+	PostUpdate   []string `mapstructure:"postupdate"`
+	PostDelete   []string `mapstructure:"postdelete"`
+	PostUndelete []string `mapstructure:"postundelete"`
 }
 
 type configMicropub struct {

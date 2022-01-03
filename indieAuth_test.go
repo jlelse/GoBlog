@@ -70,6 +70,7 @@ func Test_addAllScopes(t *testing.T) {
 		assert.Contains(t, scope, "create")
 		assert.Contains(t, scope, "update")
 		assert.Contains(t, scope, "delete")
+		assert.Contains(t, scope, "undelete")
 		assert.Contains(t, scope, "media")
 		checked = true
 	})).ServeHTTP(rec, req)

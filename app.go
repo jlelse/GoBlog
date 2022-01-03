@@ -43,10 +43,11 @@ type goBlog struct {
 	// Errors
 	errorCheckMediaTypes []ct.MediaType
 	// Hooks
-	pPostHooks   []postHookFunc
-	pUpdateHooks []postHookFunc
-	pDeleteHooks []postHookFunc
-	hourlyHooks  []hourlyHookFunc
+	pPostHooks     []postHookFunc
+	pUpdateHooks   []postHookFunc
+	pDeleteHooks   []postHookFunc
+	pUndeleteHooks []postHookFunc
+	hourlyHooks    []hourlyHookFunc
 	// HTTP Client
 	httpClient *http.Client
 	// HTTP Routers

@@ -264,3 +264,7 @@ func (p *post) Old() bool {
 func (p *post) TTS() string {
 	return p.firstParameter(ttsParameter)
 }
+
+func (p *post) Deleted() bool {
+	return strings.HasSuffix(string(p.Status), statusDeletedSuffix)
+}

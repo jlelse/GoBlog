@@ -345,6 +345,9 @@ func (a *goBlog) blogEditorRouter(conf *configBlog) func(r chi.Router) {
 		r.Get("/scheduled", a.serveScheduled)
 		r.Get("/scheduled"+feedPath, a.serveScheduled)
 		r.Get("/scheduled"+paginationPath, a.serveScheduled)
+		r.Get("/deleted", a.serveDeleted)
+		r.Get("/deleted"+feedPath, a.serveDeleted)
+		r.Get("/deleted"+paginationPath, a.serveDeleted)
 		r.HandleFunc("/preview", a.serveEditorPreview)
 	}
 }
