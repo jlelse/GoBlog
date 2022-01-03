@@ -37,6 +37,16 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	// Check status
 	if p.Status == "" {
 		p.Status = statusPublished
+		if p.Published != "" {
+			// If published time is in the future, set status to scheduled
+			publishedTime, err := dateparse.ParseLocal(p.Published)
+			if err != nil {
+				return err
+			}
+			if publishedTime.After(time.Now()) {
+				p.Status = statusScheduled
+			}
+		}
 	}
 	// Cleanup params
 	for key, value := range p.Parameters {

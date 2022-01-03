@@ -155,15 +155,20 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	switch p.Status {
 	case statusDraft:
 		mfStatus = "draft"
-	case statusPublished, statusScheduled:
+	case statusPublished, statusScheduled, statusUnlisted, statusPrivate:
 		mfStatus = "published"
+	case statusPublishedDeleted, statusDraftDeleted, statusPrivateDeleted, statusUnlistedDeleted, statusScheduledDeleted:
+		mfStatus = "deleted"
+	}
+	switch p.Status {
+	case statusDraft, statusScheduled, statusPublished:
 		mfVisibility = "public"
 	case statusUnlisted:
-		mfStatus = "published"
 		mfVisibility = "unlisted"
 	case statusPrivate:
-		mfStatus = "published"
 		mfVisibility = "private"
+	case statusPublishedDeleted, statusDraftDeleted, statusPrivateDeleted, statusUnlistedDeleted, statusScheduledDeleted:
+		mfVisibility = "deleted"
 	}
 	return &microformatItem{
 		Type: []string{"h-entry"},
