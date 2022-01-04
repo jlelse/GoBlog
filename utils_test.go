@@ -76,13 +76,33 @@ func Test_urlHasExt(t *testing.T) {
 	})
 }
 
-func Test_cleanHTMLText(t *testing.T) {
-	assert.Equal(t, `"This is a 'test'" 😁`, cleanHTMLText(`"This is a 'test'" 😁`))
-	assert.Equal(t, `Test`, cleanHTMLText(`<b>Test</b>`))
-	assert.Equal(t, "Test\n\nTest", cleanHTMLText(`<p>Test</p><p>Test</p>`))
-	assert.Equal(t, "Test\n\nTest", cleanHTMLText("<p>Test</p>\n<p>Test</p>"))
-	assert.Equal(t, "Test\n\nTest", cleanHTMLText("<div><p>Test</p>\n<p>Test</p></div>"))
-	assert.Equal(t, "Test test\n\nTest", cleanHTMLText(`<p>Test <b>test</b></p><p>Test</p>`))
+func Test_htmlText(t *testing.T) {
+	// Text without HTML
+	assert.Equal(t, "This is a test", htmlText("This is a test"))
+	// Text without HTML and Emojis
+	assert.Equal(t, "This is a test 😁", htmlText("This is a test 😁"))
+	// Text without HTML and quoutes
+	assert.Equal(t, "This is a 'test'", htmlText("This is a 'test'"))
+	// Text with formatting (like bold or italic)
+	assert.Equal(t, "This is a test", htmlText("<b>This is a test</b>"))
+	assert.Equal(t, "This is a test", htmlText("<i>This is a test</i>"))
+	// Unordered list
+	assert.Equal(t, "Test\n\nTest", htmlText(`<ul><li>Test</li><li>Test</li></ul>`))
+	// Ordered list
+	assert.Equal(t, "1. Test\n\n2. Test", htmlText(`<ol><li>Test</li><li>Test</li></ol>`))
+	// Nested unordered list
+	assert.Equal(t, "Test\n\nTest\n\nTest", htmlText(`<ul><li>Test</li><li><ul><li>Test</li><li>Test</li></ul></li></ul>`))
+	// Headers and paragraphs
+	assert.Equal(t, "Test\n\nTest", htmlText(`<h1>Test</h1><p>Test</p>`))
+	assert.Equal(t, "Test\n\nTest\n\nTest", htmlText(`<h1>Test</h1><p>Test</p><h2>Test</h2>`))
+	// Blockquote
+	assert.Equal(t, "Test\n\nBlockqoute content", htmlText(`<p>Test</p><blockquote><p>Blockqoute content</p></blockquote>`))
+	// Nested blockquotes
+	assert.Equal(t, "Blockqoute content\n\nBlockqoute content", htmlText(`<blockquote><p>Blockqoute content</p><blockquote><p>Blockqoute content</p></blockquote></blockquote>`))
+	// Code (should be ignored)
+	assert.Equal(t, "Test", htmlText(`<p>Test</p><pre><code>Code content</code></pre>`))
+	// Inline code (should not be ignored)
+	assert.Equal(t, "Test Code content", htmlText(`<p>Test <code>Code content</code></p>`))
 }
 
 func Test_containsStrings(t *testing.T) {

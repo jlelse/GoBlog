@@ -8,7 +8,6 @@ import (
 	"time"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
 	"gopkg.in/yaml.v3"
 )
@@ -113,11 +112,9 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	}
 	html := string(a.postHtml(p, false))
 	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
-		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(splitted[0]))
-		summary = doc.Text()
+		summary = htmlText(splitted[0])
 	} else {
-		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
-		summary = doc.Find("p").First().Text()
+		summary = strings.Split(htmlText(html), "\n\n")[0]
 	}
 	return
 }

@@ -64,7 +64,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	ssml.WriteString("<speak>")
 	ssml.WriteString(html.EscapeString(a.renderMdTitle(p.Title())))
 	ssml.WriteString("<break time=\"1s\"/>")
-	ssml.WriteString(html.EscapeString(cleanHTMLText(string(a.postHtml(p, false)))))
+	ssml.WriteString(html.EscapeString(htmlText(string(a.postHtml(p, false)))))
 	ssml.WriteString("</speak>")
 
 	// Generate audio

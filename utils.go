@@ -246,24 +246,48 @@ func mBytesString(size int64) string {
 }
 
 func htmlText(s string) string {
-	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(s))
+	// Build policy to only allow a subset of HTML tags
+	textPolicy := bluemonday.StrictPolicy()
+	textPolicy.AllowElements("h1", "h2", "h3", "h4", "h5", "h6") // Headers
+	textPolicy.AllowElements("p")                                // Paragraphs
+	textPolicy.AllowElements("ol", "ul", "li")                   // Lists
+	textPolicy.AllowElements("blockquote")                       // Blockquotes
+	// Filter HTML tags
+	htmlBuf := textPolicy.SanitizeReader(strings.NewReader(s))
+	// Read HTML into document
+	doc, _ := goquery.NewDocumentFromReader(htmlBuf)
 	var text strings.Builder
-	paragraphs := doc.Find("p")
-	if paragraphs.Length() == 0 {
-		text.WriteString(doc.Text())
+	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
+		// Input was real HTML, so build the text from the body
+		// Declare recursive function to print childs
+		var printChilds func(childs *goquery.Selection)
+		printChilds = func(childs *goquery.Selection) {
+			childs.Each(func(i int, sel *goquery.Selection) {
+				if i > 0 && // Not first child
+					sel.Is("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote") { // All elements that start a new paragraph
+					text.WriteString("\n\n")
+				}
+				if sel.Is("ol > li") { // List item in ordered list
+					fmt.Fprintf(&text, "%d. ", i+1) // Add list item number
+				}
+				if sel.Children().Length() > 0 { // Has children
+					printChilds(sel.Children()) // Recursive call to print childs
+				} else {
+					text.WriteString(sel.Text()) // Print text
+				}
+			})
+		}
+		printChilds(bodyChild)
 	} else {
-		paragraphs.Each(func(i int, s *goquery.Selection) {
-			if i > 0 {
-				text.WriteString("\n\n")
-			}
-			text.WriteString(s.Text())
-		})
+		// Input was probably just text, so just use the text
+		text.WriteString(doc.Text())
 	}
-	r := strings.TrimSpace(text.String())
-	return r
+	// Trim whitespace and return
+	return strings.TrimSpace(text.String())
 }
 
 func cleanHTMLText(s string) string {
+	// Clean HTML with UGC policy and return text
 	return htmlText(bluemonday.UGCPolicy().Sanitize(s))
 }
 
