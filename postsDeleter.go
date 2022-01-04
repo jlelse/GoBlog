@@ -26,7 +26,9 @@ func (a *goBlog) checkDeletedPosts() {
 	for _, post := range postsToDelete {
 		// Check if post is deleted for more than 7 days
 		if deleted, err := dateparse.ParseLocal(post.firstParameter("deleted")); err == nil && deleted.Add(time.Hour*24*7).Before(time.Now()) {
-			a.deletePost(post.Path)
+			if err := a.deletePost(post.Path); err != nil {
+				log.Println("Error deleting post:", err)
+			}
 		}
 	}
 }

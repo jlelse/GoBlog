@@ -90,13 +90,14 @@ type tinify struct {
 }
 
 func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
+	tinifyErr := errors.New("failed to compress image using tinify")
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
 		return "", nil
 	}
 	// Compress
-	compressedLocation := ""
+	headers := http.Header{}
 	err := requests.
 		URL("https://api.tinify.com/shrink").
 		Client(hc).
@@ -107,17 +108,16 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 				"url": url,
 			},
 		}).
-		Handle(func(r *http.Response) error {
-			compressedLocation = r.Header.Get("Location")
-			if compressedLocation == "" {
-				return errors.New("location header missing")
-			}
-			return nil
-		}).
+		ToHeaders(headers).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Tinify error:", err.Error())
-		return "", errors.New("failed to compress image using tinify")
+		return "", tinifyErr
+	}
+	compressedLocation := headers.Get("Location")
+	if compressedLocation == "" {
+		log.Println("Tinify error: location header missing")
+		return "", tinifyErr
 	}
 	// Resize and download image
 	var imgBuffer bytes.Buffer
@@ -137,7 +137,7 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Tinify error:", err.Error())
-		return "", errors.New("failed to compress image using tinify")
+		return "", tinifyErr
 	}
 	// Upload compressed file
 	return uploadCompressedFile(fileExtension, &imgBuffer, upload)

@@ -51,24 +51,14 @@ func Test_indieAuthServer(t *testing.T) {
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 
-	app.ias.Client = &http.Client{
-		Transport: &handlerRoundTripper{
-			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			}),
-		},
-	}
+	app.ias.Client = newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
 	iac := indieauth.NewClient(
 		"https://example.com/",
 		"https://example.com/redirect",
-		&http.Client{
-			Transport: &handlerRoundTripper{
-				handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					app.d.ServeHTTP(w, r)
-				}),
-			},
-		},
+		newHandlerClient(app.d),
 	)
 	require.NotNil(t, iac)
 

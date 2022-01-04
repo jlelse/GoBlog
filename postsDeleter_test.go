@@ -16,12 +16,13 @@ func Test_checkDeletedPosts(t *testing.T) {
 	app.initComponents(false)
 
 	// Create a post
-	app.createPost(&post{
+	err := app.createPost(&post{
 		Content: "Test",
 		Status:  statusPublished,
 		Path:    "/testpost",
 		Section: "posts",
 	})
+	require.NoError(t, err)
 
 	// Check if post count is 1
 	count, err := app.db.countPosts(&postsRequestConfig{})
@@ -49,7 +50,8 @@ func Test_checkDeletedPosts(t *testing.T) {
 	require.Equal(t, 1, count)
 
 	// Set deleted time to more than 7 days ago
-	app.db.replacePostParam("/testpost", "deleted", []string{time.Now().Add(-time.Hour * 24 * 8).Format(time.RFC3339)})
+	err = app.db.replacePostParam("/testpost", "deleted", []string{time.Now().Add(-time.Hour * 24 * 8).Format(time.RFC3339)})
+	require.NoError(t, err)
 
 	// Run deleter
 	app.checkDeletedPosts()

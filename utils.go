@@ -302,14 +302,15 @@ func (rt *handlerRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return nil, errors.New("no handler")
 }
 
+func newHandlerClient(handler http.Handler) *http.Client {
+	return &http.Client{Transport: &handlerRoundTripper{handler: handler}}
+}
+
 func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, error) {
-	client := &http.Client{
-		Transport: &handlerRoundTripper{handler: handler},
-	}
 	if req.URL.Path == "" {
 		req.URL.Path = "/"
 	}
-	return client.Do(req)
+	return newHandlerClient(handler).Do(req)
 }
 
 func saveToFile(reader io.Reader, fileName string) error {

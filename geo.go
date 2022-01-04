@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"embed"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"strings"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
+	"github.com/carlmjohnson/requests"
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/thoas/go-funk"
 )
@@ -39,33 +39,19 @@ func (a *goBlog) photonReverse(lat, lon float64, lang string) ([]byte, error) {
 	if cache != nil {
 		return cache, nil
 	}
-	uv := url.Values{}
-	uv.Set("lat", fmt.Sprintf("%v", lat))
-	uv.Set("lon", fmt.Sprintf("%v", lon))
+	var buf bytes.Buffer
+	rb := requests.URL("https://photon.komoot.io/reverse").Client(a.httpClient).UserAgent(appUserAgent).ToBytesBuffer(&buf)
+	rb.Param("lat", fmt.Sprintf("%v", lat)).Param("lon", fmt.Sprintf("%v", lon))
 	if lang == "de" || lang == "fr" || lang == "it" {
-		uv.Set("lang", lang)
+		rb.Param("lang", lang)
 	} else {
-		uv.Set("lang", "en")
+		rb.Param("lang", "en")
 	}
-	req, err := http.NewRequest(http.MethodGet, "https://photon.komoot.io/reverse?"+uv.Encode(), nil)
-	if err != nil {
+	if err := rb.Fetch(context.Background()); err != nil {
 		return nil, err
 	}
-	req.Header.Set(userAgent, appUserAgent)
-	resp, err := a.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("response status code: %v", resp.StatusCode)
-	}
-	ba, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	_ = a.db.cachePersistently(cacheKey, ba)
-	return ba, nil
+	_ = a.db.cachePersistently(cacheKey, buf.Bytes())
+	return buf.Bytes(), nil
 }
 
 func geoOSMLink(g *gogeouri.Geo) string {

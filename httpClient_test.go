@@ -15,25 +15,21 @@ type fakeHttpClient struct {
 
 func newFakeHttpClient() *fakeHttpClient {
 	fc := &fakeHttpClient{}
-	fc.Client = &http.Client{
-		Transport: &handlerRoundTripper{
-			handler: http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				fc.req = r
-				if fc.handler != nil {
-					rec := httptest.NewRecorder()
-					fc.handler.ServeHTTP(rec, r)
-					fc.res = rec.Result()
-					// Copy the headers from the response recorder
-					for k, v := range rec.Header() {
-						rw.Header()[k] = v
-					}
-					// Copy result status code and body
-					rw.WriteHeader(fc.res.StatusCode)
-					_, _ = io.Copy(rw, rec.Body)
-				}
-			}),
-		},
-	}
+	fc.Client = newHandlerClient(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fc.req = r
+		if fc.handler != nil {
+			rec := httptest.NewRecorder()
+			fc.handler.ServeHTTP(rec, r)
+			fc.res = rec.Result()
+			// Copy the headers from the response recorder
+			for k, v := range rec.Header() {
+				rw.Header()[k] = v
+			}
+			// Copy result status code and body
+			rw.WriteHeader(fc.res.StatusCode)
+			_, _ = io.Copy(rw, rec.Body)
+		}
+	}))
 	return fc
 }
 

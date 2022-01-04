@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/carlmjohnson/requests"
 	"github.com/kaorimatz/go-opml"
 	"github.com/thoas/go-funk"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -64,22 +65,16 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	if cache := a.db.loadOutlineCache(blog); cache != nil {
 		return cache, nil
 	}
-	req, err := http.NewRequest(http.MethodGet, config.Opml, nil)
-	if err != nil {
-		return nil, err
-	}
+	rb := requests.URL(config.Opml).Client(a.httpClient).UserAgent(appUserAgent)
 	if config.AuthHeader != "" && config.AuthValue != "" {
-		req.Header.Set(config.AuthHeader, config.AuthValue)
+		rb.Header(config.AuthHeader, config.AuthValue)
 	}
-	res, err := a.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if code := res.StatusCode; code < 200 || 300 <= code {
-		return nil, fmt.Errorf("opml request not successful, status code: %d", code)
-	}
-	o, err := opml.Parse(res.Body)
+	var o *opml.OPML
+	err := rb.Handle(func(r *http.Response) (err error) {
+		defer r.Body.Close()
+		o, err = opml.Parse(r.Body)
+		return
+	}).Fetch(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +112,7 @@ func (db *database) loadOutlineCache(blog string) []*opml.Outline {
 	if err != nil || data == nil {
 		return nil
 	}
-	o, err := opml.NewParser(bytes.NewReader(data)).Parse()
+	o, err := opml.Parse(bytes.NewReader(data))
 	if err != nil {
 		return nil
 	}
