@@ -63,7 +63,7 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http
 	err := requests.
 		URL("https://api.shortpixel.com/v2/reducer-sync.php").
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BodyJSON(map[string]interface{}{
 			"key":            sp.key,
 			"plugin_version": "GB001",
@@ -100,7 +100,7 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 	err := requests.
 		URL("https://api.tinify.com/shrink").
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
 		BodyJSON(map[string]interface{}{
 			"source": map[string]interface{}{
@@ -124,7 +124,7 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 	err = requests.
 		URL(compressedLocation).
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
 		BodyJSON(map[string]interface{}{
 			"resize": map[string]interface{}{
@@ -157,7 +157,6 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http
 	err := requests.
 		URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
 		Client(hc).
-		Get().
 		ToBytesBuffer(&imgBuffer).
 		Fetch(context.Background())
 	if err != nil {

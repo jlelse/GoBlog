@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/carlmjohnson/requests"
@@ -22,7 +23,7 @@ func (a *goBlog) sendNtfy(cfg *configNtfy, msg string) error {
 		URL(cfg.Topic).
 		Client(a.httpClient).
 		UserAgent(appUserAgent).
-		Post().
+		Method(http.MethodPost).
 		BodyReader(strings.NewReader(msg)).
 		Fetch(context.Background())
 }

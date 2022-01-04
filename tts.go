@@ -8,6 +8,7 @@ import (
 	"html"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -177,7 +178,7 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 		Param("key", gctts.GoogleAPIKey).
 		Client(a.httpClient).
 		UserAgent(appUserAgent).
-		Post().
+		Method(http.MethodPost).
 		BodyJSON(body).
 		ToJSON(&response).
 		Fetch(context.Background())

@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/chroma v0.9.4
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
-	github.com/carlmjohnson/requests v0.21.13
+	github.com/carlmjohnson/requests v0.22.1
 	github.com/cretz/bine v0.2.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.1.0
