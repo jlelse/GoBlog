@@ -73,7 +73,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 
 func (a *goBlog) sendWebmention(endpoint, source, target string) error {
 	// TODO: Pass all tests from https://webmention.rocks/
-	return requests.URL(endpoint).Client(a.httpClient).Post().UserAgent(appUserAgent).
+	return requests.URL(endpoint).Client(a.httpClient).Method(http.MethodPost).UserAgent(appUserAgent).
 		BodyForm(url.Values{
 			"source": []string{source},
 			"target": []string{target},

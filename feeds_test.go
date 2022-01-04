@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
+	"github.com/carlmjohnson/requests"
 	"github.com/mmcdole/gofeed"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +19,7 @@ func Test_feeds(t *testing.T) {
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 	app.d, _ = app.buildRouter()
+	handlerClient := newHandlerClient(app.d)
 
 	err := app.createPost(&post{
 		Path:       "/testpost",
@@ -26,21 +29,18 @@ func Test_feeds(t *testing.T) {
 		Parameters: map[string][]string{"title": {"Test Post"}},
 		Content:    "Test Content",
 	})
-
 	require.NoError(t, err)
 
 	for _, typ := range []feedType{rssFeed, atomFeed, jsonFeed} {
-		req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/posts."+string(typ), nil)
-		res, err := doHandlerRequest(req, app.d)
-
-		require.NoError(t, err)
-
-		require.Equal(t, http.StatusOK, res.StatusCode)
-
-		fp := gofeed.NewParser()
-		feed, err := fp.Parse(res.Body)
-		_ = res.Body.Close()
-
+		var feed *gofeed.Feed
+		err := requests.URL("http://localhost:8080/posts." + string(typ)).Client(handlerClient).
+			Handle(func(r *http.Response) (err error) {
+				fp := gofeed.NewParser()
+				defer r.Body.Close()
+				feed, err = fp.Parse(r.Body)
+				return
+			}).
+			Fetch(context.Background())
 		require.NoError(t, err)
 		require.NotNil(t, feed)
 

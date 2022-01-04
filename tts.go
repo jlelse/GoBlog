@@ -8,6 +8,7 @@ import (
 	"html"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -63,7 +64,10 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	ssml.WriteString("<speak>")
 	ssml.WriteString(html.EscapeString(a.renderMdTitle(p.Title())))
 	ssml.WriteString("<break time=\"1s\"/>")
-	ssml.WriteString(html.EscapeString(cleanHTMLText(string(a.postHtml(p, false)))))
+	for _, part := range strings.Split(htmlText(string(a.postHtml(p, false))), "\n\n") {
+		ssml.WriteString(html.EscapeString(part))
+		ssml.WriteString("<break time=\"500ms\"/>")
+	}
 	ssml.WriteString("</speak>")
 
 	// Generate audio
@@ -177,7 +181,7 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 		Param("key", gctts.GoogleAPIKey).
 		Client(a.httpClient).
 		UserAgent(appUserAgent).
-		Post().
+		Method(http.MethodPost).
 		BodyJSON(body).
 		ToJSON(&response).
 		Fetch(context.Background())

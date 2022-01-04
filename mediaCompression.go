@@ -63,7 +63,7 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http
 	err := requests.
 		URL("https://api.shortpixel.com/v2/reducer-sync.php").
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BodyJSON(map[string]interface{}{
 			"key":            sp.key,
 			"plugin_version": "GB001",
@@ -90,41 +90,41 @@ type tinify struct {
 }
 
 func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
+	tinifyErr := errors.New("failed to compress image using tinify")
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
 		return "", nil
 	}
 	// Compress
-	compressedLocation := ""
+	headers := http.Header{}
 	err := requests.
 		URL("https://api.tinify.com/shrink").
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
 		BodyJSON(map[string]interface{}{
 			"source": map[string]interface{}{
 				"url": url,
 			},
 		}).
-		Handle(func(r *http.Response) error {
-			compressedLocation = r.Header.Get("Location")
-			if compressedLocation == "" {
-				return errors.New("location header missing")
-			}
-			return nil
-		}).
+		ToHeaders(headers).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Tinify error:", err.Error())
-		return "", errors.New("failed to compress image using tinify")
+		return "", tinifyErr
+	}
+	compressedLocation := headers.Get("Location")
+	if compressedLocation == "" {
+		log.Println("Tinify error: location header missing")
+		return "", tinifyErr
 	}
 	// Resize and download image
 	var imgBuffer bytes.Buffer
 	err = requests.
 		URL(compressedLocation).
 		Client(hc).
-		Post().
+		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
 		BodyJSON(map[string]interface{}{
 			"resize": map[string]interface{}{
@@ -137,7 +137,7 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Tinify error:", err.Error())
-		return "", errors.New("failed to compress image using tinify")
+		return "", tinifyErr
 	}
 	// Upload compressed file
 	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
@@ -157,7 +157,6 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http
 	err := requests.
 		URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
 		Client(hc).
-		Get().
 		ToBytesBuffer(&imgBuffer).
 		Fetch(context.Background())
 	if err != nil {

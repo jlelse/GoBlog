@@ -34,11 +34,7 @@ func Test_serveDate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	client := &http.Client{
-		Transport: &handlerRoundTripper{
-			handler: app.d,
-		},
-	}
+	client := newHandlerClient(app.d)
 
 	var resString string
 
@@ -128,11 +124,7 @@ func Test_servePost(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	client := &http.Client{
-		Transport: &handlerRoundTripper{
-			handler: app.d,
-		},
-	}
+	client := newHandlerClient(app.d)
 
 	var resString string
 
