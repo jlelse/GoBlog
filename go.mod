@@ -15,6 +15,7 @@ require (
 	github.com/cretz/bine v0.2.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.1.0
+	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.0
 	github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac
 	github.com/emersion/go-smtp v0.15.0

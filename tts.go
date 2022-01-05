@@ -12,8 +12,10 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/carlmjohnson/requests"
+	"go.goblog.app/app/pkgs/mp3merge"
 )
 
 const ttsParameter = "tts"
@@ -54,31 +56,60 @@ func (a *goBlog) ttsEnabled() bool {
 
 func (a *goBlog) createPostTTSAudio(p *post) error {
 	// Get required values
-	lang := a.cfg.Blogs[p.Blog].Lang
-	if lang == "" {
-		lang = "en"
+	lang := defaultIfEmpty(a.cfg.Blogs[p.Blog].Lang, "en")
+
+	// Create TTS text parts
+	parts := []string{}
+	// Add title if available
+	if title := p.Title(); title != "" {
+		parts = append(parts, a.renderMdTitle(title))
+	}
+	// Add body split into paragraphs because of 5000 character limit
+	parts = append(parts, strings.Split(htmlText(string(a.postHtml(p, false))), "\n\n")...)
+
+	// Create TTS audio for each part
+	partsBuffers := make([]io.Reader, len(parts))
+	var errs []error
+	var lock sync.Mutex
+	var wg sync.WaitGroup
+	for i, part := range parts {
+		// Increase wait group
+		wg.Add(1)
+		go func(i int, part string) {
+			// Build SSML
+			ssml := "<speak>" + html.EscapeString(part) + "<break time=\"500ms\"/></speak>"
+			// Create TTS audio
+			var audioBuffer bytes.Buffer
+			err := a.createTTSAudio(lang, ssml, &audioBuffer)
+			if err != nil {
+				lock.Lock()
+				errs = append(errs, err)
+				lock.Unlock()
+				return
+			}
+			// Append buffer to partsBuffers
+			lock.Lock()
+			partsBuffers[i] = &audioBuffer
+			lock.Unlock()
+			// Decrease wait group
+			wg.Done()
+		}(i, part)
 	}
 
-	// Build SSML
-	var ssml strings.Builder
-	ssml.WriteString("<speak>")
-	ssml.WriteString(html.EscapeString(a.renderMdTitle(p.Title())))
-	ssml.WriteString("<break time=\"1s\"/>")
-	for _, part := range strings.Split(htmlText(string(a.postHtml(p, false))), "\n\n") {
-		ssml.WriteString(html.EscapeString(part))
-		ssml.WriteString("<break time=\"500ms\"/>")
-	}
-	ssml.WriteString("</speak>")
+	// Wait for all parts to be created
+	wg.Wait()
 
-	// Generate audio
-	var audioBuffer bytes.Buffer
-	err := a.createTTSAudio(lang, ssml.String(), &audioBuffer)
-	if err != nil {
-		return err
+	// Check if any errors occurred
+	if len(errs) > 0 {
+		return errs[0]
 	}
+
+	// Merge partsBuffers into final buffer
+	var final bytes.Buffer
+	mp3merge.MergeMP3(&final, partsBuffers...)
 
 	// Save audio
-	audioReader := bytes.NewReader(audioBuffer.Bytes())
+	audioReader := bytes.NewReader(final.Bytes())
 	fileHash, err := getSHA256(audioReader)
 	if err != nil {
 		return err
@@ -154,12 +185,6 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 	if w == nil {
 		return errors.New("writer not provided")
 	}
-
-	// Check max length
-	// TODO: Support longer texts by splitting into multiple requests
-	// if len(ssml) > 5000 {
-	//	return errors.New("text is too long")
-	// }
 
 	// Create request body
 	body := map[string]interface{}{
