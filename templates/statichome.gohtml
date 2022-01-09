@@ -7,13 +7,9 @@
   <main class=h-entry>
     <article>
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
-      {{ if .Data.Content }}
-        <div class=e-content>
-          {{ content .Data false }}
-        </div>
-      {{ end }}
+      {{ if .Data.Content }}<div class=e-content>{{ content .Data false }}</div>{{ end }}
     </article>
-    {{ include "author" . }}
+    {{ author }}
   </main>
   {{ if .LoggedIn }}
     <div id="posteditactions" class="p">

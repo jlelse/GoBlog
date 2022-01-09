@@ -1,10 +1,6 @@
 {{ define "editorpreview" }}
     {{ with .Data.RenderedTitle }}<h1>{{ . }}</h1>{{ end }}
     {{ include "summaryandpostmeta" . }}
-    {{ if .Data.Content }}
-    <div>
-        {{ content .Data true }}
-    </div>
-    {{ end }}
-    {{ include "posttax" . }}
+    {{ if .Data.Content }}<div>{{ content .Data true }}</div>{{ end }}
+    {{ posttax .Data .Blog }}
 {{ end }}

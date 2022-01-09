@@ -21,10 +21,10 @@ type assetFile struct {
 	body        []byte
 }
 
-func (a *goBlog) initTemplateAssets() (err error) {
+func (a *goBlog) initTemplateAssets() error {
 	a.assetFileNames = map[string]string{}
 	a.assetFiles = map[string]*assetFile{}
-	err = filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsRegular() {
 			// Open file
 			file, err := os.Open(path)
@@ -43,13 +43,11 @@ func (a *goBlog) initTemplateAssets() (err error) {
 			}
 		}
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	// Add syntax highlighting CSS
-	err = a.initChromaCSS()
-	if err != nil {
+	if err := a.initChromaCSS(); err != nil {
 		return err
 	}
 	return nil

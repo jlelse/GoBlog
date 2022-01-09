@@ -3,7 +3,10 @@
   <title>{{ with .Data.RenderedTitle }}{{ . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
   {{ include "postheadmeta" . }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
-  {{ include "trackheader" . }}
+  {{ if .Data.HasTrack }}
+    <link rel="stylesheet" href="/-/leaflet/leaflet.css"/>
+    <script src="/-/leaflet/leaflet.js"></script>
+  {{ end }}
 {{ end }}
 
 {{ define "main" }}
@@ -11,18 +14,40 @@
     <article>
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
       {{ with .Data.RenderedTitle }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-      {{ include "postmeta" . }}
-      {{ include "postactions" . }}
+      <div class="p">
+        {{ include "summaryandpostmeta" . }}
+        {{ $translations := (translations .Data) }}
+        {{ if gt (len $translations) 0 }}
+            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ $t.RenderedTitle }}</a>{{ $delimiter = ", " }}{{ end }}</div>
+        {{ end }}
+        {{ $short := shorturl .Data }}
+        {{ if $short }}<div>{{ string .Blog.Lang "shorturl" }} <a href="{{ $short }}" rel="shortlink">{{ $short }}</a></div>{{ end }}
+        {{ if ne .Data.Status "published" }}<div>{{ string .Blog.Lang "status" }}: {{ .Data.Status }}</div>{{ end }}
+      </div>
+      <div id="post-actions">
+        <a href="https://www.addtoany.com/share#url={{ shorturl .Data }}{{ with .Data.RenderedTitle }}&title={{ . }}{{ end }}" target="_blank" rel="nofollow noopener noreferrer" class="button">{{ string .Blog.Lang "share" }}</a>
+	      <a id="translateBtn" href="https://translate.google.com/translate?u={{ absolute .Data.Path }}" target="_blank" rel="nofollow noopener noreferrer" class="button">{{ string .Blog.Lang "translate" }}</a>
+	      <script defer src="{{ asset "js/translate.js" }}"></script>
+	      <button id="speakBtn" class="hide" data-speak="{{ string .Blog.Lang "speak" }}" data-stopspeak="{{ string .Blog.Lang "stopspeak" }}"></button>
+	      <script defer src="{{ if .Data.TTS }}{{ asset "js/tts.js" }}{{ else }}{{ asset "js/speak.js" }}{{ end }}"></script>
+      </div>
+      {{ if .Data.TTS }}<div class="p hide" id="tts"><audio controls preload=none id="tts-audio"><source src="{{ .Data.TTS }}"/></audio></div>{{ end }}
       {{ if .Data.Content }}
-        {{ include "oldcontentwarning" . }}
-        <div class=e-content>
-          {{ content .Data false }}
-        </div>
+        {{ oldcontentwarning .Data .Blog }}
+        <div class=e-content>{{ content .Data false }}</div>
       {{ end }}
-      {{ include "trackdetails" . }}
-      {{ include "posttax" . }}
+      {{ if .Data.HasTrack }}
+        {{ $track := (gettrack .Data) }}
+        {{ if $track }}{{ if $track.HasPoints }}
+          {{ $lang := .Blog.Lang }}
+          <p>{{ with $track.Name }}<b>{{ . }}</b> {{ end }}{{ with $track.Kilometers }}🏁 {{ . }} {{ string $lang "kilometers" }} {{ end }}{{ with $track.Hours }}⌛ {{ . }}{{ end }}</p>
+          <div class="p" id="map" data-paths="{{ $track.PathsJSON }}" data-points="{{ $track.PointsJSON }}" data-minzoom={{ $track.MinZoom }} data-maxzoom={{ $track.MaxZoom }} data-attribution="{{ $track.MapAttribution }}"></div>
+          <script defer src="{{ asset "js/geotrack.js" }}"></script>
+        {{ end }}{{ end }}
+      {{ end }}
+      {{ posttax .Data .Blog }}
     </article>
-    {{ include "author" . }}
+    {{ author }}
   </main>
   {{ if .LoggedIn }}
     <div id="posteditactions" class="p">
@@ -53,9 +78,7 @@
       <script defer src="{{ asset "js/formconfirm.js" }}"></script>
     </div>
   {{ end }}
-  {{ if .CommentsEnabled }}
-    {{ include "interactions" . }}
-  {{ end }}
+  {{ if .CommentsEnabled }}{{ interactions .Blog .Canonical }}{{ end }}
 {{ end }}
 
 {{ define "post" }}

@@ -63,6 +63,12 @@ func (a *goBlog) initRendering() error {
 		"liketitle":    a.likeTitle,
 		"photolinks":   a.photoLinks,
 		"gettrack":     a.getTrack,
+		// Code based rendering
+		"posttax":           a.renderPostTax,
+		"oldcontentwarning": a.renderOldContentWarning,
+		"interactions":      a.renderInteractions,
+		"author":            a.renderAuthor,
+		"tor":               a.renderTorNotice,
 		// Others
 		"dateformat":     dateFormat,
 		"isodate":        isoDateFormat,
@@ -72,9 +78,7 @@ func (a *goBlog) initRendering() error {
 		"string":         a.ts.GetTemplateStringVariantFunc(),
 		"include":        a.includeRenderedTemplate,
 		"urlize":         urlize,
-		"sort":           sortedStrings,
 		"absolute":       a.getFullAddress,
-		"mentions":       a.db.getWebmentionsByAddress,
 		"geotitle":       a.geoTitle,
 		"geolink":        geoOSMLink,
 		"opensearch":     openSearchUrl,

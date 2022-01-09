@@ -27,7 +27,7 @@
       {{ if .Data.HasNext }}
         <p><a href="{{ .Data.Next }}">{{ string .Blog.Lang "next" }}</a></p>
       {{ end }}
-      {{ include "author" . }}
+      {{ author }}
   </main>
 {{ end }}
 

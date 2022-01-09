@@ -106,7 +106,9 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 
 	// Merge partsBuffers into final buffer
 	var final bytes.Buffer
-	mp3merge.MergeMP3(&final, partsBuffers...)
+	if err := mp3merge.MergeMP3(&final, partsBuffers...); err != nil {
+		return err
+	}
 
 	// Save audio
 	audioReader := bytes.NewReader(final.Bytes())
