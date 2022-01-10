@@ -20,7 +20,7 @@ func Test_editorPreview(t *testing.T) {
 	app.initComponents(false)
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		app.serveEditorPreview(rw, r.WithContext(context.WithValue(r.Context(), blogKey, "en")))
+		app.serveEditorPreview(rw, r.WithContext(context.WithValue(r.Context(), blogKey, "default")))
 	})
 	d := wstest.NewDialer(h)
 

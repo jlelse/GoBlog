@@ -8,7 +8,7 @@
         </a>
       </h2>
     {{ end }}
-    {{ include "summarymeta" . }}
+    {{ postmeta .Data .Blog "summary" }}
     {{ if showfull .Data }}
       <div class=e-content>{{ content .Data false }}</div>
     {{ else }}

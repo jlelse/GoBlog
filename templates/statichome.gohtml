@@ -1,6 +1,6 @@
 {{ define "title" }}
   <title>{{ mdtitle .Blog.Title }}</title>
-  {{ include "postheadmeta" . }}
+  {{ postheadmeta .Data .Canonical }}
 {{ end }}
 
 {{ define "main" }}

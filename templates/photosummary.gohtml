@@ -8,7 +8,7 @@
         </a>
       </h2>
     {{ end }}
-    {{ include "summarymeta" . }}
+    {{ postmeta .Data .Blog "summary" }}
     {{ range $i, $photo := (photolinks .Data) }}
       {{ md ( printf "![](%s)" $photo ) }}
     {{ end }}

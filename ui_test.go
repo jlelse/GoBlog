@@ -25,7 +25,9 @@ func Test_renderPostTax(t *testing.T) {
 		},
 	}
 
-	res := app.renderPostTax(p, app.cfg.Blogs["default"])
+	var hb htmlBuilder
+	app.renderPostTax(&hb, p, app.cfg.Blogs["default"])
+	res := hb.html()
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 
@@ -44,7 +46,9 @@ func Test_renderOldContentWarning(t *testing.T) {
 		Published: "2018-01-01",
 	}
 
-	res := app.renderOldContentWarning(p, app.cfg.Blogs["default"])
+	var hb htmlBuilder
+	app.renderOldContentWarning(&hb, p, app.cfg.Blogs["default"])
+	res := hb.html()
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 
@@ -103,7 +107,9 @@ func Test_renderInteractions(t *testing.T) {
 	err = app.db.approveWebmentionId(2)
 	require.NoError(t, err)
 
-	res := app.renderInteractions(app.cfg.Blogs["default"], "https://example.com/testpost1")
+	var hb htmlBuilder
+	app.renderInteractions(&hb, app.cfg.Blogs["default"], "https://example.com/testpost1")
+	res := hb.html()
 	_, err = goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 
@@ -123,7 +129,9 @@ func Test_renderAuthor(t *testing.T) {
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 
-	res := app.renderAuthor()
+	var hb htmlBuilder
+	app.renderAuthor(&hb)
+	res := hb.html()
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 
@@ -140,13 +148,17 @@ func Test_renderTorNotice(t *testing.T) {
 
 	app.cfg.Server.Tor = true
 
-	res := app.renderTorNotice(app.cfg.Blogs["default"], true, "http://abc.onion:80/test")
+	var hb htmlBuilder
+	app.renderTorNotice(&hb, app.cfg.Blogs["default"], true, "http://abc.onion:80/test")
+	res := hb.html()
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 
 	assert.Equal(t, template.HTML("<p id=\"tor\">🔐 Connected via Tor.</p>"), res)
 
-	res = app.renderTorNotice(app.cfg.Blogs["default"], false, "http://abc.onion:80/test")
+	hb.Reset()
+	app.renderTorNotice(&hb, app.cfg.Blogs["default"], false, "http://abc.onion:80/test")
+	res = hb.html()
 	_, err = goquery.NewDocumentFromReader(strings.NewReader(string(res)))
 	require.NoError(t, err)
 

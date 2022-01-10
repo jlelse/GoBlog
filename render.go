@@ -39,7 +39,6 @@ const (
 	templateBlogroll           = "blogroll"
 	templateGeoMap             = "geomap"
 	templateContact            = "contact"
-	templateEditorPreview      = "editorpreview"
 	templateIndieAuth          = "indieauth"
 )
 
@@ -50,25 +49,48 @@ func (a *goBlog) initRendering() error {
 		"mdtitle": a.renderMdTitle,
 		"html":    wrapStringAsHTML,
 		// Post specific
-		"ps":           postParameter,
-		"content":      a.postHtml,
-		"summary":      a.postSummary,
-		"translations": a.postTranslations,
-		"shorturl":     a.shortPostURL,
-		"showfull":     a.showFull,
-		"geouri":       a.geoURI,
-		"replylink":    a.replyLink,
-		"replytitle":   a.replyTitle,
-		"likelink":     a.likeLink,
-		"liketitle":    a.likeTitle,
-		"photolinks":   a.photoLinks,
-		"gettrack":     a.getTrack,
+		"content":    a.postHtml,
+		"summary":    a.postSummary,
+		"shorturl":   a.shortPostURL,
+		"showfull":   a.showFull,
+		"photolinks": a.photoLinks,
+		"gettrack":   a.getTrack,
 		// Code based rendering
-		"posttax":           a.renderPostTax,
-		"oldcontentwarning": a.renderOldContentWarning,
-		"interactions":      a.renderInteractions,
-		"author":            a.renderAuthor,
-		"tor":               a.renderTorNotice,
+		"posttax": func(p *post, b *configBlog) template.HTML {
+			var hb htmlBuilder
+			a.renderPostTax(&hb, p, b)
+			return hb.html()
+		},
+		"postmeta": func(p *post, b *configBlog, typ string) template.HTML {
+			var hb htmlBuilder
+			a.renderPostMeta(&hb, p, b, typ)
+			return hb.html()
+		},
+		"oldcontentwarning": func(p *post, b *configBlog) template.HTML {
+			var hb htmlBuilder
+			a.renderOldContentWarning(&hb, p, b)
+			return hb.html()
+		},
+		"interactions": func(b *configBlog, c string) template.HTML {
+			var hb htmlBuilder
+			a.renderInteractions(&hb, b, c)
+			return hb.html()
+		},
+		"author": func() template.HTML {
+			var hb htmlBuilder
+			a.renderAuthor(&hb)
+			return hb.html()
+		},
+		"postheadmeta": func(p *post, c string) template.HTML {
+			var hb htmlBuilder
+			a.renderPostHeadMeta(&hb, p, c)
+			return hb.html()
+		},
+		"tor": func(b *configBlog, torUsed bool, torAddress string) template.HTML {
+			var hb htmlBuilder
+			a.renderTorNotice(&hb, b, torUsed, torAddress)
+			return hb.html()
+		},
 		// Others
 		"dateformat":     dateFormat,
 		"isodate":        isoDateFormat,
@@ -79,8 +101,6 @@ func (a *goBlog) initRendering() error {
 		"include":        a.includeRenderedTemplate,
 		"urlize":         urlize,
 		"absolute":       a.getFullAddress,
-		"geotitle":       a.geoTitle,
-		"geolink":        geoOSMLink,
 		"opensearch":     openSearchUrl,
 		"mbytes":         mBytesString,
 		"editortemplate": a.editorPostTemplate,

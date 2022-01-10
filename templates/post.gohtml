@@ -1,7 +1,7 @@
 {{ define "title" }}
   <link rel="stylesheet" href="{{ asset "css/chroma.css" }}">
   <title>{{ with .Data.RenderedTitle }}{{ . }} - {{end}}{{ mdtitle .Blog.Title }}</title>
-  {{ include "postheadmeta" . }}
+  {{ postheadmeta .Data .Canonical }}
   {{ with shorturl .Data }}<link rel="shortlink" href="{{ . }}">{{ end }}
   {{ if .Data.HasTrack }}
     <link rel="stylesheet" href="/-/leaflet/leaflet.css"/>
@@ -14,16 +14,7 @@
     <article>
       <data class="u-url hide" value="{{ absolute .Data.Path }}"></data>
       {{ with .Data.RenderedTitle }}<h1 class=p-name>{{ . }}</h1>{{ end }}
-      <div class="p">
-        {{ include "summaryandpostmeta" . }}
-        {{ $translations := (translations .Data) }}
-        {{ if gt (len $translations) 0 }}
-            <div>{{ string .Blog.Lang "translations" }}: {{ $delimiter := "" }}{{ range $i, $t := $translations }}{{ $delimiter }}<a href="{{ $t.Path }}" translate="no">{{ $t.RenderedTitle }}</a>{{ $delimiter = ", " }}{{ end }}</div>
-        {{ end }}
-        {{ $short := shorturl .Data }}
-        {{ if $short }}<div>{{ string .Blog.Lang "shorturl" }} <a href="{{ $short }}" rel="shortlink">{{ $short }}</a></div>{{ end }}
-        {{ if ne .Data.Status "published" }}<div>{{ string .Blog.Lang "status" }}: {{ .Data.Status }}</div>{{ end }}
-      </div>
+      {{ postmeta .Data .Blog "post" }}
       <div id="post-actions">
         <a href="https://www.addtoany.com/share#url={{ shorturl .Data }}{{ with .Data.RenderedTitle }}&title={{ . }}{{ end }}" target="_blank" rel="nofollow noopener noreferrer" class="button">{{ string .Blog.Lang "share" }}</a>
 	      <a id="translateBtn" href="https://translate.google.com/translate?u={{ absolute .Data.Path }}" target="_blank" rel="nofollow noopener noreferrer" class="button">{{ string .Blog.Lang "translate" }}</a>

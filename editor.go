@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,13 +57,13 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered []byte, err error) {
-	p := post{
+	p := &post{
 		Content:   string(markdown),
 		Blog:      blog,
 		Path:      "/editor/preview",
 		Published: localNowString(),
 	}
-	err = a.computeExtraPostParameters(&p)
+	err = a.computeExtraPostParameters(p)
 	if err != nil {
 		return nil, err
 	}
@@ -72,21 +71,9 @@ func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered [
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
 	// Render post
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/editor/preview", nil)
-	a.render(rec, req, templateEditorPreview, &renderData{
-		BlogString: p.Blog,
-		Data:       &p,
-	})
-	res := rec.Result()
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to render preview")
-	}
-	defer res.Body.Close()
-	rendered, err = io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
+	var hb htmlBuilder
+	a.renderEditorPreview(&hb, a.cfg.Blogs[blog], p)
+	rendered = []byte(hb.String())
 	return
 }
 

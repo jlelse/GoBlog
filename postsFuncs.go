@@ -27,10 +27,6 @@ func (a *goBlog) shortPostURL(p *post) string {
 	return a.getFullAddress(s)
 }
 
-func postParameter(p *post, parameter string) []string {
-	return p.Parameters[parameter]
-}
-
 func (p *post) firstParameter(parameter string) (result string) {
 	if pp := p.Parameters[parameter]; len(pp) > 0 {
 		result = pp[0]

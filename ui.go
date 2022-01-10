@@ -50,12 +50,27 @@ func (h *htmlBuilder) html() template.HTML {
 	return template.HTML(h.String())
 }
 
-// Render the HTML to show the list of post taxonomy values (tags, series, etc.)
-func (a *goBlog) renderPostTax(p *post, b *configBlog) template.HTML {
-	if b == nil || p == nil {
-		return ""
+// Render the HTML for the editor preview
+func (a *goBlog) renderEditorPreview(hb *htmlBuilder, bc *configBlog, p *post) {
+	if p.RenderedTitle != "" {
+		hb.writeElementOpen("h1")
+		hb.writeEscaped(p.RenderedTitle)
+		hb.writeElementClose("h1")
 	}
-	var hb htmlBuilder
+	a.renderPostMeta(hb, p, bc, "preview")
+	if p.Content != "" {
+		hb.writeElementOpen("div")
+		hb.write(string(a.postHtml(p, true)))
+		hb.writeElementClose("div")
+	}
+	a.renderPostTax(hb, p, bc)
+}
+
+// Render the HTML to show the list of post taxonomy values (tags, series, etc.)
+func (a *goBlog) renderPostTax(hb *htmlBuilder, p *post, b *configBlog) {
+	if b == nil || p == nil {
+		return
+	}
 	// Iterate over all taxonomies
 	for _, tax := range b.Taxonomies {
 		// Get all sorted taxonomy values for this post
@@ -85,27 +100,145 @@ func (a *goBlog) renderPostTax(p *post, b *configBlog) template.HTML {
 			hb.writeElementClose("p")
 		}
 	}
-	return hb.html()
+}
+
+// Render the HTML for the post meta information.
+// typ can be "summary", "post" or "preview".
+func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ string) {
+	if b == nil || p == nil || typ != "summary" && typ != "post" && typ != "preview" {
+		return
+	}
+	if typ == "summary" || typ == "post" {
+		hb.writeElementOpen("div", "class", "p")
+	}
+	// Published time
+	if published := p.Published; published != "" {
+		hb.writeElementOpen("div")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "publishedon"))
+		hb.write(" ")
+		hb.writeElementOpen("time", "class", "dt-published", "datetime", dateFormat(published, "2006-01-02T15:04:05Z07:00"))
+		hb.writeEscaped(isoDateFormat(published))
+		hb.writeElementClose("time")
+		// Section
+		if p.Section != "" {
+			if section := b.Sections[p.Section]; section != nil {
+				hb.write(" in ") // TODO: Replace with a proper translation
+				hb.writeElementOpen("a", "href", b.getRelativePath(section.Name))
+				hb.writeEscaped(a.renderMdTitle(section.Title))
+				hb.writeElementClose("a")
+			}
+		}
+		hb.writeElementClose("div")
+	}
+	// Updated time
+	if updated := p.Updated; updated != "" {
+		hb.writeElementOpen("div")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "updatedon"))
+		hb.write(" ")
+		hb.writeElementOpen("time", "class", "dt-updated", "datetime", dateFormat(updated, "2006-01-02T15:04:05Z07:00"))
+		hb.writeEscaped(isoDateFormat(updated))
+		hb.writeElementClose("time")
+		hb.writeElementClose("div")
+	}
+	// IndieWeb Meta
+	// Reply ("u-in-reply-to")
+	if replyLink := a.replyLink(p); replyLink != "" {
+		hb.writeElementOpen("div")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "replyto"))
+		hb.writeEscaped(": ")
+		hb.writeElementOpen("a", "class", "u-in-reply-to", "rel", "noopener", "target", "_blank", "href", replyLink)
+		if replyTitle := a.replyTitle(p); replyTitle != "" {
+			hb.writeEscaped(replyTitle)
+		} else {
+			hb.writeEscaped(replyLink)
+		}
+		hb.writeElementClose("a")
+		hb.writeElementClose("div")
+	}
+	// Like ("u-like-of")
+	if likeLink := a.likeLink(p); likeLink != "" {
+		hb.writeElementOpen("div")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "likeof"))
+		hb.writeEscaped(": ")
+		hb.writeElementOpen("a", "class", "u-like-of", "rel", "noopener", "target", "_blank", "href", likeLink)
+		if likeTitle := a.likeTitle(p); likeTitle != "" {
+			hb.writeEscaped(likeTitle)
+		} else {
+			hb.writeEscaped(likeLink)
+		}
+		hb.writeElementClose("div")
+	}
+	// Geo
+	if geoURI := a.geoURI(p); geoURI != nil {
+		hb.writeElementOpen("div")
+		hb.writeEscaped("📍 ")
+		hb.writeElementOpen("a", "class", "p-location h-geo", "target", "_blank", "rel", "nofollow noopener noreferrer", "href", geoOSMLink(geoURI))
+		hb.writeElementOpen("span", "class", "p-name")
+		hb.writeEscaped(a.geoTitle(geoURI, b.Lang))
+		hb.writeElementClose("span")
+		hb.writeElementOpen("data", "class", "p-longitude", "value", fmt.Sprintf("%f", geoURI.Longitude))
+		hb.writeElementClose("data")
+		hb.writeElementOpen("data", "class", "p-latitude", "value", fmt.Sprintf("%f", geoURI.Latitude))
+		hb.writeElementClose("data")
+		hb.writeElementClose("a")
+		hb.writeElementClose("div")
+	}
+	// Post specific elements
+	if typ == "post" {
+		// Translations
+		if translations := a.postTranslations(p); len(translations) > 0 {
+			hb.writeElementOpen("div")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "translations"))
+			hb.writeEscaped(": ")
+			for i, translation := range translations {
+				if i > 0 {
+					hb.writeEscaped(", ")
+				}
+				hb.writeElementOpen("a", "translate", "no", "href", translation.Path)
+				hb.writeEscaped(translation.RenderedTitle)
+				hb.writeElementClose("a")
+			}
+			hb.writeElementClose("div")
+		}
+		// Short link
+		if shortLink := a.shortPostURL(p); shortLink != "" {
+			hb.writeElementOpen("div")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "shorturl"))
+			hb.writeEscaped(" ")
+			hb.writeElementOpen("a", "rel", "shortlink", "href", shortLink)
+			hb.writeEscaped(shortLink)
+			hb.writeElementClose("a")
+			hb.writeElementClose("div")
+		}
+		// Status
+		if p.Status != statusPublished {
+			hb.writeElementOpen("div")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "status"))
+			hb.writeEscaped(": ")
+			hb.writeEscaped(string(p.Status))
+			hb.writeElementClose("div")
+		}
+	}
+	if typ == "summary" || typ == "post" {
+		hb.writeElementClose("div")
+	}
 }
 
 // Render the HTML to show a warning for old posts
-func (a *goBlog) renderOldContentWarning(p *post, b *configBlog) template.HTML {
+func (a *goBlog) renderOldContentWarning(hb *htmlBuilder, p *post, b *configBlog) {
 	if b == nil || p == nil || !p.Old() {
-		return ""
+		return
 	}
-	var hb htmlBuilder
 	hb.writeElementOpen("strong", "class", "p border-top border-bottom")
 	hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "oldcontent"))
 	hb.writeElementClose("strong")
-	return hb.html()
 }
 
 // Render the HTML to show interactions
-func (a *goBlog) renderInteractions(b *configBlog, canonical string) template.HTML {
+func (a *goBlog) renderInteractions(hb *htmlBuilder, b *configBlog, canonical string) {
 	if b == nil || canonical == "" {
-		return ""
+		return
 	}
-	var hb htmlBuilder
 	// Start accordion
 	hb.writeElementOpen("details", "class", "p", "id", "interactions")
 	hb.writeElementOpen("summary")
@@ -165,16 +298,14 @@ func (a *goBlog) renderInteractions(b *configBlog, canonical string) template.HT
 	hb.writeElementClose("form")
 	// Finish accordion
 	hb.writeElementClose("details")
-	return hb.html()
 }
 
 // Render HTML for author h-card
-func (a *goBlog) renderAuthor() template.HTML {
+func (a *goBlog) renderAuthor(hb *htmlBuilder) {
 	user := a.cfg.User
 	if user == nil {
-		return ""
+		return
 	}
-	var hb htmlBuilder
 	hb.writeElementOpen("div", "class", "p-author h-card hide")
 	if user.Picture != "" {
 		hb.writeElementOpen("data", "class", "u-photo", "value", user.Picture)
@@ -186,15 +317,44 @@ func (a *goBlog) renderAuthor() template.HTML {
 		hb.writeElementClose("a")
 	}
 	hb.writeElementClose("div")
-	return hb.html()
+}
+
+// Render HTML that includes the head meta tags for a post
+func (a *goBlog) renderPostHeadMeta(hb *htmlBuilder, p *post, canonical string) {
+	if p == nil {
+		return
+	}
+	if canonical != "" {
+		hb.writeElementOpen("meta", "property", "og:url", "content", canonical)
+		hb.writeElementOpen("meta", "property", "twitter:url", "content", canonical)
+	}
+	if p.RenderedTitle != "" {
+		hb.writeElementOpen("meta", "property", "og:title", "content", p.RenderedTitle)
+		hb.writeElementOpen("meta", "property", "twitter:title", "content", p.RenderedTitle)
+	}
+	if summary := a.postSummary(p); summary != "" {
+		hb.writeElementOpen("meta", "name", "description", "content", summary)
+		hb.writeElementOpen("meta", "property", "og:description", "content", summary)
+		hb.writeElementOpen("meta", "property", "twitter:description", "content", summary)
+	}
+	if p.Published != "" {
+		hb.writeElementOpen("meta", "itemprop", "datePublished", "content", dateFormat(p.Published, "2006-01-02T15:04:05-07:00"))
+	}
+	if p.Updated != "" {
+		hb.writeElementOpen("meta", "itemprop", "dateModified", "content", dateFormat(p.Updated, "2006-01-02T15:04:05-07:00"))
+	}
+	for _, img := range a.photoLinks(p) {
+		hb.writeElementOpen("meta", "itemprop", "image", "content", img)
+		hb.writeElementOpen("meta", "property", "og:image", "content", img)
+		hb.writeElementOpen("meta", "property", "twitter:image", "content", img)
+	}
 }
 
 // Render HTML for TOR notice in the footer
-func (a *goBlog) renderTorNotice(b *configBlog, torUsed bool, torAddress string) template.HTML {
+func (a *goBlog) renderTorNotice(hb *htmlBuilder, b *configBlog, torUsed bool, torAddress string) {
 	if !a.cfg.Server.Tor || b == nil || !torUsed && torAddress == "" {
-		return ""
+		return
 	}
-	var hb htmlBuilder
 	if torUsed {
 		hb.writeElementOpen("p", "id", "tor")
 		hb.writeEscaped("🔐 ")
@@ -212,5 +372,4 @@ func (a *goBlog) renderTorNotice(b *configBlog, torUsed bool, torAddress string)
 		hb.writeElementClose("a")
 		hb.writeElementClose("p")
 	}
-	return hb.html()
 }

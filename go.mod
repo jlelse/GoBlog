@@ -47,7 +47,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tdewolff/minify/v2 v2.9.27
 	github.com/thoas/go-funk v0.9.1
-	github.com/tkrajina/gpxgo v1.1.2
+	github.com/tkrajina/gpxgo v1.2.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.4.4
