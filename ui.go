@@ -66,6 +66,72 @@ func (a *goBlog) renderEditorPreview(hb *htmlBuilder, bc *configBlog, p *post) {
 	a.renderPostTax(hb, p, bc)
 }
 
+type summaryTyp string
+
+const (
+	defaultSummary summaryTyp = "summary"
+	photoSummary   summaryTyp = "photosummary"
+)
+
+// Render the HTML for the post summary on index pages
+func (a *goBlog) renderSummary(hb *htmlBuilder, bc *configBlog, p *post, typ summaryTyp) {
+	if bc == nil || p == nil {
+		return
+	}
+	if typ == "" {
+		typ = defaultSummary
+	}
+	// Start article
+	hb.writeElementOpen("article", "class", "h-entry border-bottom")
+	if p.Priority > 0 {
+		// Is pinned post
+		hb.writeElementOpen("p")
+		hb.writeEscaped("📌 ")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "pinned"))
+		hb.writeElementClose("p")
+	}
+	if p.RenderedTitle != "" {
+		// Has title
+		hb.writeElementOpen("h2", "class", "p-name")
+		hb.writeElementOpen("a", "class", "u-url", "href", p.Path)
+		hb.writeEscaped(p.RenderedTitle)
+		hb.writeElementClose("a")
+		hb.writeElementClose("h2")
+	}
+	// Show photos in photo summary
+	photos := a.photoLinks(p)
+	if typ == photoSummary && len(photos) > 0 {
+		for _, photo := range photos {
+			hb.write(string(a.safeRenderMarkdownAsHTML(fmt.Sprintf("![](%s)", photo))))
+		}
+	}
+	// Post meta
+	a.renderPostMeta(hb, p, bc, "summary")
+	if typ != photoSummary && a.showFull(p) {
+		// Show full content
+		hb.writeElementOpen("div", "class", "e-content")
+		hb.write(string(a.postHtml(p, false)))
+		hb.writeElementClose("div")
+	} else {
+		// Show summary
+		hb.writeElementOpen("p", "class", "p-summary")
+		hb.writeEscaped(a.postSummary(p))
+		hb.writeElementClose("p")
+	}
+	// Show link to full post
+	hb.writeElementOpen("p")
+	if len(photos) > 0 {
+		// Contains photos
+		hb.writeEscaped("🖼️ ")
+	}
+	hb.writeElementOpen("a", "class", "u-url", "href", p.Path)
+	hb.writeEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "view"))
+	hb.writeElementClose("a")
+	hb.writeElementClose("p")
+	// Finish article
+	hb.writeElementClose("article")
+}
+
 // Render the HTML to show the list of post taxonomy values (tags, series, etc.)
 func (a *goBlog) renderPostTax(hb *htmlBuilder, p *post, b *configBlog) {
 	if b == nil || p == nil {

@@ -253,7 +253,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 					parameter:       a.cfg.Micropub.PhotoParam,
 					title:           pc.Title,
 					description:     pc.Description,
-					summaryTemplate: templatePhotosSummary,
+					summaryTemplate: photoSummary,
 				}),
 			)
 			r.Get(photoPath, a.serveIndex)

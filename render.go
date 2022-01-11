@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"html/template"
 	"net/http"
 	"os"
@@ -23,8 +22,6 @@ const (
 	templateIndex              = "index"
 	templateTaxonomy           = "taxonomy"
 	templateSearch             = "search"
-	templateSummary            = "summary"
-	templatePhotosSummary      = "photosummary"
 	templateEditor             = "editor"
 	templateEditorFiles        = "editorfiles"
 	templateLogin              = "login"
@@ -49,12 +46,9 @@ func (a *goBlog) initRendering() error {
 		"mdtitle": a.renderMdTitle,
 		"html":    wrapStringAsHTML,
 		// Post specific
-		"content":    a.postHtml,
-		"summary":    a.postSummary,
-		"shorturl":   a.shortPostURL,
-		"showfull":   a.showFull,
-		"photolinks": a.photoLinks,
-		"gettrack":   a.getTrack,
+		"content":  a.postHtml,
+		"shorturl": a.shortPostURL,
+		"gettrack": a.getTrack,
 		// Code based rendering
 		"posttax": func(p *post, b *configBlog) template.HTML {
 			var hb htmlBuilder
@@ -91,6 +85,11 @@ func (a *goBlog) initRendering() error {
 			a.renderTorNotice(&hb, b, torUsed, torAddress)
 			return hb.html()
 		},
+		"summary": func(bc *configBlog, p *post, typ summaryTyp) template.HTML {
+			var hb htmlBuilder
+			a.renderSummary(&hb, bc, p, typ)
+			return hb.html()
+		},
 		// Others
 		"dateformat":     dateFormat,
 		"isodate":        isoDateFormat,
@@ -98,7 +97,6 @@ func (a *goBlog) initRendering() error {
 		"now":            localNowString,
 		"asset":          a.assetFileName,
 		"string":         a.ts.GetTemplateStringVariantFunc(),
-		"include":        a.includeRenderedTemplate,
 		"urlize":         urlize,
 		"absolute":       a.getFullAddress,
 		"opensearch":     openSearchUrl,
@@ -215,21 +213,4 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	if data.Data == nil {
 		data.Data = map[string]interface{}{}
 	}
-}
-
-func (a *goBlog) includeRenderedTemplate(templateName string, data ...interface{}) (template.HTML, error) {
-	if l := len(data); l < 1 || l > 2 {
-		return "", errors.New("wrong argument count")
-	}
-	if rd, ok := data[0].(*renderData); ok {
-		if len(data) == 2 {
-			nrd := *rd
-			nrd.Data = data[1]
-			rd = &nrd
-		}
-		var buf bytes.Buffer
-		err := a.templates[templateName].ExecuteTemplate(&buf, templateName, rd)
-		return template.HTML(buf.String()), err
-	}
-	return "", errors.New("wrong arguments")
 }

@@ -238,7 +238,7 @@ type indexConfig struct {
 	year, month, day int
 	title            string
 	description      string
-	summaryTemplate  string
+	summaryTemplate  summaryTyp
 	status           postStatus
 	statusse         []postStatus
 }
@@ -337,7 +337,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	nextPath = fmt.Sprintf("%s/page/%d", strings.TrimSuffix(path, "/"), nextPage)
 	summaryTemplate := ic.summaryTemplate
 	if summaryTemplate == "" {
-		summaryTemplate = templateSummary
+		summaryTemplate = defaultSummary
 	}
 	a.render(w, r, templateIndex, &renderData{
 		Canonical: a.getFullAddress(path),
