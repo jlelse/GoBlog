@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"errors"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -14,8 +15,7 @@ import (
 func (a *goBlog) tailscaleEnabled() bool {
 	return a.cfg.Server != nil &&
 		a.cfg.Server.Tailscale != nil &&
-		a.cfg.Server.Tailscale.Enabled &&
-		a.cfg.Server.Tailscale.AuthKey != ""
+		a.cfg.Server.Tailscale.Enabled
 }
 
 func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
@@ -24,8 +24,13 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 	}
 	a.tsinit.Do(func() {
 		tsconfig := a.cfg.Server.Tailscale
-		// Set Auth Key
-		_ = os.Setenv("TS_AUTHKEY", tsconfig.AuthKey)
+		if tsconfig.AuthKey != "" {
+			// Set Auth Key
+			_ = os.Setenv("TS_AUTHKEY", tsconfig.AuthKey)
+		} else {
+			// Set interactive login (doesn't require a new key every few months)
+			_ = os.Setenv("TS_LOGIN", "1")
+		}
 		// Enable Tailscale WIP code
 		_ = os.Setenv("TAILSCALE_USE_WIP_CODE", "true")
 		// Init server
@@ -35,8 +40,7 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 			Hostname: tsconfig.Hostname,
 			Dir:      tailscaleDir,
 			Logf: func(format string, args ...interface{}) {
-				// Uncomment to enable Tailscale logging
-				// log.Printf("tailscale: "+format, args...)
+				log.Printf("tailscale: "+format, args...)
 			},
 		}
 	})

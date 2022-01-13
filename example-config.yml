@@ -30,7 +30,7 @@ server:
   tailscale:
     enabled: true # Enable the integrated Tailscale support
     hostname: goblog # The hostname to use for Tailscale
-    authKey: "tskey-XXX" # The authentication key for Tailscale
+    authKey: "tskey-XXX" # The authentication key for Tailscale (alternatively, use the authentication link in the logging output)
 
 # Cache
 cache:
