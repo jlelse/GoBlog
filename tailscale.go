@@ -27,9 +27,6 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 		if tsconfig.AuthKey != "" {
 			// Set Auth Key
 			_ = os.Setenv("TS_AUTHKEY", tsconfig.AuthKey)
-		} else {
-			// Set interactive login (doesn't require a new key every few months)
-			_ = os.Setenv("TS_LOGIN", "1")
 		}
 		// Enable Tailscale WIP code
 		_ = os.Setenv("TAILSCALE_USE_WIP_CODE", "true")
