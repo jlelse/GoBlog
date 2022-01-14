@@ -9,6 +9,7 @@ require (
 	git.jlel.se/jlelse/template-strings v0.0.0-20210617205924-cfa3bd35ae40
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alecthomas/chroma v0.10.0
+	github.com/andybalholm/brotli v1.0.4
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
 	github.com/carlmjohnson/requests v0.22.1
