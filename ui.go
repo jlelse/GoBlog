@@ -167,7 +167,7 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 	hb.writeElementClose("footer")
 	// Easter egg
 	if rd.EasterEgg {
-		hb.writeElementOpen("script", "src", "js/easteregg.js", "defer", "")
+		hb.writeElementOpen("script", "src", a.assetFileName("js/easteregg.js"), "defer", "")
 		hb.writeElementClose("script")
 	}
 	hb.writeElementClose("html")
