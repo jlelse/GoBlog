@@ -62,12 +62,12 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		a.render(w, r, templateLogin, &renderData{
-			Data: map[string]interface{}{
-				"loginmethod":  r.Method,
-				"loginheaders": base64.StdEncoding.EncodeToString(h),
-				"loginbody":    base64.StdEncoding.EncodeToString(b),
-				"totp":         a.cfg.User.TOTP != "",
+		a.renderNew(w, r, a.renderLogin, &renderData{
+			Data: &loginRenderData{
+				loginMethod:  r.Method,
+				loginHeaders: base64.StdEncoding.EncodeToString(h),
+				loginBody:    base64.StdEncoding.EncodeToString(b),
+				totp:         a.cfg.User.TOTP != "",
 			},
 		})
 	})

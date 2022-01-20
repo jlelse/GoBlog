@@ -8,11 +8,6 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-type errorData struct {
-	Title   string
-	Message string
-}
-
 func (a *goBlog) serve404(w http.ResponseWriter, r *http.Request) {
 	a.serveError(w, r, fmt.Sprintf("%s was not found", r.RequestURI), http.StatusNotFound)
 }
@@ -40,8 +35,8 @@ func (a *goBlog) serveError(w http.ResponseWriter, r *http.Request, message stri
 		http.Error(w, message, status)
 		return
 	}
-	a.renderWithStatusCode(w, r, status, templateError, &renderData{
-		Data: &errorData{
+	a.renderNewWithStatusCode(w, r, status, a.renderError, &renderData{
+		Data: &errorRenderData{
 			Title:   fmt.Sprintf("%d %s", status, http.StatusText(status)),
 			Message: message,
 		},

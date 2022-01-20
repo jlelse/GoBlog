@@ -254,7 +254,7 @@ details summary {
   height: 400px;
 }
 
-#post-actions {
+#post-actions, #posteditactions {
   @extend .p;
   display: flex;
   flex-wrap: wrap;

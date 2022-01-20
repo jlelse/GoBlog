@@ -73,7 +73,7 @@ func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered [
 	// Render post
 	var hb htmlBuilder
 	a.renderEditorPreview(&hb, a.cfg.Blogs[blog], p)
-	rendered = []byte(hb.String())
+	rendered = hb.Bytes()
 	return
 }
 

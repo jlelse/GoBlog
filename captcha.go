@@ -65,12 +65,12 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		// Render captcha
 		_ = ses.Save(r, w)
 		w.Header().Set("Cache-Control", "no-store,max-age=0")
-		a.renderWithStatusCode(w, r, http.StatusUnauthorized, templateCaptcha, &renderData{
-			Data: map[string]string{
-				"captchamethod":  r.Method,
-				"captchaheaders": base64.StdEncoding.EncodeToString(h),
-				"captchabody":    base64.StdEncoding.EncodeToString(b),
-				"captchaid":      captchaId,
+		a.renderNewWithStatusCode(w, r, http.StatusUnauthorized, a.renderCaptcha, &renderData{
+			Data: &captchaRenderData{
+				captchaMethod:  r.Method,
+				captchaHeaders: base64.StdEncoding.EncodeToString(h),
+				captchaBody:    base64.StdEncoding.EncodeToString(b),
+				captchaId:      captchaId,
 			},
 		})
 	})

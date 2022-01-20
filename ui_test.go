@@ -2,6 +2,7 @@ package main
 
 import (
 	"html/template"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -10,6 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var _ io.Writer = &htmlBuilder{}
+var _ io.StringWriter = &htmlBuilder{}
+var _ io.Reader = &htmlBuilder{}
 
 func Test_renderPostTax(t *testing.T) {
 	app := &goBlog{
@@ -136,31 +141,4 @@ func Test_renderAuthor(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, template.HTML("<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"https://example.com/picture.jpg\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>"), res)
-}
-
-func Test_renderTorNotice(t *testing.T) {
-	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	app.initComponents(false)
-
-	app.cfg.Server.Tor = true
-
-	var hb htmlBuilder
-	app.renderTorNotice(&hb, app.cfg.Blogs["default"], true, "http://abc.onion:80/test")
-	res := hb.html()
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
-	require.NoError(t, err)
-
-	assert.Equal(t, template.HTML("<p id=\"tor\">🔐 Connected via Tor.</p>"), res)
-
-	hb.Reset()
-	app.renderTorNotice(&hb, app.cfg.Blogs["default"], false, "http://abc.onion:80/test")
-	res = hb.html()
-	_, err = goquery.NewDocumentFromReader(strings.NewReader(string(res)))
-	require.NoError(t, err)
-
-	assert.Equal(t, template.HTML("<p id=\"tor\">🔓 <a href=\"http://abc.onion:80/test\">Connect via Tor.</a> <a href=\"https://www.torproject.org/\" target=\"_blank\" rel=\"nofollow noopener noreferrer\">What is Tor?</a></p>"), res)
 }

@@ -39,7 +39,7 @@
         <nav>{{ range $i, $item := .Items }}{{ if ne $i 0 }} &bull; {{ end }}<a href="{{ $item.Link }}">{{ mdtitle $item.Title }}</a>{{ end }}</nav>
       {{ end }}
       <p translate="no">&copy; {{ dateformat now "2006" }} {{ with .User.Name }}{{ . }}{{ else }}{{ mdtitle .Blog.Title }}{{ end }}</p>
-      {{ tor .Blog .TorUsed .TorAddress }}
+      {{ tor . }}
     </footer>
     {{ if .EasterEgg }}<script defer src="{{ asset "js/easteregg.js" }}"></script>{{ end }}
   </html>

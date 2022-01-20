@@ -17,25 +17,11 @@ const (
 	templatesExt = ".gohtml"
 
 	templateBase               = "base"
-	templatePost               = "post"
-	templateError              = "error"
-	templateIndex              = "index"
-	templateTaxonomy           = "taxonomy"
-	templateSearch             = "search"
 	templateEditor             = "editor"
 	templateEditorFiles        = "editorfiles"
-	templateLogin              = "login"
-	templateStaticHome         = "statichome"
-	templateBlogStats          = "blogstats"
-	templateBlogStatsTable     = "blogstatstable"
-	templateComment            = "comment"
-	templateCaptcha            = "captcha"
 	templateCommentsAdmin      = "commentsadmin"
 	templateNotificationsAdmin = "notificationsadmin"
 	templateWebmentionAdmin    = "webmentionadmin"
-	templateBlogroll           = "blogroll"
-	templateGeoMap             = "geomap"
-	templateContact            = "contact"
 	templateIndieAuth          = "indieauth"
 )
 
@@ -45,49 +31,10 @@ func (a *goBlog) initRendering() error {
 		"md":      a.safeRenderMarkdownAsHTML,
 		"mdtitle": a.renderMdTitle,
 		"html":    wrapStringAsHTML,
-		// Post specific
-		"content":  a.postHtml,
-		"shorturl": a.shortPostURL,
-		"gettrack": a.getTrack,
 		// Code based rendering
-		"posttax": func(p *post, b *configBlog) template.HTML {
+		"tor": func(rd *renderData) template.HTML {
 			var hb htmlBuilder
-			a.renderPostTax(&hb, p, b)
-			return hb.html()
-		},
-		"postmeta": func(p *post, b *configBlog, typ string) template.HTML {
-			var hb htmlBuilder
-			a.renderPostMeta(&hb, p, b, typ)
-			return hb.html()
-		},
-		"oldcontentwarning": func(p *post, b *configBlog) template.HTML {
-			var hb htmlBuilder
-			a.renderOldContentWarning(&hb, p, b)
-			return hb.html()
-		},
-		"interactions": func(b *configBlog, c string) template.HTML {
-			var hb htmlBuilder
-			a.renderInteractions(&hb, b, c)
-			return hb.html()
-		},
-		"author": func() template.HTML {
-			var hb htmlBuilder
-			a.renderAuthor(&hb)
-			return hb.html()
-		},
-		"postheadmeta": func(p *post, c string) template.HTML {
-			var hb htmlBuilder
-			a.renderPostHeadMeta(&hb, p, c)
-			return hb.html()
-		},
-		"tor": func(b *configBlog, torUsed bool, torAddress string) template.HTML {
-			var hb htmlBuilder
-			a.renderTorNotice(&hb, b, torUsed, torAddress)
-			return hb.html()
-		},
-		"summary": func(bc *configBlog, p *post, typ summaryTyp) template.HTML {
-			var hb htmlBuilder
-			a.renderSummary(&hb, bc, p, typ)
+			a.renderTorNotice(&hb, rd)
 			return hb.html()
 		},
 		// Others
@@ -97,13 +44,11 @@ func (a *goBlog) initRendering() error {
 		"now":            localNowString,
 		"asset":          a.assetFileName,
 		"string":         a.ts.GetTemplateStringVariantFunc(),
-		"urlize":         urlize,
 		"absolute":       a.getFullAddress,
 		"opensearch":     openSearchUrl,
 		"mbytes":         mBytesString,
 		"editortemplate": a.editorPostTemplate,
 		"editorpostdesc": a.editorPostDesc,
-		"ttsenabled":     a.ttsEnabled,
 	}
 	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
 	if err != nil {
@@ -168,6 +113,24 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (a *goBlog) renderNew(w http.ResponseWriter, r *http.Request, f func(*htmlBuilder, *renderData), data *renderData) {
+	a.renderNewWithStatusCode(w, r, http.StatusOK, f, data)
+}
+
+func (a *goBlog) renderNewWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlBuilder, *renderData), data *renderData) {
+	// Check render data
+	a.checkRenderData(r, data)
+	// Set content type
+	w.Header().Set(contentType, contenttype.HTMLUTF8)
+	// Write status code
+	w.WriteHeader(statusCode)
+	// Render
+	minWriter := a.min.Get().Writer(contenttype.HTML, w)
+	defer minWriter.Close()
+	hb := newHtmlBuilder(minWriter)
+	f(hb, data)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

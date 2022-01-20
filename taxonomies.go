@@ -20,11 +20,11 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, r, templateTaxonomy, &renderData{
+	a.renderNew(w, r, a.renderTaxonomy, &renderData{
 		Canonical: a.getFullAddress(r.URL.Path),
-		Data: map[string]interface{}{
-			"Taxonomy":    tax,
-			"ValueGroups": groupStrings(allValues),
+		Data: &taxonomyRenderData{
+			taxonomy:    tax,
+			valueGroups: groupStrings(allValues),
 		},
 	})
 }

@@ -73,16 +73,16 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	if canonical == "" {
 		canonical = a.fullPostURL(p)
 	}
-	template := templatePost
+	renderMethod := a.renderPost
 	if p.Path == a.getRelativePath(p.Blog, "") {
-		template = templateStaticHome
+		renderMethod = a.renderStaticHome
 	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))
 	status := http.StatusOK
 	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
 		status = http.StatusGone
 	}
-	a.renderWithStatusCode(w, r, status, template, &renderData{
+	a.renderNewWithStatusCode(w, r, status, renderMethod, &renderData{
 		BlogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
@@ -201,23 +201,22 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 	}
 	var title, dPath strings.Builder
 	if year != 0 {
-		ys := fmt.Sprintf("%0004d", year)
-		title.WriteString(ys)
-		dPath.WriteString(ys)
+		_, _ = fmt.Fprintf(&title, "%0004d", year)
+		_, _ = fmt.Fprintf(&dPath, "%0004d", year)
 	} else {
-		title.WriteString("XXXX")
-		dPath.WriteString("x")
+		_, _ = title.WriteString("XXXX")
+		_, _ = dPath.WriteString("x")
 	}
 	if month != 0 {
-		title.WriteString(fmt.Sprintf("-%02d", month))
-		dPath.WriteString(fmt.Sprintf("/%02d", month))
+		_, _ = fmt.Fprintf(&title, "-%02d", month)
+		_, _ = fmt.Fprintf(&dPath, "/%02d", month)
 	} else if day != 0 {
-		title.WriteString("-XX")
-		dPath.WriteString("/x")
+		_, _ = title.WriteString("-XX")
+		_, _ = dPath.WriteString("/x")
 	}
 	if day != 0 {
-		title.WriteString(fmt.Sprintf("-%02d", day))
-		dPath.WriteString(fmt.Sprintf("/%02d", day))
+		_, _ = fmt.Fprintf(&title, "-%02d", day)
+		_, _ = fmt.Fprintf(&dPath, "/%02d", day)
 	}
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
@@ -339,18 +338,18 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	if summaryTemplate == "" {
 		summaryTemplate = defaultSummary
 	}
-	a.render(w, r, templateIndex, &renderData{
+	a.renderNew(w, r, a.renderIndex, &renderData{
 		Canonical: a.getFullAddress(path),
-		Data: map[string]interface{}{
-			"Title":           title,
-			"Description":     description,
-			"Posts":           posts,
-			"HasPrev":         hasPrev,
-			"HasNext":         hasNext,
-			"First":           path,
-			"Prev":            prevPath,
-			"Next":            nextPath,
-			"SummaryTemplate": summaryTemplate,
+		Data: &indexRenderData{
+			title:           title,
+			description:     description,
+			posts:           posts,
+			hasPrev:         hasPrev,
+			hasNext:         hasNext,
+			first:           path,
+			prev:            prevPath,
+			next:            nextPath,
+			summaryTemplate: summaryTemplate,
 		},
 	})
 }

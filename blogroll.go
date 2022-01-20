@@ -29,13 +29,13 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	}
 	c := bc.Blogroll
 	can := bc.getRelativePath(defaultIfEmpty(c.Path, defaultBlogrollPath))
-	a.render(w, r, templateBlogroll, &renderData{
+	a.renderNew(w, r, a.renderBlogroll, &renderData{
 		Canonical: a.getFullAddress(can),
-		Data: map[string]interface{}{
-			"Title":       c.Title,
-			"Description": c.Description,
-			"Outlines":    outlines,
-			"Download":    can + ".opml",
+		Data: &blogrollRenderData{
+			title:       c.Title,
+			description: c.Description,
+			outlines:    outlines.([]*opml.Outline),
+			download:    can + ".opml",
 		},
 	})
 }

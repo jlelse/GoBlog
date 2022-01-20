@@ -26,7 +26,7 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, path.Join(servePath, searchEncode(q)), http.StatusFound)
 		return
 	}
-	a.render(w, r, templateSearch, &renderData{
+	a.renderNew(w, r, a.renderSearch, &renderData{
 		Canonical: a.getFullAddress(servePath),
 	})
 }
