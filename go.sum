@@ -823,8 +823,8 @@ rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 software.sslmate.com/src/go-pkcs12 v0.0.0-20210415151418-c5206de65a78 h1:SqYE5+A2qvRhErbsXFfUEUmpWEKxxRSMgGLkvRAFOV4=
-tailscale.com v1.20.1 h1:FPD1xDkDRssZF1HJ/9t5CqPT5wEgUlgWz5BHNakQGDg=
-tailscale.com v1.20.1/go.mod h1:kjVy3ji2OH5lZhPLIIRacoY3CN4Bo3Yyb2mtoM8nfJ4=
+tailscale.com v1.20.2 h1:Vk6SVGmczDFSx+PYjbKMa8gIC9Y9Rq+vT1XoZni+fkA=
+tailscale.com v1.20.2/go.mod h1:kjVy3ji2OH5lZhPLIIRacoY3CN4Bo3Yyb2mtoM8nfJ4=
 willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971 h1:b4juh5znIpBA1KnzHMP0UB4Cs+3/0b0XfchkWE81FXw=
 willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971/go.mod h1:kvVnWrkkEscVAIITCEoiTX66Hcyg59C7q0E49mb9TJ0=
 willnorris.com/go/webmention v0.0.0-20211028201829-b0044f1a24d0 h1:3/ozQ2qGZat82ON3AYMTot3gCg/vU7tgn/LYSJbkVPM=
