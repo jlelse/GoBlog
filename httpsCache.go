@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"golang.org/x/crypto/acme/autocert"
@@ -27,7 +26,7 @@ func (c *httpsCache) Get(_ context.Context, key string) ([]byte, error) {
 		return nil, err
 	}
 	d, err := c.db.retrievePersistentCache("https_" + key)
-	if errors.Is(err, sql.ErrNoRows) {
+	if d == nil && err == nil {
 		return nil, autocert.ErrCacheMiss
 	} else if err != nil {
 		return nil, err

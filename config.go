@@ -24,6 +24,7 @@ type config struct {
 	Webmention    *configWebmention      `mapstructure:"webmention"`
 	Notifications *configNotifications   `mapstructure:"notifications"`
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
+	IndexNow      *configIndexNow        `mapstructure:"indexNow"`
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 	Debug         bool                   `mapstructure:"debug"`
 	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
@@ -276,6 +277,10 @@ type configTelegram struct {
 }
 
 type configPrivateMode struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type configIndexNow struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

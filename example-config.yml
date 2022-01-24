@@ -41,6 +41,10 @@ cache:
 privateMode:
   enabled: true # Enable private mode and only allow access with login
 
+# IndexNow (https://www.indexnow.org/index)
+indexNow:
+  enabled: true # Enable IndexNow integration
+
 # User
 user:
   name: John Doe # Full name

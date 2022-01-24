@@ -182,6 +182,7 @@ func (app *goBlog) initComponents(logging bool) {
 	app.initIndieAuth()
 	app.startPostsScheduler()
 	app.initPostsDeleter()
+	app.initIndexNow()
 	// Log finish
 	if logging {
 		log.Println("Initialized components")

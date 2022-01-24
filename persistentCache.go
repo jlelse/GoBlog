@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 )
 
 func (db *database) cachePersistently(key string, data []byte) error {
@@ -11,17 +12,21 @@ func (db *database) cachePersistently(key string, data []byte) error {
 
 func (db *database) retrievePersistentCache(key string) (data []byte, err error) {
 	d, err, _ := db.pc.Do(key, func() (interface{}, error) {
-		if row, err := db.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err == sql.ErrNoRows {
-			return nil, nil
-		} else if err != nil {
+		if row, err := db.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
 			return nil, err
 		} else {
 			err = row.Scan(&data)
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
 			return data, err
 		}
 	})
 	if err != nil {
 		return nil, err
+	}
+	if d == nil {
+		return nil, nil
 	}
 	return d.([]byte), nil
 }

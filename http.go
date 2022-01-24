@@ -205,6 +205,13 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	// Sitemap
 	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
+	// IndexNow
+	if a.indexNowEnabled() {
+		if inkey := a.indexNowKey(); inkey != "" {
+			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/"+inkey+".txt", a.serveIndexNow)
+		}
+	}
+
 	// Robots.txt
 	r.With(cacheLoggedIn, a.cacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
 
