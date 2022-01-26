@@ -85,6 +85,7 @@ type configBlog struct {
 	Telegram       *configTelegram           `mapstructure:"telegram"`
 	PostAsHome     bool                      `mapstructure:"postAsHome"`
 	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
+	OnThisDay      *configOnThisDay          `mapstructure:"onThisDay"`
 	Comments       *configComments           `mapstructure:"comments"`
 	Map            *configGeoMap             `mapstructure:"map"`
 	Contact        *configContact            `mapstructure:"contact"`
@@ -156,6 +157,11 @@ type configCustomPage struct {
 }
 
 type configRandomPost struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"`
+}
+
+type configOnThisDay struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
 }

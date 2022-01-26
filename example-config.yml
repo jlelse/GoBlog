@@ -235,6 +235,10 @@ blogs:
     randomPost:
       enabled: true # Enable
       path: /random # Path
+    # Redirect to archive of the current day in previous years
+    onThisDay:
+      enabled: true # Enable
+      path: /onthisday # Path
     # Send notifications about new posts to Telegram channel
     telegram:
       enabled: true # Enable

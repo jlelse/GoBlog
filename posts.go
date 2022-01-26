@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
@@ -89,6 +90,8 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const defaultRandomPath = "/random"
+
 func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 	randomPath, err := a.getRandomPostPath(blog)
@@ -97,6 +100,21 @@ func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(rw, r, randomPath, http.StatusFound)
+}
+
+const defaultOnThisDayPath = "/onthisday"
+
+func (a *goBlog) redirectToOnThisDay(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	// Get current local month and day
+	now := time.Now()
+	month := now.Month()
+	day := now.Day()
+	// Build the path
+	targetPath := fmt.Sprintf("/x/%02d/%02d", month, day)
+	targetPath = bc.getRelativePath(targetPath)
+	// Redirect
+	http.Redirect(w, r, targetPath, http.StatusFound)
 }
 
 type postPaginationAdapter struct {

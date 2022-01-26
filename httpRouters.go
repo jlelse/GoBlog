@@ -134,6 +134,9 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 		// Random post
 		r.Group(a.blogRandomRouter(conf))
 
+		// On this day
+		r.Group(a.blogOnThisDayRouter(conf))
+
 		// Editor
 		r.Route(conf.getRelativePath(editorPath), a.blogEditorRouter(conf))
 
@@ -319,7 +322,16 @@ func (a *goBlog) blogCustomPagesRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogRandomRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if rp := conf.RandomPost; rp != nil && rp.Enabled {
-			r.With(a.privateModeHandler).Get(conf.getRelativePath(defaultIfEmpty(rp.Path, "/random")), a.redirectToRandomPost)
+			r.With(a.privateModeHandler).Get(conf.getRelativePath(defaultIfEmpty(rp.Path, defaultRandomPath)), a.redirectToRandomPost)
+		}
+	}
+}
+
+// Blog - On this day
+func (a *goBlog) blogOnThisDayRouter(conf *configBlog) func(r chi.Router) {
+	return func(r chi.Router) {
+		if otd := conf.OnThisDay; otd != nil && otd.Enabled {
+			r.With(a.privateModeHandler).Get(conf.getRelativePath(defaultIfEmpty(otd.Path, defaultOnThisDayPath)), a.redirectToOnThisDay)
 		}
 	}
 }
