@@ -128,10 +128,13 @@ func (a *goBlog) renderNewWithStatusCode(w http.ResponseWriter, r *http.Request,
 	// Write status code
 	w.WriteHeader(statusCode)
 	// Render
-	minWriter := a.min.Get().Writer(contenttype.HTML, w)
-	defer minWriter.Close()
+	buf := bufferpool.Get()
+	minWriter := a.min.Get().Writer(contenttype.HTML, buf)
 	hb := newHtmlBuilder(minWriter)
 	f(hb, data)
+	_ = minWriter.Close()
+	_, _ = buf.WriteTo(w)
+	bufferpool.Put(buf)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

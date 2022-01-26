@@ -79,7 +79,7 @@ func (a *goBlog) initMarkdown() {
 
 func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
 	buffer := bufferpool.Get()
-	a.renderMarkdownToWriter(buffer, source, absoluteLinks)
+	err = a.renderMarkdownToWriter(buffer, source, absoluteLinks)
 	rendered = buffer.Bytes()
 	bufferpool.Put(buffer)
 	return

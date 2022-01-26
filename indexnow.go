@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 
@@ -42,7 +43,7 @@ func (a *goBlog) indexNowEnabled() bool {
 }
 
 func (a *goBlog) serveIndexNow(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(a.indexNowKey()))
+	_, _ = io.WriteString(w, a.indexNowKey())
 }
 
 func (a *goBlog) indexNow(url string) {
