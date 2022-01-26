@@ -33,6 +33,7 @@ func Test_postsScheduler(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	err := app.db.savePost(&post{

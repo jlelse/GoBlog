@@ -18,6 +18,7 @@ func Test_queue(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	db := app.db
 
 	err := db.enqueue("test", []byte(""), time.Now())

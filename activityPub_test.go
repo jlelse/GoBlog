@@ -20,6 +20,7 @@ func Test_loadActivityPubPrivateKey(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 
 	// Generate
 	err := app.loadActivityPubPrivateKey()

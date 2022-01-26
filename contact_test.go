@@ -52,6 +52,7 @@ func Test_contact(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	// Make contact form request

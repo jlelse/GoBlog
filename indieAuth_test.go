@@ -30,6 +30,7 @@ func Test_checkIndieAuth(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

@@ -124,6 +124,7 @@ func Test_telegram(t *testing.T) {
 		}
 		_ = app.initConfig()
 		_ = app.initDatabase(false)
+		defer app.db.close()
 
 		app.initMarkdown()
 		app.initTelegram()
@@ -157,6 +158,7 @@ func Test_telegram(t *testing.T) {
 
 		_ = app.initConfig()
 		_ = app.initDatabase(false)
+		defer app.db.close()
 
 		app.initTelegram()
 

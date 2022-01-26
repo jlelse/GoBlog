@@ -43,6 +43,7 @@ func Test_blogroll(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	fc.setFakeResponse(200, `

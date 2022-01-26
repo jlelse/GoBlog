@@ -18,6 +18,7 @@ func Test_export(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{

@@ -26,6 +26,7 @@ func Test_ntfySending(t *testing.T) {
 
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	app.sendNotification("Test notification")

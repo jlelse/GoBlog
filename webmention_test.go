@@ -29,6 +29,7 @@ func Test_webmentions(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	_ = app.db.insertWebmention(&mention{

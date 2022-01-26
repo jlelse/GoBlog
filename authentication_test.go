@@ -31,6 +31,7 @@ func Test_authMiddleware(t *testing.T) {
 
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	app.d = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

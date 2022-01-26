@@ -46,6 +46,7 @@ func Test_privateMode(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	handler := alice.New(middleware.WithValue(blogKey, "en"), app.privateModeHandler).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {

@@ -28,6 +28,7 @@ func Test_geoTrack(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	// First test (just with track)

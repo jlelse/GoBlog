@@ -37,6 +37,7 @@ func Test_verifyMention(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	m := &mention{
@@ -84,6 +85,7 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	m := &mention{
@@ -127,6 +129,7 @@ func Test_verifyMentionColin(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	m := &mention{

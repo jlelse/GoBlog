@@ -43,6 +43,7 @@ func Test_blogStats(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	// Insert post

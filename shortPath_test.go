@@ -17,6 +17,7 @@ func Test_shortenPath(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	db := app.db
 
 	res1, err := db.shortenPath("/a")

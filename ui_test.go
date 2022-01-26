@@ -21,6 +21,7 @@ func Test_renderPostTax(t *testing.T) {
 	}
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	p := &post{
@@ -47,6 +48,7 @@ func Test_renderOldContentWarning(t *testing.T) {
 	}
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	p := &post{
@@ -74,6 +76,7 @@ func Test_renderInteractions(t *testing.T) {
 	app.cfg.Server.PublicAddress = "https://example.com"
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 	app.d, err = app.buildRouter()
 	require.NoError(t, err)
@@ -140,6 +143,7 @@ func Test_renderAuthor(t *testing.T) {
 	app.cfg.User.Name = "John Doe"
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	buf := &bytes.Buffer{}

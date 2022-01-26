@@ -17,6 +17,7 @@ func Test_editorPreview(t *testing.T) {
 	}
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

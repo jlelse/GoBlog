@@ -18,6 +18,7 @@ func Test_serveDate(t *testing.T) {
 	}
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	app.d, err = app.buildRouter()
@@ -108,6 +109,7 @@ func Test_servePost(t *testing.T) {
 	})
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	app.d, err = app.buildRouter()

@@ -26,6 +26,7 @@ func Test_postsDb(t *testing.T) {
 	}
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	now := toLocalSafe(time.Now().String())
@@ -234,6 +235,7 @@ func Test_ftsWithoutTitle(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{
@@ -265,6 +267,7 @@ func Test_postsPriority(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{
@@ -315,6 +318,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 		},
 	}
 	_ = app.initDatabase(false)
+	defer app.db.close()
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",

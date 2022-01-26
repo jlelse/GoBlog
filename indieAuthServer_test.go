@@ -49,6 +49,7 @@ func Test_indieAuthServer(t *testing.T) {
 	require.NoError(t, err)
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	app.ias.Client = newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

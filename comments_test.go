@@ -37,6 +37,7 @@ func Test_comments(t *testing.T) {
 	}
 
 	_ = app.initDatabase(false)
+	defer app.db.close()
 	app.initComponents(false)
 
 	t.Run("Successful comment", func(t *testing.T) {
