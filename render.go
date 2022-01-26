@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"html/template"
 	"net/http"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -33,9 +33,12 @@ func (a *goBlog) initRendering() error {
 		"html":    wrapStringAsHTML,
 		// Code based rendering
 		"tor": func(rd *renderData) template.HTML {
-			var hb htmlBuilder
-			a.renderTorNotice(&hb, rd)
-			return hb.html()
+			buf := bufferpool.Get()
+			hb := newHtmlBuilder(buf)
+			a.renderTorNotice(hb, rd)
+			res := template.HTML(buf.String())
+			bufferpool.Put(buf)
+			return res
 		},
 		// Others
 		"dateformat":     dateFormat,
@@ -103,16 +106,14 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Set content type
 	w.Header().Set(contentType, contenttype.HTMLUTF8)
 	// Render template and write minified HTML
-	var templateBuffer bytes.Buffer
-	if err := a.templates[template].ExecuteTemplate(&templateBuffer, template, data); err != nil {
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := a.templates[template].ExecuteTemplate(buf, template, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(statusCode)
-	if err := a.min.Minify(contenttype.HTML, w, &templateBuffer); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	_ = a.min.Minify(contenttype.HTML, w, buf)
 }
 
 func (a *goBlog) renderNew(w http.ResponseWriter, r *http.Request, f func(*htmlBuilder, *renderData), data *renderData) {

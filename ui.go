@@ -71,7 +71,7 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 	// Announcement
 	if ann := rd.Blog.Announcement; ann != nil && ann.Text != "" {
 		hb.writeElementOpen("div", "id", "announcement", "data-nosnippet", "")
-		hb.writeHtml(a.safeRenderMarkdownAsHTML(ann.Text))
+		_ = a.renderMarkdownToWriter(hb, ann.Text, false)
 		hb.writeElementClose("div")
 	}
 	// Header
@@ -270,7 +270,7 @@ func (a *goBlog) renderSearch(hb *htmlBuilder, rd *renderData) {
 			// Description
 			if sc.Description != "" {
 				titleOrDesc = true
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(sc.Description))
+				_ = a.renderMarkdownToWriter(hb, sc.Description, false)
 			}
 			if titleOrDesc {
 				hb.writeElementOpen("hr")
@@ -381,7 +381,7 @@ func (a *goBlog) renderIndex(hb *htmlBuilder, rd *renderData) {
 			// Description
 			if id.description != "" {
 				titleOrDesc = true
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(id.description))
+				_ = a.renderMarkdownToWriter(hb, id.description, false)
 			}
 			if titleOrDesc {
 				hb.writeElementOpen("hr")
@@ -445,7 +445,7 @@ func (a *goBlog) renderBlogStats(hb *htmlBuilder, rd *renderData) {
 			}
 			// Description
 			if bs.Description != "" {
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(bs.Description))
+				_ = a.renderMarkdownToWriter(hb, bs.Description, false)
 			}
 			// Table
 			hb.writeElementOpen("p", "id", "loading", "data-table", bsd.tableUrl)
@@ -663,7 +663,7 @@ func (a *goBlog) renderBlogroll(hb *htmlBuilder, rd *renderData) {
 			// Description
 			if bd.description != "" {
 				hb.writeElementOpen("p")
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(bd.description))
+				_ = a.renderMarkdownToWriter(hb, bd.description, false)
 				hb.writeElementClose("p")
 			}
 			// Download button
@@ -745,7 +745,7 @@ func (a *goBlog) renderContact(hb *htmlBuilder, rd *renderData) {
 			}
 			// Description
 			if cd.description != "" {
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(cd.description))
+				_ = a.renderMarkdownToWriter(hb, cd.description, false)
 			}
 			// Form
 			hb.writeElementOpen("form", "class", "fw p", "method", "post")
@@ -760,7 +760,7 @@ func (a *goBlog) renderContact(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("textarea")
 			// Send
 			if cd.privacy != "" {
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(cd.privacy))
+				_ = a.renderMarkdownToWriter(hb, cd.privacy, false)
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contactagreesend"))
 			} else {
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contactsend"))
@@ -837,7 +837,7 @@ func (a *goBlog) renderTaxonomy(hb *htmlBuilder, rd *renderData) {
 			}
 			// Description
 			if trd.taxonomy.Description != "" {
-				hb.writeHtml(a.safeRenderMarkdownAsHTML(trd.taxonomy.Description))
+				_ = a.renderMarkdownToWriter(hb, trd.taxonomy.Description, false)
 			}
 			// List
 			for _, valGroup := range trd.valueGroups {

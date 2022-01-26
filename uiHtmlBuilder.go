@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -9,8 +8,7 @@ import (
 )
 
 type htmlBuilder struct {
-	w   io.Writer
-	buf bytes.Buffer
+	w io.Writer
 }
 
 func newHtmlBuilder(w io.Writer) *htmlBuilder {
@@ -20,10 +18,7 @@ func newHtmlBuilder(w io.Writer) *htmlBuilder {
 }
 
 func (h *htmlBuilder) getWriter() io.Writer {
-	if h.w != nil {
-		return h.w
-	}
-	return &h.buf
+	return h.w
 }
 
 func (h *htmlBuilder) Write(p []byte) (int, error) {
@@ -32,22 +27,6 @@ func (h *htmlBuilder) Write(p []byte) (int, error) {
 
 func (h *htmlBuilder) WriteString(s string) (int, error) {
 	return io.WriteString(h.getWriter(), s)
-}
-
-func (h *htmlBuilder) Read(p []byte) (int, error) {
-	return h.buf.Read(p)
-}
-
-func (h *htmlBuilder) String() string {
-	return h.buf.String()
-}
-
-func (h *htmlBuilder) Bytes() []byte {
-	return h.buf.Bytes()
-}
-
-func (h *htmlBuilder) html() template.HTML {
-	return template.HTML(h.String())
 }
 
 func (h *htmlBuilder) write(s string) {

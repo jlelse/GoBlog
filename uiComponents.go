@@ -38,7 +38,7 @@ func (a *goBlog) renderSummary(hb *htmlBuilder, bc *configBlog, p *post, typ sum
 	photos := a.photoLinks(p)
 	if typ == photoSummary && len(photos) > 0 {
 		for _, photo := range photos {
-			hb.write(string(a.safeRenderMarkdownAsHTML(fmt.Sprintf("![](%s)", photo))))
+			_ = a.renderMarkdownToWriter(hb, fmt.Sprintf("![](%s)", photo), false)
 		}
 	}
 	// Post meta

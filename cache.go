@@ -22,16 +22,14 @@ const (
 )
 
 type cache struct {
-	g   singleflight.Group
-	c   *ristretto.Cache
-	cfg *configCache
+	g singleflight.Group
+	c *ristretto.Cache
 }
 
 func (a *goBlog) initCache() (err error) {
-	a.cache = &cache{
-		cfg: a.cfg.Cache,
-	}
-	if a.cache.cfg != nil && !a.cache.cfg.Enable {
+	a.cache = &cache{}
+	if a.cfg.Cache != nil && !a.cfg.Cache.Enable {
+		// Cache disabled
 		return nil
 	}
 	a.cache.c, err = ristretto.NewCache(&ristretto.Config{
@@ -50,13 +48,8 @@ func cacheLoggedIn(next http.Handler) http.Handler {
 
 func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if a.cache.c == nil {
-			// No cache configured
-			next.ServeHTTP(w, r)
-			return
-		}
 		// Do checks
-		if !cacheable(r) {
+		if a.cache.c == nil || !cacheable(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -79,7 +72,7 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 		})
 		ci := cacheInterface.(*cacheItem)
 		// copy and set headers
-		a.cache.setHeaders(w, ci)
+		a.setCacheHeaders(w, ci)
 		// check conditional request
 		if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == ci.eTag {
 			// send 304
@@ -129,7 +122,7 @@ func cacheKey(r *http.Request) string {
 	return buf.String()
 }
 
-func (c *cache) setHeaders(w http.ResponseWriter, cache *cacheItem) {
+func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	// Copy headers
 	for k, v := range cache.header.Clone() {
 		w.Header()[k] = v
@@ -141,7 +134,8 @@ func (c *cache) setHeaders(w http.ResponseWriter, cache *cacheItem) {
 		if cache.expiration != 0 {
 			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
 		} else {
-			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", c.cfg.Expiration, c.cfg.Expiration/3, c.cfg.Expiration))
+			exp := a.cfg.Cache.Expiration
+			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", exp, exp/3, exp))
 		}
 	}
 }

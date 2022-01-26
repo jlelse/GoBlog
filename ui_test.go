@@ -1,7 +1,7 @@
 package main
 
 import (
-	"html/template"
+	"bytes"
 	"io"
 	"os"
 	"strings"
@@ -14,7 +14,6 @@ import (
 
 var _ io.Writer = &htmlBuilder{}
 var _ io.StringWriter = &htmlBuilder{}
-var _ io.Reader = &htmlBuilder{}
 
 func Test_renderPostTax(t *testing.T) {
 	app := &goBlog{
@@ -30,13 +29,16 @@ func Test_renderPostTax(t *testing.T) {
 		},
 	}
 
-	var hb htmlBuilder
-	app.renderPostTax(&hb, p, app.cfg.Blogs["default"])
-	res := hb.html()
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
+	buf := &bytes.Buffer{}
+	hb := newHtmlBuilder(buf)
+
+	app.renderPostTax(hb, p, app.cfg.Blogs["default"])
+	res := buf.String()
+
+	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 	require.NoError(t, err)
 
-	assert.Equal(t, template.HTML("<p><strong>Tags</strong>: <a class=\"p-category\" rel=\"tag\" href=\"/tags/bar\">Bar</a>, <a class=\"p-category\" rel=\"tag\" href=\"/tags/foo\">Foo</a></p>"), res)
+	assert.Equal(t, "<p><strong>Tags</strong>: <a class=\"p-category\" rel=\"tag\" href=\"/tags/bar\">Bar</a>, <a class=\"p-category\" rel=\"tag\" href=\"/tags/foo\">Foo</a></p>", res)
 }
 
 func Test_renderOldContentWarning(t *testing.T) {
@@ -51,13 +53,16 @@ func Test_renderOldContentWarning(t *testing.T) {
 		Published: "2018-01-01",
 	}
 
-	var hb htmlBuilder
-	app.renderOldContentWarning(&hb, p, app.cfg.Blogs["default"])
-	res := hb.html()
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
+	buf := &bytes.Buffer{}
+	hb := newHtmlBuilder(buf)
+
+	app.renderOldContentWarning(hb, p, app.cfg.Blogs["default"])
+	res := buf.String()
+
+	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 	require.NoError(t, err)
 
-	assert.Equal(t, template.HTML("<strong class=\"p border-top border-bottom\">⚠️ This entry is already over one year old. It may no longer be up to date. Opinions may have changed.</strong>"), res)
+	assert.Equal(t, "<strong class=\"p border-top border-bottom\">⚠️ This entry is already over one year old. It may no longer be up to date. Opinions may have changed.</strong>", res)
 }
 
 func Test_renderInteractions(t *testing.T) {
@@ -112,16 +117,19 @@ func Test_renderInteractions(t *testing.T) {
 	err = app.db.approveWebmentionId(2)
 	require.NoError(t, err)
 
-	var hb htmlBuilder
-	app.renderInteractions(&hb, app.cfg.Blogs["default"], "https://example.com/testpost1")
-	res := hb.html()
-	_, err = goquery.NewDocumentFromReader(strings.NewReader(string(res)))
+	buf := &bytes.Buffer{}
+	hb := newHtmlBuilder(buf)
+
+	app.renderInteractions(hb, app.cfg.Blogs["default"], "https://example.com/testpost1")
+	res := buf.Bytes()
+
+	_, err = goquery.NewDocumentFromReader(bytes.NewReader(res))
 	require.NoError(t, err)
 
 	expected, err := os.ReadFile("testdata/interactionstest.html")
 	require.NoError(t, err)
 
-	assert.Equal(t, template.HTML(expected), res)
+	assert.Equal(t, expected, res)
 }
 
 func Test_renderAuthor(t *testing.T) {
@@ -134,11 +142,14 @@ func Test_renderAuthor(t *testing.T) {
 	_ = app.initDatabase(false)
 	app.initComponents(false)
 
-	var hb htmlBuilder
-	app.renderAuthor(&hb)
-	res := hb.html()
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(string(res)))
+	buf := &bytes.Buffer{}
+	hb := newHtmlBuilder(buf)
+
+	app.renderAuthor(hb)
+	res := buf.String()
+
+	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 	require.NoError(t, err)
 
-	assert.Equal(t, template.HTML("<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"https://example.com/picture.jpg\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>"), res)
+	assert.Equal(t, "<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"https://example.com/picture.jpg\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>", res)
 }

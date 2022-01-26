@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"html/template"
+	"io"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
@@ -15,6 +16,7 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func (a *goBlog) initMarkdown() {
@@ -76,13 +78,20 @@ func (a *goBlog) initMarkdown() {
 }
 
 func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
-	var buffer bytes.Buffer
+	buffer := bufferpool.Get()
+	a.renderMarkdownToWriter(buffer, source, absoluteLinks)
+	rendered = buffer.Bytes()
+	bufferpool.Put(buffer)
+	return
+}
+
+func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string, absoluteLinks bool) (err error) {
 	if absoluteLinks {
-		err = a.absoluteMd.Convert([]byte(source), &buffer)
+		err = a.absoluteMd.Convert([]byte(source), w)
 	} else {
-		err = a.md.Convert([]byte(source), &buffer)
+		err = a.md.Convert([]byte(source), w)
 	}
-	return buffer.Bytes(), err
+	return err
 }
 
 func (a *goBlog) renderMarkdownAsHTML(source string, absoluteLinks bool) (rendered template.HTML, err error) {
@@ -113,8 +122,9 @@ func (a *goBlog) renderMdTitle(s string) string {
 	if s == "" {
 		return ""
 	}
-	var buffer bytes.Buffer
-	err := a.titleMd.Convert([]byte(s), &buffer)
+	buffer := bufferpool.Get()
+	defer bufferpool.Put(buffer)
+	err := a.titleMd.Convert([]byte(s), buffer)
 	if err != nil {
 		return ""
 	}

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 	ws "nhooyr.io/websocket"
@@ -71,9 +72,11 @@ func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered [
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
 	// Render post
-	var hb htmlBuilder
-	a.renderEditorPreview(&hb, a.cfg.Blogs[blog], p)
-	rendered = hb.Bytes()
+	buf := bufferpool.Get()
+	hb := newHtmlBuilder(buf)
+	a.renderEditorPreview(hb, a.cfg.Blogs[blog], p)
+	rendered = buf.Bytes()
+	bufferpool.Put(buf)
 	return
 }
 
