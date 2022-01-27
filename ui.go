@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hacdias/indieauth"
 	"github.com/kaorimatz/go-opml"
 	"github.com/thoas/go-funk"
 )
@@ -398,20 +399,7 @@ func (a *goBlog) renderIndex(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementClose("p")
 			}
 			// Navigation
-			if id.hasPrev {
-				hb.writeElementOpen("p")
-				hb.writeElementOpen("a", "href", id.prev) // TODO: rel=prev?
-				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "prev"))
-				hb.writeElementClose("a")
-				hb.writeElementClose("p")
-			}
-			if id.hasNext {
-				hb.writeElementOpen("p")
-				hb.writeElementOpen("a", "href", id.next) // TODO: rel=next?
-				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "next"))
-				hb.writeElementClose("a")
-				hb.writeElementClose("p")
-			}
+			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev, id.next)
 			// Author
 			a.renderAuthor(hb)
 			hb.writeElementClose("main")
@@ -1051,6 +1039,175 @@ func (a *goBlog) renderStaticHome(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementClose("form")
 				hb.writeElementClose("div")
 			}
+		},
+	)
+}
+
+func (a *goBlog) renderIndieAuth(hb *htmlBuilder, rd *renderData) {
+	indieAuthRequest, ok := rd.Data.(*indieauth.AuthenticationRequest)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "indieauth"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "indieauth"))
+			hb.writeElementClose("h1")
+			hb.writeElementClose("main")
+			// Form
+			hb.writeElementOpen("form", "method", "post", "action", "/indieauth/accept", "class", "p")
+			// Scopes
+			if scopes := indieAuthRequest.Scopes; len(scopes) > 0 {
+				hb.writeElementOpen("h3")
+				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "scopes"))
+				hb.writeElementClose("h3")
+				hb.writeElementOpen("ul")
+				for _, scope := range scopes {
+					hb.writeElementOpen("li")
+					hb.writeElementOpen("input", "type", "checkbox", "name", "scopes", "value", scope, "id", "scope-"+scope, "checked", "")
+					hb.writeElementOpen("label", "for", "scope-"+scope)
+					hb.writeEscaped(scope)
+					hb.writeElementClose("label")
+					hb.writeElementClose("li")
+				}
+				hb.writeElementClose("ul")
+			}
+			// Client ID
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("strong")
+			hb.writeEscaped("client_id:")
+			hb.writeElementClose("strong")
+			hb.write(" ")
+			hb.writeEscaped(indieAuthRequest.ClientID)
+			hb.writeElementClose("p")
+			// Redirect URI
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("strong")
+			hb.writeEscaped("redirect_uri:")
+			hb.writeElementClose("strong")
+			hb.write(" ")
+			hb.writeEscaped(indieAuthRequest.RedirectURI)
+			hb.writeElementClose("p")
+			// Hidden form fields
+			hb.writeElementOpen("input", "type", "hidden", "name", "client_id", "value", indieAuthRequest.ClientID)
+			hb.writeElementOpen("input", "type", "hidden", "name", "redirect_uri", "value", indieAuthRequest.RedirectURI)
+			hb.writeElementOpen("input", "type", "hidden", "name", "state", "value", indieAuthRequest.State)
+			hb.writeElementOpen("input", "type", "hidden", "name", "code_challenge", "value", indieAuthRequest.CodeChallenge)
+			hb.writeElementOpen("input", "type", "hidden", "name", "code_challenge_method", "value", indieAuthRequest.CodeChallengeMethod)
+			// Submit button
+			hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "authenticate"))
+			hb.writeElementClose("form")
+		},
+	)
+}
+
+type editorFilesRenderData struct {
+	files []*mediaFile
+	uses  []int
+}
+
+func (a *goBlog) renderEditorFiles(hb *htmlBuilder, rd *renderData) {
+	ef, ok := rd.Data.(*editorFilesRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mediafiles"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mediafiles"))
+			hb.writeElementClose("h1")
+			// Files
+			if len(ef.files) > 0 {
+				// Form
+				hb.writeElementOpen("form", "method", "post", "class", "fw p")
+				// Select with number of uses
+				hb.writeElementOpen("select", "name", "filename")
+				usesString := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses")
+				for i, f := range ef.files {
+					hb.writeElementOpen("option", "value", f.Name)
+					hb.writeEscaped(fmt.Sprintf("%s (%s), %s, ~%d %s", f.Name, isoDateFormat(f.Time.String()), mBytesString(f.Size), ef.uses[i], usesString))
+					hb.writeElementClose("option")
+				}
+				hb.writeElementClose("select")
+				// View button
+				hb.writeElementOpen(
+					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "view"),
+					"formaction", rd.Blog.getRelativePath("/editor/files/view"),
+				)
+				// Delete button
+				hb.writeElementOpen(
+					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+					"formaction", rd.Blog.getRelativePath("/editor/files/delete"),
+					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
+				)
+				hb.writeElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+				hb.writeElementClose("script")
+				hb.writeElementClose("form")
+			} else {
+				hb.writeElementOpen("p")
+				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nofiles"))
+				hb.writeElementClose("p")
+			}
+			hb.writeElementClose("main")
+		},
+	)
+}
+
+type notificationsRenderData struct {
+	notifications    []*notification
+	hasPrev, hasNext bool
+	prev, next       string
+}
+
+func (a *goBlog) renderNotificationsAdmin(hb *htmlBuilder, rd *renderData) {
+	nrd, ok := rd.Data.(*notificationsRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
+			hb.writeElementClose("h1")
+			// Notifications
+			for _, n := range nrd.notifications {
+				hb.writeElementOpen("div", "class", "p")
+				// Date
+				hb.writeElementOpen("p")
+				hb.writeElementOpen("i")
+				hb.writeEscaped(unixToLocalDateString(n.Time))
+				hb.writeElementClose("i")
+				hb.writeElementClose("p")
+				// Message
+				a.renderMarkdownToWriter(hb, n.Text, false)
+				// Delete form
+				hb.writeElementOpen("form", "method", "post", "action", "/notifications/delete")
+				hb.writeElementOpen("input", "type", "hidden", "name", "notificationid", "value", n.ID)
+				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
+				hb.writeElementClose("form")
+				hb.writeElementClose("div")
+			}
+			// Pagination
+			a.renderPagination(hb, rd.Blog, nrd.hasPrev, nrd.hasNext, nrd.prev, nrd.next)
+			hb.writeElementClose("main")
 		},
 	)
 }

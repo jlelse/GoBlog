@@ -31,7 +31,7 @@ func (a *goBlog) indieAuthRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Render page that let's the user authorize the app
-	a.render(w, r, templateIndieAuth, &renderData{
+	a.renderNew(w, r, a.renderIndieAuth, &renderData{
 		Data: iareq,
 	})
 }

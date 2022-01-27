@@ -1,6 +1,6 @@
 # How to use GoBlog
 
-This section of the documentation is a work in progress!
+This section of the documentation is a **work in progress**!
 
 ## Posting
 

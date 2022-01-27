@@ -384,3 +384,21 @@ func (a *goBlog) renderTitleTag(hb *htmlBuilder, blog *configBlog, optionalTitle
 	hb.writeEscaped(a.renderMdTitle(blog.Title))
 	hb.writeElementClose("title")
 }
+
+func (a *goBlog) renderPagination(hb *htmlBuilder, blog *configBlog, hasPrev, hasNext bool, prev, next string) {
+	// Navigation
+	if hasPrev {
+		hb.writeElementOpen("p")
+		hb.writeElementOpen("a", "href", prev) // TODO: rel=prev?
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "prev"))
+		hb.writeElementClose("a")
+		hb.writeElementClose("p")
+	}
+	if hasNext {
+		hb.writeElementOpen("p")
+		hb.writeElementOpen("a", "href", next) // TODO: rel=next?
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "next"))
+		hb.writeElementClose("a")
+		hb.writeElementClose("p")
+	}
+}

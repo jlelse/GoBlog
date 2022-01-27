@@ -358,7 +358,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 	counts, err := app.db.usesOfMediaFile("test.jpg")
 	require.NoError(t, err)
 	assert.Len(t, counts, 1)
-	if assert.NotNil(t, counts["test.jpg"]) {
-		assert.Equal(t, 2, counts["test.jpg"])
+	if assert.NotEmpty(t, counts) {
+		assert.Equal(t, 2, counts[0])
 	}
 }

@@ -628,7 +628,7 @@ select name, count(path) as count from (
 group by name;
 `
 
-func (db *database) usesOfMediaFile(names ...string) (counts map[string]int, err error) {
+func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 	sqlArgs := []interface{}{dbNoCache}
 	var nameValues strings.Builder
 	for i, n := range names {
@@ -645,7 +645,7 @@ func (db *database) usesOfMediaFile(names ...string) (counts map[string]int, err
 	if err != nil {
 		return nil, err
 	}
-	counts = map[string]int{}
+	counts = make([]int, len(names))
 	var name string
 	var count int
 	for rows.Next() {
@@ -653,7 +653,12 @@ func (db *database) usesOfMediaFile(names ...string) (counts map[string]int, err
 		if err != nil {
 			return nil, err
 		}
-		counts[name] = count
+		for i, n := range names {
+			if n == name {
+				counts[i] = count
+				break
+			}
+		}
 	}
 	return counts, nil
 }

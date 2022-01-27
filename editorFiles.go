@@ -16,8 +16,8 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	// Check if files at all
 	if len(files) == 0 {
-		a.render(w, r, templateEditorFiles, &renderData{
-			Data: map[string]interface{}{},
+		a.renderNew(w, r, a.renderEditorFiles, &renderData{
+			Data: &editorFilesRenderData{},
 		})
 		return
 	}
@@ -39,10 +39,10 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Serve HTML
-	a.render(w, r, templateEditorFiles, &renderData{
-		Data: map[string]interface{}{
-			"Files": files,
-			"Uses":  uses,
+	a.renderNew(w, r, a.renderEditorFiles, &renderData{
+		Data: &editorFilesRenderData{
+			files: files,
+			uses:  uses,
 		},
 	})
 }

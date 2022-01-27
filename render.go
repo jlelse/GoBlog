@@ -16,13 +16,10 @@ const (
 	templatesDir = "templates"
 	templatesExt = ".gohtml"
 
-	templateBase               = "base"
-	templateEditor             = "editor"
-	templateEditorFiles        = "editorfiles"
-	templateCommentsAdmin      = "commentsadmin"
-	templateNotificationsAdmin = "notificationsadmin"
-	templateWebmentionAdmin    = "webmentionadmin"
-	templateIndieAuth          = "indieauth"
+	templateBase            = "base"
+	templateEditor          = "editor"
+	templateCommentsAdmin   = "commentsadmin"
+	templateWebmentionAdmin = "webmentionadmin"
 )
 
 func (a *goBlog) initRendering() error {
@@ -42,14 +39,12 @@ func (a *goBlog) initRendering() error {
 		},
 		// Others
 		"dateformat":     dateFormat,
-		"isodate":        isoDateFormat,
 		"unixtodate":     unixToLocalDateString,
 		"now":            localNowString,
 		"asset":          a.assetFileName,
 		"string":         a.ts.GetTemplateStringVariantFunc(),
 		"absolute":       a.getFullAddress,
 		"opensearch":     openSearchUrl,
-		"mbytes":         mBytesString,
 		"editortemplate": a.editorPostTemplate,
 		"editorpostdesc": a.editorPostDesc,
 	}
