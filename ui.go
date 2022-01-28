@@ -334,6 +334,10 @@ func (a *goBlog) renderComment(h *htmlBuilder, rd *renderData) {
 			hb.write(c.Comment) // Already escaped
 			hb.writeElementClose("p")
 			hb.writeElementClose("main")
+			// Interactions
+			if rd.CommentsEnabled {
+				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+			}
 		},
 	)
 }
