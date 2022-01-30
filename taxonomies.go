@@ -20,7 +20,7 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.renderNew(w, r, a.renderTaxonomy, &renderData{
+	a.render(w, r, a.renderTaxonomy, &renderData{
 		Canonical: a.getFullAddress(r.URL.Path),
 		Data: &taxonomyRenderData{
 			taxonomy:    tax,

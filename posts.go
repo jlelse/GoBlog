@@ -83,7 +83,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
 		status = http.StatusGone
 	}
-	a.renderNewWithStatusCode(w, r, status, renderMethod, &renderData{
+	a.renderWithStatusCode(w, r, status, renderMethod, &renderData{
 		BlogString: p.Blog,
 		Canonical:  canonical,
 		Data:       p,
@@ -356,7 +356,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	if summaryTemplate == "" {
 		summaryTemplate = defaultSummary
 	}
-	a.renderNew(w, r, a.renderIndex, &renderData{
+	a.render(w, r, a.renderIndex, &renderData{
 		Canonical: a.getFullAddress(path),
 		Data: &indexRenderData{
 			title:           title,

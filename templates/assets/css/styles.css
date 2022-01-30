@@ -144,7 +144,7 @@ details summary > *:first-child {
   border-bottom: 1px solid var(--primary, #000);
 }
 
-.p, #post-actions, #posteditactions, table {
+.p, .actions, table {
   display: block;
   margin-top: 1em;
   margin-bottom: 1em;
@@ -210,17 +210,17 @@ details summary > *:first-child {
   margin-bottom: 5px;
 }
 
-#map {
-  height: 400px;
-}
-
-#post-actions, #posteditactions {
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
-#post-actions *, #posteditactions * {
+.actions * {
   text-align: center;
+}
+
+#map {
+  height: 400px;
 }
 
 #announcement {

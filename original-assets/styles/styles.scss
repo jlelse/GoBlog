@@ -250,11 +250,7 @@ details summary {
   margin-bottom: 5px;
 }
 
-#map {
-  height: 400px;
-}
-
-#post-actions, #posteditactions {
+.actions {
   @extend .p;
   display: flex;
   flex-wrap: wrap;
@@ -263,6 +259,10 @@ details summary {
   * {
     text-align: center;
   }
+}
+
+#map {
+  height: 400px;
 }
 
 #announcement {

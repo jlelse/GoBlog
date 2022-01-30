@@ -236,15 +236,12 @@ func (a *goBlog) renderOldContentWarning(hb *htmlBuilder, p *post, b *configBlog
 	hb.writeElementClose("strong")
 }
 
-func (a *goBlog) renderInteractions(hb *htmlBuilder, b *configBlog, canonical string) {
-	if b == nil || canonical == "" {
-		return
-	}
+func (a *goBlog) renderInteractions(hb *htmlBuilder, rd *renderData) {
 	// Start accordion
 	hb.writeElementOpen("details", "class", "p", "id", "interactions")
 	hb.writeElementOpen("summary")
 	hb.writeElementOpen("strong")
-	hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "interactions"))
+	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "interactions"))
 	hb.writeElementClose("strong")
 	hb.writeElementClose("summary")
 	// Render mentions
@@ -278,24 +275,24 @@ func (a *goBlog) renderInteractions(hb *htmlBuilder, b *configBlog, canonical st
 		}
 		hb.writeElementClose("ul")
 	}
-	renderMentions(a.db.getWebmentionsByAddress(canonical))
+	renderMentions(a.db.getWebmentionsByAddress(rd.Canonical))
 	// Show form to send a webmention
 	hb.writeElementOpen("form", "class", "fw p", "method", "post", "action", "/webmention")
 	hb.writeElementOpen("label", "for", "wm-source", "class", "p")
-	hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "interactionslabel"))
+	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "interactionslabel"))
 	hb.writeElementClose("label")
 	hb.writeElementOpen("input", "id", "wm-source", "type", "url", "name", "source", "placeholder", "URL", "required", "")
-	hb.writeElementOpen("input", "type", "hidden", "name", "target", "value", canonical)
-	hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(b.Lang, "send"))
+	hb.writeElementOpen("input", "type", "hidden", "name", "target", "value", rd.Canonical)
+	hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "send"))
 	hb.writeElementClose("form")
 	// Show form to create a new comment
 	hb.writeElementOpen("form", "class", "fw p", "method", "post", "action", "/comment")
-	hb.writeElementOpen("input", "type", "hidden", "name", "target", "value", canonical)
-	hb.writeElementOpen("input", "type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(b.Lang, "nameopt"))
-	hb.writeElementOpen("input", "type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(b.Lang, "websiteopt"))
-	hb.writeElementOpen("textarea", "name", "comment", "required", "", "placeholder", a.ts.GetTemplateStringVariant(b.Lang, "comment"))
+	hb.writeElementOpen("input", "type", "hidden", "name", "target", "value", rd.Canonical)
+	hb.writeElementOpen("input", "type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nameopt"))
+	hb.writeElementOpen("input", "type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "websiteopt"))
+	hb.writeElementOpen("textarea", "name", "comment", "required", "", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comment"))
 	hb.writeElementClose("textarea")
-	hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(b.Lang, "docomment"))
+	hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "docomment"))
 	hb.writeElementClose("form")
 	// Finish accordion
 	hb.writeElementClose("details")

@@ -41,7 +41,7 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, bc := a.getBlog(r)
-	a.renderNew(w, r, a.renderComment, &renderData{
+	a.render(w, r, a.renderComment, &renderData{
 		Canonical: a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id)))),
 		Data:      comment,
 	})

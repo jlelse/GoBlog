@@ -21,8 +21,8 @@ import (
 const editorPath = "/editor"
 
 func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, templateEditor, &renderData{
-		Data: map[string]interface{}{},
+	a.render(w, r, a.renderEditor, &renderData{
+		Data: &editorRenderData{},
 	})
 }
 
@@ -89,10 +89,10 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			a.render(w, r, templateEditor, &renderData{
-				Data: map[string]interface{}{
-					"UpdatePostURL":     a.fullPostURL(post),
-					"UpdatePostContent": a.postToMfItem(post).Properties.Content[0],
+			a.render(w, r, a.renderEditor, &renderData{
+				Data: &editorRenderData{
+					updatePostUrl:     a.fullPostURL(post),
+					updatePostContent: a.postToMfItem(post).Properties.Content[0],
 				},
 			})
 		case "updatepost":
@@ -188,14 +188,13 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 	_ = result.Body.Close()
 }
 
-func (a *goBlog) editorPostTemplate(blog string) string {
+func (a *goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 	var builder strings.Builder
 	marsh := func(param string, i interface{}) {
 		_ = yaml.NewEncoder(&builder).Encode(map[string]interface{}{
 			param: i,
 		})
 	}
-	bc := a.cfg.Blogs[blog]
 	builder.WriteString("---\n")
 	marsh("blog", blog)
 	marsh("section", bc.DefaultSection)
@@ -210,8 +209,7 @@ func (a *goBlog) editorPostTemplate(blog string) string {
 	return builder.String()
 }
 
-func (a *goBlog) editorPostDesc(blog string) string {
-	bc := a.cfg.Blogs[blog]
+func (a *goBlog) editorPostDesc(bc *configBlog) string {
 	t := a.ts.GetTemplateStringVariant(bc.Lang, "editorpostdesc")
 	var paramBuilder, statusBuilder strings.Builder
 	for i, param := range []string{

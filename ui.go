@@ -336,7 +336,7 @@ func (a *goBlog) renderComment(h *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 			// Interactions
 			if rd.CommentsEnabled {
-				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+				a.renderInteractions(hb, rd)
 			}
 		},
 	)
@@ -448,7 +448,7 @@ func (a *goBlog) renderBlogStats(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 			// Interactions
 			if rd.CommentsEnabled {
-				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+				a.renderInteractions(hb, rd)
 			}
 		},
 	)
@@ -620,7 +620,7 @@ func (a *goBlog) renderGeoMap(hb *htmlBuilder, rd *renderData) {
 			}
 			hb.writeElementClose("main")
 			if rd.CommentsEnabled {
-				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+				a.renderInteractions(hb, rd)
 			}
 		},
 	)
@@ -695,7 +695,7 @@ func (a *goBlog) renderBlogroll(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 			// Interactions
 			if rd.CommentsEnabled {
-				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+				a.renderInteractions(hb, rd)
 			}
 		},
 	)
@@ -891,7 +891,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			// Post meta
 			a.renderPostMeta(hb, p, rd.Blog, "post")
 			// Post actions
-			hb.writeElementOpen("div", "id", "post-actions")
+			hb.writeElementOpen("div", "class", "actions")
 			// Share button
 			hb.writeElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), funk.ShortIf(p.RenderedTitle != "", "&title="+p.RenderedTitle, "")), "target", "_blank", "rel", "nofollow noopener noreferrer")
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "share"))
@@ -964,7 +964,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 			// Post edit actions
 			if rd.LoggedIn() {
-				hb.writeElementOpen("div", "id", "posteditactions")
+				hb.writeElementOpen("div", "class", "actions")
 				// Update
 				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor")+"#update")
 				hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "loadupdate")
@@ -999,7 +999,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			}
 			// Comments
 			if rd.CommentsEnabled {
-				a.renderInteractions(hb, rd.Blog, rd.Canonical)
+				a.renderInteractions(hb, rd)
 			}
 		},
 	)
@@ -1201,9 +1201,9 @@ func (a *goBlog) renderNotificationsAdmin(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementClose("i")
 				hb.writeElementClose("p")
 				// Message
-				a.renderMarkdownToWriter(hb, n.Text, false)
+				_ = a.renderMarkdownToWriter(hb, n.Text, false)
 				// Delete form
-				hb.writeElementOpen("form", "method", "post", "action", "/notifications/delete")
+				hb.writeElementOpen("form", "class", "actions", "method", "post", "action", "/notifications/delete")
 				hb.writeElementOpen("input", "type", "hidden", "name", "notificationid", "value", n.ID)
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
 				hb.writeElementClose("form")
@@ -1212,6 +1212,323 @@ func (a *goBlog) renderNotificationsAdmin(hb *htmlBuilder, rd *renderData) {
 			// Pagination
 			a.renderPagination(hb, rd.Blog, nrd.hasPrev, nrd.hasNext, nrd.prev, nrd.next)
 			hb.writeElementClose("main")
+		},
+	)
+}
+
+type commentsRenderData struct {
+	comments         []*comment
+	hasPrev, hasNext bool
+	prev, next       string
+}
+
+func (a *goBlog) renderCommentsAdmin(hb *htmlBuilder, rd *renderData) {
+	crd, ok := rd.Data.(*commentsRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
+			hb.writeElementClose("h1")
+			// Notifications
+			for _, c := range crd.comments {
+				hb.writeElementOpen("div", "class", "p")
+				// ID, Target, Name
+				hb.writeElementOpen("p")
+				hb.writeEscaped("ID: ")
+				hb.writeEscaped(fmt.Sprintf("%d", c.ID))
+				hb.writeElementOpen("br")
+				hb.writeEscaped("Target: ")
+				hb.writeElementOpen("a", "href", c.Target, "target", "_blank")
+				hb.writeEscaped(c.Target)
+				hb.writeElementClose("a")
+				hb.writeElementOpen("br")
+				hb.writeEscaped("Name: ")
+				if c.Website != "" {
+					hb.writeElementOpen("a", "href", c.Website, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
+				}
+				hb.writeEscaped(c.Name)
+				if c.Website != "" {
+					hb.writeElementClose("a")
+				}
+				hb.writeElementClose("p")
+				// Comment
+				hb.writeElementOpen("p")
+				hb.write(c.Comment)
+				hb.writeElementClose("p")
+				// Delete form
+				hb.writeElementOpen("form", "class", "actions", "method", "post", "action", rd.Blog.getRelativePath("/comment/delete"))
+				hb.writeElementOpen("input", "type", "hidden", "name", "commentid", "value", c.ID)
+				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
+				hb.writeElementClose("form")
+				hb.writeElementClose("div")
+			}
+			// Pagination
+			a.renderPagination(hb, rd.Blog, crd.hasPrev, crd.hasNext, crd.prev, crd.next)
+			hb.writeElementClose("main")
+		},
+	)
+}
+
+type webmentionRenderData struct {
+	mentions            []*mention
+	hasPrev, hasNext    bool
+	prev, current, next string
+}
+
+func (a *goBlog) renderWebmentionAdmin(hb *htmlBuilder, rd *renderData) {
+	wrd, ok := rd.Data.(*webmentionRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
+			hb.writeElementClose("h1")
+			// Notifications
+			for _, m := range wrd.mentions {
+				hb.writeElementOpen("div", "id", fmt.Sprintf("mention-%d", m.ID), "class", "p")
+				hb.writeElementOpen("p")
+				// Source
+				hb.writeEscaped("From: ")
+				hb.writeElementOpen("a", "href", m.Source, "target", "_blank", "rel", "noopener noreferrer")
+				hb.writeEscaped(m.Source)
+				hb.writeElementClose("a")
+				hb.writeElementOpen("br")
+				// u-url
+				if m.Source != m.Url {
+					hb.writeEscaped("u-url: ")
+					hb.writeElementOpen("a", "href", m.Url, "target", "_blank", "rel", "noopener noreferrer")
+					hb.writeEscaped(m.Url)
+					hb.writeElementClose("a")
+					hb.writeElementOpen("br")
+				}
+				// Target
+				hb.writeEscaped("To: ")
+				hb.writeElementOpen("a", "href", m.Target, "target", "_blank")
+				hb.writeEscaped(m.Target)
+				hb.writeElementClose("a")
+				hb.writeElementOpen("br")
+				// Date
+				hb.writeEscaped("Created: ")
+				hb.writeEscaped(unixToLocalDateString(m.Created))
+				hb.writeElementOpen("br")
+				hb.writeElementOpen("br")
+				// Author
+				if m.Author != "" {
+					hb.writeEscaped(m.Author)
+					hb.writeElementOpen("br")
+				}
+				// Title
+				if m.Title != "" {
+					hb.writeElementOpen("strong")
+					hb.writeEscaped(m.Title)
+					hb.writeElementClose("strong")
+					hb.writeElementOpen("br")
+				}
+				// Content
+				if m.Content != "" {
+					hb.writeElementOpen("i")
+					hb.writeEscaped(m.Content)
+					hb.writeElementClose("i")
+					hb.writeElementOpen("br")
+				}
+				hb.writeElementClose("p")
+				// Actions
+				hb.writeElementOpen("form", "method", "post", "class", "actions")
+				hb.writeElementOpen("input", "type", "hidden", "name", "mentionid", "value", m.ID)
+				hb.writeElementOpen("input", "type", "hidden", "name", "redir", "value", fmt.Sprintf("%s#mention-%d", wrd.current, m.ID))
+				if m.Status == webmentionStatusVerified {
+					// Approve verified mention
+					hb.writeElementOpen("input", "type", "submit", "formaction", "/webmention/approve", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "approve"))
+				}
+				// Delete mention
+				hb.writeElementOpen("input", "type", "submit", "formaction", "/webmention/delete", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
+				// Reverify mention
+				hb.writeElementOpen("input", "type", "submit", "formaction", "/webmention/reverify", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reverify"))
+				hb.writeElementClose("form")
+			}
+			// Pagination
+			a.renderPagination(hb, rd.Blog, wrd.hasPrev, wrd.hasNext, wrd.prev, wrd.next)
+			hb.writeElementClose("main")
+		},
+	)
+}
+
+type editorRenderData struct {
+	updatePostUrl     string
+	updatePostContent string
+}
+
+func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
+	edrd, ok := rd.Data.(*editorRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
+			// Chroma CSS
+			hb.writeElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
+			hb.writeElementClose("h1")
+
+			// Create
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"))
+			hb.writeElementClose("h2")
+			_ = a.renderMarkdownToWriter(hb, a.editorPostDesc(rd.Blog), false)
+			hb.writeElementOpen("form", "method", "post", "class", "fw p")
+			hb.writeElementOpen("input", "type", "hidden", "name", "h", "value", "entry")
+			hb.writeElementOpen(
+				"textarea",
+				"name", "content",
+				"class", "monospace h400p formcache mdpreview",
+				"id", "create-input",
+				"data-preview", "post-preview",
+				"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
+			)
+			hb.writeEscaped(a.editorPostTemplate(rd.BlogString, rd.Blog))
+			hb.writeElementClose("textarea")
+			hb.writeElementOpen("div", "id", "post-preview", "class", "hide")
+			hb.writeElementClose("div")
+			hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"))
+			hb.writeElementClose("form")
+
+			// Update
+			if edrd.updatePostUrl != "" {
+				hb.writeElementOpen("h2", "id", "#update")
+				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
+				hb.writeElementClose("h2")
+				hb.writeElementOpen("form", "method", "post", "class", "fw p", "action", "#update")
+				hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "updatepost")
+				hb.writeElementOpen("input", "type", "hidden", "name", "url", "value", edrd.updatePostUrl)
+				hb.writeElementOpen(
+					"textarea",
+					"name", "content",
+					"class", "monospace h400p mdpreview",
+					"data-preview", "update-preview",
+					"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
+				)
+				hb.writeEscaped(edrd.updatePostContent)
+				hb.writeElementClose("textarea")
+				hb.writeElementOpen("div", "id", "update-preview", "class", "hide")
+				hb.writeElementClose("div")
+				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
+				hb.writeElementClose("form")
+			}
+
+			// Posts
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "posts"))
+			hb.writeElementClose("h2")
+			// Drafts
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/drafts"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "drafts"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+			// Private
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/private"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "privateposts"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+			// Unlisted
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/unlisted"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "unlistedposts"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+			// Scheduled
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/scheduled"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "scheduledposts"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+			// Deleted
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/deleted"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletedposts"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+
+			// Upload
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "upload"))
+			hb.writeElementClose("h2")
+			hb.writeElementOpen("form", "class", "fw p", "method", "post", "enctype", "multipart/form-data")
+			hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "upload")
+			hb.writeElementOpen("input", "type", "file", "name", "file")
+			hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "upload"))
+			hb.writeElementClose("form")
+			// Media files
+			hb.writeElementOpen("p")
+			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/files"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mediafiles"))
+			hb.writeElementClose("a")
+			hb.writeElementClose("p")
+
+			// Location-Helper
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "location"))
+			hb.writeElementClose("h2")
+			hb.writeElementOpen("form", "class", "fw p")
+			hb.writeElementOpen(
+				"input", "id", "geobtn", "type", "button",
+				"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "locationget"),
+				"data-failed", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "locationfailed"),
+				"data-notsupported", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "locationnotsupported"),
+			)
+			hb.writeElementOpen("input", "id", "geostatus", "type", "text", "class", "hide", "readonly", "")
+			hb.writeElementClose("form")
+
+			// GPX-Helper
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "gpxhelper"))
+			hb.writeElementClose("h2")
+			hb.writeElementOpen("p")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "gpxhelperdesc"))
+			hb.writeElementClose("p")
+			hb.writeElementOpen("form", "class", "fw p", "method", "post", "enctype", "multipart/form-data")
+			hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "helpgpx")
+			hb.writeElementOpen("input", "type", "file", "name", "file")
+			hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "upload"))
+			hb.writeElementClose("form")
+
+			hb.writeElementClose("main")
+
+			// Scripts
+			// Editor preview
+			hb.writeElementOpen("script", "src", a.assetFileName("js/mdpreview.js"), "defer", "")
+			hb.writeElementClose("script")
+			// Geohelper
+			hb.writeElementOpen("script", "src", a.assetFileName("js/geohelper.js"), "defer", "")
+			hb.writeElementClose("script")
+			// Formcache
+			hb.writeElementOpen("script", "src", a.assetFileName("js/formcache.js"), "defer", "")
+			hb.writeElementClose("script")
 		},
 	)
 }

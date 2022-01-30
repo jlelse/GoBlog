@@ -25,7 +25,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allPostsWithLocation) == 0 {
-		a.renderNew(w, r, a.renderGeoMap, &renderData{
+		a.render(w, r, a.renderGeoMap, &renderData{
 			Canonical: canonical,
 			Data: &geoMapRenderData{
 				noLocations: true,
@@ -85,7 +85,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		tracksJson = string(tracksJsonBytes)
 	}
 
-	a.renderNew(w, r, a.renderGeoMap, &renderData{
+	a.render(w, r, a.renderGeoMap, &renderData{
 		Canonical: canonical,
 		Data: &geoMapRenderData{
 			locations:   locationsJson,

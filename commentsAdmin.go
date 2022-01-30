@@ -70,13 +70,13 @@ func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	nextPath = fmt.Sprintf("%s/page/%d", commentsPath, nextPage)
 	// Render
-	a.render(w, r, templateCommentsAdmin, &renderData{
-		Data: map[string]interface{}{
-			"Comments": comments,
-			"HasPrev":  hasPrev,
-			"HasNext":  hasNext,
-			"Prev":     prevPath,
-			"Next":     nextPath,
+	a.render(w, r, a.renderCommentsAdmin, &renderData{
+		Data: &commentsRenderData{
+			comments: comments,
+			hasPrev:  hasPrev,
+			hasNext:  hasNext,
+			prev:     prevPath,
+			next:     nextPath,
 		},
 	})
 }

@@ -128,9 +128,6 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 		// Search
 		r.Group(a.blogSearchRouter(conf))
 
-		// Custom pages
-		r.Group(a.blogCustomPagesRouter(conf))
-
 		// Random post
 		r.Group(a.blogRandomRouter(conf))
 
@@ -290,29 +287,6 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 					a.cacheMiddleware,
 					middleware.WithValue(pathKey, searchPath),
 				).Get("/opensearch.xml", a.serveOpenSearch)
-			})
-		}
-	}
-}
-
-// Blog - Custom pages
-func (a *goBlog) blogCustomPagesRouter(conf *configBlog) func(r chi.Router) {
-	return func(r chi.Router) {
-		r.Use(a.privateModeHandler)
-		for _, cp := range conf.CustomPages {
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.WithValue(customPageContextKey, cp))
-				if cp.Cache {
-					ce := cp.CacheExpiration
-					if ce == 0 {
-						ce = a.defaultCacheExpiration()
-					}
-					r.Use(
-						a.cacheMiddleware,
-						middleware.WithValue(cacheExpirationKey, ce),
-					)
-				}
-				r.Get(cp.Path, a.serveCustomPage)
 			})
 		}
 	}

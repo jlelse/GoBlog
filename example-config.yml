@@ -222,15 +222,6 @@ blogs:
       authValue: abc # Authentication value for OPML
       categories: # Optional, allow only these categories
         - Blogs
-    # Custom pages
-    custompages:
-      - path: /blogroll # Path
-        template: blogroll # Template
-        cache: true # Enable caching
-        cacheExpiration: 600 # Cache expiration (default uses blog cache TTL)
-        data: # Data to provide to template
-          Title: Blogroll
-          Description: "This are alphabetically sorted lists of blogs and sites I subscribe to."
     # Redirect to random post
     randomPost:
       enabled: true # Enable

@@ -35,7 +35,7 @@ func (a *goBlog) serveError(w http.ResponseWriter, r *http.Request, message stri
 		http.Error(w, message, status)
 		return
 	}
-	a.renderNewWithStatusCode(w, r, status, a.renderError, &renderData{
+	a.renderWithStatusCode(w, r, status, a.renderError, &renderData{
 		Data: &errorRenderData{
 			Title:   fmt.Sprintf("%d %s", status, http.StatusText(status)),
 			Message: message,

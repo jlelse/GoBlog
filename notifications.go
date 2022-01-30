@@ -154,7 +154,7 @@ func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	nextPath = fmt.Sprintf("%s/page/%d", notificationsPath, nextPage)
 	// Render
-	a.renderNew(w, r, a.renderNotificationsAdmin, &renderData{
+	a.render(w, r, a.renderNotificationsAdmin, &renderData{
 		Data: &notificationsRenderData{
 			notifications: notifications,
 			hasPrev:       hasPrev,

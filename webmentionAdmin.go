@@ -95,14 +95,14 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		query = "?" + params.Encode()
 	}
 	// Render
-	a.render(w, r, templateWebmentionAdmin, &renderData{
-		Data: map[string]interface{}{
-			"Mentions": mentions,
-			"HasPrev":  hasPrev,
-			"HasNext":  hasNext,
-			"Prev":     prevPath + query,
-			"Current":  currentPath + query,
-			"Next":     nextPath + query,
+	a.render(w, r, a.renderWebmentionAdmin, &renderData{
+		Data: &webmentionRenderData{
+			mentions: mentions,
+			hasPrev:  hasPrev,
+			hasNext:  hasNext,
+			prev:     prevPath + query,
+			current:  currentPath + query,
+			next:     nextPath + query,
 		},
 	})
 }

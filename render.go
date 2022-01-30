@@ -1,75 +1,11 @@
 package main
 
 import (
-	"html/template"
 	"net/http"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
 
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
-
-const (
-	templatesDir = "templates"
-	templatesExt = ".gohtml"
-
-	templateBase            = "base"
-	templateEditor          = "editor"
-	templateCommentsAdmin   = "commentsadmin"
-	templateWebmentionAdmin = "webmentionadmin"
-)
-
-func (a *goBlog) initRendering() error {
-	a.templates = map[string]*template.Template{}
-	templateFunctions := template.FuncMap{
-		"md":      a.safeRenderMarkdownAsHTML,
-		"mdtitle": a.renderMdTitle,
-		"html":    wrapStringAsHTML,
-		// Code based rendering
-		"tor": func(rd *renderData) template.HTML {
-			buf := bufferpool.Get()
-			hb := newHtmlBuilder(buf)
-			a.renderTorNotice(hb, rd)
-			res := template.HTML(buf.String())
-			bufferpool.Put(buf)
-			return res
-		},
-		// Others
-		"dateformat":     dateFormat,
-		"unixtodate":     unixToLocalDateString,
-		"now":            localNowString,
-		"asset":          a.assetFileName,
-		"string":         a.ts.GetTemplateStringVariantFunc(),
-		"absolute":       a.getFullAddress,
-		"opensearch":     openSearchUrl,
-		"editortemplate": a.editorPostTemplate,
-		"editorpostdesc": a.editorPostDesc,
-	}
-	baseTemplate, err := template.New("base").Funcs(templateFunctions).ParseFiles(path.Join(templatesDir, templateBase+templatesExt))
-	if err != nil {
-		return err
-	}
-	err = filepath.Walk(templatesDir, func(p string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.Mode().IsRegular() && path.Ext(p) == templatesExt {
-			if name := strings.TrimSuffix(path.Base(p), templatesExt); name != templateBase {
-				if a.templates[name], err = template.Must(baseTemplate.Clone()).New(name).ParseFiles(p); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 type renderData struct {
 	BlogString                 string
@@ -91,31 +27,11 @@ func (d *renderData) LoggedIn() bool {
 	return d.app.isLoggedIn(d.req)
 }
 
-func (a *goBlog) render(w http.ResponseWriter, r *http.Request, template string, data *renderData) {
-	a.renderWithStatusCode(w, r, http.StatusOK, template, data)
+func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlBuilder, *renderData), data *renderData) {
+	a.renderWithStatusCode(w, r, http.StatusOK, f, data)
 }
 
-func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, template string, data *renderData) {
-	// Check render data
-	a.checkRenderData(r, data)
-	// Set content type
-	w.Header().Set(contentType, contenttype.HTMLUTF8)
-	// Render template and write minified HTML
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := a.templates[template].ExecuteTemplate(buf, template, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(statusCode)
-	_ = a.min.Minify(contenttype.HTML, w, buf)
-}
-
-func (a *goBlog) renderNew(w http.ResponseWriter, r *http.Request, f func(*htmlBuilder, *renderData), data *renderData) {
-	a.renderNewWithStatusCode(w, r, http.StatusOK, f, data)
-}
-
-func (a *goBlog) renderNewWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlBuilder, *renderData), data *renderData) {
+func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlBuilder, *renderData), data *renderData) {
 	// Check render data
 	a.checkRenderData(r, data)
 	// Set content type

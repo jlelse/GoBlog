@@ -102,12 +102,6 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))),
 		})
 	}
-	// Custom pages
-	for _, cp := range bc.CustomPages {
-		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(cp.Path),
-		})
-	}
 	// Write sitemap
 	a.writeSitemapXML(w, sm)
 }

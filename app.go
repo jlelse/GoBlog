@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rsa"
-	"html/template"
 	"net/http"
 	"sync"
 
@@ -70,8 +69,6 @@ type goBlog struct {
 	min minify.Minifier
 	// Regex Redirects
 	regexRedirects []*regexRedirect
-	// Rendering
-	templates map[string]*template.Template
 	// Sessions
 	loginSessions, captchaSessions *dbSessionStore
 	// Shutdown

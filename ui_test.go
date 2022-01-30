@@ -123,7 +123,10 @@ func Test_renderInteractions(t *testing.T) {
 	buf := &bytes.Buffer{}
 	hb := newHtmlBuilder(buf)
 
-	app.renderInteractions(hb, app.cfg.Blogs["default"], "https://example.com/testpost1")
+	app.renderInteractions(hb, &renderData{
+		Blog:      app.cfg.Blogs["default"],
+		Canonical: "https://example.com/testpost1",
+	})
 	res := buf.Bytes()
 
 	_, err = goquery.NewDocumentFromReader(bytes.NewReader(res))

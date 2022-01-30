@@ -154,10 +154,6 @@ func (app *goBlog) initComponents(logging bool) {
 		app.logErrAndQuit("Failed to init template translations:", err.Error())
 		return
 	}
-	if err = app.initRendering(); err != nil { // Needs assets and minify
-		app.logErrAndQuit("Failed to init HTML rendering:", err.Error())
-		return
-	}
 	if err = app.initCache(); err != nil {
 		app.logErrAndQuit("Failed to init HTTP cache:", err.Error())
 		return

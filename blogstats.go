@@ -25,7 +25,7 @@ func (a *goBlog) initBlogStats() {
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	canonical := bc.getRelativePath(defaultIfEmpty(bc.BlogStats.Path, defaultBlogStatsPath))
-	a.renderNew(w, r, a.renderBlogStats, &renderData{
+	a.render(w, r, a.renderBlogStats, &renderData{
 		Canonical: a.getFullAddress(canonical),
 		Data: &blogStatsRenderData{
 			tableUrl: canonical + blogStatsTablePath,
@@ -43,7 +43,7 @@ func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Render
-	a.renderNew(w, r, a.renderBlogStatsTable, &renderData{
+	a.render(w, r, a.renderBlogStatsTable, &renderData{
 		Data: data,
 	})
 }

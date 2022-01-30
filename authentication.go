@@ -62,7 +62,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 			_ = r.ParseForm()
 			b = []byte(r.PostForm.Encode())
 		}
-		a.renderNew(w, r, a.renderLogin, &renderData{
+		a.render(w, r, a.renderLogin, &renderData{
 			Data: &loginRenderData{
 				loginMethod:  r.Method,
 				loginHeaders: base64.StdEncoding.EncodeToString(h),

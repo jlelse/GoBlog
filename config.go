@@ -81,7 +81,6 @@ type configBlog struct {
 	Search         *configSearch             `mapstructure:"search"`
 	BlogStats      *configBlogStats          `mapstructure:"blogStats"`
 	Blogroll       *configBlogroll           `mapstructure:"blogroll"`
-	CustomPages    []*configCustomPage       `mapstructure:"custompages"`
 	Telegram       *configTelegram           `mapstructure:"telegram"`
 	PostAsHome     bool                      `mapstructure:"postAsHome"`
 	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
@@ -146,14 +145,6 @@ type configBlogroll struct {
 	Categories  []string `mapstructure:"categories"`
 	Title       string   `mapstructure:"title"`
 	Description string   `mapstructure:"description"`
-}
-
-type configCustomPage struct {
-	Path            string       `mapstructure:"path"`
-	Template        string       `mapstructure:"template"`
-	Cache           bool         `mapstructure:"cache"`
-	CacheExpiration int          `mapstructure:"cacheExpiration"`
-	Data            *interface{} `mapstructure:"data"`
 }
 
 type configRandomPost struct {

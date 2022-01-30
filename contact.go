@@ -17,7 +17,7 @@ const defaultContactPath = "/contact"
 func (a *goBlog) serveContactForm(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	cc := bc.Contact
-	a.renderNew(w, r, a.renderContact, &renderData{
+	a.render(w, r, a.renderContact, &renderData{
 		Data: &contactRenderData{
 			title:       cc.Title,
 			description: cc.Description,
@@ -63,7 +63,7 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	// Send notification
 	a.sendNotification(message.String())
 	// Give feedback
-	a.renderNew(w, r, a.renderContact, &renderData{
+	a.render(w, r, a.renderContact, &renderData{
 		Data: &contactRenderData{
 			sent: true,
 		},

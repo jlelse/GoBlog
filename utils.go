@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -203,10 +202,6 @@ func charCount(s string) (count int) {
 		}
 	}
 	return count
-}
-
-func wrapStringAsHTML(s string) template.HTML {
-	return template.HTML(s)
 }
 
 // Check if url has allowed file extension
