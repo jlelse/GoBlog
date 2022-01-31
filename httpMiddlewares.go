@@ -23,7 +23,13 @@ func fixHTTPHandler(next http.Handler) http.Handler {
 func headAsGetHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodHead {
-			r.Method = http.MethodGet
+			// Clone request and change method
+			newReq := new(http.Request)
+			*newReq = *r
+			newReq.Method = http.MethodGet
+			// Serve new request
+			next.ServeHTTP(w, newReq)
+			return
 		}
 		next.ServeHTTP(w, r)
 	})

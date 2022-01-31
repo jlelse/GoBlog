@@ -94,7 +94,7 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 }
 
 func cacheable(r *http.Request) bool {
-	if !(r.Method == http.MethodGet || r.Method == http.MethodHead) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		return false
 	}
 	if r.URL.Query().Get("cache") == "0" || r.URL.Query().Get("cache") == "false" {

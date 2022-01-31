@@ -46,7 +46,7 @@ func (a *goBlog) startServer() (err error) {
 	compressor.SetEncoder("br", func(w io.Writer, _ int) io.Writer {
 		return brotli.NewWriter(w)
 	})
-	h = h.Append(middleware.Recoverer, compressor.Handler, middleware.Heartbeat("/ping"), headAsGetHandler)
+	h = h.Append(middleware.Recoverer, compressor.Handler, middleware.Heartbeat("/ping"))
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}
@@ -225,7 +225,7 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	mapRouter.DefaultHandler = r
-	return mapRouter, nil
+	return alice.New(headAsGetHandler).Then(mapRouter), nil
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
