@@ -21,6 +21,6 @@ func (a *goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Add("Cache-Control", "public,max-age=31536000,immutable")
+	w.Header().Add(cacheControl, "public,max-age=31536000,immutable")
 	http.ServeFile(w, r, f)
 }

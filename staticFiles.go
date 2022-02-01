@@ -39,6 +39,6 @@ func hasStaticPath(path string) bool {
 
 // Gets only called by registered paths
 func (a *goBlog) serveStaticFile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", a.cfg.Cache.Expiration, a.cfg.Cache.Expiration/3, a.cfg.Cache.Expiration))
+	w.Header().Set(cacheControl, fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", a.cfg.Cache.Expiration, a.cfg.Cache.Expiration/3, a.cfg.Cache.Expiration))
 	http.ServeFile(w, r, filepath.Join(staticFolder, r.URL.Path))
 }

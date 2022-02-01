@@ -110,7 +110,7 @@ func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
-	w.Header().Set("Cache-Control", "public,max-age=31536000,immutable")
+	w.Header().Set(cacheControl, "public,max-age=31536000,immutable")
 	w.Header().Set(contentType, af.contentType+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write(af.body)
 }

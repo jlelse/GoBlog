@@ -19,6 +19,9 @@ import (
 const (
 	cacheLoggedInKey   contextKey = "cacheLoggedIn"
 	cacheExpirationKey contextKey = "cacheExpiration"
+
+	lastModified = "Last-Modified"
+	cacheControl = "Cache-Control"
 )
 
 type cache struct {
@@ -129,13 +132,13 @@ func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	}
 	// Set cache headers
 	w.Header().Set("ETag", cache.eTag)
-	w.Header().Set("Last-Modified", cache.creationTime.UTC().Format(http.TimeFormat))
-	if w.Header().Get("Cache-Control") == "" {
+	w.Header().Set(lastModified, cache.creationTime.UTC().Format(http.TimeFormat))
+	if w.Header().Get(cacheControl) == "" {
 		if cache.expiration != 0 {
-			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
+			w.Header().Set(cacheControl, fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
 		} else {
 			exp := a.cfg.Cache.Expiration
-			w.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", exp, exp/3, exp))
+			w.Header().Set(cacheControl, fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", exp, exp/3, exp))
 		}
 	}
 }
@@ -185,7 +188,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 			eTag, _ = getSHA256(bytes.NewReader(body))
 		}
 		lastMod := time.Now()
-		if lm := result.Header.Get("Last-Modified"); lm != "" {
+		if lm := result.Header.Get(lastModified); lm != "" {
 			if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
 				lastMod = parsedTime
 			}
@@ -193,7 +196,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		// Remove problematic headers
 		result.Header.Del("Accept-Ranges")
 		result.Header.Del("ETag")
-		result.Header.Del("Last-Modified")
+		result.Header.Del(lastModified)
 		// Create cache item
 		exp, _ := cr.Context().Value(cacheExpirationKey).(int)
 		item = &cacheItem{
@@ -205,7 +208,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 			body:         body,
 		}
 		// Save cache
-		if cch := item.header.Get("Cache-Control"); !containsStrings(cch, "no-store", "private", "no-cache") {
+		if cch := item.header.Get(cacheControl); !containsStrings(cch, "no-store", "private", "no-cache") {
 			if exp == 0 {
 				c.c.Set(key, item, item.cost())
 			} else {
