@@ -28,7 +28,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hacdias/indieauth v1.7.1
-	github.com/jlaffaye/ftp v0.0.0-20211117213618-11820403398b
+	github.com/jlaffaye/ftp v0.0.0-20220201222555-02685330ee35
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
@@ -36,7 +36,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.11
-	github.com/microcosm-cc/bluemonday v1.0.17
+	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
@@ -51,23 +51,20 @@ require (
 	github.com/tkrajina/gpxgo v1.2.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.4
+	github.com/yuin/goldmark v1.4.5
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
-	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838
+	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
+	golang.org/x/crypto v0.0.0-20220208050332-20e1d8d225ab
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	nhooyr.io/websocket v1.8.7
-	tailscale.com v1.20.3
+	tailscale.com v1.20.4
 	// main
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
-
-// Override some modules with own forks
-replace github.com/yuin/goldmark-highlighting => github.com/jlelse/goldmark-highlighting v0.0.0-20211115195757-39f0fea96680
 
 require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
