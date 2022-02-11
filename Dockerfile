@@ -10,6 +10,7 @@ ADD testdata/ /app/testdata/
 ADD templates/ /app/templates/
 ADD leaflet/ /app/leaflet/
 ADD dbmigrations/ /app/dbmigrations/
+ADD strings/ /app/strings/
 
 FROM buildbase as build
 

@@ -114,3 +114,13 @@ func Test_defaultIfEmpty(t *testing.T) {
 	assert.Equal(t, "def", defaultIfEmpty("", "def"))
 	assert.Equal(t, "first", defaultIfEmpty("first", "def"))
 }
+
+func Test_matchTimeDiffLocale(t *testing.T) {
+	assert.Equal(t, "en", string(matchTimeDiffLocale("en-US")))
+	assert.Equal(t, "en", string(matchTimeDiffLocale("en")))
+	assert.Equal(t, "de", string(matchTimeDiffLocale("de")))
+	assert.Equal(t, "de", string(matchTimeDiffLocale("de-DE")))
+	assert.Equal(t, "de", string(matchTimeDiffLocale("de-AT")))
+	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt-BR")))
+	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt")))
+}

@@ -20,8 +20,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
 	"github.com/c2h5oh/datasize"
+	tdl "github.com/mergestat/timediff/locale"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/thoas/go-funk"
+	"golang.org/x/text/language"
 )
 
 type contextKey string
@@ -362,4 +364,15 @@ func (valueOnlyContext) Done() <-chan struct{} {
 
 func (valueOnlyContext) Err() error {
 	return nil
+}
+
+func matchTimeDiffLocale(lang string) tdl.Locale {
+	supportedLangs := []string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
+	supportedTags := []language.Tag{}
+	for _, lang := range supportedLangs {
+		supportedTags = append(supportedTags, language.Make(lang))
+	}
+	matcher := language.NewMatcher(supportedTags)
+	_, idx, _ := matcher.Match(language.Make(lang))
+	return tdl.Locale(supportedLangs[idx])
 }

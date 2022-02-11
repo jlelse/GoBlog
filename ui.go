@@ -7,6 +7,7 @@ import (
 
 	"github.com/hacdias/indieauth"
 	"github.com/kaorimatz/go-opml"
+	"github.com/mergestat/timediff"
 	"github.com/thoas/go-funk"
 )
 
@@ -1192,16 +1193,19 @@ func (a *goBlog) renderNotificationsAdmin(hb *htmlBuilder, rd *renderData) {
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
 			hb.writeElementClose("h1")
 			// Notifications
+			tdLocale := matchTimeDiffLocale(rd.Blog.Lang)
 			for _, n := range nrd.notifications {
 				hb.writeElementOpen("div", "class", "p")
 				// Date
 				hb.writeElementOpen("p")
 				hb.writeElementOpen("i")
-				hb.writeEscaped(unixToLocalDateString(n.Time))
+				hb.writeEscaped(timediff.TimeDiff(time.Unix(n.Time, 0), timediff.WithLocale(tdLocale)))
 				hb.writeElementClose("i")
 				hb.writeElementClose("p")
 				// Message
-				_ = a.renderMarkdownToWriter(hb, n.Text, false)
+				hb.writeElementOpen("pre")
+				hb.writeEscaped(n.Text)
+				hb.writeElementClose("pre")
 				// Delete form
 				hb.writeElementOpen("form", "class", "actions", "method", "post", "action", "/notifications/delete")
 				hb.writeElementOpen("input", "type", "hidden", "name", "notificationid", "value", n.ID)
