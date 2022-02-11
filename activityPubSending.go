@@ -6,7 +6,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -120,8 +119,7 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	}
 	defer resp.Body.Close()
 	if !apRequestIsSuccess(resp.StatusCode) {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("signed request failed with status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("signed request failed with status %d", resp.StatusCode)
 	}
 	return nil
 }

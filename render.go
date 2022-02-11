@@ -1,9 +1,9 @@
 package main
 
 import (
+	"io"
 	"net/http"
 
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -39,13 +39,14 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Write status code
 	w.WriteHeader(statusCode)
 	// Render
-	buf := bufferpool.Get()
-	mw := a.min.Writer(contenttype.HTML, buf)
-	hb := newHtmlBuilder(mw)
-	f(hb, data)
-	_ = mw.Close()
-	_, _ = buf.WriteTo(w)
-	bufferpool.Put(buf)
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		mw := a.min.Writer(contenttype.HTML, pipeWriter)
+		f(newHtmlBuilder(mw), data)
+		_ = mw.Close()
+		_ = pipeWriter.Close()
+	}()
+	_, _ = io.Copy(w, pipeReader)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

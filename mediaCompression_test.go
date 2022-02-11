@@ -15,7 +15,7 @@ import (
 func Test_compress(t *testing.T) {
 	fakeFileContent := "Test"
 	hash := sha256.New()
-	io.WriteString(hash, fakeFileContent)
+	_, _ = io.WriteString(hash, fakeFileContent)
 	fakeSha256 := fmt.Sprintf("%x", hash.Sum(nil))
 
 	var uf mediaStorageSaveFunc = func(filename string, f io.Reader) (location string, err error) {

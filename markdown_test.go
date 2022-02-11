@@ -6,7 +6,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
+
+func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
+	buffer := bufferpool.Get()
+	err = a.renderMarkdownToWriter(buffer, source, absoluteLinks)
+	rendered = buffer.Bytes()
+	bufferpool.Put(buffer)
+	return
+}
 
 func Test_markdown(t *testing.T) {
 	t.Run("Basic Markdown tests", func(t *testing.T) {

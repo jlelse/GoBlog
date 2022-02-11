@@ -113,8 +113,8 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		a.micropubCreatePostFromForm(w, r)
 	case contenttype.JSON:
 		parsedMfItem := &microformatItem{}
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 10000000)) // 10 MB
-		if err := json.Unmarshal(b, parsedMfItem); err != nil {
+		err := json.NewDecoder(io.LimitReader(r.Body, 10000000)).Decode(parsedMfItem)
+		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}

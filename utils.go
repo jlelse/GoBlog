@@ -221,16 +221,18 @@ func mBytesString(size int64) string {
 }
 
 func htmlText(s string) string {
+	return htmlTextFromReader(strings.NewReader(s))
+}
+
+func htmlTextFromReader(r io.Reader) string {
 	// Build policy to only allow a subset of HTML tags
 	textPolicy := bluemonday.StrictPolicy()
 	textPolicy.AllowElements("h1", "h2", "h3", "h4", "h5", "h6") // Headers
 	textPolicy.AllowElements("p")                                // Paragraphs
 	textPolicy.AllowElements("ol", "ul", "li")                   // Lists
 	textPolicy.AllowElements("blockquote")                       // Blockquotes
-	// Filter HTML tags
-	htmlBuf := textPolicy.SanitizeReader(strings.NewReader(s))
-	// Read HTML into document
-	doc, _ := goquery.NewDocumentFromReader(htmlBuf)
+	// Read filtered HTML into document
+	doc, _ := goquery.NewDocumentFromReader(textPolicy.SanitizeReader(r))
 	var text strings.Builder
 	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
 		// Input was real HTML, so build the text from the body

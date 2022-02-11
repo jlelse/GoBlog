@@ -36,7 +36,7 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	for {
 		// Retrieve content
-		mt, message, err := c.Read(ctx)
+		mt, message, err := c.Reader(ctx)
 		if err != nil {
 			break
 		}
@@ -48,21 +48,24 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-		a.createMarkdownPreview(w, blog, string(message))
-		err = w.Close()
-		if err != nil {
+		a.createMarkdownPreview(w, blog, message)
+		if err = w.Close(); err != nil {
 			break
 		}
 	}
 }
 
-func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown string) {
+func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Reader) {
+	md, err := io.ReadAll(markdown)
+	if err != nil {
+		_, _ = io.WriteString(w, err.Error())
+		return
+	}
 	p := &post{
 		Blog:    blog,
-		Content: markdown,
+		Content: string(md),
 	}
-	err := a.computeExtraPostParameters(p)
-	if err != nil {
+	if err = a.computeExtraPostParameters(p); err != nil {
 		_, _ = io.WriteString(w, err.Error())
 		return
 	}

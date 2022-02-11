@@ -15,7 +15,6 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
-	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func (a *goBlog) initMarkdown() {
@@ -76,14 +75,6 @@ func (a *goBlog) initMarkdown() {
 	)
 }
 
-func (a *goBlog) renderMarkdown(source string, absoluteLinks bool) (rendered []byte, err error) {
-	buffer := bufferpool.Get()
-	err = a.renderMarkdownToWriter(buffer, source, absoluteLinks)
-	rendered = buffer.Bytes()
-	bufferpool.Put(buffer)
-	return
-}
-
 func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string, absoluteLinks bool) (err error) {
 	if absoluteLinks {
 		err = a.absoluteMd.Convert([]byte(source), w)
@@ -97,24 +88,34 @@ func (a *goBlog) renderText(s string) string {
 	if s == "" {
 		return ""
 	}
-	h, err := a.renderMarkdown(s, false)
+	pipeReader, pipeWriter := io.Pipe()
+	var err error
+	go func() {
+		err = a.renderMarkdownToWriter(pipeWriter, s, false)
+		_ = pipeWriter.Close()
+	}()
+	text := htmlTextFromReader(pipeReader)
 	if err != nil {
 		return ""
 	}
-	return htmlText(string(h))
+	return text
 }
 
 func (a *goBlog) renderMdTitle(s string) string {
 	if s == "" {
 		return ""
 	}
-	buffer := bufferpool.Get()
-	defer bufferpool.Put(buffer)
-	err := a.titleMd.Convert([]byte(s), buffer)
+	pipeReader, pipeWriter := io.Pipe()
+	var err error
+	go func() {
+		err = a.titleMd.Convert([]byte(s), pipeWriter)
+		_ = pipeWriter.Close()
+	}()
+	text := htmlTextFromReader(pipeReader)
 	if err != nil {
 		return ""
 	}
-	return htmlText(buffer.String())
+	return text
 }
 
 // Extensions etc...
@@ -177,27 +178,24 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 		return ast.WalkContinue, nil
 	}
 	n := node.(*ast.Image)
-	// Make URL absolute if it's relative
-	destination := util.URLEscape(n.Destination, true)
-	if c.absoluteLinks && c.publicAddress != "" && bytes.HasPrefix(destination, []byte("/")) {
-		destination = util.EscapeHTML(append([]byte(c.publicAddress), destination...))
-	} else {
-		destination = util.EscapeHTML(destination)
+	dest := string(n.Destination)
+	// Make destination absolute if it's relative
+	if c.absoluteLinks && c.publicAddress != "" {
+		resolved, err := resolveURLReferences(c.publicAddress, dest)
+		if err != nil {
+			return ast.WalkStop, err
+		}
+		if len(resolved) > 0 {
+			dest = resolved[0]
+		}
 	}
-	_, _ = w.WriteString("<a href=\"")
-	_, _ = w.Write(destination)
-	_, _ = w.WriteString("\">")
-	_, _ = w.WriteString("<img src=\"")
-	_, _ = w.Write(destination)
-	_, _ = w.WriteString("\" alt=\"")
-	_, _ = w.Write(util.EscapeHTML(n.Text(source)))
-	_ = w.WriteByte('"')
-	_, _ = w.WriteString(" loading=\"lazy\"")
-	if n.Title != nil {
-		_, _ = w.WriteString(" title=\"")
-		_, _ = w.Write(n.Title)
-		_ = w.WriteByte('"')
+	hb := newHtmlBuilder(w)
+	hb.writeElementOpen("a", "href", dest)
+	imgEls := []interface{}{"src", dest, "alt", string(n.Text(source)), "loading", "lazy"}
+	if len(n.Title) > 0 {
+		imgEls = append(imgEls, "title", string(n.Title))
 	}
-	_, _ = w.WriteString("></a>")
+	hb.writeElementOpen("img", imgEls...)
+	hb.writeElementClose("a")
 	return ast.WalkSkipChildren, nil
 }

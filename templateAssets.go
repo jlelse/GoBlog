@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -34,14 +33,10 @@ func (a *goBlog) initTemplateAssets() error {
 				return err
 			}
 			// Compile asset and close file
-			compiled, err := a.compileAsset(path, file)
+			err = a.compileAsset(strings.TrimPrefix(path, assetsFolder+"/"), file)
 			_ = file.Close()
 			if err != nil {
 				return err
-			}
-			// Add to map
-			if compiled != "" {
-				a.assetFileNames[strings.TrimPrefix(path, assetsFolder+"/")] = compiled
 			}
 		}
 		return nil
@@ -55,7 +50,7 @@ func (a *goBlog) initTemplateAssets() error {
 	return nil
 }
 
-func (a *goBlog) compileAsset(name string, read io.Reader) (string, error) {
+func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	ext := path.Ext(name)
 	switch ext {
 	case ".js":
@@ -69,16 +64,18 @@ func (a *goBlog) compileAsset(name string, read io.Reader) (string, error) {
 	hash := sha256.New()
 	body, err := io.ReadAll(io.TeeReader(read, hash))
 	if err != nil {
-		return "", err
+		return err
 	}
 	// File name
 	compiledFileName := fmt.Sprintf("%x%s", hash.Sum(nil), ext)
-	// Create struct
+	// Save file
 	a.assetFiles[compiledFileName] = &assetFile{
 		contentType: mime.TypeByExtension(ext),
 		body:        body,
 	}
-	return compiledFileName, err
+	// Save mapping of original file name to compiled file name
+	a.assetFileNames[name] = compiledFileName
+	return err
 }
 
 // Function for templates
@@ -113,22 +110,15 @@ func (a *goBlog) initChromaCSS() error {
 		return nil
 	}
 	// Initialize the style
-	chromaStyleBuilder := chromaGoBlogStyle.Builder()
-	chromaStyle, err := chromaStyleBuilder.Build()
+	chromaStyle, err := chromaGoBlogStyle.Builder().Build()
 	if err != nil {
 		return err
 	}
-	// Write the CSS to a buffer
-	var cssBuffer bytes.Buffer
-	if err = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(&cssBuffer, chromaStyle); err != nil {
-		return err
-	}
-	// Compile asset
-	compiled, err := a.compileAsset(chromaPath, &cssBuffer)
-	if err != nil {
-		return err
-	}
-	// Add to map
-	a.assetFileNames[chromaPath] = compiled
-	return nil
+	// Generate and minify CSS
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		_ = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(pipeWriter, chromaStyle)
+		_ = pipeWriter.Close()
+	}()
+	return a.compileAsset(chromaPath, pipeReader)
 }

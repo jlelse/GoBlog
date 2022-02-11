@@ -93,13 +93,14 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	if summary != "" {
 		return
 	}
-	if splitted := strings.Split(p.Content, summaryDivider); len(splitted) > 1 {
-		rendered, _ := a.renderMarkdown(splitted[0], false)
-		summary = htmlText(string(rendered))
-	} else {
-		rendered, _ := a.renderMarkdown(splitted[0], false)
-		summary = strings.Split(htmlText(string(rendered)), "\n\n")[0]
+	splitted := strings.Split(p.Content, summaryDivider)
+	hasDivider := len(splitted) > 1
+	markdown := splitted[0]
+	summary = a.renderText(markdown)
+	if !hasDivider {
+		summary = strings.Split(summary, "\n\n")[0]
 	}
+	summary = strings.TrimSpace(strings.ReplaceAll(summary, "\n\n", " "))
 	return
 }
 

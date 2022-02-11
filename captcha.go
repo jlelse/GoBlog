@@ -55,7 +55,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		}
 		// Encode original request
 		h, _ := json.Marshal(r.Header)
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 20*1000*1000)) // Only allow 20 MB
+		b, _ := io.ReadAll(io.LimitReader(r.Body, 20000000)) // Only allow 20 MB
 		_ = r.Body.Close()
 		if len(b) == 0 {
 			// Maybe it's a form
