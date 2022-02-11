@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -55,37 +57,26 @@ func (a *goBlog) initTemplateAssets() error {
 
 func (a *goBlog) compileAsset(name string, read io.Reader) (string, error) {
 	ext := path.Ext(name)
-	compiledExt := ext
-	var contentBuffer bytes.Buffer
 	switch ext {
 	case ".js":
-		if err := a.min.Minify(contenttype.JS, &contentBuffer, read); err != nil {
-			return "", err
-		}
+		read = a.min.Reader(contenttype.JS, read)
 	case ".css":
-		if err := a.min.Minify(contenttype.CSS, &contentBuffer, read); err != nil {
-			return "", err
-		}
+		read = a.min.Reader(contenttype.CSS, read)
 	case ".xml", ".xsl":
-		if err := a.min.Minify(contenttype.XML, &contentBuffer, read); err != nil {
-			return "", err
-		}
-	default:
-		if _, err := io.Copy(&contentBuffer, read); err != nil {
-			return "", err
-		}
+		read = a.min.Reader(contenttype.XML, read)
 	}
-	// Hashes
-	hash, err := getSHA256(bytes.NewReader(contentBuffer.Bytes()))
+	// Read file
+	hash := sha256.New()
+	body, err := io.ReadAll(io.TeeReader(read, hash))
 	if err != nil {
 		return "", err
 	}
 	// File name
-	compiledFileName := hash + compiledExt
+	compiledFileName := fmt.Sprintf("%x%s", hash.Sum(nil), ext)
 	// Create struct
 	a.assetFiles[compiledFileName] = &assetFile{
-		contentType: mime.TypeByExtension(compiledExt),
-		body:        contentBuffer.Bytes(),
+		contentType: mime.TypeByExtension(ext),
+		body:        body,
 	}
 	return compiledFileName, err
 }

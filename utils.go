@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -215,21 +214,6 @@ func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
 		return strings.ToLower(str)
 	}).([]string)
 	return ext, funk.ContainsString(allowed, strings.ToLower(ext))
-}
-
-// Get SHA-256 hash
-func getSHA256(file io.ReadSeeker) (hash string, err error) {
-	if _, err = file.Seek(0, 0); err != nil {
-		return "", err
-	}
-	h := sha256.New()
-	if _, err = io.Copy(h, file); err != nil {
-		return "", err
-	}
-	if _, err = file.Seek(0, 0); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func mBytesString(size int64) string {

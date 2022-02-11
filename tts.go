@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"html"
 	"io"
 	"log"
@@ -105,18 +107,14 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	}
 
 	// Merge partsBuffers into final buffer
-	var final bytes.Buffer
-	if err := mp3merge.MergeMP3(&final, partsBuffers...); err != nil {
+	final := new(bytes.Buffer)
+	hash := sha256.New()
+	if err := mp3merge.MergeMP3(io.MultiWriter(final, hash), partsBuffers...); err != nil {
 		return err
 	}
 
 	// Save audio
-	audioReader := bytes.NewReader(final.Bytes())
-	fileHash, err := getSHA256(audioReader)
-	if err != nil {
-		return err
-	}
-	loc, err := a.saveMediaFile(fileHash+".mp3", audioReader)
+	loc, err := a.saveMediaFile(fmt.Sprintf("%x.mp3", hash.Sum(nil)), final)
 	if err != nil {
 		return err
 	}

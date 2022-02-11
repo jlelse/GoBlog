@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -45,37 +44,34 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		// Create preview
-		preview, err := a.createMarkdownPreview(blog, string(message))
+		w, err := c.Writer(ctx, ws.MessageText)
 		if err != nil {
-			preview = []byte(err.Error())
+			break
 		}
-		// Write preview to socket
-		err = c.Write(ctx, ws.MessageText, preview)
+		a.createMarkdownPreview(w, blog, string(message))
+		err = w.Close()
 		if err != nil {
 			break
 		}
 	}
 }
 
-func (a *goBlog) createMarkdownPreview(blog string, markdown string) (rendered []byte, err error) {
+func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown string) {
 	p := &post{
 		Blog:    blog,
 		Content: markdown,
 	}
-	err = a.computeExtraPostParameters(p)
+	err := a.computeExtraPostParameters(p)
 	if err != nil {
-		return nil, err
+		_, _ = io.WriteString(w, err.Error())
+		return
 	}
 	if t := p.Title(); t != "" {
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
 	// Render post
-	buf := bufferpool.Get()
-	hb := newHtmlBuilder(buf)
+	hb := newHtmlBuilder(w)
 	a.renderEditorPreview(hb, a.cfg.Blogs[blog], p)
-	rendered = buf.Bytes()
-	bufferpool.Put(buf)
-	return
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +90,9 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 		case "updatepost":
-			jsonBytes, err := json.Marshal(map[string]interface{}{
+			jsonBuf := bufferpool.Get()
+			defer bufferpool.Put(jsonBuf)
+			err := json.NewEncoder(jsonBuf).Encode(map[string]interface{}{
 				"action": actionUpdate,
 				"url":    r.FormValue("url"),
 				"replace": map[string][]string{
@@ -107,7 +105,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			req, err := http.NewRequest(http.MethodPost, "", bytes.NewReader(jsonBytes))
+			req, err := http.NewRequest(http.MethodPost, "", jsonBuf)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
@@ -138,25 +136,15 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			originalGpx, err := io.ReadAll(file)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			minifiedGpx, err := a.min.MinifyString(contenttype.XML, string(originalGpx))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			resultBytes, err := yaml.Marshal(map[string]string{
-				"gpx": minifiedGpx,
-			})
+			gpx, err := io.ReadAll(a.min.Reader(contenttype.XML, file))
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
 			w.Header().Set(contentType, contenttype.TextUTF8)
-			_, _ = w.Write(resultBytes)
+			_ = yaml.NewEncoder(w).Encode(map[string]string{
+				"gpx": string(gpx),
+			})
 		default:
 			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
 		}

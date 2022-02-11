@@ -1,43 +1,51 @@
 package main
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const micropubMediaSubPath = "/media"
 
 func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
+	// Check scope
 	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "media") {
 		a.serveError(w, r, "media scope missing", http.StatusForbidden)
 		return
 	}
+	// Check if request is multipart
 	if ct := r.Header.Get(contentType); !strings.Contains(ct, contenttype.MultipartForm) {
 		a.serveError(w, r, "wrong content-type", http.StatusBadRequest)
 		return
 	}
+	// Parse multipart form
 	err := r.ParseMultipartForm(0)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// Get file
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer func() { _ = file.Close() }()
-	hashFile, _, _ := r.FormFile("file")
-	defer func() { _ = hashFile.Close() }()
-	fileName, err := getSHA256(hashFile)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// Read the file into temporary buffer and generate sha256 hash
+	hash := sha256.New()
+	buffer := bufferpool.Get()
+	defer bufferpool.Put(buffer)
+	_, _ = io.Copy(buffer, io.TeeReader(file, hash))
+	_ = file.Close()
+	_ = r.Body.Close()
+	// Get file extension
 	fileExtension := filepath.Ext(header.Filename)
 	if len(fileExtension) == 0 {
 		// Find correct file extension if original filename does not contain one
@@ -49,9 +57,10 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	fileName += strings.ToLower(fileExtension)
+	// Generate the file name
+	fileName := fmt.Sprintf("%x%s", hash.Sum(nil), fileExtension)
 	// Save file
-	location, err := a.saveMediaFile(fileName, file)
+	location, err := a.saveMediaFile(fileName, buffer)
 	if err != nil {
 		a.serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
 		return

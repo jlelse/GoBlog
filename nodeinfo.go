@@ -8,7 +8,10 @@ import (
 )
 
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
-	b, _ := json.Marshal(map[string]interface{}{
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	mw := a.min.Writer(contenttype.JSON, w)
+	defer mw.Close()
+	_ = json.NewEncoder(mw).Encode(map[string]interface{}{
 		"links": []map[string]interface{}{
 			{
 				"href": a.getFullAddress("/nodeinfo"),
@@ -16,15 +19,16 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	})
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = a.min.Write(w, contenttype.JSON, b)
 }
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	localPosts, _ := a.db.countPosts(&postsRequestConfig{
 		status: statusPublished,
 	})
-	b, _ := json.Marshal(map[string]interface{}{
+	mw := a.min.Writer(contenttype.JSON, w)
+	defer mw.Close()
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_ = json.NewEncoder(mw).Encode(map[string]interface{}{
 		"version": "2.1",
 		"software": map[string]interface{}{
 			"name":       "goblog",
@@ -43,6 +47,4 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		"metadata": map[string]interface{}{},
 	})
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = a.min.Write(w, contenttype.JSON, b)
 }

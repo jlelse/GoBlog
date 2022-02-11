@@ -40,10 +40,10 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	w.WriteHeader(statusCode)
 	// Render
 	buf := bufferpool.Get()
-	minWriter := a.min.Get().Writer(contenttype.HTML, buf)
-	hb := newHtmlBuilder(minWriter)
+	mw := a.min.Writer(contenttype.HTML, buf)
+	hb := newHtmlBuilder(mw)
 	f(hb, data)
-	_ = minWriter.Close()
+	_ = mw.Close()
 	_, _ = buf.WriteTo(w)
 	bufferpool.Put(buf)
 }

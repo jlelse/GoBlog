@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
 	"github.com/carlmjohnson/requests"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const defaultCompressionWidth = 2000
@@ -167,14 +170,12 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http
 	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
 }
 
-func uploadCompressedFile(fileExtension string, imgBuffer *bytes.Buffer, upload mediaStorageSaveFunc) (string, error) {
-	// Create reader from buffer
-	imgReader := bytes.NewReader(imgBuffer.Bytes())
-	// Get hash of compressed file
-	fileName, err := getSHA256(imgReader)
-	if err != nil {
-		return "", err
-	}
-	// Upload compressed file
-	return upload(fileName+"."+fileExtension, imgReader)
+func uploadCompressedFile(fileExtension string, r io.Reader, upload mediaStorageSaveFunc) (string, error) {
+	// Copy file to temporary buffer to generate hash and filename
+	hash := sha256.New()
+	tempBuffer := bufferpool.Get()
+	defer bufferpool.Put(tempBuffer)
+	_, _ = io.Copy(io.MultiWriter(tempBuffer, hash), r)
+	// Upload buffer
+	return upload(fmt.Sprintf("%x.%s", hash.Sum(nil), fileExtension), tempBuffer)
 }

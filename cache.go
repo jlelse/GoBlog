@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -181,12 +181,9 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		next.ServeHTTP(recorder, cr)
 		// Cache values from recorder
 		result := recorder.Result()
-		body, _ := io.ReadAll(result.Body)
+		eTag := sha256.New()
+		body, _ := io.ReadAll(io.TeeReader(result.Body, eTag))
 		_ = result.Body.Close()
-		eTag := result.Header.Get("ETag")
-		if eTag == "" {
-			eTag, _ = getSHA256(bytes.NewReader(body))
-		}
 		lastMod := time.Now()
 		if lm := result.Header.Get(lastModified); lm != "" {
 			if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
@@ -202,7 +199,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		item = &cacheItem{
 			expiration:   exp,
 			creationTime: lastMod,
-			eTag:         eTag,
+			eTag:         fmt.Sprintf("%x", eTag.Sum(nil)),
 			code:         result.StatusCode,
 			header:       result.Header,
 			body:         body,

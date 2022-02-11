@@ -1,11 +1,11 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,13 +14,9 @@ import (
 
 func Test_compress(t *testing.T) {
 	fakeFileContent := "Test"
-	fakeFileName := filepath.Join(t.TempDir(), "test.jpg")
-	err := os.WriteFile(fakeFileName, []byte(fakeFileContent), 0666)
-	require.Nil(t, err)
-	fakeFile, err := os.Open(fakeFileName)
-	require.Nil(t, err)
-	fakeSha256, err := getSHA256(fakeFile)
-	require.Nil(t, err)
+	hash := sha256.New()
+	io.WriteString(hash, fakeFileContent)
+	fakeSha256 := fmt.Sprintf("%x", hash.Sum(nil))
 
 	var uf mediaStorageSaveFunc = func(filename string, f io.Reader) (location string, err error) {
 		return "https://example.com/" + filename, nil
@@ -32,7 +28,7 @@ func Test_compress(t *testing.T) {
 			assert.Equal(t, "https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=2000,h=3000/https://example.com/original.jpg", r.URL.String())
 
 			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(fakeFileContent))
+			_, _ = io.WriteString(rw, fakeFileContent)
 		}))
 
 		cf := &cloudflare{}
@@ -51,7 +47,7 @@ func Test_compress(t *testing.T) {
 			defer r.Body.Close()
 
 			var requestJson map[string]interface{}
-			err = json.Unmarshal(requestBody, &requestJson)
+			err := json.Unmarshal(requestBody, &requestJson)
 			require.Nil(t, err)
 			require.NotNil(t, requestJson)
 
@@ -59,7 +55,7 @@ func Test_compress(t *testing.T) {
 			assert.Equal(t, "https://example.com/original.jpg", requestJson["url"])
 
 			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(fakeFileContent))
+			_, _ = io.WriteString(rw, fakeFileContent)
 		}))
 
 		cf := &shortpixel{"testkey"}

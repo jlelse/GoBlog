@@ -1,7 +1,8 @@
 package main
 
 import (
-	"embed"
+	"io"
+	"io/fs"
 	"net/http"
 	"path"
 	"strings"
@@ -9,24 +10,23 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-func (a *goBlog) serveFs(fs embed.FS, basePath string) http.HandlerFunc {
+func (a *goBlog) serveFs(f fs.FS, basePath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fileName := strings.TrimPrefix(r.URL.Path, basePath)
-		fb, err := fs.ReadFile(fileName)
+		file, err := f.Open(fileName)
 		if err != nil {
 			a.serve404(w, r)
 			return
 		}
+		var read io.Reader = file
 		switch path.Ext(fileName) {
 		case ".js":
-			w.Header().Set(contentType, contenttype.JS)
-			_, _ = a.min.Write(w, contenttype.JSUTF8, fb)
+			w.Header().Set(contentType, contenttype.JSUTF8)
+			read = a.min.Reader(contenttype.JS, read)
 		case ".css":
-			w.Header().Set(contentType, contenttype.CSS)
-			_, _ = a.min.Write(w, contenttype.CSSUTF8, fb)
-		default:
-			w.Header().Set(contentType, http.DetectContentType(fb))
-			_, _ = w.Write(fb)
+			w.Header().Set(contentType, contenttype.CSSUTF8)
+			read = a.min.Reader(contenttype.CSS, read)
 		}
+		_, _ = io.Copy(w, read)
 	}
 }
