@@ -369,7 +369,7 @@ func (a *goBlog) renderIndex(hb *htmlBuilder, rd *renderData) {
 			// RSS
 			hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", id.first+".rss")
 			// ATOM
-			hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "AROM"+feedTitle, "href", id.first+".atom")
+			hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", id.first+".atom")
 			// JSON Feed
 			hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", id.first+".json")
 		},
