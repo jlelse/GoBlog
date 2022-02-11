@@ -14,6 +14,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"github.com/thoas/go-funk"
 	"github.com/tomnomnom/linkheader"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const postParamWebmention = "webmention"
@@ -32,7 +33,10 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		return nil
 	}
 	links := []string{}
-	contentLinks, err := allLinksFromHTML(strings.NewReader(string(a.postHtml(p, false))), a.fullPostURL(p))
+	contentBuf := bufferpool.Get()
+	a.postHtmlToWriter(contentBuf, p, false)
+	contentLinks, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
+	bufferpool.Put(contentBuf)
 	if err != nil {
 		return err
 	}

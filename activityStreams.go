@@ -113,7 +113,7 @@ func (a *goBlog) toASNote(p *post) *asNote {
 		as.Type = "Note"
 	}
 	// Content
-	as.Content = string(a.postHtml(p, true))
+	as.Content = a.postHtml(p, true)
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		for _, image := range images {

@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,8 +29,6 @@ type post struct {
 	// Not persisted
 	Slug          string
 	RenderedTitle string
-	renderCache   map[bool]template.HTML
-	renderMutex   sync.RWMutex
 }
 
 type postStatus string

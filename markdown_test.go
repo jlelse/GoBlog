@@ -79,11 +79,6 @@ func Test_markdown(t *testing.T) {
 		assert.Equal(t, "Test’s", app.renderMdTitle("Test's"))
 		assert.Equal(t, "😂", app.renderMdTitle(":joy:"))
 		assert.Equal(t, "<b></b>", app.renderMdTitle("<b></b>"))
-
-		// Template func
-
-		renderedText = string(app.safeRenderMarkdownAsHTML("[Relative](/relative)"))
-		assert.Contains(t, renderedText, `href="/relative"`)
 	})
 }
 

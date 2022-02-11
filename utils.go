@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -164,25 +165,18 @@ func toUTC(s string) (string, error) {
 	return d.UTC().Format(time.RFC3339), nil
 }
 
-func dateFormat(date string, format string) string {
+func toLocalTime(date string) time.Time {
+	if date == "" {
+		return time.Time{}
+	}
 	d, err := dateparse.ParseLocal(date)
 	if err != nil {
-		return ""
+		return time.Time{}
 	}
-	return d.Local().Format(format)
+	return d.Local()
 }
 
-func isoDateFormat(date string) string {
-	return dateFormat(date, "2006-01-02")
-}
-
-func unixToLocalDateString(unix int64) string {
-	return time.Unix(unix, 0).Local().Format(time.RFC3339)
-}
-
-func localNowString() string {
-	return time.Now().Local().Format(time.RFC3339)
-}
+const isoDateFormat = "2006-01-02"
 
 func utcNowString() string {
 	return time.Now().UTC().Format(time.RFC3339)
@@ -366,7 +360,17 @@ func (valueOnlyContext) Err() error {
 	return nil
 }
 
+var timeDiffLocaleMap = map[string]tdl.Locale{}
+var timeDiffLocaleMutex sync.RWMutex
+
 func matchTimeDiffLocale(lang string) tdl.Locale {
+	timeDiffLocaleMutex.RLock()
+	if locale, ok := timeDiffLocaleMap[lang]; ok {
+		return locale
+	}
+	timeDiffLocaleMutex.RUnlock()
+	timeDiffLocaleMutex.Lock()
+	defer timeDiffLocaleMutex.Unlock()
 	supportedLangs := []string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
 	supportedTags := []language.Tag{}
 	for _, lang := range supportedLangs {
@@ -374,5 +378,7 @@ func matchTimeDiffLocale(lang string) tdl.Locale {
 	}
 	matcher := language.NewMatcher(supportedTags)
 	_, idx, _ := matcher.Match(language.Make(lang))
-	return tdl.Locale(supportedLangs[idx])
+	locale := tdl.Locale(supportedLangs[idx])
+	timeDiffLocaleMap[lang] = locale
+	return locale
 }

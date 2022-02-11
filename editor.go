@@ -45,7 +45,7 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		// Create preview
-		preview, err := a.createMarkdownPreview(blog, message)
+		preview, err := a.createMarkdownPreview(blog, string(message))
 		if err != nil {
 			preview = []byte(err.Error())
 		}
@@ -57,12 +57,10 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) createMarkdownPreview(blog string, markdown []byte) (rendered []byte, err error) {
+func (a *goBlog) createMarkdownPreview(blog string, markdown string) (rendered []byte, err error) {
 	p := &post{
-		Content:   string(markdown),
-		Blog:      blog,
-		Path:      "/editor/preview",
-		Published: localNowString(),
+		Blog:    blog,
+		Content: markdown,
 	}
 	err = a.computeExtraPostParameters(p)
 	if err != nil {

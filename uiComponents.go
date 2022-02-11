@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type summaryTyp string
 
@@ -46,7 +49,7 @@ func (a *goBlog) renderSummary(hb *htmlBuilder, bc *configBlog, p *post, typ sum
 	if typ != photoSummary && a.showFull(p) {
 		// Show full content
 		hb.writeElementOpen("div", "class", "e-content")
-		hb.write(string(a.postHtml(p, false)))
+		a.postHtmlToWriter(hb, p, false)
 		hb.writeElementClose("div")
 	} else {
 		// Show summary
@@ -114,12 +117,12 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 		hb.writeElementOpen("div", "class", "p")
 	}
 	// Published time
-	if published := p.Published; published != "" {
+	if published := toLocalTime(p.Published); !published.IsZero() {
 		hb.writeElementOpen("div")
 		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "publishedon"))
 		hb.write(" ")
-		hb.writeElementOpen("time", "class", "dt-published", "datetime", dateFormat(published, "2006-01-02T15:04:05Z07:00"))
-		hb.writeEscaped(isoDateFormat(published))
+		hb.writeElementOpen("time", "class", "dt-published", "datetime", published.Format(time.RFC3339))
+		hb.writeEscaped(published.Format(isoDateFormat))
 		hb.writeElementClose("time")
 		// Section
 		if p.Section != "" {
@@ -133,12 +136,12 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 		hb.writeElementClose("div")
 	}
 	// Updated time
-	if updated := p.Updated; updated != "" {
+	if updated := toLocalTime(p.Updated); !updated.IsZero() {
 		hb.writeElementOpen("div")
 		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "updatedon"))
 		hb.write(" ")
-		hb.writeElementOpen("time", "class", "dt-updated", "datetime", dateFormat(updated, "2006-01-02T15:04:05Z07:00"))
-		hb.writeEscaped(isoDateFormat(updated))
+		hb.writeElementOpen("time", "class", "dt-updated", "datetime", updated.Format(time.RFC3339))
+		hb.writeEscaped(updated.Format(isoDateFormat))
 		hb.writeElementClose("time")
 		hb.writeElementClose("div")
 	}
@@ -335,11 +338,11 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlBuilder, p *post, canonical string) 
 		hb.writeElementOpen("meta", "property", "og:description", "content", summary)
 		hb.writeElementOpen("meta", "property", "twitter:description", "content", summary)
 	}
-	if p.Published != "" {
-		hb.writeElementOpen("meta", "itemprop", "datePublished", "content", dateFormat(p.Published, "2006-01-02T15:04:05-07:00"))
+	if published := toLocalTime(p.Published); !published.IsZero() {
+		hb.writeElementOpen("meta", "itemprop", "datePublished", "content", published.Format(time.RFC3339))
 	}
-	if p.Updated != "" {
-		hb.writeElementOpen("meta", "itemprop", "dateModified", "content", dateFormat(p.Updated, "2006-01-02T15:04:05-07:00"))
+	if updated := toLocalTime(p.Updated); !updated.IsZero() {
+		hb.writeElementOpen("meta", "itemprop", "dateModified", "content", updated.Format(time.RFC3339))
 	}
 	for _, img := range a.photoLinks(p) {
 		hb.writeElementOpen("meta", "itemprop", "image", "content", img)

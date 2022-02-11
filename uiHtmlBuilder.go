@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"io"
 	textTemplate "text/template"
 )
@@ -31,10 +30,6 @@ func (h *htmlBuilder) WriteString(s string) (int, error) {
 
 func (h *htmlBuilder) write(s string) {
 	_, _ = h.WriteString(s)
-}
-
-func (h *htmlBuilder) writeHtml(s template.HTML) {
-	h.write(string(s))
 }
 
 func (h *htmlBuilder) writeEscaped(s string) {

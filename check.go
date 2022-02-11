@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -126,7 +127,10 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 
 func (a *goBlog) allLinks(posts ...*post) (allLinks []*stringPair, err error) {
 	for _, p := range posts {
-		links, err := allLinksFromHTMLString(string(a.postHtml(p, true)), a.fullPostURL(p))
+		contentBuf := bufferpool.Get()
+		a.postHtmlToWriter(contentBuf, p, true)
+		links, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
+		bufferpool.Put(contentBuf)
 		if err != nil {
 			return nil, err
 		}

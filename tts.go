@@ -65,7 +65,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		parts = append(parts, a.renderMdTitle(title))
 	}
 	// Add body split into paragraphs because of 5000 character limit
-	parts = append(parts, strings.Split(htmlText(string(a.postHtml(p, false))), "\n\n")...)
+	parts = append(parts, strings.Split(htmlText(a.postHtml(p, false)), "\n\n")...)
 
 	// Create TTS audio for each part
 	partsBuffers := make([]io.Reader, len(parts))

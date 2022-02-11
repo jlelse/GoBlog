@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hacdias/indieauth"
@@ -20,7 +19,7 @@ func (a *goBlog) renderEditorPreview(hb *htmlBuilder, bc *configBlog, p *post) {
 	a.renderPostMeta(hb, p, bc, "preview")
 	if p.Content != "" {
 		hb.writeElementOpen("div")
-		hb.writeHtml(a.postHtml(p, true))
+		a.postHtmlToWriter(hb, p, true)
 		hb.writeElementClose("div")
 	}
 	a.renderPostTax(hb, p, bc)
@@ -859,14 +858,11 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
-	postHtml := a.postHtml(p, false)
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlBuilder) {
 			a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
-			if strings.Contains(string(postHtml), "c-chroma") {
-				hb.writeElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
-			}
+			hb.writeElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
 			a.renderPostHeadMeta(hb, p, rd.Canonical)
 			if su := a.shortPostURL(p); su != "" {
 				hb.writeElementOpen("link", "rel", "shortlink", "href", su)
@@ -924,7 +920,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			if p.Content != "" {
 				// Content
 				hb.writeElementOpen("div", "class", "e-content")
-				hb.writeHtml(postHtml)
+				a.postHtmlToWriter(hb, p, false)
 				hb.writeElementClose("div")
 			}
 			// GPS Track
@@ -1027,7 +1023,7 @@ func (a *goBlog) renderStaticHome(hb *htmlBuilder, rd *renderData) {
 			if p.Content != "" {
 				// Content
 				hb.writeElementOpen("div", "class", "e-content")
-				hb.writeHtml(a.postHtml(p, false))
+				a.postHtmlToWriter(hb, p, false)
 				hb.writeElementClose("div")
 			}
 			// Author
@@ -1142,7 +1138,7 @@ func (a *goBlog) renderEditorFiles(hb *htmlBuilder, rd *renderData) {
 				usesString := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses")
 				for i, f := range ef.files {
 					hb.writeElementOpen("option", "value", f.Name)
-					hb.writeEscaped(fmt.Sprintf("%s (%s), %s, ~%d %s", f.Name, isoDateFormat(f.Time.String()), mBytesString(f.Size), ef.uses[i], usesString))
+					hb.writeEscaped(fmt.Sprintf("%s (%s), %s, ~%d %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size), ef.uses[i], usesString))
 					hb.writeElementClose("option")
 				}
 				hb.writeElementClose("select")
@@ -1305,6 +1301,7 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlBuilder, rd *renderData) {
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 			hb.writeElementClose("h1")
 			// Notifications
+			tdLocale := matchTimeDiffLocale(rd.Blog.Lang)
 			for _, m := range wrd.mentions {
 				hb.writeElementOpen("div", "id", fmt.Sprintf("mention-%d", m.ID), "class", "p")
 				hb.writeElementOpen("p")
@@ -1330,7 +1327,7 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementOpen("br")
 				// Date
 				hb.writeEscaped("Created: ")
-				hb.writeEscaped(unixToLocalDateString(m.Created))
+				hb.writeEscaped(timediff.TimeDiff(time.Unix(m.Created, 0), timediff.WithLocale(tdLocale)))
 				hb.writeElementOpen("br")
 				hb.writeElementOpen("br")
 				// Author
@@ -1447,36 +1444,24 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementOpen("h2")
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "posts"))
 			hb.writeElementClose("h2")
+			// Template
+			postsListLink := func(path, title string) {
+				hb.writeElementOpen("p")
+				hb.writeElementOpen("a", "href", rd.Blog.getRelativePath(path))
+				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, title))
+				hb.writeElementClose("a")
+				hb.writeElementClose("p")
+			}
 			// Drafts
-			hb.writeElementOpen("p")
-			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/drafts"))
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "drafts"))
-			hb.writeElementClose("a")
-			hb.writeElementClose("p")
+			postsListLink("/editor/drafts", "drafts")
 			// Private
-			hb.writeElementOpen("p")
-			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/private"))
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "privateposts"))
-			hb.writeElementClose("a")
-			hb.writeElementClose("p")
+			postsListLink("/editor/private", "privateposts")
 			// Unlisted
-			hb.writeElementOpen("p")
-			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/unlisted"))
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "unlistedposts"))
-			hb.writeElementClose("a")
-			hb.writeElementClose("p")
+			postsListLink("/editor/unlisted", "unlistedposts")
 			// Scheduled
-			hb.writeElementOpen("p")
-			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/scheduled"))
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "scheduledposts"))
-			hb.writeElementClose("a")
-			hb.writeElementClose("p")
+			postsListLink("/editor/scheduled", "scheduledposts")
 			// Deleted
-			hb.writeElementOpen("p")
-			hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/editor/deleted"))
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletedposts"))
-			hb.writeElementClose("a")
-			hb.writeElementClose("p")
+			postsListLink("/editor/deleted", "deletedposts")
 
 			// Upload
 			hb.writeElementOpen("h2")
@@ -1524,15 +1509,10 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 
 			// Scripts
-			// Editor preview
-			hb.writeElementOpen("script", "src", a.assetFileName("js/mdpreview.js"), "defer", "")
-			hb.writeElementClose("script")
-			// Geohelper
-			hb.writeElementOpen("script", "src", a.assetFileName("js/geohelper.js"), "defer", "")
-			hb.writeElementClose("script")
-			// Formcache
-			hb.writeElementOpen("script", "src", a.assetFileName("js/formcache.js"), "defer", "")
-			hb.writeElementClose("script")
+			for _, script := range []string{"js/mdpreview.js", "js/geohelper.js", "js/formcache.js"} {
+				hb.writeElementOpen("script", "src", a.assetFileName(script), "defer", "")
+				hb.writeElementClose("script")
+			}
 		},
 	)
 }

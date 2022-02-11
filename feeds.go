@@ -8,6 +8,7 @@ import (
 
 	"github.com/araddon/dateparse"
 	"github.com/jlelse/feeds"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -38,16 +39,18 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		},
 	}
 	for _, p := range posts {
-		content, _ := a.min.MinifyString(contenttype.HTML, a.feedHtml(p))
+		buf := bufferpool.Get()
+		a.feedHtml(buf, p)
 		feed.Add(&feeds.Item{
 			Title:       p.RenderedTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
-			Content:     content,
+			Content:     buf.String(),
 			Created:     timeNoErr(dateparse.ParseLocal(p.Published)),
 			Updated:     timeNoErr(dateparse.ParseLocal(p.Updated)),
 		})
+		bufferpool.Put(buf)
 	}
 	var err error
 	var feedBuffer bytes.Buffer

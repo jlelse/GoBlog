@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cast"
 	"github.com/thoas/go-funk"
@@ -397,7 +398,7 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 	}
 	if p.Published == "" && p.Section != "" {
 		// Has no published date, but section -> published now
-		p.Published = localNowString()
+		p.Published = time.Now().Local().Format(time.RFC3339)
 	}
 	// Add images not in content
 	images := p.Parameters[a.cfg.Micropub.PhotoParam]

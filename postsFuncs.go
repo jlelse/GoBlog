@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"html/template"
-	"log"
+	"io"
 	"strings"
 	"time"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/araddon/dateparse"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,69 +34,56 @@ func (p *post) firstParameter(parameter string) (result string) {
 	return
 }
 
-func (a *goBlog) postHtml(p *post, absolute bool) template.HTML {
-	p.renderMutex.RLock()
-	// Check cache
-	if r, ok := p.renderCache[absolute]; ok && r != "" {
-		p.renderMutex.RUnlock()
-		return r
-	}
-	p.renderMutex.RUnlock()
-	// No cache, build it...
-	p.renderMutex.Lock()
-	defer p.renderMutex.Unlock()
-	// Build HTML
-	var htmlBuilder strings.Builder
-	// Add audio to the top
-	for _, a := range p.Parameters[a.cfg.Micropub.AudioParam] {
-		htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
-		htmlBuilder.WriteString(a)
-		htmlBuilder.WriteString(`"/></audio>`)
-	}
-	// Render markdown
-	htmlContent, err := a.renderMarkdown(p.Content, absolute)
-	if err != nil {
-		log.Fatal(err)
-		return ""
-	}
-	htmlBuilder.Write(htmlContent)
-	// Add bookmark links to the bottom
-	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
-		htmlBuilder.WriteString(`<p><a class=u-bookmark-of href="`)
-		htmlBuilder.WriteString(l)
-		htmlBuilder.WriteString(`" target=_blank rel=noopener>`)
-		htmlBuilder.WriteString(l)
-		htmlBuilder.WriteString(`</a></p>`)
-	}
-	// Cache
-	html := template.HTML(htmlBuilder.String())
-	if p.renderCache == nil {
-		p.renderCache = map[bool]template.HTML{}
-	}
-	p.renderCache[absolute] = html
-	return html
+func (a *goBlog) postHtml(p *post, absolute bool) (res string) {
+	buf := bufferpool.Get()
+	a.postHtmlToWriter(buf, p, absolute)
+	res = buf.String()
+	bufferpool.Put(buf)
+	return
 }
 
-func (a *goBlog) feedHtml(p *post) string {
-	var htmlBuilder strings.Builder
+func (a *goBlog) postHtmlToWriter(w io.Writer, p *post, absolute bool) {
+	// Build HTML
+	hb := newHtmlBuilder(w)
+	// Add audio to the top
+	for _, a := range p.Parameters[a.cfg.Micropub.AudioParam] {
+		hb.writeElementOpen("audio", "controls", "preload", "none")
+		hb.writeElementOpen("source", "src", a)
+		hb.writeElementClose("source")
+		hb.writeElementClose("audio")
+	}
+	// Render markdown
+	_ = a.renderMarkdownToWriter(w, p.Content, absolute)
+	// Add bookmark links to the bottom
+	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
+		hb.writeElementOpen("p")
+		hb.writeElementOpen("a", "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
+		hb.writeEscaped(l)
+		hb.writeElementClose("a")
+		hb.writeElementClose("p")
+	}
+}
+
+func (a *goBlog) feedHtml(w io.Writer, p *post) {
+	hb := newHtmlBuilder(w)
 	// Add TTS audio to the top
 	for _, a := range p.Parameters[ttsParameter] {
-		htmlBuilder.WriteString(`<audio controls preload=none><source src="`)
-		htmlBuilder.WriteString(a)
-		htmlBuilder.WriteString(`"/></audio>`)
+		hb.writeElementOpen("audio", "controls", "preload", "none")
+		hb.writeElementOpen("source", "src", a)
+		hb.writeElementClose("source")
+		hb.writeElementClose("audio")
 	}
 	// Add post HTML
-	htmlBuilder.WriteString(string(a.postHtml(p, true)))
+	a.postHtmlToWriter(hb, p, true)
 	// Add link to interactions and comments
 	blogConfig := a.cfg.Blogs[defaultIfEmpty(p.Blog, a.cfg.DefaultBlog)]
 	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
-		htmlBuilder.WriteString(`<p><a href="`)
-		htmlBuilder.WriteString(a.getFullAddress(p.Path))
-		htmlBuilder.WriteString(`#interactions">`)
-		htmlBuilder.WriteString(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
-		htmlBuilder.WriteString(`</a></p>`)
+		hb.writeElementOpen("p")
+		hb.writeElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
+		hb.writeElementClose("a")
+		hb.writeElementClose("p")
 	}
-	return htmlBuilder.String()
 }
 
 const summaryDivider = "<!--more-->"
@@ -106,11 +93,12 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	if summary != "" {
 		return
 	}
-	html := string(a.postHtml(p, false))
-	if splitted := strings.Split(html, summaryDivider); len(splitted) > 1 {
-		summary = htmlText(splitted[0])
+	if splitted := strings.Split(p.Content, summaryDivider); len(splitted) > 1 {
+		rendered, _ := a.renderMarkdown(splitted[0], false)
+		summary = htmlText(string(rendered))
 	} else {
-		summary = strings.Split(htmlText(html), "\n\n")[0]
+		rendered, _ := a.renderMarkdown(splitted[0], false)
+		summary = strings.Split(htmlText(string(rendered)), "\n\n")[0]
 	}
 	return
 }
