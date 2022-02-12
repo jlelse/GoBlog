@@ -179,21 +179,23 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 		// Record request
 		recorder := httptest.NewRecorder()
 		next.ServeHTTP(recorder, cr)
-		// Cache values from recorder
+		recorder.Flush()
+		// Cache result
 		result := recorder.Result()
 		eTag := sha256.New()
 		body, _ := io.ReadAll(io.TeeReader(result.Body, eTag))
+		headers := result.Header.Clone()
 		_ = result.Body.Close()
 		lastMod := time.Now()
-		if lm := result.Header.Get(lastModified); lm != "" {
+		if lm := headers.Get(lastModified); lm != "" {
 			if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
 				lastMod = parsedTime
 			}
 		}
 		// Remove problematic headers
-		result.Header.Del("Accept-Ranges")
-		result.Header.Del("ETag")
-		result.Header.Del(lastModified)
+		headers.Del("Accept-Ranges")
+		headers.Del("ETag")
+		headers.Del(lastModified)
 		// Create cache item
 		exp, _ := cr.Context().Value(cacheExpirationKey).(int)
 		item = &cacheItem{
@@ -201,7 +203,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) (item *
 			creationTime: lastMod,
 			eTag:         fmt.Sprintf("%x", eTag.Sum(nil)),
 			code:         result.StatusCode,
-			header:       result.Header,
+			header:       headers,
 			body:         body,
 		}
 		// Save cache

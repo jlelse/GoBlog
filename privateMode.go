@@ -7,10 +7,7 @@ import (
 )
 
 func (a *goBlog) isPrivate() bool {
-	if pm := a.cfg.PrivateMode; pm != nil && pm.Enabled {
-		return true
-	}
-	return false
+	return a.cfg.PrivateMode != nil && a.cfg.PrivateMode.Enabled
 }
 
 func (a *goBlog) privateModeHandler(next http.Handler) http.Handler {

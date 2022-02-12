@@ -8,9 +8,14 @@ import (
 const robotsTXTPath = "/robots.txt"
 
 func (a *goBlog) serveRobotsTXT(w http.ResponseWriter, r *http.Request) {
+	_, _ = fmt.Fprint(w, "User-agent: *\n")
 	if a.isPrivate() {
-		_, _ = w.Write([]byte("User-agent: *\nDisallow: /"))
+		_, _ = fmt.Fprint(w, "Disallow: /\n")
 		return
 	}
-	_, _ = w.Write([]byte(fmt.Sprintf("User-agent: *\nSitemap: %v", a.getFullAddress(sitemapPath))))
+	_, _ = fmt.Fprint(w, "Allow: /\n\n")
+	_, _ = fmt.Fprintf(w, "Sitemap: %s\n", a.getFullAddress(sitemapPath))
+	for _, bc := range a.cfg.Blogs {
+		_, _ = fmt.Fprintf(w, "Sitemap: %s\n", a.getFullAddress(bc.getRelativePath(sitemapBlogPath)))
+	}
 }

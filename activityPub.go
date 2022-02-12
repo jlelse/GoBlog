@@ -7,8 +7,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"encoding/pem"
+	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -242,7 +244,8 @@ func (a *goBlog) apVerifySignature(r *http.Request) (*asPerson, string, int, err
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(contentType, "application/xrd+xml"+contenttype.CharsetUtf8Suffix)
-	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://` + r.Host + `/.well-known/webfinger?resource={uri}"/></XRD>`))
+	_, _ = io.WriteString(w, xml.Header)
+	_, _ = io.WriteString(w, `<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://`+r.Host+`/.well-known/webfinger?resource={uri}"/></XRD>`)
 }
 
 func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {

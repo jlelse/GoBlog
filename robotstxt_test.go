@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,18 +18,21 @@ func Test_robotsTXT(t *testing.T) {
 		},
 	}
 
-	h := http.HandlerFunc(app.serveRobotsTXT)
-	assert.HTTPStatusCode(t, h, http.MethodGet, "", nil, 200)
-	txt := assert.HTTPBody(h, http.MethodGet, "", nil)
-	assert.Equal(t, "User-agent: *\nSitemap: https://example.com/sitemap.xml", txt)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/robots.txt", nil)
+	app.serveRobotsTXT(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "User-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap.xml\n", rec.Body.String())
 
 	app.cfg.PrivateMode = &configPrivateMode{
 		Enabled: true,
 	}
+	assert.True(t, app.isPrivate())
 
-	h = http.HandlerFunc(app.serveRobotsTXT)
-	assert.HTTPStatusCode(t, h, http.MethodGet, "", nil, 200)
-	txt = assert.HTTPBody(h, http.MethodGet, "", nil)
-	assert.Equal(t, "User-agent: *\nDisallow: /", txt)
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/robots.txt", nil)
+	app.serveRobotsTXT(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "User-agent: *\nDisallow: /\n", rec.Body.String())
 
 }

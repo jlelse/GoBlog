@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -52,27 +52,28 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		})
 		bufferpool.Put(buf)
 	}
-	var err error
-	var feedBuffer bytes.Buffer
+	var feedWriteFunc func(w io.Writer) error
 	var feedMediaType string
 	switch f {
 	case rssFeed:
 		feedMediaType = contenttype.RSS
-		err = feed.WriteRss(&feedBuffer)
+		feedWriteFunc = feed.WriteRss
 	case atomFeed:
 		feedMediaType = contenttype.ATOM
-		err = feed.WriteAtom(&feedBuffer)
+		feedWriteFunc = feed.WriteAtom
 	case jsonFeed:
 		feedMediaType = contenttype.JSONFeed
-		err = feed.WriteJSON(&feedBuffer)
+		feedWriteFunc = feed.WriteJSON
 	default:
 		a.serve404(w, r)
 		return
 	}
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		writeErr := feedWriteFunc(pipeWriter)
+		_ = pipeWriter.CloseWithError(writeErr)
+	}()
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
-	_ = a.min.Minify(feedMediaType, w, &feedBuffer)
+	minifyErr := a.min.Minify(feedMediaType, w, pipeReader)
+	_ = pipeReader.CloseWithError(minifyErr)
 }

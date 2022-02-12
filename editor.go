@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 	ws "nhooyr.io/websocket"
@@ -93,22 +92,21 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 		case "updatepost":
-			jsonBuf := bufferpool.Get()
-			defer bufferpool.Put(jsonBuf)
-			err := json.NewEncoder(jsonBuf).Encode(map[string]interface{}{
-				"action": actionUpdate,
-				"url":    r.FormValue("url"),
-				"replace": map[string][]string{
-					"content": {
-						r.FormValue("content"),
+			pipeReader, pipeWriter := io.Pipe()
+			defer pipeReader.Close()
+			go func() {
+				writeErr := json.NewEncoder(pipeWriter).Encode(map[string]interface{}{
+					"action": actionUpdate,
+					"url":    r.FormValue("url"),
+					"replace": map[string][]string{
+						"content": {
+							r.FormValue("content"),
+						},
 					},
-				},
-			})
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			req, err := http.NewRequest(http.MethodPost, "", jsonBuf)
+				})
+				_ = pipeWriter.CloseWithError(writeErr)
+			}()
+			req, err := http.NewRequest(http.MethodPost, "", pipeReader)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return

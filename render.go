@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"io"
 	"net/http"
 
@@ -42,11 +41,9 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Render
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		bufferedPipeWriter := bufio.NewWriter(pipeWriter)
-		minifyWriter := a.min.Writer(contenttype.HTML, bufferedPipeWriter)
+		minifyWriter := a.min.Writer(contenttype.HTML, pipeWriter)
 		f(newHtmlBuilder(minifyWriter), data)
 		_ = minifyWriter.Close()
-		_ = bufferedPipeWriter.Flush()
 		_ = pipeWriter.Close()
 	}()
 	_, readErr := io.Copy(w, pipeReader)

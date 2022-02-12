@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/xml"
+	"io"
 	"net/http"
 	"time"
 
@@ -174,13 +174,19 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm interface{}) {
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
-	buf.WriteString(`<?xml-stylesheet type="text/xsl" href="`)
-	buf.WriteString(a.assetFileName("sitemap.xsl"))
-	buf.WriteString(`" ?>`)
-	_ = xml.NewEncoder(&buf).Encode(sm)
-	_ = a.min.Minify(contenttype.XML, w, &buf)
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		mw := a.min.Writer(contenttype.XML, pipeWriter)
+		_, _ = io.WriteString(mw, xml.Header)
+		_, _ = io.WriteString(mw, `<?xml-stylesheet type="text/xsl" href="`)
+		_, _ = io.WriteString(mw, a.assetFileName("sitemap.xsl"))
+		_, _ = io.WriteString(mw, `" ?>`)
+		writeErr := xml.NewEncoder(mw).Encode(sm)
+		_ = mw.Close()
+		_ = pipeWriter.CloseWithError(writeErr)
+	}()
+	_, copyErr := io.Copy(w, pipeReader)
+	_ = pipeReader.CloseWithError(copyErr)
 }
 
 const sitemapDatePathsSql = `
