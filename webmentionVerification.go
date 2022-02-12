@@ -23,13 +23,13 @@ func (a *goBlog) initWebmentionQueue() {
 		for {
 			qi, err := a.db.peekQueue("wm")
 			if err != nil {
-				log.Println(err.Error())
+				log.Println("webmention queue:", err.Error())
 				continue
 			} else if qi != nil {
 				var m mention
 				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m)
 				if err != nil {
-					log.Println(err.Error())
+					log.Println("webmention queue:", err.Error())
 					_ = a.db.dequeue(qi)
 					continue
 				}
@@ -39,7 +39,7 @@ func (a *goBlog) initWebmentionQueue() {
 				}
 				err = a.db.dequeue(qi)
 				if err != nil {
-					log.Println(err.Error())
+					log.Println("webmention queue:", err.Error())
 				}
 			} else {
 				// No item in the queue, wait a moment

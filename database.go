@@ -129,6 +129,9 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 // Main features
 
 func (db *database) dump(file string) {
+	if db == nil || db.db == nil {
+		return
+	}
 	// Lock execution
 	db.em.Lock()
 	defer db.em.Unlock()
@@ -144,10 +147,16 @@ func (db *database) dump(file string) {
 }
 
 func (db *database) close() error {
+	if db == nil || db.db == nil {
+		return nil
+	}
 	return db.db.Close()
 }
 
 func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []interface{}, error) {
+	if db == nil || db.db == nil {
+		return nil, nil, errors.New("database not initialized")
+	}
 	if len(args) > 0 && args[0] == dbNoCache {
 		return nil, args[1:], nil
 	}
@@ -178,6 +187,9 @@ func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []int
 const dbNoCache = "nocache"
 
 func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
+	if db == nil || db.db == nil {
+		return nil, errors.New("database not initialized")
+	}
 	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
 	// Lock execution
@@ -194,6 +206,9 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
+	if db == nil || db.db == nil {
+		return nil, errors.New("database not initialized")
+	}
 	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook
@@ -207,6 +222,9 @@ func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) 
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
+	if db == nil || db.db == nil {
+		return nil, errors.New("database not initialized")
+	}
 	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook

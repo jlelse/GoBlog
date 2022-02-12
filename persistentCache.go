@@ -6,11 +6,17 @@ import (
 )
 
 func (db *database) cachePersistently(key string, data []byte) error {
+	if db == nil {
+		return errors.New("database is nil")
+	}
 	_, err := db.exec("insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", utcNowString()))
 	return err
 }
 
 func (db *database) retrievePersistentCache(key string) (data []byte, err error) {
+	if db == nil {
+		return nil, errors.New("database is nil")
+	}
 	d, err, _ := db.pc.Do(key, func() (interface{}, error) {
 		if row, err := db.queryRow("select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
 			return nil, err

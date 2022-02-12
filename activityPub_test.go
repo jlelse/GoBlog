@@ -19,11 +19,13 @@ func Test_loadActivityPubPrivateKey(t *testing.T) {
 			},
 		},
 	}
-	_ = app.initDatabase(false)
+	err := app.initDatabase(false)
+	require.NoError(t, err)
 	defer app.db.close()
+	require.NotNil(t, app.db)
 
 	// Generate
-	err := app.loadActivityPubPrivateKey()
+	err = app.loadActivityPubPrivateKey()
 	require.NoError(t, err)
 
 	assert.NotNil(t, app.apPrivateKey)

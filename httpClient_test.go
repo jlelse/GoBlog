@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 )
 
 type fakeHttpClient struct {
@@ -11,11 +12,14 @@ type fakeHttpClient struct {
 	req     *http.Request
 	res     *http.Response
 	handler http.Handler
+	mu      sync.Mutex
 }
 
 func newFakeHttpClient() *fakeHttpClient {
 	fc := &fakeHttpClient{}
 	fc.Client = newHandlerClient(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fc.mu.Lock()
+		defer fc.mu.Unlock()
 		fc.req = r
 		if fc.handler != nil {
 			rec := httptest.NewRecorder()
@@ -34,14 +38,18 @@ func newFakeHttpClient() *fakeHttpClient {
 }
 
 func (c *fakeHttpClient) clean() {
+	c.mu.Lock()
 	c.req = nil
 	c.res = nil
 	c.handler = nil
+	c.mu.Unlock()
 }
 
 func (c *fakeHttpClient) setHandler(handler http.Handler) {
 	c.clean()
+	c.mu.Lock()
 	c.handler = handler
+	c.mu.Unlock()
 }
 
 func (c *fakeHttpClient) setFakeResponse(statusCode int, body string) {

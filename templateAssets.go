@@ -117,8 +117,10 @@ func (a *goBlog) initChromaCSS() error {
 	// Generate and minify CSS
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		_ = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(pipeWriter, chromaStyle)
-		_ = pipeWriter.Close()
+		writeErr := chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(pipeWriter, chromaStyle)
+		_ = pipeWriter.CloseWithError(writeErr)
 	}()
-	return a.compileAsset(chromaPath, pipeReader)
+	readErr := a.compileAsset(chromaPath, pipeReader)
+	_ = pipeReader.CloseWithError(readErr)
+	return readErr
 }

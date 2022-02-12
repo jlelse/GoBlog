@@ -221,10 +221,11 @@ func mBytesString(size int64) string {
 }
 
 func htmlText(s string) string {
-	return htmlTextFromReader(strings.NewReader(s))
+	text, _ := htmlTextFromReader(strings.NewReader(s))
+	return text
 }
 
-func htmlTextFromReader(r io.Reader) string {
+func htmlTextFromReader(r io.Reader) (string, error) {
 	// Build policy to only allow a subset of HTML tags
 	textPolicy := bluemonday.StrictPolicy()
 	textPolicy.AllowElements("h1", "h2", "h3", "h4", "h5", "h6") // Headers
@@ -232,7 +233,10 @@ func htmlTextFromReader(r io.Reader) string {
 	textPolicy.AllowElements("ol", "ul", "li")                   // Lists
 	textPolicy.AllowElements("blockquote")                       // Blockquotes
 	// Read filtered HTML into document
-	doc, _ := goquery.NewDocumentFromReader(textPolicy.SanitizeReader(r))
+	doc, err := goquery.NewDocumentFromReader(textPolicy.SanitizeReader(r))
+	if err != nil {
+		return "", err
+	}
 	var text strings.Builder
 	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
 		// Input was real HTML, so build the text from the body
@@ -242,25 +246,25 @@ func htmlTextFromReader(r io.Reader) string {
 			childs.Each(func(i int, sel *goquery.Selection) {
 				if i > 0 && // Not first child
 					sel.Is("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote") { // All elements that start a new paragraph
-					text.WriteString("\n\n")
+					_, _ = text.WriteString("\n\n")
 				}
 				if sel.Is("ol > li") { // List item in ordered list
-					fmt.Fprintf(&text, "%d. ", i+1) // Add list item number
+					_, _ = fmt.Fprintf(&text, "%d. ", i+1) // Add list item number
 				}
 				if sel.Children().Length() > 0 { // Has children
 					printChilds(sel.Children()) // Recursive call to print childs
 				} else {
-					text.WriteString(sel.Text()) // Print text
+					_, _ = text.WriteString(sel.Text()) // Print text
 				}
 			})
 		}
 		printChilds(bodyChild)
 	} else {
 		// Input was probably just text, so just use the text
-		text.WriteString(doc.Text())
+		_, _ = text.WriteString(doc.Text())
 	}
 	// Trim whitespace and return
-	return strings.TrimSpace(text.String())
+	return strings.TrimSpace(text.String()), nil
 }
 
 func cleanHTMLText(s string) string {

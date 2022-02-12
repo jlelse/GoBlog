@@ -89,13 +89,13 @@ func (a *goBlog) renderText(s string) string {
 		return ""
 	}
 	pipeReader, pipeWriter := io.Pipe()
-	var err error
 	go func() {
-		err = a.renderMarkdownToWriter(pipeWriter, s, false)
-		_ = pipeWriter.Close()
+		writeErr := a.renderMarkdownToWriter(pipeWriter, s, false)
+		_ = pipeWriter.CloseWithError(writeErr)
 	}()
-	text := htmlTextFromReader(pipeReader)
-	if err != nil {
+	text, readErr := htmlTextFromReader(pipeReader)
+	_ = pipeReader.CloseWithError(readErr)
+	if readErr != nil {
 		return ""
 	}
 	return text
@@ -106,13 +106,13 @@ func (a *goBlog) renderMdTitle(s string) string {
 		return ""
 	}
 	pipeReader, pipeWriter := io.Pipe()
-	var err error
 	go func() {
-		err = a.titleMd.Convert([]byte(s), pipeWriter)
-		_ = pipeWriter.Close()
+		writeErr := a.titleMd.Convert([]byte(s), pipeWriter)
+		_ = pipeWriter.CloseWithError(writeErr)
 	}()
-	text := htmlTextFromReader(pipeReader)
-	if err != nil {
+	text, readErr := htmlTextFromReader(pipeReader)
+	_ = pipeReader.CloseWithError(readErr)
+	if readErr != nil {
 		return ""
 	}
 	return text

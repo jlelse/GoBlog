@@ -43,9 +43,14 @@ func Test_indexNow(t *testing.T) {
 	})
 
 	// Wait for hooks to run
-	time.Sleep(300 * time.Millisecond)
+	fc.mu.Lock()
+	for fc.req == nil {
+		fc.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
+		fc.mu.Lock()
+	}
+	fc.mu.Unlock()
 
 	// Check fake http client
-	require.NotNil(t, fc.req)
 	require.Equal(t, "https://api.indexnow.org/indexnow?key="+app.inKey+"&url=http%3A%2F%2Flocalhost%3A8080%2Ftestpost", fc.req.URL.String())
 }

@@ -25,13 +25,13 @@ func (a *goBlog) initAPSendQueue() {
 		for {
 			qi, err := a.db.peekQueue("ap")
 			if err != nil {
-				log.Println(err.Error())
+				log.Println("activitypub send queue:", err.Error())
 				continue
 			} else if qi != nil {
 				var r apRequest
 				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r)
 				if err != nil {
-					log.Println(err.Error())
+					log.Println("activitypub send queue:", err.Error())
 					_ = a.db.dequeue(qi)
 					continue
 				}
@@ -49,7 +49,7 @@ func (a *goBlog) initAPSendQueue() {
 				}
 				err = a.db.dequeue(qi)
 				if err != nil {
-					log.Println(err.Error())
+					log.Println("activitypub send queue:", err.Error())
 				}
 			} else {
 				// No item in the queue, wait a moment

@@ -17,12 +17,12 @@ func (a *goBlog) healthcheck() bool {
 	defer cancelFunc()
 	req, err := http.NewRequestWithContext(timeoutContext, http.MethodGet, a.getFullAddress("/ping"), nil)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("healthcheck:", err.Error())
 		return false
 	}
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("healthcheck:", err.Error())
 		return false
 	}
 	defer resp.Body.Close()
