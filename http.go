@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/andybalholm/brotli"
 	"github.com/dchest/captcha"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -42,10 +40,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	compressor := middleware.NewCompressor(flate.DefaultCompression)
-	compressor.SetEncoder("br", func(w io.Writer, _ int) io.Writer {
-		return brotli.NewWriter(w)
-	})
+	compressor := middleware.NewCompressor(flate.BestCompression)
 	h = h.Append(middleware.Recoverer, compressor.Handler, middleware.Heartbeat("/ping"))
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
