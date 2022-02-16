@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"github.com/kaorimatz/go-opml"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -50,14 +52,22 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(contentType, contenttype.XMLUTF8)
-	var opmlBuffer bytes.Buffer
-	_ = opml.Render(&opmlBuffer, &opml.OPML{
+	opmlBuf := bufferpool.Get()
+	defer bufferpool.Put(opmlBuf)
+	mw := a.min.Writer(contenttype.XML, opmlBuf)
+	err = opml.Render(mw, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines.([]*opml.Outline),
 	})
-	_ = a.min.Minify(contenttype.XML, w, &opmlBuffer)
+	_ = mw.Close()
+	if err != nil {
+		log.Printf("Failed to render OPML: %v", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentType, contenttype.XMLUTF8)
+	_, _ = io.Copy(w, opmlBuf)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

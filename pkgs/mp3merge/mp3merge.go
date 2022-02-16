@@ -1,11 +1,11 @@
 package mp3merge
 
 import (
-	"bytes"
 	"errors"
 	"io"
 
 	"github.com/dmulholl/mp3lib"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 // Inspired by https://github.com/dmulholl/mp3cat/blob/2ec1e4fe4d995ebd41bf1887b3cab8e2a569b3d4/mp3cat.go
@@ -18,7 +18,9 @@ func MergeMP3(out io.Writer, in ...io.Reader) error {
 	var totalFrames, totalBytes uint32
 	var firstBitRate int
 	var isVBR bool
-	var tmpOut bytes.Buffer
+
+	tmpOut := bufferpool.Get()
+	defer bufferpool.Put(tmpOut)
 
 	// Loop over the input files and append their MP3 frames to the output file.
 	for _, inReader := range in {

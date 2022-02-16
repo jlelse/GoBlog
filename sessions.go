@@ -12,6 +12,7 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const (
@@ -133,8 +134,9 @@ func (s *dbSessionStore) load(session *sessions.Session) (err error) {
 
 func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	deleteSessionValuesNotNeededForDb(session)
-	var encoded bytes.Buffer
-	if err := gob.NewEncoder(&encoded).Encode(session.Values); err != nil {
+	encoded := bufferpool.Get()
+	defer bufferpool.Put(encoded)
+	if err := gob.NewEncoder(encoded).Encode(session.Values); err != nil {
 		return err
 	}
 	session.ID = session.Name() + "-" + uuid.NewString()
@@ -156,12 +158,17 @@ func (s *dbSessionStore) save(session *sessions.Session) (err error) {
 		return s.insert(session)
 	}
 	deleteSessionValuesNotNeededForDb(session)
-	var encoded bytes.Buffer
-	if err = gob.NewEncoder(&encoded).Encode(session.Values); err != nil {
+	encoded := bufferpool.Get()
+	defer bufferpool.Put(encoded)
+	if err = gob.NewEncoder(encoded).Encode(session.Values); err != nil {
 		return err
 	}
-	_, err = s.db.exec("update sessions set data = @data, modified = @modified where id = @id",
-		sql.Named("data", encoded.Bytes()), sql.Named("modified", utcNowString()), sql.Named("id", session.ID))
+	_, err = s.db.exec(
+		"update sessions set data = @data, modified = @modified where id = @id",
+		sql.Named("data", encoded.Bytes()),
+		sql.Named("modified", utcNowString()),
+		sql.Named("id", session.ID),
+	)
 	if err != nil {
 		return err
 	}

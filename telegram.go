@@ -1,13 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"log"
 	"net/url"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func (a *goBlog) initTelegram() {
@@ -123,11 +123,12 @@ func (tg *configTelegram) enabled() bool {
 	return true
 }
 
-func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) string {
+func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) (html string) {
 	if !tg.enabled() {
 		return ""
 	}
-	var message bytes.Buffer
+	message := bufferpool.Get()
+	defer bufferpool.Put(message)
 	if title != "" {
 		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, title))
 		message.WriteString("\n\n")
@@ -141,7 +142,8 @@ func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) string {
 		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, shortURL))
 		message.WriteString("</a>")
 	}
-	return message.String()
+	html = message.String()
+	return
 }
 
 func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string) (int64, int, error) {
