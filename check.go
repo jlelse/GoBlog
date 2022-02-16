@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/klauspost/compress/gzhttp"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/sync/singleflight"
 )
@@ -49,14 +50,14 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 	// Create HTTP client
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
+		Transport: gzhttp.Transport(&http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 			// Limits
 			DisableKeepAlives: true,
 			MaxConnsPerHost:   1,
-		},
+		}),
 	}
 	// Process all links
 	var wg sync.WaitGroup

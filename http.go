@@ -1,7 +1,6 @@
 package main
 
 import (
-	"compress/flate"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -15,6 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
+	"github.com/klauspost/compress/gzhttp"
+	"github.com/klauspost/compress/gzip"
 	"go.goblog.app/app/pkgs/maprouter"
 	"golang.org/x/net/context"
 )
@@ -40,8 +41,11 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	compressor := middleware.NewCompressor(flate.BestCompression)
-	h = h.Append(middleware.Recoverer, compressor.Handler, middleware.Heartbeat("/ping"))
+	compressor, err := gzhttp.NewWrapper(gzhttp.CompressionLevel(gzip.BestCompression))
+	if err != nil {
+		return err
+	}
+	h = h.Append(middleware.Recoverer, func(next http.Handler) http.Handler { return compressor(next) }, middleware.Heartbeat("/ping"))
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}

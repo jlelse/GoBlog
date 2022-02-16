@@ -3,13 +3,15 @@ package main
 import (
 	"net/http"
 	"time"
+
+	"github.com/klauspost/compress/gzhttp"
 )
 
 func newHttpClient() *http.Client {
 	return &http.Client{
-		Timeout: 5 * time.Minute,
-		Transport: &http.Transport{
+		Timeout: time.Minute,
+		Transport: gzhttp.Transport(&http.Transport{
 			DisableKeepAlives: true,
-		},
+		}),
 	}
 }

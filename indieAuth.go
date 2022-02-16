@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/hacdias/indieauth"
 )
@@ -14,12 +13,7 @@ const indieAuthScope contextKey = "scope"
 func (a *goBlog) initIndieAuth() {
 	a.ias = indieauth.NewServer(
 		false,
-		&http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				DisableKeepAlives: true,
-			},
-		},
+		a.httpClient,
 	)
 }
 
