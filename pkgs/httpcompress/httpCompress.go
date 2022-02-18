@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -98,7 +97,7 @@ func (c *Compressor) SetEncoder(encoding string, fn EncoderFunc) {
 
 	c.pooledEncoders[encoding] = &sync.Pool{
 		New: func() interface{} {
-			return fn(ioutil.Discard, c.level)
+			return fn(io.Discard, c.level)
 		},
 	}
 

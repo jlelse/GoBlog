@@ -2,7 +2,6 @@ package mocksmtp
 
 import (
 	"io"
-	"io/ioutil"
 
 	"github.com/emersion/go-smtp"
 )
@@ -53,7 +52,7 @@ func (s *session) Rcpt(to string) error {
 }
 
 func (s *session) Data(r io.Reader) error {
-	if b, err := ioutil.ReadAll(r); err != nil {
+	if b, err := io.ReadAll(r); err != nil {
 		return err
 	} else {
 		s.values.Datas = append(s.values.Datas, b)
