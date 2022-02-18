@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -16,8 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
 	"github.com/klauspost/compress/flate"
-	"github.com/klauspost/compress/gzip"
-	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
 	"golang.org/x/net/context"
 )
@@ -43,31 +41,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	compressor := middleware.NewCompressor(flate.BestCompression, []string{
-		contenttype.AS,
-		contenttype.ATOM,
-		contenttype.CSS,
-		contenttype.HTML,
-		contenttype.JS,
-		contenttype.JSON,
-		contenttype.JSONFeed,
-		contenttype.LDJSON,
-		contenttype.RSS,
-		contenttype.Text,
-		contenttype.XML,
-		"application/opensearchdescription+xml",
-		"application/jrd+json",
-		"application/xrd+xml",
-	}...)
-	compressor.SetEncoder("deflate", func(w io.Writer, level int) io.Writer {
-		cw, _ := flate.NewWriter(w, level)
-		return cw
-	})
-	compressor.SetEncoder("gzip", func(w io.Writer, level int) io.Writer {
-		cw, _ := gzip.NewWriterLevel(w, level)
-		return cw
-	})
-	h = h.Append(middleware.Recoverer, compressor.Handler, middleware.Heartbeat("/ping"))
+	h = h.Append(middleware.Recoverer, httpcompress.Compress(flate.BestCompression), middleware.Heartbeat("/ping"))
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}

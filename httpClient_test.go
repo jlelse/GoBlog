@@ -8,11 +8,11 @@ import (
 )
 
 type fakeHttpClient struct {
-	*http.Client
-	req     *http.Request
-	res     *http.Response
-	handler http.Handler
 	mu      sync.Mutex
+	handler http.Handler
+	*http.Client
+	req *http.Request
+	res *http.Response
 }
 
 func newFakeHttpClient() *fakeHttpClient {

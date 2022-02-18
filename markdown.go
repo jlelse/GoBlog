@@ -122,8 +122,8 @@ func (a *goBlog) renderMdTitle(s string) string {
 
 // Links
 type customExtension struct {
-	absoluteLinks bool
 	publicAddress string
+	absoluteLinks bool
 }
 
 func (l *customExtension) Extend(m goldmark.Markdown) {
@@ -136,8 +136,8 @@ func (l *customExtension) Extend(m goldmark.Markdown) {
 }
 
 type customRenderer struct {
-	absoluteLinks bool
 	publicAddress string
+	absoluteLinks bool
 }
 
 func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {

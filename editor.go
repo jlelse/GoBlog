@@ -26,7 +26,7 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
-	c, err := ws.Accept(w, r, nil)
+	c, err := ws.Accept(w, r, &ws.AcceptOptions{CompressionMode: ws.CompressionContextTakeover})
 	if err != nil {
 		return
 	}

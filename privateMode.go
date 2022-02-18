@@ -11,11 +11,12 @@ func (a *goBlog) isPrivate() bool {
 }
 
 func (a *goBlog) privateModeHandler(next http.Handler) http.Handler {
+	private := alice.New(a.authMiddleware).Then(next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.isPrivate() {
-			alice.New(a.authMiddleware).Then(next).ServeHTTP(w, r)
-		} else {
-			next.ServeHTTP(w, r)
+			private.ServeHTTP(w, r)
+			return
 		}
+		next.ServeHTTP(w, r)
 	})
 }

@@ -9,10 +9,10 @@ import (
 )
 
 type queueItem struct {
-	id       int
+	schedule time.Time
 	name     string
 	content  []byte
-	schedule *time.Time
+	id       int
 }
 
 func (db *database) enqueue(name string, content []byte, schedule time.Time) error {
@@ -64,6 +64,6 @@ func (db *database) peekQueue(name string) (*queueItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	qi.schedule = &t
+	qi.schedule = t
 	return qi, nil
 }
