@@ -16,7 +16,7 @@ require (
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/dmulholl/mp3lib v1.0.0
-	github.com/elnormous/contenttype v1.0.1
+	github.com/elnormous/contenttype v1.0.2
 	github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac
 	github.com/emersion/go-smtp v0.15.0
 	github.com/go-chi/chi/v5 v5.0.7
@@ -52,7 +52,7 @@ require (
 	github.com/tkrajina/gpxgo v1.2.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.6
+	github.com/yuin/goldmark v1.4.7
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594

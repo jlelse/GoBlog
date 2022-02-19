@@ -104,8 +104,8 @@ github.com/dmulholl/mp3lib v1.0.0/go.mod h1:4RoA+iht/khfwxmH1ieoxZTzYVbb0am/zdvF
 github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dvyukov/go-fuzz v0.0.0-20210103155950-6a8e9d1f2415/go.mod h1:11Gm+ccJnvAhCNLlf5+cS9KjtbaD5I5zaZpFMsTHWTw=
-github.com/elnormous/contenttype v1.0.1 h1:SfPyQht9GlfIRC6ywjxZV6ks9S58q1665j3ms3eG5DA=
-github.com/elnormous/contenttype v1.0.1/go.mod h1:ngVcyGGU8pnn4QJ5sL4StrNgc/wmXZXy5IQSBuHOFPg=
+github.com/elnormous/contenttype v1.0.2 h1:dAQXmfzoDLKye4KjI6VOkGIzo6BpHLfpEQSBVkTPJAE=
+github.com/elnormous/contenttype v1.0.2/go.mod h1:ngVcyGGU8pnn4QJ5sL4StrNgc/wmXZXy5IQSBuHOFPg=
 github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21/go.mod h1:iL2twTeMvZnrg54ZoPDNfJaJaqy0xIQFuBdrLsmspwQ=
 github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac h1:tn/OQ2PmwQ0XFVgAHfjlLyqMewry25Rz7jWnVoh4Ggs=
 github.com/emersion/go-sasl v0.0.0-20211008083017-0b9dcfb154ac/go.mod h1:iL2twTeMvZnrg54ZoPDNfJaJaqy0xIQFuBdrLsmspwQ=
@@ -446,8 +446,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.7/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.5/go.mod h1:rmuwmfZ0+bvzB24eSC//bk1R1Zp3hM0OXYv/G2LIilg=
-github.com/yuin/goldmark v1.4.6 h1:EQ1OkiNq/eMbQxs/2O/A8VDIHERXGH14s19ednd4XIw=
-github.com/yuin/goldmark v1.4.6/go.mod h1:rmuwmfZ0+bvzB24eSC//bk1R1Zp3hM0OXYv/G2LIilg=
+github.com/yuin/goldmark v1.4.7 h1:KHHlQL4EKBZ43vpA1KBEQHfodk4JeIgeb0xJLg7rvDI=
+github.com/yuin/goldmark v1.4.7/go.mod h1:rmuwmfZ0+bvzB24eSC//bk1R1Zp3hM0OXYv/G2LIilg=
 github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38 h1:XZjLcLoTPNZuxppY3gwhRqo/T2XF6JMGFFdkAjX3w1w=
 github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38/go.mod h1:RhP/RWpexdp+KHs7ghKnifRoIs/Bq4nDS7tRbCkOwKY=
 github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594 h1:yHfZyN55+5dp1wG7wDKv8HQ044moxkyGq12KFFMFDxg=
