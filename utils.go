@@ -23,6 +23,7 @@ import (
 	tdl "github.com/mergestat/timediff/locale"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/text/language"
 )
 
@@ -237,7 +238,8 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var text strings.Builder
+	text := bufferpool.Get()
+	defer bufferpool.Put(text)
 	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
 		// Input was real HTML, so build the text from the body
 		// Declare recursive function to print childs
@@ -249,7 +251,7 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 					_, _ = text.WriteString("\n\n")
 				}
 				if sel.Is("ol > li") { // List item in ordered list
-					_, _ = fmt.Fprintf(&text, "%d. ", i+1) // Add list item number
+					_, _ = fmt.Fprintf(text, "%d. ", i+1) // Add list item number
 				}
 				if sel.Children().Length() > 0 { // Has children
 					printChilds(sel.Children()) // Recursive call to print childs
