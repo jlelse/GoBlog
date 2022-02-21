@@ -38,10 +38,11 @@ func (a *goBlog) startServer() (err error) {
 	}
 	// Set basic middlewares
 	h := alice.New()
+	h = h.Append(middleware.Heartbeat("/ping"))
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	h = h.Append(middleware.Recoverer, httpcompress.Compress(flate.BestCompression), middleware.Heartbeat("/ping"))
+	h = h.Append(middleware.Recoverer, httpcompress.Compress(flate.BestCompression))
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}

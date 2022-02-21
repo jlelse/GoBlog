@@ -1,64 +1,58 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 )
 
 // cacheRecorder is an implementation of http.ResponseWriter
 type cacheRecorder struct {
-	item *cacheItem
+	item cacheItem
+	done bool
 }
 
 func newCacheRecorder() *cacheRecorder {
 	return &cacheRecorder{
-		item: &cacheItem{
+		item: cacheItem{
 			code:   http.StatusOK,
-			header: make(http.Header),
+			header: http.Header{},
 		},
 	}
 }
 
-func (c *cacheRecorder) finish() (ci *cacheItem) {
-	ci = c.item
-	c.item = nil
-	return
+func (c *cacheRecorder) finish() *cacheItem {
+	c.done = true
+	return &c.item
 }
 
 // Header implements http.ResponseWriter.
-func (rw *cacheRecorder) Header() http.Header {
-	if rw.item == nil {
+func (c *cacheRecorder) Header() http.Header {
+	if c.done {
 		return nil
 	}
-	return rw.item.header
+	return c.item.header
 }
 
 // Write implements http.ResponseWriter.
-func (rw *cacheRecorder) Write(buf []byte) (int, error) {
-	if rw.item == nil {
+func (c *cacheRecorder) Write(buf []byte) (int, error) {
+	if c.done {
 		return 0, nil
 	}
-	rw.item.body = append(rw.item.body, buf...)
+	c.item.body = append(c.item.body, buf...)
 	return len(buf), nil
 }
 
 // WriteString implements io.StringWriter.
-func (rw *cacheRecorder) WriteString(str string) (int, error) {
-	return rw.Write([]byte(str))
+func (c *cacheRecorder) WriteString(str string) (int, error) {
+	if c.done {
+		return 0, nil
+	}
+	return c.Write([]byte(str))
 }
 
 // WriteHeader implements http.ResponseWriter.
-func (rw *cacheRecorder) WriteHeader(code int) {
-	if rw.item == nil {
+func (c *cacheRecorder) WriteHeader(code int) {
+	if c.done {
 		return
 	}
-	if code < 100 || code > 999 {
-		panic(fmt.Sprintf("invalid WriteHeader code %v", code))
-	}
-	rw.item.code = code
-}
-
-// Flush implements http.Flusher.
-func (rw *cacheRecorder) Flush() {
-	// Do nothing
+	c.item.code = code
 }
