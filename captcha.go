@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dchest/captcha"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -40,6 +40,8 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), captchaSolvedKey, true)))
 			return
 		}
+		// Remember to close body
+		defer r.Body.Close()
 		// Get captcha ID
 		captchaId := ""
 		if sesCaptchaId, ok := ses.Values["captchaid"]; ok {
@@ -54,13 +56,26 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			ses.Values["captchaid"] = captchaId
 		}
 		// Encode original request
-		h, _ := json.Marshal(r.Header)
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 20000000)) // Only allow 20 MB
-		_ = r.Body.Close()
-		if len(b) == 0 {
+		headerBuffer, bodyBuffer := bufferpool.Get(), bufferpool.Get()
+		defer bufferpool.Put(headerBuffer, bodyBuffer)
+		// Encode headers
+		headerEncoder := base64.NewEncoder(base64.StdEncoding, headerBuffer)
+		_ = json.NewEncoder(headerEncoder).Encode(r.Header)
+		_ = headerEncoder.Close()
+		// Encode body
+		bodyEncoder := base64.NewEncoder(base64.StdEncoding, bodyBuffer)
+		limit := int64(1000 * 1000) // 1 MB
+		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
+		if written == 0 {
 			// Maybe it's a form
 			_ = r.ParseForm()
-			b = []byte(r.PostForm.Encode())
+			// Encode form
+			written, _ = io.Copy(bodyEncoder, strings.NewReader(r.Form.Encode()))
+		}
+		bodyEncoder.Close()
+		if written >= limit {
+			a.serveError(w, r, "Request body too large, first login", http.StatusRequestEntityTooLarge)
+			return
 		}
 		// Render captcha
 		_ = ses.Save(r, w)
@@ -68,8 +83,8 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		a.renderWithStatusCode(w, r, http.StatusUnauthorized, a.renderCaptcha, &renderData{
 			Data: &captchaRenderData{
 				captchaMethod:  r.Method,
-				captchaHeaders: base64.StdEncoding.EncodeToString(h),
-				captchaBody:    base64.StdEncoding.EncodeToString(b),
+				captchaHeaders: headerBuffer.String(),
+				captchaBody:    bodyBuffer.String(),
 				captchaId:      captchaId,
 			},
 		})
@@ -94,16 +109,11 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if r.FormValue("captchaaction") != "captcha" {
 		return false
 	}
-	// Decode and prepare original request
-	captchabody, _ := base64.StdEncoding.DecodeString(r.FormValue("captchabody"))
-	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
-	// Copy original headers
-	captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
-	var headers http.Header
-	_ = json.Unmarshal(captchaheaders, &headers)
-	for k, v := range headers {
-		origReq.Header[k] = v
-	}
+	// Prepare original request
+	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchabody")))
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("captchamethod"), r.RequestURI, bodyDecoder)
+	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchaheaders")))
+	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Get session
 	ses, err := a.captchaSessions.Get(r, "c")
 	if err != nil {

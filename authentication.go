@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pquerna/otp/totp"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -51,22 +51,38 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// Show login form
-		w.Header().Set(cacheControl, "no-store,max-age=0")
-		w.Header().Set("X-Robots-Tag", "noindex")
-		h, _ := json.Marshal(r.Header)
-		b, _ := io.ReadAll(io.LimitReader(r.Body, 20*1000*1000)) // Only allow 20 MB
-		_ = r.Body.Close()
-		if len(b) == 0 {
+		// Remember to close body
+		defer r.Body.Close()
+		// Encode original request
+		headerBuffer, bodyBuffer := bufferpool.Get(), bufferpool.Get()
+		defer bufferpool.Put(headerBuffer, bodyBuffer)
+		// Encode headers
+		headerEncoder := base64.NewEncoder(base64.StdEncoding, headerBuffer)
+		_ = json.NewEncoder(headerEncoder).Encode(r.Header)
+		_ = headerEncoder.Close()
+		// Encode body
+		bodyEncoder := base64.NewEncoder(base64.StdEncoding, bodyBuffer)
+		limit := int64(3 * 1000 * 1000) // 3 MB
+		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
+		if written == 0 {
 			// Maybe it's a form
 			_ = r.ParseForm()
-			b = []byte(r.PostForm.Encode())
+			// Encode form
+			written, _ = io.Copy(bodyEncoder, strings.NewReader(r.Form.Encode()))
 		}
+		bodyEncoder.Close()
+		if written >= limit {
+			a.serveError(w, r, "Request body too large, first login", http.StatusRequestEntityTooLarge)
+			return
+		}
+		// Render login form
+		w.Header().Set(cacheControl, "no-store,max-age=0")
+		w.Header().Set("X-Robots-Tag", "noindex")
 		a.render(w, r, a.renderLogin, &renderData{
 			Data: &loginRenderData{
 				loginMethod:  r.Method,
-				loginHeaders: base64.StdEncoding.EncodeToString(h),
-				loginBody:    base64.StdEncoding.EncodeToString(b),
+				loginHeaders: headerBuffer.String(),
+				loginBody:    bodyBuffer.String(),
 				totp:         a.cfg.User.TOTP != "",
 			},
 		})
@@ -99,15 +115,10 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	// Prepare original request
-	loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
-	req, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
-	// Copy original headers
-	loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
-	var headers http.Header
-	_ = json.Unmarshal(loginheaders, &headers)
-	for k, v := range headers {
-		req.Header[k] = v
-	}
+	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginbody")))
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.RequestURI, bodyDecoder)
+	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))
+	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Cookie
 	ses, err := a.loginSessions.Get(r, "l")
 	if err != nil {
@@ -121,8 +132,8 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	// Serve original request
-	setLoggedIn(req, true)
-	a.d.ServeHTTP(w, req)
+	setLoggedIn(origReq, true)
+	a.d.ServeHTTP(w, origReq)
 	return true
 }
 
