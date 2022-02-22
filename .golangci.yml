@@ -8,5 +8,21 @@ run:
     - sqlite_fts5
 linters:
   enable:
+    # Default linters
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
+    # Other linters
     - dupl
     - gofmt
+    - bodyclose
+    - noctx
+    - prealloc
+    - unparam
+    - durationcheck

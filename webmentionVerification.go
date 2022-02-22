@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -62,7 +63,7 @@ func (a *goBlog) queueMention(m *mention) error {
 
 func (a *goBlog) verifyMention(m *mention) error {
 	// Request target
-	targetReq, err := http.NewRequest(http.MethodGet, m.Target, nil)
+	targetReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, m.Target, nil)
 	if err != nil {
 		return err
 	}
@@ -72,6 +73,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	if err != nil {
 		return err
 	}
+	_ = targetResp.Body.Close()
 	// Check if target has a valid status code
 	if targetResp.StatusCode != http.StatusOK {
 		if a.cfg.Debug {
@@ -86,7 +88,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 	}
 	// Request source
-	sourceReq, err := http.NewRequest(http.MethodGet, m.Source, nil)
+	sourceReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, m.Source, nil)
 	if err != nil {
 		return err
 	}
@@ -96,12 +98,17 @@ func (a *goBlog) verifyMention(m *mention) error {
 		(a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Source, a.cfg.Server.ShortPublicAddress)) {
 		setLoggedIn(sourceReq, true)
 		sourceResp, err = doHandlerRequest(sourceReq, a.getAppRouter())
+		if err != nil {
+			return err
+		}
+		defer sourceResp.Body.Close()
 	} else {
 		sourceReq.Header.Set(userAgent, appUserAgent)
 		sourceResp, err = a.httpClient.Do(sourceReq)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		defer sourceResp.Body.Close()
 	}
 	// Check if source has a valid status code
 	if sourceResp.StatusCode != http.StatusOK {
@@ -118,7 +125,6 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	// Parse response body
 	err = a.verifyReader(m, sourceResp.Body)
-	_ = sourceResp.Body.Close()
 	if err != nil {
 		if a.cfg.Debug {
 			a.debug(fmt.Sprintf("Delete webmention because verifying %s threw error: %s", m.Source, err.Error()))
@@ -176,7 +182,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			return false
 		}
 		// Check if link is or redirects to target
-		req, err := http.NewRequest(http.MethodGet, m.Target, nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, m.Target, nil)
 		if err != nil {
 			return false
 		}
@@ -186,6 +192,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		if err != nil {
 			return false
 		}
+		_ = resp.Body.Close()
 		if resp.StatusCode == http.StatusOK && unescapedPath(resp.Request.URL.String()) == unescapedPath(defaultIfEmpty(m.NewTarget, m.Target)) {
 			return true
 		}

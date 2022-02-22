@@ -107,7 +107,7 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 		return nil, err
 	}
 
-	var paths []*trackPath
+	paths := make([]*trackPath, 0)
 	for _, track := range result.gpxData.Tracks {
 		for _, segment := range track.Segments {
 			md := segment.MovingData()

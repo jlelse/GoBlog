@@ -45,8 +45,7 @@ func Test_indieAuthServer(t *testing.T) {
 		},
 	}
 
-	app.d, err = app.buildRouter()
-	require.NoError(t, err)
+	app.d = app.buildRouter()
 
 	_ = app.initDatabase(false)
 	defer app.db.close()

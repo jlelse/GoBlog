@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (a *goBlog) proxyTiles(basePath string) http.HandlerFunc {
+func (a *goBlog) proxyTiles() http.HandlerFunc {
 	tileSource := "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 	if c := a.cfg.MapTiles; c != nil && c.Source != "" {
 		tileSource = c.Source

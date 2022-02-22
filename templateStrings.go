@@ -10,7 +10,7 @@ import (
 var stringsFiles embed.FS
 
 func (a *goBlog) initTemplateStrings() (err error) {
-	var blogLangs []string
+	blogLangs := make([]string, 0)
 	for _, b := range a.cfg.Blogs {
 		blogLangs = append(blogLangs, b.Lang)
 	}

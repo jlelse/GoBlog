@@ -19,7 +19,7 @@ func Test_feeds(t *testing.T) {
 	_ = app.initDatabase(false)
 	defer app.db.close()
 	app.initComponents(false)
-	app.d, _ = app.buildRouter()
+	app.d = app.buildRouter()
 	handlerClient := newHandlerClient(app.d)
 
 	err := app.createPost(&post{

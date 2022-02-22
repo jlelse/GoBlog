@@ -99,7 +99,7 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 // Various other routes
 func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.Use(a.privateModeHandler)
-	r.Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles("/-/tiles"))
+	r.Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles())
 	r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
 }
 
@@ -311,7 +311,7 @@ func (a *goBlog) blogOnThisDayRouter(conf *configBlog) func(r chi.Router) {
 }
 
 // Blog - Editor
-func (a *goBlog) blogEditorRouter(conf *configBlog) func(r chi.Router) {
+func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(a.authMiddleware)
 		r.Get("/", a.serveEditor)

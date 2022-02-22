@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -57,9 +56,9 @@ func Test_comments(t *testing.T) {
 		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		res := rec.Result()
-
 		assert.Equal(t, http.StatusFound, res.StatusCode)
 		assert.Equal(t, "/comment/1", res.Header.Get("Location"))
+		_ = res.Body.Close()
 
 		// View comment
 
@@ -72,11 +71,9 @@ func Test_comments(t *testing.T) {
 
 		mux.ServeHTTP(rec, req)
 
-		res = rec.Result()
-		resBody, _ := io.ReadAll(res.Body)
-		resBodyStr := string(resBody)
+		resBodyStr := rec.Body.String()
 
-		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Contains(t, resBodyStr, "https://goblog.app")
 		assert.Contains(t, resBodyStr, "Test name")
 		assert.Contains(t, resBodyStr, "This is just a test")
@@ -128,9 +125,9 @@ func Test_comments(t *testing.T) {
 		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		res := rec.Result()
-
 		assert.Equal(t, http.StatusFound, res.StatusCode)
 		assert.Equal(t, "/comment/2", res.Header.Get("Location"))
+		_ = res.Body.Close()
 
 		// Get comment
 
@@ -163,9 +160,7 @@ func Test_comments(t *testing.T) {
 
 		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
-		res := rec.Result()
-
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
 		cc, err := app.db.countComments(&commentsRequestConfig{})
 		require.NoError(t, err)

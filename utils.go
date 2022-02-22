@@ -91,7 +91,7 @@ func resolveURLReferences(base string, refs ...string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var urls []string
+	urls := make([]string, 0)
 	for _, r := range refs {
 		u, err := url.Parse(r)
 		if err != nil {

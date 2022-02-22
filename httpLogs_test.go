@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -66,12 +65,8 @@ func Test_httpLogs(t *testing.T) {
 
 	// Check response
 
-	res := rec.Result()
-	resBody, _ := io.ReadAll(res.Body)
-	resBodyStr := string(resBody)
-
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	assert.Contains(t, resBodyStr, "Test")
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Test")
 
 	// Check log
 

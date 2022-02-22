@@ -457,7 +457,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 		return nil
 	}
 	// Build query
-	var sqlArgs []interface{}
+	sqlArgs := make([]interface{}, 0)
 	var queryBuilder strings.Builder
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
 	// Paths

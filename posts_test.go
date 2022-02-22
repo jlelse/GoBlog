@@ -21,8 +21,7 @@ func Test_serveDate(t *testing.T) {
 	defer app.db.close()
 	app.initComponents(false)
 
-	app.d, err = app.buildRouter()
-	require.NoError(t, err)
+	app.d = app.buildRouter()
 
 	err = app.createPost(&post{
 		Path:       "/testpost",
@@ -112,8 +111,7 @@ func Test_servePost(t *testing.T) {
 	defer app.db.close()
 	app.initComponents(false)
 
-	app.d, err = app.buildRouter()
-	require.NoError(t, err)
+	app.d = app.buildRouter()
 
 	// Create a post
 	err = app.createPost(&post{

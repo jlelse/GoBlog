@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -23,12 +24,13 @@ func Test_proxyTiles(t *testing.T) {
 	// Default tile source
 
 	m := chi.NewMux()
-	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/-/tiles"))
+	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles())
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
 	require.NoError(t, err)
 	resp, err := doHandlerRequest(req, m)
 	require.NoError(t, err)
+	_ = resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "https://c.tile.openstreetmap.org/8/134/84.png", hc.req.URL.String())
@@ -40,12 +42,13 @@ func Test_proxyTiles(t *testing.T) {
 	}
 
 	m = chi.NewMux()
-	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles("/-/tiles"))
+	m.Get("/-/tiles/{s}/{z}/{x}/{y}.png", app.proxyTiles())
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.org/-/tiles/c/8/134/84.png", nil)
 	require.NoError(t, err)
 	resp, err = doHandlerRequest(req, m)
 	require.NoError(t, err)
+	_ = resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "https://c.tile.opentopomap.org/8/134/84.png", hc.req.URL.String())

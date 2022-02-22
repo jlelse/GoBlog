@@ -55,9 +55,11 @@ func Test_captchaMiddleware(t *testing.T) {
 		session.Values["captcha"] = true
 		_ = session.Save(req, rec1)
 
-		for _, cookie := range rec1.Result().Cookies() {
+		res1 := rec1.Result()
+		for _, cookie := range res1.Cookies() {
 			req.AddCookie(cookie)
 		}
+		_ = res1.Body.Close()
 
 		rec2 := httptest.NewRecorder()
 

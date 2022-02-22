@@ -21,8 +21,7 @@ func Test_sitemap(t *testing.T) {
 	defer app.db.close()
 	app.initComponents(false)
 
-	app.d, err = app.buildRouter()
-	require.NoError(t, err)
+	app.d = app.buildRouter()
 
 	err = app.createPost(&post{
 		Path:      "/testpost",

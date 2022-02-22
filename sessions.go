@@ -96,7 +96,7 @@ func (s *dbSessionStore) Save(r *http.Request, w http.ResponseWriter, ss *sessio
 	return nil
 }
 
-func (s *dbSessionStore) Delete(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
+func (s *dbSessionStore) Delete(_ *http.Request, w http.ResponseWriter, session *sessions.Session) error {
 	options := *session.Options
 	options.MaxAge = -1
 	http.SetCookie(w, sessions.NewCookie(session.Name(), "", &options))

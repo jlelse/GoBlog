@@ -106,7 +106,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				})
 				_ = pipeWriter.CloseWithError(writeErr)
 			}()
-			req, err := http.NewRequest(http.MethodPost, "", pipeReader)
+			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, "", pipeReader)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return

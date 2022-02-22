@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -65,12 +64,8 @@ func Test_privateMode(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	res := rec.Result()
-	resBody, _ := io.ReadAll(res.Body)
-	resBodyStr := string(resBody)
-
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	assert.Equal(t, "Awesome", resBodyStr)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "Awesome", rec.Body.String())
 
 	// Test unauthenticated request
 
@@ -79,14 +74,10 @@ func Test_privateMode(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	res = rec.Result()
-	resBody, _ = io.ReadAll(res.Body)
-	resBodyStr = string(resBody)
-
-	assert.Equal(t, http.StatusOK, res.StatusCode) // Not 401, to be compatible with some apps
-	assert.NotEqual(t, "Awesome", resBodyStr)
-	assert.NotContains(t, resBodyStr, "Awesome")
-	assert.Contains(t, resBodyStr, "Login")
+	assert.Equal(t, http.StatusOK, rec.Code) // Not 401, to be compatible with some apps
+	assert.NotEqual(t, "Awesome", rec.Body.String())
+	assert.NotContains(t, rec.Body.String(), "Awesome")
+	assert.Contains(t, rec.Body.String(), "Login")
 
 	// Disable private mode
 
@@ -97,11 +88,7 @@ func Test_privateMode(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	res = rec.Result()
-	resBody, _ = io.ReadAll(res.Body)
-	resBodyStr = string(resBody)
-
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	assert.Equal(t, "Awesome", resBodyStr)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "Awesome", rec.Body.String())
 
 }

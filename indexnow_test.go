@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 func Test_indexNow(t *testing.T) {
 	fc := newFakeHttpClient()
-	fc.setFakeResponse(200, "OK")
+	fc.setFakeResponse(http.StatusOK, "OK")
 
 	app := &goBlog{
 		cfg:        createDefaultTestConfig(t),
@@ -24,15 +25,16 @@ func Test_indexNow(t *testing.T) {
 	app.initComponents(false)
 
 	// Create http router
-	app.d, _ = app.buildRouter()
+	app.d = app.buildRouter()
 
 	// Check key
 	require.NotEmpty(t, app.inKey)
-	req, _ := http.NewRequest("GET", "http://localhost:8080/"+app.inKey+".txt", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "http://localhost:8080/"+app.inKey+".txt", nil)
 	res, err := doHandlerRequest(req, app.d)
 	require.NoError(t, err)
 	require.Equal(t, 200, res.StatusCode)
 	body, _ := io.ReadAll(res.Body)
+	_ = res.Body.Close()
 	require.Equal(t, app.inKey, string(body))
 
 	// Test publish post

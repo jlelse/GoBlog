@@ -25,8 +25,9 @@ func Test_editorPreview(t *testing.T) {
 	})
 	d := wstest.NewDialer(h)
 
-	c, _, err := d.Dial("ws://example.com/editor/preview", nil)
+	c, resp, err := d.Dial("ws://example.com/editor/preview", nil)
 	require.NoError(t, err)
+	defer resp.Body.Close()
 	require.NotNil(t, c)
 
 	err = c.WriteMessage(websocket.TextMessage, []byte("---\ntitle: Title\nsection: posts\n---\nContent."))

@@ -17,7 +17,9 @@ func Test_noIndexHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 
-	assert.Equal(t, "noindex", rec.Result().Header.Get("X-Robots-Tag"))
+	res := rec.Result()
+	_ = res.Body.Close()
+	assert.Equal(t, "noindex", res.Header.Get("X-Robots-Tag"))
 }
 
 func Test_fixHTTPHandler(t *testing.T) {

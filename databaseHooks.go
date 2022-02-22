@@ -13,7 +13,7 @@ import (
 
 const dbHooksBegin contextKey = "begin"
 
-func (db *database) dbBefore(ctx context.Context, query string, args ...interface{}) context.Context {
+func (db *database) dbBefore(ctx context.Context, _ string, _ ...interface{}) context.Context {
 	if !db.debug {
 		return ctx
 	}

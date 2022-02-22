@@ -1,7 +1,6 @@
 package maprouter
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,20 +26,17 @@ func TestMapRouter(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://a.example.org", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	resBody, _ := io.ReadAll(rec.Result().Body)
-	assert.Equal(t, "a", string(resBody))
+	assert.Equal(t, "a", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodGet, "http://b.example.org", nil)
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	resBody, _ = io.ReadAll(rec.Result().Body)
-	assert.Equal(t, "b", string(resBody))
+	assert.Equal(t, "b", rec.Body.String())
 
 	req = httptest.NewRequest(http.MethodGet, "http://c.example.org", nil)
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	resBody, _ = io.ReadAll(rec.Result().Body)
-	assert.Equal(t, "Default", string(resBody))
+	assert.Equal(t, "Default", rec.Body.String())
 
 	router.KeyFunc = func(r *http.Request) string {
 		return "a.example.org"
@@ -49,6 +45,5 @@ func TestMapRouter(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "http://c.example.org", nil)
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	resBody, _ = io.ReadAll(rec.Result().Body)
-	assert.Equal(t, "a", string(resBody))
+	assert.Equal(t, "a", rec.Body.String())
 }

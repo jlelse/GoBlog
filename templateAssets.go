@@ -84,7 +84,7 @@ func (a *goBlog) assetFileName(fileName string) string {
 }
 
 func (a *goBlog) allAssetPaths() []string {
-	var paths []string
+	paths := make([]string, 0)
 	for _, name := range a.assetFileNames {
 		paths = append(paths, "/"+name)
 	}

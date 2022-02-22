@@ -100,7 +100,7 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// Prepare original request
 	loginbody, _ := base64.StdEncoding.DecodeString(r.FormValue("loginbody"))
-	req, _ := http.NewRequest(r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
+	req, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.RequestURI, bytes.NewReader(loginbody))
 	// Copy original headers
 	loginheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("loginheaders"))
 	var headers http.Header

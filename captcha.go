@@ -96,7 +96,7 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// Decode and prepare original request
 	captchabody, _ := base64.StdEncoding.DecodeString(r.FormValue("captchabody"))
-	origReq, _ := http.NewRequest(r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("captchamethod"), r.RequestURI, bytes.NewReader(captchabody))
 	// Copy original headers
 	captchaheaders, _ := base64.StdEncoding.DecodeString(r.FormValue("captchaheaders"))
 	var headers http.Header

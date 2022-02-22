@@ -78,8 +78,7 @@ func Test_renderInteractions(t *testing.T) {
 	_ = app.initDatabase(false)
 	defer app.db.close()
 	app.initComponents(false)
-	app.d, err = app.buildRouter()
-	require.NoError(t, err)
+	app.d = app.buildRouter()
 
 	err = app.createPost(&post{
 		Path: "/testpost1",

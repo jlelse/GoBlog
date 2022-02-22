@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -46,7 +47,7 @@ func Test_blogroll(t *testing.T) {
 	defer app.db.close()
 	app.initComponents(false)
 
-	fc.setFakeResponse(200, `
+	fc.setFakeResponse(http.StatusOK, `
 	<opml version="2.0">
 		<head>
 			<dateCreated>Tue, 30 Nov 2021 19:34:38 UTC</dateCreated>

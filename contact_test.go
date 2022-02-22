@@ -65,7 +65,7 @@ func Test_contact(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/contact", strings.NewReader(data.Encode()))
 	req.Header.Add(contentType, contenttype.WWWForm)
 	app.sendContactSubmission(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
-	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.Equal(t, http.StatusOK, rec.Code)
 
 	// Check sent mail
 	assert.Contains(t, rd.Usernames, "user")

@@ -42,6 +42,7 @@ func Test_regexRedirects(t *testing.T) {
 		h.ServeHTTP(rec, req)
 
 		res := rec.Result()
+		_ = res.Body.Close()
 
 		assert.Equal(t, 301, res.StatusCode)
 		assert.Equal(t, "/posts.rss", res.Header.Get("Location"))
@@ -54,6 +55,7 @@ func Test_regexRedirects(t *testing.T) {
 		h.ServeHTTP(rec, req)
 
 		res := rec.Result()
+		_ = res.Body.Close()
 
 		assert.Equal(t, http.StatusFound, res.StatusCode)
 		assert.Equal(t, "/def/test", res.Header.Get("Location"))

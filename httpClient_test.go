@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type fakeHttpClient struct {
@@ -24,14 +28,17 @@ func newFakeHttpClient() *fakeHttpClient {
 		if fc.handler != nil {
 			rec := httptest.NewRecorder()
 			fc.handler.ServeHTTP(rec, r)
-			fc.res = rec.Result()
+			res := rec.Result()
+			fc.res = res
 			// Copy the headers from the response recorder
 			for k, v := range rec.Header() {
 				rw.Header()[k] = v
 			}
 			// Copy result status code and body
-			rw.WriteHeader(fc.res.StatusCode)
+			rw.WriteHeader(rec.Code)
 			_, _ = io.Copy(rw, rec.Body)
+			// Close response body
+			_ = res.Body.Close()
 		}
 	}))
 	return fc
@@ -57,4 +64,14 @@ func (c *fakeHttpClient) setFakeResponse(statusCode int, body string) {
 		rw.WriteHeader(statusCode)
 		_, _ = rw.Write([]byte(body))
 	}))
+}
+
+func Test_fakeHttpClient(t *testing.T) {
+	fc := newFakeHttpClient()
+	fc.setFakeResponse(http.StatusNotFound, "Not found")
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:8080/", nil)
+	resp, err := fc.Client.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	_ = resp.Body.Close()
 }

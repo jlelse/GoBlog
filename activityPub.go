@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -249,7 +250,7 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {
-	req, err := http.NewRequest(http.MethodGet, iri, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, iri, nil)
 	if err != nil {
 		return nil, 0, err
 	}

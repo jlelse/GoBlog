@@ -32,10 +32,7 @@ const (
 func (a *goBlog) startServer() (err error) {
 	log.Println("Start server(s)...")
 	// Load router
-	a.d, err = a.buildRouter()
-	if err != nil {
-		return err
-	}
+	a.d = a.buildRouter()
 	// Set basic middlewares
 	h := alice.New()
 	h = h.Append(middleware.Heartbeat("/ping"))
@@ -115,7 +112,7 @@ const (
 	feedPath       = ".{feed:(rss|json|atom)}"
 )
 
-func (a *goBlog) buildRouter() (http.Handler, error) {
+func (a *goBlog) buildRouter() http.Handler {
 	mapRouter := &maprouter.MapRouter{
 		Handlers: map[string]http.Handler{},
 	}
@@ -221,7 +218,7 @@ func (a *goBlog) buildRouter() (http.Handler, error) {
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	mapRouter.DefaultHandler = r
-	return alice.New(headAsGetHandler).Then(mapRouter), nil
+	return alice.New(headAsGetHandler).Then(mapRouter)
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {

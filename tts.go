@@ -46,7 +46,9 @@ func (a *goBlog) initTTS() {
 	a.pUndeleteHooks = append(a.pUndeleteHooks, createOrUpdate)
 	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
 		// Try to delete the audio file
-		_ = a.deletePostTTSAudio(p)
+		if a.deletePostTTSAudio(p) {
+			log.Println("deleted tts audio for", p.Path)
+		}
 	})
 }
 
@@ -125,7 +127,9 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	if old := p.firstParameter(ttsParameter); old != "" && old != loc {
 		// Already has tts audio, but with different location
 		// Try to delete the old audio file
-		_ = a.deletePostTTSAudio(p)
+		if a.deletePostTTSAudio(p) {
+			log.Println("deleted old tts audio for", p.Path)
+		}
 	}
 
 	// Set post parameter
