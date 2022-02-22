@@ -41,6 +41,8 @@ type goBlog struct {
 	db *database
 	// Errors
 	errorCheckMediaTypes []ct.MediaType
+	// Geo
+	photonMutex sync.Mutex
 	// Hooks
 	pPostHooks     []postHookFunc
 	pUpdateHooks   []postHookFunc
