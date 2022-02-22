@@ -6,11 +6,14 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -22,40 +25,49 @@ type apRequest struct {
 
 func (a *goBlog) initAPSendQueue() {
 	go func() {
-		for {
+		done := false
+		var wg sync.WaitGroup
+		wg.Add(1)
+		a.shutdown.Add(func() {
+			done = true
+			wg.Wait()
+			log.Println("Stopped AP send queue")
+		})
+		for !done {
 			qi, err := a.db.peekQueue("ap")
 			if err != nil {
 				log.Println("activitypub send queue:", err.Error())
 				continue
-			} else if qi != nil {
-				var r apRequest
-				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r)
-				if err != nil {
-					log.Println("activitypub send queue:", err.Error())
-					_ = a.db.dequeue(qi)
+			}
+			if qi == nil {
+				// No item in the queue, wait a moment
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			var r apRequest
+			if err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r); err != nil {
+				log.Println("activitypub send queue:", err.Error())
+				_ = a.db.dequeue(qi)
+				continue
+			}
+			if err = a.apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
+				if r.Try++; r.Try < 20 {
+					// Try it again
+					buf := bufferpool.Get()
+					_ = r.encode(buf)
+					qi.content = buf.Bytes()
+					_ = a.db.reschedule(qi, time.Duration(r.Try)*10*time.Minute)
+					bufferpool.Put(buf)
 					continue
 				}
-				if err := a.apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
-					if r.Try++; r.Try < 20 {
-						// Try it again
-						qi.content, _ = r.encode()
-						_ = a.db.reschedule(qi, time.Duration(r.Try)*10*time.Minute)
-						continue
-					} else {
-						log.Printf("Request to %s failed for the 20th time", r.To)
-						log.Println()
-						_ = a.db.apRemoveInbox(r.To)
-					}
-				}
-				err = a.db.dequeue(qi)
-				if err != nil {
-					log.Println("activitypub send queue:", err.Error())
-				}
-			} else {
-				// No item in the queue, wait a moment
-				time.Sleep(15 * time.Second)
+				log.Println("AP request failed for the 20th time:", r.To)
+				_ = a.db.apRemoveInbox(r.To)
+			}
+			if err = a.db.dequeue(qi); err != nil {
+				log.Println("activitypub send queue:", err.Error())
 			}
 		}
+		wg.Done()
 	}()
 }
 
@@ -64,24 +76,20 @@ func (db *database) apQueueSendSigned(blogIri, to string, activity interface{}) 
 	if err != nil {
 		return err
 	}
-	b, err := (&apRequest{
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := (&apRequest{
 		BlogIri:  blogIri,
 		To:       to,
 		Activity: body,
-	}).encode()
-	if err != nil {
+	}).encode(buf); err != nil {
 		return err
 	}
-	return db.enqueue("ap", b, time.Now())
+	return db.enqueue("ap", buf.Bytes(), time.Now())
 }
 
-func (r *apRequest) encode() ([]byte, error) {
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(r)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+func (r *apRequest) encode(w io.Writer) error {
+	return gob.NewEncoder(w).Encode(r)
 }
 
 func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
@@ -89,9 +97,7 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// Create request
-	var requestBuffer bytes.Buffer
-	requestBuffer.Write(activity)
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, to, &requestBuffer)
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, to, bytes.NewReader(activity))
 	if err != nil {
 		return err
 	}
@@ -117,7 +123,7 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 	if !apRequestIsSuccess(resp.StatusCode) {
 		return fmt.Errorf("signed request failed with status %d", resp.StatusCode)
 	}

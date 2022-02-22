@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"net/http"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const (
@@ -195,9 +197,10 @@ func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 }
 
 func (db *database) cacheBlogStats(blog string, stats *blogStatsData) {
-	var buf bytes.Buffer
-	_ = gob.NewEncoder(&buf).Encode(stats)
+	buf := bufferpool.Get()
+	_ = gob.NewEncoder(buf).Encode(stats)
 	_ = db.cachePersistently("blogstats_"+blog, buf.Bytes())
+	bufferpool.Put(buf)
 }
 
 func (db *database) loadBlogStatsCache(blog string) (stats *blogStatsData) {

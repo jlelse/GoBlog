@@ -11,42 +11,51 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"willnorris.com/go/microformats"
 )
 
 func (a *goBlog) initWebmentionQueue() {
 	go func() {
-		for {
+		done := false
+		var wg sync.WaitGroup
+		wg.Add(1)
+		a.shutdown.Add(func() {
+			done = true
+			wg.Wait()
+			log.Println("Stopped webmention queue")
+		})
+		for !done {
 			qi, err := a.db.peekQueue("wm")
 			if err != nil {
 				log.Println("webmention queue:", err.Error())
 				continue
-			} else if qi != nil {
-				var m mention
-				err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m)
-				if err != nil {
-					log.Println("webmention queue:", err.Error())
-					_ = a.db.dequeue(qi)
-					continue
-				}
-				err = a.verifyMention(&m)
-				if err != nil {
-					log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
-				}
-				err = a.db.dequeue(qi)
-				if err != nil {
-					log.Println("webmention queue:", err.Error())
-				}
-			} else {
+			}
+			if qi == nil {
 				// No item in the queue, wait a moment
-				time.Sleep(15 * time.Second)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			var m mention
+			if err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
+				log.Println("webmention queue:", err.Error())
+				_ = a.db.dequeue(qi)
+				continue
+			}
+			if err = a.verifyMention(&m); err != nil {
+				log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
+			}
+			if err = a.db.dequeue(qi); err != nil {
+				log.Println("webmention queue:", err.Error())
 			}
 		}
+		wg.Done()
 	}()
 }
 
@@ -54,8 +63,9 @@ func (a *goBlog) queueMention(m *mention) error {
 	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
 		return errors.New("webmention receiving disabled")
 	}
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(m); err != nil {
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := gob.NewEncoder(buf).Encode(m); err != nil {
 		return err
 	}
 	return a.db.enqueue("wm", buf.Bytes(), time.Now())
@@ -165,12 +175,13 @@ func (a *goBlog) verifyMention(m *mention) error {
 }
 
 func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
-	var linksBuffer, gqBuffer, mfBuffer bytes.Buffer
-	if _, err := io.Copy(io.MultiWriter(&linksBuffer, &gqBuffer, &mfBuffer), body); err != nil {
+	linksBuffer, gqBuffer, mfBuffer := bufferpool.Get(), bufferpool.Get(), bufferpool.Get()
+	defer bufferpool.Put(linksBuffer, gqBuffer, mfBuffer)
+	if _, err := io.Copy(io.MultiWriter(linksBuffer, gqBuffer, mfBuffer), body); err != nil {
 		return err
 	}
 	// Check if source mentions target
-	links, err := allLinksFromHTML(&linksBuffer, defaultIfEmpty(m.NewSource, m.Source))
+	links, err := allLinksFromHTML(linksBuffer, defaultIfEmpty(m.NewSource, m.Source))
 	if err != nil {
 		return err
 	}
@@ -210,13 +221,13 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	m.Author = ""
 	m.Url = ""
 	m.hasUrl = false
-	m.fillFromData(microformats.Parse(&mfBuffer, sourceURL))
+	m.fillFromData(microformats.Parse(mfBuffer, sourceURL))
 	if m.Url == "" {
 		m.Url = m.Source
 	}
 	// Set title when content is empty as well
 	if m.Title == "" && m.Content == "" {
-		doc, err := goquery.NewDocumentFromReader(&gqBuffer)
+		doc, err := goquery.NewDocumentFromReader(gqBuffer)
 		if err != nil {
 			return err
 		}

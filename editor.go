@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 	ws "nhooyr.io/websocket"
@@ -198,7 +199,8 @@ func (a *goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 
 func (a *goBlog) editorPostDesc(bc *configBlog) string {
 	t := a.ts.GetTemplateStringVariant(bc.Lang, "editorpostdesc")
-	var paramBuilder, statusBuilder strings.Builder
+	paramBuilder, statusBuilder := bufferpool.Get(), bufferpool.Get()
+	defer bufferpool.Put(paramBuilder, statusBuilder)
 	for i, param := range []string{
 		"published",
 		"updated",

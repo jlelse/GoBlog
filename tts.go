@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/carlmjohnson/requests"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/mp3merge"
 )
 
@@ -109,7 +110,8 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	}
 
 	// Merge partsBuffers into final buffer
-	final := new(bytes.Buffer)
+	final := bufferpool.Get()
+	defer bufferpool.Put(final)
 	hash := sha256.New()
 	if err := mp3merge.MergeMP3(io.MultiWriter(final, hash), partsBuffers...); err != nil {
 		return err

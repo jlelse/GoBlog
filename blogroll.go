@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -67,7 +66,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_, _ = io.Copy(w, opmlBuf)
+	_, _ = opmlBuf.WriteTo(w)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
@@ -108,13 +107,14 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 }
 
 func (db *database) cacheOutlines(blog string, outlines []*opml.Outline) {
-	var opmlBuffer bytes.Buffer
-	_ = opml.Render(&opmlBuffer, &opml.OPML{
+	opmlBuffer := bufferpool.Get()
+	_ = opml.Render(opmlBuffer, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines,
 	})
 	_ = db.cachePersistently("blogroll_"+blog, opmlBuffer.Bytes())
+	bufferpool.Put(opmlBuffer)
 }
 
 func (db *database) loadOutlineCache(blog string) []*opml.Outline {

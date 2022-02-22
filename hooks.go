@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"html/template"
 	"log"
 	"os/exec"
 	"time"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func (a *goBlog) preStartHooks() {
@@ -91,13 +92,13 @@ func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, dat
 		log.Println("Failed to parse cmd template:", err.Error())
 		return
 	}
-	var cmdBuf bytes.Buffer
-	if err = cmdTmpl.Execute(&cmdBuf, data); err != nil {
+	cmdBuf := bufferpool.Get()
+	defer bufferpool.Put(cmdBuf)
+	if err = cmdTmpl.Execute(cmdBuf, data); err != nil {
 		log.Println("Failed to execute cmd template:", err.Error())
 		return
 	}
-	cmd := cmdBuf.String()
-	executeHookCommand(hookType, cfg.Shell, cmd)
+	executeHookCommand(hookType, cfg.Shell, cmdBuf.String())
 }
 
 type hourlyHookFunc func()

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -62,7 +61,8 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http
 		return "", nil
 	}
 	// Compress
-	var imgBuffer bytes.Buffer
+	imgBuffer := bufferpool.Get()
+	defer bufferpool.Put(imgBuffer)
 	err := requests.
 		URL("https://api.shortpixel.com/v2/reducer-sync.php").
 		Client(hc).
@@ -78,14 +78,14 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http
 			"keep_exif":      0,
 			"url":            url,
 		}).
-		ToBytesBuffer(&imgBuffer).
+		ToBytesBuffer(imgBuffer).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Shortpixel error:", err.Error())
 		return "", errors.New("failed to compress image using shortpixel")
 	}
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
+	return uploadCompressedFile(fileExtension, imgBuffer, upload)
 }
 
 type tinify struct {
@@ -123,7 +123,8 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		return "", tinifyErr
 	}
 	// Resize and download image
-	var imgBuffer bytes.Buffer
+	imgBuffer := bufferpool.Get()
+	defer bufferpool.Put(imgBuffer)
 	err = requests.
 		URL(compressedLocation).
 		Client(hc).
@@ -136,14 +137,14 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 				"height": defaultCompressionHeight,
 			},
 		}).
-		ToBytesBuffer(&imgBuffer).
+		ToBytesBuffer(imgBuffer).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Tinify error:", err.Error())
 		return "", tinifyErr
 	}
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
+	return uploadCompressedFile(fileExtension, imgBuffer, upload)
 }
 
 type cloudflare struct{}
@@ -156,18 +157,19 @@ func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http
 	// Force jpeg
 	fileExtension := "jpeg"
 	// Compress
-	var imgBuffer bytes.Buffer
+	imgBuffer := bufferpool.Get()
+	defer bufferpool.Put(imgBuffer)
 	err := requests.
 		URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
 		Client(hc).
-		ToBytesBuffer(&imgBuffer).
+		ToBytesBuffer(imgBuffer).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Cloudflare error:", err.Error())
 		return "", errors.New("failed to compress image using cloudflare")
 	}
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, &imgBuffer, upload)
+	return uploadCompressedFile(fileExtension, imgBuffer, upload)
 }
 
 func uploadCompressedFile(fileExtension string, r io.Reader, upload mediaStorageSaveFunc) (string, error) {

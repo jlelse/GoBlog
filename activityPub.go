@@ -49,7 +49,9 @@ func (a *goBlog) initActivityPub() error {
 		a.apDelete(p)
 	})
 	a.pUndeleteHooks = append(a.pUndeleteHooks, func(p *post) {
-		a.apUndelete(p)
+		if p.isPublishedSectionPost() {
+			a.apUndelete(p)
+		}
 	})
 	// Prepare webfinger
 	a.webfingerResources = map[string]*configBlog{}
@@ -185,7 +187,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 					// May be a mention; find links to blog and save them as webmentions
 					if links, err := allLinksFromHTMLString(content, baseUrl); err == nil {
 						for _, link := range links {
-							if strings.HasPrefix(link, blogIri) {
+							if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
 								_ = a.createWebmention(baseUrl, link)
 							}
 						}
@@ -313,11 +315,6 @@ func (a *goBlog) apPost(p *post) {
 		"type":      "Create",
 		"object":    n,
 	})
-	if n.InReplyTo != "" {
-		// Is reply, so announce it
-		time.Sleep(30 * time.Second)
-		a.apAnnounce(p)
-	}
 }
 
 func (a *goBlog) apUpdate(p *post) {
@@ -328,17 +325,6 @@ func (a *goBlog) apUpdate(p *post) {
 		"published": time.Now().Format("2006-01-02T15:04:05-07:00"),
 		"type":      "Update",
 		"object":    a.toASNote(p),
-	})
-}
-
-func (a *goBlog) apAnnounce(p *post) {
-	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
-		"@context":  []string{asContext},
-		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
-		"id":        a.fullPostURL(p) + "#announce",
-		"published": a.toASNote(p).Published,
-		"type":      "Announce",
-		"object":    a.fullPostURL(p),
 	})
 }
 
@@ -450,17 +436,16 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 		}
 	}
 	// Generate and cache key
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	var err error
+	a.apPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return err
 	}
-	encodedKey := x509.MarshalPKCS1PrivateKey(key)
-	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: encodedKey})
-	err = a.db.cachePersistently("activitypub_key", pemEncoded)
-	if err != nil {
-		return err
-	}
-	a.apPrivateKey = key
-	// Return key
-	return nil
+	return a.db.cachePersistently(
+		"activitypub_key",
+		pem.EncodeToMemory(&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(a.apPrivateKey),
+		}),
+	)
 }

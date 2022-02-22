@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func noIndexHeader(next http.Handler) http.Handler {
@@ -37,7 +39,7 @@ func headAsGetHandler(next http.Handler) http.Handler {
 
 func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	// Build CSP domains list
-	var cspBuilder strings.Builder
+	cspBuilder := bufferpool.Get()
 	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
 			cspBuilder.WriteByte(' ')
@@ -49,6 +51,7 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
 	}
 	cspDomains := cspBuilder.String()
+	bufferpool.Put(cspBuilder)
 	// Return handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")

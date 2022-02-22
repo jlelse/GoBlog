@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 var errPostNotFound = errors.New("post not found")
@@ -213,24 +214,24 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
-	var title, dPath strings.Builder
+	title, dPath := bufferpool.Get(), bufferpool.Get()
 	if year != 0 {
-		_, _ = fmt.Fprintf(&title, "%0004d", year)
-		_, _ = fmt.Fprintf(&dPath, "%0004d", year)
+		_, _ = fmt.Fprintf(title, "%0004d", year)
+		_, _ = fmt.Fprintf(dPath, "%0004d", year)
 	} else {
 		_, _ = title.WriteString("XXXX")
 		_, _ = dPath.WriteString("x")
 	}
 	if month != 0 {
-		_, _ = fmt.Fprintf(&title, "-%02d", month)
-		_, _ = fmt.Fprintf(&dPath, "/%02d", month)
+		_, _ = fmt.Fprintf(title, "-%02d", month)
+		_, _ = fmt.Fprintf(dPath, "/%02d", month)
 	} else if day != 0 {
 		_, _ = title.WriteString("-XX")
 		_, _ = dPath.WriteString("/x")
 	}
 	if day != 0 {
-		_, _ = fmt.Fprintf(&title, "-%02d", day)
-		_, _ = fmt.Fprintf(&dPath, "/%02d", day)
+		_, _ = fmt.Fprintf(title, "-%02d", day)
+		_, _ = fmt.Fprintf(dPath, "/%02d", day)
 	}
 	_, bc := a.getBlog(r)
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
@@ -240,6 +241,7 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		day:   day,
 		title: title.String(),
 	})))
+	bufferpool.Put(title, dPath)
 }
 
 type indexConfig struct {

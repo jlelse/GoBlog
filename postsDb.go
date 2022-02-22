@@ -12,6 +12,7 @@ import (
 
 	"github.com/araddon/dateparse"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 func (a *goBlog) checkPost(p *post) (err error) {
@@ -630,7 +631,7 @@ group by name;
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 	sqlArgs := []interface{}{dbNoCache}
-	var nameValues strings.Builder
+	nameValues := bufferpool.Get()
 	for i, n := range names {
 		if i > 0 {
 			nameValues.WriteString(", ")
@@ -642,6 +643,7 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
 	rows, err := db.query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
+	bufferpool.Put(nameValues)
 	if err != nil {
 		return nil, err
 	}

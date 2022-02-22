@@ -10,6 +10,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 var _ io.Writer = &htmlBuilder{}
@@ -30,16 +31,17 @@ func Test_renderPostTax(t *testing.T) {
 		},
 	}
 
-	buf := &bytes.Buffer{}
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+
 	hb := newHtmlBuilder(buf)
 
 	app.renderPostTax(hb, p, app.cfg.Blogs["default"])
-	res := buf.String()
 
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
+	_, err := goquery.NewDocumentFromReader(strings.NewReader(buf.String()))
 	require.NoError(t, err)
 
-	assert.Equal(t, "<p><strong>Tags</strong>: <a class=\"p-category\" rel=\"tag\" href=\"/tags/bar\">Bar</a>, <a class=\"p-category\" rel=\"tag\" href=\"/tags/foo\">Foo</a></p>", res)
+	assert.Equal(t, "<p><strong>Tags</strong>: <a class=\"p-category\" rel=\"tag\" href=\"/tags/bar\">Bar</a>, <a class=\"p-category\" rel=\"tag\" href=\"/tags/foo\">Foo</a></p>", buf.String())
 }
 
 func Test_renderOldContentWarning(t *testing.T) {
