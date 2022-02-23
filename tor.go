@@ -41,7 +41,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 			return err
 		}
 		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-		_ = os.WriteFile(torKeyPath, pemEncoded, 0666)
+		_ = os.WriteFile(torKeyPath, pemEncoded, 0600)
 	} else {
 		d, _ := os.ReadFile(torKeyPath)
 		block, _ := pem.Decode(d)

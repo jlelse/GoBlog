@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 	"time"
@@ -8,9 +9,9 @@ import (
 
 func initGC() {
 	go func() {
-		ticker := time.NewTicker(10 * time.Minute)
+		ticker := time.NewTicker(15 * time.Minute)
 		for range ticker.C {
-			go doGC()
+			doGC()
 		}
 	}()
 }
@@ -20,5 +21,10 @@ func doGC() {
 	runtime.ReadMemStats(&old)
 	runtime.GC()
 	runtime.ReadMemStats(&new)
-	log.Printf("Alloc: %v MiB → %v MiB", old.Alloc/1024/1024, new.Alloc/1024/1024)
+	log.Println(fmt.Sprintf(
+		"\nAlloc: %d MiB -> %d MiB\nSys: %d MiB -> %d MiB\nNumGC: %d",
+		old.Alloc/1024/1024, new.Alloc/1024/1024,
+		old.Sys/1024/1024, new.Sys/1024/1024,
+		new.NumGC,
+	))
 }

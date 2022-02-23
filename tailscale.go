@@ -49,6 +49,7 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 	if addr == ":443" && a.cfg.Server.TailscaleHTTPS {
 		ln = tls.NewListener(ln, &tls.Config{
 			GetCertificate: tailscale.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
 		})
 	}
 	return ln, nil

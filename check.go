@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -51,9 +50,6 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: gzhttp.Transport(&http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
 			// Limits
 			DisableKeepAlives: true,
 			MaxConnsPerHost:   1,

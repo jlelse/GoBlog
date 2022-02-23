@@ -210,26 +210,10 @@ func (db *database) execContext(c context.Context, query string, args ...interfa
 }
 
 func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
-	if db == nil || db.db == nil {
-		return nil, errors.New("database not initialized")
-	}
-	// Maybe prepare
-	st, args, _ := db.prepare(query, args...)
-	// Prepare context, call hook
-	ctx := db.dbBefore(context.Background(), query, args...)
-	defer db.dbAfter(ctx, query, args...)
-	// Query
-	if st != nil {
-		return st.QueryContext(ctx, args...)
-	}
-	return db.db.QueryContext(ctx, query, args...)
+	return db.queryContext(context.Background(), query, args...)
 }
 
-func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
-	return db.queryRowContext(context.Background(), query, args...)
-}
-
-func (db *database) queryRowContext(c context.Context, query string, args ...interface{}) (*sql.Row, error) {
+func (db *database) queryContext(c context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -237,12 +221,38 @@ func (db *database) queryRowContext(c context.Context, query string, args ...int
 	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook
 	ctx := db.dbBefore(c, query, args...)
-	defer db.dbAfter(ctx, query, args...)
 	// Query
 	if st != nil {
-		return st.QueryRowContext(ctx, args...), nil
+		rows, err = st.QueryContext(ctx, args...)
+	} else {
+		rows, err = db.db.QueryContext(ctx, query, args...)
 	}
-	return db.db.QueryRowContext(ctx, query, args...), nil
+	// Call hook
+	db.dbAfter(ctx, query, args...)
+	return
+}
+
+func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
+	return db.queryRowContext(context.Background(), query, args...)
+}
+
+func (db *database) queryRowContext(c context.Context, query string, args ...interface{}) (row *sql.Row, err error) {
+	if db == nil || db.db == nil {
+		return nil, errors.New("database not initialized")
+	}
+	// Maybe prepare
+	st, args, _ := db.prepare(query, args...)
+	// Prepare context, call hook
+	ctx := db.dbBefore(c, query, args...)
+	// Query
+	if st != nil {
+		row = st.QueryRowContext(ctx, args...)
+	} else {
+		row = db.db.QueryRowContext(ctx, query, args...)
+	}
+	// Call hook
+	db.dbAfter(ctx, query, args...)
+	return
 }
 
 // Other things

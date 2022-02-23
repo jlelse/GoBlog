@@ -17,6 +17,7 @@ func (a *goBlog) exportMarkdownFiles(dir string) error {
 		filename := filepath.Join(dir, p.Path+".md")
 		filedir := filepath.Dir(filename)
 		_ = os.MkdirAll(filedir, 0777)
+		//nolint:gosec
 		err = os.WriteFile(filename, []byte(p.contentWithParams()), 0666)
 		if err != nil {
 			return err

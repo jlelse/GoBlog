@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -38,7 +39,15 @@ func (a *goBlog) initCache() (err error) {
 		NumCounters: 40 * 1000,        // 4000 items when full with 5 KB items -> x10 = 40.000
 		MaxCost:     20 * 1000 * 1000, // 20 MB
 		BufferItems: 64,               // recommended
+		Metrics:     true,
 	})
+	go func() {
+		ticker := time.NewTicker(15 * time.Minute)
+		for range ticker.C {
+			met := a.cache.c.Metrics
+			log.Println("\nCache:", met.String())
+		}
+	}()
 	return
 }
 

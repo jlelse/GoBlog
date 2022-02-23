@@ -29,6 +29,7 @@ linters:
     - bidichk
     - containedctx
     - contextcheck
+    - gosec
 linters-settings:
   gosimple:
     go: "1.17"

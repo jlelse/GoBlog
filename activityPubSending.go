@@ -23,7 +23,7 @@ type apRequest struct {
 }
 
 func (a *goBlog) initAPSendQueue() {
-	a.listenOnQueue("ap", 15*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
+	a.listenOnQueue("ap", time.Minute, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
 		var r apRequest
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r); err != nil {
 			log.Println("activitypub queue:", err.Error())
