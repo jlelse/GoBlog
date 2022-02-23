@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -30,11 +31,11 @@ func Test_queue(t *testing.T) {
 	err = db.enqueue("test", []byte("2"), time.Now())
 	require.NoError(t, err)
 
-	qi, err := db.peekQueue("abc")
+	qi, err := db.peekQueue(context.Background(), "abc")
 	require.NoError(t, err)
 	require.Nil(t, qi)
 
-	qi, err = db.peekQueue("test")
+	qi, err = db.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("1"), qi.content)
@@ -42,7 +43,7 @@ func Test_queue(t *testing.T) {
 	err = db.reschedule(qi, 1*time.Second)
 	require.NoError(t, err)
 
-	qi, err = db.peekQueue("test")
+	qi, err = db.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("2"), qi.content)
@@ -50,13 +51,13 @@ func Test_queue(t *testing.T) {
 	err = db.dequeue(qi)
 	require.NoError(t, err)
 
-	qi, err = db.peekQueue("test")
+	qi, err = db.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.Nil(t, qi)
 
 	time.Sleep(1 * time.Second)
 
-	qi, err = db.peekQueue("test")
+	qi, err = db.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("1"), qi.content)

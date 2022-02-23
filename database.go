@@ -187,6 +187,10 @@ func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []int
 const dbNoCache = "nocache"
 
 func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
+	return db.execContext(context.Background(), query, args...)
+}
+
+func (db *database) execContext(c context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -196,7 +200,7 @@ func (db *database) exec(query string, args ...interface{}) (sql.Result, error) 
 	db.em.Lock()
 	defer db.em.Unlock()
 	// Prepare context, call hook
-	ctx := db.dbBefore(context.Background(), query, args...)
+	ctx := db.dbBefore(c, query, args...)
 	defer db.dbAfter(ctx, query, args...)
 	// Execute
 	if st != nil {
@@ -222,13 +226,17 @@ func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) 
 }
 
 func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
+	return db.queryRowContext(context.Background(), query, args...)
+}
+
+func (db *database) queryRowContext(c context.Context, query string, args ...interface{}) (*sql.Row, error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
 	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
 	// Prepare context, call hook
-	ctx := db.dbBefore(context.Background(), query, args...)
+	ctx := db.dbBefore(c, query, args...)
 	defer db.dbAfter(ctx, query, args...)
 	// Query
 	if st != nil {

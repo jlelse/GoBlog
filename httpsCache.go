@@ -21,11 +21,11 @@ func (c *httpsCache) check() error {
 	return nil
 }
 
-func (c *httpsCache) Get(_ context.Context, key string) ([]byte, error) {
+func (c *httpsCache) Get(ctx context.Context, key string) ([]byte, error) {
 	if err := c.check(); err != nil {
 		return nil, err
 	}
-	d, err := c.db.retrievePersistentCache("https_" + key)
+	d, err := c.db.retrievePersistentCacheContext(ctx, "https_"+key)
 	if d == nil && err == nil {
 		return nil, autocert.ErrCacheMiss
 	} else if err != nil {
@@ -34,16 +34,16 @@ func (c *httpsCache) Get(_ context.Context, key string) ([]byte, error) {
 	return d, nil
 }
 
-func (c *httpsCache) Put(_ context.Context, key string, data []byte) error {
+func (c *httpsCache) Put(ctx context.Context, key string, data []byte) error {
 	if err := c.check(); err != nil {
 		return err
 	}
-	return c.db.cachePersistently("https_"+key, data)
+	return c.db.cachePersistentlyContext(ctx, "https_"+key, data)
 }
 
-func (c *httpsCache) Delete(_ context.Context, key string) error {
+func (c *httpsCache) Delete(ctx context.Context, key string) error {
 	if err := c.check(); err != nil {
 		return err
 	}
-	return c.db.clearPersistentCache("https_" + key)
+	return c.db.clearPersistentCacheContext(ctx, "https_"+key)
 }

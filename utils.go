@@ -336,6 +336,7 @@ func saveToFile(reader io.Reader, fileName string) error {
 	return err
 }
 
+//nolint:containedctx
 type valueOnlyContext struct {
 	context.Context
 }

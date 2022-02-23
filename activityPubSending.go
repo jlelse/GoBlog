@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -24,51 +23,28 @@ type apRequest struct {
 }
 
 func (a *goBlog) initAPSendQueue() {
-	go func() {
-		done := false
-		var wg sync.WaitGroup
-		wg.Add(1)
-		a.shutdown.Add(func() {
-			done = true
-			wg.Wait()
-			log.Println("Stopped AP send queue")
-		})
-		for !done {
-			qi, err := a.db.peekQueue("ap")
-			if err != nil {
-				log.Println("activitypub send queue:", err.Error())
-				continue
-			}
-			if qi == nil {
-				// No item in the queue, wait a moment
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			var r apRequest
-			if err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r); err != nil {
-				log.Println("activitypub send queue:", err.Error())
-				_ = a.db.dequeue(qi)
-				continue
-			}
-			if err = a.apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
-				if r.Try++; r.Try < 20 {
-					// Try it again
-					buf := bufferpool.Get()
-					_ = r.encode(buf)
-					qi.content = buf.Bytes()
-					_ = a.db.reschedule(qi, time.Duration(r.Try)*10*time.Minute)
-					bufferpool.Put(buf)
-					continue
-				}
-				log.Println("AP request failed for the 20th time:", r.To)
-				_ = a.db.apRemoveInbox(r.To)
-			}
-			if err = a.db.dequeue(qi); err != nil {
-				log.Println("activitypub send queue:", err.Error())
-			}
+	a.listenOnQueue("ap", 15*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
+		var r apRequest
+		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r); err != nil {
+			log.Println("activitypub queue:", err.Error())
+			dequeue()
+			return
 		}
-		wg.Done()
-	}()
+		if err := a.apSendSigned(r.BlogIri, r.To, r.Activity); err != nil {
+			if r.Try++; r.Try < 20 {
+				// Try it again
+				buf := bufferpool.Get()
+				_ = r.encode(buf)
+				qi.content = buf.Bytes()
+				reschedule(time.Duration(r.Try) * 10 * time.Minute)
+				bufferpool.Put(buf)
+				return
+			}
+			log.Println("AP request failed for the 20th time:", r.To)
+			_ = a.db.apRemoveInbox(r.To)
+		}
+		dequeue()
+	})
 }
 
 func (db *database) apQueueSendSigned(blogIri, to string, activity interface{}) error {

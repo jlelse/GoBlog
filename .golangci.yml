@@ -26,3 +26,13 @@ linters:
     - prealloc
     - unparam
     - durationcheck
+    - bidichk
+    - containedctx
+    - contextcheck
+linters-settings:
+  gosimple:
+    go: "1.17"
+    checks: ["all"]
+  gostatichcheck:
+    go: "1.17"
+    checks: ["all"]

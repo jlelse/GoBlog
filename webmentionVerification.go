@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -22,41 +21,18 @@ import (
 )
 
 func (a *goBlog) initWebmentionQueue() {
-	go func() {
-		done := false
-		var wg sync.WaitGroup
-		wg.Add(1)
-		a.shutdown.Add(func() {
-			done = true
-			wg.Wait()
-			log.Println("Stopped webmention queue")
-		})
-		for !done {
-			qi, err := a.db.peekQueue("wm")
-			if err != nil {
-				log.Println("webmention queue:", err.Error())
-				continue
-			}
-			if qi == nil {
-				// No item in the queue, wait a moment
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			var m mention
-			if err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
-				log.Println("webmention queue:", err.Error())
-				_ = a.db.dequeue(qi)
-				continue
-			}
-			if err = a.verifyMention(&m); err != nil {
-				log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
-			}
-			if err = a.db.dequeue(qi); err != nil {
-				log.Println("webmention queue:", err.Error())
-			}
+	a.listenOnQueue("wm", 15*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
+		var m mention
+		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
+			log.Println("webmention queue:", err.Error())
+			dequeue()
+			return
 		}
-		wg.Done()
-	}()
+		if err := a.verifyMention(&m); err != nil {
+			log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
+		}
+		dequeue()
+	})
 }
 
 func (a *goBlog) queueMention(m *mention) error {
