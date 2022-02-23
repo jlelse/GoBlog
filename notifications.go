@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const notificationsPath = "/notifications"
@@ -57,7 +57,8 @@ type notificationsRequestConfig struct {
 }
 
 func buildNotificationsQuery(config *notificationsRequestConfig) (query string, args []interface{}) {
-	var queryBuilder strings.Builder
+	queryBuilder := bufferpool.Get()
+	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, time, text from notifications order by id desc")
 	if config.limit != 0 || config.offset != 0 {
 		queryBuilder.WriteString(" limit @limit offset @offset")

@@ -108,12 +108,24 @@ func Benchmark_markdown(b *testing.B) {
 
 	app.initMarkdown()
 
-	b.Run("Benchmark Markdown Rendering", func(b *testing.B) {
+	b.Run("Markdown Rendering", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_, err := app.renderMarkdown(mdExp, true)
 			if err != nil {
 				b.Errorf("Error: %v", err)
 			}
+		}
+	})
+
+	b.Run("Title Rendering", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			app.renderMdTitle("**Test**")
+		}
+	})
+
+	b.Run("Text Rendering", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			app.renderText("**Test**")
 		}
 	})
 }

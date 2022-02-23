@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const commentPath = "/comment"
@@ -102,7 +103,8 @@ type commentsRequestConfig struct {
 }
 
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []interface{}) {
-	var queryBuilder strings.Builder
+	queryBuilder := bufferpool.Get()
+	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, target, name, website, comment from comments order by id desc")
 	if config.limit != 0 || config.offset != 0 {
 		queryBuilder.WriteString(" limit @limit offset @offset")

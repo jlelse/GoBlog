@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -73,31 +72,29 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	parts = append(parts, strings.Split(htmlText(a.postHtml(p, false)), "\n\n")...)
 
 	// Create TTS audio for each part
-	partsBuffers := make([]io.Reader, len(parts))
-	var errs []error
-	var lock sync.Mutex
+	partWriters := make([]io.Writer, len(parts))
+	partReaders := make([]io.Reader, len(parts))
+	for i := range parts {
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		partWriters[i] = buf
+		partReaders[i] = buf
+	}
+	errs := make([]error, len(parts))
 	var wg sync.WaitGroup
 	for i, part := range parts {
 		// Increase wait group
 		wg.Add(1)
 		go func(i int, part string) {
+			defer wg.Done()
 			// Build SSML
 			ssml := "<speak>" + html.EscapeString(part) + "<break time=\"500ms\"/></speak>"
 			// Create TTS audio
-			var audioBuffer bytes.Buffer
-			err := a.createTTSAudio(lang, ssml, &audioBuffer)
+			err := a.createTTSAudio(lang, ssml, partWriters[i])
 			if err != nil {
-				lock.Lock()
-				errs = append(errs, err)
-				lock.Unlock()
+				errs[i] = err
 				return
 			}
-			// Append buffer to partsBuffers
-			lock.Lock()
-			partsBuffers[i] = &audioBuffer
-			lock.Unlock()
-			// Decrease wait group
-			wg.Done()
 		}(i, part)
 	}
 
@@ -105,15 +102,17 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	wg.Wait()
 
 	// Check if any errors occurred
-	if len(errs) > 0 {
-		return errs[0]
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
 	}
 
 	// Merge partsBuffers into final buffer
 	final := bufferpool.Get()
 	defer bufferpool.Put(final)
 	hash := sha256.New()
-	if err := mp3merge.MergeMP3(io.MultiWriter(final, hash), partsBuffers...); err != nil {
+	if err := mp3merge.MergeMP3(io.MultiWriter(final, hash), partReaders...); err != nil {
 		return err
 	}
 

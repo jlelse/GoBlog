@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
+	"net/http"
+	netpprof "net/http/pprof"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -88,6 +91,39 @@ func main() {
 		log.Println("TOTP-Secret:", key.Secret())
 		app.shutdown.ShutdownAndWait()
 		return
+	}
+
+	// Start pprof server
+	if pprofCfg := app.cfg.Pprof; pprofCfg != nil && pprofCfg.Enabled {
+		go func() {
+			// Build handler
+			pprofHandler := http.NewServeMux()
+			pprofHandler.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+				http.Redirect(rw, r, "/debug/pprof/", http.StatusFound)
+			})
+			pprofHandler.HandleFunc("/debug/pprof/", netpprof.Index)
+			pprofHandler.HandleFunc("/debug/pprof/{action}", netpprof.Index)
+			pprofHandler.HandleFunc("/debug/pprof/cmdline", netpprof.Cmdline)
+			pprofHandler.HandleFunc("/debug/pprof/profile", netpprof.Profile)
+			pprofHandler.HandleFunc("/debug/pprof/symbol", netpprof.Symbol)
+			pprofHandler.HandleFunc("/debug/pprof/trace", netpprof.Trace)
+			// Build server and listener
+			pprofServer := &http.Server{
+				Addr:    defaultIfEmpty(pprofCfg.Address, "localhost:0"),
+				Handler: pprofHandler,
+			}
+			listener, err := net.Listen("tcp", pprofServer.Addr)
+			if err != nil {
+				log.Fatalln("Failed to start pprof server:", err.Error())
+				return
+			}
+			log.Println("Pprof server listening on", listener.Addr().String())
+			// Start server
+			if err := pprofServer.Serve(listener); err != nil {
+				log.Fatalln("Failed to start pprof server:", err.Error())
+				return
+			}
+		}()
 	}
 
 	// Execute pre-start hooks

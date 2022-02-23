@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -93,21 +92,22 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 		case "updatepost":
-			pipeReader, pipeWriter := io.Pipe()
-			defer pipeReader.Close()
-			go func() {
-				writeErr := json.NewEncoder(pipeWriter).Encode(map[string]interface{}{
-					"action": actionUpdate,
-					"url":    r.FormValue("url"),
-					"replace": map[string][]string{
-						"content": {
-							r.FormValue("content"),
-						},
+			buf := bufferpool.Get()
+			defer bufferpool.Put(buf)
+			err := json.NewEncoder(buf).Encode(map[string]interface{}{
+				"action": actionUpdate,
+				"url":    r.FormValue("url"),
+				"replace": map[string][]string{
+					"content": {
+						r.FormValue("content"),
 					},
-				})
-				_ = pipeWriter.CloseWithError(writeErr)
-			}()
-			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, "", pipeReader)
+				},
+			})
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, "", buf)
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 				return
@@ -177,9 +177,10 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 }
 
 func (a *goBlog) editorPostTemplate(blog string, bc *configBlog) string {
-	var builder strings.Builder
+	builder := bufferpool.Get()
+	defer bufferpool.Put(builder)
 	marsh := func(param string, i interface{}) {
-		_ = yaml.NewEncoder(&builder).Encode(map[string]interface{}{
+		_ = yaml.NewEncoder(builder).Encode(map[string]interface{}{
 			param: i,
 		})
 	}

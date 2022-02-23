@@ -26,9 +26,10 @@ type config struct {
 	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
 	IndexNow      *configIndexNow        `mapstructure:"indexNow"`
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
-	Debug         bool                   `mapstructure:"debug"`
 	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
 	TTS           *configTTS             `mapstructure:"tts"`
+	Pprof         *configPprof           `mapstructure:"pprof"`
+	Debug         bool                   `mapstructure:"debug"`
 	initialized   bool
 }
 
@@ -300,6 +301,11 @@ type configMapTiles struct {
 type configTTS struct {
 	Enabled      bool   `mapstructure:"enabled"`
 	GoogleAPIKey string `mapstructure:"googleApiKey"`
+}
+
+type configPprof struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Address string `mapstructure:"address"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -99,8 +98,9 @@ func (a *goBlog) checkPost(p *post) (err error) {
 		if err != nil {
 			return errors.New("failed to parse location template")
 		}
-		var pathBuffer bytes.Buffer
-		err = pathTmpl.Execute(&pathBuffer, map[string]interface{}{
+		pathBuffer := bufferpool.Get()
+		defer bufferpool.Put(pathBuffer)
+		err = pathTmpl.Execute(pathBuffer, map[string]interface{}{
 			"BlogPath": a.getRelativePath(p.Blog, ""),
 			"Year":     published.Year(),
 			"Month":    int(published.Month()),
@@ -171,7 +171,8 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	var sqlBuilder strings.Builder
+	sqlBuilder := bufferpool.Get()
+	defer bufferpool.Put(sqlBuilder)
 	var sqlArgs = []interface{}{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -294,7 +295,8 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	var sqlBuilder strings.Builder
+	sqlBuilder := bufferpool.Get()
+	defer bufferpool.Put(sqlBuilder)
 	var sqlArgs = []interface{}{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -343,7 +345,8 @@ type postsRequestConfig struct {
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []interface{}) {
-	var queryBuilder strings.Builder
+	queryBuilder := bufferpool.Get()
+	defer bufferpool.Put(queryBuilder)
 	// Selection
 	queryBuilder.WriteString("select ")
 	queryBuilder.WriteString(selection)
@@ -459,7 +462,8 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	}
 	// Build query
 	sqlArgs := make([]interface{}, 0)
-	var queryBuilder strings.Builder
+	queryBuilder := bufferpool.Get()
+	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
 	// Paths
 	queryBuilder.WriteString(" path in (")
