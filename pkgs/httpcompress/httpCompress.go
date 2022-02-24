@@ -121,7 +121,8 @@ func (c *Compressor) Handler(next http.Handler) http.Handler {
 			request:        r,
 		}
 		next.ServeHTTP(cw, r)
-		cw.Close()
+		_ = cw.Close()
+		cw.doCleanup()
 	})
 }
 
@@ -149,7 +150,6 @@ type compressResponseWriter struct {
 	compressor          *Compressor    // Holds the compressor configuration.
 	request             *http.Request  // The request that is being handled.
 	wroteHeader         bool           // Whether the header has been written.
-	closed              bool           // Whether the connection has been closed.
 }
 
 func (cw *compressResponseWriter) isCompressable() bool {
@@ -264,11 +264,6 @@ func (cw *compressResponseWriter) Push(target string, opts *http.PushOptions) er
 }
 
 func (cw *compressResponseWriter) Close() error {
-	if cw.closed {
-		return nil
-	}
-	cw.closed = true
-	defer cw.doCleanup()
 	if c, ok := cw.writer().(io.WriteCloser); ok {
 		return c.Close()
 	}
