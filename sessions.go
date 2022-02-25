@@ -80,7 +80,7 @@ func (s *dbSessionStore) New(r *http.Request, name string) (session *sessions.Se
 	return session, err
 }
 
-func (s *dbSessionStore) Save(r *http.Request, w http.ResponseWriter, ss *sessions.Session) (err error) {
+func (s *dbSessionStore) Save(_ *http.Request, w http.ResponseWriter, ss *sessions.Session) (err error) {
 	if ss.ID == "" {
 		// Is new session, save it to database
 		if err = s.insert(ss); err != nil {

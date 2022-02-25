@@ -334,7 +334,7 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 		p.Parameters = map[string][]string{}
 	}
 	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
-	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && len(strings.TrimSpace(split[0])) == 0 {
+	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && strings.TrimSpace(split[0]) == "" {
 		// Contains frontmatter
 		fm := split[1]
 		meta := map[string]interface{}{}

@@ -200,8 +200,8 @@ func (a *goBlog) buildRouter() http.Handler {
 
 	// IndexNow
 	if a.indexNowEnabled() {
-		if inkey := a.indexNowKey(); inkey != "" {
-			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/"+inkey+".txt", a.serveIndexNow)
+		if inkey := a.indexNowKey(); len(inkey) > 0 {
+			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/"+string(inkey)+".txt", a.serveIndexNow)
 		}
 	}
 

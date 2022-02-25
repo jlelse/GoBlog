@@ -7,7 +7,7 @@ import (
 
 const robotsTXTPath = "/robots.txt"
 
-func (a *goBlog) serveRobotsTXT(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveRobotsTXT(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprint(w, "User-agent: *\n")
 	if a.isPrivate() {
 		_, _ = fmt.Fprint(w, "Disallow: /\n")

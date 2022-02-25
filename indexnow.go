@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 
@@ -43,7 +42,7 @@ func (a *goBlog) indexNowEnabled() bool {
 }
 
 func (a *goBlog) serveIndexNow(w http.ResponseWriter, r *http.Request) {
-	_, _ = io.WriteString(w, a.indexNowKey())
+	_, _ = w.Write(a.indexNowKey())
 }
 
 func (a *goBlog) indexNow(url string) {
@@ -51,7 +50,7 @@ func (a *goBlog) indexNow(url string) {
 		return
 	}
 	key := a.indexNowKey()
-	if key == "" {
+	if len(key) == 0 {
 		log.Println("Skipping IndexNow")
 		return
 	}
@@ -59,7 +58,7 @@ func (a *goBlog) indexNow(url string) {
 		Client(a.httpClient).
 		UserAgent(appUserAgent).
 		Param("url", url).
-		Param("key", key).
+		Param("key", string(key)).
 		Fetch(context.Background())
 	if err != nil {
 		log.Println("Sending IndexNow request failed:", err.Error())
@@ -69,17 +68,13 @@ func (a *goBlog) indexNow(url string) {
 	}
 }
 
-func (a *goBlog) indexNowKey() string {
-	res, _, _ := a.inLoad.Do("", func() (interface{}, error) {
-		// Check if already loaded
-		if a.inKey != "" {
-			return a.inKey, nil
-		}
+func (a *goBlog) indexNowKey() []byte {
+	a.inLoad.Do(func() {
 		// Try to load key from database
 		keyBytes, err := a.db.retrievePersistentCache("indexnowkey")
 		if err != nil {
 			log.Println("Failed to retrieve cached IndexNow key:", err.Error())
-			return "", err
+			return
 		}
 		if keyBytes == nil {
 			// Generate 128 character key with hexadecimal characters
@@ -88,11 +83,10 @@ func (a *goBlog) indexNowKey() string {
 			err = a.db.cachePersistently("indexnowkey", keyBytes)
 			if err != nil {
 				log.Println("Failed to cache IndexNow key:", err.Error())
-				return "", err
+				return
 			}
 		}
-		a.inKey = string(keyBytes)
-		return a.inKey, nil
+		a.inKey = keyBytes
 	})
-	return res.(string)
+	return a.inKey
 }

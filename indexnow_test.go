@@ -29,13 +29,13 @@ func Test_indexNow(t *testing.T) {
 
 	// Check key
 	require.NotEmpty(t, app.inKey)
-	req, _ := http.NewRequestWithContext(context.Background(), "GET", "http://localhost:8080/"+app.inKey+".txt", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "http://localhost:8080/"+string(app.inKey)+".txt", nil)
 	res, err := doHandlerRequest(req, app.d)
 	require.NoError(t, err)
 	require.Equal(t, 200, res.StatusCode)
 	body, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
-	require.Equal(t, app.inKey, string(body))
+	require.Equal(t, app.inKey, body)
 
 	// Test publish post
 	_ = app.createPost(&post{
@@ -54,5 +54,5 @@ func Test_indexNow(t *testing.T) {
 	fc.mu.Unlock()
 
 	// Check fake http client
-	require.Equal(t, "https://api.indexnow.org/indexnow?key="+app.inKey+"&url=http%3A%2F%2Flocalhost%3A8080%2Ftestpost", fc.req.URL.String())
+	require.Equal(t, "https://api.indexnow.org/indexnow?key="+string(app.inKey)+"&url=http%3A%2F%2Flocalhost%3A8080%2Ftestpost", fc.req.URL.String())
 }

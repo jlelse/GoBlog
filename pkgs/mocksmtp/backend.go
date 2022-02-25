@@ -60,8 +60,8 @@ func (s *session) Data(r io.Reader) error {
 	return nil
 }
 
-func (s *session) Reset() {}
+func (*session) Reset() {}
 
-func (s *session) Logout() error {
+func (*session) Logout() error {
 	return nil
 }

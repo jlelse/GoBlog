@@ -13,7 +13,7 @@ const (
 	mediaFileRoute = `/{file:[0-9a-fA-F]+(\.[0-9a-zA-Z]+)?}`
 )
 
-func (a *goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
+func (*goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 	f := filepath.Join(mediaFilePath, chi.URLParam(r, "file"))
 	_, err := os.Stat(f)
 	if err != nil {

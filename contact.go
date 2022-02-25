@@ -71,7 +71,7 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
+func (*goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
 	// Check required config
 	if cc == nil || cc.SMTPHost == "" || cc.EmailFrom == "" || cc.EmailTo == "" {
 		return fmt.Errorf("email not send as config is missing")

@@ -47,7 +47,7 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	_ = r.Body.Close()
 	// Get file extension
 	fileExtension := filepath.Ext(header.Filename)
-	if len(fileExtension) == 0 {
+	if fileExtension == "" {
 		// Find correct file extension if original filename does not contain one
 		mimeType := header.Header.Get(contentType)
 		if len(mimeType) > 0 {

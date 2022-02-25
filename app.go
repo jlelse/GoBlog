@@ -54,8 +54,8 @@ type goBlog struct {
 	// HTTP Routers
 	d http.Handler
 	// IndexNow
-	inKey  string
-	inLoad singleflight.Group
+	inKey  []byte
+	inLoad sync.Once
 	// IndieAuth
 	ias *indieauth.Server
 	// Logs

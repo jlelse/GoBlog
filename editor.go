@@ -176,7 +176,7 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 	_ = result.Body.Close()
 }
 
-func (a *goBlog) editorPostTemplate(blog string, bc *configBlog) string {
+func (*goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 	builder := bufferpool.Get()
 	defer bufferpool.Put(builder)
 	marsh := func(param string, i interface{}) {

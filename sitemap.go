@@ -20,7 +20,7 @@ const (
 	sitemapBlogPostsPath    = "/sitemap-blog-posts.xml"
 )
 
-func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveSitemap(w http.ResponseWriter, _ *http.Request) {
 	// Create sitemap
 	sm := sitemap.NewSitemapIndex()
 	// Add blog sitemap indices

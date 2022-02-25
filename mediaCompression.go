@@ -149,7 +149,7 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 
 type cloudflare struct{}
 
-func (cf *cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
+func (*cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
 	// Check url
 	if _, allowed := urlHasExt(url, "jpg", "jpeg", "png"); !allowed {
 		return "", nil
