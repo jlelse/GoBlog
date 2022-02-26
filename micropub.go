@@ -8,35 +8,29 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/cast"
 	"github.com/thoas/go-funk"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
 
 const micropubPath = "/micropub"
 
-type micropubConfig struct {
-	MediaEndpoint string `json:"media-endpoint,omitempty"`
-}
-
 func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Query().Get("q") {
+	var result interface{}
+	switch query := r.URL.Query(); query.Get("q") {
 	case "config":
-		w.Header().Set(contentType, contenttype.JSONUTF8)
-		mw := a.min.Writer(contenttype.JSON, w)
-		defer mw.Close()
-		_ = json.NewEncoder(mw).Encode(&micropubConfig{
-			MediaEndpoint: a.getFullAddress(micropubPath + micropubMediaSubPath),
-		})
+		type micropubConfig struct {
+			MediaEndpoint string `json:"media-endpoint"`
+		}
+		result = micropubConfig{MediaEndpoint: a.getFullAddress(micropubPath + micropubMediaSubPath)}
 	case "source":
-		var mf interface{}
-		if urlString := r.URL.Query().Get("url"); urlString != "" {
-			u, err := url.Parse(r.URL.Query().Get("url"))
+		if urlString := query.Get("url"); urlString != "" {
+			u, err := url.Parse(query.Get("url"))
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
@@ -46,13 +40,11 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			mf = a.postToMfItem(p)
+			result = a.postToMfItem(p)
 		} else {
-			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-			offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 			posts, err := a.getPosts(&postsRequestConfig{
-				limit:  limit,
-				offset: offset,
+				limit:  stringToInt(query.Get("limit")),
+				offset: stringToInt(query.Get("offset")),
 			})
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -62,12 +54,8 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			for _, p := range posts {
 				list["items"] = append(list["items"], a.postToMfItem(p))
 			}
-			mf = list
+			result = list
 		}
-		w.Header().Set(contentType, contenttype.JSONUTF8)
-		mw := a.min.Writer(contenttype.JSON, w)
-		defer mw.Close()
-		_ = json.NewEncoder(mw).Encode(mf)
 	case "category":
 		allCategories := []string{}
 		for blog := range a.cfg.Blogs {
@@ -78,22 +66,28 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			allCategories = append(allCategories, values...)
 		}
-		w.Header().Set(contentType, contenttype.JSONUTF8)
-		mw := a.min.Writer(contenttype.JSON, w)
-		defer mw.Close()
-		_ = json.NewEncoder(mw).Encode(map[string]interface{}{
-			"categories": allCategories,
-		})
+		result = map[string]interface{}{"categories": allCategories}
 	default:
 		a.serve404(w, r)
+		return
 	}
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	mw := a.min.Writer(contenttype.JSON, buf)
+	err := json.NewEncoder(mw).Encode(result)
+	_ = mw.Close()
+	if err != nil {
+		a.serveError(w, r, "Failed to encode json", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = buf.WriteTo(w)
 }
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	switch mt, _, _ := mime.ParseMediaType(r.Header.Get(contentType)); mt {
 	case contenttype.WWWForm, contenttype.MultipartForm:
-		_ = r.ParseForm()
 		_ = r.ParseMultipartForm(0)
 		if r.Form == nil {
 			a.serveError(w, r, "Failed to parse form", http.StatusBadRequest)
@@ -442,9 +436,16 @@ func (a *goBlog) micropubCreatePostFromJson(w http.ResponseWriter, r *http.Reque
 	a.micropubCreate(w, r, p)
 }
 
+func (a *goBlog) micropubCheckScope(w http.ResponseWriter, r *http.Request, required string) bool {
+	if !strings.Contains(r.Context().Value(indieAuthScope).(string), required) {
+		a.serveError(w, r, required+" scope missing", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 func (a *goBlog) micropubCreate(w http.ResponseWriter, r *http.Request, p *post) {
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "create") {
-		a.serveError(w, r, "create scope missing", http.StatusForbidden)
+	if !a.micropubCheckScope(w, r, "create") {
 		return
 	}
 	if err := a.computeExtraPostParameters(p); err != nil {
@@ -459,8 +460,7 @@ func (a *goBlog) micropubCreate(w http.ResponseWriter, r *http.Request, p *post)
 }
 
 func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u string) {
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "delete") {
-		a.serveError(w, r, "delete scope missing", http.StatusForbidden)
+	if !a.micropubCheckScope(w, r, "delete") {
 		return
 	}
 	uu, err := url.Parse(u)
@@ -476,8 +476,7 @@ func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u string
 }
 
 func (a *goBlog) micropubUndelete(w http.ResponseWriter, r *http.Request, u string) {
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "undelete") {
-		a.serveError(w, r, "undelete scope missing", http.StatusForbidden)
+	if !a.micropubCheckScope(w, r, "undelete") {
 		return
 	}
 	uu, err := url.Parse(u)
@@ -493,8 +492,7 @@ func (a *goBlog) micropubUndelete(w http.ResponseWriter, r *http.Request, u stri
 }
 
 func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string, mf *microformatItem) {
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "update") {
-		a.serveError(w, r, "update scope missing", http.StatusForbidden)
+	if !a.micropubCheckScope(w, r, "update") {
 		return
 	}
 	uu, err := url.Parse(u)

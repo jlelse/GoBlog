@@ -17,14 +17,14 @@ func initGC() {
 }
 
 func doGC() {
-	var old, new runtime.MemStats
-	runtime.ReadMemStats(&old)
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
 	runtime.GC()
-	runtime.ReadMemStats(&new)
+	runtime.ReadMemStats(&after)
 	log.Println(fmt.Sprintf(
 		"\nAlloc: %d MiB -> %d MiB\nSys: %d MiB -> %d MiB\nNumGC: %d",
-		old.Alloc/1024/1024, new.Alloc/1024/1024,
-		old.Sys/1024/1024, new.Sys/1024/1024,
-		new.NumGC,
+		before.Alloc/1024/1024, after.Alloc/1024/1024,
+		before.Sys/1024/1024, after.Sys/1024/1024,
+		after.NumGC,
 	))
 }

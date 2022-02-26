@@ -38,7 +38,6 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data interface{}
 }
 
 func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
-	pageNo, _ := strconv.Atoi(chi.URLParam(r, "page"))
 	var status webmentionStatus = ""
 	switch webmentionStatus(r.URL.Query().Get("status")) {
 	case webmentionStatusVerified:
@@ -51,7 +50,7 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		status:     status,
 		sourcelike: sourcelike,
 	}, db: a.db}, 5)
-	p.SetPage(pageNo)
+	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var mentions []*mention
 	err := p.Results(&mentions)
 	if err != nil {

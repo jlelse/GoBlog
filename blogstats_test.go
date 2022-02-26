@@ -112,14 +112,12 @@ func Test_blogStats(t *testing.T) {
 	// Test HTML
 
 	t.Run("Test stats table", func(t *testing.T) {
-		h := http.HandlerFunc(app.serveBlogStatsTable)
-
 		req := httptest.NewRequest(http.MethodGet, "/abc", nil)
 		req = req.WithContext(context.WithValue(req.Context(), blogKey, "en"))
 
 		rec := httptest.NewRecorder()
 
-		h(rec, req)
+		app.serveBlogStatsTable(rec, req)
 
 		res := rec.Result()
 		resBody, _ := io.ReadAll(res.Body)
@@ -132,14 +130,12 @@ func Test_blogStats(t *testing.T) {
 	})
 
 	t.Run("Test stats page", func(t *testing.T) {
-		h := http.HandlerFunc(app.serveBlogStats)
-
 		req := httptest.NewRequest(http.MethodGet, "/abc", nil)
 		req = req.WithContext(context.WithValue(req.Context(), blogKey, "en"))
 
 		rec := httptest.NewRecorder()
 
-		h(rec, req)
+		app.serveBlogStats(rec, req)
 
 		res := rec.Result()
 		resBody, _ := io.ReadAll(res.Body)

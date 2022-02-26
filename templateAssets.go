@@ -122,9 +122,5 @@ func (a *goBlog) initChromaCSS() error {
 	if err != nil {
 		return err
 	}
-	err = a.compileAsset(chromaPath, buf)
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.compileAsset(chromaPath, buf)
 }

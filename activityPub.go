@@ -164,54 +164,44 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case "Follow":
 		a.apAccept(blogName, blog, activity)
 	case "Undo":
-		{
-			if object, ok := activity["object"].(map[string]interface{}); ok {
-				ot := cast.ToString(object["type"])
-				actor := cast.ToString(object["actor"])
-				if ot == "Follow" && actor == activityActor {
-					_ = a.db.apRemoveFollower(blogName, activityActor)
-				}
+		if object, ok := activity["object"].(map[string]interface{}); ok {
+			ot := cast.ToString(object["type"])
+			actor := cast.ToString(object["actor"])
+			if ot == "Follow" && actor == activityActor {
+				_ = a.db.apRemoveFollower(blogName, activityActor)
 			}
 		}
 	case "Create":
-		{
-			if object, ok := activity["object"].(map[string]interface{}); ok {
-				baseUrl := cast.ToString(object["id"])
-				if ou := cast.ToString(object["url"]); ou != "" {
-					baseUrl = ou
-				}
-				if r := cast.ToString(object["inReplyTo"]); r != "" && baseUrl != "" && strings.HasPrefix(r, blogIri) {
-					// It's an ActivityPub reply; save reply as webmention
-					_ = a.createWebmention(baseUrl, r)
-				} else if content := cast.ToString(object["content"]); content != "" && baseUrl != "" {
-					// May be a mention; find links to blog and save them as webmentions
-					if links, err := allLinksFromHTMLString(content, baseUrl); err == nil {
-						for _, link := range links {
-							if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
-								_ = a.createWebmention(baseUrl, link)
-							}
+		if object, ok := activity["object"].(map[string]interface{}); ok {
+			baseUrl := cast.ToString(object["id"])
+			if ou := cast.ToString(object["url"]); ou != "" {
+				baseUrl = ou
+			}
+			if r := cast.ToString(object["inReplyTo"]); r != "" && baseUrl != "" && strings.HasPrefix(r, blogIri) {
+				// It's an ActivityPub reply; save reply as webmention
+				_ = a.createWebmention(baseUrl, r)
+			} else if content := cast.ToString(object["content"]); content != "" && baseUrl != "" {
+				// May be a mention; find links to blog and save them as webmentions
+				if links, err := allLinksFromHTMLString(content, baseUrl); err == nil {
+					for _, link := range links {
+						if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
+							_ = a.createWebmention(baseUrl, link)
 						}
 					}
 				}
 			}
 		}
 	case "Delete", "Block":
-		{
-			if o := cast.ToString(activity["object"]); o == activityActor {
-				_ = a.db.apRemoveFollower(blogName, activityActor)
-			}
+		if o := cast.ToString(activity["object"]); o == activityActor {
+			_ = a.db.apRemoveFollower(blogName, activityActor)
 		}
 	case "Like":
-		{
-			if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
-				a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, o))
-			}
+		if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
+			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, o))
 		}
 	case "Announce":
-		{
-			if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
-				a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, o))
-			}
+		if o := cast.ToString(activity["object"]); o != "" && strings.HasPrefix(o, blogIri) {
+			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, o))
 		}
 	}
 	// Return 200

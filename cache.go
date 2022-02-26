@@ -68,12 +68,10 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 		if cli, ok := r.Context().Value(cacheLoggedInKey).(bool); ok && cli {
 			// Continue caching, but remove login
 			setLoggedIn(r, false)
-		} else {
-			if a.isLoggedIn(r) {
-				// Don't cache logged in requests
-				next.ServeHTTP(w, r)
-				return
-			}
+		} else if a.isLoggedIn(r) {
+			// Don't cache logged in requests
+			next.ServeHTTP(w, r)
+			return
 		}
 		// Search and serve cache
 		key := cacheKey(r)

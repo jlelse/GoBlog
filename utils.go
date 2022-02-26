@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -211,9 +212,7 @@ func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
 		return "", false
 	}
 	ext = ext[1:]
-	allowed = funk.Map(allowed, func(str string) string {
-		return strings.ToLower(str)
-	}).([]string)
+	allowed = funk.Map(allowed, strings.ToLower).([]string)
 	return ext, funk.ContainsString(allowed, strings.ToLower(ext))
 }
 
@@ -374,4 +373,9 @@ func matchTimeDiffLocale(lang string) tdl.Locale {
 	locale := tdl.Locale(supportedLangs[idx])
 	timeDiffLocaleMap[lang] = locale
 	return locale
+}
+
+func stringToInt(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
 }

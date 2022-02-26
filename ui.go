@@ -471,21 +471,13 @@ func (a *goBlog) renderBlogStatsTable(hb *htmlBuilder, rd *renderData) {
 	hb.writeElementOpen("th", "class", "tar")
 	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "posts"))
 	hb.writeElementClose("th")
-	// Chars
-	hb.writeElementOpen("th", "class", "tar")
-	hb.write("~")
-	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "chars"))
-	hb.writeElementClose("th")
-	// Words
-	hb.writeElementOpen("th", "class", "tar")
-	hb.write("~")
-	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "words"))
-	hb.writeElementClose("th")
-	// Words/post
-	hb.writeElementOpen("th", "class", "tar")
-	hb.write("~")
-	hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "wordsperpost"))
-	hb.writeElementClose("th")
+	// Chars, Words, Words/Post
+	for _, s := range []string{"chars", "words", "wordsperpost"} {
+		hb.writeElementOpen("th", "class", "tar")
+		hb.write("~")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, s))
+		hb.writeElementClose("th")
+	}
 	hb.writeElementClose("thead")
 	// Table body
 	hb.writeElementOpen("tbody")

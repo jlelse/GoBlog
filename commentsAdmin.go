@@ -37,10 +37,8 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) 
 func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 	commentsPath := r.Context().Value(pathKey).(string)
 	// Adapter
-	pageNoString := chi.URLParam(r, "page")
-	pageNo, _ := strconv.Atoi(pageNoString)
 	p := paginator.New(&commentsPaginationAdapter{config: &commentsRequestConfig{}, db: a.db}, 5)
-	p.SetPage(pageNo)
+	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var comments []*comment
 	err := p.Results(&comments)
 	if err != nil {

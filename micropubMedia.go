@@ -17,8 +17,7 @@ const micropubMediaSubPath = "/media"
 
 func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	// Check scope
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), "media") {
-		a.serveError(w, r, "media scope missing", http.StatusForbidden)
+	if !a.micropubCheckScope(w, r, "media") {
 		return
 	}
 	// Check if request is multipart

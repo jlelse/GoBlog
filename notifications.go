@@ -122,10 +122,8 @@ func (p *notificationsPaginationAdapter) Slice(offset, length int, data interfac
 
 func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	// Adapter
-	pageNoString := chi.URLParam(r, "page")
-	pageNo, _ := strconv.Atoi(pageNoString)
 	p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}, db: a.db}, 10)
-	p.SetPage(pageNo)
+	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var notifications []*notification
 	err := p.Results(&notifications)
 	if err != nil {

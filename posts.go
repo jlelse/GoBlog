@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -202,13 +201,13 @@ func (a *goBlog) serveDeleted(w http.ResponseWriter, r *http.Request) {
 func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 	var year, month, day int
 	if ys := chi.URLParam(r, "year"); ys != "" && ys != "x" {
-		year, _ = strconv.Atoi(ys)
+		year = stringToInt(ys)
 	}
 	if ms := chi.URLParam(r, "month"); ms != "" && ms != "x" {
-		month, _ = strconv.Atoi(ms)
+		month = stringToInt(ms)
 	}
 	if ds := chi.URLParam(r, "day"); ds != "" {
-		day, _ = strconv.Atoi(ds)
+		day = stringToInt(ds)
 	}
 	if year == 0 && month == 0 && day == 0 {
 		a.serve404(w, r)
@@ -270,8 +269,6 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		// Decode and sanitize search
 		search = cleanHTMLText(searchDecode(search))
 	}
-	pageNoString := chi.URLParam(r, "page")
-	pageNo, _ := strconv.Atoi(pageNoString)
 	var sections []string
 	if ic.section != nil {
 		sections = []string{ic.section.Name}
@@ -300,7 +297,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		statusse:       statusse,
 		priorityOrder:  true,
 	}, a: a}, bc.Pagination)
-	p.SetPage(pageNo)
+	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var posts []*post
 	err := p.Results(&posts)
 	if err != nil {

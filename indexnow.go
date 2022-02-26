@@ -41,7 +41,7 @@ func (a *goBlog) indexNowEnabled() bool {
 	return true
 }
 
-func (a *goBlog) serveIndexNow(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveIndexNow(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(a.indexNowKey())
 }
 

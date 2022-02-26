@@ -37,3 +37,5 @@ linters-settings:
   gostatichcheck:
     go: "1.17"
     checks: ["all"]
+  dupl:
+    threshold: 125
