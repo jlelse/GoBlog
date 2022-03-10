@@ -105,6 +105,12 @@ mark, :not(pre) > code {
   font-size: 1rem;
 }
 
+/* Initial values for Chroma */
+.c-chroma {
+  background: #fff;
+  color: #000;
+}
+
 code {
   font-family: monospace;
 }

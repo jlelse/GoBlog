@@ -147,6 +147,12 @@ mark, :not(pre) > code {
   @extend .invert;
 }
 
+/* Initial values for Chroma */
+.c-chroma {
+  background: #fff;
+  color: #000;
+}
+
 code {
   font-family: monospace;
 }

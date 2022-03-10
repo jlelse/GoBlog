@@ -5,10 +5,8 @@ import (
 	"io"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
-	chromahtml "github.com/alecthomas/chroma/formatters/html"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
-	highlighting "github.com/yuin/goldmark-highlighting"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -16,6 +14,7 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/highlighting"
 )
 
 func (a *goBlog) initMarkdown() {
@@ -38,13 +37,7 @@ func (a *goBlog) initMarkdown() {
 			extension.Linkify,
 			marktag.Mark,
 			emoji.Emoji,
-			highlighting.NewHighlighting(
-				highlighting.WithCustomStyle(chromaGoBlogStyle),
-				highlighting.WithFormatOptions(
-					chromahtml.ClassPrefix("c-"),
-					chromahtml.WithClasses(true),
-				),
-			),
+			highlighting.Highlighting,
 		),
 	}
 	publicAddress := ""

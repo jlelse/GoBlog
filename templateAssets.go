@@ -14,6 +14,7 @@ import (
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/highlighting"
 )
 
 const assetsFolder = "templates/assets"
@@ -111,7 +112,7 @@ func (a *goBlog) initChromaCSS() error {
 		return nil
 	}
 	// Initialize the style
-	chromaStyle, err := chromaGoBlogStyle.Builder().Build()
+	chromaStyle, err := highlighting.Style.Builder().Build()
 	if err != nil {
 		return err
 	}
