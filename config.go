@@ -44,6 +44,7 @@ type configServer struct {
 	TailscaleHTTPS      bool             `mapstructure:"tailscaleHttps"`
 	Tailscale           *configTailscale `mapstructure:"tailscale"`
 	Tor                 bool             `mapstructure:"tor"`
+	TorSingleHop        bool             `mapstructure:"torSingleHop"`
 	SecurityHeaders     bool             `mapstructure:"securityHeaders"`
 	CSPDomains          []string         `mapstructure:"cspDomains"`
 	publicHostname      string

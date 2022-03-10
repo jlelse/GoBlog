@@ -2,6 +2,14 @@
 # Until there's an official release configuration may change
 # Keep a look at the commit history
 
+# Debug
+debug: true # Enable more verbose logging
+
+# Pprof - Option to enable pprof profiling
+pprof:
+  enabled: true # Enable pprof profiling
+  address: ":6060" # Address to listen on
+
 # Database
 database:
   file: data/db.sqlite # File for the SQLite database
@@ -25,6 +33,7 @@ server:
   - media.example.com
   # Tor
   tor: true # Publish onion service, requires Tor to be installed and available in path
+  torSingleHop: true # Enable single hop mode (non-anonymous)
   # Tailscale (see https://tailscale.com)
   tailscaleHttps: true # Use an Let's Encrypt certificate from Tailscale (see https://goblog.app/s/7), requires publicHttps to be disabled
   tailscale:

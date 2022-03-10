@@ -41,3 +41,7 @@ There's also the possibility to configure GoBlog to use Google Cloud's Text-to-S
 On receiving a webmention, a new comment or a contact form submission, GoBlog will create a new notification. Notifications are displayed on `/notifications` and can be deleted by the user.
 
 If configured, GoBlog will also send a notification using a Telegram Bot or [Ntfy.sh](https://ntfy.sh/). See the `example-config.yml` file for how to configure the notification providers.
+
+## Tor Hidden Services
+
+GoBlog can be configured to provide a Tor Hidden Service. This is useful if you want to offer your visitors a way to connect to your blog from censored networks or countries. See the `example-config.yml` file for how to enable the Tor Hidden Service. If you don't need to hide your server, you can enable the Single Hop mode.

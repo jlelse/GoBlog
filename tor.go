@@ -29,32 +29,16 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		return err
 	}
 	// Initialize private key
-	torKeyPath := filepath.Join(torDataPath, "onion.pk")
-	var torKey crypto.PrivateKey
-	if _, err := os.Stat(torKeyPath); os.IsNotExist(err) {
-		_, torKey, err = ed25519.GenerateKey(nil)
-		if err != nil {
-			return err
-		}
-		x509Encoded, err := x509.MarshalPKCS8PrivateKey(torKey)
-		if err != nil {
-			return err
-		}
-		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-		_ = os.WriteFile(torKeyPath, pemEncoded, 0600)
-	} else {
-		d, _ := os.ReadFile(torKeyPath)
-		block, _ := pem.Decode(d)
-		x509Encoded := block.Bytes
-		torKey, err = x509.ParsePKCS8PrivateKey(x509Encoded)
-		if err != nil {
-			return err
-		}
+	torKey, err := a.createTorPrivateKey(torDataPath)
+	if err != nil {
+		return err
 	}
-	// Start tor with default config (can set start conf's DebugWriter to os.Stdout for debug logs)
+	// Start tor
 	log.Println("Starting and registering onion service, please wait a couple of minutes...")
 	t, err := tor.Start(context.Background(), &tor.StartConf{
 		TempDataDirBase: os.TempDir(),
+		NoAutoSocksPort: true,
+		ExtraArgs:       a.torExtraArgs(),
 	})
 	if err != nil {
 		return err
@@ -65,9 +49,10 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	defer listenCancel()
 	// Create a v3 onion service to listen on any port but show as 80
 	onion, err := t.Listen(listenCtx, &tor.ListenConf{
-		Version3:    true,
-		Key:         torKey,
-		RemotePorts: []int{80},
+		Version3:     true,
+		Key:          torKey,
+		RemotePorts:  []int{80},
+		NonAnonymous: a.cfg.Server.TorSingleHop,
 	})
 	if err != nil {
 		return err
@@ -90,4 +75,43 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		return err
 	}
 	return nil
+}
+
+func (a *goBlog) createTorPrivateKey(torDataPath string) (crypto.PrivateKey, error) {
+	torKeyPath := filepath.Join(torDataPath, "onion.pk")
+	var torKey crypto.PrivateKey
+	if _, err := os.Stat(torKeyPath); os.IsNotExist(err) {
+		// Tor private key not found, create it
+		_, torKey, err = ed25519.GenerateKey(nil)
+		if err != nil {
+			return nil, err
+		}
+		x509Encoded, err := x509.MarshalPKCS8PrivateKey(torKey)
+		if err != nil {
+			return nil, err
+		}
+		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
+		err = os.WriteFile(torKeyPath, pemEncoded, 0600)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Tor private key found, load it
+		d, _ := os.ReadFile(torKeyPath)
+		block, _ := pem.Decode(d)
+		x509Encoded := block.Bytes
+		torKey, err = x509.ParsePKCS8PrivateKey(x509Encoded)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return torKey, nil
+}
+
+func (a *goBlog) torExtraArgs() []string {
+	s := []string{"--SocksPort", "0"}
+	if a.cfg.Server.TorSingleHop {
+		s = append(s, "--HiddenServiceNonAnonymousMode", "1", "--HiddenServiceSingleHopMode", "1")
+	}
+	return s
 }
