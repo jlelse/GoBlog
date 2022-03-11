@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
@@ -17,15 +18,15 @@ import (
 
 type database struct {
 	// Basic things
-	db *sql.DB            // database
-	em sync.Mutex         // command execution (insert, update, delete ...)
-	sg singleflight.Group // singleflight group for prepared statements
-	ps sync.Map           // map with prepared statements
+	db  *sql.DB            // database
+	em  sync.Mutex         // command execution (insert, update, delete ...)
+	sg  singleflight.Group // singleflight group for prepared statements
+	psc *ristretto.Cache   // prepared statement cache
 	// Other things
 	pc    singleflight.Group // persistant cache
 	pcm   sync.Mutex         // post creation
 	sp    singleflight.Group // singleflight group for short path requests
-	spc   sync.Map           // shortpath cache
+	spc   *ristretto.Cache   // shortpath cache
 	debug bool
 }
 
@@ -120,9 +121,29 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if c := a.cfg.Db; c != nil && c.Debug {
 		debug = true
 	}
+	psc, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters:        1000,
+		MaxCost:            100,
+		BufferItems:        64,
+		IgnoreInternalCost: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	spc, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters:        5000,
+		MaxCost:            500,
+		BufferItems:        64,
+		IgnoreInternalCost: true,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &database{
 		db:    db,
 		debug: debug,
+		psc:   psc,
+		spc:   spc,
 	}, nil
 }
 
@@ -162,7 +183,7 @@ func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []int
 	}
 	stmt, err, _ := db.sg.Do(query, func() (interface{}, error) {
 		// Look if statement already exists
-		st, ok := db.ps.Load(query)
+		st, ok := db.psc.Get(query)
 		if ok {
 			return st, nil
 		}
@@ -172,7 +193,7 @@ func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []int
 			return nil, err
 		}
 		// ... and store it
-		db.ps.Store(query, st)
+		db.psc.Set(query, st, 1)
 		return st, nil
 	})
 	if err != nil {

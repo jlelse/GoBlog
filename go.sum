@@ -253,8 +253,8 @@ github.com/insomniacslk/dhcp v0.0.0-20211026125128-ad197bcd36fd h1:jupbuQFZtwOBg
 github.com/insomniacslk/dhcp v0.0.0-20211026125128-ad197bcd36fd/go.mod h1:h+MxyHxRg9NH3terB1nfRIUaQEcI0XOVkdR9LNBlp8E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jlaffaye/ftp v0.0.0-20220309012535-813c8a838452 h1:kqK7woZfi4Y1sIrKu2QxKWa7uDwi1pMeRAzLWG5bWag=
-github.com/jlaffaye/ftp v0.0.0-20220309012535-813c8a838452/go.mod h1:oZaomI+9/et52UBjvNU9LCIqmgt816+7ljXCx0EIPzo=
+github.com/jlaffaye/ftp v0.0.0-20220310202011-d2c44e311e78 h1:urWv38lDLjDRk5fG9P8vvxlfpQXaKtRlZc+QLKk3FRA=
+github.com/jlaffaye/ftp v0.0.0-20220310202011-d2c44e311e78/go.mod h1:oZaomI+9/et52UBjvNU9LCIqmgt816+7ljXCx0EIPzo=
 github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4 h1:d2oKwfgLl3ef0PyYDkzjsVyYlBZzNpOpXitDraOnVXc=
 github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4/go.mod h1:vt0iOV52/wq97Ql/jp7mUkqyrlEiGQuhHic4bVoHy0c=
 github.com/joeshaw/gengen v0.0.0-20190604015154-c77d87825f5a/go.mod h1:v2qvRL8Xwk4OlARK6gPlf2JreZXzv0dYp/8+kUJ0y7Q=
@@ -288,8 +288,8 @@ github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9 h1:+9REu9CK9D1AQ
 github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9/go.mod h1:OvY5ZBrAC9kOvM2PZs9Lw0BH+5K7tjrT6T7SFhn27OA=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.10.3/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
-github.com/klauspost/compress v1.15.0 h1:xqfchp4whNFxn5A4XFyyYtitiWI8Hy5EW59jEwcyL6U=
-github.com/klauspost/compress v1.15.0/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
+github.com/klauspost/compress v1.15.1 h1:y9FcTHGyrebwfP0ZZqFiaxTaiDnUrGkJkI+f583BL1A=
+github.com/klauspost/compress v1.15.1/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=

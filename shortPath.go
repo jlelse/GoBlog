@@ -13,7 +13,7 @@ func (db *database) shortenPath(p string) (string, error) {
 	}
 	spi, err, _ := db.sp.Do(p, func() (interface{}, error) {
 		// Check if already cached
-		if spi, ok := db.spc.Load(p); ok {
+		if spi, ok := db.spc.Get(p); ok {
 			return spi.(string), nil
 		}
 		// Insert in case it isn't shortened yet
@@ -41,7 +41,7 @@ func (db *database) shortenPath(p string) (string, error) {
 			return nil, err
 		}
 		// Cache result
-		db.spc.Store(p, sp)
+		db.spc.Set(p, sp, 1)
 		return sp, nil
 	})
 	if err != nil {
