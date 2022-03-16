@@ -172,7 +172,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	a.writeSitemapXML(w, sm)
 }
 
-func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm interface{}) {
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm any) {
 	w.Header().Set(contentType, contenttype.XMLUTF8)
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {

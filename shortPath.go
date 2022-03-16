@@ -11,7 +11,7 @@ func (db *database) shortenPath(p string) (string, error) {
 	if p == "" {
 		return "", errors.New("empty path")
 	}
-	spi, err, _ := db.sp.Do(p, func() (interface{}, error) {
+	spi, err, _ := db.sp.Do(p, func() (any, error) {
 		// Check if already cached
 		if spi, ok := db.spc.Get(p); ok {
 			return spi.(string), nil

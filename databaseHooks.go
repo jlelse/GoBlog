@@ -13,14 +13,14 @@ import (
 
 const dbHooksBegin contextKey = "begin"
 
-func (db *database) dbBefore(ctx context.Context, _ string, _ ...interface{}) context.Context {
+func (db *database) dbBefore(ctx context.Context, _ string, _ ...any) context.Context {
 	if !db.debug {
 		return ctx
 	}
 	return context.WithValue(ctx, dbHooksBegin, time.Now())
 }
 
-func (db *database) dbAfter(ctx context.Context, query string, args ...interface{}) {
+func (db *database) dbAfter(ctx context.Context, query string, args ...any) {
 	if !db.debug {
 		return
 	}
@@ -55,7 +55,7 @@ func (db *database) dbAfter(ctx context.Context, query string, args ...interface
 	bufferpool.Put(logBuilder)
 }
 
-func argToString(arg interface{}) string {
+func argToString(arg any) string {
 	val := cast.ToString(arg)
 	if val == "" {
 		val = fmt.Sprintf("%v", arg)

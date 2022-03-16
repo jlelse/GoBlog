@@ -67,7 +67,7 @@ func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http
 		URL("https://api.shortpixel.com/v2/reducer-sync.php").
 		Client(hc).
 		Method(http.MethodPost).
-		BodyJSON(map[string]interface{}{
+		BodyJSON(map[string]any{
 			"key":            sp.key,
 			"plugin_version": "GB001",
 			"lossy":          1,
@@ -106,8 +106,8 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		Client(hc).
 		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
-		BodyJSON(map[string]interface{}{
-			"source": map[string]interface{}{
+		BodyJSON(map[string]any{
+			"source": map[string]any{
 				"url": url,
 			},
 		}).
@@ -130,8 +130,8 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		Client(hc).
 		Method(http.MethodPost).
 		BasicAuth("api", tf.key).
-		BodyJSON(map[string]interface{}{
-			"resize": map[string]interface{}{
+		BodyJSON(map[string]any{
+			"resize": map[string]any{
 				"method": "fit",
 				"width":  defaultCompressionWidth,
 				"height": defaultCompressionHeight,

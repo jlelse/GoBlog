@@ -46,7 +46,7 @@ func Test_compress(t *testing.T) {
 			requestBody, _ := io.ReadAll(r.Body)
 			defer r.Body.Close()
 
-			var requestJson map[string]interface{}
+			var requestJson map[string]any
 			err := json.Unmarshal(requestBody, &requestJson)
 			require.Nil(t, err)
 			require.NotNil(t, requestJson)

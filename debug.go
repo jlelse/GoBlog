@@ -2,8 +2,8 @@ package main
 
 import "log"
 
-func (a *goBlog) debug(msg ...interface{}) {
+func (a *goBlog) debug(msg ...any) {
 	if a.cfg.Debug {
-		log.Println(append([]interface{}{"Debug:"}, msg...)...)
+		log.Println(append([]any{"Debug:"}, msg...)...)
 	}
 }

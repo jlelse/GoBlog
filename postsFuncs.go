@@ -211,7 +211,7 @@ func (a *goBlog) photoLinks(p *post) []string {
 }
 
 func (p *post) contentWithParams() string {
-	params := map[string]interface{}{}
+	params := map[string]any{}
 	for k, v := range p.Parameters {
 		if l := len(v); l == 1 {
 			params[k] = v[0]

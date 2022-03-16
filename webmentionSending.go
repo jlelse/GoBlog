@@ -12,7 +12,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 	"github.com/tomnomnom/linkheader"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -44,7 +44,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 	if mpc := a.cfg.Micropub; mpc != nil {
 		links = append(links, p.firstParameter(a.cfg.Micropub.LikeParam), p.firstParameter(a.cfg.Micropub.ReplyParam), p.firstParameter(a.cfg.Micropub.BookmarkParam))
 	}
-	for _, link := range funk.UniqString(links) {
+	for _, link := range lo.Uniq(links) {
 		if link == "" {
 			continue
 		}

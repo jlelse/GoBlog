@@ -32,7 +32,7 @@ func newConfig() *config {
 }
 
 // SetOption implements renderer.SetOptioner.
-func (c *config) SetOption(name renderer.OptionName, value interface{}) {
+func (c *config) SetOption(name renderer.OptionName, value any) {
 	c.Config.SetOption(name, value)
 }
 

@@ -89,7 +89,7 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	apIri := a.apIri(blog)
-	b, _ := json.Marshal(map[string]interface{}{
+	b, _ := json.Marshal(map[string]any{
 		"subject": a.webfingerAccts[apIri],
 		"aliases": []string{
 			a.webfingerAccts[apIri],
@@ -142,7 +142,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Parse activity
-	activity := map[string]interface{}{}
+	activity := map[string]any{}
 	err = json.NewDecoder(r.Body).Decode(&activity)
 	_ = r.Body.Close()
 	if err != nil {
@@ -164,7 +164,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case "Follow":
 		a.apAccept(blogName, blog, activity)
 	case "Undo":
-		if object, ok := activity["object"].(map[string]interface{}); ok {
+		if object, ok := activity["object"].(map[string]any); ok {
 			ot := cast.ToString(object["type"])
 			actor := cast.ToString(object["actor"])
 			if ot == "Follow" && actor == activityActor {
@@ -172,7 +172,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "Create":
-		if object, ok := activity["object"].(map[string]interface{}); ok {
+		if object, ok := activity["object"].(map[string]any); ok {
 			baseUrl := cast.ToString(object["id"])
 			if ou := cast.ToString(object["url"]); ou != "" {
 				baseUrl = ou
@@ -297,7 +297,7 @@ func (db *database) apRemoveInbox(inbox string) error {
 
 func (a *goBlog) apPost(p *post) {
 	n := a.toASNote(p)
-	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
+	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":        a.fullPostURL(p),
@@ -308,7 +308,7 @@ func (a *goBlog) apPost(p *post) {
 }
 
 func (a *goBlog) apUpdate(p *post) {
-	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
+	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
 		"id":        a.fullPostURL(p),
@@ -319,7 +319,7 @@ func (a *goBlog) apUpdate(p *post) {
 }
 
 func (a *goBlog) apDelete(p *post) {
-	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
+	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context": []string{asContext},
 		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
 		"type":     "Delete",
@@ -328,11 +328,11 @@ func (a *goBlog) apDelete(p *post) {
 }
 
 func (a *goBlog) apUndelete(p *post) {
-	a.apSendToAllFollowers(p.Blog, map[string]interface{}{
+	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context": []string{asContext},
 		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
 		"type":     "Undo",
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"@context": []string{asContext},
 			"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
 			"type":     "Delete",
@@ -341,7 +341,7 @@ func (a *goBlog) apUndelete(p *post) {
 	})
 }
 
-func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]interface{}) {
+func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]any) {
 	// it's a follow, write it down
 	newFollower := follow["actor"].(string)
 	log.Println("New follow request:", newFollower)
@@ -365,7 +365,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]i
 		return
 	}
 	// Send accept response to the new follower
-	accept := map[string]interface{}{
+	accept := map[string]any{
 		"@context": []string{asContext},
 		"type":     "Accept",
 		"to":       follow["actor"],
@@ -376,7 +376,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]i
 	_ = a.db.apQueueSendSigned(a.apIri(blog), inbox, accept)
 }
 
-func (a *goBlog) apSendToAllFollowers(blog string, activity interface{}) {
+func (a *goBlog) apSendToAllFollowers(blog string, activity any) {
 	inboxes, err := a.db.apGetAllInboxes(blog)
 	if err != nil {
 		log.Println("Failed to retrieve inboxes:", err.Error())
@@ -385,7 +385,7 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity interface{}) {
 	a.db.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes)
 }
 
-func (db *database) apSendTo(blogIri string, activity interface{}, inboxes []string) {
+func (db *database) apSendTo(blogIri string, activity any, inboxes []string) {
 	for _, i := range inboxes {
 		go func(inbox string) {
 			_ = db.apQueueSendSigned(blogIri, inbox, activity)

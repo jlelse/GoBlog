@@ -13,7 +13,7 @@ type renderData struct {
 	TorAddress                 string
 	Blog                       *configBlog
 	User                       *configUser
-	Data                       interface{}
+	Data                       any
 	CommentsEnabled            bool
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
@@ -91,6 +91,6 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	}
 	// Data
 	if data.Data == nil {
-		data.Data = map[string]interface{}{}
+		data.Data = map[string]any{}
 	}
 }

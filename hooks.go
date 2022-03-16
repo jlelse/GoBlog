@@ -25,7 +25,7 @@ func (a *goBlog) postPostHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostPost {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]interface{}{
+				a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -42,7 +42,7 @@ func (a *goBlog) postUpdateHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostUpdate {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]interface{}{
+				a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -58,7 +58,7 @@ func (a *goBlog) postDeleteHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostDelete {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]interface{}{
+				a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -74,7 +74,7 @@ func (a *goBlog) postUndeleteHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostUndelete {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-undelete", cmdTmplString, map[string]interface{}{
+				a.cfg.Hooks.executeTemplateCommand("post-undelete", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -86,7 +86,7 @@ func (a *goBlog) postUndeleteHooks(p *post) {
 	}
 }
 
-func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, data map[string]interface{}) {
+func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, data map[string]any) {
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {
 		log.Println("Failed to parse cmd template:", err.Error())

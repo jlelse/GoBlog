@@ -47,7 +47,7 @@ func (a *goBlog) initAPSendQueue() {
 	})
 }
 
-func (db *database) apQueueSendSigned(blogIri, to string, activity interface{}) error {
+func (db *database) apQueueSendSigned(blogIri, to string, activity any) error {
 	body, err := json.Marshal(activity)
 	if err != nil {
 		return err

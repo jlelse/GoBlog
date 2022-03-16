@@ -66,7 +66,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	sql.Register(dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions
-			for n, f := range map[string]interface{}{
+			for n, f := range map[string]any{
 				"mdtext":    a.renderText,
 				"tolocal":   toLocalSafe,
 				"toutc":     toUTCSafe,
@@ -174,14 +174,14 @@ func (db *database) close() error {
 	return db.db.Close()
 }
 
-func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []interface{}, error) {
+func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error) {
 	if db == nil || db.db == nil {
 		return nil, nil, errors.New("database not initialized")
 	}
 	if len(args) > 0 && args[0] == dbNoCache {
 		return nil, args[1:], nil
 	}
-	stmt, err, _ := db.sg.Do(query, func() (interface{}, error) {
+	stmt, err, _ := db.sg.Do(query, func() (any, error) {
 		// Look if statement already exists
 		st, ok := db.psc.Get(query)
 		if ok {
@@ -207,11 +207,11 @@ func (db *database) prepare(query string, args ...interface{}) (*sql.Stmt, []int
 
 const dbNoCache = "nocache"
 
-func (db *database) exec(query string, args ...interface{}) (sql.Result, error) {
+func (db *database) exec(query string, args ...any) (sql.Result, error) {
 	return db.execContext(context.Background(), query, args...)
 }
 
-func (db *database) execContext(c context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (db *database) execContext(c context.Context, query string, args ...any) (sql.Result, error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -230,11 +230,11 @@ func (db *database) execContext(c context.Context, query string, args ...interfa
 	return db.db.ExecContext(ctx, query, args...)
 }
 
-func (db *database) query(query string, args ...interface{}) (*sql.Rows, error) {
+func (db *database) query(query string, args ...any) (*sql.Rows, error) {
 	return db.queryContext(context.Background(), query, args...)
 }
 
-func (db *database) queryContext(c context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
+func (db *database) queryContext(c context.Context, query string, args ...any) (rows *sql.Rows, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -253,11 +253,11 @@ func (db *database) queryContext(c context.Context, query string, args ...interf
 	return
 }
 
-func (db *database) queryRow(query string, args ...interface{}) (*sql.Row, error) {
+func (db *database) queryRow(query string, args ...any) (*sql.Row, error) {
 	return db.queryRowContext(context.Background(), query, args...)
 }
 
-func (db *database) queryRowContext(c context.Context, query string, args ...interface{}) (row *sql.Row, err error) {
+func (db *database) queryRowContext(c context.Context, query string, args ...any) (row *sql.Row, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}

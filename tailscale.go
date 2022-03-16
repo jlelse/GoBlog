@@ -36,7 +36,7 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 		a.tss = &tsnet.Server{
 			Hostname: tsconfig.Hostname,
 			Dir:      tailscaleDir,
-			Logf: func(format string, args ...interface{}) {
+			Logf: func(format string, args ...any) {
 				log.Printf("tailscale: "+format, args...)
 			},
 		}

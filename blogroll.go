@@ -11,7 +11,7 @@ import (
 
 	"github.com/carlmjohnson/requests"
 	"github.com/kaorimatz/go-opml"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -20,7 +20,7 @@ const defaultBlogrollPath = "/blogroll"
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
-	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (any, error) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
@@ -43,7 +43,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
-	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (interface{}, error) {
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (any, error) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
@@ -91,9 +91,9 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	if len(config.Categories) > 0 {
 		filtered := []*opml.Outline{}
 		for _, category := range config.Categories {
-			if outline, ok := funk.Find(outlines, func(outline *opml.Outline) bool {
+			if outline, ok := lo.Find(outlines, func(outline *opml.Outline) bool {
 				return outline.Title == category || outline.Text == category
-			}).(*opml.Outline); ok && outline != nil {
+			}); ok && outline != nil {
 				outline.Outlines = sortOutlines(outline.Outlines)
 				filtered = append(filtered, outline)
 			}

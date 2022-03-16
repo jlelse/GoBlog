@@ -185,7 +185,7 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	}
 	hb := newHtmlBuilder(w)
 	hb.writeElementOpen("a", "href", dest)
-	imgEls := []interface{}{"src", dest, "alt", string(n.Text(source)), "loading", "lazy"}
+	imgEls := []any{"src", dest, "alt", string(n.Text(source)), "loading", "lazy"}
 	if len(n.Title) > 0 {
 		imgEls = append(imgEls, "title", string(n.Title))
 	}

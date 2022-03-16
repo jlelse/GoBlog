@@ -38,7 +38,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 }
 
 type asNote struct {
-	Context      interface{}     `json:"@context,omitempty"`
+	Context      any             `json:"@context,omitempty"`
 	To           []string        `json:"to,omitempty"`
 	InReplyTo    string          `json:"inReplyTo,omitempty"`
 	Name         string          `json:"name,omitempty"`
@@ -55,7 +55,7 @@ type asNote struct {
 }
 
 type asPerson struct {
-	Context           interface{}   `json:"@context,omitempty"`
+	Context           any           `json:"@context,omitempty"`
 	ID                string        `json:"id,omitempty"`
 	URL               string        `json:"url,omitempty"`
 	Type              string        `json:"type,omitempty"`

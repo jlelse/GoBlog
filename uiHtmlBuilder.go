@@ -36,7 +36,7 @@ func (h *htmlBuilder) writeEscaped(s string) {
 	textTemplate.HTMLEscape(h, []byte(s))
 }
 
-func (h *htmlBuilder) writeAttribute(attr string, val interface{}) {
+func (h *htmlBuilder) writeAttribute(attr string, val any) {
 	h.write(` `)
 	h.write(attr)
 	h.write(`=`)
@@ -49,7 +49,7 @@ func (h *htmlBuilder) writeAttribute(attr string, val interface{}) {
 	}
 }
 
-func (h *htmlBuilder) writeElementOpen(tag string, attrs ...interface{}) {
+func (h *htmlBuilder) writeElementOpen(tag string, attrs ...any) {
 	h.write(`<`)
 	h.write(tag)
 	for i := 0; i < len(attrs); i += 2 {

@@ -14,7 +14,7 @@ import (
 var dbMigrations embed.FS
 
 func migrateDb(db *sql.DB, logging bool) error {
-	var sqlMigrations []interface{}
+	var sqlMigrations []any
 	err := fs.WalkDir(dbMigrations, "dbmigrations", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.Type().IsDir() {
 			return err
@@ -39,7 +39,7 @@ func migrateDb(db *sql.DB, logging bool) error {
 		return err
 	}
 	m, err := migrator.New(
-		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...interface{}) {
+		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...any) {
 			if logging {
 				log.Printf(s, i)
 			}

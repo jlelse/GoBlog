@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"github.com/thoas/go-funk"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
@@ -21,7 +21,7 @@ import (
 const micropubPath = "/micropub"
 
 func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
-	var result interface{}
+	var result any
 	switch query := r.URL.Query(); query.Get("q") {
 	case "config":
 		type micropubConfig struct {
@@ -66,7 +66,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			}
 			allCategories = append(allCategories, values...)
 		}
-		result = map[string]interface{}{"categories": allCategories}
+		result = map[string]any{"categories": allCategories}
 	default:
 		a.serve404(w, r)
 		return
@@ -231,30 +231,30 @@ const (
 )
 
 type microformatItem struct {
-	Type       []string                 `json:"type,omitempty"`
-	URL        string                   `json:"url,omitempty"`
-	Action     micropubAction           `json:"action,omitempty"`
-	Properties *microformatProperties   `json:"properties,omitempty"`
-	Replace    map[string][]interface{} `json:"replace,omitempty"`
-	Add        map[string][]interface{} `json:"add,omitempty"`
-	Delete     interface{}              `json:"delete,omitempty"`
+	Type       []string               `json:"type,omitempty"`
+	URL        string                 `json:"url,omitempty"`
+	Action     micropubAction         `json:"action,omitempty"`
+	Properties *microformatProperties `json:"properties,omitempty"`
+	Replace    map[string][]any       `json:"replace,omitempty"`
+	Add        map[string][]any       `json:"add,omitempty"`
+	Delete     any                    `json:"delete,omitempty"`
 }
 
 type microformatProperties struct {
-	Name       []string      `json:"name,omitempty"`
-	Published  []string      `json:"published,omitempty"`
-	Updated    []string      `json:"updated,omitempty"`
-	PostStatus []string      `json:"post-status,omitempty"`
-	Visibility []string      `json:"visibility,omitempty"`
-	Category   []string      `json:"category,omitempty"`
-	Content    []string      `json:"content,omitempty"`
-	URL        []string      `json:"url,omitempty"`
-	InReplyTo  []string      `json:"in-reply-to,omitempty"`
-	LikeOf     []string      `json:"like-of,omitempty"`
-	BookmarkOf []string      `json:"bookmark-of,omitempty"`
-	MpSlug     []string      `json:"mp-slug,omitempty"`
-	Photo      []interface{} `json:"photo,omitempty"`
-	Audio      []string      `json:"audio,omitempty"`
+	Name       []string `json:"name,omitempty"`
+	Published  []string `json:"published,omitempty"`
+	Updated    []string `json:"updated,omitempty"`
+	PostStatus []string `json:"post-status,omitempty"`
+	Visibility []string `json:"visibility,omitempty"`
+	Category   []string `json:"category,omitempty"`
+	Content    []string `json:"content,omitempty"`
+	URL        []string `json:"url,omitempty"`
+	InReplyTo  []string `json:"in-reply-to,omitempty"`
+	LikeOf     []string `json:"like-of,omitempty"`
+	BookmarkOf []string `json:"bookmark-of,omitempty"`
+	MpSlug     []string `json:"mp-slug,omitempty"`
+	Photo      []any    `json:"photo,omitempty"`
+	Audio      []string `json:"audio,omitempty"`
 }
 
 func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem) error {
@@ -314,7 +314,7 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 			if theString, justString := photo.(string); justString {
 				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], theString)
 				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], "")
-			} else if thePhoto, isPhoto := photo.(map[string]interface{}); isPhoto {
+			} else if thePhoto, isPhoto := photo.(map[string]any); isPhoto {
 				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], cast.ToString(thePhoto["value"]))
 				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], cast.ToString(thePhoto["alt"]))
 			}
@@ -331,7 +331,7 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && strings.TrimSpace(split[0]) == "" {
 		// Contains frontmatter
 		fm := split[1]
-		meta := map[string]interface{}{}
+		meta := map[string]any{}
 		err := yaml.Unmarshal([]byte(fm), &meta)
 		if err != nil {
 			return err
@@ -340,7 +340,7 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 		for key, value := range meta {
 			// Delete existing content - replace
 			p.Parameters[key] = []string{}
-			if a, ok := value.([]interface{}); ok {
+			if a, ok := value.([]any); ok {
 				for _, ae := range a {
 					p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
 				}
@@ -534,7 +534,7 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 	http.Redirect(w, r, a.fullPostURL(p), http.StatusNoContent)
 }
 
-func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]interface{}) {
+func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]any) {
 	if content, ok := replace["content"]; ok && len(content) > 0 {
 		p.Content = cast.ToStringSlice(content)[0]
 	}
@@ -578,7 +578,7 @@ func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]interface{}
 	// TODO: photos
 }
 
-func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]interface{}) {
+func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]any) {
 	for key, value := range add {
 		switch key {
 		case "content":
@@ -602,11 +602,11 @@ func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]interface{}) {
 	}
 }
 
-func (a *goBlog) micropubUpdateDelete(p *post, del interface{}) {
+func (a *goBlog) micropubUpdateDelete(p *post, del any) {
 	if del == nil {
 		return
 	}
-	deleteProperties, ok := del.([]interface{})
+	deleteProperties, ok := del.([]any)
 	if ok {
 		// Completely remove properties
 		for _, prop := range deleteProperties {
@@ -637,7 +637,7 @@ func (a *goBlog) micropubUpdateDelete(p *post, del interface{}) {
 		// Return
 		return
 	}
-	toDelete, ok := del.(map[string]interface{})
+	toDelete, ok := del.(map[string]any)
 	if ok {
 		// Only delete parts of properties
 		for key, values := range toDelete {
@@ -661,8 +661,8 @@ func (a *goBlog) micropubUpdateDelete(p *post, del interface{}) {
 			// TODO: Support partial deletes of more properties
 			case "category":
 				delValues := cast.ToStringSlice(values)
-				p.Parameters[a.cfg.Micropub.CategoryParam] = funk.FilterString(p.Parameters[a.cfg.Micropub.CategoryParam], func(s string) bool {
-					return !funk.ContainsString(delValues, s)
+				p.Parameters[a.cfg.Micropub.CategoryParam] = lo.Filter(p.Parameters[a.cfg.Micropub.CategoryParam], func(s string, _ int) bool {
+					return !lo.Contains(delValues, s)
 				})
 			}
 		}

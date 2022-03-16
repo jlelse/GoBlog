@@ -76,7 +76,7 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 		// Search and serve cache
 		key := cacheKey(r)
 		// Get cache or render it
-		cacheInterface, _, _ := a.cache.g.Do(key, func() (interface{}, error) {
+		cacheInterface, _, _ := a.cache.g.Do(key, func() (any, error) {
 			return a.cache.getCache(key, next, r), nil
 		})
 		ci := cacheInterface.(*cacheItem)

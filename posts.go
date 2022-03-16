@@ -127,7 +127,7 @@ func (p *postPaginationAdapter) Nums() (int64, error) {
 	return p.nums, nil
 }
 
-func (p *postPaginationAdapter) Slice(offset, length int, data interface{}) error {
+func (p *postPaginationAdapter) Slice(offset, length int, data any) error {
 	modifiedConfig := *p.config
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length

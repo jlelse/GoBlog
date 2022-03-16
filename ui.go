@@ -7,7 +7,7 @@ import (
 	"github.com/hacdias/indieauth"
 	"github.com/kaorimatz/go-opml"
 	"github.com/mergestat/timediff"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlBuilder, bc *configBlog, p *post) {
@@ -279,7 +279,7 @@ func (a *goBlog) renderSearch(hb *htmlBuilder, rd *renderData) {
 			// Form
 			hb.writeElementOpen("form", "class", "fw p", "method", "post")
 			// Search
-			args := []interface{}{"type", "text", "name", "q", "required", ""}
+			args := []any{"type", "text", "name", "q", "required", ""}
 			if sc.Placeholder != "" {
 				args = append(args, "placeholder", a.renderMdTitle(sc.Placeholder))
 			}
@@ -882,7 +882,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			// Post actions
 			hb.writeElementOpen("div", "class", "actions")
 			// Share button
-			hb.writeElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), funk.ShortIf(p.RenderedTitle != "", "&title="+p.RenderedTitle, "")), "target", "_blank", "rel", "nofollow noopener noreferrer")
+			hb.writeElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), lo.If(p.RenderedTitle != "", "&title="+p.RenderedTitle).Else("")), "target", "_blank", "rel", "nofollow noopener noreferrer")
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "share"))
 			hb.writeElementClose("a")
 			// Translate button
@@ -894,7 +894,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			// Speak button
 			hb.writeElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
 			hb.writeElementClose("button")
-			hb.writeElementOpen("script", "defer", "", "src", funk.ShortIf(p.TTS() != "", a.assetFileName("js/tts.js"), a.assetFileName("js/speak.js")))
+			hb.writeElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
 			hb.writeElementClose("script")
 			hb.writeElementClose("div")
 			// TTS

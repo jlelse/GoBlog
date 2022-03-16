@@ -192,20 +192,20 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 	}
 
 	// Create request body
-	body := map[string]interface{}{
-		"audioConfig": map[string]interface{}{
+	body := map[string]any{
+		"audioConfig": map[string]any{
 			"audioEncoding": "MP3",
 		},
-		"input": map[string]interface{}{
+		"input": map[string]any{
 			"ssml": ssml,
 		},
-		"voice": map[string]interface{}{
+		"voice": map[string]any{
 			"languageCode": lang,
 		},
 	}
 
 	// Do request
-	var response map[string]interface{}
+	var response map[string]any
 	err := requests.
 		URL("https://texttospeech.googleapis.com/v1beta1/text:synthesize").
 		Param("key", gctts.GoogleAPIKey).

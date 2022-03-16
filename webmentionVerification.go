@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"willnorris.com/go/microformats"
@@ -161,7 +161,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if _, hasLink := funk.FindString(links, func(s string) bool {
+	if _, hasLink := lo.Find(links, func(s string) bool {
 		// Check if link belongs to installation
 		hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(s, a.cfg.Server.ShortPublicAddress)
 		hasLongPrefix := strings.HasPrefix(s, a.cfg.Server.PublicAddress)

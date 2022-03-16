@@ -94,7 +94,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		case "updatepost":
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
-			err := json.NewEncoder(buf).Encode(map[string]interface{}{
+			err := json.NewEncoder(buf).Encode(map[string]any{
 				"action": actionUpdate,
 				"url":    r.FormValue("url"),
 				"replace": map[string][]string{
@@ -179,8 +179,8 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 func (*goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 	builder := bufferpool.Get()
 	defer bufferpool.Put(builder)
-	marsh := func(param string, i interface{}) {
-		_ = yaml.NewEncoder(builder).Encode(map[string]interface{}{
+	marsh := func(param string, i any) {
+		_ = yaml.NewEncoder(builder).Encode(map[string]any{
 			param: i,
 		})
 	}

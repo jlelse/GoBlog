@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/gzhttp"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/sync/singleflight"
 )
@@ -79,7 +80,7 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 				return
 			}
 			// Process link
-			r, err, _ := sg.Do(link.Second, func() (interface{}, error) {
+			r, err, _ := sg.Do(link.Second, func() (any, error) {
 				// Check if already cached
 				if mr, ok := sm.Load(link.Second); ok {
 					return mr, nil
@@ -131,9 +132,9 @@ func (a *goBlog) allLinks(posts ...*post) (allLinks []*stringPair, err error) {
 		if err != nil {
 			return nil, err
 		}
-		for _, link := range links {
-			allLinks = append(allLinks, &stringPair{a.fullPostURL(p), link})
-		}
+		allLinks = lo.Map(links, func(s string, _ int) *stringPair {
+			return &stringPair{a.fullPostURL(p), s}
+		})
 	}
 	return allLinks, nil
 }

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
@@ -26,13 +26,9 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 		return files[i].Time.After(files[j].Time)
 	})
 	// Find uses
-	fileNames, ok := funk.Map(files, func(f *mediaFile) string {
+	fileNames := lo.Map(files, func(f *mediaFile, _ int) string {
 		return f.Name
-	}).([]string)
-	if !ok {
-		a.serveError(w, r, "Failed to get file names", http.StatusInternalServerError)
-		return
-	}
+	})
 	uses, err := a.db.usesOfMediaFile(fileNames...)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)

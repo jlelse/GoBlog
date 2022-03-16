@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
@@ -86,8 +86,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			p.Section = a.cfg.Blogs[p.Blog].DefaultSection
 		}
 		if p.Slug == "" {
-			random := generateRandomString(5)
-			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), random)
+			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), randomString(5))
 		}
 		published := timeNoErr(dateparse.ParseLocal(p.Published))
 		pathTmplString := defaultIfEmpty(
@@ -100,7 +99,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 		}
 		pathBuffer := bufferpool.Get()
 		defer bufferpool.Put(pathBuffer)
-		err = pathTmpl.Execute(pathBuffer, map[string]interface{}{
+		err = pathTmpl.Execute(pathBuffer, map[string]any{
 			"BlogPath": a.getRelativePath(p.Blog, ""),
 			"Year":     published.Year(),
 			"Month":    int(published.Month()),
@@ -173,7 +172,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Build SQL
 	sqlBuilder := bufferpool.Get()
 	defer bufferpool.Put(sqlBuilder)
-	var sqlArgs = []interface{}{dbNoCache}
+	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
 	// Delete old post
@@ -297,7 +296,7 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	// Build SQL
 	sqlBuilder := bufferpool.Get()
 	defer bufferpool.Put(sqlBuilder)
-	var sqlArgs = []interface{}{dbNoCache}
+	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
 	// Delete old post
@@ -344,7 +343,7 @@ type postsRequestConfig struct {
 	withoutRenderedTitle                        bool
 }
 
-func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []interface{}) {
+func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
 	// Selection
@@ -461,7 +460,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 		return nil
 	}
 	// Build query
-	sqlArgs := make([]interface{}, 0)
+	sqlArgs := make([]any, 0)
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
@@ -584,10 +583,7 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 }
 
 func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
-	sections, ok := funk.Keys(a.cfg.Blogs[blog].Sections).([]string)
-	if !ok {
-		return "", errors.New("no sections")
-	}
+	sections := lo.Keys(a.cfg.Blogs[blog].Sections)
 	query, params := buildPostsQuery(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections}, "path")
 	row, err := a.db.queryRow(query, params...)
 	if err != nil {
@@ -634,7 +630,7 @@ group by name;
 `
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
-	sqlArgs := []interface{}{dbNoCache}
+	sqlArgs := []any{dbNoCache}
 	nameValues := bufferpool.Get()
 	for i, n := range names {
 		if i > 0 {

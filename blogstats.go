@@ -37,7 +37,7 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
-	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (interface{}, error) {
+	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (any, error) {
 		return a.db.getBlogStats(blog)
 	})
 	if err != nil {

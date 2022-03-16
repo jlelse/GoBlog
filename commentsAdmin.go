@@ -5,26 +5,28 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
 )
 
 type commentsPaginationAdapter struct {
-	config *commentsRequestConfig
-	nums   int64
-	db     *database
+	config  *commentsRequestConfig
+	nums    int64
+	getNums sync.Once
+	db      *database
 }
 
 func (p *commentsPaginationAdapter) Nums() (int64, error) {
-	if p.nums == 0 {
+	p.getNums.Do(func() {
 		nums, _ := p.db.countComments(p.config)
 		p.nums = int64(nums)
-	}
+	})
 	return p.nums, nil
 }
 
-func (p *commentsPaginationAdapter) Slice(offset, length int, data interface{}) error {
+func (p *commentsPaginationAdapter) Slice(offset, length int, data any) error {
 	modifiedConfig := *p.config
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length

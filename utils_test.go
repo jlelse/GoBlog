@@ -12,6 +12,16 @@ func Test_urlize(t *testing.T) {
 	assert.Equal(t, "this-is-a-test", urlize("This Is A Test"))
 }
 
+func Fuzz_urlize(f *testing.F) {
+	f.Add("Test")
+	f.Fuzz(func(t *testing.T, str string) {
+		out := urlize(str)
+		if out == "" {
+			t.Error("Empty output")
+		}
+	})
+}
+
 func Benchmark_urlize(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		urlize("äbc ef")
@@ -23,8 +33,8 @@ func Test_sortedStrings(t *testing.T) {
 }
 
 func Test_generateRandomString(t *testing.T) {
-	assert.Len(t, generateRandomString(30), 30)
-	assert.Len(t, generateRandomString(50), 50)
+	assert.Len(t, randomString(30), 30)
+	assert.Len(t, randomString(50), 50)
 }
 
 func Test_isAbsoluteURL(t *testing.T) {

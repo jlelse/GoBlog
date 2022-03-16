@@ -221,7 +221,7 @@ func (app *goBlog) initComponents(logging bool) {
 	}
 }
 
-func (a *goBlog) logErrAndQuit(v ...interface{}) {
+func (a *goBlog) logErrAndQuit(v ...any) {
 	log.Println(v...)
 	a.shutdown.ShutdownAndWait()
 	os.Exit(1)

@@ -6,28 +6,30 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator"
 )
 
 type webmentionPaginationAdapter struct {
-	config *webmentionsRequestConfig
-	nums   int64
-	db     *database
+	config  *webmentionsRequestConfig
+	nums    int64
+	getNums sync.Once
+	db      *database
 }
 
 var _ paginator.Adapter = &webmentionPaginationAdapter{}
 
 func (p *webmentionPaginationAdapter) Nums() (int64, error) {
-	if p.nums == 0 {
+	p.getNums.Do(func() {
 		nums, _ := p.db.countWebmentions(p.config)
 		p.nums = int64(nums)
-	}
+	})
 	return p.nums, nil
 }
 
-func (p *webmentionPaginationAdapter) Slice(offset, length int, data interface{}) error {
+func (p *webmentionPaginationAdapter) Slice(offset, length int, data any) error {
 	modifiedConfig := *p.config
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length

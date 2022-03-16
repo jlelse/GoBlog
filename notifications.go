@@ -56,7 +56,7 @@ type notificationsRequestConfig struct {
 	offset, limit int
 }
 
-func buildNotificationsQuery(config *notificationsRequestConfig) (query string, args []interface{}) {
+func buildNotificationsQuery(config *notificationsRequestConfig) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, time, text from notifications order by id desc")
@@ -110,7 +110,7 @@ func (p *notificationsPaginationAdapter) Nums() (int64, error) {
 	return p.nums, nil
 }
 
-func (p *notificationsPaginationAdapter) Slice(offset, length int, data interface{}) error {
+func (p *notificationsPaginationAdapter) Slice(offset, length int, data any) error {
 	modifiedConfig := *p.config
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length

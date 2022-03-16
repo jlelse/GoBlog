@@ -11,7 +11,7 @@ import (
 
 	"github.com/klauspost/compress/flate"
 	"github.com/klauspost/compress/gzip"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -48,7 +48,7 @@ type Compressor struct {
 	// The mapping of pooled encoders to pools.
 	pooledEncoders map[string]*sync.Pool
 	// The set of content types allowed to be compressed.
-	allowedTypes map[string]interface{}
+	allowedTypes map[string]any
 	// The list of encoders in order of decreasing precedence.
 	encodingPrecedence []string
 	// The compression level.
@@ -62,8 +62,8 @@ type Compressor struct {
 func NewCompressor(level int, types ...string) *Compressor {
 	// If types are provided, set those as the allowed types. If none are
 	// provided, use the default list.
-	allowedTypes := map[string]interface{}{}
-	for _, t := range funk.ShortIf(len(types) > 0, types, defaultCompressibleContentTypes).([]string) {
+	allowedTypes := map[string]any{}
+	for _, t := range lo.If(len(types) > 0, types).Else(defaultCompressibleContentTypes) {
 		allowedTypes[t] = nil
 	}
 
@@ -96,7 +96,7 @@ func (c *Compressor) SetEncoder(encoding string, fn EncoderFunc) {
 	delete(c.pooledEncoders, encoding)
 
 	c.pooledEncoders[encoding] = &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return fn(io.Discard, c.level)
 		},
 	}
@@ -124,10 +124,6 @@ func (c *Compressor) Handler(next http.Handler) http.Handler {
 		_ = cw.Close()
 		cw.doCleanup()
 	})
-}
-
-func matchAcceptEncoding(accepted []string, encoding string) bool {
-	return funk.ContainsString(accepted, encoding)
 }
 
 // An EncoderFunc is a function that wraps the provided io.Writer with a
@@ -178,7 +174,7 @@ func (cw *compressResponseWriter) selectEncoder() (compressWriter, string, func(
 
 	// Find supported encoder by accepted list by precedence
 	for _, name := range cw.compressor.encodingPrecedence {
-		if matchAcceptEncoding(accepted, name) {
+		if lo.Contains(accepted, name) {
 			if pool, ok := cw.compressor.pooledEncoders[name]; ok {
 				encoder := pool.Get().(compressWriter)
 				cleanup := func() {

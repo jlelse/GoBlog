@@ -11,8 +11,8 @@ import (
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	err := json.NewEncoder(buf).Encode(map[string]interface{}{
-		"links": []map[string]interface{}{
+	err := json.NewEncoder(buf).Encode(map[string]any{
+		"links": []map[string]any{
 			{
 				"href": a.getFullAddress("/nodeinfo"),
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
@@ -35,14 +35,14 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	})
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	err := json.NewEncoder(buf).Encode(map[string]interface{}{
+	err := json.NewEncoder(buf).Encode(map[string]any{
 		"version": "2.1",
-		"software": map[string]interface{}{
+		"software": map[string]any{
 			"name":       "goblog",
 			"repository": "https://go.goblog.app/app",
 		},
-		"usage": map[string]interface{}{
-			"users": map[string]interface{}{
+		"usage": map[string]any{
+			"users": map[string]any{
 				"total": len(a.cfg.Blogs),
 			},
 			"localPosts": localPosts,
@@ -52,7 +52,7 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 			"micropub",
 			"webmention",
 		},
-		"metadata": map[string]interface{}{},
+		"metadata": map[string]any{},
 	})
 	if err != nil {
 		a.serveError(w, r, "", http.StatusInternalServerError)

@@ -102,7 +102,7 @@ type commentsRequestConfig struct {
 	offset, limit int
 }
 
-func buildCommentsQuery(config *commentsRequestConfig) (query string, args []interface{}) {
+func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, target, name, website, comment from comments order by id desc")

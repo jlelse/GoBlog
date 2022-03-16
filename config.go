@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
 )
 
@@ -370,9 +371,7 @@ func (a *goBlog) initConfig() error {
 	if a.cfg.DefaultBlog == "" {
 		if len(a.cfg.Blogs) == 1 {
 			// Set default blog to the only blog that is configured
-			for k := range a.cfg.Blogs {
-				a.cfg.DefaultBlog = k
-			}
+			a.cfg.DefaultBlog = lo.Keys(a.cfg.Blogs)[0]
 		} else {
 			return errors.New("no default blog configured")
 		}

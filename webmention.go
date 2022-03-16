@@ -226,7 +226,7 @@ type webmentionsRequestConfig struct {
 	submentions   bool
 }
 
-func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []interface{}) {
+func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, source, target, url, created, title, content, author, status from webmentions ")

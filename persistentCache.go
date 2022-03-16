@@ -26,7 +26,7 @@ func (db *database) retrievePersistentCacheContext(c context.Context, key string
 	if db == nil {
 		return nil, errors.New("database is nil")
 	}
-	d, err, _ := db.pc.Do(key, func() (interface{}, error) {
+	d, err, _ := db.pc.Do(key, func() (any, error) {
 		if row, err := db.queryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
 			return nil, err
 		} else {

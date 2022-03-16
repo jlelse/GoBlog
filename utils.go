@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -23,7 +24,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	tdl "github.com/mergestat/timediff/locale"
 	"github.com/microcosm-cc/bluemonday"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/text/language"
 )
@@ -55,10 +56,15 @@ func sortedStrings(s []string) []string {
 	return s
 }
 
-const randomLetters = "abcdefghijklmnopqrstuvwxyz"
+var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func generateRandomString(chars int) string {
-	return funk.RandomString(chars, []rune(randomLetters))
+func randomString(n int, allowedChars ...[]rune) string {
+	letters := append(allowedChars, defaultLetters)[0]
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
 
 func isAbsoluteURL(s string) bool {
@@ -84,7 +90,7 @@ func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 		}
 	})
 	links, err = resolveURLReferences(baseURL, links...)
-	return funk.UniqString(links), err
+	return lo.Uniq(links), err
 }
 
 func resolveURLReferences(base string, refs ...string) ([]string, error) {
@@ -212,8 +218,8 @@ func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
 		return "", false
 	}
 	ext = ext[1:]
-	allowed = funk.Map(allowed, strings.ToLower).([]string)
-	return ext, funk.ContainsString(allowed, strings.ToLower(ext))
+	allowed = lo.Map(allowed, func(t string, _ int) string { return strings.ToLower(t) })
+	return ext, lo.Contains(allowed, strings.ToLower(ext))
 }
 
 func mBytesString(size int64) string {
@@ -274,7 +280,10 @@ func cleanHTMLText(s string) string {
 }
 
 func defaultIfEmpty(s, d string) string {
-	return funk.ShortIf(s != "", s, d).(string)
+	if s == "" {
+		return d
+	}
+	return s
 }
 
 func containsStrings(s string, subStrings ...string) bool {
