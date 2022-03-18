@@ -9,7 +9,7 @@ import (
 	ts "git.jlel.se/jlelse/template-strings"
 	ct "github.com/elnormous/contenttype"
 	"github.com/go-fed/httpsig"
-	"github.com/hacdias/indieauth"
+	"github.com/hacdias/indieauth/v2"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"

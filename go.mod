@@ -26,7 +26,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hacdias/indieauth v1.7.1
+	github.com/hacdias/indieauth/v2 v2.0.0
 	github.com/jlaffaye/ftp v0.0.0-20220310202011-d2c44e311e78
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
@@ -61,7 +61,7 @@ require (
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	nhooyr.io/websocket v1.8.7
-	tailscale.com v1.22.1
+	tailscale.com v1.22.2
 	// main
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
@@ -129,7 +129,7 @@ require (
 	go4.org/mem v0.0.0-20210711025021-927187094b94 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20211027215541-db492cf91b37 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
+	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224 // indirect
@@ -141,5 +141,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gvisor.dev/gvisor v0.0.0-20220126021142-d8aa030b2591 // indirect
 	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6 // indirect
-	willnorris.com/go/webmention v0.0.0-20211028201829-b0044f1a24d0 // indirect
+	willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0 // indirect
 )

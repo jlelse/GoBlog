@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hacdias/indieauth"
+	"github.com/hacdias/indieauth/v2"
 	"github.com/kaorimatz/go-opml"
 	"github.com/mergestat/timediff"
 	"github.com/samber/lo"

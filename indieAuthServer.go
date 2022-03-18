@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hacdias/indieauth"
+	"github.com/hacdias/indieauth/v2"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 

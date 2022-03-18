@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/hacdias/indieauth"
+	"github.com/hacdias/indieauth/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,11 +62,11 @@ func Test_indieAuthServer(t *testing.T) {
 	)
 	require.NotNil(t, iac)
 
-	endpoints, err := iac.DiscoverEndpoints("https://example.org/")
+	metadata, err := iac.DiscoverMetadata("https://example.org/")
 	require.NoError(t, err)
-	if assert.NotNil(t, endpoints) {
-		assert.Equal(t, "https://example.org/indieauth", endpoints.Authorization)
-		assert.Equal(t, "https://example.org/indieauth/token", endpoints.Token)
+	if assert.NotNil(t, metadata) {
+		assert.Equal(t, "https://example.org/indieauth", metadata.AuthorizationEndpoint)
+		assert.Equal(t, "https://example.org/indieauth/token", metadata.TokenEndpoint)
 	}
 
 	for _, test := range []int{1, 2} {

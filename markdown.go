@@ -145,7 +145,7 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 		_, _ = w.WriteString("<a href=\"")
 		// Make URL absolute if it's relative
 		newDestination := util.URLEscape(n.Destination, true)
-		if c.absoluteLinks && c.publicAddress != "" && bytes.HasPrefix(newDestination, []byte("/")) {
+		if c.absoluteLinks && c.publicAddress != "" && (bytes.HasPrefix(newDestination, []byte("/")) || bytes.HasPrefix(newDestination, []byte("#"))) {
 			_, _ = w.Write(util.EscapeHTML([]byte(c.publicAddress)))
 		}
 		_, _ = w.Write(util.EscapeHTML(newDestination))
