@@ -42,7 +42,7 @@ require (
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
-	github.com/samber/lo v1.10.1
+	github.com/samber/lo v1.11.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.4.1
@@ -52,10 +52,10 @@ require (
 	github.com/tkrajina/gpxgo v1.2.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.10
+	github.com/yuin/goldmark v1.4.11
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
+	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
