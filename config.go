@@ -242,8 +242,6 @@ type configMicropubMedia struct {
 	FTPPassword string `mapstructure:"ftpPassword"`
 	// Tinify
 	TinifyKey string `mapstructure:"tinifyKey"`
-	// Shortpixel
-	ShortPixelKey string `mapstructure:"shortPixelKey"`
 	// Cloudflare
 	CloudflareCompressionEnabled bool `mapstructure:"cloudflareCompressionEnabled"`
 }

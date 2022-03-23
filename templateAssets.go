@@ -46,10 +46,7 @@ func (a *goBlog) initTemplateAssets() error {
 		return err
 	}
 	// Add syntax highlighting CSS
-	if err := a.initChromaCSS(); err != nil {
-		return err
-	}
-	return nil
+	return a.initChromaCSS()
 }
 
 func (a *goBlog) compileAsset(name string, read io.Reader) error {

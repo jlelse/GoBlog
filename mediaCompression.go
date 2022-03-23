@@ -39,53 +39,12 @@ func (a *goBlog) initMediaCompressors() {
 		return
 	}
 	config := a.cfg.Micropub.MediaStorage
-	if key := config.ShortPixelKey; key != "" {
-		a.compressors = append(a.compressors, &shortpixel{key})
-	}
 	if key := config.TinifyKey; key != "" {
 		a.compressors = append(a.compressors, &tinify{key})
 	}
 	if config.CloudflareCompressionEnabled {
 		a.compressors = append(a.compressors, &cloudflare{})
 	}
-}
-
-type shortpixel struct {
-	key string
-}
-
-func (sp *shortpixel) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
-	// Check url
-	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
-	if !allowed {
-		return "", nil
-	}
-	// Compress
-	imgBuffer := bufferpool.Get()
-	defer bufferpool.Put(imgBuffer)
-	err := requests.
-		URL("https://api.shortpixel.com/v2/reducer-sync.php").
-		Client(hc).
-		Method(http.MethodPost).
-		BodyJSON(map[string]any{
-			"key":            sp.key,
-			"plugin_version": "GB001",
-			"lossy":          1,
-			"resize":         3,
-			"resize_width":   defaultCompressionWidth,
-			"resize_height":  defaultCompressionHeight,
-			"cmyk2rgb":       1,
-			"keep_exif":      0,
-			"url":            url,
-		}).
-		ToBytesBuffer(imgBuffer).
-		Fetch(context.Background())
-	if err != nil {
-		log.Println("Shortpixel error:", err.Error())
-		return "", errors.New("failed to compress image using shortpixel")
-	}
-	// Upload compressed file
-	return uploadCompressedFile(fileExtension, imgBuffer, upload)
 }
 
 type tinify struct {

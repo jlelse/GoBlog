@@ -19,16 +19,14 @@ To reduce the data transfer for blog visitors, GoBlog can compress the media fil
 GoBlog currently supports the following media compression providers:
 
 - [Cloudflare](https://cloudflare.com/) (no API key required)
-- [ShortPixel](https://shortpixel.com/) (API key required)
 - [Tinify](https://tinify.com/) (API key required)
 
 Take a look at the `example-config.yml` on how to configure the compression providers.
 
 It is possible to configure multiple compression providers. If one fails, the next one is tried. The current priority is as follows:
 
-1. ShortPixel
-2. Tinify
-3. Cloudflare
+1. Tinify
+2. Cloudflare
 
 ## Text-to-Speech
 

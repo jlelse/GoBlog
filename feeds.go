@@ -21,7 +21,7 @@ const (
 	jsonFeed feedType = "json"
 )
 
-func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title string, description string) {
+func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description string) {
 	now := time.Now()
 	title = a.renderMdTitle(defaultIfEmpty(title, a.cfg.Blogs[blog].Title))
 	description = defaultIfEmpty(description, a.cfg.Blogs[blog].Description)

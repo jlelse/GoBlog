@@ -77,7 +77,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	return nil
 }
 
-func (a *goBlog) createTorPrivateKey(torDataPath string) (crypto.PrivateKey, error) {
+func (*goBlog) createTorPrivateKey(torDataPath string) (crypto.PrivateKey, error) {
 	torKeyPath := filepath.Join(torDataPath, "onion.pk")
 	var torKey crypto.PrivateKey
 	if _, err := os.Stat(torKeyPath); os.IsNotExist(err) {
