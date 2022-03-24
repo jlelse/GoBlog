@@ -145,6 +145,27 @@ func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, h
 	if !allowed {
 		return "", nil
 	}
+	// Start Vips
+	vips.Startup(&vips.Config{
+		CollectStats:     false,
+		MaxCacheFiles:    0,
+		MaxCacheMem:      0,
+		MaxCacheSize:     0,
+		ConcurrencyLevel: 1,
+	})
+	// Check type
+	var imgType vips.ImageType
+	switch fileExtension {
+	case "jpg", "jpeg":
+		imgType = vips.ImageTypeJPEG
+	case "png":
+		imgType = vips.ImageTypePNG
+	default:
+		imgType = vips.ImageTypeUnknown
+	}
+	if !vips.IsTypeSupported(imgType) {
+		return "", nil
+	}
 	// Download image
 	imgBuffer := bufferpool.Get()
 	defer bufferpool.Put(imgBuffer)
@@ -158,13 +179,6 @@ func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, h
 		return "", errors.New("failed to download image using local compressor")
 	}
 	// Compress image using bimg
-	vips.Startup(&vips.Config{
-		CollectStats:     false,
-		MaxCacheFiles:    0,
-		MaxCacheMem:      0,
-		MaxCacheSize:     0,
-		ConcurrencyLevel: 1,
-	})
 	img, err := vips.NewImageFromReader(imgBuffer)
 	if err != nil {
 		log.Println("Local compressor error:", err.Error())
