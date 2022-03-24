@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 
 	"github.com/carlmjohnson/requests"
+	"github.com/davidbyttow/govips/v2/vips"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
@@ -44,6 +47,9 @@ func (a *goBlog) initMediaCompressors() {
 	}
 	if config.CloudflareCompressionEnabled {
 		a.compressors = append(a.compressors, &cloudflare{})
+	}
+	if config.LocalCompressionEnabled {
+		a.compressors = append(a.compressors, &localMediaCompressor{})
 	}
 }
 
@@ -129,6 +135,76 @@ func (*cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Cl
 	}
 	// Upload compressed file
 	return uploadCompressedFile(fileExtension, imgBuffer, upload)
+}
+
+type localMediaCompressor struct{}
+
+func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
+	// Check url
+	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
+	if !allowed {
+		return "", nil
+	}
+	// Download image
+	imgBuffer := bufferpool.Get()
+	defer bufferpool.Put(imgBuffer)
+	err := requests.
+		URL(url).
+		Client(hc).
+		ToBytesBuffer(imgBuffer).
+		Fetch(context.Background())
+	if err != nil {
+		log.Println("Local compressor error:", err.Error())
+		return "", errors.New("failed to download image using local compressor")
+	}
+	// Compress image using bimg
+	vips.Startup(&vips.Config{
+		CollectStats:     false,
+		MaxCacheFiles:    0,
+		MaxCacheMem:      0,
+		MaxCacheSize:     0,
+		ConcurrencyLevel: 1,
+	})
+	img, err := vips.NewImageFromReader(imgBuffer)
+	if err != nil {
+		log.Println("Local compressor error:", err.Error())
+		return "", errors.New("failed to compress image using local compressor")
+	}
+	// Auto rotate image
+	err = img.AutoRotate()
+	if err != nil {
+		log.Println("Local compressor error:", err.Error())
+		return "", errors.New("failed to compress image using local compressor")
+	}
+	// Get resize ratio to fit in max width and height
+	ratioHeight := float64(defaultCompressionHeight) / float64(img.Height())
+	ratioWidth := float64(defaultCompressionWidth) / float64(img.Width())
+	ratio := math.Min(ratioHeight, ratioWidth)
+	// Resize image (only downscale)
+	if ratio < 1 {
+		err = img.Resize(ratio, vips.KernelAuto)
+		if err != nil {
+			log.Println("Local compressor error:", err.Error())
+			return "", errors.New("failed to compress image using local compressor")
+		}
+	}
+	// Export resized image
+	ep := vips.NewDefaultExportParams()
+	ep.StripMetadata = true      // Strip metadata
+	ep.Interlaced = true         // Progressive image
+	ep.TrellisQuant = true       // Trellis quantization (JPEG only)
+	ep.OptimizeCoding = true     // Optimize Huffman coding tables (JPEG only)
+	ep.OptimizeScans = true      // Optimize progressive scans (JPEG only)
+	ep.OvershootDeringing = true // Overshoot deringing (JPEG only)
+	ep.Compression = 100         // Compression factor
+	ep.Quality = 75              // Quality factor
+	compressed, _, err := img.Export(ep)
+	if err != nil {
+		log.Println("Local compressor error:", err.Error())
+		return "", errors.New("failed to compress image using local compressor")
+	}
+	// Upload compressed file
+	return uploadCompressedFile(fileExtension, bytes.NewReader(compressed), upload)
 }
 
 func uploadCompressedFile(fileExtension string, r io.Reader, upload mediaStorageSaveFunc) (string, error) {

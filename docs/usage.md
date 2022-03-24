@@ -27,6 +27,7 @@ It is possible to configure multiple compression providers. If one fails, the ne
 
 1. Tinify
 2. Cloudflare
+3. Local compression using VIPS
 
 ## Text-to-Speech
 

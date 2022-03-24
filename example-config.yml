@@ -111,8 +111,9 @@ micropub:
     ftpUser: ftpuser # Username of FTP user
     ftpPassword: ftppassword # Password of FTP user
     # Image compression (optional, you can define no, one or multiple services, disabled when private mode enabled)
-    tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API (first fallback)
-    cloudflareCompressionEnabled: true # Use Cloudflare's compression as a second fallback
+    tinifyKey: TINIFY-KEY # Secret key for the Tinify.com API
+    cloudflareCompressionEnabled: true # Use Cloudflare's compression
+    localCompressionEnabled: true # Use local compression
   # MicroPub parameters (defaults already set, set to overwrite)
   # You can set parameters via the UI of your MicroPub editor or via front matter in the content
   categoryParam: tags

@@ -244,6 +244,8 @@ type configMicropubMedia struct {
 	TinifyKey string `mapstructure:"tinifyKey"`
 	// Cloudflare
 	CloudflareCompressionEnabled bool `mapstructure:"cloudflareCompressionEnabled"`
+	// Local
+	LocalCompressionEnabled bool `mapstructure:"localCompressionEnabled"`
 }
 
 type configRegexRedirect struct {
