@@ -32,7 +32,6 @@ Requirements:
 - git
 - go >= 1.17
 - libsqlite3 with FTS5 enabled >= 3.31 (the newer the better)
-- libvips >= 8.10 (the newer the better)
 
 Build command:
 
