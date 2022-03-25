@@ -171,6 +171,7 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 		} else {
 			hb.writeEscaped(likeLink)
 		}
+		hb.writeElementClose("a")
 		hb.writeElementClose("div")
 	}
 	// Geo
