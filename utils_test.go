@@ -134,3 +134,13 @@ func Test_matchTimeDiffLocale(t *testing.T) {
 	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt-BR")))
 	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt")))
 }
+
+func Test_unescapedPath(t *testing.T) {
+	assert.Equal(t, "/de/posts/fahrradanhänger", unescapedPath("/de/posts/fahrradanh%C3%A4nger"))
+	assert.Equal(t, "/de/posts/fahrradanhänger", unescapedPath("/de/posts/fahrradanhänger"))
+}
+
+func Test_lowerUnescaptedPath(t *testing.T) {
+	assert.Equal(t, "/de/posts/fahrradanhänger", lowerUnescapedPath("/de/posts/fahrradanh%C3%84nger"))
+	assert.Equal(t, "/de/posts/fahrradanhänger", lowerUnescapedPath("/de/posts/fahrradanhÄnger"))
+}

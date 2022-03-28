@@ -116,6 +116,10 @@ func unescapedPath(p string) string {
 	return p
 }
 
+func lowerUnescapedPath(p string) string {
+	return strings.ToLower(unescapedPath(p))
+}
+
 type stringGroup struct {
 	Identifier string
 	Strings    []string

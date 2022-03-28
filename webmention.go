@@ -89,7 +89,7 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 		return nil, err
 	}
 	source := r.Form.Get("source")
-	target := unescapedPath(r.Form.Get("target"))
+	target := r.Form.Get("target")
 	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
 		a.debug("Invalid webmention request, source:", source, "target:", target)
 		return nil, errors.New("invalid request")
@@ -109,8 +109,8 @@ func (db *database) webmentionExists(m *mention) bool {
 			select 1
 			from webmentions
 			where
-				lowerx(source) in (lowerx(@source), lowerx(@newsource))
-				and lowerx(target) in (lowerx(@target), lowerx(@newtarget))
+				lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource))
+				and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))
 		)
 		`,
 		sql.Named("source", m.Source), sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
@@ -128,7 +128,7 @@ func (db *database) webmentionExists(m *mention) bool {
 func (a *goBlog) createWebmention(source, target string) (err error) {
 	return a.queueMention(&mention{
 		Source:  source,
-		Target:  unescapedPath(target),
+		Target:  target,
 		Created: time.Now().Unix(),
 	})
 }
@@ -137,7 +137,7 @@ func (db *database) insertWebmention(m *mention, status webmentionStatus) error 
 	_, err := db.exec(
 		`
 		insert into webmentions (source, target, url, created, status, title, content, author) 
-		values (@source, @target, @url, @created, @status, @title, @content, @author)
+		values (@source, lowerunescaped(@target), @url, @created, @status, @title, @content, @author)
 		`,
 		sql.Named("source", m.Source),
 		sql.Named("target", m.Target),
@@ -156,15 +156,15 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 			update webmentions
 			set 
 				source = @newsource,
-				target = @newtarget,
+				target = lowerunescaped(@newtarget),
 				url = @url,
 				status = @status,
 				title = @title,
 				content = @content,
 				author = @author
 			where
-				lowerx(source) in (lowerx(@source), lowerx(@newsource2))
-				and lowerx(target) in (lowerx(@target), lowerx(@newtarget2))
+				lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource2))
+				and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget2))
 			`,
 		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
 		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
@@ -188,7 +188,7 @@ func (db *database) deleteWebmentionId(id int) error {
 
 func (db *database) deleteWebmention(m *mention) error {
 	_, err := db.exec(
-		"delete from webmentions where lowerx(source) in (lowerx(@source), lowerx(@newsource)) and lowerx(target) in (lowerx(@target), lowerx(@newtarget))",
+		"delete from webmentions where lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource)) and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))",
 		sql.Named("source", m.Source),
 		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
 		sql.Named("target", m.Target),
@@ -233,7 +233,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	if config != nil {
 		queryBuilder.WriteString("where 1")
 		if config.target != "" {
-			queryBuilder.WriteString(" and lowerx(target) = lowerx(@target)")
+			queryBuilder.WriteString(" and lowerunescaped(target) = lowerunescaped(@target)")
 			args = append(args, sql.Named("target", config.target))
 		}
 		if config.status != "" {
@@ -241,7 +241,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 			args = append(args, sql.Named("status", config.status))
 		}
 		if config.sourcelike != "" {
-			queryBuilder.WriteString(" and lowerx(source) like ('%' || lowerx(@sourcelike) || '%')")
+			queryBuilder.WriteString(" and lowerunescaped(source) like ('%' || lowerunescaped(@sourcelike) || '%')")
 			args = append(args, sql.Named("sourcelike", config.sourcelike))
 		}
 		if config.id != 0 {

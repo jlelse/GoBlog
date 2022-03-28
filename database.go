@@ -67,13 +67,14 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions
 			for n, f := range map[string]any{
-				"mdtext":    a.renderText,
-				"tolocal":   toLocalSafe,
-				"toutc":     toUTCSafe,
-				"wordcount": wordCount,
-				"charcount": charCount,
-				"urlize":    urlize,
-				"lowerx":    strings.ToLower,
+				"mdtext":         a.renderText,
+				"tolocal":        toLocalSafe,
+				"toutc":          toUTCSafe,
+				"wordcount":      wordCount,
+				"charcount":      charCount,
+				"urlize":         urlize,
+				"lowerx":         strings.ToLower,
+				"lowerunescaped": lowerUnescapedPath,
 			} {
 				if err := c.RegisterFunc(n, f, true); err != nil {
 					return err

@@ -180,7 +180,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			return false
 		}
 		_ = resp.Body.Close()
-		if resp.StatusCode == http.StatusOK && unescapedPath(resp.Request.URL.String()) == unescapedPath(defaultIfEmpty(m.NewTarget, m.Target)) {
+		if resp.StatusCode == http.StatusOK && lowerUnescapedPath(resp.Request.URL.String()) == lowerUnescapedPath(defaultIfEmpty(m.NewTarget, m.Target)) {
 			return true
 		}
 		return false
