@@ -81,7 +81,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = buf.WriteTo(w)
+	_, _ = io.Copy(w, buf)
 }
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {

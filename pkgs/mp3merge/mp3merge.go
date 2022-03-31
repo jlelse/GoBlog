@@ -74,6 +74,6 @@ func MergeMP3(out io.Writer, in ...io.Reader) error {
 	}
 
 	// Copy the temporary output to the output
-	_, err := tmpOut.WriteTo(out)
+	_, err := io.Copy(out, tmpOut)
 	return err
 }

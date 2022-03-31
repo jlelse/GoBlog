@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -25,7 +26,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
 	mw := a.min.Writer(contenttype.JSON, w)
-	_, _ = buf.WriteTo(mw)
+	_, _ = io.Copy(mw, buf)
 	_ = mw.Close()
 }
 
@@ -60,6 +61,6 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
 	mw := a.min.Writer(contenttype.JSON, w)
-	_, _ = buf.WriteTo(mw)
+	_, _ = io.Copy(mw, buf)
 	_ = mw.Close()
 }

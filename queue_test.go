@@ -20,47 +20,46 @@ func Test_queue(t *testing.T) {
 	}
 	_ = app.initDatabase(false)
 	defer app.db.close()
-	db := app.db
 
 	time1 := time.Now()
 
-	err := db.enqueue("test", []byte(""), time.Now())
+	err := app.enqueue("test", []byte(""), time.Now())
 	require.Error(t, err)
 
-	err = db.enqueue("test", []byte("1"), time1)
+	err = app.enqueue("test", []byte("1"), time1)
 	require.NoError(t, err)
 
-	err = db.enqueue("test", []byte("2"), time.Now())
+	err = app.enqueue("test", []byte("2"), time.Now())
 	require.NoError(t, err)
 
-	qi, err := db.peekQueue(context.Background(), "abc")
+	qi, err := app.peekQueue(context.Background(), "abc")
 	require.NoError(t, err)
 	require.Nil(t, qi)
 
-	qi, err = db.peekQueue(context.Background(), "test")
+	qi, err = app.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("1"), qi.content)
 	require.Equal(t, time1.UTC(), qi.schedule.UTC())
 
-	err = db.reschedule(qi, 1*time.Second)
+	err = app.reschedule(qi, 1*time.Second)
 	require.NoError(t, err)
 
-	qi, err = db.peekQueue(context.Background(), "test")
+	qi, err = app.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("2"), qi.content)
 
-	err = db.dequeue(qi)
+	err = app.dequeue(qi)
 	require.NoError(t, err)
 
-	qi, err = db.peekQueue(context.Background(), "test")
+	qi, err = app.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.Nil(t, qi)
 
 	time.Sleep(1 * time.Second)
 
-	qi, err = db.peekQueue(context.Background(), "test")
+	qi, err = app.peekQueue(context.Background(), "test")
 	require.NoError(t, err)
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("1"), qi.content)
@@ -77,20 +76,19 @@ func Benchmark_queue(b *testing.B) {
 	}
 	_ = app.initDatabase(false)
 	defer app.db.close()
-	db := app.db
 
-	err := db.enqueue("test", []byte("1"), time.Now())
+	err := app.enqueue("test", []byte("1"), time.Now())
 	require.NoError(b, err)
 
 	b.Run("Peek with item", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = db.peekQueue(context.Background(), "test")
+			_, _ = app.peekQueue(context.Background(), "test")
 		}
 	})
 
 	b.Run("Peek without item", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = db.peekQueue(context.Background(), "abc")
+			_, _ = app.peekQueue(context.Background(), "abc")
 		}
 	})
 }

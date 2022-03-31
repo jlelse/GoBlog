@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"math"
-	"strings"
 
 	"github.com/tkrajina/gpxgo/gpx"
 	"golang.org/x/text/language"
@@ -102,7 +101,7 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 		points        []*trackPoint
 	}
 
-	result.gpxData, err = gpx.Parse(strings.NewReader(gpxString))
+	result.gpxData, err = gpx.ParseString(gpxString)
 	if err != nil {
 		return nil, err
 	}

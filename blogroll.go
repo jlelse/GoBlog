@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -66,7 +67,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_, _ = opmlBuf.WriteTo(w)
+	_, _ = io.Copy(w, opmlBuf)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

@@ -193,6 +193,10 @@ func utcNowString() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
+func utcNowNanos() int64 {
+	return time.Now().UTC().UnixNano()
+}
+
 type stringPair struct {
 	First, Second string
 }

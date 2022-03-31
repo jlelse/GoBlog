@@ -47,7 +47,7 @@ func (a *goBlog) initAPSendQueue() {
 	})
 }
 
-func (db *database) apQueueSendSigned(blogIri, to string, activity any) error {
+func (a *goBlog) apQueueSendSigned(blogIri, to string, activity any) error {
 	body, err := json.Marshal(activity)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (db *database) apQueueSendSigned(blogIri, to string, activity any) error {
 	}).encode(buf); err != nil {
 		return err
 	}
-	return db.enqueue("ap", buf.Bytes(), time.Now())
+	return a.enqueue("ap", buf.Bytes(), time.Now())
 }
 
 func (r *apRequest) encode(w io.Writer) error {

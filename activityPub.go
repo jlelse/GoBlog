@@ -300,7 +300,7 @@ func (a *goBlog) apPost(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
-		"id":        a.fullPostURL(p),
+		"id":        a.activityPubId(p),
 		"published": n.Published,
 		"type":      "Create",
 		"object":    n,
@@ -311,7 +311,7 @@ func (a *goBlog) apUpdate(p *post) {
 	a.apSendToAllFollowers(p.Blog, map[string]any{
 		"@context":  []string{asContext},
 		"actor":     a.apIri(a.cfg.Blogs[p.Blog]),
-		"id":        a.fullPostURL(p),
+		"id":        a.activityPubId(p),
 		"published": time.Now().Format("2006-01-02T15:04:05-07:00"),
 		"type":      "Update",
 		"object":    a.toASNote(p),
@@ -323,22 +323,22 @@ func (a *goBlog) apDelete(p *post) {
 		"@context": []string{asContext},
 		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
 		"type":     "Delete",
-		"object":   a.fullPostURL(p),
+		"object":   a.activityPubId(p),
 	})
 }
 
 func (a *goBlog) apUndelete(p *post) {
-	a.apSendToAllFollowers(p.Blog, map[string]any{
-		"@context": []string{asContext},
-		"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
-		"type":     "Undo",
-		"object": map[string]any{
-			"@context": []string{asContext},
-			"actor":    a.apIri(a.cfg.Blogs[p.Blog]),
-			"type":     "Delete",
-			"object":   a.fullPostURL(p),
-		},
-	})
+	// The optimal way to do this would be to send a "Undo Delete" activity,
+	// but that doesn't work with Mastodon yet.
+	// see:
+	// https://socialhub.activitypub.rocks/t/soft-deletes-and-restoring-deleted-posts/2318
+	// https://github.com/mastodon/mastodon/issues/17553
+
+	// Update "activityPubVersion" parameter to current timestamp in nanoseconds
+	p.Parameters[activityPubVersionParam] = []string{fmt.Sprintf("%d", utcNowNanos())}
+	a.db.replacePostParam(p.Path, activityPubVersionParam, p.Parameters[activityPubVersionParam])
+	// Post as new post
+	a.apPost(p)
 }
 
 func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]any) {
@@ -373,7 +373,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]a
 		"object":   follow,
 	}
 	_, accept["id"] = a.apNewID(blog)
-	_ = a.db.apQueueSendSigned(a.apIri(blog), inbox, accept)
+	_ = a.apQueueSendSigned(a.apIri(blog), inbox, accept)
 }
 
 func (a *goBlog) apSendToAllFollowers(blog string, activity any) {
@@ -382,13 +382,13 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity any) {
 		log.Println("Failed to retrieve inboxes:", err.Error())
 		return
 	}
-	a.db.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes)
+	a.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes)
 }
 
-func (db *database) apSendTo(blogIri string, activity any, inboxes []string) {
+func (a *goBlog) apSendTo(blogIri string, activity any, inboxes []string) {
 	for _, i := range inboxes {
 		go func(inbox string) {
-			_ = db.apQueueSendSigned(blogIri, inbox, activity)
+			_ = a.apQueueSendSigned(blogIri, inbox, activity)
 		}(i)
 	}
 }

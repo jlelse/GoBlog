@@ -44,7 +44,7 @@ func (a *goBlog) queueMention(m *mention) error {
 	if err := gob.NewEncoder(buf).Encode(m); err != nil {
 		return err
 	}
-	return a.db.enqueue("wm", buf.Bytes(), time.Now())
+	return a.enqueue("wm", buf.Bytes(), time.Now())
 }
 
 func (a *goBlog) verifyMention(m *mention) error {

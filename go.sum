@@ -438,8 +438,8 @@ github.com/tdewolff/parse/v2 v2.5.27/go.mod h1:WzaJpRSbwq++EIQHYIRTpbYKNA3gn9it1
 github.com/tdewolff/test v1.0.6 h1:76mzYJQ83Op284kMT+63iCNCI7NEERsIN8dLM+RiKr4=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
 github.com/thoas/go-funk v0.9.1 h1:O549iLZqPpTUQ10ykd26sZhzD+rmR5pWhuElrhbC20M=
-github.com/tkrajina/gpxgo v1.2.1 h1:MJJtT4Re5btDGg89brFDrUP3EWz+cBmyo8pQwV0ZOak=
-github.com/tkrajina/gpxgo v1.2.1/go.mod h1:795sjVRFo5wWyN6oOZp0RYienGGBJjpAlgOz2nCngA0=
+github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec h1:o5aL1yX+/xzvK4QfZe/iDcCoRrFoOQ/Dn43jV/thKBM=
+github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec/go.mod h1:795sjVRFo5wWyN6oOZp0RYienGGBJjpAlgOz2nCngA0=
 github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 h1:nrZ3ySNYwJbSpD6ce9duiP+QkD3JuLCcWkdaehUS/3Y=
 github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80/go.mod h1:iFyPdL66DjUD96XmzVL3ZntbzcflLnznH0fr99w5VqE=
 github.com/u-root/uio v0.0.0-20210528114334-82958018845c h1:BFvcl34IGnw8yvJi8hlqLFo9EshRInwWBs2M5fGWzQA=

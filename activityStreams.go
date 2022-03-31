@@ -101,7 +101,7 @@ func (a *goBlog) toASNote(p *post) *asNote {
 		Context:      []string{asContext},
 		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
 		MediaType:    contenttype.HTML,
-		ID:           a.fullPostURL(p),
+		ID:           a.activityPubId(p),
 		URL:          a.fullPostURL(p),
 		AttributedTo: a.apIri(a.cfg.Blogs[p.Blog]),
 	}
@@ -150,6 +150,16 @@ func (a *goBlog) toASNote(p *post) *asNote {
 		as.InReplyTo = replyLink
 	}
 	return as
+}
+
+const activityPubVersionParam = "activitypubversion"
+
+func (a *goBlog) activityPubId(p *post) string {
+	fu := a.fullPostURL(p)
+	if version := p.firstParameter(activityPubVersionParam); version != "" {
+		return fu + "?activitypubversion=" + version
+	}
+	return fu
 }
 
 func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {

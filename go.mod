@@ -50,7 +50,8 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
 	github.com/tdewolff/minify/v2 v2.10.0
-	github.com/tkrajina/gpxgo v1.2.1
+	// master
+	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/yuin/goldmark v1.4.11

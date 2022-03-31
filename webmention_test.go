@@ -76,10 +76,11 @@ func Test_webmentions(t *testing.T) {
 	mentions = app.db.getWebmentionsByAddress("https://example.com/t%C3%A4st")
 	assert.Len(t, mentions, 1)
 
-	app.db.deleteWebmention(&mention{
+	err = app.db.deleteWebmention(&mention{
 		Source: "https://example.net/test",
 		Target: "https://example.com/T%C3%84ST",
 	})
+	assert.NoError(t, err)
 
 	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
 	assert.Len(t, mentions, 0)

@@ -144,3 +144,13 @@ func Test_lowerUnescaptedPath(t *testing.T) {
 	assert.Equal(t, "/de/posts/fahrradanhänger", lowerUnescapedPath("/de/posts/fahrradanh%C3%84nger"))
 	assert.Equal(t, "/de/posts/fahrradanhänger", lowerUnescapedPath("/de/posts/fahrradanhÄnger"))
 }
+
+func Fuzz_lowerUnescaptedPath(f *testing.F) {
+	f.Add("/de/posts/fahrradanh%C3%84nger")
+	f.Fuzz(func(t *testing.T, str string) {
+		out := lowerUnescapedPath(str)
+		if out == "" {
+			t.Error("Empty output")
+		}
+	})
+}
