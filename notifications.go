@@ -34,7 +34,7 @@ func (a *goBlog) sendNotification(text string) {
 		if err := a.sendNtfy(cfg.Ntfy, n.Text); err != nil {
 			log.Println("Failed to send notification to Ntfy:", err.Error())
 		}
-		if _, _, err := a.sendTelegram(cfg.Telegram, n.Text, ""); err != nil {
+		if _, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false); err != nil {
 			log.Println("Failed to send notification to Telegram:", err.Error())
 		}
 	}

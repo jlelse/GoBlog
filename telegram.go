@@ -11,7 +11,21 @@ import (
 )
 
 func (a *goBlog) initTelegram() {
-	a.pPostHooks = append(a.pPostHooks, func(p *post) {
+	a.pPostHooks = append(a.pPostHooks, a.tgPost(false))
+	a.pUpdateHooks = append(a.pUpdateHooks, a.tgUpdate)
+	a.pDeleteHooks = append(a.pDeleteHooks, a.tgDelete)
+	a.pUndeleteHooks = append(a.pUndeleteHooks, a.tgPost(true))
+}
+
+func (tg *configTelegram) enabled() bool {
+	if tg == nil || !tg.Enabled || tg.BotToken == "" || tg.ChatID == "" {
+		return false
+	}
+	return true
+}
+
+func (a *goBlog) tgPost(silent bool) func(*post) {
+	return func(p *post) {
 		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() && p.isPublishedSectionPost() {
 			tgChat := p.firstParameter("telegramchat")
 			tgMsg := p.firstParameter("telegrammsg")
@@ -25,7 +39,7 @@ func (a *goBlog) initTelegram() {
 				return
 			}
 			// Send message
-			chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML)
+			chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML, silent)
 			if err != nil {
 				log.Printf("Failed to send post to Telegram: %v", err)
 				return
@@ -44,83 +58,77 @@ func (a *goBlog) initTelegram() {
 				log.Printf("Failed to save Telegram message id: %v", err)
 			}
 		}
-	})
-	a.pUpdateHooks = append(a.pUpdateHooks, func(p *post) {
-		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
-			tgChat := p.firstParameter("telegramchat")
-			tgMsg := p.firstParameter("telegrammsg")
-			if tgChat == "" || tgMsg == "" {
-				// Not send to Telegram
-				return
-			}
-			// Parse tgChat to int64
-			chatId, err := strconv.ParseInt(tgChat, 10, 64)
-			if err != nil {
-				log.Printf("Failed to parse Telegram chat ID: %v", err)
-				return
-			}
-			// Parse tgMsg to int
-			messageId, err := strconv.Atoi(tgMsg)
-			if err != nil {
-				log.Printf("Failed to parse Telegram message ID: %v", err)
-				return
-			}
-			// Generate HTML
-			html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
-			if html == "" {
-				return
-			}
-			// Send update
-			err = a.updateTelegram(tg, chatId, messageId, html, "HTML")
-			if err != nil {
-				log.Printf("Failed to send update to Telegram: %v", err)
-			}
-		}
-	})
-	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
-		if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
-			tgChat := p.firstParameter("telegramchat")
-			tgMsg := p.firstParameter("telegrammsg")
-			if tgChat == "" || tgMsg == "" {
-				// Not send to Telegram
-				return
-			}
-			// Parse tgChat to int64
-			chatId, err := strconv.ParseInt(tgChat, 10, 64)
-			if err != nil {
-				log.Printf("Failed to parse Telegram chat ID: %v", err)
-				return
-			}
-			// Parse tgMsg to int
-			messageId, err := strconv.Atoi(tgMsg)
-			if err != nil {
-				log.Printf("Failed to parse Telegram message ID: %v", err)
-				return
-			}
-			// Delete message
-			err = a.deleteTelegram(tg, chatId, messageId)
-			if err != nil {
-				log.Printf("Failed to delete Telegram message: %v", err)
-			}
-			// Delete chat and message id from post
-			err = a.db.replacePostParam(p.Path, "telegramchat", []string{})
-			if err != nil {
-				log.Printf("Failed to remove Telegram chat id: %v", err)
-			}
-			err = a.db.replacePostParam(p.Path, "telegrammsg", []string{})
-			if err != nil {
-				log.Printf("Failed to remove Telegram message id: %v", err)
-			}
-		}
-	})
-	// TODO: Handle undelete
+	}
 }
 
-func (tg *configTelegram) enabled() bool {
-	if tg == nil || !tg.Enabled || tg.BotToken == "" || tg.ChatID == "" {
-		return false
+func (a *goBlog) tgUpdate(p *post) {
+	if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
+		tgChat := p.firstParameter("telegramchat")
+		tgMsg := p.firstParameter("telegrammsg")
+		if tgChat == "" || tgMsg == "" {
+			// Not send to Telegram
+			return
+		}
+		// Parse tgChat to int64
+		chatId, err := strconv.ParseInt(tgChat, 10, 64)
+		if err != nil {
+			log.Printf("Failed to parse Telegram chat ID: %v", err)
+			return
+		}
+		// Parse tgMsg to int
+		messageId, err := strconv.Atoi(tgMsg)
+		if err != nil {
+			log.Printf("Failed to parse Telegram message ID: %v", err)
+			return
+		}
+		// Generate HTML
+		html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
+		if html == "" {
+			return
+		}
+		// Send update
+		err = a.updateTelegram(tg, chatId, messageId, html, "HTML")
+		if err != nil {
+			log.Printf("Failed to send update to Telegram: %v", err)
+		}
 	}
-	return true
+}
+
+func (a *goBlog) tgDelete(p *post) {
+	if tg := a.cfg.Blogs[p.Blog].Telegram; tg.enabled() {
+		tgChat := p.firstParameter("telegramchat")
+		tgMsg := p.firstParameter("telegrammsg")
+		if tgChat == "" || tgMsg == "" {
+			// Not send to Telegram
+			return
+		}
+		// Parse tgChat to int64
+		chatId, err := strconv.ParseInt(tgChat, 10, 64)
+		if err != nil {
+			log.Printf("Failed to parse Telegram chat ID: %v", err)
+			return
+		}
+		// Parse tgMsg to int
+		messageId, err := strconv.Atoi(tgMsg)
+		if err != nil {
+			log.Printf("Failed to parse Telegram message ID: %v", err)
+			return
+		}
+		// Delete message
+		err = a.deleteTelegram(tg, chatId, messageId)
+		if err != nil {
+			log.Printf("Failed to delete Telegram message: %v", err)
+		}
+		// Delete chat and message id from post
+		err = a.db.replacePostParam(p.Path, "telegramchat", []string{})
+		if err != nil {
+			log.Printf("Failed to remove Telegram chat id: %v", err)
+		}
+		err = a.db.replacePostParam(p.Path, "telegrammsg", []string{})
+		if err != nil {
+			log.Printf("Failed to remove Telegram message id: %v", err)
+		}
+	}
 }
 
 func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) (html string) {
@@ -146,7 +154,7 @@ func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) (html st
 	return
 }
 
-func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string) (int64, int, error) {
+func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string, silent bool) (int64, int, error) {
 	if !tg.enabled() {
 		return 0, 0, nil
 	}
@@ -156,7 +164,8 @@ func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string) (int64, 
 	}
 	msg := tgbotapi.MessageConfig{
 		BaseChat: tgbotapi.BaseChat{
-			ChannelUsername: tg.ChatID,
+			ChannelUsername:     tg.ChatID,
+			DisableNotification: silent,
 		},
 		Text:      message,
 		ParseMode: mode,
