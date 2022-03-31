@@ -21,7 +21,7 @@ import (
 )
 
 func (a *goBlog) initWebmentionQueue() {
-	a.listenOnQueue("wm", time.Minute, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
+	a.listenOnQueue("wm", 30*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
 		var m mention
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
 			log.Println("webmention queue:", err.Error())

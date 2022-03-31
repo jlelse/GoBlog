@@ -6,8 +6,8 @@ import (
 )
 
 func (a *goBlog) startPostsScheduler() {
-	ticker := time.NewTicker(10 * time.Second)
-	done := make(chan bool)
+	ticker := time.NewTicker(30 * time.Second)
+	done := make(chan struct{})
 	go func() {
 		for {
 			select {
@@ -20,7 +20,7 @@ func (a *goBlog) startPostsScheduler() {
 	}()
 	a.shutdown.Add(func() {
 		ticker.Stop()
-		done <- true
+		done <- struct{}{}
 		log.Println("Posts scheduler stopped")
 	})
 }

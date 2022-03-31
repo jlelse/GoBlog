@@ -73,8 +73,6 @@ type goBlog struct {
 	regexRedirects []*regexRedirect
 	// Sessions
 	loginSessions, captchaSessions *dbSessionStore
-	// Queue triggers
-	queueTriggers []chan struct{}
 	// Shutdown
 	shutdown shutdowner.Shutdowner
 	// Template strings
