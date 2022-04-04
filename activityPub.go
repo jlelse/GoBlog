@@ -336,7 +336,7 @@ func (a *goBlog) apUndelete(p *post) {
 
 	// Update "activityPubVersion" parameter to current timestamp in nanoseconds
 	p.Parameters[activityPubVersionParam] = []string{fmt.Sprintf("%d", utcNowNanos())}
-	a.db.replacePostParam(p.Path, activityPubVersionParam, p.Parameters[activityPubVersionParam])
+	_ = a.db.replacePostParam(p.Path, activityPubVersionParam, p.Parameters[activityPubVersionParam])
 	// Post as new post
 	a.apPost(p)
 }

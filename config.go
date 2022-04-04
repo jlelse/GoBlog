@@ -267,6 +267,9 @@ type configNotifications struct {
 type configNtfy struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Topic   string `mapstructure:"topic"`
+	Server  string `mapstructure:"server"`
+	User    string `mapstructure:"user"`
+	Pass    string `mapstructure:"pass"`
 }
 
 type configTelegram struct {

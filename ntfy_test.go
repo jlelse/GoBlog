@@ -17,35 +17,73 @@ func Test_ntfySending(t *testing.T) {
 		cfg:        createDefaultTestConfig(t),
 		httpClient: fakeClient.Client,
 	}
-	app.cfg.Notifications = &configNotifications{
-		Ntfy: &configNtfy{
-			Enabled: true,
-			Topic:   "example.com/topic",
-		},
-	}
 
 	_ = app.initConfig()
 	_ = app.initDatabase(false)
 	defer app.db.close()
 	app.initComponents(false)
 
-	app.sendNotification("Test notification")
+	t.Run("Default", func(t *testing.T) {
+		app.cfg.Notifications = &configNotifications{
+			Ntfy: &configNtfy{
+				Enabled: true,
+				Topic:   "topic",
+			},
+		}
 
-	req := fakeClient.req
+		app.sendNotification("Test notification")
 
-	require.NotNil(t, req)
-	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Equal(t, "https://example.com/topic", req.URL.String())
+		req := fakeClient.req
 
-	reqBody, _ := req.GetBody()
-	reqBodyByte, _ := io.ReadAll(reqBody)
+		require.NotNil(t, req)
+		assert.Equal(t, http.MethodPost, req.Method)
+		assert.Equal(t, "https://ntfy.sh/topic", req.URL.String())
 
-	assert.Equal(t, "Test notification", string(reqBodyByte))
+		reqBody, _ := req.GetBody()
+		reqBodyByte, _ := io.ReadAll(reqBody)
 
-	res := fakeClient.res
+		assert.Equal(t, "Test notification", string(reqBodyByte))
 
-	require.NotNil(t, res)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+		res := fakeClient.res
+
+		require.NotNil(t, res)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
+
+	t.Run("Custom server with Basic Auth", func(t *testing.T) {
+		app.cfg.Notifications = &configNotifications{
+			Ntfy: &configNtfy{
+				Enabled: true,
+				Topic:   "topic",
+				Server:  "https://ntfy.example.com",
+				User:    "user",
+				Pass:    "pass",
+			},
+		}
+
+		app.sendNotification("Test notification")
+
+		req := fakeClient.req
+
+		require.NotNil(t, req)
+		assert.Equal(t, http.MethodPost, req.Method)
+		assert.Equal(t, "https://ntfy.example.com/topic", req.URL.String())
+
+		user, pass, _ := req.BasicAuth()
+		assert.Equal(t, "user", user)
+		assert.Equal(t, "pass", pass)
+
+		reqBody, _ := req.GetBody()
+		reqBodyByte, _ := io.ReadAll(reqBody)
+
+		assert.Equal(t, "Test notification", string(reqBodyByte))
+
+		res := fakeClient.res
+
+		require.NotNil(t, res)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
+
 }
 
 func Test_ntfyConfig(t *testing.T) {
@@ -61,7 +99,7 @@ func Test_ntfyConfig(t *testing.T) {
 
 	assert.False(t, cfg.enabled())
 
-	cfg.Topic = "example.com/topic"
+	cfg.Topic = "topic"
 
 	assert.True(t, cfg.enabled())
 }

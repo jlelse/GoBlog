@@ -131,7 +131,10 @@ micropub:
 notifications:
   ntfy: # Receive notifications using Ntfy.sh
     enabled: true # Enable it
-    topic: ntfy.sh/mynotificationstopic # The topic for the notifications
+    topic: mynotificationstopic # The topic for the notifications
+    server: https://ntfy.sh # The server to use (default is https://ntfy.sh)
+    user: myusername # The username to use (optional)
+    password: mypassword # The password to use (optional)
   telegram: # Receive notifications via Telegram
     enabled: true # Enable it
     chatId: 123456 # Telegram chat ID (usually the user id on Telegram)
