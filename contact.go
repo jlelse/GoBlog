@@ -79,6 +79,7 @@ func (*goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
 	// Build email
 	email := bufferpool.Get()
 	defer bufferpool.Put(email)
+	_, _ = email.WriteString("Content-Type: text/plain; charset=UTF-8\n")
 	_, _ = fmt.Fprintf(email, "To: %s\n", cc.EmailTo)
 	if replyTo != "" {
 		_, _ = fmt.Fprintf(email, "Reply-To: %s\n", replyTo)
