@@ -32,10 +32,10 @@ linters:
     - gosec
 linters-settings:
   gosimple:
-    go: "1.17"
+    go: "1.18"
     checks: ["all"]
   gostatichcheck:
-    go: "1.17"
+    go: "1.18"
     checks: ["all"]
   dupl:
     threshold: 125

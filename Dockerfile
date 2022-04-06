@@ -16,10 +16,6 @@ FROM buildbase as build
 
 RUN go build -ldflags '-w -s' -o GoBlog
 
-FROM build as test
-
-RUN go test -timeout 15s -cover ./...
-
 FROM alpine:3.15 as base
 
 WORKDIR /app
