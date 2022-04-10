@@ -138,7 +138,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return
 			}
-			gpx, err := io.ReadAll(a.min.Reader(contenttype.XML, file))
+			gpx, err := io.ReadAll(a.min.Get().Reader(contenttype.XML, file))
 			if err != nil {
 				a.serveError(w, r, err.Error(), http.StatusBadRequest)
 				return

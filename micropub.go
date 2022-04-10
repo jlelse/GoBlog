@@ -73,15 +73,12 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	}
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	mw := a.min.Writer(contenttype.JSON, buf)
-	err := json.NewEncoder(mw).Encode(result)
-	_ = mw.Close()
-	if err != nil {
+	if err := json.NewEncoder(buf).Encode(result); err != nil {
 		a.serveError(w, r, "Failed to encode json", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = io.Copy(w, buf)
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
 }
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {

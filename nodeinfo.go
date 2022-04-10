@@ -25,7 +25,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	mw := a.min.Writer(contenttype.JSON, w)
+	mw := a.min.Get().Writer(contenttype.JSON, w)
 	_, _ = io.Copy(mw, buf)
 	_ = mw.Close()
 }
@@ -36,7 +36,7 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	})
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	err := json.NewEncoder(buf).Encode(map[string]any{
+	if err := json.NewEncoder(buf).Encode(map[string]any{
 		"version": "2.1",
 		"software": map[string]any{
 			"name":       "goblog",
@@ -54,13 +54,10 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 			"webmention",
 		},
 		"metadata": map[string]any{},
-	})
-	if err != nil {
+	}); err != nil {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	mw := a.min.Writer(contenttype.JSON, w)
-	_, _ = io.Copy(mw, buf)
-	_ = mw.Close()
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
 }

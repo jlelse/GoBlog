@@ -22,6 +22,7 @@ import (
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
 	"github.com/spf13/cast"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -89,7 +90,10 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	apIri := a.apIri(blog)
-	b, _ := json.Marshal(map[string]any{
+	// Encode
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := xml.NewEncoder(buf).Encode(map[string]any{
 		"subject": a.webfingerAccts[apIri],
 		"aliases": []string{
 			a.webfingerAccts[apIri],
@@ -107,9 +111,12 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 				"href": apIri,
 			},
 		},
-	})
+	}); err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
-	_, _ = a.min.Write(w, contenttype.JSON, b)
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
 }
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {

@@ -1,7 +1,6 @@
 package minify
 
 import (
-	"io"
 	"sync"
 
 	"github.com/tdewolff/minify/v2"
@@ -21,12 +20,18 @@ type Minifier struct {
 func (m *Minifier) init() {
 	m.i.Do(func() {
 		m.m = minify.New()
+		// HTML
 		m.m.AddFunc(contenttype.HTML, mHtml.Minify)
+		// CSS
 		m.m.AddFunc(contenttype.CSS, mCss.Minify)
-		m.m.AddFunc(contenttype.XML, mXml.Minify)
+		// JS
 		m.m.AddFunc(contenttype.JS, mJs.Minify)
+		// XML
+		m.m.AddFunc(contenttype.XML, mXml.Minify)
 		m.m.AddFunc(contenttype.RSS, mXml.Minify)
 		m.m.AddFunc(contenttype.ATOM, mXml.Minify)
+		// JSON
+		m.m.AddFunc(contenttype.JSON, mJson.Minify)
 		m.m.AddFunc(contenttype.JSONFeed, mJson.Minify)
 		m.m.AddFunc(contenttype.AS, mJson.Minify)
 	})
@@ -35,22 +40,4 @@ func (m *Minifier) init() {
 func (m *Minifier) Get() *minify.M {
 	m.init()
 	return m.m
-}
-
-func (m *Minifier) Write(w io.Writer, mediatype string, b []byte) (int, error) {
-	mw := m.Writer(mediatype, w)
-	defer mw.Close()
-	return mw.Write(b)
-}
-
-func (m *Minifier) Minify(mediatype string, w io.Writer, r io.Reader) error {
-	return m.Get().Minify(mediatype, w, r)
-}
-
-func (m *Minifier) Writer(mediatype string, w io.Writer) io.WriteCloser {
-	return m.Get().Writer(mediatype, w)
-}
-
-func (m *Minifier) Reader(mediatype string, r io.Reader) io.Reader {
-	return m.Get().Reader(mediatype, r)
 }

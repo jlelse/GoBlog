@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -54,20 +53,17 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	}
 	opmlBuf := bufferpool.Get()
 	defer bufferpool.Put(opmlBuf)
-	mw := a.min.Writer(contenttype.XML, opmlBuf)
-	err = opml.Render(mw, &opml.OPML{
+	if err = opml.Render(opmlBuf, &opml.OPML{
 		Version:     "2.0",
 		DateCreated: time.Now().UTC(),
 		Outlines:    outlines.([]*opml.Outline),
-	})
-	_ = mw.Close()
-	if err != nil {
+	}); err != nil {
 		log.Printf("Failed to render OPML: %v", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_, _ = io.Copy(w, opmlBuf)
+	_ = a.min.Get().Minify(contenttype.XML, w, opmlBuf)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -90,9 +91,14 @@ type asEndpoints struct {
 }
 
 func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter) {
-	b, _ := json.Marshal(a.toASNote(p))
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := json.NewEncoder(buf).Encode(a.toASNote(p)); err != nil {
+		http.Error(w, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, contenttype.ASUTF8)
-	_, _ = a.min.Write(w, contenttype.AS, b)
+	_ = a.min.Get().Minify(contenttype.AS, w, buf)
 }
 
 func (a *goBlog) toASNote(p *post) *asNote {
@@ -195,7 +201,13 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 			URL:  a.cfg.User.Picture,
 		}
 	}
-	jb, _ := json.Marshal(asBlog)
+	// Encode
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := json.NewEncoder(buf).Encode(asBlog); err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, contenttype.ASUTF8)
-	_, _ = a.min.Write(w, contenttype.AS, jb)
+	a.min.Get().Minify(contenttype.AS, w, buf)
 }

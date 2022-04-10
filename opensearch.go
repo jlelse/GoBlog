@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/xml"
-	"io"
 	"net/http"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -35,7 +35,6 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 	_, b := a.getBlog(r)
 	title := a.renderMdTitle(b.Title)
 	sURL := a.getFullAddress(b.getRelativePath(defaultIfEmpty(b.Search.Path, defaultSearchPath)))
-	w.Header().Set(contentType, "application/opensearchdescription+xml"+contenttype.CharsetUtf8Suffix)
 	openSearch := &openSearchDescription{
 		ShortName:   title,
 		Description: title,
@@ -50,10 +49,15 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 		},
 		SearchForm: sURL,
 	}
-	mw := a.min.Writer(contenttype.XML, w)
-	_, _ = io.WriteString(mw, xml.Header)
-	_ = xml.NewEncoder(mw).Encode(openSearch)
-	_ = mw.Close()
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	_, _ = buf.WriteString(xml.Header)
+	if err := xml.NewEncoder(buf).Encode(openSearch); err != nil {
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentType, "application/opensearchdescription+xml"+contenttype.CharsetUtf8Suffix)
+	_ = a.min.Get().Minify(contenttype.XML, w, buf)
 }
 
 func openSearchUrl(b *configBlog) string {

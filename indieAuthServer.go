@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hacdias/indieauth/v2"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -137,9 +138,14 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		resp.Token = token
 		resp.Scope = strings.Join(data.Scopes, " ")
 	}
-	b, _ := json.Marshal(resp)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err = json.NewEncoder(buf).Encode(resp); err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = a.min.Write(w, contenttype.JSON, b)
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
 }
 
 // Save the authorization request and return the code
@@ -196,9 +202,14 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 		Me:       a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
 		ClientID: data.ClientID,
 	}
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err = json.NewEncoder(buf).Encode(res); err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	b, _ := json.Marshal(res)
-	_, _ = a.min.Write(w, contenttype.JSON, b)
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
 }
 
 // Checks the database for the token and returns the indieAuthData with client and scope.

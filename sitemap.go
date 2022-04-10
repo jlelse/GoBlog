@@ -3,12 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/xml"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/araddon/dateparse"
 	"github.com/snabb/sitemap"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -20,7 +20,7 @@ const (
 	sitemapBlogPostsPath    = "/sitemap-blog-posts.xml"
 )
 
-func (a *goBlog) serveSitemap(w http.ResponseWriter, _ *http.Request) {
+func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.NewSitemapIndex()
 	// Add blog sitemap indices
@@ -32,7 +32,7 @@ func (a *goBlog) serveSitemap(w http.ResponseWriter, _ *http.Request) {
 		})
 	}
 	// Write sitemap
-	a.writeSitemapXML(w, sm)
+	a.writeSitemapXML(w, r, sm)
 }
 
 func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
 		LastMod: &now,
 	})
 	// Write sitemap
-	a.writeSitemapXML(w, sm)
+	a.writeSitemapXML(w, r, sm)
 }
 
 func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +103,7 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 		})
 	}
 	// Write sitemap
-	a.writeSitemapXML(w, sm)
+	a.writeSitemapXML(w, r, sm)
 }
 
 func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +145,7 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 		})
 	}
 	// Write sitemap
-	a.writeSitemapXML(w, sm)
+	a.writeSitemapXML(w, r, sm)
 }
 
 // Serve sitemap with all the blog's posts
@@ -169,24 +169,22 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 		sm.Add(item)
 	}
 	// Write sitemap
-	a.writeSitemapXML(w, sm)
+	a.writeSitemapXML(w, r, sm)
 }
 
-func (a *goBlog) writeSitemapXML(w http.ResponseWriter, sm any) {
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, r *http.Request, sm any) {
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	_, _ = buf.WriteString(xml.Header)
+	_, _ = buf.WriteString(`<?xml-stylesheet type="text/xsl" href="`)
+	_, _ = buf.WriteString(a.assetFileName("sitemap.xsl"))
+	_, _ = buf.WriteString(`" ?>`)
+	if err := xml.NewEncoder(buf).Encode(sm); err != nil {
+		a.serveError(w, r, "Failed to encode sitemap", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	pipeReader, pipeWriter := io.Pipe()
-	go func() {
-		mw := a.min.Writer(contenttype.XML, pipeWriter)
-		_, _ = io.WriteString(mw, xml.Header)
-		_, _ = io.WriteString(mw, `<?xml-stylesheet type="text/xsl" href="`)
-		_, _ = io.WriteString(mw, a.assetFileName("sitemap.xsl"))
-		_, _ = io.WriteString(mw, `" ?>`)
-		writeErr := xml.NewEncoder(mw).Encode(sm)
-		_ = mw.Close()
-		_ = pipeWriter.CloseWithError(writeErr)
-	}()
-	_, copyErr := io.Copy(w, pipeReader)
-	_ = pipeReader.CloseWithError(copyErr)
+	_ = a.min.Get().Minify(contenttype.XML, w, buf)
 }
 
 const sitemapDatePathsSql = `

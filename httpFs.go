@@ -18,15 +18,15 @@ func (a *goBlog) serveFs(f fs.FS, basePath string) http.HandlerFunc {
 			a.serve404(w, r)
 			return
 		}
-		var read io.Reader = file
 		switch path.Ext(fileName) {
 		case ".js":
 			w.Header().Set(contentType, contenttype.JSUTF8)
-			read = a.min.Reader(contenttype.JS, read)
+			_ = a.min.Get().Minify(contenttype.JS, w, file)
 		case ".css":
 			w.Header().Set(contentType, contenttype.CSSUTF8)
-			read = a.min.Reader(contenttype.CSS, read)
+			_ = a.min.Get().Minify(contenttype.CSS, w, file)
+		default:
+			_, _ = io.Copy(w, file)
 		}
-		_, _ = io.Copy(w, read)
 	}
 }

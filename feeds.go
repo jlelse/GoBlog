@@ -74,6 +74,6 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		_ = pipeWriter.CloseWithError(writeErr)
 	}()
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
-	minifyErr := a.min.Minify(feedMediaType, w, pipeReader)
+	minifyErr := a.min.Get().Minify(feedMediaType, w, pipeReader)
 	_ = pipeReader.CloseWithError(minifyErr)
 }

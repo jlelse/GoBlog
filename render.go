@@ -41,13 +41,10 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Render
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		minifyWriter := a.min.Writer(contenttype.HTML, pipeWriter)
-		f(newHtmlBuilder(minifyWriter), data)
-		_ = minifyWriter.Close()
+		f(newHtmlBuilder(pipeWriter), data)
 		_ = pipeWriter.Close()
 	}()
-	_, readErr := io.Copy(w, pipeReader)
-	_ = pipeReader.CloseWithError(readErr)
+	_ = pipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pipeReader))
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

@@ -53,11 +53,11 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	ext := path.Ext(name)
 	switch ext {
 	case ".js":
-		read = a.min.Reader(contenttype.JS, read)
+		read = a.min.Get().Reader(contenttype.JS, read)
 	case ".css":
-		read = a.min.Reader(contenttype.CSS, read)
+		read = a.min.Get().Reader(contenttype.CSS, read)
 	case ".xml", ".xsl":
-		read = a.min.Reader(contenttype.XML, read)
+		read = a.min.Get().Reader(contenttype.XML, read)
 	}
 	// Read file
 	hash := sha256.New()
