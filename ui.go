@@ -903,6 +903,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("button")
 			hb.writeElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
 			hb.writeElementClose("script")
+			// Close post actions
 			hb.writeElementClose("div")
 			// TTS
 			if tts := p.TTS(); tts != "" {
@@ -1031,7 +1032,7 @@ func (a *goBlog) renderStaticHome(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementClose("main")
 			// Update
 			if rd.LoggedIn() {
-				hb.writeElementOpen("div", "id", "posteditactions")
+				hb.writeElementOpen("div", "class", "actions")
 				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor")+"#update")
 				hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "loadupdate")
 				hb.writeElementOpen("input", "type", "hidden", "name", "path", "value", p.Path)
