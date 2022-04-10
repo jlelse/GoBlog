@@ -886,7 +886,14 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "share"))
 			hb.writeElementClose("a")
 			// Translate button
-			hb.writeElementOpen("a", "id", "translateBtn", "class", "button", "href", fmt.Sprintf("https://translate.google.com/translate?u=%s", a.getFullAddress(p.Path)), "target", "_blank", "rel", "nofollow noopener noreferrer", "title", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "translate"))
+			hb.writeElementOpen(
+				"a", "id", "translateBtn",
+				"class", "button",
+				"href", fmt.Sprintf("https://translate.google.com/translate?u=%s", a.getFullAddress(p.Path)),
+				"target", "_blank", "rel", "nofollow noopener noreferrer",
+				"title", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "translate"),
+				"translate", "no",
+			)
 			hb.writeEscaped("A ⇄ 文")
 			hb.writeElementClose("a")
 			hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/translate.js"))
