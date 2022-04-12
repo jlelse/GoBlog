@@ -2,11 +2,10 @@ package main
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/http"
 
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
 	"tailscale.com/client/tailscale"
 )
 
@@ -15,24 +14,11 @@ func (a *goBlog) getTCPListener(s *http.Server) (net.Listener, error) {
 		// Tailscale listener
 		return a.getTailscaleListener(s.Addr)
 	} else if s.Addr == ":443" && a.cfg.Server.PublicHTTPS {
-		// Listener with public HTTPS
-		hosts := []string{a.cfg.Server.publicHostname}
-		if shn := a.cfg.Server.shortPublicHostname; shn != "" {
-			hosts = append(hosts, shn)
+		m := a.getAutocertManager()
+		if m == nil {
+			return nil, errors.New("autocert not initialized")
 		}
-		if mhn := a.cfg.Server.mediaHostname; mhn != "" {
-			hosts = append(hosts, mhn)
-		}
-		acmeDir := acme.LetsEncryptURL
-		// Uncomment for Staging Let's Encrypt
-		// acmeDir = "https://acme-staging-v02.api.letsencrypt.org/directory"
-		m := &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(hosts...),
-			Cache:      &httpsCache{db: a.db},
-			Client:     &acme.Client{DirectoryURL: acmeDir},
-		}
-		return m.Listener(), nil
+		return a.getAutocertManager().Listener(), nil
 	} else if s.Addr == ":443" && a.cfg.Server.TailscaleHTTPS {
 		// Listener with Tailscale TLS config
 		ln, err := net.Listen("tcp", s.Addr)

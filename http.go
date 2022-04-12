@@ -62,9 +62,13 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.PublicHTTPS || a.cfg.Server.TailscaleHTTPS {
 		go func() {
 			// Start HTTP server for redirects
+			h := http.Handler(http.HandlerFunc(a.redirectToHttps))
+			if m := a.getAutocertManager(); m != nil {
+				h = m.HTTPHandler(h)
+			}
 			httpServer := &http.Server{
 				Addr:         ":80",
-				Handler:      http.HandlerFunc(a.redirectToHttps),
+				Handler:      h,
 				ReadTimeout:  5 * time.Minute,
 				WriteTimeout: 5 * time.Minute,
 			}

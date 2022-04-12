@@ -13,6 +13,7 @@ import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/sync/singleflight"
 	"tailscale.com/tsnet"
 )
@@ -29,6 +30,9 @@ type goBlog struct {
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile
+	// Autocert
+	autocertManager *autocert.Manager
+	autocertInit    sync.Once
 	// Blogroll
 	blogrollCacheGroup singleflight.Group
 	// Blogstats

@@ -42,6 +42,9 @@ type configServer struct {
 	ShortPublicAddress  string           `mapstructure:"shortPublicAddress"`
 	MediaAddress        string           `mapstructure:"mediaAddress"`
 	PublicHTTPS         bool             `mapstructure:"publicHttps"`
+	AcmeDir             string           `mapstructure:"acmeDir"`
+	AcmeEabKid          string           `mapstructure:"acmeEabKid"`
+	AcmeEabKey          string           `mapstructure:"acmeEabKey"`
 	TailscaleHTTPS      bool             `mapstructure:"tailscaleHttps"`
 	Tailscale           *configTailscale `mapstructure:"tailscale"`
 	Tor                 bool             `mapstructure:"tor"`

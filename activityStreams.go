@@ -209,5 +209,5 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 		return
 	}
 	w.Header().Set(contentType, contenttype.ASUTF8)
-	a.min.Get().Minify(contenttype.AS, w, buf)
+	_ = a.min.Get().Minify(contenttype.AS, w, buf)
 }

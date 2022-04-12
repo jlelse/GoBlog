@@ -28,6 +28,10 @@ server:
   mediaAddress: https://media.example.com # Optional domain to use for serving media files
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
+  # To use another ACME server like ZeroSSL, set the following
+  # acmeDir: https://acme.zerossl.com/v2/DV90
+  # acmeEabKid: "kid" # Key ID for the EAB key
+  # acmeEabKey: "key" # Key for the EAB key
   securityHeaders: true # Set security HTTP headers (to always use HTTPS etc.)
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
