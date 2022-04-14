@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 type summaryTyp string
@@ -59,10 +61,20 @@ func (a *goBlog) renderSummary(hb *htmlBuilder, bc *configBlog, p *post, typ sum
 	}
 	// Show link to full post
 	hb.writeElementOpen("p")
+	prefix := bufferpool.Get()
 	if len(photos) > 0 {
 		// Contains photos
-		hb.writeEscaped("🖼️ ")
+		prefix.WriteString("🖼️")
 	}
+	if p.HasTrack() {
+		// Has GPX track
+		prefix.WriteString("🗺️")
+	}
+	if prefix.Len() > 0 {
+		prefix.WriteRune(' ')
+		hb.writeEscaped(prefix.String())
+	}
+	bufferpool.Put(prefix)
 	hb.writeElementOpen("a", "class", "u-url", "href", p.Path)
 	hb.writeEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "view"))
 	hb.writeElementClose("a")
