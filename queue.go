@@ -93,7 +93,7 @@ func (a *goBlog) listenOnQueue(queueName string, wait time.Duration, process que
 		for !done {
 			qi, err := a.peekQueue(ctx, queueName)
 			if err != nil {
-				log.Println("queue peek error:", err.Error())
+				// log.Println("queue peek error:", err.Error())
 				continue
 			}
 			if qi == nil {

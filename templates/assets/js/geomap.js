@@ -1,37 +1,68 @@
 (function () {
-    let mapEl = document.getElementById('map')
-    let locations = (mapEl.dataset.locations == "") ? [] : JSON.parse(mapEl.dataset.locations)
-    let tracks = (mapEl.dataset.tracks == "") ? [] : JSON.parse(mapEl.dataset.tracks)
+    function loadMap() {
+        // Get the map element
+        let mapEl = document.getElementById('map')
 
-    let map = L.map('map', {
-        minZoom: mapEl.dataset.minzoom,
-        maxZoom: mapEl.dataset.maxzoom
-    })
+        // Read the map data
+        // Map page
+        let locations = !mapEl.dataset.locations ? [] : JSON.parse(mapEl.dataset.locations)
+        let tracks = !mapEl.dataset.tracks ? [] : JSON.parse(mapEl.dataset.tracks)
+        // Post map
+        let paths = !mapEl.dataset.paths ? [] : JSON.parse(mapEl.dataset.paths)
+        let points = !mapEl.dataset.points ? [] : JSON.parse(mapEl.dataset.points)
 
-    L.tileLayer("/-/tiles/{s}/{z}/{x}/{y}.png", {
-        attribution: mapEl.dataset.attribution,
-    }).addTo(map)
+        // Create Leaflet map
+        let map = L.map('map', {
+            minZoom: mapEl.dataset.minzoom,
+            maxZoom: mapEl.dataset.maxzoom
+        })
 
-    let features = []
+        // Set tile source and attribution
+        L.tileLayer("/-/tiles/{s}/{z}/{x}/{y}.png", {
+            attribution: mapEl.dataset.attribution,
+        }).addTo(map)
 
-    locations.forEach(loc => {
-        features.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
-            window.open(loc.Post, '_blank').focus()
-        }))
-    })
-
-    tracks.forEach(track => {
-        track.Paths.forEach(path => {
-            features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
-                window.open(track.Post, '_blank').focus()
+        // Add features to the map
+        let features = []
+        locations.forEach(loc => {
+            features.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
+                window.open(loc.Post, '_blank').focus()
             }))
         })
-        track.Points.forEach(point => {
-            features.push(L.marker([point.Lat, point.Lon]).addTo(map).on('click', function () {
-                window.open(track.Post, '_blank').focus()
-            }))
+        tracks.forEach(track => {
+            track.Paths.forEach(path => {
+                features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
+                    window.open(track.Post, '_blank').focus()
+                }))
+            })
+            track.Points.forEach(point => {
+                features.push(L.marker([point.Lat, point.Lon]).addTo(map).on('click', function () {
+                    window.open(track.Post, '_blank').focus()
+                }))
+            })
         })
-    })
+        paths.forEach(path => {
+            features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map))
+        })
+        points.forEach(point => {
+            features.push(L.marker([point.Lat, point.Lon]).addTo(map))
+        })
 
-    map.fitBounds(L.featureGroup(features).getBounds(), { padding: [5, 5] })
+        // Make the map fit the features
+        map.fitBounds(L.featureGroup(features).getBounds(), { padding: [5, 5] })
+    }
+
+    // Add Leaflet to the page
+
+    // CSS
+    let css = document.createElement('link')
+    css.rel = 'stylesheet'
+    css.href = '/-/leaflet/leaflet.css'
+    document.head.appendChild(css)
+
+    // JS
+    let script = document.createElement('script')
+    script.src = '/-/leaflet/leaflet.js'
+    script.onload = loadMap
+    document.head.appendChild(script)
 })()

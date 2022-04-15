@@ -43,7 +43,7 @@ require (
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
-	github.com/samber/lo v1.12.0
+	github.com/samber/lo v1.13.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.4.1

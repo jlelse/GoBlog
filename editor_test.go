@@ -38,7 +38,8 @@ func Test_editorPreview(t *testing.T) {
 	require.Equal(t, websocket.TextMessage, mt)
 
 	msgStr := string(msg)
-	require.Contains(t, msgStr, "<h1>Title")
+	require.Contains(t, msgStr, "<h1")
+	require.Contains(t, msgStr, ">Title")
 	require.Contains(t, msgStr, "<p>Content")
 	require.Contains(t, msgStr, "Posts")
 

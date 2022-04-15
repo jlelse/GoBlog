@@ -290,12 +290,13 @@ func (a *goBlog) undeletePost(path string) error {
 }
 
 func (db *database) replacePostParam(path, param string, values []string) error {
+	// Filter empty values
+	values = lo.Filter(values, func(v string, _ int) bool { return v != "" })
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
 	sqlBuilder := bufferpool.Get()
-	defer bufferpool.Put(sqlBuilder)
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -304,15 +305,15 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	sqlArgs = append(sqlArgs, path, param)
 	// Insert new post parameters
 	for _, value := range values {
-		if value != "" {
-			sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
-			sqlArgs = append(sqlArgs, path, param, value)
-		}
+		sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+		sqlArgs = append(sqlArgs, path, param, value)
 	}
 	// Commit transaction
 	sqlBuilder.WriteString("commit;")
 	// Execute
-	if _, err := db.exec(sqlBuilder.String(), sqlArgs...); err != nil {
+	_, err := db.exec(sqlBuilder.String(), sqlArgs...)
+	bufferpool.Put(sqlBuilder)
+	if err != nil {
 		return err
 	}
 	// Update FTS index

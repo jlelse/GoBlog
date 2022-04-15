@@ -11,17 +11,14 @@ import (
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlBuilder, bc *configBlog, p *post) {
-	if p.RenderedTitle != "" {
-		hb.writeElementOpen("h1")
-		hb.writeEscaped(p.RenderedTitle)
-		hb.writeElementClose("h1")
-	}
+	a.renderPostTitle(hb, p)
 	a.renderPostMeta(hb, p, bc, "preview")
 	if p.Content != "" {
 		hb.writeElementOpen("div")
 		a.postHtmlToWriter(hb, p, true)
 		hb.writeElementClose("div")
 	}
+	// a.renderPostGPX(hb, p, bc)
 	a.renderPostTax(hb, p, bc)
 }
 
@@ -585,11 +582,6 @@ func (a *goBlog) renderGeoMap(hb *htmlBuilder, rd *renderData) {
 		hb, rd,
 		func(hb *htmlBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
-			if !gmd.noLocations {
-				hb.writeElementOpen("link", "rel", "stylesheet", "href", "/-/leaflet/leaflet.css")
-				hb.writeElementOpen("script", "src", "/-/leaflet/leaflet.js")
-				hb.writeElementClose("script")
-			}
 		},
 		func(hb *htmlBuilder) {
 			hb.writeElementOpen("main")
@@ -859,11 +851,6 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			if su := a.shortPostURL(p); su != "" {
 				hb.writeElementOpen("link", "rel", "shortlink", "href", su)
 			}
-			if p.HasTrack() {
-				hb.writeElementOpen("link", "rel", "stylesheet", "href", "/-/leaflet/leaflet.css")
-				hb.writeElementOpen("script", "src", "/-/leaflet/leaflet.js")
-				hb.writeElementClose("script")
-			}
 		},
 		func(hb *htmlBuilder) {
 			hb.writeElementOpen("main", "class", "h-entry")
@@ -872,11 +859,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementOpen("data", "value", a.getFullAddress(p.Path), "class", "u-url hide")
 			hb.writeElementClose("data")
 			// Title
-			if p.RenderedTitle != "" {
-				hb.writeElementOpen("h1", "class", "p-name")
-				hb.writeEscaped(p.RenderedTitle)
-				hb.writeElementClose("h1")
-			}
+			a.renderPostTitle(hb, p)
 			// Post meta
 			a.renderPostMeta(hb, p, rd.Blog, "post")
 			// Post actions
@@ -924,35 +907,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementClose("div")
 			}
 			// GPS Track
-			if p.HasTrack() {
-				if track, err := a.getTrack(p); err == nil && track != nil && track.HasPoints {
-					// Track stats
-					hb.writeElementOpen("p")
-					if track.Name != "" {
-						hb.writeElementOpen("strong")
-						hb.writeEscaped(track.Name)
-						hb.writeElementClose("strong")
-						hb.write(" ")
-					}
-					if track.Kilometers != "" {
-						hb.write("🏁 ")
-						hb.writeEscaped(track.Kilometers)
-						hb.write(" ")
-						hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "kilometers"))
-						hb.write(" ")
-					}
-					if track.Hours != "" {
-						hb.write("⏱ ")
-						hb.writeEscaped(track.Hours)
-					}
-					hb.writeElementClose("p")
-					// Map
-					hb.writeElementOpen("div", "id", "map", "class", "p", "data-paths", track.PathsJSON, "data-points", track.PointsJSON, "data-minzoom", track.MinZoom, "data-maxzoom", track.MaxZoom, "data-attribution", track.MapAttribution)
-					hb.writeElementClose("div")
-					hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/geotrack.js"))
-					hb.writeElementClose("script")
-				}
-			}
+			a.renderPostGPX(hb, p, rd.Blog)
 			// Taxonomies
 			a.renderPostTax(hb, p, rd.Blog)
 			hb.writeElementClose("article")

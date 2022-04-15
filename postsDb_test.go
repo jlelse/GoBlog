@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -360,5 +361,36 @@ func Test_usesOfMediaFile(t *testing.T) {
 	assert.Len(t, counts, 1)
 	if assert.NotEmpty(t, counts) {
 		assert.Equal(t, 2, counts[0])
+	}
+}
+
+func Test_replaceParams(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initDatabase(false)
+	defer app.db.close()
+
+	err := app.db.savePost(&post{
+		Path:    "/test/abc",
+		Content: "ABC",
+		Parameters: map[string][]string{
+			"test": {
+				"ABC", "DEF", "GHI",
+			},
+		},
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.replacePostParam("/test/abc", "test", []string{"DEF", "123", "456"})
+	require.NoError(t, err)
+
+	p, err := app.getPost("/test/abc")
+	require.NoError(t, err)
+
+	if assert.NotNil(t, p) {
+		assert.Len(t, p.Parameters["test"], 3)
+		union := lo.Union(p.Parameters["test"], []string{"DEF", "123", "456"})
+		assert.Len(t, union, 3)
 	}
 }

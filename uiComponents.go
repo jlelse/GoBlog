@@ -415,3 +415,53 @@ func (a *goBlog) renderPagination(hb *htmlBuilder, blog *configBlog, hasPrev, ha
 		hb.writeElementClose("p")
 	}
 }
+
+func (*goBlog) renderPostTitle(hb *htmlBuilder, p *post) {
+	if p == nil || p.RenderedTitle == "" {
+		return
+	}
+	hb.writeElementOpen("h1", "class", "p-name")
+	hb.writeEscaped(p.RenderedTitle)
+	hb.writeElementClose("h1")
+}
+
+func (a *goBlog) renderPostGPX(hb *htmlBuilder, p *post, b *configBlog) {
+	if p == nil || !p.HasTrack() {
+		return
+	}
+	track, err := a.getTrack(p)
+	if err != nil || track == nil || !track.HasPoints {
+		return
+	}
+	// Track stats
+	hb.writeElementOpen("p")
+	if track.Name != "" {
+		hb.writeElementOpen("strong")
+		hb.writeEscaped(track.Name)
+		hb.writeElementClose("strong")
+		hb.write(" ")
+	}
+	if track.Kilometers != "" {
+		hb.write("🏁 ")
+		hb.writeEscaped(track.Kilometers)
+		hb.write(" ")
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "kilometers"))
+		hb.write(" ")
+	}
+	if track.Hours != "" {
+		hb.write("⏱ ")
+		hb.writeEscaped(track.Hours)
+	}
+	hb.writeElementClose("p")
+	// Map
+	hb.writeElementOpen(
+		"div", "id", "map", "class", "p",
+		"data-paths", track.PathsJSON,
+		"data-points", track.PointsJSON,
+		"data-minzoom", track.MinZoom, "data-maxzoom", track.MaxZoom,
+		"data-attribution", track.MapAttribution,
+	)
+	hb.writeElementClose("div")
+	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
+	hb.writeElementClose("script")
+}
