@@ -914,6 +914,8 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			// Author
 			a.renderAuthor(hb)
 			hb.writeElementClose("main")
+			// Reactions
+			a.renderPostReactions(hb, p)
 			// Post edit actions
 			if rd.LoggedIn() {
 				hb.writeElementOpen("div", "class", "actions")

@@ -29,6 +29,7 @@ type config struct {
 	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
 	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
 	TTS           *configTTS             `mapstructure:"tts"`
+	Reactions     *configReactions       `mapstructure:"reactions"`
 	Pprof         *configPprof           `mapstructure:"pprof"`
 	Debug         bool                   `mapstructure:"debug"`
 	initialized   bool
@@ -309,6 +310,10 @@ type configMapTiles struct {
 type configTTS struct {
 	Enabled      bool   `mapstructure:"enabled"`
 	GoogleAPIKey string `mapstructure:"googleApiKey"`
+}
+
+type configReactions struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type configPprof struct {

@@ -168,6 +168,10 @@ tts:
   enabled: true
   googleApiKey: "xxxxxxxx"
 
+# Reactions (see docs for more info)
+reactions:
+  enabled: true # Enable reactions (default is false)
+
 # Blogs
 defaultBlog: en # Default blog (needed because you can define multiple blogs)
 blogs:

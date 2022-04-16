@@ -44,3 +44,7 @@ If configured, GoBlog will also send a notification using a Telegram Bot or [Ntf
 ## Tor Hidden Services
 
 GoBlog can be configured to provide a Tor Hidden Service. This is useful if you want to offer your visitors a way to connect to your blog from censored networks or countries. See the `example-config.yml` file for how to enable the Tor Hidden Service. If you don't need to hide your server, you can enable the Single Hop mode.
+
+## Reactions
+
+It's possible to enable post reactions. GoBlog currently has a hardcoded list of reactions: "❤️", "👍", "👎", "😂" and "😱". If enabled, users can react to a post by clicking on the reaction button below the post. If you want to disable reactions for a single post, you can set the `reactions` parameter to `false` in the post's metadata.

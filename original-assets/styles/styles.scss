@@ -280,6 +280,11 @@ details summary {
   }
 }
 
+#reactions button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 // Print
 @media print {
   html {

@@ -18,7 +18,7 @@ RUN go build -ldflags '-w -s' -o GoBlog
 
 FROM build as test
 
-RUN go test -timeout 15s -cover ./...
+RUN go test -timeout 20s -cover ./...
 
 FROM alpine:3.15 as base
 

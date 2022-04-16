@@ -233,6 +233,11 @@ details summary > *:first-child {
   padding: 5px;
   text-align: center;
 }
+#reactions button:focus, #reactions .button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 @media print {
   html {
     --background: #fff;

@@ -175,14 +175,19 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
-	// Delete old post
-	if !o.new {
-		sqlBuilder.WriteString("delete from posts where path = ?;delete from post_parameters where path = ?;")
-		sqlArgs = append(sqlArgs, o.oldPath, o.oldPath)
+	// Update or create post
+	if o.new {
+		// New post, create it
+		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority)
+	} else {
+		// Update old post
+		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, priority = ? where path = ?;")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority, o.oldPath)
+		// Delete post parameters
+		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
+		sqlArgs = append(sqlArgs, o.oldPath)
 	}
-	// Insert new post
-	sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
-	sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority)
 	// Insert post parameters
 	for param, value := range p.Parameters {
 		for _, value := range value {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -463,5 +464,15 @@ func (a *goBlog) renderPostGPX(hb *htmlBuilder, p *post, b *configBlog) {
 	)
 	hb.writeElementClose("div")
 	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
+	hb.writeElementClose("script")
+}
+
+func (a *goBlog) renderPostReactions(hb *htmlBuilder, p *post) {
+	if !a.reactionsEnabledForPost(p) {
+		return
+	}
+	hb.writeElementOpen("div", "id", "reactions", "class", "actions", "data-path", p.Path, "data-allowed", strings.Join(allowedReactions, ","))
+	hb.writeElementClose("div")
+	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/reactions.js"))
 	hb.writeElementClose("script")
 }

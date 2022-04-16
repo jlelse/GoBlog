@@ -84,7 +84,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		},
 	})
 	// Open db
-	db, err := sql.Open(dbDriverName, file+"?mode=rwc&_journal_mode=WAL&_busy_timeout=100&cache=shared")
+	db, err := sql.Open(dbDriverName, file+"?mode=rwc&_journal=WAL&_timeout=100&cache=shared&_fk=1")
 	if err != nil {
 		return nil, err
 	}

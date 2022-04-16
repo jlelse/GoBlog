@@ -99,8 +99,16 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 // Various other routes
 func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.Use(a.privateModeHandler)
+
+	// Leaflet
 	r.Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles())
 	r.With(cacheLoggedIn, a.cacheMiddleware).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
+
+	// Reactions
+	if a.reactionsEnabled() {
+		r.Get("/reactions", a.getReactions)
+		r.Post("/reactions", a.postReaction)
+	}
 }
 
 // Blog
