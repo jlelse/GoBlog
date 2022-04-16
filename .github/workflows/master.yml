@@ -5,25 +5,8 @@ on:
     branches: [ master ]
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install SQLite
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install libsqlite3-dev build-essential
-    - name: Install Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: '1.18'
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Test
-      run: go test -timeout 15s -tags linux,libsqlite3,sqlite_fts5 -cover ./...
   docker:
-    name: Build Docker images
-    needs: [ test ]
+    name: Test and build Docker images
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -40,6 +23,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Test
+      uses: docker/build-push-action@v2
+      with:
+        push: false
+        target: test
+        tags: test
     - name: Build base image
       uses: docker/build-push-action@v2
       with:
