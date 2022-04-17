@@ -157,6 +157,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	}
 	// Purge cache
 	a.cache.purge()
+	a.deleteReactionsCache(p.Path)
 	return nil
 }
 
@@ -236,6 +237,7 @@ func (a *goBlog) deletePost(path string) error {
 		a.db.rebuildFTSIndex()
 		// Purge cache
 		a.cache.purge()
+		a.deleteReactionsCache(p.Path)
 	} else {
 		// Update post status
 		p.Status = postStatus(string(p.Status) + statusDeletedSuffix)

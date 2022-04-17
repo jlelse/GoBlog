@@ -33,6 +33,9 @@ func (a *goBlog) reactionsEnabledForPost(post *post) bool {
 
 func (a *goBlog) initReactions() {
 	a.reactionsInit.Do(func() {
+		if !a.reactionsEnabled() {
+			return
+		}
 		a.reactionsCache, _ = ristretto.NewCache(&ristretto.Config{
 			NumCounters:        1000,
 			MaxCost:            100, // Cache reactions for 100 posts
@@ -40,6 +43,13 @@ func (a *goBlog) initReactions() {
 			IgnoreInternalCost: true,
 		})
 	})
+}
+
+func (a *goBlog) deleteReactionsCache(path string) {
+	a.initReactions()
+	if a.reactionsCache != nil {
+		a.reactionsCache.Del(path)
+	}
 }
 
 func (a *goBlog) postReaction(w http.ResponseWriter, r *http.Request) {
