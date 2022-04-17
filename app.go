@@ -7,6 +7,7 @@ import (
 
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
+	"github.com/dgraph-io/ristretto"
 	ct "github.com/elnormous/contenttype"
 	"github.com/go-fed/httpsig"
 	"github.com/hacdias/indieauth/v2"
@@ -73,6 +74,10 @@ type goBlog struct {
 	mediaStorage     mediaStorage
 	// Minify
 	min minify.Minifier
+	// Reactions
+	reactionsInit  sync.Once
+	reactionsCache *ristretto.Cache
+	reactionsSfg   singleflight.Group
 	// Regex Redirects
 	regexRedirects []*regexRedirect
 	// Sessions
