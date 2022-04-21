@@ -27,12 +27,8 @@ import (
 )
 
 func (a *goBlog) initActivityPub() error {
-	if a.isPrivate() {
-		// Private mode, no AP
-		return nil
-	}
-	if apc := a.cfg.ActivityPub; apc == nil || !apc.Enabled {
-		// Disabled
+	if !a.apEnabled() {
+		// ActivityPub disabled
 		return nil
 	}
 	// Add hooks
@@ -80,7 +76,26 @@ func (a *goBlog) initActivityPub() error {
 	}
 	// Init send queue
 	a.initAPSendQueue()
+	// Send profile updates
+	go func() {
+		// First wait a bit
+		time.Sleep(time.Second * 10)
+		// Then send profile update
+		a.apSendProfileUpdates()
+	}()
 	return nil
+}
+
+func (a *goBlog) apEnabled() bool {
+	if a.isPrivate() {
+		// Private mode, no AP
+		return false
+	}
+	if apc := a.cfg.ActivityPub; apc == nil || !apc.Enabled {
+		// Disabled
+		return false
+	}
+	return true
 }
 
 func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
@@ -383,6 +398,23 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]a
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox, accept)
 }
 
+func (a *goBlog) apSendProfileUpdates() {
+	for blog, config := range a.cfg.Blogs {
+		person, err := a.toAsPerson(blog)
+		if err != nil {
+			log.Println("Failed to create Person object:", err)
+			continue
+		}
+		a.apSendToAllFollowers(blog, map[string]any{
+			"@context":  []string{asContext},
+			"actor":     a.apIri(config),
+			"published": time.Now().Format("2006-01-02T15:04:05-07:00"),
+			"type":      "Update",
+			"object":    person,
+		})
+	}
+}
+
 func (a *goBlog) apSendToAllFollowers(blog string, activity any) {
 	inboxes, err := a.db.apGetAllInboxes(blog)
 	if err != nil {
@@ -426,18 +458,29 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 			// continue
 		} else {
 			key, err := x509.ParsePKCS1PrivateKey(privateKeyDecoded.Bytes)
-			if err == nil && key != nil {
-				a.apPrivateKey = key
-				return nil
+			if err != nil {
+				return err
 			}
+			pubKeyBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+			if err != nil {
+				return err
+			}
+			a.apPrivateKey = key
+			a.apPubKeyBytes = pubKeyBytes
+			return nil
 		}
 	}
 	// Generate and cache key
-	var err error
-	a.apPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return err
 	}
+	pubKeyBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return err
+	}
+	a.apPrivateKey = key
+	a.apPubKeyBytes = pubKeyBytes
 	return a.db.cachePersistently(
 		"activitypub_key",
 		pem.EncodeToMemory(&pem.Block{

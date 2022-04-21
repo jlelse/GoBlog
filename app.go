@@ -22,6 +22,7 @@ import (
 type goBlog struct {
 	// ActivityPub
 	apPrivateKey       *rsa.PrivateKey
+	apPubKeyBytes      []byte
 	apPostSigner       httpsig.Signer
 	apPostSignMutex    sync.Mutex
 	webfingerResources map[string]*configBlog

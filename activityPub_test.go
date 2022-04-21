@@ -29,6 +29,7 @@ func Test_loadActivityPubPrivateKey(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, app.apPrivateKey)
+	assert.NotEmpty(t, app.apPubKeyBytes)
 
 	oldEncodedKey := x509.MarshalPKCS1PrivateKey(app.apPrivateKey)
 	oldPemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: oldEncodedKey})
@@ -38,6 +39,7 @@ func Test_loadActivityPubPrivateKey(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, app.apPrivateKey)
+	assert.NotEmpty(t, app.apPubKeyBytes)
 
 	newEncodedKey := x509.MarshalPKCS1PrivateKey(app.apPrivateKey)
 	newPemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: newEncodedKey})

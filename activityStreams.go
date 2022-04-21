@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -168,13 +167,8 @@ func (a *goBlog) activityPubId(p *post) string {
 	return fu
 }
 
-func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) toAsPerson(blog string) (*asPerson, error) {
 	b := a.cfg.Blogs[blog]
-	publicKeyDer, err := x509.MarshalPKIXPublicKey(&(a.apPrivateKey.PublicKey))
-	if err != nil {
-		a.serveError(w, r, "Failed to marshal public key", http.StatusInternalServerError)
-		return
-	}
 	asBlog := &asPerson{
 		Context:           []string{asContext},
 		Type:              "Person",
@@ -190,21 +184,29 @@ func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *htt
 			PublicKeyPem: string(pem.EncodeToMemory(&pem.Block{
 				Type:    "PUBLIC KEY",
 				Headers: nil,
-				Bytes:   publicKeyDer,
+				Bytes:   a.apPubKeyBytes,
 			})),
 		},
 	}
-	// Add profile picture
 	if a.cfg.User.Picture != "" {
 		asBlog.Icon = &asAttachment{
 			Type: "Image",
 			URL:  a.cfg.User.Picture,
 		}
 	}
+	return asBlog, nil
+}
+
+func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
+	person, err := a.toAsPerson(blog)
+	if err != nil {
+		a.serveError(w, r, "Failed to create ActivityStreams Person", http.StatusInternalServerError)
+		return
+	}
 	// Encode
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(asBlog); err != nil {
+	if err := json.NewEncoder(buf).Encode(person); err != nil {
 		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
 		return
 	}
