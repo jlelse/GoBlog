@@ -21,6 +21,7 @@ post_parameters
 posts
 posts_fts
 queue
+reactions
 sessions
 shortpath
 webmentions

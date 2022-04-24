@@ -182,20 +182,18 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
 		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority)
 	} else {
-		// Update old post
-		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, priority = ? where path = ?;")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority, o.oldPath)
 		// Delete post parameters
 		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
 		sqlArgs = append(sqlArgs, o.oldPath)
+		// Update old post
+		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, priority = ? where path = ?;")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority, o.oldPath)
 	}
 	// Insert post parameters
 	for param, value := range p.Parameters {
-		for _, value := range value {
-			if value != "" {
-				sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
-				sqlArgs = append(sqlArgs, p.Path, param, value)
-			}
+		for _, value := range lo.Filter(value, loStringNotEmpty) {
+			sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+			sqlArgs = append(sqlArgs, p.Path, param, value)
 		}
 	}
 	// Commit transaction
@@ -228,7 +226,7 @@ func (a *goBlog) deletePost(path string) error {
 	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
 		// Post is already marked as deleted, delete it from database
 		if _, err = a.db.exec(
-			`begin;	delete from posts where path = ?; delete from post_parameters where path = ?; insert or ignore into deleted (path) values (?); commit;`,
+			`begin;	delete from posts where path = ?; insert or ignore into deleted (path) values (?); commit;`,
 			dbNoCache, p.Path, p.Path, p.Path,
 		); err != nil {
 			return err
@@ -249,7 +247,7 @@ func (a *goBlog) deletePost(path string) error {
 		p.Parameters["deleted"] = []string{deletedTime}
 		// Mark post as deleted
 		if _, err = a.db.exec(
-			`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and value = 'deleted'; insert into post_parameters (path, parameter, value) values (?, 'deleted', ?); commit;`,
+			`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; insert into post_parameters (path, parameter, value) values (?, 'deleted', ?); commit;`,
 			dbNoCache, p.Status, p.Path, p.Path, p.Path, deletedTime,
 		); err != nil {
 			return err
@@ -298,7 +296,7 @@ func (a *goBlog) undeletePost(path string) error {
 
 func (db *database) replacePostParam(path, param string, values []string) error {
 	// Filter empty values
-	values = lo.Filter(values, func(v string, _ int) bool { return v != "" })
+	values = lo.Filter(values, loStringNotEmpty)
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()

@@ -394,3 +394,49 @@ func Test_replaceParams(t *testing.T) {
 		assert.Len(t, union, 3)
 	}
 }
+
+func Test_postDeletesParams(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig()
+	_ = app.initDatabase(false)
+	defer app.db.close()
+	app.initComponents(false)
+
+	err := app.createPost(&post{
+		Path:    "/test/abc",
+		Content: "ABC",
+		Parameters: map[string][]string{
+			"test": {
+				"ABC", "DEF", "GHI",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Delete the first time (mark as delete)
+	err = app.deletePost("/test/abc")
+	require.NoError(t, err)
+
+	row, err := app.db.queryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
+	require.NoError(t, err)
+
+	var count int
+	err = row.Scan(&count)
+	require.NoError(t, err)
+
+	assert.Equal(t, 3, count)
+
+	// Delete the second time (actually delete)
+	err = app.deletePost("/test/abc")
+	require.NoError(t, err)
+
+	row, err = app.db.queryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
+	require.NoError(t, err)
+
+	err = row.Scan(&count)
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, count)
+}

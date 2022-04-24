@@ -396,3 +396,7 @@ func stringToInt(s string) int {
 	i, _ := strconv.Atoi(s)
 	return i
 }
+
+func loStringNotEmpty(s string, _ int) bool {
+	return s != ""
+}
