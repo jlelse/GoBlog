@@ -1376,7 +1376,7 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 
 			// Update
 			if edrd.updatePostUrl != "" {
-				hb.writeElementOpen("h2", "id", "#update")
+				hb.writeElementOpen("h2", "id", "update")
 				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
 				hb.writeElementClose("h2")
 				hb.writeElementOpen("form", "method", "post", "class", "fw p", "action", "#update")
