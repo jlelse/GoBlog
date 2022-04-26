@@ -99,7 +99,7 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	require.Equal(t, "https://example.org/walks/2021/11/9k-local-run", m.Target)
 	require.Equal(t, "https://example.com/abc", m.Source)
 	require.Equal(t, "https://example.net/notice/ADYb7HhxE6UzPpfFiK", m.Url)
-	require.Equal(t, "comment test", m.Title)
+	require.Equal(t, "", m.Title)
 	require.Equal(t, "comment test", m.Content)
 	require.Equal(t, "m4rk", m.Author)
 }

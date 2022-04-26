@@ -211,6 +211,10 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			m.Title = title.Text()
 		}
 	}
+	// Reset title if it's just a prefix of the content
+	if m.Title != "" && strings.HasPrefix(m.Content, m.Title) {
+		m.Title = ""
+	}
 	return nil
 }
 
