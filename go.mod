@@ -43,7 +43,7 @@ require (
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
-	github.com/samber/lo v1.16.0
+	github.com/samber/lo v1.18.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.4.1
@@ -57,13 +57,13 @@ require (
 	github.com/yuin/goldmark v1.4.12
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	nhooyr.io/websocket v1.8.7
-	tailscale.com v1.24.0
+	tailscale.com v1.24.1
 	// main
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
@@ -92,7 +92,7 @@ require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.3 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect

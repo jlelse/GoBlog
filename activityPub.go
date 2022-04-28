@@ -51,14 +51,7 @@ func (a *goBlog) initActivityPub() error {
 		}
 	})
 	// Prepare webfinger
-	a.webfingerResources = map[string]*configBlog{}
-	a.webfingerAccts = map[string]string{}
-	for name, blog := range a.cfg.Blogs {
-		acct := "acct:" + name + "@" + a.cfg.Server.publicHostname
-		a.webfingerResources[acct] = blog
-		a.webfingerResources[a.apIri(blog)] = blog
-		a.webfingerAccts[a.apIri(blog)] = acct
-	}
+	a.prepareWebfinger()
 	// Read key and prepare signing
 	err := a.loadActivityPubPrivateKey()
 	if err != nil {
@@ -98,6 +91,17 @@ func (a *goBlog) apEnabled() bool {
 	return true
 }
 
+func (a *goBlog) prepareWebfinger() {
+	a.webfingerResources = map[string]*configBlog{}
+	a.webfingerAccts = map[string]string{}
+	for name, blog := range a.cfg.Blogs {
+		acct := "acct:" + name + "@" + a.cfg.Server.publicHostname
+		a.webfingerResources[acct] = blog
+		a.webfingerResources[a.apIri(blog)] = blog
+		a.webfingerAccts[a.apIri(blog)] = acct
+	}
+}
+
 func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	blog, ok := a.webfingerResources[r.URL.Query().Get("resource")]
 	if !ok {
@@ -108,7 +112,7 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	// Encode
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	if err := xml.NewEncoder(buf).Encode(map[string]any{
+	if err := json.NewEncoder(buf).Encode(map[string]any{
 		"subject": a.webfingerAccts[apIri],
 		"aliases": []string{
 			a.webfingerAccts[apIri],

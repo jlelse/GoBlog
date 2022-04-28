@@ -3,6 +3,8 @@ package main
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
@@ -46,4 +48,24 @@ func Test_loadActivityPubPrivateKey(t *testing.T) {
 
 	assert.Equal(t, string(oldPemEncoded), string(newPemEncoded))
 
+}
+
+func Test_webfinger(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	_ = app.initConfig()
+	_ = app.initDatabase(false)
+	defer app.db.close()
+	app.initComponents(false)
+
+	app.prepareWebfinger()
+
+	req := httptest.NewRequest(http.MethodGet, "/.well-known/webfinger?resource=acct:default@example.com", nil)
+	rec := httptest.NewRecorder()
+
+	app.apHandleWebfinger(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
 }
