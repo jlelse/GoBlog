@@ -43,11 +43,11 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 	// Feeds
 	renderedBlogTitle := a.renderMdTitle(rd.Blog.Title)
 	// RSS
-	hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", fmt.Sprintf("RSS (%s)", renderedBlogTitle), "href", rd.Blog.Path+".rss")
+	hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", fmt.Sprintf("RSS (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".rss"))
 	// ATOM
-	hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", rd.Blog.Path+".atom")
+	hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".atom"))
 	// JSON Feed
-	hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", fmt.Sprintf("JSON Feed (%s)", renderedBlogTitle), "href", rd.Blog.Path+".json")
+	hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", fmt.Sprintf("JSON Feed (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".json"))
 	// Webmentions
 	hb.writeElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
 	// Micropub
@@ -364,11 +364,11 @@ func (a *goBlog) renderIndex(hb *htmlBuilder, rd *renderData) {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
 			// RSS
-			hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", id.first+".rss")
+			hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss"))
 			// ATOM
-			hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", id.first+".atom")
+			hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom"))
 			// JSON Feed
-			hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", id.first+".json")
+			hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json"))
 		},
 		func(hb *htmlBuilder) {
 			hb.writeElementOpen("main", "class", "h-feed")
@@ -920,20 +920,20 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 			if rd.LoggedIn() {
 				hb.writeElementOpen("div", "class", "actions")
 				// Update
-				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor")+"#update")
+				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor")+"#update")
 				hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "loadupdate")
 				hb.writeElementOpen("input", "type", "hidden", "name", "path", "value", p.Path)
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
 				hb.writeElementClose("form")
 				// Delete
-				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor"))
+				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
 				hb.writeElementOpen("input", "type", "hidden", "name", "action", "value", "delete")
 				hb.writeElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 				hb.writeElementClose("form")
 				// Undelete
 				if p.Deleted() {
-					hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor"))
+					hb.writeElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
 					hb.writeElementOpen("input", "type", "hidden", "name", "action", "value", "undelete")
 					hb.writeElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
 					hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "undelete"))
@@ -941,7 +941,7 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 				}
 				// TTS
 				if a.ttsEnabled() {
-					hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor"))
+					hb.writeElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
 					hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "tts")
 					hb.writeElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
 					hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "gentts"))
@@ -990,7 +990,7 @@ func (a *goBlog) renderStaticHome(hb *htmlBuilder, rd *renderData) {
 			// Update
 			if rd.LoggedIn() {
 				hb.writeElementOpen("div", "class", "actions")
-				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.RelativePath("/editor")+"#update")
+				hb.writeElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor")+"#update")
 				hb.writeElementOpen("input", "type", "hidden", "name", "editoraction", "value", "loadupdate")
 				hb.writeElementOpen("input", "type", "hidden", "name", "path", "value", p.Path)
 				hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))

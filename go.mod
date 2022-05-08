@@ -33,7 +33,7 @@ require (
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.15.2
+	github.com/klauspost/compress v1.15.3
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.0
 	github.com/mattn/go-sqlite3 v1.14.12
@@ -43,7 +43,7 @@ require (
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
-	github.com/samber/lo v1.18.0
+	github.com/samber/lo v1.20.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.4.1
@@ -57,7 +57,7 @@ require (
 	github.com/yuin/goldmark v1.4.12
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
