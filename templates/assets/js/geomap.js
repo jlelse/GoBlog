@@ -57,12 +57,12 @@
     // CSS
     let css = document.createElement('link')
     css.rel = 'stylesheet'
-    css.href = '/-/leaflet/leaflet.css'
+    css.href = '/-/leaflet/leaflet.css?v=1.8.0'
     document.head.appendChild(css)
 
     // JS
     let script = document.createElement('script')
-    script.src = '/-/leaflet/leaflet.js'
+    script.src = '/-/leaflet/leaflet.js?v=1.8.0'
     script.onload = loadMap
     document.head.appendChild(script)
 })()
