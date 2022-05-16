@@ -36,7 +36,7 @@ require (
 	github.com/klauspost/compress v1.15.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.0
-	github.com/mattn/go-sqlite3 v1.14.12
+	github.com/mattn/go-sqlite3 v1.14.13
 	github.com/mergestat/timediff v0.0.3
 	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/mmcdole/gofeed v1.1.3
@@ -57,9 +57,9 @@ require (
 	github.com/yuin/goldmark v1.4.12
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.0.0-20220511200225-c6db032c6c88
-	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8
+	golang.org/x/net v0.0.0-20220516155154-20f960328961
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99
 	nhooyr.io/websocket v1.8.7

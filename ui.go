@@ -827,7 +827,7 @@ func (a *goBlog) renderTaxonomy(hb *htmlBuilder, rd *renderData) {
 					if i > 0 {
 						hb.write(" &bull; ")
 					}
-					hb.writeElementOpen("a", "href", fmt.Sprintf("/%s/%s", trd.taxonomy.Name, urlize(val)))
+					hb.writeElementOpen("a", "href", rd.Blog.getRelativePath(fmt.Sprintf("/%s/%s", trd.taxonomy.Name, urlize(val))))
 					hb.writeEscaped(val)
 					hb.writeElementClose("a")
 				}
