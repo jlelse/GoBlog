@@ -28,8 +28,9 @@ func Test_geo(t *testing.T) {
 		},
 	}
 
-	gu := app.geoURI(p)
-	require.NotNil(t, gu)
+	gus := app.geoURIs(p)
+	require.NotEmpty(t, gus)
+	gu := gus[0]
 	assert.Equal(t, 52.51627, gu.Latitude)
 	assert.Equal(t, 13.37737, gu.Longitude)
 

@@ -188,18 +188,23 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 		hb.writeElementClose("div")
 	}
 	// Geo
-	if geoURI := a.geoURI(p); geoURI != nil {
+	if geoURIs := a.geoURIs(p); len(geoURIs) != 0 {
 		hb.writeElementOpen("div")
 		hb.writeEscaped("📍 ")
-		hb.writeElementOpen("a", "class", "p-location h-geo", "target", "_blank", "rel", "nofollow noopener noreferrer", "href", geoOSMLink(geoURI))
-		hb.writeElementOpen("span", "class", "p-name")
-		hb.writeEscaped(a.geoTitle(geoURI, b.Lang))
-		hb.writeElementClose("span")
-		hb.writeElementOpen("data", "class", "p-longitude", "value", fmt.Sprintf("%f", geoURI.Longitude))
-		hb.writeElementClose("data")
-		hb.writeElementOpen("data", "class", "p-latitude", "value", fmt.Sprintf("%f", geoURI.Latitude))
-		hb.writeElementClose("data")
-		hb.writeElementClose("a")
+		for i, geoURI := range geoURIs {
+			if i > 0 {
+				hb.writeEscaped(", ")
+			}
+			hb.writeElementOpen("a", "class", "p-location h-geo", "target", "_blank", "rel", "nofollow noopener noreferrer", "href", geoOSMLink(geoURI))
+			hb.writeElementOpen("span", "class", "p-name")
+			hb.writeEscaped(a.geoTitle(geoURI, b.Lang))
+			hb.writeElementClose("span")
+			hb.writeElementOpen("data", "class", "p-longitude", "value", fmt.Sprintf("%f", geoURI.Longitude))
+			hb.writeElementClose("data")
+			hb.writeElementOpen("data", "class", "p-latitude", "value", fmt.Sprintf("%f", geoURI.Latitude))
+			hb.writeElementClose("data")
+			hb.writeElementClose("a")
+		}
 		hb.writeElementClose("div")
 	}
 	// Post specific elements

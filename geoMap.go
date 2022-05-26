@@ -49,7 +49,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	var locations []*templateLocation
 	var tracks []*templateTrack
 	for _, p := range allPostsWithLocation {
-		if g := a.geoURI(p); g != nil {
+		for _, g := range a.geoURIs(p) {
 			locations = append(locations, &templateLocation{
 				Lat:  g.Latitude,
 				Lon:  g.Longitude,

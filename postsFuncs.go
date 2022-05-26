@@ -181,13 +181,18 @@ func (a *goBlog) showFull(p *post) bool {
 	return ok && sec != nil && sec.ShowFull
 }
 
-func (a *goBlog) geoURI(p *post) *gogeouri.Geo {
-	loc := p.firstParameter(a.cfg.Micropub.LocationParam)
-	if loc == "" {
-		return nil
+func (a *goBlog) geoURIs(p *post) []*gogeouri.Geo {
+	res := []*gogeouri.Geo{}
+	for _, loc := range p.Parameters[a.cfg.Micropub.LocationParam] {
+		if loc == "" {
+			continue
+		}
+		g, _ := gogeouri.Parse(loc)
+		if g != nil {
+			res = append(res, g)
+		}
 	}
-	g, _ := gogeouri.Parse(loc)
-	return g
+	return res
 }
 
 func (a *goBlog) replyLink(p *post) string {
