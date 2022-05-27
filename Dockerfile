@@ -9,6 +9,7 @@ ADD pkgs/ /app/pkgs/
 ADD testdata/ /app/testdata/
 ADD templates/ /app/templates/
 ADD leaflet/ /app/leaflet/
+ADD hlsjs/ /app/hlsjs/
 ADD dbmigrations/ /app/dbmigrations/
 ADD strings/ /app/strings/
 

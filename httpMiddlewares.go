@@ -59,7 +59,7 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'"+cspDomains+"; img-src 'self' "+cspDomains+" data:")
+		w.Header().Set("Content-Security-Policy", "default-src 'self' blob:"+cspDomains+"; img-src 'self'"+cspDomains+" data:")
 		next.ServeHTTP(w, r)
 	})
 }

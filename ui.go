@@ -906,6 +906,8 @@ func (a *goBlog) renderPost(hb *htmlBuilder, rd *renderData) {
 				a.postHtmlToWriter(hb, p, false)
 				hb.writeElementClose("div")
 			}
+			// External Videp
+			a.renderPostVideo(hb, p)
 			// GPS Track
 			a.renderPostGPX(hb, p, rd.Blog)
 			// Taxonomies

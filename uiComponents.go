@@ -481,3 +481,13 @@ func (a *goBlog) renderPostReactions(hb *htmlBuilder, p *post) {
 	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/reactions.js"))
 	hb.writeElementClose("script")
 }
+
+func (a *goBlog) renderPostVideo(hb *htmlBuilder, p *post) {
+	if !p.hasVideoPlaylist() {
+		return
+	}
+	hb.writeElementOpen("div", "id", "video", "data-url", p.firstParameter(videoPlaylistParam))
+	hb.writeElementClose("div")
+	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/video.js"))
+	hb.writeElementClose("script")
+}

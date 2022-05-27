@@ -104,6 +104,9 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.With(noIndexHeader).Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles())
 	r.With(cacheLoggedIn, a.cacheMiddleware, noIndexHeader).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
 
+	// Hlsjs
+	r.With(cacheLoggedIn, a.cacheMiddleware, noIndexHeader).HandleFunc("/hlsjs/*", a.serveFs(hlsjsFiles, "/-/"))
+
 	// Reactions
 	if a.reactionsEnabled() {
 		r.Get("/reactions", a.getReactions)
