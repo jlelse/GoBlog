@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine3.15 as buildbase
+FROM golang:1.18-alpine3.16 as buildbase
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
@@ -21,7 +21,7 @@ FROM build as test
 
 RUN go test -timeout 20s -cover ./...
 
-FROM alpine:3.15 as base
+FROM alpine:3.16 as base
 
 WORKDIR /app
 VOLUME /app/config

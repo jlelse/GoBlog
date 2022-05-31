@@ -49,7 +49,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
-	github.com/tdewolff/minify/v2 v2.11.5
+	github.com/tdewolff/minify/v2 v2.11.7
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -61,7 +61,7 @@ require (
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 	golang.org/x/text v0.3.7
-	gopkg.in/yaml.v3 v3.0.0
+	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.7
 	tailscale.com v1.24.2
 	// main
@@ -136,7 +136,7 @@ require (
 	github.com/tailscale/goupnp v1.0.1-0.20210804011211-c64d0f06ea05 // indirect
 	github.com/tailscale/netlink v1.1.1-0.20211101221916-cabfb018fe85 // indirect
 	github.com/tcnksm/go-httpstat v0.2.0 // indirect
-	github.com/tdewolff/parse/v2 v2.5.31 // indirect
+	github.com/tdewolff/parse/v2 v2.5.32 // indirect
 	github.com/u-root/uio v0.0.0-20210528151154-e40b768296a7 // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20211118161826-650dca95af54 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
