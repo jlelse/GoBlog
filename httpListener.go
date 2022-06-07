@@ -25,8 +25,9 @@ func (a *goBlog) getTCPListener(s *http.Server) (net.Listener, error) {
 		if err != nil {
 			return nil, err
 		}
+		tailscaleLC := &tailscale.LocalClient{}
 		return tls.NewListener(ln, &tls.Config{
-			GetCertificate: tailscale.GetCertificate,
+			GetCertificate: tailscaleLC.GetCertificate,
 			MinVersion:     tls.VersionTLS12,
 		}), nil
 	} else {

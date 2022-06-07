@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"tailscale.com/client/tailscale"
 	"tailscale.com/tsnet"
 )
 
@@ -45,10 +44,14 @@ func (a *goBlog) getTailscaleListener(addr string) (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
+	lc, err := a.tss.LocalClient()
+	if err != nil {
+		return nil, err
+	}
 	// Tailscale HTTPS
 	if addr == ":443" && a.cfg.Server.TailscaleHTTPS {
 		ln = tls.NewListener(ln, &tls.Config{
-			GetCertificate: tailscale.GetCertificate,
+			GetCertificate: lc.GetCertificate,
 			MinVersion:     tls.VersionTLS12,
 		})
 	}
