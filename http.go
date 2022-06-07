@@ -168,7 +168,7 @@ func (a *goBlog) buildRouter() http.Handler {
 	r.Route(micropubPath, a.micropubRouter)
 
 	// IndieAuth
-	r.Route("/indieauth", a.indieAuthRouter)
+	r.Group(a.indieAuthRouter)
 
 	// ActivityPub and stuff
 	r.Group(a.activityPubRouter)

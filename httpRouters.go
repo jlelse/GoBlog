@@ -22,11 +22,15 @@ func (a *goBlog) micropubRouter(r chi.Router) {
 
 // IndieAuth
 func (a *goBlog) indieAuthRouter(r chi.Router) {
-	r.Get("/", a.indieAuthRequest)
-	r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
-	r.Post("/", a.indieAuthVerificationAuth)
-	r.Post("/token", a.indieAuthVerificationToken)
-	r.Get("/token", a.indieAuthTokenVerification)
+	r.Route(indieAuthPath, func(r chi.Router) {
+		r.Get("/", a.indieAuthRequest)
+		r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
+		r.Post("/", a.indieAuthVerificationAuth)
+		r.Post(indieAuthTokenSubpath, a.indieAuthVerificationToken)
+		r.Get(indieAuthTokenSubpath, a.indieAuthTokenVerification)
+		r.Post(indieAuthTokenRevocationSubpath, a.indieAuthTokenRevokation)
+	})
+	r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/oauth-authorization-server", a.indieAuthMetadata)
 }
 
 // ActivityPub

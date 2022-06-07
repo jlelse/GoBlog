@@ -55,6 +55,7 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 	// IndieAuth
 	hb.writeElementOpen("link", "rel", "authorization_endpoint", "href", "/indieauth")
 	hb.writeElementOpen("link", "rel", "token_endpoint", "href", "/indieauth/token")
+	hb.writeElementOpen("link", "rel", "indieauth-metadata", "href", "/.well-known/oauth-authorization-server")
 	// Rel-Me
 	user := a.cfg.User
 	if user != nil {

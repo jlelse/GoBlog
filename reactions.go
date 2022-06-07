@@ -108,7 +108,7 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 		return val.(map[string]int), nil
 	}
 	// Get reactions
-	res, err, _ := a.reactionsSfg.Do(path, func() (interface{}, error) {
+	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
 		// Build query
 		sqlBuf := bufferpool.Get()
 		defer bufferpool.Put(sqlBuf)

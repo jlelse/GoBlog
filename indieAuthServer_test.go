@@ -145,6 +145,7 @@ func Test_indieAuthServer(t *testing.T) {
 			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 			app.d.ServeHTTP(rec, req)
 			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Contains(t, rec.Body.String(), "\"active\":true")
 
 			rec = httptest.NewRecorder()
 			req = httptest.NewRequest(http.MethodPost, "https://example.org/indieauth/token?action=revoke&token="+token.AccessToken, nil)
@@ -156,7 +157,8 @@ func Test_indieAuthServer(t *testing.T) {
 			req = httptest.NewRequest(http.MethodGet, "https://example.org/indieauth/token", nil)
 			req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 			app.d.ServeHTTP(rec, req)
-			assert.Equal(t, http.StatusUnauthorized, rec.Code)
+			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Contains(t, rec.Body.String(), "\"active\":false")
 
 		}
 

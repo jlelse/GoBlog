@@ -15,6 +15,14 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+// TODOs:
+// - Expire tokens after a while
+// - Userinfo endpoint
+
+const indieAuthPath = "/indieauth"
+const indieAuthTokenSubpath = "/token"
+const indieAuthTokenRevocationSubpath = "/revoke"
+
 // https://www.w3.org/TR/indieauth/
 // https://indieauth.spec.indieweb.org/
 
@@ -22,6 +30,29 @@ var (
 	errInvalidToken = errors.New("invalid token or token not found")
 	errInvalidCode  = errors.New("invalid code or code not found")
 )
+
+// Server Metadata
+// https://indieauth.spec.indieweb.org/#x4-1-1-indieauth-server-metadata
+func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
+	resp := map[string]any{
+		"issuer":                 a.getFullAddress("/"),
+		"authorization_endpoint": a.getFullAddress(indieAuthPath),
+		"token_endpoint":         a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
+		"introspection_endpoint": a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
+		"revocation_endpoint":    a.getFullAddress(indieAuthPath + indieAuthTokenRevocationSubpath),
+		"revocation_endpoint_auth_methods_supported": []string{"none"},
+		"scopes_supported":                           []string{"create", "update", "delete", "undelete", "media"},
+		"code_challenge_methods_supported":           indieauth.CodeChallengeMethods,
+	}
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := json.NewEncoder(buf).Encode(resp); err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+}
 
 // Parse Authorization Request
 // https://indieauth.spec.indieweb.org/#authorization-request
@@ -56,15 +87,8 @@ func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 	query := url.Values{}
 	query.Set("code", code)
 	query.Set("state", iareq.State)
+	query.Set("iss", a.getFullAddress("/"))
 	http.Redirect(w, r, iareq.RedirectURI+"?"+query.Encode(), http.StatusFound)
-}
-
-type tokenResponse struct {
-	Me        string `json:"me,omitempty"`
-	ClientID  string `json:"client_id,omitempty"`
-	Scope     string `json:"scope,omitempty"`
-	Token     string `json:"access_token,omitempty"`
-	TokenType string `json:"token_type,omitempty"`
 }
 
 // authorization endpoint
@@ -86,14 +110,20 @@ func (a *goBlog) indieAuthVerificationToken(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// Token Revocation
+	// Token Revocation (old way)
 	if r.Form.Get("action") == "revoke" {
 		a.db.indieAuthRevokeToken(r.Form.Get("token"))
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 	// Token request
 	a.indieAuthVerification(w, r, true)
+}
+
+// Token Revocation (new way)
+// https://indieauth.spec.indieweb.org/#token-revocation-p-4
+func (a *goBlog) indieAuthTokenRevokation(w http.ResponseWriter, r *http.Request) {
+	a.db.indieAuthRevokeToken(r.Form.Get("token"))
+	return
 }
 
 // Verify the authorization request with or without token response
@@ -123,8 +153,8 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		return
 	}
 	// Generate response
-	resp := &tokenResponse{
-		Me: a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
+	resp := map[string]any{
+		"me": a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
 	}
 	if withToken {
 		// Generate and save token
@@ -134,9 +164,9 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 			return
 		}
 		// Add token to response
-		resp.TokenType = "Bearer"
-		resp.Token = token
-		resp.Scope = strings.Join(data.Scopes, " ")
+		resp["token_type"] = "Bearer"
+		resp["access_token"] = token
+		resp["scope"] = strings.Join(data.Scopes, " ")
 	}
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
@@ -190,17 +220,21 @@ func (db *database) indieAuthGetAuthRequest(code string) (data *indieauth.Authen
 // GET request to the token endpoint to check if the access token is valid
 func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Request) {
 	data, err := a.db.indieAuthVerifyToken(r.Header.Get("Authorization"))
+	var res map[string]any
 	if errors.Is(err, errInvalidToken) {
-		a.serveError(w, r, err.Error(), http.StatusUnauthorized)
-		return
+		res = map[string]any{
+			"active": false,
+		}
 	} else if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	res := &tokenResponse{
-		Scope:    strings.Join(data.Scopes, " "),
-		Me:       a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
-		ClientID: data.ClientID,
+	} else {
+		res = map[string]any{
+			"active":    true,
+			"me":        a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
+			"client_id": data.ClientID,
+			"scope":     strings.Join(data.Scopes, " "),
+		}
 	}
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
