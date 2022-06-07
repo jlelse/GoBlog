@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/carlmjohnson/requests"
+	"github.com/samber/lo"
 )
 
 func (ntfy *configNtfy) enabled() bool {
@@ -19,14 +20,8 @@ func (a *goBlog) sendNtfy(cfg *configNtfy, msg string) error {
 	if !cfg.enabled() {
 		return nil
 	}
-	topic := cfg.Topic
-	if strings.HasPrefix(topic, "ntfy.sh/") { // Old configuration example
-		topic = strings.TrimPrefix(topic, "ntfy.sh/")
-	}
-	server := "https://ntfy.sh"
-	if cfg.Server != "" {
-		server = cfg.Server
-	}
+	topic := strings.TrimPrefix(cfg.Topic, "ntfy.sh/")
+	server, _ := lo.Coalesce(cfg.Server, "https://ntfy.sh")
 	builder := requests.
 		URL(server + "/" + topic).
 		Client(a.httpClient).
