@@ -181,14 +181,10 @@ func (a *goBlog) initFtpMediaStorage() mediaStorage {
 
 func (f *ftpMediaStorage) save(filename string, file io.Reader) (location string, err error) {
 	c, err := f.connection()
-	defer func() {
-		if c != nil {
-			_ = c.Quit()
-		}
-	}()
 	if err != nil {
 		return "", err
 	}
+	defer c.Quit()
 	if err = c.Stor(filename, file); err != nil {
 		return "", err
 	}
@@ -197,27 +193,19 @@ func (f *ftpMediaStorage) save(filename string, file io.Reader) (location string
 
 func (f *ftpMediaStorage) delete(filename string) (err error) {
 	c, err := f.connection()
-	defer func() {
-		if c != nil {
-			_ = c.Quit()
-		}
-	}()
 	if err != nil {
 		return err
 	}
+	defer c.Quit()
 	return c.Delete(filename)
 }
 
 func (f *ftpMediaStorage) files() (files []*mediaFile, err error) {
 	c, err := f.connection()
-	defer func() {
-		if c != nil {
-			_ = c.Quit()
-		}
-	}()
 	if err != nil {
 		return nil, err
 	}
+	defer c.Quit()
 	w := c.Walk("")
 	for w.Next() {
 		if s := w.Stat(); s.Type == ftp.EntryTypeFile {

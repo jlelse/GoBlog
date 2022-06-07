@@ -10,8 +10,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
-	github.com/carlmjohnson/requests v0.22.2
+	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
+	github.com/carlmjohnson/requests v0.22.3
 	github.com/cretz/bine v0.2.0
 	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/dgraph-io/ristretto v0.1.0
@@ -27,13 +27,13 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hacdias/indieauth/v2 v2.0.0
+	github.com/hacdias/indieauth/v2 v2.1.0
 	github.com/jlaffaye/ftp v0.0.0-20220524001917-dfa1e758f3af
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.15.5
+	github.com/klauspost/compress v1.15.6
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.13
@@ -48,8 +48,8 @@ require (
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.7.1
-	github.com/tdewolff/minify/v2 v2.11.7
+	github.com/stretchr/testify v1.7.2
+	github.com/tdewolff/minify/v2 v2.11.9
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -58,12 +58,12 @@ require (
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
-	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.7
-	tailscale.com v1.24.2
+	tailscale.com v1.26.0
 	// main
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
@@ -111,6 +111,7 @@ require (
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/jsimonetti/rtnetlink v1.1.2-0.20220408201609-d380b505068b // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kortschak/wol v0.0.0-20200729010619-da482cc4850a // indirect
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mdlayher/genetlink v1.2.0 // indirect
@@ -136,7 +137,7 @@ require (
 	github.com/tailscale/goupnp v1.0.1-0.20210804011211-c64d0f06ea05 // indirect
 	github.com/tailscale/netlink v1.1.1-0.20211101221916-cabfb018fe85 // indirect
 	github.com/tcnksm/go-httpstat v0.2.0 // indirect
-	github.com/tdewolff/parse/v2 v2.5.32 // indirect
+	github.com/tdewolff/parse/v2 v2.5.33 // indirect
 	github.com/u-root/uio v0.0.0-20210528151154-e40b768296a7 // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20211118161826-650dca95af54 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
