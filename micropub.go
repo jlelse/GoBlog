@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -24,10 +24,23 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	var result any
 	switch query := r.URL.Query(); query.Get("q") {
 	case "config":
-		type micropubConfig struct {
-			MediaEndpoint string `json:"media-endpoint"`
+		channels := []map[string]any{}
+		for b, bc := range a.cfg.Blogs {
+			channels = append(channels, map[string]any{
+				"name": fmt.Sprintf("%s: %s", b, bc.Title),
+				"uid":  b,
+			})
+			for s, sc := range bc.Sections {
+				channels = append(channels, map[string]any{
+					"name": fmt.Sprintf("%s/%s: %s", b, s, sc.Name),
+					"uid":  fmt.Sprintf("%s/%s", b, s),
+				})
+			}
 		}
-		result = micropubConfig{MediaEndpoint: a.getFullAddress(micropubPath + micropubMediaSubPath)}
+		result = map[string]any{
+			"channels":       channels,
+			"media-endpoint": a.getFullAddress(micropubPath + micropubMediaSubPath),
+		}
 	case "source":
 		if urlString := query.Get("url"); urlString != "" {
 			u, err := url.Parse(query.Get("url"))
@@ -150,6 +163,10 @@ func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[st
 		entry.Slug = slug[0]
 		delete(values, "mp-slug")
 	}
+	if channel, ok := values["mp-channel"]; ok && len(channel) > 0 {
+		entry.setChannel(channel[0])
+		delete(values, "mp-channel")
+	}
 	// Status
 	statusStr := ""
 	if status, ok := values["post-status"]; ok && len(status) > 0 {
@@ -252,6 +269,7 @@ type microformatProperties struct {
 	MpSlug     []string `json:"mp-slug,omitempty"`
 	Photo      []any    `json:"photo,omitempty"`
 	Audio      []string `json:"audio,omitempty"`
+	MpChannel  []string `json:"mp-channel,omitempty"`
 }
 
 func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem) error {
@@ -274,6 +292,9 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 	}
 	if len(mf.Properties.MpSlug) > 0 {
 		entry.Slug = mf.Properties.MpSlug[0]
+	}
+	if len(mf.Properties.MpChannel) > 0 {
+		entry.setChannel(mf.Properties.MpChannel[0])
 	}
 	// Status
 	status := ""
@@ -320,7 +341,7 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 	return nil
 }
 
-func (a *goBlog) computeExtraPostParameters(p *post) error {
+func (a *goBlog) extractParamsFromContent(p *post) error {
 	if p.Parameters == nil {
 		p.Parameters = map[string][]string{}
 	}
@@ -352,8 +373,6 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 	if blog := p.Parameters["blog"]; len(blog) == 1 && blog[0] != "" {
 		p.Blog = blog[0]
 		delete(p.Parameters, "blog")
-	} else {
-		p.Blog = a.cfg.DefaultBlog
 	}
 	if path := p.Parameters["path"]; len(path) == 1 {
 		p.Path = path[0]
@@ -383,14 +402,6 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 		p.Priority = cast.ToInt(priority[0])
 		delete(p.Parameters, "priority")
 	}
-	if p.Path == "" && p.Section == "" {
-		// Has no path or section -> default section
-		p.Section = a.cfg.Blogs[p.Blog].DefaultSection
-	}
-	if p.Published == "" && p.Section != "" {
-		// Has no published date, but section -> published now
-		p.Published = time.Now().Local().Format(time.RFC3339)
-	}
 	// Add images not in content
 	images := p.Parameters[a.cfg.Micropub.PhotoParam]
 	imageAlts := p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
@@ -402,12 +413,6 @@ func (a *goBlog) computeExtraPostParameters(p *post) error {
 			} else {
 				p.Content += "\n\n![](" + image + ")"
 			}
-		}
-	}
-	// Remove all parameters where there are just empty strings
-	for pk, pvs := range p.Parameters {
-		if len(pvs) == 0 || strings.Join(pvs, "") == "" {
-			delete(p.Parameters, pk)
 		}
 	}
 	return nil
@@ -445,7 +450,7 @@ func (a *goBlog) micropubCreate(w http.ResponseWriter, r *http.Request, p *post)
 	if !a.micropubCheckScope(w, r, "create") {
 		return
 	}
-	if err := a.computeExtraPostParameters(p); err != nil {
+	if err := a.extractParamsFromContent(p); err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -518,7 +523,7 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 	a.micropubUpdateReplace(p, mf.Replace)
 	a.micropubUpdateAdd(p, mf.Add)
 	a.micropubUpdateDelete(p, mf.Delete)
-	err = a.computeExtraPostParameters(p)
+	err = a.extractParamsFromContent(p)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return

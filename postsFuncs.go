@@ -168,6 +168,7 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 			BookmarkOf: p.Parameters[a.cfg.Micropub.BookmarkParam],
 			MpSlug:     []string{p.Slug},
 			Audio:      p.Parameters[a.cfg.Micropub.AudioParam],
+			MpChannel:  []string{p.getChannel()},
 			// TODO: Photos
 		},
 	}
@@ -233,6 +234,24 @@ func (p *post) contentWithParams() string {
 	params["priority"] = p.Priority
 	pb, _ := yaml.Marshal(params)
 	return fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
+}
+
+func (p *post) setChannel(channel string) {
+	if channel == "" {
+		return
+	}
+	channelParts := strings.SplitN(channel, "/", 2)
+	p.Blog = channelParts[0]
+	if len(channelParts) > 1 {
+		p.Section = channelParts[1]
+	}
+}
+
+func (p *post) getChannel() string {
+	if p.Section == "" {
+		return p.Blog
+	}
+	return p.Blog + "/" + p.Section
 }
 
 // Public because of rendering

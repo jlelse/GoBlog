@@ -65,16 +65,20 @@ func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Rea
 		Blog:    blog,
 		Content: string(md),
 	}
-	if err = a.computeExtraPostParameters(p); err != nil {
+	if err = a.extractParamsFromContent(p); err != nil {
+		_, _ = io.WriteString(w, err.Error())
+		return
+	}
+	if err := a.checkPost(p); err != nil {
 		_, _ = io.WriteString(w, err.Error())
 		return
 	}
 	if t := p.Title(); t != "" {
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
-	// Render post
+	// Render post (using post's blog config)
 	hb := newHtmlBuilder(w)
-	a.renderEditorPreview(hb, a.cfg.Blogs[blog], p)
+	a.renderEditorPreview(hb, a.cfg.Blogs[p.Blog], p)
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {

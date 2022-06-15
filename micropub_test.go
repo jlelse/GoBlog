@@ -38,17 +38,17 @@ func Test_micropubQuery(t *testing.T) {
 	testCases := []testCase{
 		{
 			query:      "config",
-			want:       "{\"media-endpoint\":\"http://localhost:8080/micropub/media\"}",
+			want:       "{\"channels\":[{\"name\":\"default: My Blog\",\"uid\":\"default\"},{\"name\":\"default/posts: posts\",\"uid\":\"default/posts\"}],\"media-endpoint\":\"http://localhost:8080/micropub/media\"}",
 			wantStatus: http.StatusOK,
 		},
 		{
 			query:      "source&url=http://localhost:8080/test/post",
-			want:       "{\"type\":[\"h-entry\"],\"properties\":{\"published\":[\"\"],\"updated\":[\"\"],\"post-status\":[\"published\"],\"visibility\":[\"public\"],\"category\":[\"test\",\"test2\"],\"content\":[\"---\\nblog: default\\npath: /test/post\\npriority: 0\\npublished: \\\"\\\"\\nsection: \\\"\\\"\\nstatus: published\\ntags:\\n    - test\\n    - test2\\nupdated: \\\"\\\"\\n---\\nTest post\"],\"url\":[\"http://localhost:8080/test/post\"],\"mp-slug\":[\"\"]}}",
+			want:       "{\"type\":[\"h-entry\"],\"properties\":{\"published\":[\"\"],\"updated\":[\"\"],\"post-status\":[\"published\"],\"visibility\":[\"public\"],\"category\":[\"test\",\"test2\"],\"content\":[\"---\\nblog: default\\npath: /test/post\\npriority: 0\\npublished: \\\"\\\"\\nsection: \\\"\\\"\\nstatus: published\\ntags:\\n    - test\\n    - test2\\nupdated: \\\"\\\"\\n---\\nTest post\"],\"url\":[\"http://localhost:8080/test/post\"],\"mp-slug\":[\"\"],\"mp-channel\":[\"default\"]}}",
 			wantStatus: http.StatusOK,
 		},
 		{
 			query:      "source",
-			want:       "{\"items\":[{\"type\":[\"h-entry\"],\"properties\":{\"published\":[\"\"],\"updated\":[\"\"],\"post-status\":[\"published\"],\"visibility\":[\"public\"],\"category\":[\"test\",\"test2\"],\"content\":[\"---\\nblog: default\\npath: /test/post\\npriority: 0\\npublished: \\\"\\\"\\nsection: \\\"\\\"\\nstatus: published\\ntags:\\n    - test\\n    - test2\\nupdated: \\\"\\\"\\n---\\nTest post\"],\"url\":[\"http://localhost:8080/test/post\"],\"mp-slug\":[\"\"]}}]}",
+			want:       "{\"items\":[{\"type\":[\"h-entry\"],\"properties\":{\"published\":[\"\"],\"updated\":[\"\"],\"post-status\":[\"published\"],\"visibility\":[\"public\"],\"category\":[\"test\",\"test2\"],\"content\":[\"---\\nblog: default\\npath: /test/post\\npriority: 0\\npublished: \\\"\\\"\\nsection: \\\"\\\"\\nstatus: published\\ntags:\\n    - test\\n    - test2\\nupdated: \\\"\\\"\\n---\\nTest post\"],\"url\":[\"http://localhost:8080/test/post\"],\"mp-slug\":[\"\"],\"mp-channel\":[\"default\"]}}]}",
 			wantStatus: http.StatusOK,
 		},
 		{

@@ -18,10 +18,32 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
-	now := time.Now()
-	// Fix content
-	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
-	// Fix date strings
+	now := time.Now().Local()
+	// Maybe add blog
+	if p.Blog == "" {
+		p.Blog = a.cfg.DefaultBlog
+	}
+	// Check blog
+	if _, ok := a.cfg.Blogs[p.Blog]; !ok {
+		return errors.New("blog doesn't exist")
+	}
+	// Maybe add section
+	if p.Path == "" && p.Section == "" {
+		// Has no path or section -> default section
+		p.Section = a.cfg.Blogs[p.Blog].DefaultSection
+	}
+	// Check section
+	if p.Section != "" {
+		if _, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]; !ok {
+			return errors.New("section doesn't exist")
+		}
+	}
+	// Maybe add published date
+	if p.Published == "" && p.Section != "" {
+		// Has no published date, but section -> published now
+		p.Published = now.Format(time.RFC3339)
+	}
+	// Fix and check date strings
 	if p.Published != "" {
 		p.Published, err = toLocal(p.Published)
 		if err != nil {
@@ -34,6 +56,8 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			return err
 		}
 	}
+	// Fix content
+	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
 	// Check status
 	if p.Status == "" {
 		p.Status = statusPublished
@@ -43,52 +67,32 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			if err != nil {
 				return err
 			}
-			if publishedTime.After(time.Now()) {
+			if publishedTime.After(now) {
 				p.Status = statusScheduled
 			}
 		}
 	}
 	// Cleanup params
-	for key, value := range p.Parameters {
-		if value == nil {
-			delete(p.Parameters, key)
+	for pk, pvs := range p.Parameters {
+		pvs = lo.Filter(pvs, func(s string, _ int) bool { return s != "" })
+		if len(pvs) == 0 {
+			delete(p.Parameters, pk)
 			continue
 		}
-		allValues := []string{}
-		for _, v := range value {
-			if v != "" {
-				allValues = append(allValues, v)
-			}
-		}
-		if len(allValues) >= 1 {
-			p.Parameters[key] = allValues
-		} else {
-			delete(p.Parameters, key)
-		}
-	}
-	// Check blog
-	if p.Blog == "" {
-		p.Blog = a.cfg.DefaultBlog
-	}
-	if _, ok := a.cfg.Blogs[p.Blog]; !ok {
-		return errors.New("blog doesn't exist")
-	}
-	// Check if section exists
-	if _, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]; p.Section != "" && !ok {
-		return errors.New("section doesn't exist")
+		p.Parameters[pk] = pvs
 	}
 	// Check path
 	if p.Path != "/" {
 		p.Path = strings.TrimSuffix(p.Path, "/")
 	}
 	if p.Path == "" {
-		if p.Section == "" {
-			p.Section = a.cfg.Blogs[p.Blog].DefaultSection
+		published, err := dateparse.ParseLocal(p.Published)
+		if err != nil {
+			published, err = now, nil
 		}
 		if p.Slug == "" {
-			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", now.Year(), int(now.Month()), now.Day(), randomString(5))
+			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", published.Year(), int(published.Month()), published.Day(), randomString(5))
 		}
-		published := timeNoErr(dateparse.ParseLocal(p.Published))
 		pathTmplString := defaultIfEmpty(
 			a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate,
 			"{{printf \""+a.getRelativePath(p.Blog, "/%v/%02d/%02d/%v")+"\" .Section .Year .Month .Slug}}",

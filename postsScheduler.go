@@ -27,7 +27,7 @@ func (a *goBlog) startPostsScheduler() {
 
 func (a *goBlog) checkScheduledPosts() {
 	postsToPublish, err := a.getPosts(&postsRequestConfig{
-		status:          "scheduled",
+		status:          statusScheduled,
 		publishedBefore: time.Now(),
 	})
 	if err != nil {
@@ -35,7 +35,7 @@ func (a *goBlog) checkScheduledPosts() {
 		return
 	}
 	for _, post := range postsToPublish {
-		post.Status = "published"
+		post.Status = statusPublished
 		err := a.replacePost(post, post.Path, statusScheduled)
 		if err != nil {
 			log.Println("Error publishing scheduled post:", err)
