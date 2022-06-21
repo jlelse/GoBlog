@@ -1148,6 +1148,10 @@ func (a *goBlog) renderNotificationsAdmin(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementOpen("h1")
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
 			hb.writeElementClose("h1")
+			// Delete all form
+			hb.writeElementOpen("form", "class", "actions", "method", "post", "action", "/notifications/delete")
+			hb.writeElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deleteall"))
+			hb.writeElementClose("form")
 			// Notifications
 			tdLocale := matchTimeDiffLocale(rd.Blog.Lang)
 			for _, n := range nrd.notifications {

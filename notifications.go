@@ -52,6 +52,11 @@ func (db *database) deleteNotification(id int) error {
 	return err
 }
 
+func (db *database) deleteAllNotifications() error {
+	_, err := db.exec("delete from notifications")
+	return err
+}
+
 type notificationsRequestConfig struct {
 	offset, limit int
 }
@@ -165,15 +170,25 @@ func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) notificationsAdminDelete(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.FormValue("notificationid"))
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err = a.db.deleteNotification(id)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
+	if idString := r.FormValue("notificationid"); idString != "" {
+		// Delete single notification with id
+		id, err := strconv.Atoi(idString)
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = a.db.deleteNotification(id)
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Delete all notifications
+		err := a.db.deleteAllNotifications()
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	http.Redirect(w, r, ".", http.StatusFound)
 }
