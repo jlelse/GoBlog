@@ -409,8 +409,11 @@ func (a *goBlog) blogBlogrollRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if mc := conf.Map; mc != nil && mc.Enabled {
+			r.Use(a.privateModeHandler, a.cacheMiddleware)
 			mapPath := conf.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))
-			r.With(a.privateModeHandler, a.cacheMiddleware).Get(mapPath, a.serveGeoMap)
+			r.Get(mapPath, a.serveGeoMap)
+			r.Get(mapPath+geoMapTracksSubpath, a.serveGeoMapTracks)
+			r.Get(mapPath+geoMapLocationsSubpath, a.serveGeoMapLocations)
 		}
 	}
 }

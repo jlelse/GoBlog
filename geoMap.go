@@ -2,7 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+
+	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const defaultGeoMapPath = "/map"
@@ -13,7 +17,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	mapPath := bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))
 	canonical := a.getFullAddress(mapPath)
 
-	allPostsWithLocation, err := a.getPosts(&postsRequestConfig{
+	allPostsWithLocation, err := a.db.countPosts(&postsRequestConfig{
 		blog:               blog,
 		status:             statusPublished,
 		parameters:         []string{a.cfg.Micropub.LocationParam, gpxParameter},
@@ -24,7 +28,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(allPostsWithLocation) == 0 {
+	if allPostsWithLocation == 0 {
 		a.render(w, r, a.renderGeoMap, &renderData{
 			Canonical: canonical,
 			Data: &geoMapRenderData{
@@ -34,10 +38,32 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type templateLocation struct {
-		Lat  float64
-		Lon  float64
-		Post string
+	a.render(w, r, a.renderGeoMap, &renderData{
+		Canonical: canonical,
+		Data: &geoMapRenderData{
+			locations:   "url:" + canonical + geoMapLocationsSubpath,
+			tracks:      "url:" + canonical + geoMapTracksSubpath,
+			attribution: a.getMapAttribution(),
+			minZoom:     a.getMinZoom(),
+			maxZoom:     a.getMaxZoom(),
+		},
+	})
+}
+
+const geoMapTracksSubpath = "/tracks.json"
+
+func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
+	blog, _ := a.getBlog(r)
+
+	allPostsWithTracks, err := a.getPosts(&postsRequestConfig{
+		blog:               blog,
+		status:             statusPublished,
+		parameters:         []string{gpxParameter},
+		withOnlyParameters: []string{gpxParameter},
+	})
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	type templateTrack struct {
@@ -46,16 +72,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		Post   string
 	}
 
-	var locations []*templateLocation
 	var tracks []*templateTrack
-	for _, p := range allPostsWithLocation {
-		for _, g := range a.geoURIs(p) {
-			locations = append(locations, &templateLocation{
-				Lat:  g.Latitude,
-				Lon:  g.Longitude,
-				Post: p.Path,
-			})
-		}
+	for _, p := range allPostsWithTracks {
 		if t, err := a.getTrack(p); err == nil && t != nil {
 			tracks = append(tracks, &templateTrack{
 				Paths:  t.Paths,
@@ -65,34 +83,57 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	locationsJson := ""
-	if len(locations) > 0 {
-		locationsJsonBytes, err := json.Marshal(locations)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		locationsJson = string(locationsJsonBytes)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	err = json.NewEncoder(buf).Encode(tracks)
+	if err != nil {
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = io.Copy(w, buf)
+}
 
-	tracksJson := ""
-	if len(tracks) > 0 {
-		tracksJsonBytes, err := json.Marshal(tracks)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		tracksJson = string(tracksJsonBytes)
-	}
+const geoMapLocationsSubpath = "/locations.json"
 
-	a.render(w, r, a.renderGeoMap, &renderData{
-		Canonical: canonical,
-		Data: &geoMapRenderData{
-			locations:   locationsJson,
-			tracks:      tracksJson,
-			attribution: a.getMapAttribution(),
-			minZoom:     a.getMinZoom(),
-			maxZoom:     a.getMaxZoom(),
-		},
+func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
+	blog, _ := a.getBlog(r)
+
+	allPostsWithLocations, err := a.getPosts(&postsRequestConfig{
+		blog:               blog,
+		status:             statusPublished,
+		parameters:         []string{a.cfg.Micropub.LocationParam},
+		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
 	})
+	if err != nil {
+		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	type templateLocation struct {
+		Lat  float64
+		Lon  float64
+		Post string
+	}
+
+	var locations []*templateLocation
+	for _, p := range allPostsWithLocations {
+		for _, g := range a.geoURIs(p) {
+			locations = append(locations, &templateLocation{
+				Lat:  g.Latitude,
+				Lon:  g.Longitude,
+				Post: p.Path,
+			})
+		}
+	}
+
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	err = json.NewEncoder(buf).Encode(locations)
+	if err != nil {
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_, _ = io.Copy(w, buf)
 }
