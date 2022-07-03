@@ -1,4 +1,13 @@
 (function () {
+    function randomColor() {
+        // Generate a random but valid HEX color value
+        let color = '#'
+        for (let i = 0; i < 3; i++) {
+            color += Math.floor(Math.random() * 256).toString(16)
+        }
+        return color
+    }
+
     function loadMap() {
         // Get the map element
         let mapEl = document.getElementById('map')
@@ -31,7 +40,8 @@
         })
         tracks.forEach(track => {
             track.Paths.forEach(path => {
-                features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map).on('click', function () {
+                // Use random color on map page for paths to better differentiate
+                features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: randomColor() }).addTo(map).on('click', function () {
                     window.open(track.Post, '_blank').focus()
                 }))
             })
