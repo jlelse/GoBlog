@@ -29,7 +29,7 @@ func (a *goBlog) initWebmentionQueue() {
 			return
 		}
 		if err := a.verifyMention(&m); err != nil {
-			log.Println(fmt.Sprintf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error()))
+			log.Printf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error())
 		}
 		dequeue()
 	})

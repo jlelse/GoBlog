@@ -86,9 +86,9 @@ func (a *goBlog) checkPost(p *post) (err error) {
 		p.Path = strings.TrimSuffix(p.Path, "/")
 	}
 	if p.Path == "" {
-		published, err := dateparse.ParseLocal(p.Published)
-		if err != nil {
-			published, err = now, nil
+		published, parseErr := dateparse.ParseLocal(p.Published)
+		if parseErr != nil {
+			published = now
 		}
 		if p.Slug == "" {
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", published.Year(), int(published.Month()), published.Day(), randomString(5))

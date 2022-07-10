@@ -9,7 +9,7 @@ run:
 linters:
   enable:
     # Default linters
-    # - deadcode
+    - deadcode
     - errcheck
     - gosimple
     - govet
@@ -29,7 +29,7 @@ linters:
     - bidichk
     - containedctx
     - contextcheck
-    # - gosec
+    - gosec
 linters-settings:
   gosimple:
     go: "1.18"

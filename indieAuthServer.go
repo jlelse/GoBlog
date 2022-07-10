@@ -123,7 +123,6 @@ func (a *goBlog) indieAuthVerificationToken(w http.ResponseWriter, r *http.Reque
 // https://indieauth.spec.indieweb.org/#token-revocation-p-4
 func (a *goBlog) indieAuthTokenRevokation(w http.ResponseWriter, r *http.Request) {
 	a.db.indieAuthRevokeToken(r.Form.Get("token"))
-	return
 }
 
 // Verify the authorization request with or without token response

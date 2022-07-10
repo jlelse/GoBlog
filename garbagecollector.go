@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"runtime"
 	"time"
@@ -21,10 +20,10 @@ func doGC() {
 	runtime.ReadMemStats(&before)
 	runtime.GC()
 	runtime.ReadMemStats(&after)
-	log.Println(fmt.Sprintf(
+	log.Printf(
 		"\nAlloc: %d MiB -> %d MiB\nSys: %d MiB -> %d MiB\nNumGC: %d",
 		before.Alloc/1024/1024, after.Alloc/1024/1024,
 		before.Sys/1024/1024, after.Sys/1024/1024,
 		after.NumGC,
-	))
+	)
 }
