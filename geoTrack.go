@@ -12,13 +12,20 @@ import (
 )
 
 const gpxParameter = "gpx"
+const showRouteParam = "showroute"
 
-func (p *post) HasTrack() bool {
+func (p *post) hasTrack() bool {
 	return p.firstParameter(gpxParameter) != ""
 }
 
+func (p *post) showTrackRoute() bool {
+	if param := p.firstParameter(showRouteParam); param == "false" {
+		return false
+	}
+	return true
+}
+
 type trackResult struct {
-	HasPoints        bool
 	Paths            [][]*trackPoint
 	PathsJSON        string
 	Points           []*trackPoint
@@ -30,7 +37,11 @@ type trackResult struct {
 	MinZoom, MaxZoom int
 }
 
-func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
+func (t *trackResult) hasMapFeatures() bool {
+	return t.Points != nil || t.Paths != nil
+}
+
+func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, err error) {
 	gpxString := p.firstParameter(gpxParameter)
 	if gpxString == "" {
 		return nil, errors.New("no gpx parameter in post")
@@ -47,26 +58,29 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	l, _ := language.Parse(a.cfg.Blogs[p.Blog].Lang)
 	lp := message.NewPrinter(l)
 
-	pathsJSON, err := json.Marshal(parseResult.paths)
-	if err != nil {
-		return nil, err
-	}
-
-	pointsJSON, err := json.Marshal(parseResult.points)
-	if err != nil {
-		return nil, err
-	}
-
 	result = &trackResult{
-		HasPoints:      len(parseResult.paths) > 0 && len(parseResult.paths[0]) > 0,
-		Paths:          parseResult.paths,
-		PathsJSON:      string(pathsJSON),
-		Points:         parseResult.points,
-		PointsJSON:     string(pointsJSON),
-		Name:           parseResult.gpxData.Name,
-		MapAttribution: a.getMapAttribution(),
-		MinZoom:        a.getMinZoom(),
-		MaxZoom:        a.getMaxZoom(),
+		Name: parseResult.gpxData.Name,
+	}
+
+	if withMapFeatures {
+		// Add Paths
+		pathsJSON, err := json.Marshal(parseResult.paths)
+		if err != nil {
+			return nil, err
+		}
+		result.Paths = parseResult.paths
+		result.PathsJSON = string(pathsJSON)
+		// Add Points
+		pointsJSON, err := json.Marshal(parseResult.points)
+		if err != nil {
+			return nil, err
+		}
+		result.Points = parseResult.points
+		result.PointsJSON = string(pointsJSON)
+		// Map settings
+		result.MapAttribution = a.getMapAttribution()
+		result.MinZoom = a.getMinZoom()
+		result.MaxZoom = a.getMaxZoom()
 	}
 
 	if parseResult.md != nil {

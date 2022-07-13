@@ -344,6 +344,8 @@ type postsRequestConfig struct {
 	parameters                                  []string // Ignores parameterValue
 	parameter                                   string   // Ignores parameters
 	parameterValue                              string
+	excludeParameter                            string // exclude posts that have a certain parameter (with non-empty value)
+	excludeParameterValue                       string // ... with exactly this value
 	publishedYear, publishedMonth, publishedDay int
 	publishedBefore                             time.Time
 	randomOrder                                 bool
@@ -414,6 +416,15 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 			args = append(args, param)
 		}
 		queryBuilder.WriteString(") and length(coalesce(value, '')) > 0)")
+	}
+	if c.excludeParameter != "" {
+		if c.excludeParameterValue != "" {
+			queryBuilder.WriteString(" and path not in (select path from post_parameters where parameter = @param and value = @paramval)")
+			args = append(args, sql.Named("param", c.excludeParameter), sql.Named("paramval", c.excludeParameterValue))
+		} else {
+			queryBuilder.WriteString(" and path not in (select path from post_parameters where parameter = @param and length(coalesce(value, '')) > 0)")
+			args = append(args, sql.Named("param", c.excludeParameter))
+		}
 	}
 	if c.taxonomy != nil && len(c.taxonomyValue) > 0 {
 		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @taxname and lowerx(value) = lowerx(@taxval))")

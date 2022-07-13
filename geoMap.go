@@ -56,10 +56,12 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 
 	allPostsWithTracks, err := a.getPosts(&postsRequestConfig{
-		blog:               blog,
-		status:             statusPublished,
-		parameters:         []string{gpxParameter},
-		withOnlyParameters: []string{gpxParameter},
+		blog:                  blog,
+		status:                statusPublished,
+		parameters:            []string{gpxParameter},
+		withOnlyParameters:    []string{gpxParameter},
+		excludeParameter:      showRouteParam,
+		excludeParameterValue: "false", // Don't show hidden route tracks
 	})
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -74,7 +76,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 
 	var tracks []*templateTrack
 	for _, p := range allPostsWithTracks {
-		if t, err := a.getTrack(p); err == nil && t != nil {
+		if t, err := a.getTrack(p, true); err == nil && t != nil {
 			tracks = append(tracks, &templateTrack{
 				Paths:  t.Paths,
 				Points: t.Points,

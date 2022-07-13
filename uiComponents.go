@@ -67,7 +67,7 @@ func (a *goBlog) renderSummary(hb *htmlBuilder, bc *configBlog, p *post, typ sum
 		// Contains photos
 		prefix.WriteString("🖼️")
 	}
-	if p.HasTrack() {
+	if p.hasTrack() {
 		// Has GPX track
 		prefix.WriteString("🗺️")
 	}
@@ -432,11 +432,11 @@ func (*goBlog) renderPostTitle(hb *htmlBuilder, p *post) {
 }
 
 func (a *goBlog) renderPostGPX(hb *htmlBuilder, p *post, b *configBlog) {
-	if p == nil || !p.HasTrack() {
+	if p == nil || !p.hasTrack() {
 		return
 	}
-	track, err := a.getTrack(p)
-	if err != nil || track == nil || !track.HasPoints {
+	track, err := a.getTrack(p, p.showTrackRoute())
+	if err != nil || track == nil {
 		return
 	}
 	// Track stats
@@ -459,17 +459,19 @@ func (a *goBlog) renderPostGPX(hb *htmlBuilder, p *post, b *configBlog) {
 		hb.writeEscaped(track.Hours)
 	}
 	hb.writeElementClose("p")
-	// Map
-	hb.writeElementOpen(
-		"div", "id", "map", "class", "p",
-		"data-paths", track.PathsJSON,
-		"data-points", track.PointsJSON,
-		"data-minzoom", track.MinZoom, "data-maxzoom", track.MaxZoom,
-		"data-attribution", track.MapAttribution,
-	)
-	hb.writeElementClose("div")
-	hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
-	hb.writeElementClose("script")
+	// Map (only show if it has features)
+	if track.hasMapFeatures() {
+		hb.writeElementOpen(
+			"div", "id", "map", "class", "p",
+			"data-paths", track.PathsJSON,
+			"data-points", track.PointsJSON,
+			"data-minzoom", track.MinZoom, "data-maxzoom", track.MaxZoom,
+			"data-attribution", track.MapAttribution,
+		)
+		hb.writeElementClose("div")
+		hb.writeElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
+		hb.writeElementClose("script")
+	}
 }
 
 func (a *goBlog) renderPostReactions(hb *htmlBuilder, p *post) {
