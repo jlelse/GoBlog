@@ -170,6 +170,9 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 		// Sitemap
 		r.Group(a.blogSitemapRouter(conf))
 
+		// Settings
+		r.Route(conf.getRelativePath(settingsPath), a.blogSettingsRouter(conf))
+
 	}
 }
 
@@ -440,5 +443,16 @@ func (a *goBlog) blogSitemapRouter(conf *configBlog) func(r chi.Router) {
 		r.Get(conf.getRelativePath(sitemapBlogFeaturesPath), a.serveSitemapBlogFeatures)
 		r.Get(conf.getRelativePath(sitemapBlogArchivesPath), a.serveSitemapBlogArchives)
 		r.Get(conf.getRelativePath(sitemapBlogPostsPath), a.serveSitemapBlogPosts)
+	}
+}
+
+// Blog - Settings
+func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(a.authMiddleware)
+		r.Get("/", a.serveSettings)
+		r.Post(settingsDeleteSectionPath, a.settingsDeleteSection)
+		r.Post(settingsCreateSectionPath, a.settingsCreateSection)
+		r.Post(settingsUpdateSectionPath, a.settingsUpdateSection)
 	}
 }

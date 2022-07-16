@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -21,23 +20,16 @@ func Test_verifyMention(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: mockClient.Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.org",
-			},
-		},
+		cfg:        createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/") {
 				http.Redirect(w, r, r.URL.Path[:len(r.URL.Path)-1], http.StatusFound)
 			}
 		}),
 	}
+	app.cfg.Server.PublicAddress = "https://example.org"
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	m := &mention{
@@ -71,21 +63,14 @@ func Test_verifyMentionBidgy(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: mockClient.Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.org",
-			},
-		},
+		cfg:        createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
 	}
+	app.cfg.Server.PublicAddress = "https://example.org"
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	m := &mention{
@@ -115,21 +100,14 @@ func Test_verifyMentionColin(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: mockClient.Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://jlelse.blog",
-			},
-		},
+		cfg:        createDefaultConfig(),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
 	}
+	app.cfg.Server.PublicAddress = "https://jlelse.blog"
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	m := &mention{

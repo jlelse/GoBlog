@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,36 +13,26 @@ import (
 )
 
 func Test_blogStats(t *testing.T) {
+
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
+		cfg: createDefaultTestConfig(t),
+	}
+
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+			BlogStats: &configBlogStats{
+				Enabled: true,
+				Path:    "/stats",
 			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-					BlogStats: &configBlogStats{
-						Enabled: true,
-						Path:    "/stats",
-					},
-					Sections: map[string]*configSection{
-						"test": {},
-					},
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
-			Webmention: &configWebmention{
-				DisableSending: true,
+			Sections: map[string]*configSection{
+				"test": {},
 			},
 		},
 	}
+	app.cfg.DefaultBlog = "en"
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	// Insert post

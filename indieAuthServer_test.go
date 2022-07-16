@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -22,34 +21,24 @@ func Test_indieAuthServer(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: newFakeHttpClient().Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.org",
-			},
-			DefaultBlog: "en",
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			User: &configUser{
-				Name: "John Doe",
-				Nick: "jdoe",
-			},
-			Cache: &configCache{
-				Enable: false,
-			},
+		cfg:        createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.org"
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
 		},
 	}
+	app.cfg.User = &configUser{
+		Name: "John Doe",
+		Nick: "jdoe",
+	}
+	app.cfg.Cache.Enable = false
+
+	_ = app.initConfig(false)
+	app.initComponents(false)
 
 	app.d = app.buildRouter()
-
-	_ = app.initDatabase(false)
-	defer app.db.close()
-	app.initComponents(false)
 
 	app.ias.Client = newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

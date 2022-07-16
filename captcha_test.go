@@ -23,9 +23,7 @@ func Test_captchaMiddleware(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	app.d = alice.New(app.checkIsCaptcha, app.captchaMiddleware).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {

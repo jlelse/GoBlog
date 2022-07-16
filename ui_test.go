@@ -20,9 +20,7 @@ func Test_renderPostTax(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	p := &post{
@@ -48,9 +46,7 @@ func Test_renderOldContentWarning(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	p := &post{
@@ -76,10 +72,10 @@ func Test_renderInteractions(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+
+	_ = app.initConfig(false)
 	app.initComponents(false)
+
 	app.d = app.buildRouter()
 
 	err = app.createPost(&post{
@@ -145,9 +141,8 @@ func Test_renderAuthor(t *testing.T) {
 	}
 	app.cfg.User.Picture = "https://example.com/picture.jpg"
 	app.cfg.User.Name = "John Doe"
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	buf := &bytes.Buffer{}

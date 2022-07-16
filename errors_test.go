@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,25 +12,10 @@ import (
 
 func Test_errors(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	t.Run("Test 404, no HTML", func(t *testing.T) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,25 +10,16 @@ import (
 
 func Test_webmentions(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
 		},
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	_ = app.db.insertWebmention(&mention{

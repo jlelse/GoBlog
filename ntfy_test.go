@@ -18,9 +18,7 @@ func Test_ntfySending(t *testing.T) {
 		httpClient: fakeClient.Client,
 	}
 
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	t.Run("Default", func(t *testing.T) {

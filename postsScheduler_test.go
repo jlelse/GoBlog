@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,28 +11,18 @@ import (
 func Test_postsScheduler(t *testing.T) {
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Sections: map[string]*configSection{
+				"test": {},
 			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			DefaultBlog: "en",
-			Blogs: map[string]*configBlog{
-				"en": {
-					Sections: map[string]*configSection{
-						"test": {},
-					},
-					Lang: "en",
-				},
-			},
-			Micropub: &configMicropub{},
+			Lang: "en",
 		},
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	err := app.db.savePost(&post{

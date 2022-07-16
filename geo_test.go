@@ -16,9 +16,8 @@ func Test_geo(t *testing.T) {
 		httpClient: fc.Client,
 		cfg:        createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	p := &post{

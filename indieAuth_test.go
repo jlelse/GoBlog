@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,22 +14,10 @@ func Test_checkIndieAuth(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: newFakeHttpClient().Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server:      &configServer{},
-			DefaultBlog: "en",
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-		},
+		cfg:        createDefaultTestConfig(t),
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

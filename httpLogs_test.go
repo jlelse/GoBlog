@@ -15,7 +15,7 @@ func Test_httpLogsConfig(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
+	_ = app.initConfig(false)
 
 	assert.Equal(t, false, app.cfg.Server.Logging)
 	assert.Equal(t, "data/access.log", app.cfg.Server.LogFile)

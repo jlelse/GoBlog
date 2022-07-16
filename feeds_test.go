@@ -15,10 +15,9 @@ func Test_feeds(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
+
 	app.d = app.buildRouter()
 	handlerClient := newHandlerClient(app.d)
 

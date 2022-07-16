@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,14 +9,10 @@ import (
 
 func Test_shortenPath(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
+
 	db := app.db
 
 	res1, err := db.shortenPath("/a")

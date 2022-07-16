@@ -11,14 +11,9 @@ import (
 
 func Test_export(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{

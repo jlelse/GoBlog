@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,25 +17,20 @@ import (
 
 func Test_comments(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+			Comments: &configComments{
+				Enabled: true,
 			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
 		},
 	}
+	app.cfg.DefaultBlog = "en"
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	err := app.initConfig(false)
+	require.NoError(t, err)
 	app.initComponents(false)
 
 	t.Run("Successful comment", func(t *testing.T) {
@@ -44,7 +38,7 @@ func Test_comments(t *testing.T) {
 		// Create comment
 
 		data := url.Values{}
-		data.Add("target", "https://example.com/test")
+		data.Add("target", "http://localhost:8080/test")
 		data.Add("comment", "This is just a test")
 		data.Add("name", "Test name")
 		data.Add("website", "https://goblog.app")
@@ -115,7 +109,7 @@ func Test_comments(t *testing.T) {
 		// Create comment
 
 		data := url.Values{}
-		data.Add("target", "https://example.com/test")
+		data.Add("target", "http://localhost:8080/test")
 		data.Add("comment", "This is just a test")
 
 		req := httptest.NewRequest(http.MethodPost, commentPath, strings.NewReader(data.Encode()))
@@ -151,7 +145,7 @@ func Test_comments(t *testing.T) {
 	t.Run("Empty comment", func(t *testing.T) {
 
 		data := url.Values{}
-		data.Add("target", "https://example.com/test")
+		data.Add("target", "http://localhost:8080/test")
 		data.Add("comment", "")
 
 		req := httptest.NewRequest(http.MethodPost, commentPath, strings.NewReader(data.Encode()))

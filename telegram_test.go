@@ -122,9 +122,7 @@ func Test_telegram(t *testing.T) {
 			cfg:        cfg,
 			httpClient: fakeClient.Client,
 		}
-		_ = app.initConfig()
-		_ = app.initDatabase(false)
-		defer app.db.close()
+		_ = app.initConfig(false)
 
 		app.initMarkdown()
 		app.initTelegram()
@@ -156,9 +154,7 @@ func Test_telegram(t *testing.T) {
 			httpClient: fakeClient.Client,
 		}
 
-		_ = app.initConfig()
-		_ = app.initDatabase(false)
-		defer app.db.close()
+		_ = app.initConfig(false)
 
 		app.initTelegram()
 

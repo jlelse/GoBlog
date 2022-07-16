@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -24,35 +23,27 @@ func Test_contact(t *testing.T) {
 
 	// Init everything
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+			// Config for contact
+			Contact: &configContact{
+				Enabled:      true,
+				SMTPPort:     port,
+				SMTPHost:     "127.0.0.1",
+				SMTPUser:     "user",
+				SMTPPassword: "pass",
+				EmailTo:      "to@example.org",
+				EmailFrom:    "from@example.org",
+				EmailSubject: "Neue Kontaktnachricht",
 			},
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-					// Config for contact
-					Contact: &configContact{
-						Enabled:      true,
-						SMTPPort:     port,
-						SMTPHost:     "127.0.0.1",
-						SMTPUser:     "user",
-						SMTPPassword: "pass",
-						EmailTo:      "to@example.org",
-						EmailFrom:    "from@example.org",
-						EmailSubject: "Neue Kontaktnachricht",
-					},
-				},
-			},
-			DefaultBlog: "en",
-			User:        &configUser{},
 		},
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	app.cfg.DefaultBlog = "en"
+
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	// Make contact form request

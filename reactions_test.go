@@ -15,9 +15,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	err := app.saveReaction("🖕", "/testpost")
@@ -97,9 +95,7 @@ func Test_reactionsHighLevel(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	// Send unsuccessful reaction

@@ -64,7 +64,7 @@ func main() {
 		app.logErrAndQuit("Failed to load config file:", err.Error())
 		return
 	}
-	if err = app.initConfig(); err != nil {
+	if err = app.initConfig(false); err != nil {
 		app.logErrAndQuit("Failed to init config:", err.Error())
 		return
 	}
@@ -128,12 +128,6 @@ func main() {
 
 	// Execute pre-start hooks
 	app.preStartHooks()
-
-	// Initialize database
-	if err = app.initDatabase(true); err != nil {
-		app.logErrAndQuit("Failed to init database:", err.Error())
-		return
-	}
 
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {

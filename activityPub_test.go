@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,15 +14,10 @@ import (
 func Test_loadActivityPubPrivateKey(t *testing.T) {
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	err := app.initDatabase(false)
+	err := app.initConfig(false)
 	require.NoError(t, err)
-	defer app.db.close()
 	require.NotNil(t, app.db)
 
 	// Generate
@@ -55,9 +49,7 @@ func Test_webfinger(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	app.prepareWebfinger()

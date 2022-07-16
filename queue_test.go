@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,14 +11,9 @@ import (
 func Test_queue(t *testing.T) {
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 
 	time1 := time.Now()
 
@@ -64,31 +58,4 @@ func Test_queue(t *testing.T) {
 	require.NotNil(t, qi)
 	require.Equal(t, []byte("1"), qi.content)
 
-}
-
-func Benchmark_queue(b *testing.B) {
-	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(b.TempDir(), "test.db"),
-			},
-		},
-	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
-
-	err := app.enqueue("test", []byte("1"), time.Now())
-	require.NoError(b, err)
-
-	b.Run("Peek with item", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = app.peekQueue(context.Background(), "test")
-		}
-	})
-
-	b.Run("Peek without item", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_, _ = app.peekQueue(context.Background(), "abc")
-		}
-	})
 }

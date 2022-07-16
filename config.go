@@ -341,12 +341,16 @@ func (a *goBlog) loadConfigFile(file string) error {
 	return v.Unmarshal(a.cfg)
 }
 
-func (a *goBlog) initConfig() error {
+func (a *goBlog) initConfig(logging bool) error {
 	if a.cfg == nil {
 		a.cfg = createDefaultConfig()
 	}
 	if a.cfg.initialized {
 		return nil
+	}
+	// Init database
+	if err := a.initDatabase(logging); err != nil {
+		return err
 	}
 	// Check config
 	// Parse addresses and hostnames
@@ -402,12 +406,24 @@ func (a *goBlog) initConfig() error {
 			b.Comments = &configComments{Enabled: false}
 		}
 	}
+	// Check if sections already migrated to db
+	const sectionMigrationKey = "sections_migrated"
+	if val, err := a.getSettingValue(sectionMigrationKey); err != nil {
+		return err
+	} else if val == "" {
+		if err = a.saveAllSections(); err != nil {
+			return err
+		}
+		if err = a.saveSettingValue(sectionMigrationKey, "1"); err != nil {
+			return err
+		}
+	}
+	// Load db sections
+	if err = a.loadSections(); err != nil {
+		return err
+	}
 	// Check config for each blog
 	for _, blog := range a.cfg.Blogs {
-		// Copy sections key to section name
-		for k, s := range blog.Sections {
-			s.Name = k
-		}
 		// Check if language is set
 		if blog.Lang == "" {
 			blog.Lang = "en"

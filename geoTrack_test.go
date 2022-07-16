@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,24 +10,18 @@ import (
 
 func Test_geoTrack(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server: &configServer{},
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-				"de": {
-					Lang: "de",
-				},
-			},
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+		},
+		"de": {
+			Lang: "de",
 		},
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	// First test (just with track)

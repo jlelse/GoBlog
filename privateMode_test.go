@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -16,36 +15,28 @@ func Test_privateMode(t *testing.T) {
 	// Init
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "db.db"),
-			},
-			Server: &configServer{},
-			PrivateMode: &configPrivateMode{
-				Enabled: true,
-			},
-			User: &configUser{
-				Name:     "Test",
-				Nick:     "test",
-				Password: "testpw",
-				AppPasswords: []*configAppPassword{
-					{
-						Username: "testapp",
-						Password: "pw",
-					},
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.PrivateMode = &configPrivateMode{Enabled: true}
+	app.cfg.User =
+		&configUser{
+			Name:     "Test",
+			Nick:     "test",
+			Password: "testpw",
+			AppPasswords: []*configAppPassword{
+				{
+					Username: "testapp",
+					Password: "pw",
 				},
 			},
-			DefaultBlog: "en",
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-				},
-			},
+		}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
 		},
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	handler := alice.New(middleware.WithValue(blogKey, "en"), app.privateModeHandler).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -25,9 +24,7 @@ func Test_postsDb(t *testing.T) {
 			},
 		},
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	now := toLocalSafe(time.Now().String())
@@ -229,14 +226,9 @@ func Test_ftsWithoutTitle(t *testing.T) {
 	// Added because there was a bug where there were no search results without title
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{
@@ -261,14 +253,9 @@ func Test_postsPriority(t *testing.T) {
 	// Added because there was a bug where there were no search results without title
 
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initMarkdown()
 
 	err := app.db.savePost(&post{
@@ -312,14 +299,9 @@ func Test_postsPriority(t *testing.T) {
 
 func Test_usesOfMediaFile(t *testing.T) {
 	app := &goBlog{
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-		},
+		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -368,8 +350,7 @@ func Test_replaceParams(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 
 	err := app.db.savePost(&post{
 		Path:    "/test/abc",
@@ -399,9 +380,7 @@ func Test_postDeletesParams(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	err := app.createPost(&post{

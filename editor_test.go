@@ -15,9 +15,7 @@ func Test_editorPreview(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

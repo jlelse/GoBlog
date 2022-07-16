@@ -16,9 +16,7 @@ func Test_serveDate(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	app.d = app.buildRouter()
@@ -106,9 +104,7 @@ func Test_servePost(t *testing.T) {
 		Username: "test",
 		Password: "test",
 	})
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	app.d = app.buildRouter()

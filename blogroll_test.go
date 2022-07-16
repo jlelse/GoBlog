@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,34 +16,26 @@ func Test_blogroll(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: fc.Client,
-		cfg: &config{
-			Db: &configDb{
-				File: filepath.Join(t.TempDir(), "test.db"),
-			},
-			Server:      &configServer{},
-			DefaultBlog: "en",
-			Blogs: map[string]*configBlog{
-				"en": {
-					Lang: "en",
-					Blogroll: &configBlogroll{
-						Enabled:    true,
-						Path:       "/br",
-						AuthHeader: "Authheader",
-						AuthValue:  "Authtoken",
-						Opml:       "https://example.com/opml",
-						Categories: []string{"A", "B"},
-					},
-				},
-			},
-			User: &configUser{},
-			Cache: &configCache{
-				Enable: false,
+		cfg:        createDefaultTestConfig(t),
+	}
+
+	app.cfg.Cache.Enable = false
+	app.cfg.DefaultBlog = "en"
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+			Blogroll: &configBlogroll{
+				Enabled:    true,
+				Path:       "/br",
+				AuthHeader: "Authheader",
+				AuthValue:  "Authtoken",
+				Opml:       "https://example.com/opml",
+				Categories: []string{"A", "B"},
 			},
 		},
 	}
 
-	_ = app.initDatabase(false)
-	defer app.db.close()
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	fc.setFakeResponse(http.StatusOK, `

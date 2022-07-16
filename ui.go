@@ -125,6 +125,10 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 			hb.writeElementClose("a")
 		}
 		hb.write(" &bull; ")
+		hb.writeElementOpen("a", "href", rd.Blog.getRelativePath("/settings"))
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
+		hb.writeElementClose("a")
+		hb.write(" &bull; ")
 		hb.writeElementOpen("a", "href", "/logout")
 		hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "logout"))
 		hb.writeElementClose("a")
@@ -1477,6 +1481,107 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 				hb.writeElementOpen("script", "src", a.assetFileName(script), "defer", "")
 				hb.writeElementClose("script")
 			}
+		},
+	)
+}
+
+type settingsRenderData struct {
+	blog     string
+	sections []*configSection
+}
+
+func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
+	srd, ok := rd.Data.(*settingsRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
+		},
+		func(hb *htmlBuilder) {
+			hb.writeElementOpen("main")
+
+			// Title
+			hb.writeElementOpen("h1")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
+			hb.writeElementClose("h1")
+
+			// Post sections
+			hb.writeElementOpen("h2")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "postsections"))
+			hb.writeElementClose("h2")
+
+			for _, section := range srd.sections {
+				hb.writeElementOpen("details")
+
+				hb.writeElementOpen("summary")
+				hb.writeElementOpen("h3")
+				hb.writeEscaped(section.Name)
+				hb.writeElementClose("h3")
+				hb.writeElementClose("summary")
+
+				hb.writeElementOpen("form", "class", "fw p", "method", "post")
+
+				hb.writeElementOpen("input", "type", "hidden", "name", "sectionname", "value", section.Name)
+
+				// Title
+				hb.writeElementOpen("input", "type", "text", "name", "sectiontitle", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiontitle"), "required", "", "value", section.Title)
+				// Description
+				hb.writeElementOpen(
+					"textarea",
+					"name", "sectiondescription",
+					"class", "monospace",
+					"placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiondescription"),
+				)
+				hb.writeEscaped(section.Description)
+				hb.writeElementClose("textarea")
+				// Path template
+				hb.writeElementOpen("input", "type", "text", "name", "sectionpathtemplate", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionpathtemplate"), "value", section.PathTemplate)
+				// Show full
+				hb.writeElementOpen("input", "type", "checkbox", "name", "sectionshowfull", "id", "showfull-"+section.Name, lo.If(section.ShowFull, "checked").Else(""), "")
+				hb.writeElementOpen("label", "for", "showfull-"+section.Name)
+				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionshowfull"))
+				hb.writeElementClose("label")
+
+				// Actions
+				hb.writeElementOpen("div", "class", "p")
+				// Update
+				hb.writeElementOpen(
+					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
+					"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateSectionPath),
+				)
+				// Delete
+				hb.writeElementOpen(
+					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+					"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteSectionPath),
+					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
+				)
+				hb.writeElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+				hb.writeElementClose("script")
+				hb.writeElementClose("div")
+
+				hb.writeElementClose("form")
+				hb.writeElementClose("details")
+			}
+
+			// Create new section
+			hb.writeElementOpen("form", "class", "fw p", "method", "post")
+			// Name
+			hb.writeElementOpen("input", "type", "text", "name", "sectionname", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionname"), "required", "")
+			// Title
+			hb.writeElementOpen("input", "type", "text", "name", "sectiontitle", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiontitle"), "required", "")
+			// Create button
+			hb.writeElementOpen("div")
+			hb.writeElementOpen(
+				"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"),
+				"formaction", rd.Blog.getRelativePath(settingsPath+settingsCreateSectionPath),
+			)
+			hb.writeElementClose("div")
+			hb.writeElementClose("form")
+
+			hb.writeElementClose("main")
 		},
 	)
 }

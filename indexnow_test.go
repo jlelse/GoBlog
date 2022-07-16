@@ -19,9 +19,8 @@ func Test_indexNow(t *testing.T) {
 		httpClient: fc.Client,
 	}
 	app.cfg.IndexNow = &configIndexNow{Enabled: true}
-	_ = app.initConfig()
-	_ = app.initDatabase(false)
-	defer app.db.close()
+
+	_ = app.initConfig(false)
 	app.initComponents(false)
 
 	// Create http router

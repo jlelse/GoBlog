@@ -32,7 +32,7 @@ const (
 func (a *goBlog) startServer() (err error) {
 	log.Println("Start server(s)...")
 	// Load router
-	a.d = a.buildRouter()
+	a.reloadRouter()
 	// Set basic middlewares
 	h := alice.New()
 	h = h.Append(middleware.Heartbeat("/ping"))
@@ -43,7 +43,9 @@ func (a *goBlog) startServer() (err error) {
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}
-	finalHandler := h.Then(a.d)
+	finalHandler := h.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+		a.d.ServeHTTP(w, r)
+	})
 	// Start Onion service
 	if a.cfg.Server.Tor {
 		go func() {
@@ -115,6 +117,10 @@ const (
 	paginationPath = "/page/{page:[0-9-]+}"
 	feedPath       = ".{feed:(rss|json|atom)}"
 )
+
+func (a *goBlog) reloadRouter() {
+	a.d = a.buildRouter()
+}
 
 func (a *goBlog) buildRouter() http.Handler {
 	mapRouter := &maprouter.MapRouter{

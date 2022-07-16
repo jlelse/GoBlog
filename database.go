@@ -31,6 +31,9 @@ type database struct {
 }
 
 func (a *goBlog) initDatabase(logging bool) (err error) {
+	if a.db != nil {
+		return
+	}
 	if logging {
 		log.Println("Initialize database...")
 	}
