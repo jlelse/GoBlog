@@ -36,10 +36,9 @@ func Test_privateMode(t *testing.T) {
 		},
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initSessions()
+	_ = app.initTemplateStrings()
 
 	handler := alice.New(middleware.WithValue(blogKey, "en"), app.privateModeHandler).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("Awesome"))

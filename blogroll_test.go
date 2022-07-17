@@ -35,10 +35,7 @@ func Test_blogroll(t *testing.T) {
 		},
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	fc.setFakeResponse(http.StatusOK, `
 	<opml version="2.0">

@@ -17,10 +17,9 @@ func Test_checkIndieAuth(t *testing.T) {
 		cfg:        createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	app.initSessions()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()

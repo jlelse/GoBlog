@@ -21,10 +21,7 @@ func Test_geoTrack(t *testing.T) {
 		},
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	// First test (just with track)
 

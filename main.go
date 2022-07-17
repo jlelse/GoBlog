@@ -153,7 +153,7 @@ func main() {
 	}
 
 	// Initialize components
-	app.initComponents(true)
+	app.initComponents()
 
 	// Start cron hooks
 	app.startHourlyHooks()
@@ -169,12 +169,11 @@ func main() {
 	app.shutdown.Wait()
 }
 
-func (app *goBlog) initComponents(logging bool) {
+func (app *goBlog) initComponents() {
 	var err error
-	// Log start
-	if logging {
-		log.Println("Initialize components...")
-	}
+
+	log.Println("Initialize components...")
+
 	app.initMarkdown()
 	if err = app.initTemplateAssets(); err != nil { // Needs minify
 		app.logErrAndQuit("Failed to init template assets:", err.Error())
@@ -209,10 +208,8 @@ func (app *goBlog) initComponents(logging bool) {
 	app.startPostsScheduler()
 	app.initPostsDeleter()
 	app.initIndexNow()
-	// Log finish
-	if logging {
-		log.Println("Initialized components")
-	}
+
+	log.Println("Initialized components")
 }
 
 func (a *goBlog) logErrAndQuit(v ...any) {

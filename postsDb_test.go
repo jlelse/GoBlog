@@ -25,10 +25,9 @@ func Test_postsDb(t *testing.T) {
 		},
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initCache()
 
 	now := toLocalSafe(time.Now().String())
 	nowPlus1Hour := toLocalSafe(time.Now().Add(1 * time.Hour).String())
@@ -384,10 +383,9 @@ func Test_postDeletesParams(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initCache()
 
 	err := app.createPost(&post{
 		Path:    "/test/abc",

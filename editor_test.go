@@ -16,10 +16,9 @@ func Test_editorPreview(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initTemplateStrings()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		app.serveEditorPreview(rw, r.WithContext(context.WithValue(r.Context(), blogKey, "default")))

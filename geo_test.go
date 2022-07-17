@@ -17,10 +17,7 @@ func Test_geo(t *testing.T) {
 		cfg:        createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	p := &post{
 		Blog: "en",

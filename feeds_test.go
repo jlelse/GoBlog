@@ -16,10 +16,10 @@ func Test_feeds(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initCache()
+	app.initSessions()
 
 	app.d = app.buildRouter()
 	handlerClient := newHandlerClient(app.d)

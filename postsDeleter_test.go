@@ -12,10 +12,8 @@ func Test_checkDeletedPosts(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	_ = app.initCache()
 
 	// Create a post
 	err := app.createPost(&post{

@@ -18,10 +18,7 @@ func Test_ntfySending(t *testing.T) {
 		httpClient: fakeClient.Client,
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	t.Run("Default", func(t *testing.T) {
 		app.cfg.Notifications = &configNotifications{

@@ -23,10 +23,10 @@ func Test_captchaMiddleware(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	app.initSessions()
+	_ = app.initTemplateStrings()
 
 	app.d = alice.New(app.checkIsCaptcha, app.captchaMiddleware).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("ABC Test"))

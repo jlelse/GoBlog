@@ -21,10 +21,8 @@ func Test_renderPostTax(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
 
 	p := &post{
 		Parameters: map[string][]string{
@@ -50,10 +48,8 @@ func Test_renderOldContentWarning(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	_ = app.initTemplateStrings()
 
 	p := &post{
 		Published: "2018-01-01",
@@ -79,10 +75,10 @@ func Test_renderInteractions(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	_ = app.initCache()
+	app.initMarkdown()
+	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()
 
@@ -150,10 +146,7 @@ func Test_renderAuthor(t *testing.T) {
 	app.cfg.User.Picture = "https://example.com/picture.jpg"
 	app.cfg.User.Name = "John Doe"
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	buf := &bytes.Buffer{}
 	hb := newHtmlBuilder(buf)

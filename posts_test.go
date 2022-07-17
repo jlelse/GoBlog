@@ -17,10 +17,11 @@ func Test_serveDate(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initCache()
+	app.initSessions()
+	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()
 
@@ -108,10 +109,11 @@ func Test_servePost(t *testing.T) {
 		Password: "test",
 	})
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	app.initMarkdown()
+	_ = app.initCache()
+	app.initSessions()
+	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()
 

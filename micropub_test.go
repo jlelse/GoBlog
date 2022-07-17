@@ -15,10 +15,10 @@ func Test_micropubQuery(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	_ = app.initCache()
+	app.initMarkdown()
+	app.initSessions()
 
 	// Create a test post with tags
 	err := app.createPost(&post{

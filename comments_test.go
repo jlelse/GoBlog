@@ -29,11 +29,10 @@ func Test_comments(t *testing.T) {
 	}
 	app.cfg.DefaultBlog = "en"
 
-	t.Cleanup(app.cleanup)
-
 	err := app.initConfig(false)
 	require.NoError(t, err)
-	app.initComponents(false)
+	_ = app.initTemplateStrings()
+	app.initSessions()
 
 	t.Run("Successful comment", func(t *testing.T) {
 

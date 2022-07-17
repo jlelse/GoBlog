@@ -20,10 +20,9 @@ func Test_indexNow(t *testing.T) {
 	}
 	app.cfg.IndexNow = &configIndexNow{Enabled: true}
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
+	_ = app.initCache()
+	app.initIndexNow()
 
 	// Create http router
 	app.d = app.buildRouter()
