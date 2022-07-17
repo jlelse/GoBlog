@@ -98,14 +98,15 @@ func Test_verifyMentionColin(t *testing.T) {
 
 	app := &goBlog{
 		httpClient: mockClient.Client,
-		cfg:        createDefaultConfig(),
+		cfg:        createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
 	}
 	app.cfg.Server.PublicAddress = "https://jlelse.blog"
 
-	_ = app.initConfig(false)
+	err = app.initConfig(false)
+	require.NoError(t, err)
 
 	m := &mention{
 		Source: "https://colinwalker.blog/?date=2021-11-14#p3",

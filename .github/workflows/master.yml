@@ -23,12 +23,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    # - name: Test
-    #   uses: docker/build-push-action@v2
-    #   with:
-    #     push: false
-    #     target: test
-    #     tags: test
+    - name: Test
+      uses: docker/build-push-action@v2
+      with:
+        push: false
+        target: test
+        tags: test
     - name: Build base image
       uses: docker/build-push-action@v2
       with:
