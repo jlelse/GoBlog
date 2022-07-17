@@ -29,10 +29,7 @@ func Test_verifyMention(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	m := &mention{
 		Source: "https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms",
@@ -54,7 +51,7 @@ func Test_verifyMention(t *testing.T) {
 
 }
 
-func Test_verifyMentionBidgy(t *testing.T) {
+func Test_verifyMentionBridgy(t *testing.T) {
 
 	testHtmlBytes, err := os.ReadFile("testdata/bridgy.html")
 	require.NoError(t, err)
@@ -72,10 +69,7 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	m := &mention{
 		Source: "https://example.com/abc",
@@ -111,10 +105,7 @@ func Test_verifyMentionColin(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://jlelse.blog"
 
-	t.Cleanup(app.cleanup)
-
 	_ = app.initConfig(false)
-	app.initComponents(false)
 
 	m := &mention{
 		Source: "https://colinwalker.blog/?date=2021-11-14#p3",
