@@ -1578,8 +1578,6 @@ func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
 					"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteSectionPath),
 					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
 				)
-				hb.writeElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
-				hb.writeElementClose("script")
 				hb.writeElementClose("div")
 
 				hb.writeElementClose("form")
@@ -1600,6 +1598,10 @@ func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
 			)
 			hb.writeElementClose("div")
 			hb.writeElementClose("form")
+
+			// Scripts
+			hb.writeElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+			hb.writeElementClose("script")
 
 			hb.writeElementClose("main")
 		},
