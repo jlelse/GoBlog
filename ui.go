@@ -1486,8 +1486,9 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 }
 
 type settingsRenderData struct {
-	blog     string
-	sections []*configSection
+	blog           string
+	sections       []*configSection
+	defaultSection string
 }
 
 func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
@@ -1512,6 +1513,25 @@ func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
 			hb.writeElementOpen("h2")
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "postsections"))
 			hb.writeElementClose("h2")
+
+			// Update default section
+			hb.writeElementOpen("h3")
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "default"))
+			hb.writeElementClose("h3")
+
+			hb.writeElementOpen("form", "class", "fw p", "method", "post")
+			hb.writeElementOpen("select", "name", "defaultsection")
+			for _, section := range srd.sections {
+				hb.writeElementOpen("option", "value", section.Name, lo.If(section.Name == srd.defaultSection, "selected").Else(""), "")
+				hb.writeEscaped(section.Name)
+				hb.writeElementClose("option")
+			}
+			hb.writeElementClose("select")
+			hb.writeElementOpen(
+				"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
+				"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateDefaultSectionPath),
+			)
+			hb.writeElementClose("form")
 
 			for _, section := range srd.sections {
 				hb.writeElementOpen("details")

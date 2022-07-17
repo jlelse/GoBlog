@@ -17,8 +17,9 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
-			blog:     blog,
-			sections: sections,
+			blog:           blog,
+			sections:       sections,
+			defaultSection: bc.DefaultSection,
 		},
 	})
 }
@@ -74,7 +75,7 @@ func (a *goBlog) settingsCreateSection(w http.ResponseWriter, r *http.Request) {
 		Name:  sectionName,
 		Title: sectionTitle,
 	}
-	err := a.addSection(blog, section)
+	err := a.saveSection(blog, section)
 	if err != nil {
 		a.serveError(w, r, "Failed to insert section into database", http.StatusInternalServerError)
 		return
@@ -112,7 +113,7 @@ func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 		PathTemplate: sectionPathTemplate,
 		ShowFull:     sectionShowFull,
 	}
-	err := a.updateSection(blog, sectionName, section)
+	err := a.saveSection(blog, section)
 	if err != nil {
 		a.serveError(w, r, "Failed to update section in database", http.StatusInternalServerError)
 		return
@@ -125,5 +126,26 @@ func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 	}
 	a.reloadRouter()
 	a.cache.purge()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const settingsUpdateDefaultSectionPath = "/updatedefaultsection"
+
+func (a *goBlog) settingsUpdateDefaultSection(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	newDefaultSection := r.FormValue("defaultsection")
+	// Check plausibility
+	if _, ok := bc.Sections[newDefaultSection]; !ok {
+		a.serveError(w, r, "Section unknown", http.StatusBadRequest)
+		return
+	}
+	// Update
+	err := a.saveSettingValue(settingNameWithBlog(blog, defaultSectionSetting), newDefaultSection)
+	if err != nil {
+		a.serveError(w, r, "Failed to update default section in database", http.StatusInternalServerError)
+		return
+	}
+	bc.DefaultSection = newDefaultSection
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

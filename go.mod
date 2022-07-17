@@ -13,7 +13,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/carlmjohnson/requests v0.22.3
 	github.com/cretz/bine v0.2.0
-	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
+	github.com/dchest/captcha v1.0.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0

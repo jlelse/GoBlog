@@ -384,12 +384,8 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	// Check if default blog is set
 	if a.cfg.DefaultBlog == "" {
-		if len(a.cfg.Blogs) == 1 {
-			// Set default blog to the only blog that is configured
-			a.cfg.DefaultBlog = lo.Keys(a.cfg.Blogs)[0]
-		} else {
-			return errors.New("no default blog configured")
-		}
+		// Set default blog to the only blog that is configured
+		a.cfg.DefaultBlog = lo.Keys(a.cfg.Blogs)[0]
 	}
 	// Check if default blog exists
 	if a.cfg.Blogs[a.cfg.DefaultBlog] == nil {
@@ -423,13 +419,37 @@ func (a *goBlog) initConfig(logging bool) error {
 		return err
 	}
 	// Check config for each blog
-	for _, blog := range a.cfg.Blogs {
+	for blog, bc := range a.cfg.Blogs {
+		// Check sections and add section if none exists
+		if len(bc.Sections) == 0 {
+			bc.Sections = createDefaultSections()
+			if err = a.saveAllSections(); err != nil {
+				return err
+			}
+		}
+		// Check default section
+		if defaultSection, err := a.getSettingValue(settingNameWithBlog(blog, defaultSectionSetting)); err != nil {
+			// Failed to read value
+			return err
+		} else if defaultSection == "" {
+			// No value defined in database
+			if _, ok := bc.Sections[bc.DefaultSection]; !ok {
+				bc.DefaultSection = lo.Keys(bc.Sections)[0]
+			}
+			// Save to database
+			if err = a.saveSettingValue(settingNameWithBlog(blog, defaultSectionSetting), bc.DefaultSection); err != nil {
+				return err
+			}
+		} else {
+			// Set value from database
+			bc.DefaultSection = defaultSection
+		}
 		// Check if language is set
-		if blog.Lang == "" {
-			blog.Lang = "en"
+		if bc.Lang == "" {
+			bc.Lang = "en"
 		}
 		// Blogroll
-		if br := blog.Blogroll; br != nil && br.Enabled && br.Opml == "" {
+		if br := bc.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false
 		}
 	}
@@ -484,18 +504,20 @@ func createDefaultBlog() *configBlog {
 		Lang:        "en",
 		Title:       "My Blog",
 		Description: "Welcome to my blog.",
-		Sections: map[string]*configSection{
-			"posts": {
-				Title: "Posts",
-			},
-		},
 		Taxonomies: []*configTaxonomy{
 			{
 				Name:  "tags",
 				Title: "Tags",
 			},
 		},
-		DefaultSection: "posts",
+	}
+}
+
+func createDefaultSections() map[string]*configSection {
+	return map[string]*configSection{
+		"posts": {
+			Title: "Posts",
+		},
 	}
 }
 

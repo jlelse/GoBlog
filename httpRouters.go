@@ -454,5 +454,6 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.Post(settingsDeleteSectionPath, a.settingsDeleteSection)
 		r.Post(settingsCreateSectionPath, a.settingsCreateSection)
 		r.Post(settingsUpdateSectionPath, a.settingsUpdateSection)
+		r.Post(settingsUpdateDefaultSectionPath, a.settingsUpdateDefaultSection)
 	}
 }

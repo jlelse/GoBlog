@@ -3,6 +3,15 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+)
+
+func settingNameWithBlog(blog, name string) string {
+	return fmt.Sprintf("%s---%s", blog, name)
+}
+
+const (
+	defaultSectionSetting = "defaultsection"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
@@ -63,7 +72,7 @@ func (a *goBlog) saveAllSections() error {
 	for blog, bc := range a.cfg.Blogs {
 		for k, s := range bc.Sections {
 			s.Name = k
-			if err := a.addSection(blog, s); err != nil {
+			if err := a.saveSection(blog, s); err != nil {
 				return err
 			}
 		}
@@ -71,33 +80,27 @@ func (a *goBlog) saveAllSections() error {
 	return nil
 }
 
-func (a *goBlog) addSection(blog string, section *configSection) error {
+func (a *goBlog) saveSection(blog string, section *configSection) error {
 	_, err := a.db.exec(
-		"insert into sections (blog, name, title, description, pathtemplate, showfull) values (@blog, @name, @title, @description, @pathtemplate, @showfull)",
+		`
+		insert into sections (blog, name, title, description, pathtemplate, showfull) values (@blog, @name, @title, @description, @pathtemplate, @showfull)
+		on conflict (blog, name) do update set title = @title2, description = @description2, pathtemplate = @pathtemplate2, showfull = @showfull2
+		`,
 		sql.Named("blog", blog),
 		sql.Named("name", section.Name),
 		sql.Named("title", section.Title),
 		sql.Named("description", section.Description),
 		sql.Named("pathtemplate", section.PathTemplate),
 		sql.Named("showfull", section.ShowFull),
+		sql.Named("title2", section.Title),
+		sql.Named("description2", section.Description),
+		sql.Named("pathtemplate2", section.PathTemplate),
+		sql.Named("showfull2", section.ShowFull),
 	)
 	return err
 }
 
 func (a *goBlog) deleteSection(blog string, name string) error {
 	_, err := a.db.exec("delete from sections where blog = @blog and name = @name", sql.Named("blog", blog), sql.Named("name", name))
-	return err
-}
-
-func (a *goBlog) updateSection(blog string, name string, section *configSection) error {
-	_, err := a.db.exec(
-		"update sections set title = @title, description = @description, pathtemplate = @pathtemplate, showfull = @showfull where blog = @blog and name = @name",
-		sql.Named("title", section.Title),
-		sql.Named("description", section.Description),
-		sql.Named("pathtemplate", section.PathTemplate),
-		sql.Named("showfull", section.ShowFull),
-		sql.Named("blog", blog),
-		sql.Named("name", section.Name),
-	)
 	return err
 }
