@@ -36,6 +36,8 @@ func Test_privateMode(t *testing.T) {
 		},
 	}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

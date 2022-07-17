@@ -14,6 +14,9 @@ func Test_micropubQuery(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

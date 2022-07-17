@@ -20,6 +20,8 @@ func Test_indexNow(t *testing.T) {
 	}
 	app.cfg.IndexNow = &configIndexNow{Enabled: true}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

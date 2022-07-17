@@ -20,6 +20,9 @@ func Test_renderPostTax(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
@@ -46,6 +49,9 @@ func Test_renderOldContentWarning(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
@@ -72,6 +78,8 @@ func Test_renderInteractions(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
+
+	t.Cleanup(app.cleanup)
 
 	_ = app.initConfig(false)
 	app.initComponents(false)
@@ -141,6 +149,8 @@ func Test_renderAuthor(t *testing.T) {
 	}
 	app.cfg.User.Picture = "https://example.com/picture.jpg"
 	app.cfg.User.Name = "John Doe"
+
+	t.Cleanup(app.cleanup)
 
 	_ = app.initConfig(false)
 	app.initComponents(false)

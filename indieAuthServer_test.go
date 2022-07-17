@@ -35,6 +35,8 @@ func Test_indieAuthServer(t *testing.T) {
 	}
 	app.cfg.Cache.Enable = false
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

@@ -19,6 +19,8 @@ func Test_webmentions(t *testing.T) {
 		},
 	}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

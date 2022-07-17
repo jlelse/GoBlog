@@ -29,6 +29,8 @@ func Test_comments(t *testing.T) {
 	}
 	app.cfg.DefaultBlog = "en"
 
+	t.Cleanup(app.cleanup)
+
 	err := app.initConfig(false)
 	require.NoError(t, err)
 	app.initComponents(false)

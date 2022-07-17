@@ -17,6 +17,8 @@ func Test_sitemap(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

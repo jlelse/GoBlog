@@ -29,6 +29,8 @@ func Test_verifyMention(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
@@ -70,6 +72,8 @@ func Test_verifyMentionBidgy(t *testing.T) {
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
@@ -106,6 +110,8 @@ func Test_verifyMentionColin(t *testing.T) {
 		}),
 	}
 	app.cfg.Server.PublicAddress = "https://jlelse.blog"
+
+	t.Cleanup(app.cleanup)
 
 	_ = app.initConfig(false)
 	app.initComponents(false)

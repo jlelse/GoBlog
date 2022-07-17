@@ -43,6 +43,8 @@ func Test_contact(t *testing.T) {
 	}
 	app.cfg.DefaultBlog = "en"
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

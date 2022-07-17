@@ -49,6 +49,9 @@ func Test_webfinger(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

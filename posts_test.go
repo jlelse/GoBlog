@@ -16,6 +16,9 @@ func Test_serveDate(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
@@ -104,6 +107,9 @@ func Test_servePost(t *testing.T) {
 		Username: "test",
 		Password: "test",
 	})
+
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

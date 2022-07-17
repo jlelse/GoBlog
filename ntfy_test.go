@@ -18,6 +18,8 @@ func Test_ntfySending(t *testing.T) {
 		httpClient: fakeClient.Client,
 	}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 

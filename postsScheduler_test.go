@@ -22,6 +22,8 @@ func Test_postsScheduler(t *testing.T) {
 		},
 	}
 
+	t.Cleanup(app.cleanup)
+
 	_ = app.initConfig(false)
 	app.initComponents(false)
 
