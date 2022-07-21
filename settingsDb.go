@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/samber/lo"
 )
 
 func settingNameWithBlog(blog, name string) string {
@@ -11,7 +13,8 @@ func settingNameWithBlog(blog, name string) string {
 }
 
 const (
-	defaultSectionSetting = "defaultsection"
+	defaultSectionSetting        = "defaultsection"
+	hideOldContentWarningSetting = "hideoldcontentwarning"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
@@ -30,6 +33,17 @@ func (a *goBlog) getSettingValue(name string) (string, error) {
 	return value, nil
 }
 
+func (a *goBlog) getBooleanSettingValue(name string, defaultValue bool) (bool, error) {
+	stringValue, err := a.getSettingValue(name)
+	if err != nil {
+		return defaultValue, err
+	}
+	if stringValue == "" {
+		return defaultValue, nil
+	}
+	return stringValue == "1", nil
+}
+
 func (a *goBlog) saveSettingValue(name, value string) error {
 	_, err := a.db.exec(
 		"insert into settings (name, value) values (@name, @value) on conflict (name) do update set value = @value2",
@@ -38,6 +52,10 @@ func (a *goBlog) saveSettingValue(name, value string) error {
 		sql.Named("value2", value),
 	)
 	return err
+}
+
+func (a *goBlog) saveBooleanSettingValue(name string, value bool) error {
+	return a.saveSettingValue(name, lo.If(value, "1").Else("0"))
 }
 
 func (a *goBlog) loadSections() error {

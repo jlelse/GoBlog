@@ -33,7 +33,7 @@ require (
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.15.8
+	github.com/klauspost/compress v1.15.9
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.14
@@ -63,7 +63,7 @@ require (
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.7
-	tailscale.com v1.26.2
+	tailscale.com v1.28.0
 	// main
 	willnorris.com/go/microformats v1.1.2-0.20210827044458-ff2a6ae41971
 )
@@ -147,7 +147,8 @@ require (
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20220703234212-c31a7b1ab478 // indirect

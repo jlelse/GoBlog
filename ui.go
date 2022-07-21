@@ -1486,9 +1486,10 @@ func (a *goBlog) renderEditor(hb *htmlBuilder, rd *renderData) {
 }
 
 type settingsRenderData struct {
-	blog           string
-	sections       []*configSection
-	defaultSection string
+	blog                  string
+	sections              []*configSection
+	defaultSection        string
+	hideOldContentWarning bool
 }
 
 func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
@@ -1509,95 +1510,22 @@ func (a *goBlog) renderSettings(hb *htmlBuilder, rd *renderData) {
 			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
 			hb.writeElementClose("h1")
 
-			// Post sections
+			// General
 			hb.writeElementOpen("h2")
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "postsections"))
+			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "general"))
 			hb.writeElementClose("h2")
 
-			// Update default section
-			hb.writeElementOpen("h3")
-			hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "default"))
-			hb.writeElementClose("h3")
-
-			hb.writeElementOpen("form", "class", "fw p", "method", "post")
-			hb.writeElementOpen("select", "name", "defaultsection")
-			for _, section := range srd.sections {
-				hb.writeElementOpen("option", "value", section.Name, lo.If(section.Name == srd.defaultSection, "selected").Else(""), "")
-				hb.writeEscaped(section.Name)
-				hb.writeElementClose("option")
-			}
-			hb.writeElementClose("select")
-			hb.writeElementOpen(
-				"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
-				"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateDefaultSectionPath),
+			// Hide old content warning
+			a.renderCollapsibleBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsHideOldContentWarningPath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hideoldcontentwarningtitle"),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hideoldcontentwarningdesc"),
+				hideOldContentWarningSetting,
+				srd.hideOldContentWarning,
 			)
-			hb.writeElementClose("form")
 
-			for _, section := range srd.sections {
-				hb.writeElementOpen("details")
-
-				hb.writeElementOpen("summary")
-				hb.writeElementOpen("h3")
-				hb.writeEscaped(section.Name)
-				hb.writeElementClose("h3")
-				hb.writeElementClose("summary")
-
-				hb.writeElementOpen("form", "class", "fw p", "method", "post")
-
-				hb.writeElementOpen("input", "type", "hidden", "name", "sectionname", "value", section.Name)
-
-				// Title
-				hb.writeElementOpen("input", "type", "text", "name", "sectiontitle", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiontitle"), "required", "", "value", section.Title)
-				// Description
-				hb.writeElementOpen(
-					"textarea",
-					"name", "sectiondescription",
-					"class", "monospace",
-					"placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiondescription"),
-				)
-				hb.writeEscaped(section.Description)
-				hb.writeElementClose("textarea")
-				// Path template
-				hb.writeElementOpen("input", "type", "text", "name", "sectionpathtemplate", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionpathtemplate"), "value", section.PathTemplate)
-				// Show full
-				hb.writeElementOpen("input", "type", "checkbox", "name", "sectionshowfull", "id", "showfull-"+section.Name, lo.If(section.ShowFull, "checked").Else(""), "")
-				hb.writeElementOpen("label", "for", "showfull-"+section.Name)
-				hb.writeEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionshowfull"))
-				hb.writeElementClose("label")
-
-				// Actions
-				hb.writeElementOpen("div", "class", "p")
-				// Update
-				hb.writeElementOpen(
-					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
-					"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateSectionPath),
-				)
-				// Delete
-				hb.writeElementOpen(
-					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
-					"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteSectionPath),
-					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
-				)
-				hb.writeElementClose("div")
-
-				hb.writeElementClose("form")
-				hb.writeElementClose("details")
-			}
-
-			// Create new section
-			hb.writeElementOpen("form", "class", "fw p", "method", "post")
-			// Name
-			hb.writeElementOpen("input", "type", "text", "name", "sectionname", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionname"), "required", "")
-			// Title
-			hb.writeElementOpen("input", "type", "text", "name", "sectiontitle", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectiontitle"), "required", "")
-			// Create button
-			hb.writeElementOpen("div")
-			hb.writeElementOpen(
-				"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"),
-				"formaction", rd.Blog.getRelativePath(settingsPath+settingsCreateSectionPath),
-			)
-			hb.writeElementClose("div")
-			hb.writeElementClose("form")
+			// Post sections
+			a.renderPostSectionSettings(hb, rd, srd)
 
 			// Scripts
 			hb.writeElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")

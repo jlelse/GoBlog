@@ -17,9 +17,10 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
-			blog:           blog,
-			sections:       sections,
-			defaultSection: bc.DefaultSection,
+			blog:                  blog,
+			sections:              sections,
+			defaultSection:        bc.DefaultSection,
+			hideOldContentWarning: bc.hideOldContentWarning,
 		},
 	})
 }
@@ -147,5 +148,22 @@ func (a *goBlog) settingsUpdateDefaultSection(w http.ResponseWriter, r *http.Req
 		return
 	}
 	bc.DefaultSection = newDefaultSection
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const settingsHideOldContentWarningPath = "/oldcontentwarning"
+
+func (a *goBlog) settingsHideOldContentWarning(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	hideOldContentWarning := r.FormValue(hideOldContentWarningSetting) == "on"
+	// Update
+	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), hideOldContentWarning)
+	if err != nil {
+		a.serveError(w, r, "Failed to update default section in database", http.StatusInternalServerError)
+		return
+	}
+	bc.hideOldContentWarning = hideOldContentWarning
+	a.cache.purge()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

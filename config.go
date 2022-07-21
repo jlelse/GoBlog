@@ -75,27 +75,28 @@ type configCache struct {
 }
 
 type configBlog struct {
-	Path           string                    `mapstructure:"path"`
-	Lang           string                    `mapstructure:"lang"`
-	Title          string                    `mapstructure:"title"`
-	Description    string                    `mapstructure:"description"`
-	Pagination     int                       `mapstructure:"pagination"`
-	DefaultSection string                    `mapstructure:"defaultsection"`
-	Sections       map[string]*configSection `mapstructure:"sections"`
-	Taxonomies     []*configTaxonomy         `mapstructure:"taxonomies"`
-	Menus          map[string]*configMenu    `mapstructure:"menus"`
-	Photos         *configPhotos             `mapstructure:"photos"`
-	Search         *configSearch             `mapstructure:"search"`
-	BlogStats      *configBlogStats          `mapstructure:"blogStats"`
-	Blogroll       *configBlogroll           `mapstructure:"blogroll"`
-	Telegram       *configTelegram           `mapstructure:"telegram"`
-	PostAsHome     bool                      `mapstructure:"postAsHome"`
-	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
-	OnThisDay      *configOnThisDay          `mapstructure:"onThisDay"`
-	Comments       *configComments           `mapstructure:"comments"`
-	Map            *configGeoMap             `mapstructure:"map"`
-	Contact        *configContact            `mapstructure:"contact"`
-	Announcement   *configAnnouncement       `mapstructure:"announcement"`
+	Path                  string                    `mapstructure:"path"`
+	Lang                  string                    `mapstructure:"lang"`
+	Title                 string                    `mapstructure:"title"`
+	Description           string                    `mapstructure:"description"`
+	Pagination            int                       `mapstructure:"pagination"`
+	DefaultSection        string                    `mapstructure:"defaultsection"`
+	Sections              map[string]*configSection `mapstructure:"sections"`
+	Taxonomies            []*configTaxonomy         `mapstructure:"taxonomies"`
+	Menus                 map[string]*configMenu    `mapstructure:"menus"`
+	Photos                *configPhotos             `mapstructure:"photos"`
+	Search                *configSearch             `mapstructure:"search"`
+	BlogStats             *configBlogStats          `mapstructure:"blogStats"`
+	Blogroll              *configBlogroll           `mapstructure:"blogroll"`
+	Telegram              *configTelegram           `mapstructure:"telegram"`
+	PostAsHome            bool                      `mapstructure:"postAsHome"`
+	RandomPost            *configRandomPost         `mapstructure:"randomPost"`
+	OnThisDay             *configOnThisDay          `mapstructure:"onThisDay"`
+	Comments              *configComments           `mapstructure:"comments"`
+	Map                   *configGeoMap             `mapstructure:"map"`
+	Contact               *configContact            `mapstructure:"contact"`
+	Announcement          *configAnnouncement       `mapstructure:"announcement"`
+	hideOldContentWarning bool
 }
 
 type configSection struct {
@@ -451,6 +452,11 @@ func (a *goBlog) initConfig(logging bool) error {
 		// Blogroll
 		if br := bc.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false
+		}
+		// Load other settings from database
+		bc.hideOldContentWarning, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), false)
+		if err != nil {
+			return err
 		}
 	}
 	// Log success
