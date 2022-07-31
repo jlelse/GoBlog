@@ -283,6 +283,9 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(statusse) == 0 {
 		statusse = []postStatus{statusPublished}
+		if a.isLoggedIn(r) {
+			statusse = append(statusse, statusPrivate, statusUnlisted)
+		}
 	}
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
 		blog:           blog,
