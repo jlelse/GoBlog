@@ -73,10 +73,13 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 		hb.writeElementClose("source")
 		hb.writeElementClose("audio")
 	}
+	// Add IndieWeb context
+	a.renderPostReplyContext(hb, p, "p")
+	a.renderPostLikeContext(hb, p, "p")
 	// Add post HTML
 	a.postHtmlToWriter(hb, p, true)
 	// Add link to interactions and comments
-	blogConfig := a.cfg.Blogs[defaultIfEmpty(p.Blog, a.cfg.DefaultBlog)]
+	blogConfig := a.getBlogFromPost(p)
 	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
 		hb.writeElementOpen("p")
 		hb.writeElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")

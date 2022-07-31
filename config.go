@@ -546,3 +546,7 @@ func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
 	}
 	return blog, a.cfg.Blogs[blog]
 }
+
+func (a *goBlog) getBlogFromPost(p *post) *configBlog {
+	return a.cfg.Blogs[defaultIfEmpty(p.Blog, a.cfg.DefaultBlog)]
+}

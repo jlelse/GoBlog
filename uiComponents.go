@@ -160,20 +160,8 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 		hb.writeElementClose("div")
 	}
 	// IndieWeb Meta
-	// Reply ("u-in-reply-to")
-	if replyLink := a.replyLink(p); replyLink != "" {
-		hb.writeElementOpen("div")
-		hb.writeEscaped(a.ts.GetTemplateStringVariant(b.Lang, "replyto"))
-		hb.writeEscaped(": ")
-		hb.writeElementOpen("a", "class", "u-in-reply-to", "rel", "noopener", "target", "_blank", "href", replyLink)
-		if replyTitle := a.replyTitle(p); replyTitle != "" {
-			hb.writeEscaped(replyTitle)
-		} else {
-			hb.writeEscaped(replyLink)
-		}
-		hb.writeElementClose("a")
-		hb.writeElementClose("div")
-	}
+	a.renderPostReplyContext(hb, p, "")
+	a.renderPostLikeContext(hb, p, "")
 	// Like ("u-like-of")
 	if likeLink := a.likeLink(p); likeLink != "" {
 		hb.writeElementOpen("div")
@@ -246,6 +234,46 @@ func (a *goBlog) renderPostMeta(hb *htmlBuilder, p *post, b *configBlog, typ str
 	}
 	if typ == "summary" || typ == "post" {
 		hb.writeElementClose("div")
+	}
+}
+
+// Reply ("u-in-reply-to")
+func (a *goBlog) renderPostReplyContext(hb *htmlBuilder, p *post, htmlWrapperElement string) {
+	if htmlWrapperElement == "" {
+		htmlWrapperElement = "div"
+	}
+	if replyLink := a.replyLink(p); replyLink != "" {
+		hb.writeElementOpen(htmlWrapperElement)
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "replyto"))
+		hb.writeEscaped(": ")
+		hb.writeElementOpen("a", "class", "u-in-reply-to", "rel", "noopener", "target", "_blank", "href", replyLink)
+		if replyTitle := a.replyTitle(p); replyTitle != "" {
+			hb.writeEscaped(replyTitle)
+		} else {
+			hb.writeEscaped(replyLink)
+		}
+		hb.writeElementClose("a")
+		hb.writeElementClose(htmlWrapperElement)
+	}
+}
+
+// Like ("u-like-of")
+func (a *goBlog) renderPostLikeContext(hb *htmlBuilder, p *post, htmlWrapperElement string) {
+	if htmlWrapperElement == "" {
+		htmlWrapperElement = "div"
+	}
+	if likeLink := a.likeLink(p); likeLink != "" {
+		hb.writeElementOpen(htmlWrapperElement)
+		hb.writeEscaped(a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "likeof"))
+		hb.writeEscaped(": ")
+		hb.writeElementOpen("a", "class", "u-like-of", "rel", "noopener", "target", "_blank", "href", likeLink)
+		if likeTitle := a.likeTitle(p); likeTitle != "" {
+			hb.writeEscaped(likeTitle)
+		} else {
+			hb.writeEscaped(likeLink)
+		}
+		hb.writeElementClose("a")
+		hb.writeElementClose(htmlWrapperElement)
 	}
 }
 
