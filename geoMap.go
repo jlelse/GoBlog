@@ -19,7 +19,7 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithLocation, err := a.db.countPosts(&postsRequestConfig{
 		blog:               blog,
-		status:             statusPublished,
+		statusse:           a.getDefaultPostStatusse(r),
 		parameters:         []string{a.cfg.Micropub.LocationParam, gpxParameter},
 		withOnlyParameters: []string{a.cfg.Micropub.LocationParam, gpxParameter},
 	})
@@ -57,7 +57,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithTracks, err := a.getPosts(&postsRequestConfig{
 		blog:                  blog,
-		status:                statusPublished,
+		statusse:              a.getDefaultPostStatusse(r),
 		parameters:            []string{gpxParameter},
 		withOnlyParameters:    []string{gpxParameter},
 		excludeParameter:      showRouteParam,
@@ -103,7 +103,7 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithLocations, err := a.getPosts(&postsRequestConfig{
 		blog:               blog,
-		status:             statusPublished,
+		statusse:           a.getDefaultPostStatusse(r),
 		parameters:         []string{a.cfg.Micropub.LocationParam},
 		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
 	})
