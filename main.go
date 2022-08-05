@@ -53,9 +53,6 @@ func main() {
 		}()
 	}
 
-	// Init regular garbage collection
-	initGC()
-
 	app := &goBlog{
 		httpClient: newHttpClient(),
 	}
