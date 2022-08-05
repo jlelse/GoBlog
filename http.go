@@ -56,9 +56,10 @@ func (a *goBlog) startServer() (err error) {
 	}
 	// Start server
 	s := &http.Server{
-		Handler:      finalHandler,
-		ReadTimeout:  5 * time.Minute,
-		WriteTimeout: 5 * time.Minute,
+		Handler:           finalHandler,
+		ReadHeaderTimeout: 1 * time.Minute,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      5 * time.Minute,
 	}
 	a.shutdown.Add(shutdownServer(s, "main server"))
 	if a.cfg.Server.PublicHTTPS || a.cfg.Server.TailscaleHTTPS {
@@ -69,10 +70,11 @@ func (a *goBlog) startServer() (err error) {
 				h = m.HTTPHandler(h)
 			}
 			httpServer := &http.Server{
-				Addr:         ":80",
-				Handler:      h,
-				ReadTimeout:  5 * time.Minute,
-				WriteTimeout: 5 * time.Minute,
+				Addr:              ":80",
+				Handler:           h,
+				ReadHeaderTimeout: 1 * time.Minute,
+				ReadTimeout:       5 * time.Minute,
+				WriteTimeout:      5 * time.Minute,
 			}
 			a.shutdown.Add(shutdownServer(httpServer, "http server"))
 			if err := a.listenAndServe(httpServer); err != nil && err != http.ErrServerClosed {

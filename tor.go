@@ -66,9 +66,10 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	a.cache.purge()
 	// Serve handler
 	s := &http.Server{
-		Handler:      middleware.WithValue(torUsedKey, true)(h),
-		ReadTimeout:  5 * time.Minute,
-		WriteTimeout: 5 * time.Minute,
+		Handler:           middleware.WithValue(torUsedKey, true)(h),
+		ReadHeaderTimeout: 1 * time.Minute,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      5 * time.Minute,
 	}
 	a.shutdown.Add(shutdownServer(s, "tor"))
 	if err = s.Serve(onion); err != nil && err != http.ErrServerClosed {
