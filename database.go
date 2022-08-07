@@ -103,14 +103,14 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
-	cos := map[string]bool{}
+	cos := map[string]struct{}{}
 	var co string
 	for rows.Next() {
 		err = rows.Scan(&co)
 		if err != nil {
 			return nil, err
 		}
-		cos[co] = true
+		cos[co] = struct{}{}
 	}
 	if _, ok := cos["ENABLE_FTS5"]; !ok {
 		return nil, errors.New("sqlite not compiled with FTS5")

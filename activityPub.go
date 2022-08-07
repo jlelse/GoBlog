@@ -404,11 +404,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]a
 
 func (a *goBlog) apSendProfileUpdates() {
 	for blog, config := range a.cfg.Blogs {
-		person, err := a.toAsPerson(blog)
-		if err != nil {
-			log.Println("Failed to create Person object:", err)
-			continue
-		}
+		person := a.toAsPerson(blog)
 		a.apSendToAllFollowers(blog, map[string]any{
 			"@context":  []string{asContext},
 			"actor":     a.apIri(config),

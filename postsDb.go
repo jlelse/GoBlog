@@ -620,12 +620,12 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 }
 
 func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
-	var values []string
 	// TODO: Query posts the normal way
 	rows, err := d.query("select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status) order by value", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}
+	var values []string
 	var value string
 	for rows.Next() {
 		if err = rows.Scan(&value); err != nil {

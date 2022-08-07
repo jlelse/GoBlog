@@ -14,22 +14,24 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - structcheck
+    - staticcheck
     - typecheck
     - unused
     - varcheck
     # Other linters
-    - dupl
-    - gofmt
+    - asasalint
+    - bidichk
     - bodyclose
+    - containedctx
+    - contextcheck
+    - dupl
+    - durationcheck
+    - gofmt
+    - gosec
+    - makezero
     - noctx
     - prealloc
     - unparam
-    - durationcheck
-    - bidichk
-    - containedctx
-    - contextcheck
-    - gosec
 linters-settings:
   gosimple:
     go: "1.19"

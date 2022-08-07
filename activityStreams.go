@@ -167,7 +167,7 @@ func (a *goBlog) activityPubId(p *post) string {
 	return fu
 }
 
-func (a *goBlog) toAsPerson(blog string) (*asPerson, error) {
+func (a *goBlog) toAsPerson(blog string) *asPerson {
 	b := a.cfg.Blogs[blog]
 	asBlog := &asPerson{
 		Context:           []string{asContext},
@@ -194,15 +194,11 @@ func (a *goBlog) toAsPerson(blog string) (*asPerson, error) {
 			URL:  a.cfg.User.Picture,
 		}
 	}
-	return asBlog, nil
+	return asBlog
 }
 
 func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
-	person, err := a.toAsPerson(blog)
-	if err != nil {
-		a.serveError(w, r, "Failed to create ActivityStreams Person", http.StatusInternalServerError)
-		return
-	}
+	person := a.toAsPerson(blog)
 	// Encode
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
