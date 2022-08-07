@@ -15,10 +15,13 @@ import (
 type feedType string
 
 const (
-	noFeed   feedType = ""
-	rssFeed  feedType = "rss"
-	atomFeed feedType = "atom"
-	jsonFeed feedType = "json"
+	noFeed      feedType = ""
+	rssFeed     feedType = "rss"
+	atomFeed    feedType = "atom"
+	jsonFeed    feedType = "json"
+	minRssFeed  feedType = "min.rss"
+	minAtomFeed feedType = "min.atom"
+	minJsonFeed feedType = "min.json"
 )
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description string) {
@@ -40,7 +43,12 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	}
 	for _, p := range posts {
 		buf := bufferpool.Get()
-		a.feedHtml(buf, p)
+		switch f {
+		case minRssFeed, minAtomFeed, minJsonFeed:
+			a.minFeedHtml(buf, p)
+		default:
+			a.feedHtml(buf, p)
+		}
 		feed.Add(&feeds.Item{
 			Title:       p.RenderedTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
@@ -55,13 +63,13 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	var feedWriteFunc func(w io.Writer) error
 	var feedMediaType string
 	switch f {
-	case rssFeed:
+	case rssFeed, minRssFeed:
 		feedMediaType = contenttype.RSS
 		feedWriteFunc = feed.WriteRss
-	case atomFeed:
+	case atomFeed, minAtomFeed:
 		feedMediaType = contenttype.ATOM
 		feedWriteFunc = feed.WriteAtom
-	case jsonFeed:
+	case jsonFeed, minJsonFeed:
 		feedMediaType = contenttype.JSONFeed
 		feedWriteFunc = feed.WriteJSON
 	default:

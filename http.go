@@ -117,7 +117,7 @@ func (*goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
 
 const (
 	paginationPath = "/page/{page:[0-9-]+}"
-	feedPath       = ".{feed:(rss|json|atom)}"
+	feedPath       = ".{feed:(rss|json|atom|min\\.rss|min\\.json|min\\.atom)}"
 )
 
 func (a *goBlog) reloadRouter() {

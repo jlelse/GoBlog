@@ -40,13 +40,10 @@ func (a *goBlog) renderBase(hb *htmlBuilder, rd *renderData, title, main func(hb
 	} else {
 		a.renderTitleTag(hb, rd.Blog, "")
 	}
-	// Feeds
 	renderedBlogTitle := a.renderMdTitle(rd.Blog.Title)
-	// RSS
+	// Feeds
 	hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", fmt.Sprintf("RSS (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".rss"))
-	// ATOM
 	hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".atom"))
-	// JSON Feed
 	hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", fmt.Sprintf("JSON Feed (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".json"))
 	// Webmentions
 	hb.writeElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
@@ -368,11 +365,8 @@ func (a *goBlog) renderIndex(hb *htmlBuilder, rd *renderData) {
 			if renderedIndexTitle != "" {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
-			// RSS
 			hb.writeElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss"))
-			// ATOM
 			hb.writeElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom"))
-			// JSON Feed
 			hb.writeElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json"))
 		},
 		func(hb *htmlBuilder) {

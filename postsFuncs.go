@@ -89,6 +89,15 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 	}
 }
 
+func (a *goBlog) minFeedHtml(w io.Writer, p *post) {
+	hb := newHtmlBuilder(w)
+	// Add IndieWeb context
+	a.renderPostReplyContext(hb, p, "p")
+	a.renderPostLikeContext(hb, p, "p")
+	// Add post HTML
+	a.postHtmlToWriter(hb, p, true)
+}
+
 const summaryDivider = "<!--more-->"
 
 func (a *goBlog) postSummary(p *post) (summary string) {

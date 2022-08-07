@@ -6,9 +6,9 @@ License: MIT License
 
 [Blog](https://goblog.app/)  
 [Documentation](https://docs.goblog.app)  
-[Main repository](https://git.jlel.se/jlelse/GoBlog)  
-[GitHub mirror](https://github.com/jlelse/GoBlog)  
-[Codeberg mirror](https://codeberg.org/jlelse/GoBlog)
+[Main repository](https://github.com/jlelse/GoBlog)  
+[Mirror](https://git.jlel.se/jlelse/GoBlog)  
+[Mirror on Codeberg](https://codeberg.org/jlelse/GoBlog)
 
 ## Features
 
@@ -33,7 +33,7 @@ Here's an (incomplete) list of features:
     - Publish posts to the Fediverse (Mastodon etc.)
     - ActivityPub-based commenting
 - Web feeds
-    - Multiple feed formats: RSS, Atom, JSON
+    - Multiple feed formats (.rss, .atom, .json, .min.rss, .min.atom, .min.json)
     - Feeds on any archive page
 - Sitemap
 - Automatic HTTPS using Let's Encrypt
