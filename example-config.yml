@@ -181,17 +181,6 @@ blogs:
     title: My awesome blog # Blog title
     description: My awesome blog description # Blog description
     pagination: 10 # Number of posts per page
-    # Sections
-    defaultsection: micro # Default section
-    sections:
-      posts: # Section code
-        title: Posts # Section title
-        pathtemplate: "{{printf \"/%v/%v\" .Section .Slug}}" # Template to generate post paths (available: .Section, .Slug, .Year, .Month, .Day, .BlogPath (useful for blogs on sub-paths))
-      micro:
-        title: Micro
-        description: "You can also use **Markdown** here." # Section description, can also use Markdown
-        pathtemplate: "{{printf \"/%v/%02d/%02d/%v\" .Section .Year .Month .Slug}}"
-        showFull: true # Show full post content instead of just the summary on index pages
     # Taxonomies
     taxonomies:
       - name: tags # Code of taxonomy (used via post parameters)
