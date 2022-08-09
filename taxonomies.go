@@ -38,7 +38,7 @@ func (a *goBlog) serveTaxonomyValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get value from DB
-	row, err := a.db.queryRow(
+	row, err := a.db.QueryRow(
 		"select value from post_parameters where parameter = @tax and urlize(value) = @taxValue limit 1",
 		sql.Named("tax", tax.Name), sql.Named("taxValue", taxValueParam),
 	)

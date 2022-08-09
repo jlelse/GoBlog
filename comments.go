@@ -28,7 +28,7 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := a.db.queryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
+	row, err := a.db.QueryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +63,7 @@ func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
 	name := defaultIfEmpty(cleanHTMLText(r.FormValue("name")), "Anonymous")
 	website := cleanHTMLText(r.FormValue("website"))
 	// Insert
-	result, err := a.db.exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
+	result, err := a.db.Exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,7 +116,7 @@ func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any
 func (db *database) getComments(config *commentsRequestConfig) ([]*comment, error) {
 	comments := []*comment{}
 	query, args := buildCommentsQuery(config)
-	rows, err := db.query(query, args...)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (db *database) getComments(config *commentsRequestConfig) ([]*comment, erro
 func (db *database) countComments(config *commentsRequestConfig) (count int, err error) {
 	query, params := buildCommentsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := db.queryRow(query, params...)
+	row, err := db.QueryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -143,6 +143,6 @@ func (db *database) countComments(config *commentsRequestConfig) (count int, err
 }
 
 func (db *database) deleteComment(id int) error {
-	_, err := db.exec("delete from comments where id = @id", sql.Named("id", id))
+	_, err := db.Exec("delete from comments where id = @id", sql.Named("id", id))
 	return err
 }

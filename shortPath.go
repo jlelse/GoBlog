@@ -17,7 +17,7 @@ func (db *database) shortenPath(p string) (string, error) {
 			return spi.(string), nil
 		}
 		// Insert in case it isn't shortened yet
-		_, err := db.exec(`
+		_, err := db.Exec(`
 		insert or rollback into shortpath (id, path)
 		values (
 			-- next available id (reuse skipped ids due to bug)
@@ -31,7 +31,7 @@ func (db *database) shortenPath(p string) (string, error) {
 			}
 		}
 		// Query short path
-		row, err := db.queryRow("select printf('/s/%x', id) from shortpath where path = @path", sql.Named("path", p))
+		row, err := db.QueryRow("select printf('/s/%x', id) from shortpath where path = @path", sql.Named("path", p))
 		if err != nil {
 			return nil, err
 		}

@@ -77,7 +77,7 @@ func (a *goBlog) saveReaction(reaction, path string) error {
 	defer a.reactionsSfg.Forget(path)
 	defer a.reactionsCache.Del(path)
 	// Insert reaction
-	_, err := a.db.exec("insert into reactions (path, reaction, count) values (?, ?, 1) on conflict (path, reaction) do update set count=count+1", path, reaction)
+	_, err := a.db.Exec("insert into reactions (path, reaction, count) values (?, ?, 1) on conflict (path, reaction) do update set count=count+1", path, reaction)
 	return err
 }
 
@@ -125,7 +125,7 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 		sqlBuf.WriteString(") and path not in (select path from post_parameters where parameter=? and value=?)")
 		sqlArgs = append(sqlArgs, reactionsPostParam, "false")
 		// Execute query
-		rows, err := a.db.query(sqlBuf.String(), sqlArgs...)
+		rows, err := a.db.Query(sqlBuf.String(), sqlArgs...)
 		if err != nil {
 			return nil, err
 		}

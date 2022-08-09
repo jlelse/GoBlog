@@ -154,7 +154,7 @@ func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 		Months: map[string][]blogStatsRow{},
 	}
 	// Query and scan
-	rows, err := db.query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("blog", blog))
+	rows, err := db.Query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}

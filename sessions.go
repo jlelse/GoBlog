@@ -23,7 +23,7 @@ const (
 
 func (a *goBlog) initSessions() {
 	deleteExpiredSessions := func() {
-		if _, err := a.db.exec(
+		if _, err := a.db.Exec(
 			"delete from sessions where expires < @now",
 			sql.Named("now", utcNowString()),
 		); err != nil {
@@ -103,14 +103,14 @@ func (s *dbSessionStore) Delete(_ *http.Request, w http.ResponseWriter, session 
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
-	if _, err := s.db.exec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
+	if _, err := s.db.Exec("delete from sessions where id = @id", sql.Named("id", session.ID)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *dbSessionStore) load(session *sessions.Session) (err error) {
-	row, err := s.db.queryRow(
+	row, err := s.db.QueryRow(
 		"select data, created, modified, expires from sessions where id = @id and expires > @now",
 		sql.Named("id", session.ID),
 		sql.Named("now", utcNowString()),
@@ -142,7 +142,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	session.ID = session.Name() + "-" + uuid.NewString()
 	created, modified := utcNowString(), utcNowString()
 	expires := time.Now().UTC().Add(time.Second * time.Duration(session.Options.MaxAge)).Format(time.RFC3339)
-	_, err = s.db.exec(
+	_, err = s.db.Exec(
 		"insert or replace into sessions(id, data, created, modified, expires) values(@id, @data, @created, @modified, @expires)",
 		sql.Named("id", session.ID),
 		sql.Named("data", encoded.Bytes()),
@@ -163,7 +163,7 @@ func (s *dbSessionStore) save(session *sessions.Session) (err error) {
 	if err = gob.NewEncoder(encoded).Encode(session.Values); err != nil {
 		return err
 	}
-	_, err = s.db.exec(
+	_, err = s.db.Exec(
 		"update sessions set data = @data, modified = @modified where id = @id",
 		sql.Named("data", encoded.Bytes()),
 		sql.Named("modified", utcNowString()),

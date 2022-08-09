@@ -19,6 +19,7 @@ type config struct {
 	Blogs         map[string]*configBlog `mapstructure:"blogs"`
 	User          *configUser            `mapstructure:"user"`
 	Hooks         *configHooks           `mapstructure:"hooks"`
+	Plugins       []*configPlugin        `mapstructure:"plugins"`
 	Micropub      *configMicropub        `mapstructure:"micropub"`
 	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
 	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
@@ -320,6 +321,13 @@ type configReactions struct {
 type configPprof struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Address string `mapstructure:"address"`
+}
+
+type configPlugin struct {
+	Path   string         `mapstructure:"path"`
+	Type   string         `mapstructure:"type"`
+	Import string         `mapstructure:"import"`
+	Config map[string]any `mapstructure:"config"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {

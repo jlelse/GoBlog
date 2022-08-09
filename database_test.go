@@ -15,17 +15,17 @@ func Test_database(t *testing.T) {
 			t.Fatalf("Error: %v", err)
 		}
 
-		_, err = db.exec("create table test(test text);")
+		_, err = db.Exec("create table test(test text);")
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
 
-		_, err = db.exec("insert into test (test) values ('Test')")
+		_, err = db.Exec("insert into test (test) values ('Test')")
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
 
-		row, err := db.queryRow("select count(test) from test")
+		row, err := db.QueryRow("select count(test) from test")
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
@@ -38,7 +38,7 @@ func Test_database(t *testing.T) {
 			t.Error("Wrong result")
 		}
 
-		rows, err := db.query("select count(test), test from test")
+		rows, err := db.Query("select count(test), test from test")
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}

@@ -14,7 +14,7 @@ func (db *database) cachePersistentlyContext(ctx context.Context, key string, da
 	if db == nil {
 		return errors.New("database is nil")
 	}
-	_, err := db.execContext(ctx, "insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", utcNowString()))
+	_, err := db.ExecContext(ctx, "insert or replace into persistent_cache(key, data, date) values(@key, @data, @date)", sql.Named("key", key), sql.Named("data", data), sql.Named("date", utcNowString()))
 	return err
 }
 
@@ -27,7 +27,7 @@ func (db *database) retrievePersistentCacheContext(c context.Context, key string
 		return nil, errors.New("database is nil")
 	}
 	d, err, _ := db.pc.Do(key, func() (any, error) {
-		if row, err := db.queryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
+		if row, err := db.QueryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
 			return nil, err
 		} else {
 			err = row.Scan(&data)
@@ -51,6 +51,6 @@ func (db *database) clearPersistentCache(pattern string) error {
 }
 
 func (db *database) clearPersistentCacheContext(c context.Context, pattern string) error {
-	_, err := db.execContext(c, "delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
+	_, err := db.ExecContext(c, "delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
 	return err
 }

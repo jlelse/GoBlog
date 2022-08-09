@@ -18,7 +18,7 @@ const (
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
-	row, err := a.db.queryRow("select value from settings where name = @name", sql.Named("name", name))
+	row, err := a.db.QueryRow("select value from settings where name = @name", sql.Named("name", name))
 	if err != nil {
 		return "",
 			err
@@ -45,7 +45,7 @@ func (a *goBlog) getBooleanSettingValue(name string, defaultValue bool) (bool, e
 }
 
 func (a *goBlog) saveSettingValue(name, value string) error {
-	_, err := a.db.exec(
+	_, err := a.db.Exec(
 		"insert into settings (name, value) values (@name, @value) on conflict (name) do update set value = @value2",
 		sql.Named("name", name),
 		sql.Named("value", value),
@@ -70,7 +70,7 @@ func (a *goBlog) loadSections() error {
 }
 
 func (a *goBlog) getSections(blog string) (map[string]*configSection, error) {
-	rows, err := a.db.query("select name, title, description, pathtemplate, showfull from sections where blog = @blog", sql.Named("blog", blog))
+	rows, err := a.db.Query("select name, title, description, pathtemplate, showfull from sections where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (a *goBlog) saveAllSections() error {
 }
 
 func (a *goBlog) saveSection(blog string, section *configSection) error {
-	_, err := a.db.exec(
+	_, err := a.db.Exec(
 		`
 		insert into sections (blog, name, title, description, pathtemplate, showfull) values (@blog, @name, @title, @description, @pathtemplate, @showfull)
 		on conflict (blog, name) do update set title = @title2, description = @description2, pathtemplate = @pathtemplate2, showfull = @showfull2
@@ -119,6 +119,6 @@ func (a *goBlog) saveSection(blog string, section *configSection) error {
 }
 
 func (a *goBlog) deleteSection(blog string, name string) error {
-	_, err := a.db.exec("delete from sections where blog = @blog and name = @name", sql.Named("blog", blog), sql.Named("name", name))
+	_, err := a.db.Exec("delete from sections where blog = @blog and name = @name", sql.Named("blog", blog), sql.Named("name", name))
 	return err
 }

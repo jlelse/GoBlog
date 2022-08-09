@@ -22,7 +22,7 @@ func (a *goBlog) enqueue(name string, content []byte, schedule time.Time) error 
 	if len(content) == 0 {
 		return errors.New("empty content")
 	}
-	_, err := a.db.exec(
+	_, err := a.db.Exec(
 		"insert into queue (name, content, schedule) values (@name, @content, @schedule)",
 		sql.Named("name", name),
 		sql.Named("content", content),
@@ -35,7 +35,7 @@ func (a *goBlog) enqueue(name string, content []byte, schedule time.Time) error 
 }
 
 func (a *goBlog) reschedule(qi *queueItem, dur time.Duration) error {
-	_, err := a.db.exec(
+	_, err := a.db.Exec(
 		"update queue set schedule = @schedule, content = @content where id = @id",
 		sql.Named("schedule", qi.schedule.Add(dur).UTC().Format(time.RFC3339Nano)),
 		sql.Named("content", qi.content),
@@ -45,12 +45,12 @@ func (a *goBlog) reschedule(qi *queueItem, dur time.Duration) error {
 }
 
 func (a *goBlog) dequeue(qi *queueItem) error {
-	_, err := a.db.exec("delete from queue where id = @id", sql.Named("id", qi.id))
+	_, err := a.db.Exec("delete from queue where id = @id", sql.Named("id", qi.id))
 	return err
 }
 
 func (a *goBlog) peekQueue(ctx context.Context, name string) (*queueItem, error) {
-	row, err := a.db.queryRowContext(
+	row, err := a.db.QueryRowContext(
 		ctx,
 		"select id, name, content, schedule from queue where schedule <= @schedule and name = @name order by schedule asc limit 1",
 		sql.Named("name", name),

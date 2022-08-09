@@ -67,6 +67,12 @@ func main() {
 		return
 	}
 
+	// Initialize plugins
+	if err = app.initPlugins(); err != nil {
+		app.logErrAndQuit("Failed to init plugins:", err.Error())
+		return
+	}
+
 	// Healthcheck tool
 	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
 		// Connect to public address + "/ping" and exit with 0 when successful
