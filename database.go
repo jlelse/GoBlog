@@ -211,11 +211,11 @@ func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error)
 
 const dbNoCache = "nocache"
 
-func (db *database) exec(query string, args ...any) (sql.Result, error) {
-	return db.execContext(context.Background(), query, args...)
+func (db *database) Exec(query string, args ...any) (sql.Result, error) {
+	return db.ExecContext(context.Background(), query, args...)
 }
 
-func (db *database) execContext(c context.Context, query string, args ...any) (sql.Result, error) {
+func (db *database) ExecContext(c context.Context, query string, args ...any) (sql.Result, error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -234,11 +234,11 @@ func (db *database) execContext(c context.Context, query string, args ...any) (s
 	return db.db.ExecContext(ctx, query, args...)
 }
 
-func (db *database) query(query string, args ...any) (*sql.Rows, error) {
-	return db.queryContext(context.Background(), query, args...)
+func (db *database) Query(query string, args ...any) (*sql.Rows, error) {
+	return db.QueryContext(context.Background(), query, args...)
 }
 
-func (db *database) queryContext(c context.Context, query string, args ...any) (rows *sql.Rows, err error) {
+func (db *database) QueryContext(c context.Context, query string, args ...any) (rows *sql.Rows, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -257,11 +257,11 @@ func (db *database) queryContext(c context.Context, query string, args ...any) (
 	return
 }
 
-func (db *database) queryRow(query string, args ...any) (*sql.Row, error) {
-	return db.queryRowContext(context.Background(), query, args...)
+func (db *database) QueryRow(query string, args ...any) (*sql.Row, error) {
+	return db.QueryRowContext(context.Background(), query, args...)
 }
 
-func (db *database) queryRowContext(c context.Context, query string, args ...any) (row *sql.Row, err error) {
+func (db *database) QueryRowContext(c context.Context, query string, args ...any) (row *sql.Row, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
@@ -283,5 +283,5 @@ func (db *database) queryRowContext(c context.Context, query string, args ...any
 // Other things
 
 func (d *database) rebuildFTSIndex() {
-	_, _ = d.exec("insert into posts_fts(posts_fts) values ('rebuild')")
+	_, _ = d.Exec("insert into posts_fts(posts_fts) values ('rebuild')")
 }

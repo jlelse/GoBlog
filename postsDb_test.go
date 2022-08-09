@@ -402,7 +402,7 @@ func Test_postDeletesParams(t *testing.T) {
 	err = app.deletePost("/test/abc")
 	require.NoError(t, err)
 
-	row, err := app.db.queryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
+	row, err := app.db.QueryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
 	require.NoError(t, err)
 
 	var count int
@@ -415,7 +415,7 @@ func Test_postDeletesParams(t *testing.T) {
 	err = app.deletePost("/test/abc")
 	require.NoError(t, err)
 
-	row, err = app.db.queryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
+	row, err = app.db.QueryRow("select count(*) from post_parameters where path = ? and parameter = ?", "/test/abc", "test")
 	require.NoError(t, err)
 
 	err = row.Scan(&count)

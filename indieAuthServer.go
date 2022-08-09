@@ -182,7 +182,7 @@ func (db *database) indieAuthSaveAuthRequest(data *indieauth.AuthenticationReque
 	// Generate a code to identify the request
 	code := uuid.NewString()
 	// Save the request
-	_, err := db.exec(
+	_, err := db.Exec(
 		"insert into indieauthauth (time, code, client, redirect, scope, challenge, challengemethod) values (?, ?, ?, ?, ?, ?, ?)",
 		time.Now().UTC().Unix(), code, data.ClientID, data.RedirectURI, strings.Join(data.Scopes, " "), data.CodeChallenge, data.CodeChallengeMethod,
 	)
@@ -194,7 +194,7 @@ func (db *database) indieAuthGetAuthRequest(code string) (data *indieauth.Authen
 	// code valid for 10 minutes
 	maxAge := time.Now().UTC().Add(-10 * time.Minute).Unix()
 	// Query the database
-	row, err := db.queryRow("select client, redirect, scope, challenge, challengemethod from indieauthauth where time >= ? and code = ?", maxAge, code)
+	row, err := db.QueryRow("select client, redirect, scope, challenge, challengemethod from indieauthauth where time >= ? and code = ?", maxAge, code)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (db *database) indieAuthGetAuthRequest(code string) (data *indieauth.Authen
 		data.Scopes = strings.Split(scope, " ")
 	}
 	// Delete the auth code and expired auth codes
-	_, _ = db.exec("delete from indieauthauth where code = ? or time < ?", code, maxAge)
+	_, _ = db.Exec("delete from indieauthauth where code = ? or time < ?", code, maxAge)
 	return data, nil
 }
 
@@ -251,7 +251,7 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 func (db *database) indieAuthVerifyToken(token string) (data *indieauth.AuthenticationRequest, err error) {
 	token = strings.ReplaceAll(token, "Bearer ", "")
 	data = &indieauth.AuthenticationRequest{Scopes: []string{}}
-	row, err := db.queryRow("select client, scope from indieauthtoken where token = @token", sql.Named("token", token))
+	row, err := db.QueryRow("select client, scope from indieauthtoken where token = @token", sql.Named("token", token))
 	if err != nil {
 		return nil, err
 	}
@@ -271,13 +271,13 @@ func (db *database) indieAuthVerifyToken(token string) (data *indieauth.Authenti
 // Save a new token to the database
 func (db *database) indieAuthSaveToken(data *indieauth.AuthenticationRequest) (string, error) {
 	token := uuid.NewString()
-	_, err := db.exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", time.Now().UTC().Unix(), token, data.ClientID, strings.Join(data.Scopes, " "))
+	_, err := db.Exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", time.Now().UTC().Unix(), token, data.ClientID, strings.Join(data.Scopes, " "))
 	return token, err
 }
 
 // Revoke and delete the token from the database
 func (db *database) indieAuthRevokeToken(token string) {
 	if token != "" {
-		_, _ = db.exec("delete from indieauthtoken where token=?", token)
+		_, _ = db.Exec("delete from indieauthtoken where token=?", token)
 	}
 }

@@ -41,19 +41,19 @@ func (a *goBlog) sendNotification(text string) {
 }
 
 func (db *database) saveNotification(n *notification) error {
-	if _, err := db.exec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
+	if _, err := db.Exec("insert into notifications (time, text) values (@time, @text)", sql.Named("time", n.Time), sql.Named("text", n.Text)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (db *database) deleteNotification(id int) error {
-	_, err := db.exec("delete from notifications where id = @id", sql.Named("id", id))
+	_, err := db.Exec("delete from notifications where id = @id", sql.Named("id", id))
 	return err
 }
 
 func (db *database) deleteAllNotifications() error {
-	_, err := db.exec("delete from notifications")
+	_, err := db.Exec("delete from notifications")
 	return err
 }
 
@@ -75,7 +75,7 @@ func buildNotificationsQuery(config *notificationsRequestConfig) (query string, 
 func (db *database) getNotifications(config *notificationsRequestConfig) ([]*notification, error) {
 	notifications := []*notification{}
 	query, args := buildNotificationsQuery(config)
-	rows, err := db.query(query, args...)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (db *database) getNotifications(config *notificationsRequestConfig) ([]*not
 func (db *database) countNotifications(config *notificationsRequestConfig) (count int, err error) {
 	query, params := buildNotificationsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := db.queryRow(query, params...)
+	row, err := db.QueryRow(query, params...)
 	if err != nil {
 		return
 	}

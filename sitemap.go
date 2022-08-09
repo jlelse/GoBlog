@@ -213,7 +213,7 @@ select distinct '/x/x/' || day from alldates;
 `
 
 func (a *goBlog) sitemapDatePaths(blog string) (paths []string, err error) {
-	rows, err := a.db.query(sitemapDatePathsSql, sql.Named("blog", blog), sql.Named("status", statusPublished))
+	rows, err := a.db.Query(sitemapDatePathsSql, sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}

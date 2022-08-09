@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/klauspost/compress/flate"
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
+	"go.goblog.app/app/pkgs/plugintypes"
 	"golang.org/x/net/context"
 )
 
@@ -43,6 +45,16 @@ func (a *goBlog) startServer() (err error) {
 	if a.httpsConfigured(false) {
 		h = h.Append(a.securityHeaders)
 	}
+	// Add plugin middlewares
+	middlewarePlugins := getPluginsForType[plugintypes.Middleware](a, "middleware")
+	sort.Slice(middlewarePlugins, func(i, j int) bool {
+		// Sort with descending prio
+		return middlewarePlugins[i].Prio() > middlewarePlugins[j].Prio()
+	})
+	for _, plugin := range middlewarePlugins {
+		h = h.Append(plugin.Handler)
+	}
+	// Finally...
 	finalHandler := h.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 		a.d.ServeHTTP(w, r)
 	})
@@ -245,7 +257,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		}
 		// Check if post or alias
 		path := r.URL.Path
-		row, err := a.db.queryRow(`
+		row, err := a.db.QueryRow(`
 		-- normal posts
 		select 'post', status, 200 from posts where path = @path
 		union all

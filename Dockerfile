@@ -12,6 +12,7 @@ ADD leaflet/ /app/leaflet/
 ADD hlsjs/ /app/hlsjs/
 ADD dbmigrations/ /app/dbmigrations/
 ADD strings/ /app/strings/
+ADD plugins/ /app/plugins/
 
 FROM buildbase as build
 

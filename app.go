@@ -14,6 +14,7 @@ import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
+	"go.goblog.app/app/pkgs/plugins"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/sync/singleflight"
 	"tailscale.com/tsnet"
@@ -75,6 +76,8 @@ type goBlog struct {
 	mediaStorage     mediaStorage
 	// Minify
 	min minify.Minifier
+	// Plugins
+	pluginHost *plugins.PluginHost
 	// Reactions
 	reactionsInit  sync.Once
 	reactionsCache *ristretto.Cache

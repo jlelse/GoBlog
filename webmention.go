@@ -103,7 +103,7 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 
 func (db *database) webmentionExists(m *mention) bool {
 	result := 0
-	row, err := db.queryRow(
+	row, err := db.QueryRow(
 		`
 		select exists(
 			select 1
@@ -134,7 +134,7 @@ func (a *goBlog) createWebmention(source, target string) (err error) {
 }
 
 func (db *database) insertWebmention(m *mention, status webmentionStatus) error {
-	_, err := db.exec(
+	_, err := db.Exec(
 		`
 		insert into webmentions (source, target, url, created, status, title, content, author) 
 		values (@source, lowerunescaped(@target), @url, @created, @status, @title, @content, @author)
@@ -152,7 +152,7 @@ func (db *database) insertWebmention(m *mention, status webmentionStatus) error 
 }
 
 func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) error {
-	_, err := db.exec(`
+	_, err := db.Exec(`
 			update webmentions
 			set 
 				source = @newsource,
@@ -182,12 +182,12 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 }
 
 func (db *database) deleteWebmentionId(id int) error {
-	_, err := db.exec("delete from webmentions where id = @id", sql.Named("id", id))
+	_, err := db.Exec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 
 func (db *database) deleteWebmention(m *mention) error {
-	_, err := db.exec(
+	_, err := db.Exec(
 		"delete from webmentions where lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource)) and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))",
 		sql.Named("source", m.Source),
 		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
@@ -198,7 +198,7 @@ func (db *database) deleteWebmention(m *mention) error {
 }
 
 func (db *database) approveWebmentionId(id int) error {
-	_, err := db.exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
+	_, err := db.Exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
@@ -265,7 +265,7 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	mentions := []*mention{}
 	query, args := buildWebmentionsQuery(config)
-	rows, err := db.query(query, args...)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (db *database) getWebmentionsByAddress(address string) []*mention {
 func (db *database) countWebmentions(config *webmentionsRequestConfig) (count int, err error) {
 	query, params := buildWebmentionsQuery(config)
 	query = "select count(*) from (" + query + ")"
-	row, err := db.queryRow(query, params...)
+	row, err := db.QueryRow(query, params...)
 	if err != nil {
 		return
 	}

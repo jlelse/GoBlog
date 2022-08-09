@@ -203,7 +203,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Commit transaction
 	sqlBuilder.WriteString("commit;")
 	// Execute
-	if _, err := db.exec(sqlBuilder.String(), sqlArgs...); err != nil {
+	if _, err := db.Exec(sqlBuilder.String(), sqlArgs...); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
 			return errors.New("post already exists at given path")
 		}
@@ -229,7 +229,7 @@ func (a *goBlog) deletePost(path string) error {
 	// Post exists, check if it's already marked as deleted
 	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
 		// Post is already marked as deleted, delete it from database
-		if _, err = a.db.exec(
+		if _, err = a.db.Exec(
 			`begin;	delete from posts where path = ?; insert or ignore into deleted (path) values (?); commit;`,
 			dbNoCache, p.Path, p.Path, p.Path,
 		); err != nil {
@@ -250,7 +250,7 @@ func (a *goBlog) deletePost(path string) error {
 		}
 		p.Parameters["deleted"] = []string{deletedTime}
 		// Mark post as deleted
-		if _, err = a.db.exec(
+		if _, err = a.db.Exec(
 			`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; insert into post_parameters (path, parameter, value) values (?, 'deleted', ?); commit;`,
 			dbNoCache, p.Status, p.Path, p.Path, p.Path, deletedTime,
 		); err != nil {
@@ -283,7 +283,7 @@ func (a *goBlog) undeletePost(path string) error {
 	// Remove parameter
 	p.Parameters["deleted"] = nil
 	// Update database
-	if _, err = a.db.exec(
+	if _, err = a.db.Exec(
 		`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; commit;`,
 		dbNoCache, p.Status, p.Path, p.Path,
 	); err != nil {
@@ -320,7 +320,7 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	// Commit transaction
 	sqlBuilder.WriteString("commit;")
 	// Execute
-	_, err := db.exec(sqlBuilder.String(), sqlArgs...)
+	_, err := db.Exec(sqlBuilder.String(), sqlArgs...)
 	bufferpool.Put(sqlBuilder)
 	if err != nil {
 		return err
@@ -514,7 +514,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	// Order
 	queryBuilder.WriteString(" order by id")
 	// Query
-	rows, err := d.query(queryBuilder.String(), sqlArgs...)
+	rows, err := d.Query(queryBuilder.String(), sqlArgs...)
 	if err != nil {
 		return err
 	}
@@ -542,7 +542,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
 	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, priority")
-	rows, err := a.db.query(query, queryParams...)
+	rows, err := a.db.Query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -595,7 +595,7 @@ func (a *goBlog) getPost(path string) (*post, error) {
 
 func (d *database) countPosts(config *postsRequestConfig) (count int, err error) {
 	query, params := buildPostsQuery(config, "path")
-	row, err := d.queryRow("select count(distinct path) from ("+query+")", params...)
+	row, err := d.QueryRow("select count(distinct path) from ("+query+")", params...)
 	if err != nil {
 		return
 	}
@@ -606,7 +606,7 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	sections := lo.Keys(a.cfg.Blogs[blog].Sections)
 	query, params := buildPostsQuery(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections}, "path")
-	row, err := a.db.queryRow(query, params...)
+	row, err := a.db.QueryRow(query, params...)
 	if err != nil {
 		return
 	}
@@ -621,7 +621,7 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 
 func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
 	// TODO: Query posts the normal way
-	rows, err := d.query("select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status) order by value", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
+	rows, err := d.Query("select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status) order by value", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +663,7 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 		nameValues.WriteByte(')')
 		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
-	rows, err := db.query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
+	rows, err := db.Query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
 	bufferpool.Put(nameValues)
 	if err != nil {
 		return nil, err
