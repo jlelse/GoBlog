@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
 type renderData struct {
@@ -27,11 +28,11 @@ func (d *renderData) LoggedIn() bool {
 	return d.app.isLoggedIn(d.req)
 }
 
-func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlBuilder, *renderData), data *renderData) {
+func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlbuilder.HtmlBuilder, *renderData), data *renderData) {
 	a.renderWithStatusCode(w, r, http.StatusOK, f, data)
 }
 
-func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlBuilder, *renderData), data *renderData) {
+func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlbuilder.HtmlBuilder, *renderData), data *renderData) {
 	// Check render data
 	a.checkRenderData(r, data)
 	// Set content type
@@ -41,7 +42,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Render
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		f(newHtmlBuilder(pipeWriter), data)
+		f(htmlbuilder.NewHtmlBuilder(pipeWriter), data)
 		_ = pipeWriter.Close()
 	}()
 	_ = pipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pipeReader))

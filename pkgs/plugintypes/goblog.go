@@ -3,10 +3,9 @@ package plugintypes
 import (
 	"context"
 	"database/sql"
-	"net/http"
-)
 
-// Interface to GoBlog
+	"go.goblog.app/app/pkgs/htmlbuilder"
+)
 
 // App is used to access GoBlog's app instance.
 type App interface {
@@ -23,29 +22,27 @@ type Database interface {
 	QueryRowContext(context.Context, string, ...any) (*sql.Row, error)
 }
 
-// Plugin types
-
-// SetApp is used in all plugin types to allow
-// GoBlog set it's app instance to be accessible by the plugin.
-type SetApp interface {
-	SetApp(App)
+// Post
+type Post interface {
+	GetParameters() map[string][]string
 }
 
-// SetConfig is used in all plugin types to allow
-// GoBlog set plugin configuration.
-type SetConfig interface {
-	SetConfig(map[string]any)
+// RenderType
+type RenderType string
+
+// RenderData
+type RenderData interface {
+	// Empty
 }
 
-type Exec interface {
-	SetApp
-	SetConfig
-	Exec()
-}
+// RenderNextFunc
+type RenderNextFunc func(*htmlbuilder.HtmlBuilder)
 
-type Middleware interface {
-	SetApp
-	SetConfig
-	Handler(http.Handler) http.Handler
-	Prio() int
+// Render main element content on post page, data = PostRenderData
+const PostMainElementRenderType RenderType = "post-main-content"
+
+// PostRenderData is RenderData containing a Post
+type PostRenderData interface {
+	RenderData
+	GetPost() Post
 }

@@ -27,6 +27,7 @@ package yaegiwrappers
 import (
 	"context"
 	"database/sql"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
 	"net/http"
 	"reflect"
@@ -34,21 +35,34 @@ import (
 
 func init() {
 	Symbols["go.goblog.app/app/pkgs/plugintypes/plugintypes"] = map[string]reflect.Value{
+		// function, constant and variable definitions
+		"PostMainElementRenderType": reflect.ValueOf(plugintypes.PostMainElementRenderType),
+
 		// type definitions
-		"App":        reflect.ValueOf((*plugintypes.App)(nil)),
-		"Database":   reflect.ValueOf((*plugintypes.Database)(nil)),
-		"Exec":       reflect.ValueOf((*plugintypes.Exec)(nil)),
-		"Middleware": reflect.ValueOf((*plugintypes.Middleware)(nil)),
-		"SetApp":     reflect.ValueOf((*plugintypes.SetApp)(nil)),
-		"SetConfig":  reflect.ValueOf((*plugintypes.SetConfig)(nil)),
+		"App":            reflect.ValueOf((*plugintypes.App)(nil)),
+		"Database":       reflect.ValueOf((*plugintypes.Database)(nil)),
+		"Exec":           reflect.ValueOf((*plugintypes.Exec)(nil)),
+		"Middleware":     reflect.ValueOf((*plugintypes.Middleware)(nil)),
+		"Post":           reflect.ValueOf((*plugintypes.Post)(nil)),
+		"PostRenderData": reflect.ValueOf((*plugintypes.PostRenderData)(nil)),
+		"RenderData":     reflect.ValueOf((*plugintypes.RenderData)(nil)),
+		"RenderNextFunc": reflect.ValueOf((*plugintypes.RenderNextFunc)(nil)),
+		"RenderType":     reflect.ValueOf((*plugintypes.RenderType)(nil)),
+		"SetApp":         reflect.ValueOf((*plugintypes.SetApp)(nil)),
+		"SetConfig":      reflect.ValueOf((*plugintypes.SetConfig)(nil)),
+		"UI":             reflect.ValueOf((*plugintypes.UI)(nil)),
 
 		// interface wrapper definitions
-		"_App":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
-		"_Database":   reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
-		"_Exec":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
-		"_Middleware": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Middleware)(nil)),
-		"_SetApp":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
-		"_SetConfig":  reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
+		"_App":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
+		"_Database":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
+		"_Exec":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
+		"_Middleware":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Middleware)(nil)),
+		"_Post":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Post)(nil)),
+		"_PostRenderData": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_PostRenderData)(nil)),
+		"_RenderData":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_RenderData)(nil)),
+		"_SetApp":         reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
+		"_SetConfig":      reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
+		"_UI":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
 	}
 }
 
@@ -132,6 +146,31 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Middleware) SetConfig(a0 map[string]
 	W.WSetConfig(a0)
 }
 
+// _go_goblog_app_app_pkgs_plugintypes_Post is an interface wrapper for Post type
+type _go_goblog_app_app_pkgs_plugintypes_Post struct {
+	IValue         interface{}
+	WGetParameters func() map[string][]string
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetParameters() map[string][]string {
+	return W.WGetParameters()
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_PostRenderData is an interface wrapper for PostRenderData type
+type _go_goblog_app_app_pkgs_plugintypes_PostRenderData struct {
+	IValue   interface{}
+	WGetPost func() plugintypes.Post
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_PostRenderData) GetPost() plugintypes.Post {
+	return W.WGetPost()
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_RenderData is an interface wrapper for RenderData type
+type _go_goblog_app_app_pkgs_plugintypes_RenderData struct {
+	IValue interface{}
+}
+
 // _go_goblog_app_app_pkgs_plugintypes_SetApp is an interface wrapper for SetApp type
 type _go_goblog_app_app_pkgs_plugintypes_SetApp struct {
 	IValue  interface{}
@@ -149,5 +188,23 @@ type _go_goblog_app_app_pkgs_plugintypes_SetConfig struct {
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_SetConfig) SetConfig(a0 map[string]any) {
+	W.WSetConfig(a0)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UI is an interface wrapper for UI type
+type _go_goblog_app_app_pkgs_plugintypes_UI struct {
+	IValue     interface{}
+	WRender    func(a0 *htmlbuilder.HtmlBuilder, a1 plugintypes.RenderType, a2 plugintypes.RenderData, a3 plugintypes.RenderNextFunc)
+	WSetApp    func(a0 plugintypes.App)
+	WSetConfig func(a0 map[string]any)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UI) Render(a0 *htmlbuilder.HtmlBuilder, a1 plugintypes.RenderType, a2 plugintypes.RenderData, a3 plugintypes.RenderNextFunc) {
+	W.WRender(a0, a1, a2, a3)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_UI) SetApp(a0 plugintypes.App) {
+	W.WSetApp(a0)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_UI) SetConfig(a0 map[string]any) {
 	W.WSetConfig(a0)
 }

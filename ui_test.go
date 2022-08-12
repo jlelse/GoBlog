@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"strings"
 	"testing"
@@ -11,10 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 )
-
-var _ io.Writer = &htmlBuilder{}
-var _ io.StringWriter = &htmlBuilder{}
 
 func Test_renderPostTax(t *testing.T) {
 	app := &goBlog{
@@ -33,7 +30,7 @@ func Test_renderPostTax(t *testing.T) {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 
-	hb := newHtmlBuilder(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
 
 	app.renderPostTax(hb, p, app.cfg.Blogs["default"])
 
@@ -56,7 +53,7 @@ func Test_renderOldContentWarning(t *testing.T) {
 	}
 
 	buf := &bytes.Buffer{}
-	hb := newHtmlBuilder(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
 
 	app.renderOldContentWarning(hb, p, app.cfg.Blogs["default"])
 	res := buf.String()
@@ -122,7 +119,7 @@ func Test_renderInteractions(t *testing.T) {
 	require.NoError(t, err)
 
 	buf := &bytes.Buffer{}
-	hb := newHtmlBuilder(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
 
 	app.renderInteractions(hb, &renderData{
 		Blog:      app.cfg.Blogs["default"],
@@ -149,7 +146,7 @@ func Test_renderAuthor(t *testing.T) {
 	_ = app.initConfig(false)
 
 	buf := &bytes.Buffer{}
-	hb := newHtmlBuilder(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
 
 	app.renderAuthor(hb)
 	res := buf.String()
