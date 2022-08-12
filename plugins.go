@@ -6,11 +6,18 @@ import (
 	"go.goblog.app/app/pkgs/yaegiwrappers"
 )
 
+const (
+	execPlugin       = "exec"
+	middlewarePlugin = "middleware"
+	uiPlugin         = "ui"
+)
+
 func (a *goBlog) initPlugins() error {
 	a.pluginHost = plugins.NewPluginHost(yaegiwrappers.Symbols)
 
-	a.pluginHost.AddPluginType("exec", (*plugintypes.Exec)(nil))
-	a.pluginHost.AddPluginType("middleware", (*plugintypes.Middleware)(nil))
+	a.pluginHost.AddPluginType(execPlugin, (*plugintypes.Exec)(nil))
+	a.pluginHost.AddPluginType(middlewarePlugin, (*plugintypes.Middleware)(nil))
+	a.pluginHost.AddPluginType(uiPlugin, (*plugintypes.UI)(nil))
 
 	for _, pc := range a.cfg.Plugins {
 		if pluginInterface, err := a.pluginHost.LoadPlugin(&plugins.PluginConfig{
@@ -29,7 +36,7 @@ func (a *goBlog) initPlugins() error {
 		}
 	}
 
-	execs := getPluginsForType[plugintypes.Exec](a, "exec")
+	execs := getPluginsForType[plugintypes.Exec](a, execPlugin)
 	for _, p := range execs {
 		go p.Exec()
 	}
@@ -38,15 +45,30 @@ func (a *goBlog) initPlugins() error {
 }
 
 func getPluginsForType[T any](a *goBlog, pluginType string) (list []T) {
+	if a == nil || a.pluginHost == nil {
+		return nil
+	}
 	return plugins.GetPluginsForType[T](a.pluginHost, pluginType)
 }
 
-// Implement all needed interfaces for goblog
-
-var _ plugintypes.App = &goBlog{}
+// Implement all needed interfaces
 
 func (a *goBlog) GetDatabase() plugintypes.Database {
 	return a.db
 }
 
-var _ plugintypes.Database = &database{}
+func (p *post) GetParameters() map[string][]string {
+	return p.Parameters
+}
+
+type pluginPostRenderData struct {
+	p *post
+}
+
+func (d *pluginPostRenderData) GetPost() plugintypes.Post {
+	return d.p
+}
+
+func (p *post) pluginRenderData() plugintypes.PostRenderData {
+	return &pluginPostRenderData{p: p}
+}

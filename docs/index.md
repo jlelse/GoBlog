@@ -59,3 +59,4 @@ Here's an (incomplete) list of features:
 - [How to configure GoBlog](./config.md)
 - [Administration paths](./admin-paths.md)
 - [GoBlog's storage system](./storage.md)
+- [GoBlog Plugins](./plugins.md)

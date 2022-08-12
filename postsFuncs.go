@@ -9,6 +9,7 @@ import (
 	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/araddon/dateparse"
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,34 +45,34 @@ func (a *goBlog) postHtml(p *post, absolute bool) (res string) {
 
 func (a *goBlog) postHtmlToWriter(w io.Writer, p *post, absolute bool) {
 	// Build HTML
-	hb := newHtmlBuilder(w)
+	hb := htmlbuilder.NewHtmlBuilder(w)
 	// Add audio to the top
 	for _, a := range p.Parameters[a.cfg.Micropub.AudioParam] {
-		hb.writeElementOpen("audio", "controls", "preload", "none")
-		hb.writeElementOpen("source", "src", a)
-		hb.writeElementClose("source")
-		hb.writeElementClose("audio")
+		hb.WriteElementOpen("audio", "controls", "preload", "none")
+		hb.WriteElementOpen("source", "src", a)
+		hb.WriteElementClose("source")
+		hb.WriteElementClose("audio")
 	}
 	// Render markdown
 	_ = a.renderMarkdownToWriter(w, p.Content, absolute)
 	// Add bookmark links to the bottom
 	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
-		hb.writeElementOpen("p")
-		hb.writeElementOpen("a", "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
-		hb.writeEscaped(l)
-		hb.writeElementClose("a")
-		hb.writeElementClose("p")
+		hb.WriteElementOpen("p")
+		hb.WriteElementOpen("a", "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
+		hb.WriteEscaped(l)
+		hb.WriteElementClose("a")
+		hb.WriteElementClose("p")
 	}
 }
 
 func (a *goBlog) feedHtml(w io.Writer, p *post) {
-	hb := newHtmlBuilder(w)
+	hb := htmlbuilder.NewHtmlBuilder(w)
 	// Add TTS audio to the top
 	for _, a := range p.Parameters[ttsParameter] {
-		hb.writeElementOpen("audio", "controls", "preload", "none")
-		hb.writeElementOpen("source", "src", a)
-		hb.writeElementClose("source")
-		hb.writeElementClose("audio")
+		hb.WriteElementOpen("audio", "controls", "preload", "none")
+		hb.WriteElementOpen("source", "src", a)
+		hb.WriteElementClose("source")
+		hb.WriteElementClose("audio")
 	}
 	// Add IndieWeb context
 	a.renderPostReplyContext(hb, p, "p")
@@ -81,16 +82,16 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 	// Add link to interactions and comments
 	blogConfig := a.getBlogFromPost(p)
 	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
-		hb.writeElementOpen("p")
-		hb.writeElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")
-		hb.writeEscaped(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
-		hb.writeElementClose("a")
-		hb.writeElementClose("p")
+		hb.WriteElementOpen("p")
+		hb.WriteElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
+		hb.WriteElementClose("a")
+		hb.WriteElementClose("p")
 	}
 }
 
 func (a *goBlog) minFeedHtml(w io.Writer, p *post) {
-	hb := newHtmlBuilder(w)
+	hb := htmlbuilder.NewHtmlBuilder(w)
 	// Add IndieWeb context
 	a.renderPostReplyContext(hb, p, "p")
 	a.renderPostLikeContext(hb, p, "p")

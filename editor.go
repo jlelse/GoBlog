@@ -12,6 +12,7 @@ import (
 
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 	"gopkg.in/yaml.v3"
 	ws "nhooyr.io/websocket"
 )
@@ -77,7 +78,7 @@ func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Rea
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
 	// Render post (using post's blog config)
-	hb := newHtmlBuilder(w)
+	hb := htmlbuilder.NewHtmlBuilder(w)
 	a.renderEditorPreview(hb, a.cfg.Blogs[p.Blog], p)
 }
 

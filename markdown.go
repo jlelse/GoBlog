@@ -15,6 +15,7 @@ import (
 	"github.com/yuin/goldmark/util"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/highlighting"
+	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
 func (a *goBlog) initMarkdown() {
@@ -183,13 +184,13 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 			dest = resolved[0]
 		}
 	}
-	hb := newHtmlBuilder(w)
-	hb.writeElementOpen("a", "href", dest)
+	hb := htmlbuilder.NewHtmlBuilder(w)
+	hb.WriteElementOpen("a", "href", dest)
 	imgEls := []any{"src", dest, "alt", string(n.Text(source)), "loading", "lazy"}
 	if len(n.Title) > 0 {
 		imgEls = append(imgEls, "title", string(n.Title))
 	}
-	hb.writeElementOpen("img", imgEls...)
-	hb.writeElementClose("a")
+	hb.WriteElementOpen("img", imgEls...)
+	hb.WriteElementClose("a")
 	return ast.WalkSkipChildren, nil
 }

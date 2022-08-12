@@ -9,3 +9,4 @@ var (
 )
 
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/plugintypes
+//go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/htmlbuilder

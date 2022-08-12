@@ -8,6 +8,11 @@ import (
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
+var _ plugintypes.App = &goBlog{}
+var _ plugintypes.Database = &database{}
+var _ plugintypes.Post = &post{}
+var _ plugintypes.PostRenderData = &pluginPostRenderData{}
+
 func TestExecPlugin(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
