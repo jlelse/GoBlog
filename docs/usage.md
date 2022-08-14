@@ -48,3 +48,11 @@ GoBlog can be configured to provide a Tor Hidden Service. This is useful if you 
 ## Reactions
 
 It's possible to enable post reactions. GoBlog currently has a hardcoded list of reactions: "❤️", "👍", "👎", "😂" and "😱". If enabled, users can react to a post by clicking on the reaction button below the post. If you want to disable reactions for a single post, you can set the `reactions` parameter to `false` in the post's metadata.
+
+## Comments and interactions
+
+GoBlog has a comment system. That can be enable using the configuration. See the `example-config.yml` file for how to configure it.
+
+All comments and interactions (Webmentions) have to be approved manually using the UI at `/webmention`. To completely delete a comment, delete the entry from the Webmention UI and also delete the comment from `/comment`.
+
+To disable showing comments and interactions on a single post, add the parameter `comments` with the value `false` to the post's metadata.

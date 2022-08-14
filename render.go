@@ -15,7 +15,6 @@ type renderData struct {
 	Blog                       *configBlog
 	User                       *configUser
 	Data                       any
-	CommentsEnabled            bool
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
 	EasterEgg                  bool
@@ -79,8 +78,6 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
 		data.TorUsed = true
 	}
-	// Check if comments enabled
-	data.CommentsEnabled = data.Blog.Comments != nil && data.Blog.Comments.Enabled
 	// Check if able to receive webmentions
 	data.WebmentionReceivingEnabled = a.cfg.Webmention == nil || !a.cfg.Webmention.DisableReceiving
 	// Easter egg

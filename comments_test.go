@@ -164,3 +164,36 @@ func Test_comments(t *testing.T) {
 	})
 
 }
+
+func Test_commentsEnabled(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	err := app.initConfig(false)
+	require.NoError(t, err)
+
+	assert.False(t, app.commentsEnabledForPost(&post{
+		Blog: app.cfg.DefaultBlog,
+	}))
+
+	app.cfg.Blogs[app.cfg.DefaultBlog].Comments = &configComments{
+		Enabled: true,
+	}
+
+	assert.True(t, app.commentsEnabledForPost(&post{
+		Blog: app.cfg.DefaultBlog,
+	}))
+	assert.True(t, app.commentsEnabledForPost(&post{
+		Blog: app.cfg.DefaultBlog,
+		Parameters: map[string][]string{
+			"comments": {"true"},
+		},
+	}))
+	assert.False(t, app.commentsEnabledForPost(&post{
+		Blog: app.cfg.DefaultBlog,
+		Parameters: map[string][]string{
+			"comments": {"false"},
+		},
+	}))
+
+}

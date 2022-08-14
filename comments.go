@@ -146,3 +146,13 @@ func (db *database) deleteComment(id int) error {
 	_, err := db.Exec("delete from comments where id = @id", sql.Named("id", id))
 	return err
 }
+
+func (a *goBlog) commentsEnabledForBlog(blog *configBlog) bool {
+	return blog.Comments != nil && blog.Comments.Enabled
+}
+
+const commentsPostParam = "comments"
+
+func (a *goBlog) commentsEnabledForPost(post *post) bool {
+	return post != nil && a.commentsEnabledForBlog(a.getBlogFromPost(post)) && post.firstParameter(commentsPostParam) != "false"
+}
