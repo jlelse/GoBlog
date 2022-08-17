@@ -163,20 +163,6 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 	// IndieWeb Meta
 	a.renderPostReplyContext(hb, p, "")
 	a.renderPostLikeContext(hb, p, "")
-	// Like ("u-like-of")
-	if likeLink := a.likeLink(p); likeLink != "" {
-		hb.WriteElementOpen("div")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "likeof"))
-		hb.WriteEscaped(": ")
-		hb.WriteElementOpen("a", "class", "u-like-of", "rel", "noopener", "target", "_blank", "href", likeLink)
-		if likeTitle := a.likeTitle(p); likeTitle != "" {
-			hb.WriteEscaped(likeTitle)
-		} else {
-			hb.WriteEscaped(likeLink)
-		}
-		hb.WriteElementClose("a")
-		hb.WriteElementClose("div")
-	}
 	// Geo
 	if geoURIs := a.geoURIs(p); len(geoURIs) != 0 {
 		hb.WriteElementOpen("div")
