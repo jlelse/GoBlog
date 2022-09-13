@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -77,17 +76,13 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	if err != nil {
 		return err
 	}
-	iri, err := url.Parse(to)
-	if err != nil {
-		return err
-	}
 	r.Header.Set("Accept-Charset", "utf-8")
-	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
 	r.Header.Set(userAgent, appUserAgent)
 	r.Header.Set("Accept", contenttype.ASUTF8)
 	r.Header.Set(contentType, contenttype.ASUTF8)
-	r.Header.Set("Host", iri.Host)
 	// Sign request
+	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
+	r.Header.Set("Host", r.URL.Host)
 	a.apPostSignMutex.Lock()
 	err = a.apPostSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, activity)
 	a.apPostSignMutex.Unlock()

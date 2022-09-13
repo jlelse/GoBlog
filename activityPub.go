@@ -147,7 +147,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	blogIri := a.apIri(blog)
 	// Verify request
-	requestActor, requestKey, requestActorStatus, err := a.apVerifySignature(r)
+	requestActor, requestKey, requestActorStatus, err := a.apVerifySignature(r, blogIri)
 	if err != nil {
 		// Send 401 because signature could not be verified
 		a.serveError(w, r, err.Error(), http.StatusUnauthorized)
@@ -188,7 +188,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	// Do
 	switch activity["type"] {
 	case "Follow":
-		a.apAccept(blogName, blog, activity)
+		a.apAccept(blogName, blogIri, blog, activity)
 	case "Undo":
 		if object, ok := activity["object"].(map[string]any); ok {
 			ot := cast.ToString(object["type"])
@@ -234,14 +234,14 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *goBlog) apVerifySignature(r *http.Request) (*asPerson, string, int, error) {
+func (a *goBlog) apVerifySignature(r *http.Request, blogIri string) (*asPerson, string, int, error) {
 	verifier, err := httpsig.NewVerifier(r)
 	if err != nil {
 		// Error with signature header etc.
 		return nil, "", 0, err
 	}
 	keyID := verifier.KeyId()
-	actor, statusCode, err := a.apGetRemoteActor(keyID)
+	actor, statusCode, err := a.apGetRemoteActor(keyID, blogIri)
 	if err != nil || actor == nil || statusCode != 0 {
 		// Actor not found or something else bad
 		return nil, keyID, statusCode, err
@@ -267,13 +267,23 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, `<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://`+r.Host+`/.well-known/webfinger?resource={uri}"/></XRD>`)
 }
 
-func (a *goBlog) apGetRemoteActor(iri string) (*asPerson, int, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, iri, nil)
+func (a *goBlog) apGetRemoteActor(iri, ownBlogIri string) (*asPerson, int, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, iri, strings.NewReader(""))
 	if err != nil {
 		return nil, 0, err
 	}
 	req.Header.Set("Accept", contenttype.AS)
 	req.Header.Set(userAgent, appUserAgent)
+	// Sign request
+	req.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
+	req.Header.Set("Host", req.URL.Host)
+	a.apPostSignMutex.Lock()
+	err = a.apPostSigner.SignRequest(a.apPrivateKey, ownBlogIri+"#main-key", req, []byte(""))
+	a.apPostSignMutex.Unlock()
+	if err != nil {
+		return nil, 0, err
+	}
+	// Do request
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -367,7 +377,7 @@ func (a *goBlog) apUndelete(p *post) {
 	a.apPost(p)
 }
 
-func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]any) {
+func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow map[string]any) {
 	// it's a follow, write it down
 	newFollower := follow["actor"].(string)
 	log.Println("New follow request:", newFollower)
@@ -376,7 +386,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow map[string]a
 		// actor and object are equal
 		return
 	}
-	follower, status, err := a.apGetRemoteActor(newFollower)
+	follower, status, err := a.apGetRemoteActor(newFollower, blogIri)
 	if err != nil || status != 0 {
 		// Couldn't retrieve remote actor info
 		log.Println("Failed to retrieve remote actor info:", newFollower)
