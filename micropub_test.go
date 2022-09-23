@@ -58,6 +58,11 @@ func Test_micropubQuery(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			query:      "channel",
+			want:       "{\"channels\":[{\"name\":\"default: My Blog\",\"uid\":\"default\"},{\"name\":\"default/posts: posts\",\"uid\":\"default/posts\"}]}",
+			wantStatus: http.StatusOK,
+		},
+		{
 			query:      "somethingelse",
 			wantStatus: http.StatusNotFound,
 		},

@@ -24,19 +24,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	var result any
 	switch query := r.URL.Query(); query.Get("q") {
 	case "config":
-		channels := []map[string]any{}
-		for b, bc := range a.cfg.Blogs {
-			channels = append(channels, map[string]any{
-				"name": fmt.Sprintf("%s: %s", b, bc.Title),
-				"uid":  b,
-			})
-			for s, sc := range bc.Sections {
-				channels = append(channels, map[string]any{
-					"name": fmt.Sprintf("%s/%s: %s", b, s, sc.Name),
-					"uid":  fmt.Sprintf("%s/%s", b, s),
-				})
-			}
-		}
+		channels := a.getMicropubChannelsMap()
 		result = map[string]any{
 			"channels":       channels,
 			"media-endpoint": a.getFullAddress(micropubPath + micropubMediaSubPath),
@@ -81,6 +69,9 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 			allCategories = append(allCategories, values...)
 		}
 		result = map[string]any{"categories": allCategories}
+	case "channel":
+		channels := a.getMicropubChannelsMap()
+		result = map[string]any{"channels": channels}
 	default:
 		a.serve404(w, r)
 		return
@@ -93,6 +84,23 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(contentType, contenttype.JSONUTF8)
 	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+}
+
+func (a *goBlog) getMicropubChannelsMap() []map[string]any {
+	channels := []map[string]any{}
+	for b, bc := range a.cfg.Blogs {
+		channels = append(channels, map[string]any{
+			"name": fmt.Sprintf("%s: %s", b, bc.Title),
+			"uid":  b,
+		})
+		for s, sc := range bc.Sections {
+			channels = append(channels, map[string]any{
+				"name": fmt.Sprintf("%s/%s: %s", b, s, sc.Name),
+				"uid":  fmt.Sprintf("%s/%s", b, s),
+			})
+		}
+	}
+	return channels
 }
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
