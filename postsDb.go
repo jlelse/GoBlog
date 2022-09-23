@@ -59,7 +59,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	// Fix content
 	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")
 	// Check status
-	if p.Status == "" {
+	if p.Status == statusNil {
 		p.Status = statusPublished
 		if p.Published != "" {
 			// If published time is in the future, set status to scheduled
@@ -71,6 +71,10 @@ func (a *goBlog) checkPost(p *post) (err error) {
 				p.Status = statusScheduled
 			}
 		}
+	}
+	// Check visibility
+	if p.Visibility == visibilityNil {
+		p.Visibility = visibilityPublic
 	}
 	// Cleanup params
 	for pk, pvs := range p.Parameters {
@@ -126,14 +130,15 @@ func (a *goBlog) createPost(p *post) error {
 	return a.createOrReplacePost(p, &postCreationOptions{new: true})
 }
 
-func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus) error {
-	return a.createOrReplacePost(p, &postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus})
+func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus, oldVisibility postVisibility) error {
+	return a.createOrReplacePost(p, &postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus, oldVisibility: oldVisibility})
 }
 
 type postCreationOptions struct {
-	new       bool
-	oldPath   string
-	oldStatus postStatus
+	new           bool
+	oldPath       string
+	oldStatus     postStatus
+	oldVisibility postVisibility
 }
 
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
@@ -152,8 +157,8 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 		return err
 	}
 	// Trigger hooks
-	if p.Status == statusPublished || p.Status == statusUnlisted {
-		if o.new || (o.oldStatus != statusPublished && o.oldStatus != statusUnlisted) {
+	if p.Status == statusPublished && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
+		if o.new || (o.oldStatus != statusPublished && o.oldVisibility != visibilityPublic && o.oldVisibility != visibilityUnlisted) {
 			defer a.postPostHooks(p)
 		} else {
 			defer a.postUpdateHooks(p)
@@ -183,15 +188,15 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Update or create post
 	if o.new {
 		// New post, create it
-		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, priority) values (?, ?, ?, ?, ?, ?, ?, ?);")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority)
+		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, visibility, priority) values (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority)
 	} else {
 		// Delete post parameters
 		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
 		sqlArgs = append(sqlArgs, o.oldPath)
 		// Update old post
-		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, priority = ? where path = ?;")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Priority, o.oldPath)
+		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ? where path = ?;")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, o.oldPath)
 	}
 	// Insert post parameters
 	for param, value := range p.Parameters {
@@ -227,7 +232,7 @@ func (a *goBlog) deletePost(path string) error {
 		return err
 	}
 	// Post exists, check if it's already marked as deleted
-	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+	if p.Deleted() {
 		// Post is already marked as deleted, delete it from database
 		if _, err = a.db.Exec(
 			`begin;	delete from posts where path = ?; insert or ignore into deleted (path) values (?); commit;`,
@@ -242,7 +247,7 @@ func (a *goBlog) deletePost(path string) error {
 		a.deleteReactionsCache(p.Path)
 	} else {
 		// Update post status
-		p.Status = postStatus(string(p.Status) + statusDeletedSuffix)
+		p.Status = p.Status + statusDeletedSuffix
 		// Add parameter
 		deletedTime := utcNowString()
 		if p.Parameters == nil {
@@ -279,7 +284,7 @@ func (a *goBlog) undeletePost(path string) error {
 		return err
 	}
 	// Post exists, update status and parameters
-	p.Status = postStatus(strings.TrimSuffix(string(p.Status), statusDeletedSuffix))
+	p.Status = postStatus(strings.TrimSuffix(string(p.Status), string(statusDeletedSuffix)))
 	// Remove parameter
 	p.Parameters["deleted"] = nil
 	// Update database
@@ -337,8 +342,8 @@ type postsRequestConfig struct {
 	limit                                       int
 	offset                                      int
 	sections                                    []string
-	status                                      postStatus
-	statusse                                    []postStatus
+	status                                      []postStatus
+	visibility                                  []postVisibility
 	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
 	parameters                                  []string // Ignores parameterValue
@@ -375,13 +380,9 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		queryBuilder.WriteString(" and path = @path")
 		args = append(args, sql.Named("path", c.path))
 	}
-	if c.status != "" && c.status != statusNil {
-		queryBuilder.WriteString(" and status = @status")
-		args = append(args, sql.Named("status", c.status))
-	}
-	if c.statusse != nil && len(c.statusse) > 0 {
+	if c.status != nil && len(c.status) > 0 {
 		queryBuilder.WriteString(" and status in (")
-		for i, status := range c.statusse {
+		for i, status := range c.status {
 			if i > 0 {
 				queryBuilder.WriteString(", ")
 			}
@@ -389,6 +390,19 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 			queryBuilder.WriteByte('@')
 			queryBuilder.WriteString(named)
 			args = append(args, sql.Named(named, status))
+		}
+		queryBuilder.WriteByte(')')
+	}
+	if c.visibility != nil && len(c.visibility) > 0 {
+		queryBuilder.WriteString(" and visibility in (")
+		for i, visibility := range c.visibility {
+			if i > 0 {
+				queryBuilder.WriteString(", ")
+			}
+			named := "visibility" + strconv.Itoa(i)
+			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString(named)
+			args = append(args, sql.Named(named, visibility))
 		}
 		queryBuilder.WriteByte(')')
 	}
@@ -541,28 +555,29 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 
 func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
-	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, priority")
+	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, visibility, priority")
 	rows, err := a.db.Query(query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
 	// Prepare row scanning
-	var path, content, published, updated, blog, section, status string
+	var path, content, published, updated, blog, section, status, visibility string
 	var priority int
 	for rows.Next() {
-		if err = rows.Scan(&path, &content, &published, &updated, &blog, &section, &status, &priority); err != nil {
+		if err = rows.Scan(&path, &content, &published, &updated, &blog, &section, &status, &visibility, &priority); err != nil {
 			return nil, err
 		}
 		// Create new post, fill and add to list
 		p := &post{
-			Path:      path,
-			Content:   content,
-			Published: toLocalSafe(published),
-			Updated:   toLocalSafe(updated),
-			Blog:      blog,
-			Section:   section,
-			Status:    postStatus(status),
-			Priority:  priority,
+			Path:       path,
+			Content:    content,
+			Published:  toLocalSafe(published),
+			Updated:    toLocalSafe(updated),
+			Blog:       blog,
+			Section:    section,
+			Status:     postStatus(status),
+			Visibility: postVisibility(visibility),
+			Priority:   priority,
 		}
 		posts = append(posts, p)
 	}
@@ -620,8 +635,10 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 }
 
 func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
-	// TODO: Query posts the normal way
-	rows, err := d.Query("select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status) order by value", sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished))
+	rows, err := d.Query(
+		"select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status and visibility = @visibility) order by value",
+		sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished), sql.Named("visibility", visibilityPublic),
+	)
 	if err != nil {
 		return nil, err
 	}

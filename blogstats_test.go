@@ -41,20 +41,42 @@ func Test_blogStats(t *testing.T) {
 	// Insert post
 
 	err := app.createPost(&post{
-		Content:   "This is a simple **test** post",
-		Blog:      "en",
-		Section:   "test",
-		Published: "2020-06-01",
-		Status:    statusPublished,
+		Content:    "This is a simple **test** post",
+		Blog:       "en",
+		Section:    "test",
+		Published:  "2020-06-01",
+		Status:     statusPublished,
+		Visibility: visibilityPublic,
 	})
 	require.NoError(t, err)
 
 	err = app.createPost(&post{
-		Content:   "This is another simple **test** post",
-		Blog:      "en",
-		Section:   "test",
-		Published: "2021-05-01",
-		Status:    statusPublished,
+		Content:    "This is another simple **test** post",
+		Blog:       "en",
+		Section:    "test",
+		Published:  "2021-05-01",
+		Status:     statusPublished,
+		Visibility: visibilityPublic,
+	})
+	require.NoError(t, err)
+
+	err = app.createPost(&post{
+		Content:    "This is a private post, that doesn't count",
+		Blog:       "en",
+		Section:    "test",
+		Published:  "2021-05-01",
+		Status:     statusPublished,
+		Visibility: visibilityPrivate,
+	})
+	require.NoError(t, err)
+
+	err = app.createPost(&post{
+		Content:    "Unlisted posts don't count as well",
+		Blog:       "en",
+		Section:    "test",
+		Published:  "2021-05-01",
+		Status:     statusPublished,
+		Visibility: visibilityUnlisted,
 	})
 	require.NoError(t, err)
 

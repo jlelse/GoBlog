@@ -34,13 +34,14 @@ func Test_postsDb(t *testing.T) {
 
 	// Save post
 	err := app.db.savePost(&post{
-		Path:      "/test/abc",
-		Content:   "ABC",
-		Published: now,
-		Updated:   nowPlus1Hour,
-		Blog:      "en",
-		Section:   "test",
-		Status:    statusDraft,
+		Path:       "/test/abc",
+		Content:    "ABC",
+		Published:  now,
+		Updated:    nowPlus1Hour,
+		Blog:       "en",
+		Section:    "test",
+		Status:     statusDraft,
+		Visibility: visibilityPublic,
 		Parameters: map[string][]string{
 			"title": {"Title"},
 			"tags":  {"C", "A", "B"},
@@ -65,7 +66,7 @@ func Test_postsDb(t *testing.T) {
 	// Check drafts
 	drafts, _ := app.getPosts(&postsRequestConfig{
 		blog:   "en",
-		status: statusDraft,
+		status: []postStatus{statusDraft},
 	})
 	is.Len(drafts, 1)
 
@@ -97,10 +98,10 @@ func Test_postsDb(t *testing.T) {
 	must.NoError(err)
 
 	// Check if post is marked as deleted
-	count, err = app.db.countPosts(&postsRequestConfig{status: statusDraft})
+	count, err = app.db.countPosts(&postsRequestConfig{status: []postStatus{statusDraft}})
 	must.NoError(err)
 	is.Equal(0, count)
-	count, err = app.db.countPosts(&postsRequestConfig{status: statusDraftDeleted})
+	count, err = app.db.countPosts(&postsRequestConfig{status: []postStatus{statusDraftDeleted}})
 	must.NoError(err)
 	is.Equal(1, count)
 
@@ -115,13 +116,14 @@ func Test_postsDb(t *testing.T) {
 
 	// Save published post
 	err = app.db.savePost(&post{
-		Path:      "/test/abc",
-		Content:   "ABC",
-		Published: "2021-06-10 10:00:00",
-		Updated:   "2021-06-15 10:00:00",
-		Blog:      "en",
-		Section:   "test",
-		Status:    statusPublished,
+		Path:       "/test/abc",
+		Content:    "ABC",
+		Published:  "2021-06-10 10:00:00",
+		Updated:    "2021-06-15 10:00:00",
+		Blog:       "en",
+		Section:    "test",
+		Status:     statusPublished,
+		Visibility: visibilityPublic,
 		Parameters: map[string][]string{
 			"tags": {"Test", "Blog", "A"},
 		},

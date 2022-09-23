@@ -17,12 +17,14 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	mapPath := bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))
 	canonical := a.getFullAddress(mapPath)
 
-	allPostsWithLocation, err := a.db.countPosts(&postsRequestConfig{
+	allPostsWithLocationRequestConfig := &postsRequestConfig{
 		blog:               blog,
-		statusse:           a.getDefaultPostStatusse(r),
 		parameters:         []string{a.cfg.Micropub.LocationParam, gpxParameter},
 		withOnlyParameters: []string{a.cfg.Micropub.LocationParam, gpxParameter},
-	})
+	}
+	allPostsWithLocationRequestConfig.status, allPostsWithLocationRequestConfig.visibility = a.getDefaultPostStates(r)
+
+	allPostsWithLocation, err := a.db.countPosts(allPostsWithLocationRequestConfig)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,14 +57,16 @@ const geoMapTracksSubpath = "/tracks.json"
 func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 
-	allPostsWithTracks, err := a.getPosts(&postsRequestConfig{
+	allPostsWithTracksRequestConfig := &postsRequestConfig{
 		blog:                  blog,
-		statusse:              a.getDefaultPostStatusse(r),
 		parameters:            []string{gpxParameter},
 		withOnlyParameters:    []string{gpxParameter},
 		excludeParameter:      showRouteParam,
 		excludeParameterValue: "false", // Don't show hidden route tracks
-	})
+	}
+	allPostsWithTracksRequestConfig.status, allPostsWithTracksRequestConfig.visibility = a.getDefaultPostStates(r)
+
+	allPostsWithTracks, err := a.getPosts(allPostsWithTracksRequestConfig)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,12 +105,14 @@ const geoMapLocationsSubpath = "/locations.json"
 func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 
-	allPostsWithLocations, err := a.getPosts(&postsRequestConfig{
+	allPostsWithLocationRequestConfig := &postsRequestConfig{
 		blog:               blog,
-		statusse:           a.getDefaultPostStatusse(r),
 		parameters:         []string{a.cfg.Micropub.LocationParam},
 		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
-	})
+	}
+	allPostsWithLocationRequestConfig.status, allPostsWithLocationRequestConfig.visibility = a.getDefaultPostStates(r)
+
+	allPostsWithLocations, err := a.getPosts(allPostsWithLocationRequestConfig)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return

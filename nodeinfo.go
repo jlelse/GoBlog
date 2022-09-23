@@ -32,7 +32,8 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	localPosts, _ := a.db.countPosts(&postsRequestConfig{
-		status: statusPublished,
+		status:     []postStatus{statusPublished},
+		visibility: []postVisibility{visibilityPublic},
 	})
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)

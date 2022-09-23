@@ -259,16 +259,16 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		path := r.URL.Path
 		row, err := a.db.QueryRow(`
 		-- normal posts
-		select 'post', status, 200 from posts where path = @path
+		select 'post', status, visibility, 200 from posts where path = @path
 		union all
 		-- short paths
-		select 'alias', path, 301 from shortpath where printf('/s/%x', id) = @path
+		select 'alias', path, '', 301 from shortpath where printf('/s/%x', id) = @path
 		union all
 		-- post aliases
-		select 'alias', path, 302 from post_parameters where parameter = 'aliases' and value = @path
+		select 'alias', path, '', 302 from post_parameters where parameter = 'aliases' and value = @path
 		union all
 		-- deleted posts
-		select 'deleted', '', 410 from deleted where path = @path
+		select 'deleted', '', '', 410 from deleted where path = @path
 		-- just select the first result
 		limit 1
 		`, sql.Named("path", path))
@@ -276,9 +276,9 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var pathType, value string
+		var pathType, value1, value2 string
 		var status int
-		err = row.Scan(&pathType, &value, &status)
+		err = row.Scan(&pathType, &value1, &value2, &status)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				// Error
@@ -290,26 +290,32 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 			// Found post or alias
 			switch pathType {
 			case "post":
-				// Is post, check status
-				switch postStatus(value) {
-				case statusPublished, statusUnlisted:
-					alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
+				// Check status
+				switch postStatus(value1) {
+				case statusPublished:
+					// Check visibility
+					switch postVisibility(value2) {
+					case visibilityPublic, visibilityUnlisted:
+						alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
+					default: // private, etc.
+						alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
+					}
 					return
-				case statusPublishedDeleted, statusUnlistedDeleted:
+				case statusPublishedDeleted:
 					if a.isLoggedIn(r) {
 						a.servePost(w, r)
 						return
 					}
 					alicePrivate.Append(a.cacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
 					return
-				default: // private, draft, scheduled, etc.
+				default: // draft, scheduled, etc.
 					alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					return
 				}
 			case "alias":
 				// Is alias, redirect
 				alicePrivate.Append(cacheLoggedIn, a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
-					http.Redirect(w, r, value, status)
+					http.Redirect(w, r, value1, status)
 				}).ServeHTTP(w, r)
 				return
 			case "deleted":

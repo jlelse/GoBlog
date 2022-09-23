@@ -20,7 +20,7 @@ import (
 const postParamWebmention = "webmention"
 
 func (a *goBlog) sendWebmentions(p *post) error {
-	if p.Status != statusPublished && p.Status != statusUnlisted {
+	if p.Status != statusPublished && p.Visibility != visibilityPublic && p.Visibility != visibilityUnlisted {
 		// Not published or unlisted
 		return nil
 	}

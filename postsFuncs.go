@@ -142,7 +142,7 @@ func (a *goBlog) postTranslations(p *post) []*post {
 }
 
 func (p *post) isPublishedSectionPost() bool {
-	return p.Published != "" && p.Section != "" && p.Status == statusPublished
+	return p.Published != "" && p.Section != "" && p.Status == statusPublished && p.Visibility == visibilityPublic
 }
 
 func (a *goBlog) postToMfItem(p *post) *microformatItem {
@@ -150,20 +150,18 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	switch p.Status {
 	case statusDraft:
 		mfStatus = "draft"
-	case statusPublished, statusScheduled, statusUnlisted, statusPrivate:
+	case statusPublished, statusScheduled:
 		mfStatus = "published"
-	case statusPublishedDeleted, statusDraftDeleted, statusPrivateDeleted, statusUnlistedDeleted, statusScheduledDeleted:
+	case statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted:
 		mfStatus = "deleted"
 	}
-	switch p.Status {
-	case statusDraft, statusScheduled, statusPublished:
+	switch p.Visibility {
+	case visibilityPublic:
 		mfVisibility = "public"
-	case statusUnlisted:
+	case visibilityUnlisted:
 		mfVisibility = "unlisted"
-	case statusPrivate:
+	case visibilityPrivate:
 		mfVisibility = "private"
-	case statusPublishedDeleted, statusDraftDeleted, statusPrivateDeleted, statusUnlistedDeleted, statusScheduledDeleted:
-		mfVisibility = "deleted"
 	}
 	return &microformatItem{
 		Type: []string{"h-entry"},
@@ -244,6 +242,7 @@ func (p *post) contentWithParams() string {
 	params["published"] = p.Published
 	params["updated"] = p.Updated
 	params["status"] = string(p.Status)
+	params["visibility"] = string(p.Visibility)
 	params["priority"] = p.Priority
 	pb, _ := yaml.Marshal(params)
 	return fmt.Sprintf("---\n%s---\n%s", string(pb), p.Content)
@@ -290,5 +289,5 @@ func (p *post) TTS() string {
 }
 
 func (p *post) Deleted() bool {
-	return strings.HasSuffix(string(p.Status), statusDeletedSuffix)
+	return strings.HasSuffix(string(p.Status), string(statusDeletedSuffix))
 }

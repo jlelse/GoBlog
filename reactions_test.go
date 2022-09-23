@@ -50,7 +50,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 		Path:    "/newpost",
 		Content: "test",
 		Status:  statusPublished,
-	}, "/testpost", statusPublished)
+	}, "/testpost", statusPublished, visibilityPublic)
 	require.NoError(t, err)
 
 	// Check if reaction count is 4

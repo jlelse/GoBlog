@@ -155,7 +155,8 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Request posts
 	blog, _ := a.getBlog(r)
 	posts, _ := a.getPosts(&postsRequestConfig{
-		status:            statusPublished,
+		status:            []postStatus{statusPublished},
+		visibility:        []postVisibility{visibilityPublic},
 		blog:              blog,
 		withoutParameters: true,
 	})

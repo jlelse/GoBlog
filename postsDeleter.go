@@ -16,7 +16,7 @@ func (a *goBlog) initPostsDeleter() {
 func (a *goBlog) checkDeletedPosts() {
 	// Get all posts with `deleted` parameter and a deleted status
 	postsToDelete, err := a.getPosts(&postsRequestConfig{
-		statusse:  []postStatus{statusPublishedDeleted, statusDraftDeleted, statusPrivateDeleted, statusUnlistedDeleted, statusScheduledDeleted},
+		status:    []postStatus{statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted},
 		parameter: "deleted",
 	})
 	if err != nil {

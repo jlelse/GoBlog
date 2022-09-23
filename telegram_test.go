@@ -134,6 +134,7 @@ func Test_telegram(t *testing.T) {
 			Section:       "test",
 			Blog:          "en",
 			Status:        statusPublished,
+			Visibility:    visibilityPublic,
 		}
 
 		app.pPostHooks[0](p)
@@ -163,10 +164,11 @@ func Test_telegram(t *testing.T) {
 			Parameters: map[string][]string{
 				"title": {"Title"},
 			},
-			Published: time.Now().String(),
-			Section:   "test",
-			Blog:      "default",
-			Status:    statusPublished,
+			Published:  time.Now().String(),
+			Section:    "test",
+			Blog:       "default",
+			Status:     statusPublished,
+			Visibility: visibilityPublic,
 		})
 
 		assert.Nil(t, fakeClient.req)

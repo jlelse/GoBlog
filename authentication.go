@@ -176,9 +176,13 @@ func (a *goBlog) serveLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (a *goBlog) getDefaultPostStatusse(r *http.Request) []postStatus {
+func (a *goBlog) getDefaultPostStates(r *http.Request) (status []postStatus, visibility []postVisibility) {
 	if a.isLoggedIn(r) {
-		return []postStatus{statusPublished, statusUnlisted, statusPrivate}
+		status = []postStatus{statusPublished}
+		visibility = []postVisibility{visibilityPublic, visibilityUnlisted, visibilityPrivate}
+	} else {
+		status = []postStatus{statusPublished}
+		visibility = []postVisibility{visibilityPublic}
 	}
-	return []postStatus{statusPublished}
+	return
 }

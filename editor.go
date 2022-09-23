@@ -194,6 +194,7 @@ func (*goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 	marsh("blog", blog)
 	marsh("section", bc.DefaultSection)
 	marsh("status", statusDraft)
+	marsh("visibility", visibilityPublic)
 	marsh("priority", 0)
 	marsh("slug", "")
 	marsh("title", "")
@@ -206,8 +207,8 @@ func (*goBlog) editorPostTemplate(blog string, bc *configBlog) string {
 
 func (a *goBlog) editorPostDesc(bc *configBlog) string {
 	t := a.ts.GetTemplateStringVariant(bc.Lang, "editorpostdesc")
-	paramBuilder, statusBuilder := bufferpool.Get(), bufferpool.Get()
-	defer bufferpool.Put(paramBuilder, statusBuilder)
+	paramBuilder, statusBuilder, visibilityBuilder := bufferpool.Get(), bufferpool.Get(), bufferpool.Get()
+	defer bufferpool.Put(paramBuilder, statusBuilder, visibilityBuilder)
 	for i, param := range []string{
 		"published",
 		"updated",
@@ -236,7 +237,7 @@ func (a *goBlog) editorPostDesc(bc *configBlog) string {
 		paramBuilder.WriteByte('`')
 	}
 	for i, status := range []postStatus{
-		statusDraft, statusPublished, statusUnlisted, statusScheduled, statusPrivate,
+		statusPublished, statusDraft, statusScheduled,
 	} {
 		if i > 0 {
 			statusBuilder.WriteString(", ")
@@ -245,5 +246,15 @@ func (a *goBlog) editorPostDesc(bc *configBlog) string {
 		statusBuilder.WriteString(string(status))
 		statusBuilder.WriteByte('`')
 	}
-	return fmt.Sprintf(t, paramBuilder.String(), "status", statusBuilder.String())
+	for i, visibility := range []postVisibility{
+		visibilityPublic, visibilityUnlisted, visibilityPrivate,
+	} {
+		if i > 0 {
+			visibilityBuilder.WriteString(", ")
+		}
+		visibilityBuilder.WriteByte('`')
+		visibilityBuilder.WriteString(string(visibility))
+		visibilityBuilder.WriteByte('`')
+	}
+	return fmt.Sprintf(t, paramBuilder.String(), "status", "visibility", statusBuilder.String(), visibilityBuilder.String())
 }

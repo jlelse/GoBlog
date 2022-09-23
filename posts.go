@@ -25,6 +25,7 @@ type post struct {
 	Blog       string
 	Section    string
 	Status     postStatus
+	Visibility postVisibility
 	Priority   int
 	// Not persisted
 	Slug          string
@@ -32,21 +33,23 @@ type post struct {
 }
 
 type postStatus string
+type postVisibility string
 
 const (
-	statusDeletedSuffix string = "-deleted"
+	statusDeletedSuffix postStatus = "-deleted"
 
 	statusNil              postStatus = ""
 	statusPublished        postStatus = "published"
-	statusPublishedDeleted postStatus = "published-deleted"
+	statusPublishedDeleted postStatus = statusPublished + statusDeletedSuffix
 	statusDraft            postStatus = "draft"
-	statusDraftDeleted     postStatus = "draft-deleted"
-	statusPrivate          postStatus = "private"
-	statusPrivateDeleted   postStatus = "private-deleted"
-	statusUnlisted         postStatus = "unlisted"
-	statusUnlistedDeleted  postStatus = "unlisted-deleted"
+	statusDraftDeleted     postStatus = statusDraft + statusDeletedSuffix
 	statusScheduled        postStatus = "scheduled"
-	statusScheduledDeleted postStatus = "scheduled-deleted"
+	statusScheduledDeleted postStatus = statusScheduled + statusDeletedSuffix
+
+	visibilityNil      postVisibility = ""
+	visibilityPublic   postVisibility = "public"
+	visibilityUnlisted postVisibility = "unlisted"
+	visibilityPrivate  postVisibility = "private"
 )
 
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +79,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))
 	status := http.StatusOK
-	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+	if p.Deleted() {
 		status = http.StatusGone
 	}
 	a.renderWithStatusCode(w, r, status, renderMethod, &renderData{
@@ -154,7 +157,7 @@ func (a *goBlog) serveDrafts(w http.ResponseWriter, r *http.Request) {
 		path:        bc.getRelativePath("/editor/drafts"),
 		title:       a.ts.GetTemplateStringVariant(bc.Lang, "drafts"),
 		description: a.ts.GetTemplateStringVariant(bc.Lang, "draftsdesc"),
-		status:      statusDraft,
+		status:      []postStatus{statusDraft},
 	})))
 }
 
@@ -164,7 +167,8 @@ func (a *goBlog) servePrivate(w http.ResponseWriter, r *http.Request) {
 		path:        bc.getRelativePath("/editor/private"),
 		title:       a.ts.GetTemplateStringVariant(bc.Lang, "privateposts"),
 		description: a.ts.GetTemplateStringVariant(bc.Lang, "privatepostsdesc"),
-		status:      statusPrivate,
+		status:      []postStatus{statusPublished},
+		visibility:  []postVisibility{visibilityPrivate},
 	})))
 }
 
@@ -174,7 +178,8 @@ func (a *goBlog) serveUnlisted(w http.ResponseWriter, r *http.Request) {
 		path:        bc.getRelativePath("/editor/unlisted"),
 		title:       a.ts.GetTemplateStringVariant(bc.Lang, "unlistedposts"),
 		description: a.ts.GetTemplateStringVariant(bc.Lang, "unlistedpostsdesc"),
-		status:      statusUnlisted,
+		status:      []postStatus{statusPublished},
+		visibility:  []postVisibility{visibilityUnlisted},
 	})))
 }
 
@@ -184,7 +189,7 @@ func (a *goBlog) serveScheduled(w http.ResponseWriter, r *http.Request) {
 		path:        bc.getRelativePath("/editor/scheduled"),
 		title:       a.ts.GetTemplateStringVariant(bc.Lang, "scheduledposts"),
 		description: a.ts.GetTemplateStringVariant(bc.Lang, "scheduledpostsdesc"),
-		status:      statusScheduled,
+		status:      []postStatus{statusScheduled},
 	})))
 }
 
@@ -194,7 +199,7 @@ func (a *goBlog) serveDeleted(w http.ResponseWriter, r *http.Request) {
 		path:        bc.getRelativePath("/editor/deleted"),
 		title:       a.ts.GetTemplateStringVariant(bc.Lang, "deletedposts"),
 		description: a.ts.GetTemplateStringVariant(bc.Lang, "deletedpostsdesc"),
-		statusse:    []postStatus{statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted, statusPrivateDeleted, statusUnlistedDeleted},
+		status:      []postStatus{statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted},
 	})))
 }
 
@@ -253,8 +258,8 @@ type indexConfig struct {
 	title            string
 	description      string
 	summaryTemplate  summaryTyp
-	status           postStatus
-	statusse         []postStatus
+	status           []postStatus
+	visibility       []postVisibility
 }
 
 const defaultPhotosPath = "/photos"
@@ -277,12 +282,14 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			sections = append(sections, sectionKey)
 		}
 	}
-	statusse := ic.statusse
-	if ic.status != statusNil {
-		statusse = []postStatus{ic.status}
+	defaultStatus, defaultVisibility := a.getDefaultPostStates(r)
+	status := ic.status
+	if len(status) == 0 {
+		status = defaultStatus
 	}
-	if len(statusse) == 0 {
-		statusse = a.getDefaultPostStatusse(r)
+	visibility := ic.visibility
+	if len(visibility) == 0 {
+		visibility = defaultVisibility
 	}
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
 		blog:           blog,
@@ -294,7 +301,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedYear:  ic.year,
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
-		statusse:       statusse,
+		status:         status,
+		visibility:     visibility,
 		priorityOrder:  true,
 	}, a: a}, bc.Pagination)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))

@@ -18,8 +18,11 @@ import (
 )
 
 func (a *goBlog) checkAllExternalLinks() {
-	// Get all published posts without parameters
-	posts, err := a.getPosts(&postsRequestConfig{status: statusPublished, withoutParameters: true})
+	posts, err := a.getPosts(&postsRequestConfig{
+		status:            []postStatus{statusPublished},
+		visibility:        []postVisibility{visibilityPublic, visibilityUnlisted},
+		withoutParameters: true,
+	})
 	if err != nil {
 		log.Println(err.Error())
 		return

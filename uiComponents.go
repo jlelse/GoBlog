@@ -218,6 +218,14 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 			hb.WriteEscaped(string(p.Status))
 			hb.WriteElementClose("div")
 		}
+		// Visibility
+		if p.Visibility != visibilityPublic {
+			hb.WriteElementOpen("div")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "visibility"))
+			hb.WriteEscaped(": ")
+			hb.WriteEscaped(string(p.Visibility))
+			hb.WriteElementClose("div")
+		}
 	}
 	if typ == "summary" || typ == "post" {
 		hb.WriteElementClose("div")

@@ -65,7 +65,7 @@ with filtered as (
 			tolocal(published) as pub,
 			mdtext(coalesce(content, '')) as content
 		from posts
-		where status = @status and blog = @blog
+		where status = @status and visibility = @visibility and blog = @blog
 	)
 )
 select *
@@ -154,7 +154,7 @@ func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 		Months: map[string][]blogStatsRow{},
 	}
 	// Query and scan
-	rows, err := db.Query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("blog", blog))
+	rows, err := db.Query(blogStatsSql, sql.Named("status", statusPublished), sql.Named("visibility", visibilityPublic), sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}

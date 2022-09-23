@@ -168,18 +168,16 @@ func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[st
 		delete(values, "mp-channel")
 	}
 	// Status
-	statusStr := ""
 	if status, ok := values["post-status"]; ok && len(status) > 0 {
-		statusStr = status[0]
+		statusStr := status[0]
+		entry.Status = micropubStatus(statusStr)
 		delete(values, "post-status")
 	}
-	visibilityStr := ""
+	// Visibility
 	if visibility, ok := values["visibility"]; ok && len(visibility) > 0 {
-		visibilityStr = visibility[0]
+		visibilityStr := visibility[0]
+		entry.Visibility = micropubVisibility(visibilityStr)
 		delete(values, "visibility")
-	}
-	if finalStatus := micropubStatus(statusNil, statusStr, visibilityStr); finalStatus != statusNil {
-		entry.Status = finalStatus
 	}
 	// Parameter
 	if name, ok := values["name"]; ok {
@@ -297,16 +295,14 @@ func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem)
 		entry.setChannel(mf.Properties.MpChannel[0])
 	}
 	// Status
-	status := ""
 	if len(mf.Properties.PostStatus) > 0 {
-		status = mf.Properties.PostStatus[0]
+		status := mf.Properties.PostStatus[0]
+		entry.Status = micropubStatus(status)
 	}
-	visibility := ""
+	// Visibility
 	if len(mf.Properties.Visibility) > 0 {
-		visibility = mf.Properties.Visibility[0]
-	}
-	if finalStatus := micropubStatus(statusNil, status, visibility); finalStatus != statusNil {
-		entry.Status = finalStatus
+		visibility := mf.Properties.Visibility[0]
+		entry.Visibility = micropubVisibility(visibility)
 	}
 	// Parameter
 	if len(mf.Properties.Name) > 0 {
@@ -397,6 +393,10 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 	if status := p.Parameters["status"]; len(status) == 1 {
 		p.Status = postStatus(status[0])
 		delete(p.Parameters, "status")
+	}
+	if visibility := p.Parameters["visibility"]; len(visibility) == 1 {
+		p.Visibility = postVisibility(visibility[0])
+		delete(p.Parameters, "visibility")
 	}
 	if priority := p.Parameters["priority"]; len(priority) == 1 {
 		p.Priority = cast.ToInt(priority[0])
@@ -513,13 +513,14 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 		return
 	}
 	// Check if post is marked as deleted
-	if strings.HasSuffix(string(p.Status), statusDeletedSuffix) {
+	if p.Deleted() {
 		a.serveError(w, r, "post is marked as deleted, undelete it first", http.StatusBadRequest)
 		return
 	}
 	// Update post
 	oldPath := p.Path
 	oldStatus := p.Status
+	oldVisibility := p.Visibility
 	a.micropubUpdateReplace(p, mf.Replace)
 	a.micropubUpdateAdd(p, mf.Add)
 	a.micropubUpdateDelete(p, mf.Delete)
@@ -528,7 +529,7 @@ func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = a.replacePost(p, oldPath, oldStatus)
+	err = a.replacePost(p, oldPath, oldStatus, oldVisibility)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -547,16 +548,14 @@ func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]any) {
 		p.Updated = cast.ToStringSlice(updated)[0]
 	}
 	// Status
-	statusStr := ""
 	if status, ok := replace["post-status"]; ok && len(status) > 0 {
-		statusStr = cast.ToStringSlice(status)[0]
+		statusStr := cast.ToStringSlice(status)[0]
+		p.Status = micropubStatus(statusStr)
 	}
-	visibilityStr := ""
+	// Visibility
 	if visibility, ok := replace["visibility"]; ok && len(visibility) > 0 {
-		visibilityStr = cast.ToStringSlice(visibility)[0]
-	}
-	if finalStatus := micropubStatus(p.Status, statusStr, visibilityStr); finalStatus != statusNil {
-		p.Status = finalStatus
+		visibilityStr := cast.ToStringSlice(visibility)[0]
+		p.Visibility = micropubVisibility(visibilityStr)
 	}
 	// Parameters
 	if name, ok := replace["name"]; ok && name != nil {
@@ -671,24 +670,22 @@ func (a *goBlog) micropubUpdateDelete(p *post, del any) {
 	}
 }
 
-func micropubStatus(defaultStatus postStatus, status string, visibility string) (final postStatus) {
-	final = defaultStatus
+func micropubStatus(status string) postStatus {
 	switch status {
-	case "published":
-		final = statusPublished
 	case "draft":
-		final = statusDraft
+		return statusDraft
+	default:
+		return statusPublished
 	}
-	if final != statusDraft {
-		// Only override status if it's not a draft
-		switch visibility {
-		case "public":
-			final = statusPublished
-		case "unlisted":
-			final = statusUnlisted
-		case "private":
-			final = statusPrivate
-		}
+}
+
+func micropubVisibility(visibility string) postVisibility {
+	switch visibility {
+	case "unlisted":
+		return visibilityUnlisted
+	case "private":
+		return visibilityPrivate
+	default:
+		return visibilityPublic
 	}
-	return final
 }

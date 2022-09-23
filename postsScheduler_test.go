@@ -26,23 +26,24 @@ func Test_postsScheduler(t *testing.T) {
 	_ = app.initCache()
 
 	err := app.db.savePost(&post{
-		Path:      "/test/abc",
-		Content:   "ABC",
-		Published: toLocalSafe(time.Now().Add(-1 * time.Hour).String()),
-		Blog:      "en",
-		Section:   "test",
-		Status:    statusScheduled,
+		Path:       "/test/abc",
+		Content:    "ABC",
+		Published:  toLocalSafe(time.Now().Add(-1 * time.Hour).String()),
+		Blog:       "en",
+		Section:    "test",
+		Status:     statusScheduled,
+		Visibility: visibilityPublic,
 	}, &postCreationOptions{new: true})
 	require.NoError(t, err)
 
-	count, err := app.db.countPosts(&postsRequestConfig{status: statusPublished})
+	count, err := app.db.countPosts(&postsRequestConfig{status: []postStatus{statusScheduled}})
 	require.NoError(t, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 1, count)
 
 	app.checkScheduledPosts()
 
-	count, err = app.db.countPosts(&postsRequestConfig{status: statusPublished})
+	count, err = app.db.countPosts(&postsRequestConfig{status: []postStatus{statusScheduled}})
 	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 0, count)
 
 }
