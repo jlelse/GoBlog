@@ -40,6 +40,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		result = map[string]any{
 			"channels":       channels,
 			"media-endpoint": a.getFullAddress(micropubPath + micropubMediaSubPath),
+			"visibility":     []postVisibility{visibilityPublic, visibilityUnlisted, visibilityPrivate},
 		}
 	case "source":
 		if urlString := query.Get("url"); urlString != "" {
