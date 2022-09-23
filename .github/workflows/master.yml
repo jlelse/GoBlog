@@ -12,32 +12,43 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v2
       with:
         config-inline: |
           [registry."docker.io"]
             mirrors = ["mirror.gcr.io"]
     - name: Login to GitHub container registry
-      uses: docker/login-action@v1
+      uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Login to Gitea container registry
+      uses: docker/login-action@v2
+      with:
+        registry: git.jlel.se
+        username: nologin
+        password: ${{ secrets.GITEA_TOKEN }}
     - name: Test
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         push: false
         target: test
         tags: test
     - name: Build base image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         push: true
         target: base
-        tags: ghcr.io/jlelse/goblog:latest
+        tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
     - name: Build tools image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
         push: true
         target: tools
-        tags: ghcr.io/jlelse/goblog:tools
+        tags: ghcr.io/jlelse/goblog:tools,git.jlel.se/jlelse/goblog:tools
+    - name: Delete old untagged images
+      uses: camargo/delete-untagged-action@v1
+      with:
+        github-token: ${{ secrets.DELETE_PACKAGES_TOKEN }}
+        personal-account: true
