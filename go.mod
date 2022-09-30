@@ -33,7 +33,7 @@ require (
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.15.10
+	github.com/klauspost/compress v1.15.11
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.15
@@ -49,18 +49,18 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tdewolff/minify/v2 v2.12.1
+	github.com/tdewolff/minify/v2 v2.12.2
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.14.2
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
-	github.com/yuin/goldmark v1.4.15
+	github.com/yuin/goldmark v1.5.2
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
-	golang.org/x/net v0.0.0-20220921203646-d300de134e69
-	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
+	golang.org/x/net v0.0.0-20220927171203-f486391704dc
+	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.7
