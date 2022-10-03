@@ -138,7 +138,8 @@ notifications:
     topic: mynotificationstopic # The topic for the notifications
     server: https://ntfy.sh # The server to use (default is https://ntfy.sh)
     user: myusername # The username to use (optional)
-    password: mypassword # The password to use (optional)
+    pass: mypassword # The password to use (optional)
+    email: notifications@example.com # Email address for Ntfy Email Notifications (optional)
   telegram: # Receive notifications via Telegram
     enabled: true # Enable it
     chatId: 123456 # Telegram chat ID (usually the user id on Telegram)

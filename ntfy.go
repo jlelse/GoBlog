@@ -31,5 +31,8 @@ func (a *goBlog) sendNtfy(cfg *configNtfy, msg string) error {
 	if cfg.User != "" {
 		builder.BasicAuth(cfg.User, cfg.Pass)
 	}
+	if cfg.Email != "" {
+		builder.Header("X-Email", cfg.Email)
+	}
 	return builder.Fetch(context.Background())
 }

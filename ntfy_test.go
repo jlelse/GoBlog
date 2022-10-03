@@ -47,7 +47,7 @@ func Test_ntfySending(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 
-	t.Run("Custom server with Basic Auth", func(t *testing.T) {
+	t.Run("Custom server with Basic Auth and Email", func(t *testing.T) {
 		app.cfg.Notifications = &configNotifications{
 			Ntfy: &configNtfy{
 				Enabled: true,
@@ -55,6 +55,7 @@ func Test_ntfySending(t *testing.T) {
 				Server:  "https://ntfy.example.com",
 				User:    "user",
 				Pass:    "pass",
+				Email:   "test@example.com",
 			},
 		}
 
@@ -65,6 +66,7 @@ func Test_ntfySending(t *testing.T) {
 		require.NotNil(t, req)
 		assert.Equal(t, http.MethodPost, req.Method)
 		assert.Equal(t, "https://ntfy.example.com/topic", req.URL.String())
+		assert.Equal(t, "test@example.com", req.Header.Get("X-Email"))
 
 		user, pass, _ := req.BasicAuth()
 		assert.Equal(t, "user", user)

@@ -276,6 +276,7 @@ type configNtfy struct {
 	Server  string `mapstructure:"server"`
 	User    string `mapstructure:"user"`
 	Pass    string `mapstructure:"pass"`
+	Email   string `mapstructure:"email"`
 }
 
 type configTelegram struct {
