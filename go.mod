@@ -43,13 +43,13 @@ require (
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.3.0
-	github.com/samber/lo v1.29.0
+	github.com/samber/lo v1.31.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tdewolff/minify/v2 v2.12.3
+	github.com/tdewolff/minify/v2 v2.12.4
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -59,7 +59,7 @@ require (
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
-	golang.org/x/net v0.0.0-20221002022538-bcab6841153b
+	golang.org/x/net v0.0.0-20221004154528-8021a29435af
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v3 v3.0.1

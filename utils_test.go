@@ -154,3 +154,16 @@ func Fuzz_lowerUnescaptedPath(f *testing.F) {
 		}
 	})
 }
+
+func Test_groupStrings(t *testing.T) {
+	strings := []string{"Aaaaaa", "Dddedddee", "Bbbbb", "anjkdhfkjshf", "hjgsfkjdhkfhskjdfh", "🚴🏼‍♀️ jhfjshkfjh"}
+	groups := groupStrings(strings)
+
+	assert.Len(t, groups, 5)
+
+	assert.Equal(t, "A", groups[0].Identifier)
+	assert.Equal(t, "B", groups[1].Identifier)
+	assert.Equal(t, "D", groups[2].Identifier)
+	assert.Equal(t, "H", groups[3].Identifier)
+	assert.Equal(t, "🚴", groups[4].Identifier)
+}

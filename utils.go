@@ -126,18 +126,21 @@ type stringGroup struct {
 }
 
 func groupStrings(toGroup []string) []stringGroup {
-	stringMap := map[string][]string{}
-	for _, s := range toGroup {
-		first := strings.ToUpper(string([]rune(s)[0]))
-		stringMap[first] = append(stringMap[first], s)
-	}
-	stringGroups := []stringGroup{}
-	for key, sa := range stringMap {
-		stringGroups = append(stringGroups, stringGroup{
-			Identifier: key,
-			Strings:    sortedStrings(sa),
-		})
-	}
+	// Group strings and map them to stringGroups
+	stringGroups := lo.MapToSlice(
+		// strings -> map
+		lo.GroupBy(toGroup, func(s string) string {
+			return strings.ToUpper(string([]rune(s)[0]))
+		}),
+		// map -> stringGroups
+		func(key string, strings []string) stringGroup {
+			return stringGroup{
+				Identifier: key,
+				Strings:    sortedStrings(strings),
+			}
+		},
+	)
+	// Sort stringGroups
 	sort.Slice(stringGroups, func(i, j int) bool {
 		return strings.ToLower(stringGroups[i].Identifier) < strings.ToLower(stringGroups[j].Identifier)
 	})
