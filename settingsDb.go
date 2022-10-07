@@ -15,6 +15,8 @@ func settingNameWithBlog(blog, name string) string {
 const (
 	defaultSectionSetting        = "defaultsection"
 	hideOldContentWarningSetting = "hideoldcontentwarning"
+	hideShareButtonSetting       = "hidesharebutton"
+	hideTranslateButtonSetting   = "hidetranslatebutton"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

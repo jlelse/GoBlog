@@ -98,6 +98,8 @@ type configBlog struct {
 	Contact               *configContact            `mapstructure:"contact"`
 	Announcement          *configAnnouncement       `mapstructure:"announcement"`
 	hideOldContentWarning bool
+	hideShareButton       bool
+	hideTranslateButton   bool
 }
 
 type configSection struct {
@@ -464,6 +466,14 @@ func (a *goBlog) initConfig(logging bool) error {
 		}
 		// Load other settings from database
 		bc.hideOldContentWarning, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), false)
+		if err != nil {
+			return err
+		}
+		bc.hideShareButton, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideShareButtonSetting), false)
+		if err != nil {
+			return err
+		}
+		bc.hideTranslateButton, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideTranslateButtonSetting), false)
 		if err != nil {
 			return err
 		}

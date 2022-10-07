@@ -21,6 +21,8 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			sections:              sections,
 			defaultSection:        bc.DefaultSection,
 			hideOldContentWarning: bc.hideOldContentWarning,
+			hideShareButton:       bc.hideShareButton,
+			hideTranslateButton:   bc.hideTranslateButton,
 		},
 	})
 }
@@ -160,10 +162,44 @@ func (a *goBlog) settingsHideOldContentWarning(w http.ResponseWriter, r *http.Re
 	// Update
 	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), hideOldContentWarning)
 	if err != nil {
-		a.serveError(w, r, "Failed to update default section in database", http.StatusInternalServerError)
+		a.serveError(w, r, "Failed to update setting to hide old content warning in database", http.StatusInternalServerError)
 		return
 	}
 	bc.hideOldContentWarning = hideOldContentWarning
+	a.cache.purge()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const settingsHideShareButtonPath = "/sharebutton"
+
+func (a *goBlog) settingsHideShareButton(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	hideShareButton := r.FormValue(hideShareButtonSetting) == "on"
+	// Update
+	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideShareButtonSetting), hideShareButton)
+	if err != nil {
+		a.serveError(w, r, "Failed to update setting to hide share button in database", http.StatusInternalServerError)
+		return
+	}
+	bc.hideShareButton = hideShareButton
+	a.cache.purge()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const settingsHideTranslateButtonPath = "/translatebutton"
+
+func (a *goBlog) settingsHideTranslateButton(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	hideTranslateButton := r.FormValue(hideTranslateButtonSetting) == "on"
+	// Update
+	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideTranslateButtonSetting), hideTranslateButton)
+	if err != nil {
+		a.serveError(w, r, "Failed to update setting to hide translate button in database", http.StatusInternalServerError)
+		return
+	}
+	bc.hideTranslateButton = hideTranslateButton
 	a.cache.purge()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

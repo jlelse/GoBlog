@@ -282,6 +282,33 @@ func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HtmlBuilder, p *post, b
 	hb.WriteElementClose("strong")
 }
 
+func (a *goBlog) renderShareButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+	if b == nil || b.hideShareButton {
+		return
+	}
+	hb.WriteElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), lo.If(p.RenderedTitle != "", "&title="+p.RenderedTitle).Else("")), "target", "_blank", "rel", "nofollow noopener noreferrer")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "share"))
+	hb.WriteElementClose("a")
+}
+
+func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+	if b == nil || b.hideTranslateButton {
+		return
+	}
+	hb.WriteElementOpen(
+		"a", "id", "translateBtn",
+		"class", "button",
+		"href", fmt.Sprintf("https://translate.google.com/translate?u=%s", a.getFullAddress(p.Path)),
+		"target", "_blank", "rel", "nofollow noopener noreferrer",
+		"title", a.ts.GetTemplateStringVariant(b.Lang, "translate"),
+		"translate", "no",
+	)
+	hb.WriteEscaped("A ⇄ 文")
+	hb.WriteElementClose("a")
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/translate.js"))
+	hb.WriteElementClose("script")
+}
+
 func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	// Start accordion
 	hb.WriteElementOpen("details", "class", "p", "id", "interactions")
@@ -609,29 +636,21 @@ func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HtmlBuilder, rd *rend
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderCollapsibleBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderData, path, title, description, name string, value bool) {
-	hb.WriteElementOpen("details")
+func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderData, path, description, name string, value bool) {
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", path)
 
-	hb.WriteElementOpen("summary")
-	hb.WriteElementOpen("h3")
-	hb.WriteEscaped(title)
-	hb.WriteElementClose("h3")
-	hb.WriteElementClose("summary")
-
-	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
-
-	hb.WriteElementOpen("input", "type", "checkbox", "name", name, "id", "cb-"+name, lo.If(value, "checked").Else(""), "")
+	hb.WriteElementOpen("input", "type", "checkbox", "class", "autosubmit", "name", name, "id", "cb-"+name, lo.If(value, "checked").Else(""), "")
 	hb.WriteElementOpen("label", "for", "cb-"+name)
 	hb.WriteEscaped(description)
 	hb.WriteElementClose("label")
 
+	hb.WriteElementOpen("noscript")
 	hb.WriteElementOpen("div", "class", "p")
 	hb.WriteElementOpen(
-		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"), "formaction", path,
+		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
 	)
 	hb.WriteElementClose("div")
+	hb.WriteElementClose("noscript")
 
 	hb.WriteElementClose("form")
-
-	hb.WriteElementClose("details")
 }

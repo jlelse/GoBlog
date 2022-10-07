@@ -890,22 +890,9 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				// Post actions
 				hb.WriteElementOpen("div", "class", "actions")
 				// Share button
-				hb.WriteElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), lo.If(p.RenderedTitle != "", "&title="+p.RenderedTitle).Else("")), "target", "_blank", "rel", "nofollow noopener noreferrer")
-				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "share"))
-				hb.WriteElementClose("a")
+				a.renderShareButton(hb, p, rd.Blog)
 				// Translate button
-				hb.WriteElementOpen(
-					"a", "id", "translateBtn",
-					"class", "button",
-					"href", fmt.Sprintf("https://translate.google.com/translate?u=%s", a.getFullAddress(p.Path)),
-					"target", "_blank", "rel", "nofollow noopener noreferrer",
-					"title", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "translate"),
-					"translate", "no",
-				)
-				hb.WriteEscaped("A ⇄ 文")
-				hb.WriteElementClose("a")
-				hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/translate.js"))
-				hb.WriteElementClose("script")
+				a.renderTranslateButton(hb, p, rd.Blog)
 				// Speak button
 				hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
 				hb.WriteElementClose("button")
@@ -1511,6 +1498,8 @@ type settingsRenderData struct {
 	sections              []*configSection
 	defaultSection        string
 	hideOldContentWarning bool
+	hideShareButton       bool
+	hideTranslateButton   bool
 }
 
 func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -1537,18 +1526,33 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("h2")
 
 			// Hide old content warning
-			a.renderCollapsibleBooleanSetting(hb, rd,
+			a.renderBooleanSetting(hb, rd,
 				rd.Blog.getRelativePath(settingsPath+settingsHideOldContentWarningPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hideoldcontentwarningtitle"),
 				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hideoldcontentwarningdesc"),
 				hideOldContentWarningSetting,
 				srd.hideOldContentWarning,
+			)
+			// Hide share button
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsHideShareButtonPath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hidesharebuttondesc"),
+				hideShareButtonSetting,
+				srd.hideShareButton,
+			)
+			// Hide translate button
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsHideTranslateButtonPath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hidetranslatebuttondesc"),
+				hideTranslateButtonSetting,
+				srd.hideTranslateButton,
 			)
 
 			// Post sections
 			a.renderPostSectionSettings(hb, rd, srd)
 
 			// Scripts
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/settings.js"), "defer", "")
+			hb.WriteElementClose("script")
 			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
 			hb.WriteElementClose("script")
 
