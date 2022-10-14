@@ -72,11 +72,11 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	// Webmentions
 	hb.WriteElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
 	// Micropub
-	hb.WriteElementOpen("link", "rel", "micropub", "href", "/micropub")
+	hb.WriteElementOpen("link", "rel", "micropub", "href", a.getFullAddress("/micropub"))
 	// IndieAuth
-	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", "/indieauth")
-	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", "/indieauth/token")
-	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", "/.well-known/oauth-authorization-server")
+	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", a.getFullAddress("/indieauth"))
+	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", a.getFullAddress("/indieauth/token"))
+	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", a.getFullAddress("/.well-known/oauth-authorization-server"))
 	// Rel-Me
 	user := a.cfg.User
 	if user != nil {
