@@ -35,7 +35,7 @@ var (
 // https://indieauth.spec.indieweb.org/#x4-1-1-indieauth-server-metadata
 func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{
-		"issuer":                 a.getFullAddress("/"),
+		"issuer":                 a.getInstanceRootURL(),
 		"authorization_endpoint": a.getFullAddress(indieAuthPath),
 		"token_endpoint":         a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
 		"introspection_endpoint": a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
@@ -87,7 +87,8 @@ func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 	query := url.Values{}
 	query.Set("code", code)
 	query.Set("state", iareq.State)
-	query.Set("iss", a.getFullAddress("/"))
+	query.Set("iss", a.getInstanceRootURL())
+	query.Set("me", a.getInstanceRootURL())
 	http.Redirect(w, r, iareq.RedirectURI+"?"+query.Encode(), http.StatusFound)
 }
 
@@ -153,7 +154,7 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 	}
 	// Generate response
 	resp := map[string]any{
-		"me": a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
+		"me": a.getInstanceRootURL(),
 	}
 	if withToken {
 		// Generate and save token
@@ -230,7 +231,7 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 	} else {
 		res = map[string]any{
 			"active":    true,
-			"me":        a.getFullAddress("") + "/", // MUST contain a path component / trailing slash
+			"me":        a.getInstanceRootURL(),
 			"client_id": data.ClientID,
 			"scope":     strings.Join(data.Scopes, " "),
 		}

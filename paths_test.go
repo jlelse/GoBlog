@@ -44,6 +44,8 @@ func Test_getFullAddress(t *testing.T) {
 
 	assert.Equal(t, "https://example.net", cfg1.getFullAddress("https://example.net"))
 	assert.Equal(t, "https://example.net", cfg2.getFullAddress("https://example.net"))
+
+	assert.Equal(t, "https://example.com/", app.getInstanceRootURL())
 }
 
 func Test_getRelativeBlogPath(t *testing.T) {

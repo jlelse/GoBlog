@@ -47,3 +47,7 @@ func (cfg *configServer) getFullAddress(path string) string {
 	}
 	return pa + path
 }
+
+func (a *goBlog) getInstanceRootURL() string {
+	return a.getFullAddress("") + "/"
+}
