@@ -1379,14 +1379,20 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementOpen("form", "method", "post", "class", "fw p")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "h", "value", "entry")
 			hb.WriteElementOpen(
+				"input", "id", "templatebtn", "type", "button",
+				"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editorusetemplate"),
+			)
+			hb.WriteElementOpen(
 				"textarea",
+				"id", "editor-create",
 				"name", "content",
-				"class", "monospace h400p formcache mdpreview",
+				"class", "monospace h400p",
 				"id", "create-input",
 				"data-preview", "post-preview",
 				"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
+				"data-syncws", rd.Blog.getRelativePath("/editor/sync"),
+				"data-template", a.editorPostTemplate(rd.BlogString, rd.Blog),
 			)
-			hb.WriteEscaped(a.editorPostTemplate(rd.BlogString, rd.Blog))
 			hb.WriteElementClose("textarea")
 			hb.WriteElementOpen("div", "id", "post-preview", "class", "hide")
 			hb.WriteElementClose("div")
@@ -1403,8 +1409,9 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", edrd.updatePostUrl)
 				hb.WriteElementOpen(
 					"textarea",
+					"id", "editor-update",
 					"name", "content",
-					"class", "monospace h400p mdpreview",
+					"class", "monospace h400p",
 					"data-preview", "update-preview",
 					"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
 				)
@@ -1484,11 +1491,9 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 
 			hb.WriteElementClose("main")
 
-			// Scripts
-			for _, script := range []string{"js/mdpreview.js", "js/geohelper.js", "js/formcache.js"} {
-				hb.WriteElementOpen("script", "src", a.assetFileName(script), "defer", "")
-				hb.WriteElementClose("script")
-			}
+			// Script
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/editor.js"), "defer", "")
+			hb.WriteElementClose("script")
 		},
 	)
 }

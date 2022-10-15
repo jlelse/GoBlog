@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
@@ -76,30 +77,34 @@ type configCache struct {
 }
 
 type configBlog struct {
-	Path                  string                    `mapstructure:"path"`
-	Lang                  string                    `mapstructure:"lang"`
-	Title                 string                    `mapstructure:"title"`
-	Description           string                    `mapstructure:"description"`
-	Pagination            int                       `mapstructure:"pagination"`
-	DefaultSection        string                    `mapstructure:"defaultsection"`
-	Sections              map[string]*configSection `mapstructure:"sections"`
-	Taxonomies            []*configTaxonomy         `mapstructure:"taxonomies"`
-	Menus                 map[string]*configMenu    `mapstructure:"menus"`
-	Photos                *configPhotos             `mapstructure:"photos"`
-	Search                *configSearch             `mapstructure:"search"`
-	BlogStats             *configBlogStats          `mapstructure:"blogStats"`
-	Blogroll              *configBlogroll           `mapstructure:"blogroll"`
-	Telegram              *configTelegram           `mapstructure:"telegram"`
-	PostAsHome            bool                      `mapstructure:"postAsHome"`
-	RandomPost            *configRandomPost         `mapstructure:"randomPost"`
-	OnThisDay             *configOnThisDay          `mapstructure:"onThisDay"`
-	Comments              *configComments           `mapstructure:"comments"`
-	Map                   *configGeoMap             `mapstructure:"map"`
-	Contact               *configContact            `mapstructure:"contact"`
-	Announcement          *configAnnouncement       `mapstructure:"announcement"`
+	Path           string                    `mapstructure:"path"`
+	Lang           string                    `mapstructure:"lang"`
+	Title          string                    `mapstructure:"title"`
+	Description    string                    `mapstructure:"description"`
+	Pagination     int                       `mapstructure:"pagination"`
+	DefaultSection string                    `mapstructure:"defaultsection"`
+	Sections       map[string]*configSection `mapstructure:"sections"`
+	Taxonomies     []*configTaxonomy         `mapstructure:"taxonomies"`
+	Menus          map[string]*configMenu    `mapstructure:"menus"`
+	Photos         *configPhotos             `mapstructure:"photos"`
+	Search         *configSearch             `mapstructure:"search"`
+	BlogStats      *configBlogStats          `mapstructure:"blogStats"`
+	Blogroll       *configBlogroll           `mapstructure:"blogroll"`
+	Telegram       *configTelegram           `mapstructure:"telegram"`
+	PostAsHome     bool                      `mapstructure:"postAsHome"`
+	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
+	OnThisDay      *configOnThisDay          `mapstructure:"onThisDay"`
+	Comments       *configComments           `mapstructure:"comments"`
+	Map            *configGeoMap             `mapstructure:"map"`
+	Contact        *configContact            `mapstructure:"contact"`
+	Announcement   *configAnnouncement       `mapstructure:"announcement"`
+	// Configs read from database
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	// Editor state WebSockets
+	esws sync.Map
+	esm  sync.Mutex
 }
 
 type configSection struct {

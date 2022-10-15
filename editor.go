@@ -33,7 +33,7 @@ func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	c.SetReadLimit(1 << 20) // 1MB
 	defer c.Close(ws.StatusNormalClosure, "")
-	ctx, cancel := context.WithTimeout(r.Context(), time.Minute*60)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Hour*6)
 	defer cancel()
 	for {
 		// Retrieve content
