@@ -4,6 +4,12 @@ FLAGS="-tags=linux,libsqlite3,sqlite_fts5"
 SKIP="
 golang.org/x/crypto
 "
+EXTRA="
+github.com/cretz/bine@master
+github.com/tkrajina/gpxgo@master
+github.com/yuin/goldmark-emoji@master
+willnorris.com/go/microformats@main
+"
 
 checkSkip() { 
   echo $SKIP | grep -F -q -w "$1"
@@ -25,5 +31,15 @@ do
   echo ""
   echo "Update $update"
   GOFLAGS=$FLAGS go get $update@latest
-  GOFLAGS=$FLAGS go mod tidy
 done
+
+# 3. Update extra packages
+for e in $EXTRA
+do
+  echo ""
+  echo "Update $e"
+  GOFLAGS=$FLAGS go get $e
+done
+
+# 4. Tidy
+GOFLAGS=$FLAGS go mod tidy

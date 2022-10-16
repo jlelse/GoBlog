@@ -12,7 +12,8 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/carlmjohnson/requests v0.22.3
-	github.com/cretz/bine v0.2.0
+	// master
+	github.com/cretz/bine v0.2.1-0.20220825052916-cb1f9e88dfba
 	github.com/dchest/captcha v1.0.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/disintegration/imaging v1.6.2

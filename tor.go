@@ -49,7 +49,6 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	defer listenCancel()
 	// Create a v3 onion service to listen on any port but show as 80
 	onion, err := t.Listen(listenCtx, &tor.ListenConf{
-		Version3:     true,
 		Key:          torKey,
 		RemotePorts:  []int{80},
 		NonAnonymous: a.cfg.Server.TorSingleHop,
