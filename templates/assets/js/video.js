@@ -26,7 +26,7 @@
 
     // JS
     let script = document.createElement('script')
-    script.src = '/-/hlsjs/hls.js?v=1.1.5'
+    script.src = '/-/hlsjs/hls.js?v=1.2.4'
     script.onload = loadVideo
     document.head.appendChild(script)
 })()
