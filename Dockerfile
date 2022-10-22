@@ -16,7 +16,7 @@ ADD plugins/ /app/plugins/
 
 FROM buildbase as build
 
-RUN go build -ldflags '-w -s' -o GoBlog
+RUN go build -ldflags '-w -s -X tailscale.com/version.Long=GoBlog' -o GoBlog
 
 FROM build as test
 
