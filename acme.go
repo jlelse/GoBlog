@@ -8,7 +8,7 @@ import (
 )
 
 func (a *goBlog) getAutocertManager() *autocert.Manager {
-	if a.tailscaleEnabled() || !a.cfg.Server.PublicHTTPS {
+	if !a.cfg.Server.PublicHTTPS {
 		return nil
 	}
 	if a.autocertManager != nil {

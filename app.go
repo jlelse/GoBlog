@@ -17,7 +17,6 @@ import (
 	"go.goblog.app/app/pkgs/plugins"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/sync/singleflight"
-	"tailscale.com/tsnet"
 )
 
 type goBlog struct {
@@ -90,9 +89,6 @@ type goBlog struct {
 	shutdown shutdowner.Shutdowner
 	// Template strings
 	ts *ts.TemplateStrings
-	// Tailscale
-	tsinit sync.Once
-	tss    *tsnet.Server
 	// Tor
 	torAddress  string
 	torHostname string

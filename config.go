@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -38,31 +39,27 @@ type config struct {
 }
 
 type configServer struct {
-	Logging             bool             `mapstructure:"logging"`
-	LogFile             string           `mapstructure:"logFile"`
-	Port                int              `mapstructure:"port"`
-	PublicAddress       string           `mapstructure:"publicAddress"`
-	ShortPublicAddress  string           `mapstructure:"shortPublicAddress"`
-	MediaAddress        string           `mapstructure:"mediaAddress"`
-	PublicHTTPS         bool             `mapstructure:"publicHttps"`
-	AcmeDir             string           `mapstructure:"acmeDir"`
-	AcmeEabKid          string           `mapstructure:"acmeEabKid"`
-	AcmeEabKey          string           `mapstructure:"acmeEabKey"`
-	TailscaleHTTPS      bool             `mapstructure:"tailscaleHttps"`
-	Tailscale           *configTailscale `mapstructure:"tailscale"`
-	Tor                 bool             `mapstructure:"tor"`
-	TorSingleHop        bool             `mapstructure:"torSingleHop"`
-	SecurityHeaders     bool             `mapstructure:"securityHeaders"`
-	CSPDomains          []string         `mapstructure:"cspDomains"`
+	Logging             bool     `mapstructure:"logging"`
+	LogFile             string   `mapstructure:"logFile"`
+	Port                int      `mapstructure:"port"`
+	PublicAddress       string   `mapstructure:"publicAddress"`
+	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
+	MediaAddress        string   `mapstructure:"mediaAddress"`
+	PublicHTTPS         bool     `mapstructure:"publicHttps"`
+	AcmeDir             string   `mapstructure:"acmeDir"`
+	AcmeEabKid          string   `mapstructure:"acmeEabKid"`
+	AcmeEabKey          string   `mapstructure:"acmeEabKey"`
+	HttpsCert           string   `mapstructure:"httpsCert"`
+	HttpsKey            string   `mapstructure:"httpsKey"`
+	HttpsRedirect       bool     `mapstructure:"httpsRedirect"`
+	Tor                 bool     `mapstructure:"tor"`
+	TorSingleHop        bool     `mapstructure:"torSingleHop"`
+	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
+	CSPDomains          []string `mapstructure:"cspDomains"`
 	publicHostname      string
 	shortPublicHostname string
 	mediaHostname       string
-}
-
-type configTailscale struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	AuthKey  string `mapstructure:"authKey"`
-	Hostname string `mapstructure:"Hostname"`
+	manualHttps         bool
 }
 
 type configDb struct {
@@ -393,6 +390,30 @@ func (a *goBlog) initConfig(logging bool) error {
 		}
 		a.cfg.Server.mediaHostname = mediaUrl.Hostname()
 	}
+	// Check port or set default
+	if a.cfg.Server.Port == 0 {
+		finalPort := 8080
+		if port := publicURL.Port(); port != "" {
+			finalPort, err = strconv.Atoi(port)
+			if err != nil {
+				return errors.New("Failed to parse port: " + err.Error())
+			}
+		} else if publicURL.Scheme == "https" {
+			finalPort = 443
+		}
+		a.cfg.Server.Port = finalPort
+	}
+	// Check HTTPS
+	if a.cfg.Server.HttpsCert != "" && a.cfg.Server.HttpsKey != "" {
+		a.cfg.Server.manualHttps = true
+	}
+	if a.cfg.Server.PublicHTTPS || a.cfg.Server.manualHttps {
+		a.cfg.Server.SecurityHeaders = true
+	}
+	if a.cfg.Server.PublicHTTPS {
+		a.cfg.Server.HttpsRedirect = true
+		a.cfg.Server.Port = 443
+	}
 	// Check if any blog is configured
 	if a.cfg.Blogs == nil || len(a.cfg.Blogs) == 0 {
 		a.cfg.Blogs = map[string]*configBlog{
@@ -492,7 +513,6 @@ func (a *goBlog) initConfig(logging bool) error {
 func createDefaultConfig() *config {
 	return &config{
 		Server: &configServer{
-			Port:          8080,
 			PublicAddress: "http://localhost:8080",
 			LogFile:       "data/access.log",
 		},
@@ -551,11 +571,8 @@ func createDefaultSections() map[string]*configSection {
 	}
 }
 
-func (a *goBlog) httpsConfigured(checkAddress bool) bool {
-	return a.cfg.Server.PublicHTTPS ||
-		a.cfg.Server.TailscaleHTTPS ||
-		a.cfg.Server.SecurityHeaders ||
-		(checkAddress && strings.HasPrefix(a.cfg.Server.PublicAddress, "https"))
+func (a *goBlog) useSecureCookies() bool {
+	return a.cfg.Server.SecurityHeaders || strings.HasPrefix(a.cfg.Server.PublicAddress, "https")
 }
 
 func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {

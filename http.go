@@ -42,7 +42,7 @@ func (a *goBlog) startServer() (err error) {
 		h = h.Append(a.logMiddleware)
 	}
 	h = h.Append(middleware.Recoverer, httpcompress.Compress(flate.BestCompression))
-	if a.httpsConfigured(false) {
+	if a.cfg.Server.SecurityHeaders {
 		h = h.Append(a.securityHeaders)
 	}
 	// Add plugin middlewares
@@ -67,14 +67,7 @@ func (a *goBlog) startServer() (err error) {
 		}()
 	}
 	// Start server
-	s := &http.Server{
-		Handler:           finalHandler,
-		ReadHeaderTimeout: 1 * time.Minute,
-		ReadTimeout:       5 * time.Minute,
-		WriteTimeout:      5 * time.Minute,
-	}
-	a.shutdown.Add(shutdownServer(s, "main server"))
-	if a.cfg.Server.PublicHTTPS || a.cfg.Server.TailscaleHTTPS {
+	if a.cfg.Server.HttpsRedirect {
 		go func() {
 			// Start HTTP server for redirects
 			h := http.Handler(http.HandlerFunc(a.redirectToHttps))
@@ -89,22 +82,30 @@ func (a *goBlog) startServer() (err error) {
 				WriteTimeout:      5 * time.Minute,
 			}
 			a.shutdown.Add(shutdownServer(httpServer, "http server"))
-			if err := a.listenAndServe(httpServer); err != nil && err != http.ErrServerClosed {
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Println("Failed to start HTTP server:", err.Error())
 			}
 		}()
-		// Start HTTPS
-		s.Addr = ":443"
-		if err = a.listenAndServe(s); err != nil && err != http.ErrServerClosed {
-			return err
-		}
-	} else {
-		s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
-		if err = a.listenAndServe(s); err != nil && err != http.ErrServerClosed {
-			return err
-		}
 	}
-	return nil
+	s := &http.Server{
+		Handler:           finalHandler,
+		ReadHeaderTimeout: 1 * time.Minute,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      5 * time.Minute,
+	}
+	a.shutdown.Add(shutdownServer(s, "main server"))
+	s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
+	if a.cfg.Server.PublicHTTPS {
+		err = s.Serve(a.getAutocertManager().Listener())
+	} else if a.cfg.Server.manualHttps {
+		err = s.ListenAndServeTLS(a.cfg.Server.HttpsCert, a.cfg.Server.HttpsKey)
+	} else {
+		err = s.ListenAndServe()
+	}
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
 }
 
 func shutdownServer(s *http.Server, name string) func() {

@@ -34,7 +34,7 @@ func (a *goBlog) initSessions() {
 	a.hourlyHooks = append(a.hourlyHooks, deleteExpiredSessions)
 	a.loginSessions = &dbSessionStore{
 		options: &sessions.Options{
-			Secure:   a.httpsConfigured(true),
+			Secure:   a.useSecureCookies(),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((7 * 24 * time.Hour).Seconds()),
@@ -44,7 +44,7 @@ func (a *goBlog) initSessions() {
 	}
 	a.captchaSessions = &dbSessionStore{
 		options: &sessions.Options{
-			Secure:   a.httpsConfigured(true),
+			Secure:   a.useSecureCookies(),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   int((24 * time.Hour).Seconds()),

@@ -1,9 +1,7 @@
 #!/bin/bash
 
 FLAGS="-tags=linux,libsqlite3,sqlite_fts5"
-SKIP="
-golang.org/x/crypto
-"
+SKIP=""
 EXTRA="
 github.com/cretz/bine@master
 github.com/tkrajina/gpxgo@master
