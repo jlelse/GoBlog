@@ -36,10 +36,13 @@ import (
 func init() {
 	Symbols["go.goblog.app/app/pkgs/plugintypes/plugintypes"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"BlogFooterRenderType":      reflect.ValueOf(plugintypes.BlogFooterRenderType),
 		"PostMainElementRenderType": reflect.ValueOf(plugintypes.PostMainElementRenderType),
 
 		// type definitions
 		"App":            reflect.ValueOf((*plugintypes.App)(nil)),
+		"Blog":           reflect.ValueOf((*plugintypes.Blog)(nil)),
+		"BlogRenderData": reflect.ValueOf((*plugintypes.BlogRenderData)(nil)),
 		"Database":       reflect.ValueOf((*plugintypes.Database)(nil)),
 		"Exec":           reflect.ValueOf((*plugintypes.Exec)(nil)),
 		"Middleware":     reflect.ValueOf((*plugintypes.Middleware)(nil)),
@@ -54,6 +57,8 @@ func init() {
 
 		// interface wrapper definitions
 		"_App":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
+		"_Blog":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Blog)(nil)),
+		"_BlogRenderData": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_BlogRenderData)(nil)),
 		"_Database":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
 		"_Exec":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
 		"_Middleware":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Middleware)(nil)),
@@ -74,6 +79,26 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_Blog is an interface wrapper for Blog type
+type _go_goblog_app_app_pkgs_plugintypes_Blog struct {
+	IValue   interface{}
+	WGetBlog func() string
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_Blog) GetBlog() string {
+	return W.WGetBlog()
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_BlogRenderData is an interface wrapper for BlogRenderData type
+type _go_goblog_app_app_pkgs_plugintypes_BlogRenderData struct {
+	IValue   interface{}
+	WGetBlog func() plugintypes.Blog
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_BlogRenderData) GetBlog() plugintypes.Blog {
+	return W.WGetBlog()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Database is an interface wrapper for Database type

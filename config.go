@@ -95,6 +95,7 @@ type configBlog struct {
 	Map            *configGeoMap             `mapstructure:"map"`
 	Contact        *configContact            `mapstructure:"contact"`
 	Announcement   *configAnnouncement       `mapstructure:"announcement"`
+	name           string
 	// Configs read from database
 	hideOldContentWarning bool
 	hideShareButton       bool
@@ -428,6 +429,10 @@ func (a *goBlog) initConfig(logging bool) error {
 	// Check if default blog exists
 	if a.cfg.Blogs[a.cfg.DefaultBlog] == nil {
 		return errors.New("default blog does not exist")
+	}
+	// Set name attribute for every blog
+	for name, blog := range a.cfg.Blogs {
+		blog.name = name
 	}
 	// Check media storage config
 	if ms := a.cfg.Micropub.MediaStorage; ms != nil && ms.MediaURL != "" {

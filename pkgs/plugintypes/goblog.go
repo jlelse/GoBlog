@@ -27,6 +27,11 @@ type Post interface {
 	GetParameters() map[string][]string
 }
 
+// Blog
+type Blog interface {
+	GetBlog() string
+}
+
 // RenderType
 type RenderType string
 
@@ -45,4 +50,13 @@ const PostMainElementRenderType RenderType = "post-main-content"
 type PostRenderData interface {
 	RenderData
 	GetPost() Post
+}
+
+// Render footer element on every blog page, data = BlogRenderData
+const BlogFooterRenderType RenderType = "blog-footer"
+
+// BlogRenderData is RenderData containing a Blog
+type BlogRenderData interface {
+	RenderData
+	GetBlog() Blog
 }

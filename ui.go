@@ -162,32 +162,34 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	}
 	// Footer
 	hb.WriteElementOpen("footer")
-	// Footer menu
-	if fm, ok := rd.Blog.Menus["footer"]; ok {
-		hb.WriteElementOpen("nav")
-		for i, item := range fm.Items {
-			if i > 0 {
-				hb.WriteUnescaped(" &bull; ")
+	a.renderWithPlugins(hb, plugintypes.BlogFooterRenderType, rd.Blog.pluginRenderData(), func(hb *htmlbuilder.HtmlBuilder) {
+		// Footer menu
+		if fm, ok := rd.Blog.Menus["footer"]; ok {
+			hb.WriteElementOpen("nav")
+			for i, item := range fm.Items {
+				if i > 0 {
+					hb.WriteUnescaped(" &bull; ")
+				}
+				hb.WriteElementOpen("a", "href", item.Link)
+				hb.WriteEscaped(a.renderMdTitle(item.Title))
+				hb.WriteElementClose("a")
 			}
-			hb.WriteElementOpen("a", "href", item.Link)
-			hb.WriteEscaped(a.renderMdTitle(item.Title))
-			hb.WriteElementClose("a")
+			hb.WriteElementClose("nav")
 		}
-		hb.WriteElementClose("nav")
-	}
-	// Copyright
-	hb.WriteElementOpen("p", "translate", "no")
-	hb.WriteUnescaped("&copy; ")
-	hb.WriteEscaped(time.Now().Format("2006"))
-	hb.WriteUnescaped(" ")
-	if user != nil && user.Name != "" {
-		hb.WriteEscaped(user.Name)
-	} else {
-		hb.WriteEscaped(renderedBlogTitle)
-	}
-	hb.WriteElementClose("p")
-	// Tor
-	a.renderTorNotice(hb, rd)
+		// Copyright
+		hb.WriteElementOpen("p", "translate", "no")
+		hb.WriteUnescaped("&copy; ")
+		hb.WriteEscaped(time.Now().Format("2006"))
+		hb.WriteUnescaped(" ")
+		if user != nil && user.Name != "" {
+			hb.WriteEscaped(user.Name)
+		} else {
+			hb.WriteEscaped(renderedBlogTitle)
+		}
+		hb.WriteElementClose("p")
+		// Tor
+		a.renderTorNotice(hb, rd)
+	})
 	hb.WriteElementClose("footer")
 	// Easter egg
 	if rd.EasterEgg {

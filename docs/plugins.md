@@ -42,3 +42,19 @@ Adds hidden `u-syndication` `data` elements to post page when the configured pos
 #### Config
 
 `parameter` (string): Name for the post parameter containing the syndication links.
+
+### Webrings (plugins/webrings)
+
+Adds webring links to the bottom of the blog footer to easily participate in webrings.
+
+#### Config
+
+You can add webring links like this:
+
+```yaml
+config:
+  default: # Name of the blog
+    - title: Webring # Title to show for the webring
+      prev: https://example.com/ # Link to previous webring site
+      next: https://example.net/ # Link to next webring site
+```

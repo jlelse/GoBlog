@@ -72,3 +72,19 @@ func (d *pluginPostRenderData) GetPost() plugintypes.Post {
 func (p *post) pluginRenderData() plugintypes.PostRenderData {
 	return &pluginPostRenderData{p: p}
 }
+
+func (b *configBlog) GetBlog() string {
+	return b.name
+}
+
+type pluginBlogRenderData struct {
+	b *configBlog
+}
+
+func (d *pluginBlogRenderData) GetBlog() plugintypes.Blog {
+	return d.b
+}
+
+func (b *configBlog) pluginRenderData() plugintypes.BlogRenderData {
+	return &pluginBlogRenderData{b: b}
+}
