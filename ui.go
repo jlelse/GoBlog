@@ -484,7 +484,6 @@ func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HtmlBuilder, rd *renderDat
 	hb.WriteElementOpen("table")
 	// Table header
 	hb.WriteElementOpen("thead")
-	hb.WriteElementOpen("tr")
 	// Year
 	hb.WriteElementOpen("th", "class", "tal")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "year"))
@@ -1564,6 +1563,59 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("script")
 
 			hb.WriteElementClose("main")
+		},
+	)
+}
+
+type activityPubFollowersRenderData struct {
+	followers []*apFollower
+}
+
+func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	aprd, ok := rd.Data.(*activityPubFollowersRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
+		},
+		func(hb *htmlbuilder.HtmlBuilder) {
+			hb.WriteElementOpen("main")
+
+			// Title
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
+			hb.WriteEscaped(": ")
+			hb.WriteEscaped(rd.BlogString)
+			hb.WriteElementClose("h1")
+
+			// List followers
+			hb.WriteElementOpen("table")
+			hb.WriteElementOpen("thead")
+			hb.WriteElementOpen("th", "class", "tal")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollower"))
+			hb.WriteElementClose("th")
+			hb.WriteElementOpen("th", "class", "tar")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apinbox"))
+			hb.WriteElementClose("th")
+			hb.WriteElementClose("thead")
+			hb.WriteElementOpen("tbody")
+			for _, follower := range aprd.followers {
+				hb.WriteElementOpen("tr")
+				hb.WriteElementOpen("td", "class", "tal")
+				hb.WriteElementOpen("a", "href", follower.follower, "target", "_blank")
+				hb.WriteEscaped(follower.follower)
+				hb.WriteElementClose("a")
+				hb.WriteElementClose("td")
+				hb.WriteElementOpen("td", "class", "tar")
+				hb.WriteEscaped(follower.inbox)
+				hb.WriteElementClose("td")
+				hb.WriteElementClose("tr")
+			}
+			hb.WriteElementClose("tbody")
+			hb.WriteElementClose("table")
 		},
 	)
 }

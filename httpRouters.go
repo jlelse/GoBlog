@@ -43,6 +43,7 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 		r.Route("/activitypub", func(r chi.Router) {
 			r.Post("/inbox/{blog}", a.apHandleInbox)
 			r.Post("/{blog}/inbox", a.apHandleInbox)
+			r.With(a.authMiddleware).Get("/{blog}/followers", a.apShowFollowers)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(cacheLoggedIn, a.cacheMiddleware)

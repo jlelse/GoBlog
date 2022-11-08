@@ -1,4 +1,7 @@
 acommentby: "A comment by"
+apfollower: "Follower"
+apfollowers: "ActivityPub followers"
+apinbox: "Inbox"
 approve: "Approve"
 approved: "Approved"
 authenticate: "Authenticate"

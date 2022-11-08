@@ -316,6 +316,26 @@ func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
 	return inboxes, nil
 }
 
+type apFollower struct {
+	follower, inbox string
+}
+
+func (db *database) apGetAllFollowers(blog string) (followers []*apFollower, err error) {
+	rows, err := db.Query("select follower, inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
+	if err != nil {
+		return nil, err
+	}
+	var follower, inbox string
+	for rows.Next() {
+		err = rows.Scan(&follower, &inbox)
+		if err != nil {
+			return nil, err
+		}
+		followers = append(followers, &apFollower{follower: follower, inbox: inbox})
+	}
+	return followers, nil
+}
+
 func (db *database) apAddFollower(blog, follower, inbox string) error {
 	_, err := db.Exec("insert or replace into activitypub_followers (blog, follower, inbox) values (@blog, @follower, @inbox)", sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox))
 	return err
@@ -498,4 +518,24 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 			Bytes: x509.MarshalPKCS1PrivateKey(a.apPrivateKey),
 		}),
 	)
+}
+
+func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
+	blogName := chi.URLParam(r, "blog")
+	blog, ok := a.cfg.Blogs[blogName]
+	if !ok || blog == nil {
+		a.serveError(w, r, "Blog not found", http.StatusNotFound)
+		return
+	}
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		a.serveError(w, r, "Failed to get followers", http.StatusInternalServerError)
+		return
+	}
+	a.render(w, r, a.renderActivityPubFollowers, &renderData{
+		BlogString: blogName,
+		Data: &activityPubFollowersRenderData{
+			followers: followers,
+		},
+	})
 }
