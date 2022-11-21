@@ -178,6 +178,8 @@ func Test_mimeTypeFromUrl(t *testing.T) {
 		{url: "https://example.com/profile.jpg", want: "image/jpeg"},
 		{url: "https://example.com/profile.jpeg", want: "image/jpeg"},
 		{url: "https://example.com/profile.png", want: "image/png"},
+		{url: "https://example.com/profile.png?v=3", want: "image/png"},
+		{url: "/profile.png?v=3", want: "image/png"},
 	}
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
