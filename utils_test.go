@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -166,4 +167,23 @@ func Test_groupStrings(t *testing.T) {
 	assert.Equal(t, "D", groups[2].Identifier)
 	assert.Equal(t, "H", groups[3].Identifier)
 	assert.Equal(t, "🚴", groups[4].Identifier)
+}
+
+func Test_mimeTypeFromUrl(t *testing.T) {
+	type test struct {
+		url  string
+		want string
+	}
+	tests := []*test{
+		{url: "https://example.com/profile.jpg", want: "image/jpeg"},
+		{url: "https://example.com/profile.jpeg", want: "image/jpeg"},
+		{url: "https://example.com/profile.png", want: "image/png"},
+	}
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if got := mimeTypeFromUrl(tt.url); got != tt.want {
+				t.Errorf("mimeTypeFromUrl() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

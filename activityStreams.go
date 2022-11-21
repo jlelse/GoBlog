@@ -69,8 +69,9 @@ type asPerson struct {
 }
 
 type asAttachment struct {
-	Type string `json:"type,omitempty"`
-	URL  string `json:"url,omitempty"`
+	Type      string `json:"type,omitempty"`
+	URL       string `json:"url,omitempty"`
+	MediaType string `json:"mediaType,omitempty"`
 }
 
 type asTag struct {
@@ -188,10 +189,11 @@ func (a *goBlog) toAsPerson(blog string) *asPerson {
 			})),
 		},
 	}
-	if a.cfg.User.Picture != "" {
+	if pic := a.cfg.User.Picture; pic != "" {
 		asBlog.Icon = &asAttachment{
-			Type: "Image",
-			URL:  a.cfg.User.Picture,
+			Type:      "Image",
+			URL:       pic,
+			MediaType: mimeTypeFromUrl(pic),
 		}
 	}
 	return asBlog
