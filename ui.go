@@ -358,7 +358,16 @@ func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementOpen("p", "class", "e-content")
 			hb.WriteUnescaped(c.Comment) // Already escaped
 			hb.WriteElementClose("p")
+			// Original
+			if c.Original != "" {
+				hb.WriteElementOpen("p", "class", "")
+				hb.WriteElementOpen("a", "class", "u-url", "target", "_blank", "rel", "nofollow noopener noreferrer ugc", "href", c.Original)
+				hb.WriteEscaped(c.Original)
+				hb.WriteElementClose("a")
+				hb.WriteElementClose("p")
+			}
 			hb.WriteElementClose("main")
+			// Original
 			// Interactions
 			if a.commentsEnabledForBlog(rd.Blog) {
 				a.renderInteractions(hb, rd)
@@ -1215,7 +1224,7 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData
 			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
 			hb.WriteElementClose("h1")
-			// Notifications
+			// Comments
 			for _, c := range crd.comments {
 				hb.WriteElementOpen("div", "class", "p")
 				// ID, Target, Name
@@ -1234,6 +1243,13 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData
 				}
 				hb.WriteEscaped(c.Name)
 				if c.Website != "" {
+					hb.WriteElementClose("a")
+				}
+				if c.Original != "" {
+					hb.WriteElementOpen("br")
+					hb.WriteEscaped("Original: ")
+					hb.WriteElementOpen("a", "href", c.Website, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
+					hb.WriteEscaped(c.Original)
 					hb.WriteElementClose("a")
 				}
 				hb.WriteElementClose("p")

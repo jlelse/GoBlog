@@ -369,7 +369,7 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 					middleware.WithValue(pathKey, commentsPath),
 				)
 				r.With(a.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
-				r.With(a.captchaMiddleware).Post("/", a.createComment)
+				r.With(a.captchaMiddleware).Post("/", a.createCommentFromRequest)
 				r.Group(func(r chi.Router) {
 					// Admin
 					r.Use(a.authMiddleware)

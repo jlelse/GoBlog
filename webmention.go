@@ -186,6 +186,11 @@ func (db *database) deleteWebmentionId(id int) error {
 	return err
 }
 
+func (db *database) deleteWebmentionUUrl(uUrl string) error {
+	_, err := db.Exec("delete from webmentions where url = @url", sql.Named("url", uUrl))
+	return err
+}
+
 func (db *database) deleteWebmention(m *mention) error {
 	_, err := db.Exec(
 		"delete from webmentions where lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource)) and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))",

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/url"
 	"path"
@@ -15,11 +16,12 @@ import (
 const commentPath = "/comment"
 
 type comment struct {
-	ID      int
-	Target  string
-	Name    string
-	Website string
-	Comment string
+	ID       int
+	Target   string
+	Name     string
+	Website  string
+	Comment  string
+	Original string
 }
 
 func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
@@ -28,13 +30,13 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	row, err := a.db.QueryRow("select id, target, name, website, comment from comments where id = @id", sql.Named("id", id))
+	row, err := a.db.QueryRow("select id, target, name, website, comment, original from comments where id = @id", sql.Named("id", id))
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	comment := &comment{}
-	if err = row.Scan(&comment.ID, &comment.Target, &comment.Name, &comment.Website, &comment.Comment); err == sql.ErrNoRows {
+	if err = row.Scan(&comment.ID, &comment.Target, &comment.Name, &comment.Website, &comment.Comment, &comment.Original); err == sql.ErrNoRows {
 		a.serve404(w, r)
 		return
 	} else if err != nil {
@@ -42,60 +44,102 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, bc := a.getBlog(r)
+	canonical := a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id))))
+	if comment.Original != "" {
+		canonical = comment.Original
+	}
 	a.render(w, r, a.renderComment, &renderData{
-		Canonical: a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id)))),
+		Canonical: canonical,
 		Data:      comment,
 	})
 }
 
-func (a *goBlog) createComment(w http.ResponseWriter, r *http.Request) {
-	// Check target
-	target := a.checkCommentTarget(w, r)
-	if target == "" {
+func (a *goBlog) createCommentFromRequest(w http.ResponseWriter, r *http.Request) {
+	target := r.FormValue("target")
+	comment := r.FormValue("comment")
+	name := r.FormValue("name")
+	website := r.FormValue("website")
+	_, bc := a.getBlog(r)
+	// Create comment
+	result, errStatus, err := a.createComment(bc, target, comment, name, website, "")
+	if err != nil {
+		a.serveError(w, r, err.Error(), errStatus)
 		return
+	}
+	// Redirect to comment
+	http.Redirect(w, r, result, http.StatusFound)
+}
+
+func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, original string) (string, int, error) {
+	updateId := -1
+	// Check target
+	target, status, err := a.checkCommentTarget(target)
+	if err != nil {
+		return "", status, err
 	}
 	// Check and clean comment
-	comment := cleanHTMLText(r.FormValue("comment"))
+	comment = cleanHTMLText(comment)
 	if comment == "" {
-		a.serveError(w, r, "Comment is empty", http.StatusBadRequest)
-		return
+		return "", http.StatusBadRequest, errors.New("comment is empty")
 	}
-	name := defaultIfEmpty(cleanHTMLText(r.FormValue("name")), "Anonymous")
-	website := cleanHTMLText(r.FormValue("website"))
+	name = defaultIfEmpty(cleanHTMLText(name), "Anonymous")
+	website = cleanHTMLText(website)
+	original = cleanHTMLText(original)
+	if original != "" {
+		// Check if comment already exists
+		exists, id, err := a.db.commentIdByOriginal(original)
+		if err != nil {
+			return "", http.StatusInternalServerError, errors.New("failed to check the database")
+		}
+		if exists {
+			updateId = id
+		}
+	}
 	// Insert
-	result, err := a.db.Exec("insert into comments (target, comment, name, website) values (@target, @comment, @name, @website)", sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website))
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if commentID, err := result.LastInsertId(); err != nil {
-		// Serve error
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+	if updateId == -1 {
+		result, err := a.db.Exec(
+			"insert into comments (target, comment, name, website, original) values (@target, @comment, @name, @website, @original)",
+			sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website), sql.Named("original", original),
+		)
+		if err != nil {
+			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
+		}
+		if commentID, err := result.LastInsertId(); err != nil {
+			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
+		} else {
+			commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(int(commentID))))
+			// Send webmention
+			_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
+			// Return comment path
+			return commentAddress, 0, nil
+		}
 	} else {
-		_, bc := a.getBlog(r)
-		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(int(commentID))))
+		_, err := a.db.Exec(
+			"update comments set target = @target, comment = @comment, name = @name, website = @website where id = @id",
+			sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website), sql.Named("id", updateId),
+		)
+		if err != nil {
+			return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
+		}
+		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(updateId)))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
-		// Redirect to comment
-		http.Redirect(w, r, commentAddress, http.StatusFound)
+		// Return comment path
+		return commentAddress, 0, nil
 	}
 }
 
-func (a *goBlog) checkCommentTarget(w http.ResponseWriter, r *http.Request) string {
-	target := r.FormValue("target")
+func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
 	if target == "" {
-		a.serveError(w, r, "No target specified", http.StatusBadRequest)
-		return ""
+		return "", http.StatusBadRequest, errors.New("no target specified")
 	} else if !strings.HasPrefix(target, a.cfg.Server.PublicAddress) {
-		a.serveError(w, r, "Bad target", http.StatusBadRequest)
-		return ""
+		return "", http.StatusBadRequest, errors.New("bad target")
 	}
 	targetURL, err := url.Parse(target)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return ""
+		return "", http.StatusBadRequest, errors.New("failed to parse URL")
 	}
-	return targetURL.Path
+	return targetURL.Path, 0, nil
 }
 
 type commentsRequestConfig struct {
@@ -105,7 +149,7 @@ type commentsRequestConfig struct {
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
-	queryBuilder.WriteString("select id, target, name, website, comment from comments order by id desc")
+	queryBuilder.WriteString("select id, target, name, website, comment, original from comments order by id desc")
 	if config.limit != 0 || config.offset != 0 {
 		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
@@ -122,7 +166,7 @@ func (db *database) getComments(config *commentsRequestConfig) ([]*comment, erro
 	}
 	for rows.Next() {
 		c := &comment{}
-		err = rows.Scan(&c.ID, &c.Target, &c.Name, &c.Website, &c.Comment)
+		err = rows.Scan(&c.ID, &c.Target, &c.Name, &c.Website, &c.Comment, &c.Original)
 		if err != nil {
 			return nil, err
 		}
@@ -145,6 +189,20 @@ func (db *database) countComments(config *commentsRequestConfig) (count int, err
 func (db *database) deleteComment(id int) error {
 	_, err := db.Exec("delete from comments where id = @id", sql.Named("id", id))
 	return err
+}
+
+func (db *database) commentIdByOriginal(original string) (bool, int, error) {
+	var id int
+	row, err := db.QueryRow("select id from comments where original = @original", sql.Named("original", original))
+	if err != nil {
+		return false, 0, err
+	}
+	if err := row.Scan(&id); err != nil && errors.Is(err, sql.ErrNoRows) {
+		return false, 0, nil
+	} else if err != nil {
+		return false, 0, err
+	}
+	return true, id, nil
 }
 
 func (a *goBlog) commentsEnabledForBlog(blog *configBlog) bool {

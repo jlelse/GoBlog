@@ -48,7 +48,7 @@ func Test_comments(t *testing.T) {
 		req.Header.Add(contentType, contenttype.WWWForm)
 		rec := httptest.NewRecorder()
 
-		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
+		app.createCommentFromRequest(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		res := rec.Result()
 		assert.Equal(t, http.StatusFound, res.StatusCode)
@@ -117,7 +117,7 @@ func Test_comments(t *testing.T) {
 		req.Header.Add(contentType, contenttype.WWWForm)
 		rec := httptest.NewRecorder()
 
-		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
+		app.createCommentFromRequest(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		res := rec.Result()
 		assert.Equal(t, http.StatusFound, res.StatusCode)
@@ -153,7 +153,7 @@ func Test_comments(t *testing.T) {
 		req.Header.Add(contentType, contenttype.WWWForm)
 		rec := httptest.NewRecorder()
 
-		app.createComment(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
+		app.createCommentFromRequest(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 

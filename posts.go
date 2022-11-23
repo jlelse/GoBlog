@@ -66,7 +66,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 			a.serveActivityStreams(p.Blog, w, r)
 			return
 		}
-		a.serveActivityStreamsPost(p, w)
+		a.serveActivityStreamsPost(p, w, r)
 		return
 	}
 	canonical := p.firstParameter("original")

@@ -1,19 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/http"
 
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"
-	"go.goblog.app/app/pkgs/bufferpool"
+	ap "github.com/go-ap/activitypub"
+	"github.com/go-ap/jsonld"
 	"go.goblog.app/app/pkgs/contenttype"
 )
-
-const asContext = "https://www.w3.org/ns/activitystreams"
 
 const asRequestKey contextKey = "asRequest"
 
@@ -37,177 +36,122 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	})
 }
 
-type asNote struct {
-	Context      any             `json:"@context,omitempty"`
-	To           []string        `json:"to,omitempty"`
-	InReplyTo    string          `json:"inReplyTo,omitempty"`
-	Name         string          `json:"name,omitempty"`
-	Type         string          `json:"type,omitempty"`
-	Content      string          `json:"content,omitempty"`
-	MediaType    string          `json:"mediaType,omitempty"`
-	Attachment   []*asAttachment `json:"attachment,omitempty"`
-	Published    string          `json:"published,omitempty"`
-	Updated      string          `json:"updated,omitempty"`
-	ID           string          `json:"id,omitempty"`
-	URL          string          `json:"url,omitempty"`
-	AttributedTo string          `json:"attributedTo,omitempty"`
-	Tag          []*asTag        `json:"tag,omitempty"`
-}
-
-type asPerson struct {
-	Context           any           `json:"@context,omitempty"`
-	ID                string        `json:"id,omitempty"`
-	URL               string        `json:"url,omitempty"`
-	Type              string        `json:"type,omitempty"`
-	Name              string        `json:"name,omitempty"`
-	Summary           string        `json:"summary,omitempty"`
-	PreferredUsername string        `json:"preferredUsername,omitempty"`
-	Icon              *asAttachment `json:"icon,omitempty"`
-	Inbox             string        `json:"inbox,omitempty"`
-	PublicKey         *asPublicKey  `json:"publicKey,omitempty"`
-	Endpoints         *asEndpoints  `json:"endpoints,omitempty"`
-}
-
-type asAttachment struct {
-	Type      string `json:"type,omitempty"`
-	URL       string `json:"url,omitempty"`
-	MediaType string `json:"mediaType,omitempty"`
-}
-
-type asTag struct {
-	Type string `json:"type,omitempty"`
-	Name string `json:"name,omitempty"`
-	Href string `json:"href,omitempty"`
-}
-
-type asPublicKey struct {
-	ID           string `json:"id,omitempty"`
-	Owner        string `json:"owner,omitempty"`
-	PublicKeyPem string `json:"publicKeyPem,omitempty"`
-}
-
-type asEndpoints struct {
-	SharedInbox string `json:"sharedInbox,omitempty"`
-}
-
-func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter) {
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(a.toASNote(p)); err != nil {
-		http.Error(w, "Encoding failed", http.StatusInternalServerError)
+func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter, r *http.Request) {
+	note := a.toAPNote(p)
+	// Encode
+	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(note)
+	if err != nil {
+		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
 		return
 	}
+	// Send response
 	w.Header().Set(contentType, contenttype.ASUTF8)
-	_ = a.min.Get().Minify(contenttype.AS, w, buf)
+	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
 }
 
-func (a *goBlog) toASNote(p *post) *asNote {
+func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Create a Note object
-	as := &asNote{
-		Context:      []string{asContext},
-		To:           []string{"https://www.w3.org/ns/activitystreams#Public"},
-		MediaType:    contenttype.HTML,
-		ID:           a.activityPubId(p),
-		URL:          a.fullPostURL(p),
-		AttributedTo: a.apIri(a.cfg.Blogs[p.Blog]),
-	}
+	note := ap.ObjectNew(ap.NoteType)
+	note.To.Append(ap.PublicNS)
+	note.MediaType = ap.MimeType(contenttype.HTML)
+	note.ID = a.activityPubId(p)
+	note.URL = ap.IRI(a.fullPostURL(p))
+	note.AttributedTo = a.apAPIri(a.cfg.Blogs[p.Blog])
 	// Name and Type
 	if title := p.RenderedTitle; title != "" {
-		as.Name = title
-		as.Type = "Article"
-	} else {
-		as.Type = "Note"
+		note.Type = ap.ArticleType
+		note.Name.Add(ap.DefaultLangRef(title))
 	}
 	// Content
-	as.Content = a.postHtml(p, true)
+	note.Content.Add(ap.DefaultLangRef(a.postHtml(p, true)))
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
+		var attachments ap.ItemCollection
 		for _, image := range images {
-			as.Attachment = append(as.Attachment, &asAttachment{
-				Type: "Image",
-				URL:  image,
-			})
+			apImage := ap.ObjectNew(ap.ImageType)
+			apImage.URL = ap.IRI(image)
+			attachments.Append(apImage)
 		}
+		note.Attachment = attachments
 	}
 	// Tags
 	for _, tagTax := range a.cfg.ActivityPub.TagsTaxonomies {
 		for _, tag := range p.Parameters[tagTax] {
-			as.Tag = append(as.Tag, &asTag{
-				Type: "Hashtag",
-				Name: tag,
-				Href: a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))),
-			})
+			apTag := &ap.Object{Type: "Hashtag"}
+			apTag.Name.Add(ap.DefaultLangRef(tag))
+			apTag.URL = ap.IRI(a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))))
+			note.Tag.Append(apTag)
 		}
 	}
 	// Dates
-	dateFormat := "2006-01-02T15:04:05-07:00"
 	if p.Published != "" {
 		if t, err := dateparse.ParseLocal(p.Published); err == nil {
-			as.Published = t.Format(dateFormat)
+			note.Published = t
 		}
 	}
 	if p.Updated != "" {
 		if t, err := dateparse.ParseLocal(p.Updated); err == nil {
-			as.Updated = t.Format(dateFormat)
+			note.Published = t
 		}
 	}
 	// Reply
 	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" {
-		as.InReplyTo = replyLink
+		note.InReplyTo = ap.IRI(replyLink)
 	}
-	return as
+	return note
 }
 
 const activityPubVersionParam = "activitypubversion"
 
-func (a *goBlog) activityPubId(p *post) string {
+func (a *goBlog) activityPubId(p *post) ap.IRI {
 	fu := a.fullPostURL(p)
 	if version := p.firstParameter(activityPubVersionParam); version != "" {
-		return fu + "?activitypubversion=" + version
+		return ap.IRI(fu + "?activitypubversion=" + version)
 	}
-	return fu
+	return ap.IRI(fu)
 }
 
-func (a *goBlog) toAsPerson(blog string) *asPerson {
+func (a *goBlog) toApPerson(blog string) *ap.Person {
 	b := a.cfg.Blogs[blog]
-	asBlog := &asPerson{
-		Context:           []string{asContext},
-		Type:              "Person",
-		ID:                a.apIri(b),
-		URL:               a.apIri(b),
-		Name:              a.renderMdTitle(b.Title),
-		Summary:           b.Description,
-		PreferredUsername: blog,
-		Inbox:             a.getFullAddress("/activitypub/inbox/" + blog),
-		PublicKey: &asPublicKey{
-			Owner: a.apIri(b),
-			ID:    a.apIri(b) + "#main-key",
-			PublicKeyPem: string(pem.EncodeToMemory(&pem.Block{
-				Type:    "PUBLIC KEY",
-				Headers: nil,
-				Bytes:   a.apPubKeyBytes,
-			})),
-		},
-	}
+
+	apIri := a.apAPIri(b)
+
+	apBlog := ap.PersonNew(apIri)
+	apBlog.URL = apIri
+
+	apBlog.Name.Set(ap.DefaultLang, ap.Content(a.renderMdTitle(b.Title)))
+	apBlog.Summary.Set(ap.DefaultLang, ap.Content(b.Description))
+	apBlog.PreferredUsername.Set(ap.DefaultLang, ap.Content(blog))
+
+	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
+	apBlog.PublicKey.Owner = apIri
+	apBlog.PublicKey.ID = ap.IRI(a.apIri(b) + "#main-key")
+	apBlog.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   a.apPubKeyBytes,
+	}))
+
 	if pic := a.cfg.User.Picture; pic != "" {
-		asBlog.Icon = &asAttachment{
-			Type:      "Image",
-			URL:       pic,
-			MediaType: mimeTypeFromUrl(pic),
-		}
+		icon := &ap.Image{}
+		icon.Type = ap.ImageType
+		icon.MediaType = ap.MimeType(mimeTypeFromUrl(pic))
+		icon.URL = ap.IRI(pic)
+		apBlog.Icon = icon
 	}
-	return asBlog
+
+	return apBlog
 }
 
 func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
-	person := a.toAsPerson(blog)
+	person := a.toApPerson(blog)
 	// Encode
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(person); err != nil {
+	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(person)
+	if err != nil {
 		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
 		return
 	}
+	// Send response
 	w.Header().Set(contentType, contenttype.ASUTF8)
-	_ = a.min.Get().Minify(contenttype.AS, w, buf)
+	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
 }

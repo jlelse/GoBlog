@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	ap "github.com/go-ap/activitypub"
+	"github.com/go-ap/jsonld"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -47,7 +48,7 @@ func (a *goBlog) initAPSendQueue() {
 }
 
 func (a *goBlog) apQueueSendSigned(blogIri, to string, activity any) error {
-	body, err := json.Marshal(activity)
+	body, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(activity)
 	if err != nil {
 		return err
 	}
