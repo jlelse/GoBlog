@@ -23,6 +23,8 @@ editorpostdesc: "💡 Leere Parameter werden automatisch entfernt. Mehr möglich
 editorusetemplate: "Benutze Vorlage"
 emailopt: "E-Mail (optional)"
 fileuses: "Datei-Verwendungen"
+follow: "Folgen"
+followusingactivitypub: "Mit ActivityPub folgen"
 general: "Allgemein"
 gentts: "Text-To-Speech-Audio erzeugen"
 gpxhelper: "GPX-Helfer"

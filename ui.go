@@ -1631,6 +1631,33 @@ func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *ren
 			}
 			hb.WriteElementClose("tbody")
 			hb.WriteElementClose("table")
+
+			hb.WriteElementClose("main")
+		},
+	)
+}
+
+func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
+		},
+		func(hb *htmlbuilder.HtmlBuilder) {
+			hb.WriteElementOpen("main")
+
+			// Title
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "followusingactivitypub"))
+			hb.WriteElementClose("h1")
+
+			// Form
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+			hb.WriteElementOpen("input", "type", "text", "name", "user", "placeholder", "user@example.org")
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "follow"))
+			hb.WriteElementClose("form")
+
+			hb.WriteElementClose("main")
 		},
 	)
 }
