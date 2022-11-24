@@ -208,23 +208,21 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	case ap.CreateType, ap.UpdateType:
 		if activity.Object.IsObject() {
-			object, err := ap.ToObject(activity.Object)
-			if err == nil && (object.GetType() == ap.NoteType || object.GetType() == ap.ArticleType) {
-				objectLink := object.GetID()
-				if replyTo := object.InReplyTo.GetID(); objectLink != "" && replyTo != "" && strings.HasPrefix(replyTo.String(), blogIri) {
-					target := replyTo.String()
-					original := objectLink.String()
-					name := requestActor.Name.First().Value.String()
-					if username := requestActor.PreferredUsername.First().String(); name == "" && username != "" {
-						name = username
-					}
-					website := requestActor.GetLink().String()
-					if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
-						website = actorUrl.String()
-					}
-					content := object.Content.First().Value.String()
-					a.createComment(blog, target, content, name, website, original)
+			if object, err := ap.ToObject(activity.Object); err == nil &&
+				(object.GetType() == ap.NoteType || object.GetType() == ap.ArticleType) &&
+				(object.To.Contains(ap.PublicNS) || object.CC.Contains(ap.PublicNS)) {
+				target := object.InReplyTo.GetID().String()
+				original := object.GetID().String()
+				name := requestActor.Name.First().Value.String()
+				if username := requestActor.PreferredUsername.First().String(); name == "" && username != "" {
+					name = username
 				}
+				website := requestActor.GetLink().String()
+				if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
+					website = actorUrl.String()
+				}
+				content := object.Content.First().Value.String()
+				_, _, _ = a.createComment(blog, target, content, name, website, original)
 			}
 		}
 	case ap.DeleteType, ap.BlockType:
