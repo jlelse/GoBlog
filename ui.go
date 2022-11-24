@@ -1641,7 +1641,7 @@ func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HtmlBuilder, rd *
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HtmlBuilder) {
-			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "followusingactivitypub"))
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
 			hb.WriteElementOpen("main")
