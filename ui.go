@@ -367,7 +367,6 @@ func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("p")
 			}
 			hb.WriteElementClose("main")
-			// Original
 			// Interactions
 			if a.commentsEnabledForBlog(rd.Blog) {
 				a.renderInteractions(hb, rd)
@@ -1248,7 +1247,7 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData
 				if c.Original != "" {
 					hb.WriteElementOpen("br")
 					hb.WriteEscaped("Original: ")
-					hb.WriteElementOpen("a", "href", c.Website, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
+					hb.WriteElementOpen("a", "href", c.Original, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
 					hb.WriteEscaped(c.Original)
 					hb.WriteElementClose("a")
 				}
