@@ -208,22 +208,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	case ap.CreateType, ap.UpdateType:
 		if activity.Object.IsObject() {
-			if object, err := ap.ToObject(activity.Object); err == nil &&
-				(object.GetType() == ap.NoteType || object.GetType() == ap.ArticleType) &&
-				(object.To.Contains(ap.PublicNS) || object.CC.Contains(ap.PublicNS)) {
-				target := object.InReplyTo.GetID().String()
-				original := object.GetID().String()
-				name := requestActor.Name.First().Value.String()
-				if username := requestActor.PreferredUsername.First().String(); name == "" && username != "" {
-					name = username
-				}
-				website := requestActor.GetLink().String()
-				if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
-					website = actorUrl.String()
-				}
-				content := object.Content.First().Value.String()
-				_, _, _ = a.createComment(blog, target, content, name, website, original)
-			}
+			a.apOnCreateUpdate(blog, requestActor, activity)
 		}
 	case ap.DeleteType, ap.BlockType:
 		if activity.Object.GetID() == activityActor {
@@ -243,6 +228,38 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	// Return 200
 	w.WriteHeader(http.StatusOK)
+}
+
+func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, activity *ap.Activity) {
+	object, err := ap.ToObject(activity.Object)
+	if err != nil {
+		return
+	}
+	if object.GetType() != ap.NoteType && object.GetType() != ap.ArticleType {
+		// ignore other objects for now
+		return
+	}
+	visible := true
+	if !object.To.Contains(ap.PublicNS) && !object.CC.Contains(ap.PublicNS) {
+		visible = false
+	}
+	if replyTarget := object.InReplyTo.GetID().String(); visible && replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
+		// It's a reply
+		original := object.GetID().String()
+		name := requestActor.Name.First().Value.String()
+		if username := requestActor.PreferredUsername.First().String(); name == "" && username != "" {
+			name = username
+		}
+		website := requestActor.GetLink().String()
+		if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
+			website = actorUrl.String()
+		}
+		content := object.Content.First().Value.String()
+		_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
+		return
+	}
+	// Might be a private reply or mention etc.
+	// TODO: handle them
 }
 
 func (a *goBlog) apVerifySignature(r *http.Request, blogIri string) (*ap.Actor, string, int, error) {
@@ -276,6 +293,40 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(contentType, "application/xrd+xml"+contenttype.CharsetUtf8Suffix)
 	_, _ = io.WriteString(w, xml.Header)
 	_, _ = io.WriteString(w, `<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://`+r.Host+`/.well-known/webfinger?resource={uri}"/></XRD>`)
+}
+
+func (a *goBlog) apGetFollowersCollectionId(blogName string, blog *configBlog) ap.IRI {
+	return ap.IRI(a.apIri(blog) + "/activitypub/followers/" + blogName)
+}
+
+func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
+	blogName := chi.URLParam(r, "blog")
+	blog, ok := a.cfg.Blogs[blogName]
+	if !ok || blog == nil {
+		a.serveError(w, r, "Blog not found", http.StatusNotFound)
+		return
+	}
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		a.serveError(w, r, "Failed to get followers", http.StatusInternalServerError)
+		return
+	}
+	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
+		followersCollection := ap.CollectionNew(a.apGetFollowersCollectionId(blogName, blog))
+		for _, follower := range followers {
+			followersCollection.Items.Append(ap.IRI(follower.follower))
+		}
+		followersCollection.TotalItems = uint(len(followers))
+		a.serveAPItem(followersCollection, w, r)
+		return
+	}
+	a.render(w, r, a.renderActivityPubFollowers, &renderData{
+		BlogString: blogName,
+		Data: &activityPubFollowersRenderData{
+			apUser:    fmt.Sprintf("@%s@%s", blogName, a.cfg.Server.publicHostname),
+			followers: followers,
+		},
+	})
 }
 
 func (a *goBlog) apGetRemoteActor(iri, ownBlogIri string) (*ap.Actor, int, error) {

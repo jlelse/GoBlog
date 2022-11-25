@@ -1583,6 +1583,7 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 }
 
 type activityPubFollowersRenderData struct {
+	apUser    string
 	followers []*apFollower
 }
 
@@ -1603,7 +1604,7 @@ func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *ren
 			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
 			hb.WriteEscaped(": ")
-			hb.WriteEscaped(rd.BlogString)
+			hb.WriteEscaped(aprd.apUser)
 			hb.WriteElementClose("h1")
 
 			// List followers

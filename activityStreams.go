@@ -37,16 +37,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 }
 
 func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter, r *http.Request) {
-	note := a.toAPNote(p)
-	// Encode
-	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(note)
-	if err != nil {
-		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
-		return
-	}
-	// Send response
-	w.Header().Set(contentType, contenttype.ASUTF8)
-	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
+	a.serveAPItem(a.toAPNote(p), w, r)
 }
 
 func (a *goBlog) toAPNote(p *post) *ap.Note {
@@ -124,6 +115,8 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 	apBlog.PreferredUsername.Set(ap.DefaultLang, ap.Content(blog))
 
 	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
+	apBlog.Followers = ap.IRI(a.getFullAddress("/activitypub/followers/" + blog))
+
 	apBlog.PublicKey.Owner = apIri
 	apBlog.PublicKey.ID = ap.IRI(a.apIri(b) + "#main-key")
 	apBlog.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pem.Block{
@@ -144,9 +137,12 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 }
 
 func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
-	person := a.toApPerson(blog)
+	a.serveAPItem(a.toApPerson(blog), w, r)
+}
+
+func (a *goBlog) serveAPItem(item any, w http.ResponseWriter, r *http.Request) {
 	// Encode
-	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(person)
+	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(item)
 	if err != nil {
 		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
 		return
