@@ -129,7 +129,7 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 		icon := &ap.Image{}
 		icon.Type = ap.ImageType
 		icon.MediaType = ap.MimeType(contenttype.JPEG)
-		icon.URL = ap.IRI(a.profileImagePath(profileImageFormatJPEG, 0, 0))
+		icon.URL = ap.IRI(a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 0, 0)))
 		apBlog.Icon = icon
 	}
 
