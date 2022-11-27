@@ -125,11 +125,11 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 		Bytes:   a.apPubKeyBytes,
 	}))
 
-	if pic := a.cfg.User.Picture; pic != "" {
+	if a.hasProfileImage() {
 		icon := &ap.Image{}
 		icon.Type = ap.ImageType
-		icon.MediaType = ap.MimeType(mimeTypeFromUrl(pic))
-		icon.URL = ap.IRI(pic)
+		icon.MediaType = ap.MimeType(contenttype.JPEG)
+		icon.URL = ap.IRI(a.profileImagePath(profileImageFormatJPEG, 0, 0))
 		apBlog.Icon = icon
 	}
 

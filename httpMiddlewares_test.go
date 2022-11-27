@@ -45,3 +45,18 @@ func Test_fixHTTPHandler(t *testing.T) {
 	assert.Equal(t, "", got.URL.RawPath)
 
 }
+
+func Test_keepSelectedQueryParams(t *testing.T) {
+	var got *http.Request
+
+	h := keepSelectedQueryParams("size")(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		got = r
+	}))
+
+	rec := httptest.NewRecorder()
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.org/test?def=1234&size=123&abc=def", nil)
+	h.ServeHTTP(rec, req)
+
+	assert.Equal(t, "/test?size=123", got.URL.RequestURI())
+}

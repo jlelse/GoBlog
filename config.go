@@ -205,7 +205,6 @@ type configUser struct {
 	Password     string               `mapstructure:"password"`
 	TOTP         string               `mapstructure:"totp"`
 	AppPasswords []*configAppPassword `mapstructure:"appPasswords"`
-	Picture      string               `mapstructure:"picture"`
 	Email        string               `mapstructure:"email"`
 	Link         string               `mapstructure:"link"`
 	Identities   []string             `mapstructure:"identities"`

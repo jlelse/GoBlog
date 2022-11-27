@@ -9,11 +9,11 @@ import (
 )
 
 func (a *goBlog) serve404(w http.ResponseWriter, r *http.Request) {
-	a.serveError(w, r, fmt.Sprintf("%s was not found", r.RequestURI), http.StatusNotFound)
+	a.serveError(w, r, fmt.Sprintf("%s was not found", r.URL.RequestURI()), http.StatusNotFound)
 }
 
 func (a *goBlog) serve410(w http.ResponseWriter, r *http.Request) {
-	a.serveError(w, r, fmt.Sprintf("%s doesn't exist anymore", r.RequestURI), http.StatusGone)
+	a.serveError(w, r, fmt.Sprintf("%s doesn't exist anymore", r.URL.RequestURI()), http.StatusGone)
 }
 
 func (a *goBlog) serveNotAllowed(w http.ResponseWriter, r *http.Request) {

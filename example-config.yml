@@ -57,14 +57,13 @@ indexNow:
 
 # User
 user:
-  name: John Doe # Full name
-  nick: johndoe # Username
+  name: John Doe # Full name (only for inital, you can change this in the settings UI)
+  nick: johndoe # Username (only for inital, you can change this in the settings UI)
   password: changeThisWeakPassword # Password for login
   totp: HHUCH2SBOFXKKVCRJPVRS3W5MHX4FHXP # Optional for Two Factor Authentication; generate with "./GoBlog totp-secret"
   appPasswords: # Optional passwords you can use with Basic Authentication
     - username: app1
       password: abcdef
-  picture: https://example.com/profile.png # Optional user picture
   link: https://example.net # Optional user link to use instead of homepage
   email: contact@example.com # Email (only used in feeds)
   identities: # Other identities to add to the HTML header with rel=me links

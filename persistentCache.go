@@ -54,3 +54,13 @@ func (db *database) clearPersistentCacheContext(c context.Context, pattern strin
 	_, err := db.ExecContext(c, "delete from persistent_cache where key like @pattern", sql.Named("pattern", pattern))
 	return err
 }
+
+func (db *database) hasPersistantCache(key string) bool {
+	exists := false
+	row, err := db.QueryRow("select exists(select data from persistent_cache where key = @key)", sql.Named("key", key))
+	if err != nil {
+		return exists
+	}
+	_ = row.Scan(&exists)
+	return exists
+}

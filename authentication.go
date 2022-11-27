@@ -116,7 +116,7 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// Prepare original request
 	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginbody")))
-	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.RequestURI, bodyDecoder)
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.URL.RequestURI(), bodyDecoder)
 	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))
 	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Cookie

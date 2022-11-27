@@ -8,6 +8,7 @@ import (
 	"github.com/kaorimatz/go-opml"
 	"github.com/mergestat/timediff"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
 )
@@ -88,6 +89,11 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	if os := openSearchUrl(rd.Blog); os != "" {
 		hb.WriteElementOpen("link", "rel", "search", "type", "application/opensearchdescription+xml", "href", os, "title", renderedBlogTitle)
 	}
+	// Favicons
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 192, 0), "sizes", "192x192")
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 256, 0), "sizes", "256x256")
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 512, 0), "sizes", "512x512")
+	hb.WriteElementOpen("link", "rel", "apple-touch-icon", "href", a.profileImagePath(profileImageFormatPNG, 180, 0))
 	// Announcement
 	if ann := rd.Blog.Announcement; ann != nil && ann.Text != "" {
 		hb.WriteElementOpen("div", "id", "announcement", "data-nosnippet", "")

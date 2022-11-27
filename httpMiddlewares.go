@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
@@ -67,8 +68,23 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 func (a *goBlog) addOnionLocation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.torAddress != "" {
-			w.Header().Set("Onion-Location", a.torAddress+r.RequestURI)
+			w.Header().Set("Onion-Location", a.torAddress+r.URL.RequestURI())
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func keepSelectedQueryParams(paramsToKeep ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			for param := range query {
+				if !lo.Contains(paramsToKeep, param) {
+					query.Del(param)
+				}
+			}
+			r.URL.RawQuery = query.Encode()
+			next.ServeHTTP(w, r)
+		})
+	}
 }

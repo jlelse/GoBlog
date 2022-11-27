@@ -102,6 +102,13 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 	r.Get(mediaFileRoute, a.serveMediaFile)
 }
 
+// Profile image
+func (a *goBlog) profileImageRouter(r chi.Router) {
+	r.Use(keepSelectedQueryParams("s", "q"), cacheLoggedIn, a.cacheMiddleware, noIndexHeader)
+	r.Get(profileImagePathJPEG, a.serveProfileImage(profileImageFormatJPEG))
+	r.Get(profileImagePathPNG, a.serveProfileImage(profileImageFormatPNG))
+}
+
 // Various other routes
 func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.Use(a.privateModeHandler)
@@ -462,5 +469,7 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.Post(settingsHideShareButtonPath, a.settingsHideShareButton)
 		r.Post(settingsHideTranslateButtonPath, a.settingsHideTranslateButton)
 		r.Post(settingsUpdateUserPath, a.settingsUpdateUser)
+		r.Post(settingsUpdateProfileImagePath, a.serveUpdateProfileImage)
+		r.Post(settingsDeleteProfileImagePath, a.serveDeleteProfileImage)
 	}
 }

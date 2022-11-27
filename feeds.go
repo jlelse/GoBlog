@@ -38,7 +38,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Email: a.cfg.User.Email,
 		},
 		Image: &feeds.Image{
-			Url: a.cfg.User.Picture,
+			Url: a.profileImagePath(profileImageFormatJPEG, 0, 0),
 		},
 	}
 	for _, p := range posts {

@@ -209,6 +209,9 @@ func (a *goBlog) buildRouter() http.Handler {
 	// Media files
 	r.Route("/m", a.mediaFilesRouter)
 
+	// Profile image
+	r.Group(a.profileImageRouter)
+
 	// Other routes
 	r.Route("/-", a.otherRoutesRouter)
 

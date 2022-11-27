@@ -77,6 +77,9 @@ type goBlog struct {
 	min minify.Minifier
 	// Plugins
 	pluginHost *plugins.PluginHost
+	// Profile image
+	hasProfileImageBool bool
+	hasProfileImageInit sync.Once
 	// Reactions
 	reactionsInit  sync.Once
 	reactionsCache *ristretto.Cache

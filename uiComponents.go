@@ -378,8 +378,8 @@ func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
 		return
 	}
 	hb.WriteElementOpen("div", "class", "p-author h-card hide")
-	if user.Picture != "" {
-		hb.WriteElementOpen("data", "class", "u-photo", "value", user.Picture)
+	if a.hasProfileImage() {
+		hb.WriteElementOpen("data", "class", "u-photo", "value", a.profileImagePath(profileImageFormatJPEG, 0, 0))
 		hb.WriteElementClose("data")
 	}
 	if user.Name != "" {
@@ -666,6 +666,25 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 	hb.WriteElementOpen(
 		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateUserPath),
+	)
+	hb.WriteElementClose("form")
+
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "profileimage"))
+	hb.WriteElementClose("h3")
+
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "enctype", "multipart/form-data")
+	hb.WriteElementOpen("input", "type", "file", "name", "file")
+	hb.WriteElementOpen(
+		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "upload"),
+		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateProfileImagePath),
+	)
+	hb.WriteElementClose("form")
+
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+	hb.WriteElementOpen(
+		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+		"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteProfileImagePath),
 	)
 	hb.WriteElementClose("form")
 }
