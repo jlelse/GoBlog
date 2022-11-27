@@ -23,6 +23,8 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hideOldContentWarning: bc.hideOldContentWarning,
 			hideShareButton:       bc.hideShareButton,
 			hideTranslateButton:   bc.hideTranslateButton,
+			userNick:              a.cfg.User.Nick,
+			userName:              a.cfg.User.Name,
 		},
 	})
 }
@@ -200,6 +202,34 @@ func (a *goBlog) settingsHideTranslateButton(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	bc.hideTranslateButton = hideTranslateButton
+	a.cache.purge()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const settingsUpdateUserPath = "/user"
+
+func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	// Read values
+	userNick := r.FormValue(userNickSetting)
+	userName := r.FormValue(userNameSetting)
+	if userNick == "" || userName == "" {
+		a.serveError(w, r, "Values must not be empty", http.StatusInternalServerError)
+		return
+	}
+	// Update
+	err := a.saveSettingValue(userNickSetting, userNick)
+	if err != nil {
+		a.serveError(w, r, "Failed to update user nick in database", http.StatusInternalServerError)
+		return
+	}
+	err = a.saveSettingValue(userNameSetting, userName)
+	if err != nil {
+		a.serveError(w, r, "Failed to update user name in database", http.StatusInternalServerError)
+		return
+	}
+	a.cfg.User.Nick = userNick
+	a.cfg.User.Name = userName
 	a.cache.purge()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

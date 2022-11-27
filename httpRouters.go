@@ -461,5 +461,6 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.Post(settingsHideOldContentWarningPath, a.settingsHideOldContentWarning)
 		r.Post(settingsHideShareButtonPath, a.settingsHideShareButton)
 		r.Post(settingsHideTranslateButtonPath, a.settingsHideTranslateButton)
+		r.Post(settingsUpdateUserPath, a.settingsUpdateUser)
 	}
 }

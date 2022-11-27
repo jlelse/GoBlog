@@ -17,6 +17,8 @@ const (
 	hideOldContentWarningSetting = "hideoldcontentwarning"
 	hideShareButtonSetting       = "hidesharebutton"
 	hideTranslateButtonSetting   = "hidetranslatebutton"
+	userNickSetting              = "usernick"
+	userNameSetting              = "username"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

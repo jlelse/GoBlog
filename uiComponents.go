@@ -654,3 +654,18 @@ func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderDat
 
 	hb.WriteElementClose("form")
 }
+
+func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+	hb.WriteElementOpen("h2")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "user"))
+	hb.WriteElementClose("h2")
+
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+	hb.WriteElementOpen("input", "type", "text", "name", "usernick", "required", "", "value", srd.userNick, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsusernick"))
+	hb.WriteElementOpen("input", "type", "text", "name", "username", "required", "", "value", srd.userName, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsusername"))
+	hb.WriteElementOpen(
+		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
+		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateUserPath),
+	)
+	hb.WriteElementClose("form")
+}

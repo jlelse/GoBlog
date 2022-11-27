@@ -1521,6 +1521,8 @@ type settingsRenderData struct {
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	userNick              string
+	userName              string
 }
 
 func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -1567,6 +1569,9 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hideTranslateButtonSetting,
 				srd.hideTranslateButton,
 			)
+
+			// User settings
+			a.renderUserSettings(hb, rd, srd)
 
 			// Post sections
 			a.renderPostSectionSettings(hb, rd, srd)

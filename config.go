@@ -461,6 +461,29 @@ func (a *goBlog) initConfig(logging bool) error {
 	if err = a.loadSections(); err != nil {
 		return err
 	}
+	// Load other settings from database
+	// User nick
+	if userNick, err := a.getSettingValue(userNickSetting); err != nil {
+		return err
+	} else if userNick == "" {
+		// Migrate to database
+		if err = a.saveSettingValue(userNickSetting, a.cfg.User.Nick); err != nil {
+			return err
+		}
+	} else {
+		a.cfg.User.Nick = userNick
+	}
+	// User name
+	if userName, err := a.getSettingValue(userNameSetting); err != nil {
+		return err
+	} else if userName == "" {
+		// Migrate to database
+		if err = a.saveSettingValue(userNameSetting, a.cfg.User.Name); err != nil {
+			return err
+		}
+	} else {
+		a.cfg.User.Name = userName
+	}
 	// Check config for each blog
 	for blog, bc := range a.cfg.Blogs {
 		// Check sections and add section if none exists
