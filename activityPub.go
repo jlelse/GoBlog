@@ -484,9 +484,11 @@ func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow *ap
 	}
 	// Send accept response to the new follower
 	accept := ap.AcceptNew(a.apNewID(blog), follow)
-	accept.To = append(accept.To, newFollower)
+	accept.To.Append(newFollower)
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
+	// Notification
+	a.sendNotification(fmt.Sprintf("%s started following %s", newFollower.String(), a.apIri(blog)))
 }
 
 func (a *goBlog) apSendProfileUpdates() {
