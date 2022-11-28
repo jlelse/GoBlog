@@ -87,6 +87,42 @@ func Test_verifyMentionBridgy(t *testing.T) {
 	require.Equal(t, "m4rk", m.Author)
 }
 
+func Test_verifyMastodonLikeBridgy(t *testing.T) {
+
+	testHtmlBytes, err := os.ReadFile("testdata/bridgymastodon.html")
+	require.NoError(t, err)
+	testHtml := string(testHtmlBytes)
+
+	mockClient := newFakeHttpClient()
+	mockClient.setFakeResponse(http.StatusOK, testHtml)
+
+	app := &goBlog{
+		httpClient: mockClient.Client,
+		cfg:        createDefaultTestConfig(t),
+		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// do nothing
+		}),
+	}
+	app.cfg.Server.PublicAddress = "https://example.org"
+
+	_ = app.initConfig(false)
+
+	m := &mention{
+		Source: "https://example.com/@abc/109404425715413954#favorited-by-327512",
+		Target: "https://example.org/notes/2022-11-25-yijsn",
+	}
+
+	err = app.verifyMention(m)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://example.org/notes/2022-11-25-yijsn", m.Target)
+	require.Equal(t, "https://example.com/@abc/109404425715413954#favorited-by-327512", m.Source)
+	require.Equal(t, "https://example.com/@abc/109404425715413954#favorited-by-327512", m.Url)
+	require.Equal(t, "Bridgy Response", m.Title)
+	require.Equal(t, "", m.Content)
+	require.Equal(t, "Jan-Lukas Else", m.Author)
+}
+
 func Test_verifyMentionColin(t *testing.T) {
 
 	testHtmlBytes, err := os.ReadFile("testdata/colin.html")
