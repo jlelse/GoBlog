@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build and Run" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="GoBlog" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-o GoBlog -tags=linux,libsqlite3,sqlite_fts5" />
+    <useCustomBuildTags value="true" />
+    <kind value="PACKAGE" />
+    <package value="go.goblog.app/app" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
