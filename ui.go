@@ -147,7 +147,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 		}
 		if a.commentsEnabledForBlog(rd.Blog) {
 			hb.WriteUnescaped(" &bull; ")
-			hb.WriteElementOpen("a", "href", "/comment")
+			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
 			hb.WriteElementClose("a")
 		}
@@ -1271,7 +1271,7 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData
 				hb.WriteUnescaped(c.Comment)
 				hb.WriteElementClose("p")
 				// Delete form
-				hb.WriteElementOpen("form", "class", "actions", "method", "post", "action", rd.Blog.getRelativePath("/comment/delete"))
+				hb.WriteElementOpen("form", "class", "actions", "method", "post", "action", rd.Blog.getRelativePath(commentPath+commentDeleteSubPath))
 				hb.WriteElementOpen("input", "type", "hidden", "name", "commentid", "value", c.ID)
 				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
 				hb.WriteElementClose("form")

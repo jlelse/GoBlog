@@ -81,6 +81,8 @@ func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const commentDeleteSubPath = "/delete"
+
 func (a *goBlog) commentsAdminDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("commentid"))
 	if err != nil {

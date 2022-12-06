@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -101,7 +102,7 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		if commentID, err := result.LastInsertId(); err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
 		} else {
-			commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(int(commentID))))
+			commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, commentID))
 			// Send webmention
 			_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 			// Return comment path
@@ -111,7 +112,7 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		if err := a.db.updateComment(updateId, comment, name, website); err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
 		}
-		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(updateId)))
+		commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, updateId))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 		// Return comment path

@@ -359,7 +359,7 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "send"))
 	hb.WriteElementClose("form")
 	// Show form to create a new comment
-	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", "/comment")
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(commentPath))
 	hb.WriteElementOpen("input", "type", "hidden", "name", "target", "value", rd.Canonical)
 	hb.WriteElementOpen("input", "type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nameopt"))
 	hb.WriteElementOpen("input", "type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "websiteopt"))

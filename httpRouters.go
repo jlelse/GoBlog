@@ -383,9 +383,9 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 					r.Use(a.authMiddleware)
 					r.Get("/", a.commentsAdmin)
 					r.Get(paginationPath, a.commentsAdmin)
-					r.Post("/delete", a.commentsAdminDelete)
+					r.Post(commentDeleteSubPath, a.commentsAdminDelete)
 					r.Get(commentEditSubPath, a.serveCommentsEditor)
-					r.Post("/edit", a.serveCommentsEditor)
+					r.Post(commentEditSubPath, a.serveCommentsEditor)
 				})
 			})
 		}
