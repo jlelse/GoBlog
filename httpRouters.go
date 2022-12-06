@@ -384,6 +384,8 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 					r.Get("/", a.commentsAdmin)
 					r.Get(paginationPath, a.commentsAdmin)
 					r.Post("/delete", a.commentsAdminDelete)
+					r.Get(commentEditSubPath, a.serveCommentsEditor)
+					r.Post("/edit", a.serveCommentsEditor)
 				})
 			})
 		}

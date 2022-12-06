@@ -27,29 +27,23 @@ type comment struct {
 func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, "id missing or wrong format", http.StatusBadRequest)
 		return
 	}
-	row, err := a.db.QueryRow("select id, target, name, website, comment, original from comments where id = @id", sql.Named("id", id))
+	comments, err := a.db.getComments(&commentsRequestConfig{id: id})
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, "failed to query comments from database", http.StatusInternalServerError)
 		return
 	}
-	comment := &comment{}
-	if err = row.Scan(&comment.ID, &comment.Target, &comment.Name, &comment.Website, &comment.Comment, &comment.Original); err == sql.ErrNoRows {
+	if len(comments) < 1 {
 		a.serve404(w, r)
 		return
-	} else if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
 	}
+	comment := comments[0]
 	_, bc := a.getBlog(r)
 	canonical := a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id))))
-	if comment.Original != "" {
-		canonical = comment.Original
-	}
 	a.render(w, r, a.renderComment, &renderData{
-		Canonical: canonical,
+		Canonical: defaultIfEmpty(comment.Original, canonical),
 		Data:      comment,
 	})
 }
@@ -114,11 +108,7 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 			return commentAddress, 0, nil
 		}
 	} else {
-		_, err := a.db.Exec(
-			"update comments set target = @target, comment = @comment, name = @name, website = @website where id = @id",
-			sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website), sql.Named("id", updateId),
-		)
-		if err != nil {
+		if err := a.db.updateComment(updateId, comment, name, website); err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
 		}
 		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(updateId)))
@@ -143,13 +133,18 @@ func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
 }
 
 type commentsRequestConfig struct {
-	offset, limit int
+	id, offset, limit int
 }
 
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any) {
 	queryBuilder := bufferpool.Get()
 	defer bufferpool.Put(queryBuilder)
-	queryBuilder.WriteString("select id, target, name, website, comment, original from comments order by id desc")
+	queryBuilder.WriteString("select id, target, name, website, comment, original from comments")
+	if config.id != 0 {
+		queryBuilder.WriteString(" where id = @id")
+		args = append(args, sql.Named("id", config.id))
+	}
+	queryBuilder.WriteString(" order by id desc")
 	if config.limit != 0 || config.offset != 0 {
 		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", config.limit), sql.Named("offset", config.offset))
@@ -158,7 +153,7 @@ func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any
 }
 
 func (db *database) getComments(config *commentsRequestConfig) ([]*comment, error) {
-	comments := []*comment{}
+	var comments []*comment
 	query, args := buildCommentsQuery(config)
 	rows, err := db.Query(query, args...)
 	if err != nil {
@@ -184,6 +179,14 @@ func (db *database) countComments(config *commentsRequestConfig) (count int, err
 	}
 	err = row.Scan(&count)
 	return
+}
+
+func (db *database) updateComment(id int, comment, name, website string) error {
+	_, err := db.Exec(
+		"update comments set comment = @comment, name = @name, website = @website where id = @id",
+		sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website), sql.Named("id", id),
+	)
+	return err
 }
 
 func (db *database) deleteComment(id int) error {

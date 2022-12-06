@@ -373,6 +373,14 @@ func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("p")
 			}
 			hb.WriteElementClose("main")
+			// Editor
+			if rd.LoggedIn() {
+				hb.WriteElementOpen("div", "class", "actions")
+				hb.WriteElementOpen("a", "class", "button", "href", rd.Blog.getRelativePath(fmt.Sprintf("%s%s?id=%d", commentPath, commentEditSubPath, c.ID)))
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "edit"))
+				hb.WriteElementClose("a")
+				hb.WriteElementClose("div")
+			}
 			// Interactions
 			if a.commentsEnabledForBlog(rd.Blog) {
 				a.renderInteractions(hb, rd)
@@ -1670,6 +1678,39 @@ func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HtmlBuilder, rd *
 			hb.WriteElementClose("form")
 
 			hb.WriteElementClose("main")
+		},
+	)
+}
+
+func (a *goBlog) renderCommentEditor(h *htmlbuilder.HtmlBuilder, rd *renderData) {
+	c, ok := rd.Data.(*comment)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		h, rd,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editcommenttitle"))
+		},
+		func(hb *htmlbuilder.HtmlBuilder) {
+			// Form
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+			hb.WriteElementOpen("input", "type", "hidden", "name", "id", "value", c.ID)
+			hb.WriteElementOpen("input", "type", "text", "disabled", "", "value", c.Target)
+			if c.Original != "" {
+				hb.WriteElementOpen("input", "type", "text", "disabled", "", "value", c.Original)
+			}
+			if c.Name != "" {
+				hb.WriteElementOpen("input", "type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nameopt"), "value", c.Name)
+			}
+			if c.Website != "" {
+				hb.WriteElementOpen("input", "type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "websiteopt"), "value", c.Website)
+			}
+			hb.WriteElementOpen("textarea", "name", "comment", "required", "", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comment"))
+			hb.WriteEscaped(c.Comment)
+			hb.WriteElementClose("textarea")
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
+			hb.WriteElementClose("form")
 		},
 	)
 }
