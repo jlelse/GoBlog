@@ -1627,30 +1627,15 @@ func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *ren
 			hb.WriteElementClose("h1")
 
 			// List followers
-			hb.WriteElementOpen("table")
-			hb.WriteElementOpen("thead")
-			hb.WriteElementOpen("th", "class", "tal")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollower"))
-			hb.WriteElementClose("th")
-			hb.WriteElementOpen("th", "class", "tar")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apinbox"))
-			hb.WriteElementClose("th")
-			hb.WriteElementClose("thead")
-			hb.WriteElementOpen("tbody")
+			hb.WriteElementOpen("ul")
 			for _, follower := range aprd.followers {
-				hb.WriteElementOpen("tr")
-				hb.WriteElementOpen("td", "class", "tal")
+				hb.WriteElementOpen("li")
 				hb.WriteElementOpen("a", "href", follower.follower, "target", "_blank")
-				hb.WriteEscaped(follower.follower)
+				hb.WriteEscaped(follower.username)
 				hb.WriteElementClose("a")
-				hb.WriteElementClose("td")
-				hb.WriteElementOpen("td", "class", "tar")
-				hb.WriteEscaped(follower.inbox)
-				hb.WriteElementClose("td")
-				hb.WriteElementClose("tr")
+				hb.WriteElementClose("li")
 			}
-			hb.WriteElementClose("tbody")
-			hb.WriteElementClose("table")
+			hb.WriteElementClose("ul")
 
 			hb.WriteElementClose("main")
 		},

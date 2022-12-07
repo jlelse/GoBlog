@@ -247,7 +247,7 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 		// It's a reply
 		original := object.GetID().String()
 		name := requestActor.Name.First().Value.String()
-		if username := requestActor.PreferredUsername.First().String(); name == "" && username != "" {
+		if username := apUsername(requestActor); name == "" && username != "" {
 			name = username
 		}
 		website := requestActor.GetLink().String()
@@ -388,27 +388,30 @@ func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
 }
 
 type apFollower struct {
-	follower, inbox string
+	follower, inbox, username string
 }
 
 func (db *database) apGetAllFollowers(blog string) (followers []*apFollower, err error) {
-	rows, err := db.Query("select follower, inbox from activitypub_followers where blog = @blog", sql.Named("blog", blog))
+	rows, err := db.Query("select follower, inbox, username from activitypub_followers where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
-	var follower, inbox string
+	var follower, inbox, username string
 	for rows.Next() {
-		err = rows.Scan(&follower, &inbox)
+		err = rows.Scan(&follower, &inbox, &username)
 		if err != nil {
 			return nil, err
 		}
-		followers = append(followers, &apFollower{follower: follower, inbox: inbox})
+		followers = append(followers, &apFollower{follower: follower, inbox: inbox, username: username})
 	}
 	return followers, nil
 }
 
-func (db *database) apAddFollower(blog, follower, inbox string) error {
-	_, err := db.Exec("insert or replace into activitypub_followers (blog, follower, inbox) values (@blog, @follower, @inbox)", sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox))
+func (db *database) apAddFollower(blog, follower, inbox, username string) error {
+	_, err := db.Exec(
+		"insert or replace into activitypub_followers (blog, follower, inbox, username) values (@blog, @follower, @inbox, @username)",
+		sql.Named("blog", blog), sql.Named("follower", follower), sql.Named("inbox", inbox), sql.Named("username", username),
+	)
 	return err
 }
 
@@ -463,7 +466,7 @@ func (a *goBlog) apUndelete(p *post) {
 
 func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow *ap.Activity) {
 	newFollower := follow.Actor.GetID()
-	log.Println("New follow request:", newFollower.String())
+	log.Println("New follow request from follower id:", newFollower.String())
 	// Get remote actor
 	follower, status, err := a.apGetRemoteActor(newFollower.String(), blogIri)
 	if err != nil || status != 0 {
@@ -479,7 +482,8 @@ func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow *ap
 	if inbox == "" {
 		return
 	}
-	if err = a.db.apAddFollower(blogName, follower.GetID().String(), inbox.String()); err != nil {
+	username := apUsername(follower)
+	if err = a.db.apAddFollower(blogName, follower.GetID().String(), inbox.String(), username); err != nil {
 		return
 	}
 	// Send accept response to the new follower
@@ -488,7 +492,7 @@ func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow *ap
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
 	// Notification
-	a.sendNotification(fmt.Sprintf("%s started following %s", newFollower.String(), a.apIri(blog)))
+	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, follower.GetID().String(), a.apIri(blog)))
 }
 
 func (a *goBlog) apSendProfileUpdates() {

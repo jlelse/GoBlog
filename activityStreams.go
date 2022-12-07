@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"
@@ -150,4 +151,13 @@ func (a *goBlog) serveAPItem(item any, w http.ResponseWriter, r *http.Request) {
 	// Send response
 	w.Header().Set(contentType, contenttype.ASUTF8)
 	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
+}
+
+func apUsername(person *ap.Person) string {
+	preferredUsername := person.PreferredUsername.First().Value.String()
+	u, err := url.Parse(person.GetLink().String())
+	if err != nil || u == nil || u.Host == "" || preferredUsername == "" {
+		return person.GetLink().String()
+	}
+	return fmt.Sprintf("@%s@%s", preferredUsername, u.Host)
 }

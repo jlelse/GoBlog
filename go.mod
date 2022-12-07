@@ -21,9 +21,9 @@ require (
 	github.com/elnormous/contenttype v1.0.3
 	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead
 	github.com/emersion/go-smtp v0.15.0
-	github.com/go-ap/activitypub v0.0.0-20221206062958-cae46e718d79
+	github.com/go-ap/activitypub v0.0.0-20221207073405-5d6d22cbc42e
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.3.0
@@ -61,8 +61,8 @@ require (
 	github.com/yuin/goldmark v1.5.3
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.3.0
-	golang.org/x/net v0.3.0
+	golang.org/x/crypto v0.4.0
+	golang.org/x/net v0.4.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.5.0
 	gopkg.in/yaml.v3 v3.0.1

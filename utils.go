@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -403,22 +402,4 @@ func stringToInt(s string) int {
 
 func loStringNotEmpty(s string, _ int) bool {
 	return s != ""
-}
-
-func mimeTypeFromUrl(urlString string) string {
-	parsedUrl, err := url.Parse(urlString)
-	if err != nil {
-		return ""
-	}
-	ext := path.Ext(parsedUrl.Path)
-	mimeType := mime.TypeByExtension(ext)
-	if mimeType == "" {
-		switch ext {
-		case ".jpg":
-			mimeType = "image/jpeg"
-		default:
-			mimeType = "image/" + strings.TrimPrefix(ext, ".")
-		}
-	}
-	return mimeType
 }
