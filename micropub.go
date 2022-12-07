@@ -105,6 +105,8 @@ func (a *goBlog) getMicropubChannelsMap() []map[string]any {
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	blog, _ := a.getBlog(r)
+	p := &post{Blog: blog}
 	switch mt, _, _ := mime.ParseMediaType(r.Header.Get(contentType)); mt {
 	case contenttype.WWWForm, contenttype.MultipartForm:
 		_ = r.ParseMultipartForm(0)
@@ -123,7 +125,7 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		a.micropubCreatePostFromForm(w, r)
+		a.micropubCreatePostFromForm(w, r, p)
 	case contenttype.JSON:
 		parsedMfItem := &microformatItem{}
 		err := json.NewDecoder(io.LimitReader(r.Body, 10000000)).Decode(parsedMfItem)
@@ -144,7 +146,7 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		a.micropubCreatePostFromJson(w, r, parsedMfItem)
+		a.micropubCreatePostFromJson(w, r, p, parsedMfItem)
 	default:
 		a.serveError(w, r, "wrong content type", http.StatusBadRequest)
 	}
@@ -427,8 +429,7 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 	return nil
 }
 
-func (a *goBlog) micropubCreatePostFromForm(w http.ResponseWriter, r *http.Request) {
-	p := &post{}
+func (a *goBlog) micropubCreatePostFromForm(w http.ResponseWriter, r *http.Request, p *post) {
 	err := a.micropubParseValuePostParamsValueMap(p, r.Form)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
@@ -437,8 +438,7 @@ func (a *goBlog) micropubCreatePostFromForm(w http.ResponseWriter, r *http.Reque
 	a.micropubCreate(w, r, p)
 }
 
-func (a *goBlog) micropubCreatePostFromJson(w http.ResponseWriter, r *http.Request, parsedMfItem *microformatItem) {
-	p := &post{}
+func (a *goBlog) micropubCreatePostFromJson(w http.ResponseWriter, r *http.Request, p *post, parsedMfItem *microformatItem) {
 	err := a.micropubParsePostParamsMfItem(p, parsedMfItem)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
