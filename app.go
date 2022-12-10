@@ -9,6 +9,7 @@ import (
 	ts "git.jlel.se/jlelse/template-strings"
 	"github.com/dgraph-io/ristretto"
 	ct "github.com/elnormous/contenttype"
+	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
 	"github.com/hacdias/indieauth/v2"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -23,8 +24,9 @@ type goBlog struct {
 	// ActivityPub
 	apPrivateKey       *rsa.PrivateKey
 	apPubKeyBytes      []byte
-	apPostSigner       httpsig.Signer
-	apPostSignMutex    sync.Mutex
+	apSigner           httpsig.Signer
+	apSignMutex        sync.Mutex
+	apHttpClients      map[string]*apc.C
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
 	// ActivityStreams

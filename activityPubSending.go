@@ -82,12 +82,7 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 	r.Header.Set("Accept", contenttype.ASUTF8)
 	r.Header.Set(contentType, contenttype.ASUTF8)
 	// Sign request
-	r.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
-	r.Header.Set("Host", r.URL.Host)
-	a.apPostSignMutex.Lock()
-	err = a.apPostSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, activity)
-	a.apPostSignMutex.Unlock()
-	if err != nil {
+	if err = a.signRequest(r, blogIri); err != nil {
 		return err
 	}
 	// Do request

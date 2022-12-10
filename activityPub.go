@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -14,11 +15,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	ap "github.com/go-ap/activitypub"
+	apc "github.com/go-ap/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
@@ -57,8 +58,8 @@ func (a *goBlog) initActivityPub() error {
 	if err != nil {
 		return err
 	}
-	a.apPostSigner, _, err = httpsig.NewSigner(
-		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+	a.apSigner, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.ED25519, httpsig.RSA_SHA512, httpsig.RSA_SHA256},
 		httpsig.DigestSha256,
 		[]string{httpsig.RequestTarget, "date", "host", "digest"},
 		httpsig.Signature,
@@ -66,6 +67,16 @@ func (a *goBlog) initActivityPub() error {
 	)
 	if err != nil {
 		return err
+	}
+	// Init http client
+	a.apHttpClients = map[string]*apc.C{}
+	for blog, bc := range a.cfg.Blogs {
+		a.apHttpClients[blog] = apc.New(
+			apc.WithHTTPClient(a.httpClient),
+			apc.WithSignFn(func(r *http.Request) error {
+				return a.signRequest(r, a.apIri(bc))
+			}),
+		)
 	}
 	// Init send queue
 	a.initAPSendQueue()
@@ -145,26 +156,11 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Inbox not found", http.StatusNotFound)
 		return
 	}
-	blogIri := a.apIri(blog)
 	// Verify request
-	requestActor, requestKey, requestActorStatus, err := a.apVerifySignature(r, blogIri)
+	requestActor, err := a.apVerifySignature(r, blogName)
 	if err != nil {
 		// Send 401 because signature could not be verified
 		a.serveError(w, r, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	if requestActorStatus != 0 {
-		if requestActorStatus == http.StatusGone || requestActorStatus == http.StatusNotFound {
-			u, err := url.Parse(requestKey)
-			if err == nil {
-				u.Fragment = ""
-				u.RawFragment = ""
-				_ = a.db.apRemoveFollower(blogName, u.String())
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-		}
-		a.serveError(w, r, "Error when trying to get request actor", http.StatusBadRequest)
 		return
 	}
 	// Parse activity
@@ -198,7 +194,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	// Handle activity
 	switch activity.GetType() {
 	case ap.FollowType:
-		a.apAccept(blogName, blogIri, blog, activity)
+		a.apAccept(blogName, blog, activity)
 	case ap.UndoType:
 		if activity.Object.IsObject() {
 			objectActivity, err := ap.ToActivity(activity.Object)
@@ -262,31 +258,30 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 	// TODO: handle them
 }
 
-func (a *goBlog) apVerifySignature(r *http.Request, blogIri string) (*ap.Actor, string, int, error) {
+func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, error) {
 	verifier, err := httpsig.NewVerifier(r)
 	if err != nil {
 		// Error with signature header etc.
-		return nil, "", 0, err
+		return nil, err
 	}
-	keyID := verifier.KeyId()
-	actor, statusCode, err := a.apGetRemoteActor(keyID, blogIri)
-	if err != nil || actor == nil || statusCode != 0 {
+	actor, err := a.apGetRemoteActor(ap.IRI(verifier.KeyId()), blog)
+	if err != nil || actor == nil {
 		// Actor not found or something else bad
-		return nil, keyID, statusCode, err
+		return nil, errors.New("failed to get actor: " + err.Error())
 	}
 	if actor.PublicKey.PublicKeyPem == "" {
-		return nil, keyID, 0, errors.New("actor has no public key")
+		return nil, errors.New("actor has no public key")
 	}
 	block, _ := pem.Decode([]byte(actor.PublicKey.PublicKeyPem))
 	if block == nil {
-		return nil, keyID, 0, errors.New("public key invalid")
+		return nil, errors.New("public key invalid")
 	}
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		// Unable to parse public key
-		return nil, keyID, 0, err
+		return nil, err
 	}
-	return actor, keyID, 0, verifier.Verify(pubKey, httpsig.RSA_SHA256)
+	return actor, verifier.Verify(pubKey, httpsig.RSA_SHA256)
 }
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
@@ -329,46 +324,8 @@ func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *goBlog) apGetRemoteActor(iri, ownBlogIri string) (*ap.Actor, int, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, iri, strings.NewReader(""))
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Accept", contenttype.AS)
-	req.Header.Set(userAgent, appUserAgent)
-	// Sign request
-	req.Header.Set("Date", time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05")+" GMT")
-	req.Header.Set("Host", req.URL.Host)
-	a.apPostSignMutex.Lock()
-	err = a.apPostSigner.SignRequest(a.apPrivateKey, ownBlogIri+"#main-key", req, []byte(""))
-	a.apPostSignMutex.Unlock()
-	if err != nil {
-		return nil, 0, err
-	}
-	// Do request
-	resp, err := a.httpClient.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-	if !apRequestIsSuccess(resp.StatusCode) {
-		return nil, resp.StatusCode, nil
-	}
-	// Parse response
-	limit := int64(10 * 1000 * 1000) // 10 MB
-	body, err := io.ReadAll(io.LimitReader(resp.Body, limit))
-	if err != nil {
-		return nil, 0, err
-	}
-	apObject, err := ap.UnmarshalJSON(body)
-	if err != nil {
-		return nil, 0, err
-	}
-	actor, err := ap.ToActor(apObject)
-	if err != nil {
-		return nil, 0, err
-	}
-	return actor, 0, nil
+func (a *goBlog) apGetRemoteActor(iri ap.IRI, blog string) (*ap.Actor, error) {
+	return a.apHttpClients[blog].Actor(context.Background(), iri)
 }
 
 func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
@@ -464,12 +421,12 @@ func (a *goBlog) apUndelete(p *post) {
 	a.apPost(p)
 }
 
-func (a *goBlog) apAccept(blogName, blogIri string, blog *configBlog, follow *ap.Activity) {
+func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity) {
 	newFollower := follow.Actor.GetID()
 	log.Println("New follow request from follower id:", newFollower.String())
 	// Get remote actor
-	follower, status, err := a.apGetRemoteActor(newFollower.String(), blogIri)
-	if err != nil || status != 0 {
+	follower, err := a.apGetRemoteActor(newFollower, blogName)
+	if err != nil || follower == nil {
 		// Couldn't retrieve remote actor info
 		log.Println("Failed to retrieve remote actor info:", newFollower)
 		return
@@ -582,4 +539,22 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 			Bytes: x509.MarshalPKCS1PrivateKey(a.apPrivateKey),
 		}),
 	)
+}
+
+func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
+	if date := r.Header.Get("Date"); date == "" {
+		r.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	}
+	if host := r.Header.Get("Host"); host == "" {
+		r.Header.Set("Host", r.URL.Host)
+	}
+	var bodyBuf bytes.Buffer
+	if r.Body != nil {
+		if _, err := io.Copy(&bodyBuf, r.Body); err == nil {
+			r.Body = io.NopCloser(&bodyBuf)
+		}
+	}
+	a.apSignMutex.Lock()
+	defer a.apSignMutex.Unlock()
+	return a.apSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBuf.Bytes())
 }
