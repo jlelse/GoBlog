@@ -543,7 +543,7 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 
 func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
 	if date := r.Header.Get("Date"); date == "" {
-		r.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+		r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	}
 	if host := r.Header.Get("Host"); host == "" {
 		r.Header.Set("Host", r.URL.Host)
