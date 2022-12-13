@@ -6,7 +6,11 @@ This section of the documentation is a **work in progress**!
 
 ### Scheduling posts
 
-To schedule a post, create a post with `status: scheduled` and set the `published` field to the desired date. A scheduler runs in the background and checks every 10 seconds if a scheduled post should be published. If there's a post to publish, the post status is changed to `published`. That will also trigger configured hooks. Scheduled posts are only visible when logged in.
+To schedule a post, create a post with `status: scheduled` and set the `published` field to the desired date. A scheduler runs in the background and checks every 30 seconds if a scheduled post should be published. If there's a post to publish, the post status is changed to `published`. That will also trigger configured hooks. Scheduled posts are only visible when logged in.
+
+### Bookmarklets
+
+You can preset post parameters in the editor template by adding query parameters with the prefix `p:`. So `/editor?p:title=Title` will set the title post parameter in the editor template to `Title`. This way you can create yourself bookmarklets to, for example, like posts or reply to them more easily.
 
 ## Media storage
 

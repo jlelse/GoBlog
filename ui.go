@@ -1380,6 +1380,7 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderDa
 type editorRenderData struct {
 	updatePostUrl     string
 	updatePostContent string
+	presetParams      map[string][]string
 }
 
 func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -1421,7 +1422,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				"data-preview", "post-preview",
 				"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
 				"data-syncws", rd.Blog.getRelativePath("/editor/sync"),
-				"data-template", a.editorPostTemplate(rd.BlogString, rd.Blog),
+				"data-template", a.editorPostTemplate(rd.BlogString, rd.Blog, edrd.presetParams),
 			)
 			hb.WriteElementClose("textarea")
 			hb.WriteElementOpen("div", "id", "post-preview", "class", "hide")

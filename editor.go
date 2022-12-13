@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -21,7 +22,9 @@ const editorPath = "/editor"
 
 func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, a.renderEditor, &renderData{
-		Data: &editorRenderData{},
+		Data: &editorRenderData{
+			presetParams: parsePresetPostParamsFromQuery(r),
+		},
 	})
 }
 
@@ -93,6 +96,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			}
 			a.render(w, r, a.renderEditor, &renderData{
 				Data: &editorRenderData{
+					presetParams:      parsePresetPostParamsFromQuery(r),
 					updatePostUrl:     a.fullPostURL(post),
 					updatePostContent: a.postToMfItem(post).Properties.Content[0],
 				},
@@ -182,24 +186,30 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 	_ = result.Body.Close()
 }
 
-func (*goBlog) editorPostTemplate(blog string, bc *configBlog) string {
+func (*goBlog) editorPostTemplate(blog string, bc *configBlog, presetParams map[string][]string) string {
 	builder := bufferpool.Get()
 	defer bufferpool.Put(builder)
-	marsh := func(param string, i any) {
+	marsh := func(param string, preset bool, i any) {
+		if _, presetPresent := presetParams[param]; !preset && presetPresent {
+			return
+		}
 		_ = yaml.NewEncoder(builder).Encode(map[string]any{
 			param: i,
 		})
 	}
 	builder.WriteString("---\n")
-	marsh("blog", blog)
-	marsh("section", bc.DefaultSection)
-	marsh("status", statusDraft)
-	marsh("visibility", visibilityPublic)
-	marsh("priority", 0)
-	marsh("slug", "")
-	marsh("title", "")
+	marsh("blog", false, blog)
+	marsh("section", false, bc.DefaultSection)
+	marsh("status", false, statusDraft)
+	marsh("visibility", false, visibilityPublic)
+	marsh("priority", false, 0)
+	marsh("slug", false, "")
+	marsh("title", false, "")
 	for _, t := range bc.Taxonomies {
-		marsh(t.Name, []string{""})
+		marsh(t.Name, false, []string{""})
+	}
+	for key, param := range presetParams {
+		marsh(key, true, param)
 	}
 	builder.WriteString("---\n")
 	return builder.String()
@@ -257,4 +267,15 @@ func (a *goBlog) editorPostDesc(bc *configBlog) string {
 		visibilityBuilder.WriteByte('`')
 	}
 	return fmt.Sprintf(t, paramBuilder.String(), "status", "visibility", statusBuilder.String(), visibilityBuilder.String())
+}
+
+func parsePresetPostParamsFromQuery(r *http.Request) map[string][]string {
+	m := map[string][]string{}
+	for key, param := range r.URL.Query() {
+		if strings.HasPrefix(key, "p:") {
+			paramKey := strings.TrimPrefix(key, "p:")
+			m[paramKey] = append(m[paramKey], param...)
+		}
+	}
+	return m
 }
