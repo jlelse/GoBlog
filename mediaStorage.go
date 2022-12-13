@@ -206,9 +206,12 @@ func (f *ftpMediaStorage) files() (files []*mediaFile, err error) {
 		return nil, err
 	}
 	defer c.Quit()
-	w := c.Walk("")
-	for w.Next() {
-		if s := w.Stat(); s.Type == ftp.EntryTypeFile {
+	entries, err := c.List("")
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range entries {
+		if s.Type == ftp.EntryTypeFile {
 			files = append(files, &mediaFile{
 				Name:     s.Name,
 				Location: f.location(s.Name),
