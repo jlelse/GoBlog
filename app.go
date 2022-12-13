@@ -80,8 +80,8 @@ type goBlog struct {
 	// Plugins
 	pluginHost *plugins.PluginHost
 	// Profile image
-	hasProfileImageBool bool
-	hasProfileImageInit sync.Once
+	profileImageHashString string
+	profileImageHashGroup  singleflight.Group
 	// Reactions
 	reactionsInit  sync.Once
 	reactionsCache *ristretto.Cache

@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,8 +33,9 @@ const (
 	profileImagePathJPEG         = profileImagePath + "." + string(profileImageFormatJPEG)
 	profileImagePathPNG          = profileImagePath + "." + string(profileImageFormatPNG)
 	profileImageSizeRegexPattern = `(?P<width>\d+)(x(?P<height>\d+))?`
-	profileImageCacheName        = "profileImage"
-	profileImageHashCacheName    = "profileImageHash"
+	profileImageFile             = "data/profileImage"
+
+	profileImageNoImageHash = "x"
 
 	settingsUpdateProfileImagePath = "/updateprofileimage"
 	settingsDeleteProfileImagePath = "/deleteprofileimage"
@@ -90,9 +94,9 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		var imageBytes []byte
 		if a.hasProfileImage() {
 			var err error
-			imageBytes, err = a.db.retrievePersistentCacheContext(r.Context(), profileImageCacheName)
+			imageBytes, err = os.ReadFile(profileImageFile)
 			if err != nil || imageBytes == nil {
-				a.serveError(w, r, "Failed to retrieve image", http.StatusInternalServerError)
+				a.serveError(w, r, "Failed to read image file", http.StatusInternalServerError)
 				return
 			}
 		} else {
@@ -122,11 +126,10 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 
 func (a *goBlog) profileImagePath(format profileImageFormat, size, quality int) string {
 	if !a.hasProfileImage() {
-		return string(profileImagePathJPEG)
+		return fmt.Sprintf("%s.%s", profileImagePath, format)
 	}
 	query := url.Values{}
-	hashBytes, _ := a.db.retrievePersistentCache(profileImageHashCacheName)
-	query.Set("v", string(hashBytes))
+	query.Set("v", a.profileImageHash())
 	if quality != 0 {
 		query.Set("q", fmt.Sprintf("%d", quality))
 	}
@@ -137,10 +140,29 @@ func (a *goBlog) profileImagePath(format profileImageFormat, size, quality int) 
 }
 
 func (a *goBlog) hasProfileImage() bool {
-	a.hasProfileImageInit.Do(func() {
-		a.hasProfileImageBool = a.db.hasPersistantCache(profileImageHashCacheName) && a.db.hasPersistantCache(profileImageCacheName)
+	return a.profileImageHash() != profileImageNoImageHash
+}
+
+func (a *goBlog) profileImageHash() string {
+	_, _, _ = a.profileImageHashGroup.Do("", func() (interface{}, error) {
+		if a.profileImageHashString != "" {
+			return nil, nil
+		}
+		if _, err := os.Stat(profileImageFile); err != nil {
+			a.profileImageHashString = profileImageNoImageHash
+			return nil, nil
+		}
+		hash := sha256.New()
+		file, err := os.Open(profileImageFile)
+		if err != nil {
+			a.profileImageHashString = profileImageNoImageHash
+			return nil, nil
+		}
+		_, _ = io.Copy(hash, file)
+		a.profileImageHashString = fmt.Sprintf("%x", hash.Sum(nil))
+		return nil, nil
 	})
-	return a.hasProfileImageBool
+	return a.profileImageHashString
 }
 
 func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request) {
@@ -161,26 +183,26 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 		a.serveError(w, r, "Failed to read file", http.StatusBadRequest)
 		return
 	}
-	// Read the file into temporary buffer and generate sha256 hash
-	hash := sha256.New()
-	buffer := bufferpool.Get()
-	defer bufferpool.Put(buffer)
-	_, _ = io.Copy(io.MultiWriter(buffer, hash), file)
+	// Save the file locally
+	err = os.MkdirAll(filepath.Dir(profileImageFile), 0777)
+	if err != nil {
+		a.serveError(w, r, "Failed to create directories", http.StatusBadRequest)
+		return
+	}
+	dataFile, err := os.OpenFile(profileImageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		a.serveError(w, r, "Failed to open local file", http.StatusBadRequest)
+		return
+	}
+	_, err = io.Copy(dataFile, file)
 	_ = file.Close()
 	_ = r.Body.Close()
-	// Cache
-	err = a.db.cachePersistentlyContext(r.Context(), profileImageHashCacheName, []byte(fmt.Sprintf("%x", hash.Sum(nil))))
 	if err != nil {
-		a.serveError(w, r, "Failed to persist hash", http.StatusBadRequest)
+		a.serveError(w, r, "Failed to save image", http.StatusBadRequest)
 		return
 	}
-	err = a.db.cachePersistentlyContext(r.Context(), profileImageCacheName, buffer.Bytes())
-	if err != nil {
-		a.serveError(w, r, "Failed to persist image", http.StatusBadRequest)
-		return
-	}
-	// Set bool
-	a.hasProfileImageBool = true
+	// Reset hash
+	a.profileImageHashString = ""
 	// Clear http cache
 	a.cache.purge()
 	// Redirect
@@ -188,18 +210,11 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request) {
-	a.hasProfileImageBool = false
-	err := a.db.clearPersistentCache(profileImageHashCacheName)
-	if err != nil {
-		a.serveError(w, r, "Failed to delete hash of profile image", http.StatusInternalServerError)
-		return
-	}
-	err = a.db.clearPersistentCache(profileImageCacheName)
-	if err != nil {
+	a.profileImageHashString = ""
+	if err := os.Remove(profileImageFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		a.serveError(w, r, "Failed to delete profile image", http.StatusInternalServerError)
 		return
 	}
 	a.cache.purge()
-	// Redirect
 	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0, 100), http.StatusFound)
 }
