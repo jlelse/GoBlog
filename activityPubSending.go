@@ -78,7 +78,6 @@ func (a *goBlog) apSendSigned(blogIri, to string, activity []byte) error {
 		return err
 	}
 	r.Header.Set("Accept-Charset", "utf-8")
-	r.Header.Set(userAgent, appUserAgent)
 	r.Header.Set("Accept", contenttype.ASUTF8)
 	r.Header.Set(contentType, contenttype.ASUTF8)
 	// Sign request

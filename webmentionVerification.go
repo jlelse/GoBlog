@@ -89,7 +89,6 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 		defer sourceResp.Body.Close()
 	} else {
-		sourceReq.Header.Set(userAgent, appUserAgent)
 		sourceResp, err = a.httpClient.Do(sourceReq)
 		if err != nil {
 			return err

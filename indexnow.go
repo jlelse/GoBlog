@@ -55,7 +55,6 @@ func (a *goBlog) indexNow(url string) {
 	}
 	err := requests.URL("https://api.indexnow.org/indexnow").
 		Client(a.httpClient).
-		UserAgent(appUserAgent).
 		Param("url", url).
 		Param("key", string(key)).
 		Fetch(context.Background())

@@ -210,7 +210,6 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 		URL("https://texttospeech.googleapis.com/v1beta1/text:synthesize").
 		Param("key", gctts.GoogleAPIKey).
 		Client(a.httpClient).
-		UserAgent(appUserAgent).
 		Method(http.MethodPost).
 		BodyJSON(body).
 		ToJSON(&response).

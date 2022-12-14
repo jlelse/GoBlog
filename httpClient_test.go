@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/carlmjohnson/requests"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,4 +76,21 @@ func Test_fakeHttpClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	_ = resp.Body.Close()
+}
+
+func Test_addUserAgent(t *testing.T) {
+	ua := "ABC"
+
+	client := &http.Client{
+		Transport: newAddUserAgentTransport(&handlerRoundTripper{
+			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ua = r.Header.Get(userAgent)
+			}),
+		}),
+	}
+
+	err := requests.URL("http://example.com").UserAgent("WRONG").Client(client).Fetch(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, appUserAgent, ua)
 }

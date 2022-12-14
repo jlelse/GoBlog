@@ -71,7 +71,7 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	if cache := a.db.loadOutlineCache(blog); cache != nil {
 		return cache, nil
 	}
-	rb := requests.URL(config.Opml).Client(a.httpClient).UserAgent(appUserAgent)
+	rb := requests.URL(config.Opml).Client(a.httpClient)
 	if config.AuthHeader != "" && config.AuthValue != "" {
 		rb.Header(config.AuthHeader, config.AuthValue)
 	}

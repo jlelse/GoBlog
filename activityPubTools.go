@@ -43,7 +43,6 @@ func (a *goBlog) apRemoteFollow(w http.ResponseWriter, r *http.Request) {
 		webfinger := &webfingerType{}
 		err := requests.URL(fmt.Sprintf("https://%s/.well-known/webfinger?resource=acct:%s@%s", instance, user, instance)).
 			Client(a.httpClient).
-			UserAgent(appUserAgent).
 			Handle(func(resp *http.Response) error {
 				defer resp.Body.Close()
 				return json.NewDecoder(io.LimitReader(resp.Body, 1000*1000)).Decode(webfinger)

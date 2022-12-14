@@ -21,7 +21,6 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 		targetUrl = strings.ReplaceAll(targetUrl, "{x}", chi.URLParam(r, "x"))
 		targetUrl = strings.ReplaceAll(targetUrl, "{y}", chi.URLParam(r, "y"))
 		proxyRequest, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, targetUrl, nil)
-		proxyRequest.Header.Set(userAgent, appUserAgent)
 		// Copy request headers
 		for _, k := range []string{
 			"Accept-Encoding",

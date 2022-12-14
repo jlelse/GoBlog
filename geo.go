@@ -47,7 +47,7 @@ func (a *goBlog) photonReverse(lat, lon float64, lang string) (*geojson.FeatureC
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	// Create request
-	rb := requests.URL("https://photon.komoot.io/reverse").Client(a.httpClient).UserAgent(appUserAgent).ToBytesBuffer(buf)
+	rb := requests.URL("https://photon.komoot.io/reverse").Client(a.httpClient).ToBytesBuffer(buf)
 	// Set parameters
 	rb.Param("lat", fmt.Sprintf("%v", lat)).Param("lon", fmt.Sprintf("%v", lon))
 	rb.Param("lang", lo.If(lang == "de" || lang == "fr" || lang == "it", lang).Else("en")) // Photon only supports en, de, fr, it

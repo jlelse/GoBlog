@@ -25,7 +25,6 @@ func (a *goBlog) sendNtfy(cfg *configNtfy, msg string) error {
 	builder := requests.
 		URL(server + "/" + topic).
 		Client(a.httpClient).
-		UserAgent(appUserAgent).
 		Method(http.MethodPost).
 		BodyReader(strings.NewReader(msg))
 	if cfg.User != "" {
