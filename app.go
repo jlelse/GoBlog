@@ -75,6 +75,9 @@ type goBlog struct {
 	compressors      []mediaCompression
 	mediaStorageInit sync.Once
 	mediaStorage     mediaStorage
+	// Microformats
+	mfInit  sync.Once
+	mfCache *ristretto.Cache
 	// Minify
 	min minify.Minifier
 	// Plugins

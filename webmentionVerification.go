@@ -9,15 +9,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
-	"willnorris.com/go/microformats"
 )
 
 func (a *goBlog) initWebmentionQueue() {
@@ -150,9 +147,9 @@ func (a *goBlog) verifyMention(m *mention) error {
 }
 
 func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
-	linksBuffer, gqBuffer, mfBuffer := bufferpool.Get(), bufferpool.Get(), bufferpool.Get()
-	defer bufferpool.Put(linksBuffer, gqBuffer, mfBuffer)
-	if _, err := io.Copy(io.MultiWriter(linksBuffer, gqBuffer, mfBuffer), body); err != nil {
+	linksBuffer, mfBuffer := bufferpool.Get(), bufferpool.Get()
+	defer bufferpool.Put(linksBuffer, mfBuffer)
+	if _, err := io.Copy(io.MultiWriter(linksBuffer, mfBuffer), body); err != nil {
 		return err
 	}
 	// Check if source mentions target
@@ -187,136 +184,10 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		return errors.New("target not found in source")
 	}
 	// Fill mention attributes
-	sourceURL, err := url.Parse(defaultIfEmpty(m.NewSource, m.Source))
+	mf, err := a.parseMicroformatsFromBytes(defaultIfEmpty(m.NewSource, m.Source), mfBuffer.Bytes())
 	if err != nil {
 		return err
 	}
-	m.Title = ""
-	m.Content = ""
-	m.Author = ""
-	m.Url = ""
-	m.hasUrl = false
-	m.fillFromData(microformats.Parse(mfBuffer, sourceURL))
-	if m.Url == "" {
-		m.Url = m.Source
-	}
-	// Set title when content is empty as well
-	if m.Title == "" && m.Content == "" {
-		doc, err := goquery.NewDocumentFromReader(gqBuffer)
-		if err != nil {
-			return err
-		}
-		if title := doc.Find("title"); title != nil {
-			m.Title = title.Text()
-		}
-	}
-	// Reset title if it's just a prefix of the content
-	if m.Title != "" && strings.HasPrefix(m.Content, m.Title) {
-		m.Title = ""
-	}
+	m.Title, m.Content, m.Author, m.Url = mf.Title, mf.Content, mf.Author, defaultIfEmpty(mf.Url, m.Source)
 	return nil
-}
-
-func (m *mention) fillFromData(mf *microformats.Data) {
-	// Fill data
-	for _, i := range mf.Items {
-		if m.fill(i) {
-			break
-		}
-	}
-}
-
-func (m *mention) fill(mf *microformats.Microformat) bool {
-	if mfHasType(mf, "h-entry") {
-		// Check URL
-		if url, ok := mf.Properties["url"]; ok && len(url) > 0 {
-			if url0, ok := url[0].(string); ok {
-				if strings.EqualFold(url0, defaultIfEmpty(m.NewSource, m.Source)) {
-					// Is searched entry
-					m.hasUrl = true
-					m.Url = url0
-					// Reset attributes to refill
-					m.Author = ""
-					m.Title = ""
-					m.Content = ""
-				} else if m.hasUrl {
-					// Already found entry
-					return false
-				} else if m.Url == "" {
-					// Is the first entry
-					m.Url = url0
-				} else {
-					// Is not the first entry
-					return false
-				}
-			}
-		}
-		// Title
-		m.fillTitle(mf)
-		// Content
-		m.fillContent(mf)
-		// Author
-		m.fillAuthor(mf)
-		return m.hasUrl
-	}
-	for _, mfc := range mf.Children {
-		if m.fill(mfc) {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *mention) fillTitle(mf *microformats.Microformat) {
-	if m.Title != "" {
-		return
-	}
-	if name, ok := mf.Properties["name"]; ok && len(name) > 0 {
-		if title, ok := name[0].(string); ok {
-			m.Title = strings.TrimSpace(title)
-		}
-	}
-}
-
-func (m *mention) fillContent(mf *microformats.Microformat) {
-	if m.Content != "" {
-		return
-	}
-	if contents, ok := mf.Properties["content"]; ok && len(contents) > 0 {
-		if content, ok := contents[0].(map[string]string); ok {
-			if contentHTML, ok := content["html"]; ok {
-				m.Content = cleanHTMLText(contentHTML)
-				// Replace newlines with spaces
-				m.Content = strings.ReplaceAll(m.Content, "\n", " ")
-				// Collapse double spaces
-				m.Content = strings.Join(strings.Fields(m.Content), " ")
-				// Trim spaces
-				m.Content = strings.TrimSpace(m.Content)
-			}
-		}
-	}
-}
-
-func (m *mention) fillAuthor(mf *microformats.Microformat) {
-	if m.Author != "" {
-		return
-	}
-	if authors, ok := mf.Properties["author"]; ok && len(authors) > 0 {
-		if author, ok := authors[0].(*microformats.Microformat); ok {
-			if names, ok := author.Properties["name"]; ok && len(names) > 0 {
-				if name, ok := names[0].(string); ok {
-					m.Author = strings.TrimSpace(name)
-				}
-			}
-		}
-	}
-}
-
-func mfHasType(mf *microformats.Microformat, typ string) bool {
-	for _, t := range mf.Type {
-		if typ == t {
-			return true
-		}
-	}
-	return false
 }

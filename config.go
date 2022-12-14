@@ -100,6 +100,8 @@ type configBlog struct {
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	addReplyTitle         bool
+	addLikeTitle          bool
 	// Editor state WebSockets
 	esws sync.Map
 	esm  sync.Mutex
@@ -527,6 +529,14 @@ func (a *goBlog) initConfig(logging bool) error {
 			return err
 		}
 		bc.hideTranslateButton, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideTranslateButtonSetting), false)
+		if err != nil {
+			return err
+		}
+		bc.addReplyTitle, err = a.getBooleanSettingValue(settingNameWithBlog(blog, addReplyTitleSetting), false)
+		if err != nil {
+			return err
+		}
+		bc.addLikeTitle, err = a.getBooleanSettingValue(settingNameWithBlog(blog, addLikeTitleSetting), false)
 		if err != nil {
 			return err
 		}

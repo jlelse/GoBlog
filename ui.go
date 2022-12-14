@@ -1536,6 +1536,8 @@ type settingsRenderData struct {
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	addReplyTitle         bool
+	addLikeTitle          bool
 	userNick              string
 	userName              string
 }
@@ -1583,6 +1585,20 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hidetranslatebuttondesc"),
 				hideTranslateButtonSetting,
 				srd.hideTranslateButton,
+			)
+			// Add reply title
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsAddReplyTitlePath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addreplytitledesc"),
+				addReplyTitleSetting,
+				srd.addReplyTitle,
+			)
+			// Add like title
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsAddLikeTitlePath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addliketitledesc"),
+				addLikeTitleSetting,
+				srd.addLikeTitle,
 			)
 
 			// User settings

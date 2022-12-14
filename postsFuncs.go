@@ -35,6 +35,10 @@ func (p *post) firstParameter(parameter string) (result string) {
 	return
 }
 
+func (p *post) addParameter(parameter, value string) {
+	p.Parameters[parameter] = append(p.Parameters[parameter], value)
+}
+
 func (a *goBlog) postHtml(p *post, absolute bool) (res string) {
 	buf := bufferpool.Get()
 	a.postHtmlToWriter(buf, p, absolute)

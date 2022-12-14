@@ -19,6 +19,8 @@ const (
 	hideTranslateButtonSetting   = "hidetranslatebutton"
 	userNickSetting              = "usernick"
 	userNameSetting              = "username"
+	addReplyTitleSetting         = "addreplytitle"
+	addLikeTitleSetting          = "addliketitle"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

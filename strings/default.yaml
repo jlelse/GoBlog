@@ -1,4 +1,6 @@
 acommentby: "A comment by"
+addliketitledesc: "Automatically add like title to new and updated posts with a like link and no manually set like title."
+addreplytitledesc: "Automatically add reply title to new and updated posts with a reply link and no manually set reply title."
 apfollower: "Follower"
 apfollowers: "ActivityPub followers"
 apinbox: "Inbox"

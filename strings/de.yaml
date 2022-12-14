@@ -1,4 +1,6 @@
 acommentby: "Ein Kommentar von"
+addliketitledesc: "Automatisch einen Like-Titel zu neuen und aktualisierten Beiträgen mit einem Like-Link ohne manuell gesetzten Like-Titel hinzufügen."
+addreplytitledesc: "Automatisch einen Reply-Titel zu neuen und aktualisierten Beiträgen mit einem Reply-Link ohne manuell gesetzten Reply-Titel hinzufügen."
 captchainstructions: "Bitte gib die Ziffern aus dem oberen Bild ein"
 chars: "Buchstaben"
 comment: "Kommentar"

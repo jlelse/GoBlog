@@ -34,7 +34,6 @@ type mention struct {
 	Author      string
 	Status      webmentionStatus
 	Submentions []*mention
-	hasUrl      bool
 }
 
 func (a *goBlog) initWebmention() {

@@ -23,9 +23,28 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hideOldContentWarning: bc.hideOldContentWarning,
 			hideShareButton:       bc.hideShareButton,
 			hideTranslateButton:   bc.hideTranslateButton,
+			addReplyTitle:         bc.addReplyTitle,
+			addLikeTitle:          bc.addLikeTitle,
 			userNick:              a.cfg.User.Nick,
 			userName:              a.cfg.User.Name,
 		},
+	})
+}
+
+func (a *goBlog) booleanBlogSettingHandler(settingName string, apply func(*configBlog, bool)) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		blog, bc := a.getBlog(r)
+		// Read values
+		settingValue := r.FormValue(settingName) == "on"
+		// Update
+		err := a.saveBooleanSettingValue(settingNameWithBlog(blog, settingName), settingValue)
+		if err != nil {
+			a.serveError(w, r, "Failed to update setting in database", http.StatusInternalServerError)
+			return
+		}
+		// Apply
+		apply(bc, settingValue)
+		http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 	})
 }
 
@@ -157,53 +176,45 @@ func (a *goBlog) settingsUpdateDefaultSection(w http.ResponseWriter, r *http.Req
 
 const settingsHideOldContentWarningPath = "/oldcontentwarning"
 
-func (a *goBlog) settingsHideOldContentWarning(w http.ResponseWriter, r *http.Request) {
-	blog, bc := a.getBlog(r)
-	// Read values
-	hideOldContentWarning := r.FormValue(hideOldContentWarningSetting) == "on"
-	// Update
-	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), hideOldContentWarning)
-	if err != nil {
-		a.serveError(w, r, "Failed to update setting to hide old content warning in database", http.StatusInternalServerError)
-		return
-	}
-	bc.hideOldContentWarning = hideOldContentWarning
-	a.cache.purge()
-	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+func (a *goBlog) settingsHideOldContentWarning() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(hideOldContentWarningSetting, func(cb *configBlog, b bool) {
+		cb.hideOldContentWarning = b
+		a.cache.purge()
+	})
 }
 
 const settingsHideShareButtonPath = "/sharebutton"
 
-func (a *goBlog) settingsHideShareButton(w http.ResponseWriter, r *http.Request) {
-	blog, bc := a.getBlog(r)
-	// Read values
-	hideShareButton := r.FormValue(hideShareButtonSetting) == "on"
-	// Update
-	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideShareButtonSetting), hideShareButton)
-	if err != nil {
-		a.serveError(w, r, "Failed to update setting to hide share button in database", http.StatusInternalServerError)
-		return
-	}
-	bc.hideShareButton = hideShareButton
-	a.cache.purge()
-	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+func (a *goBlog) settingsHideShareButton() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(hideShareButtonSetting, func(cb *configBlog, b bool) {
+		cb.hideShareButton = b
+		a.cache.purge()
+	})
 }
 
 const settingsHideTranslateButtonPath = "/translatebutton"
 
-func (a *goBlog) settingsHideTranslateButton(w http.ResponseWriter, r *http.Request) {
-	blog, bc := a.getBlog(r)
-	// Read values
-	hideTranslateButton := r.FormValue(hideTranslateButtonSetting) == "on"
-	// Update
-	err := a.saveBooleanSettingValue(settingNameWithBlog(blog, hideTranslateButtonSetting), hideTranslateButton)
-	if err != nil {
-		a.serveError(w, r, "Failed to update setting to hide translate button in database", http.StatusInternalServerError)
-		return
-	}
-	bc.hideTranslateButton = hideTranslateButton
-	a.cache.purge()
-	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+func (a *goBlog) settingsHideTranslateButton() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(hideTranslateButtonSetting, func(cb *configBlog, b bool) {
+		cb.hideTranslateButton = b
+		a.cache.purge()
+	})
+}
+
+const settingsAddReplyTitlePath = "/replytitle"
+
+func (a *goBlog) settingsAddReplyTitle() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(addReplyTitleSetting, func(cb *configBlog, b bool) {
+		cb.addReplyTitle = b
+	})
+}
+
+const settingsAddLikeTitlePath = "/liketitle"
+
+func (a *goBlog) settingsAddLikeTitle() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(addLikeTitleSetting, func(cb *configBlog, b bool) {
+		cb.addLikeTitle = b
+	})
 }
 
 const settingsUpdateUserPath = "/user"
