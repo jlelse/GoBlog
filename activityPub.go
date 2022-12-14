@@ -267,7 +267,7 @@ func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, err
 	actor, err := a.apGetRemoteActor(ap.IRI(verifier.KeyId()), blog)
 	if err != nil || actor == nil {
 		// Actor not found or something else bad
-		return nil, errors.New("failed to get actor: " + err.Error())
+		return nil, errors.New("failed to get actor")
 	}
 	if actor.PublicKey.PublicKeyPem == "" {
 		return nil, errors.New("actor has no public key")
