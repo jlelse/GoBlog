@@ -184,7 +184,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		return errors.New("target not found in source")
 	}
 	// Fill mention attributes
-	mf, err := a.parseMicroformatsFromBytes(defaultIfEmpty(m.NewSource, m.Source), mfBuffer.Bytes())
+	mf, err := parseMicroformatsFromReader(defaultIfEmpty(m.NewSource, m.Source), mfBuffer)
 	if err != nil {
 		return err
 	}

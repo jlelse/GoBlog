@@ -122,7 +122,7 @@ func (a *goBlog) indieAuthVerificationToken(w http.ResponseWriter, r *http.Reque
 
 // Token Revocation (new way)
 // https://indieauth.spec.indieweb.org/#token-revocation-p-4
-func (a *goBlog) indieAuthTokenRevokation(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) indieAuthTokenRevokation(_ http.ResponseWriter, r *http.Request) {
 	a.db.indieAuthRevokeToken(r.Form.Get("token"))
 }
 

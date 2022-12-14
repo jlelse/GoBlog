@@ -383,28 +383,26 @@ func (db *database) apRemoveInbox(inbox string) error {
 }
 
 func (a *goBlog) apPost(p *post) {
-	blogConfig := a.cfg.Blogs[p.Blog]
-	note := a.toAPNote(p)
-	create := ap.CreateNew(a.activityPubId(p), note)
-	create.Actor = a.apAPIri(blogConfig)
-	create.Published = time.Now()
-	a.apSendToAllFollowers(p.Blog, create)
+	blogConfig := a.getBlogFromPost(p)
+	c := ap.CreateNew(a.activityPubId(p), a.toAPNote(p))
+	c.Actor = a.apAPIri(blogConfig)
+	c.Published = time.Now()
+	a.apSendToAllFollowers(p.Blog, c)
 }
 
 func (a *goBlog) apUpdate(p *post) {
-	blogConfig := a.cfg.Blogs[p.Blog]
-	note := a.toAPNote(p)
-	update := ap.UpdateNew(a.activityPubId(p), note)
-	update.Actor = a.apAPIri(blogConfig)
-	update.Published = time.Now()
-	a.apSendToAllFollowers(p.Blog, update)
+	blogConfig := a.getBlogFromPost(p)
+	u := ap.UpdateNew(a.activityPubId(p), a.toAPNote(p))
+	u.Actor = a.apAPIri(blogConfig)
+	u.Published = time.Now()
+	a.apSendToAllFollowers(p.Blog, u)
 }
 
 func (a *goBlog) apDelete(p *post) {
-	blogConfig := a.cfg.Blogs[p.Blog]
-	delete := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
-	delete.Actor = a.apAPIri(blogConfig)
-	a.apSendToAllFollowers(p.Blog, delete)
+	blogConfig := a.getBlogFromPost(p)
+	d := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
+	d.Actor = a.apAPIri(blogConfig)
+	a.apSendToAllFollowers(p.Blog, d)
 }
 
 func (a *goBlog) apUndelete(p *post) {

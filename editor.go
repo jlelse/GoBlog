@@ -82,7 +82,7 @@ func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Rea
 	}
 	// Render post (using post's blog config)
 	hb := htmlbuilder.NewHtmlBuilder(w)
-	a.renderEditorPreview(hb, a.cfg.Blogs[p.Blog], p)
+	a.renderEditorPreview(hb, a.getBlogFromPost(p), p)
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {

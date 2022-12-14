@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -50,25 +50,30 @@ func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, e
 	if err != nil {
 		return nil, err
 	}
-	return a.parseMicroformatsFromBytes(u, buf.Bytes())
+	return parseMicroformatsFromReader(u, buf)
 }
 
-func (a *goBlog) parseMicroformatsFromBytes(u string, b []byte) (*microformatsResult, error) {
+func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, error) {
 	parsedUrl, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
+	// Temporary buffer
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	// Parse microformats
 	m := &microformatsResult{
 		source: u,
 	}
-	// Fill from microformats
-	m.fillFromData(microformats.Parse(bytes.NewReader(b), parsedUrl))
+	mfd := microformats.Parse(io.TeeReader(r, buf), parsedUrl)
+	m.fillFromData(mfd)
+	// Set URL if not parsed from microformats
 	if m.Url == "" {
 		m.Url = u
 	}
-	// Set title when content is empty as well
+	// Parse title from HTML if needed
 	if m.Title == "" && m.Content == "" {
-		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(b))
+		doc, err := goquery.NewDocumentFromReader(buf)
 		if err != nil {
 			return nil, err
 		}

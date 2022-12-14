@@ -60,7 +60,7 @@ func (a *goBlog) ttsEnabled() bool {
 
 func (a *goBlog) createPostTTSAudio(p *post) error {
 	// Get required values
-	lang := defaultIfEmpty(a.cfg.Blogs[p.Blog].Lang, "en")
+	lang := defaultIfEmpty(a.getBlogFromPost(p).Lang, "en")
 
 	// Create TTS text parts
 	parts := []string{}

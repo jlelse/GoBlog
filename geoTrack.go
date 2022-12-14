@@ -55,7 +55,7 @@ func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, e
 		return nil, nil
 	}
 
-	l, _ := language.Parse(a.cfg.Blogs[p.Blog].Lang)
+	l, _ := language.Parse(a.getBlogFromPost(p).Lang)
 	lp := message.NewPrinter(l)
 
 	result = &trackResult{

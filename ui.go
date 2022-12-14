@@ -145,7 +145,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 			hb.WriteElementClose("a")
 		}
-		if a.commentsEnabledForBlog(rd.Blog) {
+		if rd.Blog.commentsEnabled() {
 			hb.WriteUnescaped(" &bull; ")
 			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
@@ -382,7 +382,7 @@ func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("div")
 			}
 			// Interactions
-			if a.commentsEnabledForBlog(rd.Blog) {
+			if rd.Blog.commentsEnabled() {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -491,7 +491,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("script")
 			hb.WriteElementClose("main")
 			// Interactions
-			if a.commentsEnabledForBlog(rd.Blog) {
+			if rd.Blog.commentsEnabled() {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -649,7 +649,7 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("script")
 			}
 			hb.WriteElementClose("main")
-			if a.commentsEnabledForBlog(rd.Blog) {
+			if rd.Blog.commentsEnabled() {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -724,7 +724,7 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			}
 			hb.WriteElementClose("main")
 			// Interactions
-			if a.commentsEnabledForBlog(rd.Blog) {
+			if rd.Blog.commentsEnabled() {
 				a.renderInteractions(hb, rd)
 			}
 		},

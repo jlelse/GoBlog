@@ -30,11 +30,11 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	// Maybe add section
 	if p.Path == "" && p.Section == "" {
 		// Has no path or section -> default section
-		p.Section = a.cfg.Blogs[p.Blog].DefaultSection
+		p.Section = a.getBlogFromPost(p).DefaultSection
 	}
 	// Check section
 	if p.Section != "" {
-		if _, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]; !ok {
+		if _, ok := a.getBlogFromPost(p).Sections[p.Section]; !ok {
 			return errors.New("section doesn't exist")
 		}
 	}
@@ -87,7 +87,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	}
 	// Automatically add reply title
 	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" && p.firstParameter(a.cfg.Micropub.ReplyTitleParam) == "" &&
-		a.cfg.Blogs[p.Blog].addReplyTitle {
+		a.getBlogFromPost(p).addReplyTitle {
 		// Is reply, but has no reply title
 		if mf, err := a.parseMicroformats(replyLink, true); err == nil && mf.Title != "" {
 			p.addParameter(a.cfg.Micropub.ReplyTitleParam, mf.Title)
@@ -95,7 +95,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 	}
 	// Automatically add like title
 	if likeLink := p.firstParameter(a.cfg.Micropub.LikeParam); likeLink != "" && p.firstParameter(a.cfg.Micropub.LikeTitleParam) == "" &&
-		a.cfg.Blogs[p.Blog].addLikeTitle {
+		a.getBlogFromPost(p).addLikeTitle {
 		// Is like, but has no like title
 		if mf, err := a.parseMicroformats(likeLink, true); err == nil && mf.Title != "" {
 			p.addParameter(a.cfg.Micropub.LikeTitleParam, mf.Title)
@@ -114,7 +114,7 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", published.Year(), int(published.Month()), published.Day(), randomString(5))
 		}
 		pathTmplString := defaultIfEmpty(
-			a.cfg.Blogs[p.Blog].Sections[p.Section].PathTemplate,
+			a.getBlogFromPost(p).Sections[p.Section].PathTemplate,
 			"{{printf \""+a.getRelativePath(p.Blog, "/%v/%02d/%02d/%v")+"\" .Section .Year .Month .Slug}}",
 		)
 		pathTmpl, err := template.New("location").Parse(pathTmplString)

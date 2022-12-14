@@ -48,7 +48,7 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	note.MediaType = ap.MimeType(contenttype.HTML)
 	note.ID = a.activityPubId(p)
 	note.URL = ap.IRI(a.fullPostURL(p))
-	note.AttributedTo = a.apAPIri(a.cfg.Blogs[p.Blog])
+	note.AttributedTo = a.apAPIri(a.getBlogFromPost(p))
 	// Name and Type
 	if title := p.RenderedTitle; title != "" {
 		note.Type = ap.ArticleType

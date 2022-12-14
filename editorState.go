@@ -68,7 +68,7 @@ func (a *goBlog) serveEditorStateSync(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) sendNewEditorStateToAllConnections(ctx context.Context, bc *configBlog, origin string, state []byte) {
+func (*goBlog) sendNewEditorStateToAllConnections(ctx context.Context, bc *configBlog, origin string, state []byte) {
 	bc.esws.Range(func(key, value any) bool {
 		if key == origin {
 			return true

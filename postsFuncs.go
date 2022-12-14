@@ -193,7 +193,7 @@ func (a *goBlog) showFull(p *post) bool {
 	if p.Section == "" {
 		return false
 	}
-	sec, ok := a.cfg.Blogs[p.Blog].Sections[p.Section]
+	sec, ok := a.getBlogFromPost(p).Sections[p.Section]
 	return ok && sec != nil && sec.ShowFull
 }
 

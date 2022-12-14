@@ -209,12 +209,12 @@ func (db *database) commentIdByOriginal(original string) (bool, int, error) {
 	return true, id, nil
 }
 
-func (a *goBlog) commentsEnabledForBlog(blog *configBlog) bool {
+func (blog *configBlog) commentsEnabled() bool {
 	return blog.Comments != nil && blog.Comments.Enabled
 }
 
 const commentsPostParam = "comments"
 
 func (a *goBlog) commentsEnabledForPost(post *post) bool {
-	return post != nil && a.commentsEnabledForBlog(a.getBlogFromPost(post)) && post.firstParameter(commentsPostParam) != "false"
+	return post != nil && a.getBlogFromPost(post).commentsEnabled() && post.firstParameter(commentsPostParam) != "false"
 }
