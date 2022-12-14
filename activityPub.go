@@ -59,7 +59,7 @@ func (a *goBlog) initActivityPub() error {
 		return err
 	}
 	a.apSigner, _, err = httpsig.NewSigner(
-		[]httpsig.Algorithm{httpsig.ED25519, httpsig.RSA_SHA512, httpsig.RSA_SHA256},
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
 		httpsig.DigestSha256,
 		[]string{httpsig.RequestTarget, "date", "host", "digest"},
 		httpsig.Signature,
@@ -546,10 +546,10 @@ func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
 	if host := r.Header.Get("Host"); host == "" {
 		r.Header.Set("Host", r.URL.Host)
 	}
-	var bodyBuf bytes.Buffer
+	bodyBuf := bytes.NewBufferString("")
 	if r.Body != nil {
-		if _, err := io.Copy(&bodyBuf, r.Body); err == nil {
-			r.Body = io.NopCloser(&bodyBuf)
+		if _, err := io.Copy(bodyBuf, r.Body); err == nil {
+			r.Body = io.NopCloser(bodyBuf)
 		}
 	}
 	a.apSignMutex.Lock()

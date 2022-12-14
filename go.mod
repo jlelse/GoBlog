@@ -46,7 +46,7 @@ require (
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
-	github.com/pquerna/otp v1.3.0
+	github.com/pquerna/otp v1.4.0
 	github.com/samber/lo v1.36.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.0
