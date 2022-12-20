@@ -182,12 +182,12 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Check actor
-	activityActor := activity.Actor.GetID()
+	activityActor := activity.Actor.GetLink()
 	if activity.Actor == nil || (!activity.Actor.IsLink() && !activity.Actor.IsObject()) {
 		a.serveError(w, r, "Activity has no actor", http.StatusBadRequest)
 		return
 	}
-	if activityActor != requestActor.GetID() {
+	if activityActor != requestActor.GetLink() {
 		a.serveError(w, r, "Request actor isn't activity actor", http.StatusForbidden)
 		return
 	}
@@ -198,7 +198,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	case ap.UndoType:
 		if activity.Object.IsObject() {
 			objectActivity, err := ap.ToActivity(activity.Object)
-			if err == nil && objectActivity.GetType() == ap.FollowType && objectActivity.Actor.GetID() == activityActor {
+			if err == nil && objectActivity.GetType() == ap.FollowType && objectActivity.Actor.GetLink() == activityActor {
 				_ = a.db.apRemoveFollower(blogName, activityActor.String())
 			}
 		}
@@ -207,20 +207,20 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			a.apOnCreateUpdate(blog, requestActor, activity)
 		}
 	case ap.DeleteType, ap.BlockType:
-		if activity.Object.GetID() == activityActor {
+		if activity.Object.GetLink() == activityActor {
 			_ = a.db.apRemoveFollower(blogName, activityActor.String())
 		} else {
 			// Check if comment exists
-			exists, commentId, err := a.db.commentIdByOriginal(activity.Object.GetID().String())
+			exists, commentId, err := a.db.commentIdByOriginal(activity.Object.GetLink().String())
 			if err == nil && exists {
 				_ = a.db.deleteComment(commentId)
-				_ = a.db.deleteWebmentionUUrl(activity.Object.GetID().String())
+				_ = a.db.deleteWebmentionUUrl(activity.Object.GetLink().String())
 			}
 		}
 	case ap.AnnounceType:
-		a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, activity.Object.GetID()))
+		a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, activity.Object.GetLink()))
 	case ap.LikeType:
-		a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, activity.Object.GetID()))
+		a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, activity.Object.GetLink()))
 	}
 	// Return 200
 	w.WriteHeader(http.StatusOK)
@@ -239,20 +239,22 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 	if !object.To.Contains(ap.PublicNS) && !object.CC.Contains(ap.PublicNS) {
 		visible = false
 	}
-	if replyTarget := object.InReplyTo.GetID().String(); visible && replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
-		// It's a reply
-		original := object.GetID().String()
-		name := requestActor.Name.First().Value.String()
-		if username := apUsername(requestActor); name == "" && username != "" {
-			name = username
+	if inReplyTo := object.InReplyTo; inReplyTo != nil {
+		if replyTarget := inReplyTo.GetLink().String(); visible && replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
+			// It's a reply
+			original := object.GetLink().String()
+			name := requestActor.Name.First().Value.String()
+			if username := apUsername(requestActor); name == "" && username != "" {
+				name = username
+			}
+			website := requestActor.GetLink().String()
+			if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
+				website = actorUrl.String()
+			}
+			content := object.Content.First().Value.String()
+			_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
+			return
 		}
-		website := requestActor.GetLink().String()
-		if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
-			website = actorUrl.String()
-		}
-		content := object.Content.First().Value.String()
-		_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
-		return
 	}
 	// Might be a private reply or mention etc.
 	// TODO: handle them
@@ -420,7 +422,7 @@ func (a *goBlog) apUndelete(p *post) {
 }
 
 func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity) {
-	newFollower := follow.Actor.GetID()
+	newFollower := follow.Actor.GetLink()
 	log.Println("New follow request from follower id:", newFollower.String())
 	// Get remote actor
 	follower, err := a.apGetRemoteActor(newFollower, blogName)
@@ -430,15 +432,15 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 		return
 	}
 	// Add or update follower
-	inbox := follower.Inbox.GetID()
-	if endpoints := follower.Endpoints; endpoints != nil && endpoints.SharedInbox != nil && endpoints.SharedInbox.GetID() != "" {
-		inbox = endpoints.SharedInbox.GetID()
+	inbox := follower.Inbox.GetLink()
+	if endpoints := follower.Endpoints; endpoints != nil && endpoints.SharedInbox != nil && endpoints.SharedInbox.GetLink() != "" {
+		inbox = endpoints.SharedInbox.GetLink()
 	}
 	if inbox == "" {
 		return
 	}
 	username := apUsername(follower)
-	if err = a.db.apAddFollower(blogName, follower.GetID().String(), inbox.String(), username); err != nil {
+	if err = a.db.apAddFollower(blogName, follower.GetLink().String(), inbox.String(), username); err != nil {
 		return
 	}
 	// Send accept response to the new follower
@@ -447,7 +449,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
 	// Notification
-	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, follower.GetID().String(), a.apIri(blog)))
+	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, follower.GetLink().String(), a.apIri(blog)))
 }
 
 func (a *goBlog) apSendProfileUpdates() {
