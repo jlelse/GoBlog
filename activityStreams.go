@@ -83,7 +83,7 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	}
 	if p.Updated != "" {
 		if t, err := dateparse.ParseLocal(p.Updated); err == nil {
-			note.Published = t
+			note.Updated = t
 		}
 	}
 	// Reply
