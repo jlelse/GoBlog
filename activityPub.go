@@ -386,7 +386,7 @@ func (db *database) apRemoveInbox(inbox string) error {
 
 func (a *goBlog) apPost(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	c := ap.CreateNew(a.activityPubId(p), a.toAPNote(p))
+	c := ap.CreateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	c.Actor = a.apAPIri(blogConfig)
 	c.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, c)
@@ -394,7 +394,7 @@ func (a *goBlog) apPost(p *post) {
 
 func (a *goBlog) apUpdate(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	u := ap.UpdateNew(a.activityPubId(p), a.toAPNote(p))
+	u := ap.UpdateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	u.Actor = a.apAPIri(blogConfig)
 	u.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, u)
@@ -404,6 +404,7 @@ func (a *goBlog) apDelete(p *post) {
 	blogConfig := a.getBlogFromPost(p)
 	d := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
 	d.Actor = a.apAPIri(blogConfig)
+	d.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, d)
 }
 
