@@ -63,6 +63,11 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 			// Has published date in the past, so add updated date
 			p.Updated = nowString
 		}
+	} else if !new && p.Updated != "" {
+		if updated, err := dateparse.ParseLocal(p.Updated); err == nil && now.After(updated) {
+			// Has updated date in the past, so add new updated date
+			p.Updated = nowString
+		}
 	}
 	// Fix content
 	p.Content = strings.TrimSuffix(strings.TrimPrefix(p.Content, "\n"), "\n")

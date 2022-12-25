@@ -478,4 +478,16 @@ func Test_checkPost(t *testing.T) {
 		assert.NotEqual(t, oldUpdate, p.Updated)
 	})
 
+	t.Run("Updated post with just updated date should get new updated date", func(t *testing.T) {
+		oldUpdate := time.Now().Local().Add(-1 * time.Hour).Format(time.RFC3339)
+		p := &post{
+			Updated: oldUpdate,
+		}
+		app.checkPost(p, false)
+
+		assert.Empty(t, p.Published)
+		assert.NotEmpty(t, p.Updated)
+		assert.NotEqual(t, oldUpdate, p.Updated)
+	})
+
 }
