@@ -73,7 +73,7 @@ func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Rea
 		_, _ = io.WriteString(w, err.Error())
 		return
 	}
-	if err := a.checkPost(p); err != nil {
+	if err := a.checkPost(p, true); err != nil {
 		_, _ = io.WriteString(w, err.Error())
 		return
 	}

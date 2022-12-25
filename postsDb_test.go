@@ -425,3 +425,57 @@ func Test_postDeletesParams(t *testing.T) {
 
 	assert.Equal(t, 0, count)
 }
+
+func Test_checkPost(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+
+	t.Run("New post should get published date", func(t *testing.T) {
+		p := &post{}
+		app.checkPost(p, true)
+
+		assert.NotEmpty(t, p.Published)
+	})
+
+	t.Run("New post with path should get no published date", func(t *testing.T) {
+		p := &post{
+			Path: "/abc",
+		}
+		app.checkPost(p, true)
+
+		assert.Empty(t, p.Published)
+	})
+
+	t.Run("Updated post with past published date should get updated date", func(t *testing.T) {
+		p := &post{
+			Published: time.Now().Local().Add(-1 * time.Hour).Format(time.RFC3339),
+		}
+		app.checkPost(p, false)
+
+		assert.NotEmpty(t, p.Updated)
+	})
+
+	t.Run("Updated post with future published date should get no updated date", func(t *testing.T) {
+		p := &post{
+			Published: time.Now().Local().Add(time.Hour).Format(time.RFC3339),
+		}
+		app.checkPost(p, false)
+
+		assert.Empty(t, p.Updated)
+	})
+
+	t.Run("Updated post with updated date should get new updated date", func(t *testing.T) {
+		oldUpdate := time.Now().Local().Add(-1 * time.Hour).Format(time.RFC3339)
+		p := &post{
+			Published: time.Now().Local().Add(-2 * time.Hour).Format(time.RFC3339),
+			Updated:   oldUpdate,
+		}
+		app.checkPost(p, false)
+
+		assert.NotEmpty(t, p.Updated)
+		assert.NotEqual(t, oldUpdate, p.Updated)
+	})
+
+}

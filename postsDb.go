@@ -14,11 +14,12 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
-func (a *goBlog) checkPost(p *post) (err error) {
+func (a *goBlog) checkPost(p *post, new bool) (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
 	now := time.Now().Local()
+	nowString := now.Format(time.RFC3339)
 	// Maybe add blog
 	if p.Blog == "" {
 		p.Blog = a.cfg.DefaultBlog
@@ -38,11 +39,6 @@ func (a *goBlog) checkPost(p *post) (err error) {
 			return errors.New("section doesn't exist")
 		}
 	}
-	// Maybe add published date
-	if p.Published == "" && p.Section != "" {
-		// Has no published date, but section -> published now
-		p.Published = now.Format(time.RFC3339)
-	}
 	// Fix and check date strings
 	if p.Published != "" {
 		p.Published, err = toLocal(p.Published)
@@ -54,6 +50,18 @@ func (a *goBlog) checkPost(p *post) (err error) {
 		p.Updated, err = toLocal(p.Updated)
 		if err != nil {
 			return err
+		}
+	}
+	// Maybe set published date
+	if new && p.Published == "" && p.Section != "" {
+		// Has no published date, but section -> published now
+		p.Published = nowString
+	}
+	// Maybe set updated date
+	if !new && p.Published != "" {
+		if published, err := dateparse.ParseLocal(p.Published); err == nil && now.After(published) {
+			// Has published date in the past, so add updated date
+			p.Updated = nowString
 		}
 	}
 	// Fix content
@@ -159,7 +167,7 @@ type postCreationOptions struct {
 
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	// Check post
-	if err := a.checkPost(p); err != nil {
+	if err := a.checkPost(p, o.new); err != nil {
 		return err
 	}
 	// Save to db
