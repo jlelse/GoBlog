@@ -240,7 +240,7 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 		visible = false
 	}
 	if inReplyTo := object.InReplyTo; inReplyTo != nil {
-		if replyTarget := inReplyTo.GetLink().String(); visible && replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
+		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
 			// It's a reply
 			original := object.GetLink().String()
 			name := requestActor.Name.First().Value.String()
@@ -252,8 +252,19 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 				website = actorUrl.String()
 			}
 			content := object.Content.First().Value.String()
-			_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
-			return
+			if visible {
+				_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
+				return
+			} else {
+				buf := bufferpool.Get()
+				defer bufferpool.Put(buf)
+				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(original))
+				fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(name), cleanHTMLText(website))
+				buf.WriteString("\n\n")
+				buf.WriteString(cleanHTMLText(content))
+				a.sendNotification(buf.String())
+				return
+			}
 		}
 	}
 	// Might be a private reply or mention etc.
