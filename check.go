@@ -129,7 +129,7 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 func (a *goBlog) allLinks(posts ...*post) (allLinks []*stringPair, err error) {
 	for _, p := range posts {
 		contentBuf := bufferpool.Get()
-		a.postHtmlToWriter(contentBuf, p, true)
+		a.postHtmlToWriter(contentBuf, &postHtmlOptions{p: p, absolute: true})
 		links, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
 		bufferpool.Put(contentBuf)
 		if err != nil {

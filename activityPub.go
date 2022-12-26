@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -34,12 +35,16 @@ func (a *goBlog) initActivityPub() error {
 	}
 	// Add hooks
 	a.pPostHooks = append(a.pPostHooks, func(p *post) {
-		if p.isPublishedSectionPost() {
+		if p.isPublishedSectionPost() && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
+			a.apCheckMentions(p)
+			a.apCheckActivityPubReply(p)
 			a.apPost(p)
 		}
 	})
 	a.pUpdateHooks = append(a.pUpdateHooks, func(p *post) {
-		if p.isPublishedSectionPost() {
+		if p.isPublishedSectionPost() && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
+			a.apCheckMentions(p)
+			a.apCheckActivityPubReply(p)
 			a.apUpdate(p)
 		}
 	})
@@ -47,7 +52,7 @@ func (a *goBlog) initActivityPub() error {
 		a.apDelete(p)
 	})
 	a.pUndeleteHooks = append(a.pUndeleteHooks, func(p *post) {
-		if p.isPublishedSectionPost() {
+		if p.isPublishedSectionPost() && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
 			a.apUndelete(p)
 		}
 	})
@@ -147,6 +152,57 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
 	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+}
+
+const activityPubMentionsParameter = "activitypubmentions"
+
+func (a *goBlog) apCheckMentions(p *post) {
+	contentBuf := bufferpool.Get()
+	a.postHtmlToWriter(contentBuf, &postHtmlOptions{p: p})
+	links, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
+	bufferpool.Put(contentBuf)
+	if err != nil {
+		log.Println("Failed to extract links from post: " + err.Error())
+		return
+	}
+	apc := a.apHttpClients[p.Blog]
+	mentions := []string{}
+	for _, link := range lo.Uniq(links) {
+		act, err := apc.Actor(context.Background(), ap.IRI(link))
+		if err != nil || act == nil || act.Type != ap.PersonType {
+			continue
+		}
+		mentions = append(mentions, link)
+	}
+	if p.Parameters == nil {
+		p.Parameters = map[string][]string{}
+	}
+	p.Parameters[activityPubMentionsParameter] = mentions
+	_ = a.db.replacePostParam(p.Path, activityPubMentionsParameter, mentions)
+}
+
+const activityPubReplyActorParameter = "activitypubreplyactor"
+
+func (a *goBlog) apCheckActivityPubReply(p *post) {
+	replyLink := a.replyLink(p)
+	if replyLink == "" {
+		return
+	}
+	apc := a.apHttpClients[p.Blog]
+	item, err := apc.LoadIRI(ap.IRI(replyLink))
+	if err != nil || item == nil || !ap.IsObject(item) {
+		return
+	}
+	obj, err := ap.ToObject(item)
+	if err != nil || obj == nil || obj.GetLink() == "" || obj.AttributedTo == nil || obj.AttributedTo.GetLink() == "" {
+		return
+	}
+	replyLinkActor := []string{obj.AttributedTo.GetLink().String()}
+	if p.Parameters == nil {
+		p.Parameters = map[string][]string{}
+	}
+	p.Parameters[activityPubReplyActorParameter] = replyLinkActor
+	_ = a.db.replacePostParam(p.Path, activityPubReplyActorParameter, replyLinkActor)
 }
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
@@ -400,7 +456,7 @@ func (a *goBlog) apPost(p *post) {
 	c := ap.CreateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	c.Actor = a.apAPIri(blogConfig)
 	c.Published = time.Now()
-	a.apSendToAllFollowers(p.Blog, c)
+	a.apSendToAllFollowers(p.Blog, c, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
 }
 
 func (a *goBlog) apUpdate(p *post) {
@@ -408,7 +464,7 @@ func (a *goBlog) apUpdate(p *post) {
 	u := ap.UpdateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	u.Actor = a.apAPIri(blogConfig)
 	u.Published = time.Now()
-	a.apSendToAllFollowers(p.Blog, u)
+	a.apSendToAllFollowers(p.Blog, u, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
 }
 
 func (a *goBlog) apDelete(p *post) {
@@ -416,7 +472,7 @@ func (a *goBlog) apDelete(p *post) {
 	d := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
 	d.Actor = a.apAPIri(blogConfig)
 	d.Published = time.Now()
-	a.apSendToAllFollowers(p.Blog, d)
+	a.apSendToAllFollowers(p.Blog, d, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
 }
 
 func (a *goBlog) apUndelete(p *post) {
@@ -470,21 +526,36 @@ func (a *goBlog) apSendProfileUpdates() {
 		update := ap.UpdateNew(a.apNewID(config), person)
 		update.Actor = a.apAPIri(config)
 		update.Published = time.Now()
+		update.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(blog, config))
 		a.apSendToAllFollowers(blog, update)
 	}
 }
 
-func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity) {
+func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity, mentions ...string) {
 	inboxes, err := a.db.apGetAllInboxes(blog)
 	if err != nil {
-		log.Println("Failed to retrieve inboxes:", err.Error())
+		log.Println("Failed to retrieve follower inboxes:", err.Error())
 		return
 	}
-	a.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes)
+	for _, m := range mentions {
+		go func(m string) {
+			if m == "" {
+				return
+			}
+			apc := a.apHttpClients[blog]
+			actor, err := apc.Actor(context.Background(), ap.IRI(m))
+			if err != nil || actor == nil || actor.Inbox == nil || actor.Inbox.GetLink() == "" {
+				return
+			}
+			inbox := actor.Inbox.GetLink().String()
+			a.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inbox)
+		}(m)
+	}
+	a.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes...)
 }
 
-func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes []string) {
-	for _, i := range inboxes {
+func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...string) {
+	for _, i := range lo.Uniq(inboxes) {
 		go func(inbox string) {
 			_ = a.apQueueSendSigned(blogIri, inbox, activity)
 		}(i)

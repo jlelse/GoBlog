@@ -32,17 +32,12 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		// Ignore this post
 		return nil
 	}
-	links := []string{}
 	contentBuf := bufferpool.Get()
-	a.postHtmlToWriter(contentBuf, p, false)
-	contentLinks, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
+	a.postHtmlToWriter(contentBuf, &postHtmlOptions{p: p})
+	links, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
 	bufferpool.Put(contentBuf)
 	if err != nil {
 		return err
-	}
-	links = append(links, contentLinks...)
-	if mpc := a.cfg.Micropub; mpc != nil {
-		links = append(links, p.firstParameter(a.cfg.Micropub.LikeParam), p.firstParameter(a.cfg.Micropub.ReplyParam), p.firstParameter(a.cfg.Micropub.BookmarkParam))
 	}
 	for _, link := range lo.Uniq(links) {
 		if link == "" {

@@ -39,33 +39,41 @@ func (p *post) addParameter(parameter, value string) {
 	p.Parameters[parameter] = append(p.Parameters[parameter], value)
 }
 
-func (a *goBlog) postHtml(p *post, absolute bool) (res string) {
+type postHtmlOptions struct {
+	p           *post
+	absolute    bool
+	activityPub bool
+}
+
+func (a *goBlog) postHtml(o *postHtmlOptions) (res string) {
 	buf := bufferpool.Get()
-	a.postHtmlToWriter(buf, p, absolute)
+	a.postHtmlToWriter(buf, o)
 	res = buf.String()
 	bufferpool.Put(buf)
 	return
 }
 
-func (a *goBlog) postHtmlToWriter(w io.Writer, p *post, absolute bool) {
+func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
 	// Build HTML
 	hb := htmlbuilder.NewHtmlBuilder(w)
 	// Add audio to the top
-	for _, a := range p.Parameters[a.cfg.Micropub.AudioParam] {
+	for _, a := range o.p.Parameters[a.cfg.Micropub.AudioParam] {
 		hb.WriteElementOpen("audio", "controls", "preload", "none")
 		hb.WriteElementOpen("source", "src", a)
 		hb.WriteElementClose("source")
 		hb.WriteElementClose("audio")
 	}
 	// Add IndieWeb context
-	a.renderPostReplyContext(hb, p)
-	a.renderPostLikeContext(hb, p)
+	if !o.activityPub || o.p.firstParameter(activityPubReplyActorParameter) == "" {
+		a.renderPostReplyContext(hb, o.p)
+	}
+	a.renderPostLikeContext(hb, o.p)
 	// Render markdown
 	hb.WriteElementOpen("div", "class", "e-content")
-	_ = a.renderMarkdownToWriter(w, p.Content, absolute)
+	_ = a.renderMarkdownToWriter(w, o.p.Content, o.absolute)
 	hb.WriteElementClose("div")
 	// Add bookmark links to the bottom
-	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
+	for _, l := range o.p.Parameters[a.cfg.Micropub.BookmarkParam] {
 		hb.WriteElementOpen("p")
 		hb.WriteElementOpen("a", "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
 		hb.WriteEscaped(l)
@@ -84,7 +92,7 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 		hb.WriteElementClose("audio")
 	}
 	// Add post HTML
-	a.postHtmlToWriter(hb, p, true)
+	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
 	// Add link to interactions and comments
 	blogConfig := a.getBlogFromPost(p)
 	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
@@ -99,7 +107,7 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 func (a *goBlog) minFeedHtml(w io.Writer, p *post) {
 	hb := htmlbuilder.NewHtmlBuilder(w)
 	// Add post HTML
-	a.postHtmlToWriter(hb, p, true)
+	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
 }
 
 const summaryDivider = "<!--more-->"
@@ -145,7 +153,11 @@ func (a *goBlog) postTranslations(p *post) []*post {
 }
 
 func (p *post) isPublishedSectionPost() bool {
-	return p.Published != "" && p.Section != "" && p.Status == statusPublished && p.Visibility == visibilityPublic
+	return p.Section != "" && p.Status == statusPublished
+}
+
+func (p *post) isPublicPublishedSectionPost() bool {
+	return p.isPublishedSectionPost() && p.Visibility == visibilityPublic
 }
 
 func (a *goBlog) postToMfItem(p *post) *microformatItem {

@@ -20,6 +20,10 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 	}
 	now := time.Now().Local()
 	nowString := now.Format(time.RFC3339)
+	// Add parameters map
+	if p.Parameters == nil {
+		p.Parameters = map[string][]string{}
+	}
 	// Maybe add blog
 	if p.Blog == "" {
 		p.Blog = a.cfg.DefaultBlog

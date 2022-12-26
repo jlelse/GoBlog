@@ -26,7 +26,7 @@ func (tg *configTelegram) enabled() bool {
 
 func (a *goBlog) tgPost(silent bool) func(*post) {
 	return func(p *post) {
-		if tg := a.getBlogFromPost(p).Telegram; tg.enabled() && p.isPublishedSectionPost() {
+		if tg := a.getBlogFromPost(p).Telegram; tg.enabled() && p.isPublicPublishedSectionPost() {
 			tgChat := p.firstParameter("telegramchat")
 			tgMsg := p.firstParameter("telegrammsg")
 			if tgChat != "" && tgMsg != "" {

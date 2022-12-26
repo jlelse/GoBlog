@@ -53,7 +53,7 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	a.renderPostMeta(hb, p, bc, "summary")
 	if typ != photoSummary && a.showFull(p) {
 		// Show full content
-		a.postHtmlToWriter(hb, p, false)
+		a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
 	} else {
 		// Show IndieWeb context
 		a.renderPostReplyContext(hb, p)

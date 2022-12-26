@@ -18,7 +18,7 @@ func (a *goBlog) initIndexNow() {
 	// Add hooks
 	hook := func(p *post) {
 		// Check if post is published
-		if !p.isPublishedSectionPost() {
+		if !p.isPublicPublishedSectionPost() {
 			return
 		}
 		// Send IndexNow request

@@ -38,7 +38,7 @@ func (a *goBlog) wrapUiPlugins(t plugintypes.RenderType, d plugintypes.RenderDat
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {
 	a.renderPostTitle(hb, p)
 	a.renderPostMeta(hb, p, bc, "preview")
-	a.postHtmlToWriter(hb, p, true)
+	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
 	// a.renderPostGPX(hb, p, bc)
 	a.renderPostTax(hb, p, bc)
 }
@@ -931,7 +931,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				// Old content warning
 				a.renderOldContentWarning(hb, p, rd.Blog)
 				// Content
-				a.postHtmlToWriter(hb, p, false)
+				a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
 				// External Videp
 				a.renderPostVideo(hb, p)
 				// GPS Track
@@ -1008,7 +1008,7 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Content
 			if p.Content != "" {
 				// Content
-				a.postHtmlToWriter(hb, p, false)
+				a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
 			}
 			// Author
 			a.renderAuthor(hb)

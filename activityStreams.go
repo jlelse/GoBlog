@@ -44,18 +44,28 @@ func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter, r *htt
 func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Create a Note object
 	note := ap.ObjectNew(ap.NoteType)
-	note.To.Append(ap.PublicNS)
-	note.MediaType = ap.MimeType(contenttype.HTML)
 	note.ID = a.activityPubId(p)
 	note.URL = ap.IRI(a.fullPostURL(p))
 	note.AttributedTo = a.apAPIri(a.getBlogFromPost(p))
+	// Audience
+	switch p.Visibility {
+	case visibilityPublic:
+		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog, a.getBlogFromPost(p)))
+	case visibilityUnlisted:
+		note.To.Append(a.apGetFollowersCollectionId(p.Blog, a.getBlogFromPost(p)))
+		note.CC.Append(ap.PublicNS)
+	}
+	for _, m := range p.Parameters[activityPubMentionsParameter] {
+		note.CC.Append(ap.IRI(m))
+	}
 	// Name and Type
 	if title := p.RenderedTitle; title != "" {
 		note.Type = ap.ArticleType
 		note.Name.Add(ap.DefaultLangRef(title))
 	}
 	// Content
-	note.Content.Add(ap.DefaultLangRef(a.postHtml(p, true)))
+	note.MediaType = ap.MimeType(contenttype.HTML)
+	note.Content.Add(ap.DefaultLangRef(a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true})))
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		var attachments ap.ItemCollection
@@ -74,6 +84,17 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 			apTag.URL = ap.IRI(a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))))
 			note.Tag.Append(apTag)
 		}
+	}
+	// Mentions
+	for _, mention := range p.Parameters[activityPubMentionsParameter] {
+		apMention := ap.MentionNew(ap.IRI(mention))
+		apMention.Href = ap.IRI(mention)
+		note.Tag.Append(apMention)
+	}
+	if replyLinkActor := p.firstParameter(activityPubReplyActorParameter); replyLinkActor != "" {
+		apMention := ap.MentionNew(ap.IRI(replyLinkActor))
+		apMention.Href = ap.IRI(replyLinkActor)
+		note.Tag.Append(apMention)
 	}
 	// Dates
 	if p.Published != "" {

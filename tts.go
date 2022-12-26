@@ -28,7 +28,7 @@ func (a *goBlog) initTTS() {
 	}
 	createOrUpdate := func(p *post) {
 		// Automatically create audio for published section posts only
-		if !p.isPublishedSectionPost() {
+		if !p.isPublicPublishedSectionPost() {
 			return
 		}
 		// Check if there is already a tts audio file
@@ -69,7 +69,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		parts = append(parts, a.renderMdTitle(title))
 	}
 	// Add body split into paragraphs because of 5000 character limit
-	parts = append(parts, strings.Split(htmlText(a.postHtml(p, false)), "\n\n")...)
+	parts = append(parts, strings.Split(htmlText(a.postHtml(&postHtmlOptions{p: p})), "\n\n")...)
 
 	// Create TTS audio for each part
 	partWriters := make([]io.Writer, len(parts))
