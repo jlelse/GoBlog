@@ -20,7 +20,9 @@ const (
 	userNickSetting              = "usernick"
 	userNameSetting              = "username"
 	addReplyTitleSetting         = "addreplytitle"
+	addReplyContextSetting       = "addreplycontext"
 	addLikeTitleSetting          = "addliketitle"
+	addLikeContextSetting        = "addlikecontext"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

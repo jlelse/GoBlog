@@ -24,7 +24,9 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hideShareButton:       bc.hideShareButton,
 			hideTranslateButton:   bc.hideTranslateButton,
 			addReplyTitle:         bc.addReplyTitle,
+			addReplyContext:       bc.addReplyContext,
 			addLikeTitle:          bc.addLikeTitle,
+			addLikeContext:        bc.addLikeContext,
 			userNick:              a.cfg.User.Nick,
 			userName:              a.cfg.User.Name,
 		},
@@ -209,11 +211,27 @@ func (a *goBlog) settingsAddReplyTitle() http.HandlerFunc {
 	})
 }
 
+const settingsAddReplyContextPath = "/replycontext"
+
+func (a *goBlog) settingsAddReplyContext() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(addReplyContextSetting, func(cb *configBlog, b bool) {
+		cb.addReplyContext = b
+	})
+}
+
 const settingsAddLikeTitlePath = "/liketitle"
 
 func (a *goBlog) settingsAddLikeTitle() http.HandlerFunc {
 	return a.booleanBlogSettingHandler(addLikeTitleSetting, func(cb *configBlog, b bool) {
 		cb.addLikeTitle = b
+	})
+}
+
+const settingsAddLikeContextPath = "/likecontext"
+
+func (a *goBlog) settingsAddLikeContext() http.HandlerFunc {
+	return a.booleanBlogSettingHandler(addLikeContextSetting, func(cb *configBlog, b bool) {
+		cb.addLikeContext = b
 	})
 }
 

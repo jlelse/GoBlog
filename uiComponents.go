@@ -53,10 +53,11 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	a.renderPostMeta(hb, p, bc, "summary")
 	if typ != photoSummary && a.showFull(p) {
 		// Show full content
-		hb.WriteElementOpen("div", "class", "e-content")
 		a.postHtmlToWriter(hb, p, false)
-		hb.WriteElementClose("div")
 	} else {
+		// Show IndieWeb context
+		a.renderPostReplyContext(hb, p)
+		a.renderPostLikeContext(hb, p)
 		// Show summary
 		hb.WriteElementOpen("p", "class", "p-summary")
 		hb.WriteEscaped(a.postSummary(p))
@@ -160,9 +161,6 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 		hb.WriteElementClose("time")
 		hb.WriteElementClose("div")
 	}
-	// IndieWeb Meta
-	a.renderPostReplyContext(hb, p, "")
-	a.renderPostLikeContext(hb, p, "")
 	// Geo
 	if geoURIs := a.geoURIs(p); len(geoURIs) != 0 {
 		hb.WriteElementOpen("div")
@@ -233,43 +231,41 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 }
 
 // Reply ("u-in-reply-to")
-func (a *goBlog) renderPostReplyContext(hb *htmlbuilder.HtmlBuilder, p *post, htmlWrapperElement string) {
-	if htmlWrapperElement == "" {
-		htmlWrapperElement = "div"
-	}
-	if replyLink := a.replyLink(p); replyLink != "" {
-		hb.WriteElementOpen(htmlWrapperElement)
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "replyto"))
-		hb.WriteEscaped(": ")
-		hb.WriteElementOpen("a", "class", "u-in-reply-to", "rel", "noopener", "target", "_blank", "href", replyLink)
-		if replyTitle := a.replyTitle(p); replyTitle != "" {
-			hb.WriteEscaped(replyTitle)
-		} else {
-			hb.WriteEscaped(replyLink)
-		}
-		hb.WriteElementClose("a")
-		hb.WriteElementClose(htmlWrapperElement)
-	}
+func (a *goBlog) renderPostReplyContext(hb *htmlbuilder.HtmlBuilder, p *post) {
+	a.renderPostLikeReplyContext(hb, "u-in-reply-to", a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "replyto"), a.replyLink(p), a.replyTitle(p), a.replyContext(p))
 }
 
 // Like ("u-like-of")
-func (a *goBlog) renderPostLikeContext(hb *htmlbuilder.HtmlBuilder, p *post, htmlWrapperElement string) {
-	if htmlWrapperElement == "" {
-		htmlWrapperElement = "div"
+func (a *goBlog) renderPostLikeContext(hb *htmlbuilder.HtmlBuilder, p *post) {
+	a.renderPostLikeReplyContext(hb, "u-like-of", a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "likeof"), a.likeLink(p), a.likeTitle(p), a.likeContext(p))
+}
+
+func (a *goBlog) renderPostLikeReplyContext(hb *htmlbuilder.HtmlBuilder, class, pretext, link, title, content string) {
+	if link == "" {
+		return
 	}
-	if likeLink := a.likeLink(p); likeLink != "" {
-		hb.WriteElementOpen(htmlWrapperElement)
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "likeof"))
-		hb.WriteEscaped(": ")
-		hb.WriteElementOpen("a", "class", "u-like-of", "rel", "noopener", "target", "_blank", "href", likeLink)
-		if likeTitle := a.likeTitle(p); likeTitle != "" {
-			hb.WriteEscaped(likeTitle)
-		} else {
-			hb.WriteEscaped(likeLink)
-		}
-		hb.WriteElementClose("a")
-		hb.WriteElementClose(htmlWrapperElement)
+
+	hb.WriteElementOpen("div", "class", "h-cite "+class)
+
+	hb.WriteElementOpen("p")
+	hb.WriteElementOpen("strong")
+	hb.WriteEscaped(pretext)
+	hb.WriteEscaped(": ")
+	hb.WriteElementOpen("a", "class", "u-url", "rel", "noopener", "target", "_blank", "href", link)
+	hb.WriteEscaped(lo.If(title != "", title).Else(link))
+	hb.WriteElementClose("a")
+	hb.WriteElementClose("strong")
+	hb.WriteElementClose("p")
+
+	if content != "" {
+		hb.WriteElementOpen("blockquote")
+		hb.WriteElementOpen("p", "class", "e-content")
+		hb.WriteEscaped(content)
+		hb.WriteElementClose("p")
+		hb.WriteElementClose("blockquote")
 	}
+
+	hb.WriteElementClose("div")
 }
 
 // warning for old posts
@@ -391,22 +387,12 @@ func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
 }
 
 // head meta tags for a post
-func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post, canonical string) {
+func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post) {
 	if p == nil {
 		return
 	}
-	if canonical != "" {
-		hb.WriteElementOpen("meta", "property", "og:url", "content", canonical)
-		hb.WriteElementOpen("meta", "property", "twitter:url", "content", canonical)
-	}
-	if p.RenderedTitle != "" {
-		hb.WriteElementOpen("meta", "property", "og:title", "content", p.RenderedTitle)
-		hb.WriteElementOpen("meta", "property", "twitter:title", "content", p.RenderedTitle)
-	}
 	if summary := a.postSummary(p); summary != "" {
 		hb.WriteElementOpen("meta", "name", "description", "content", summary)
-		hb.WriteElementOpen("meta", "property", "og:description", "content", summary)
-		hb.WriteElementOpen("meta", "property", "twitter:description", "content", summary)
 	}
 	if published := toLocalTime(p.Published); !published.IsZero() {
 		hb.WriteElementOpen("meta", "itemprop", "datePublished", "content", published.Format(time.RFC3339))
@@ -416,8 +402,6 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post, canoni
 	}
 	for _, img := range a.photoLinks(p) {
 		hb.WriteElementOpen("meta", "itemprop", "image", "content", img)
-		hb.WriteElementOpen("meta", "property", "og:image", "content", img)
-		hb.WriteElementOpen("meta", "property", "twitter:image", "content", img)
 	}
 }
 

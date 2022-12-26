@@ -38,11 +38,7 @@ func (a *goBlog) wrapUiPlugins(t plugintypes.RenderType, d plugintypes.RenderDat
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {
 	a.renderPostTitle(hb, p)
 	a.renderPostMeta(hb, p, bc, "preview")
-	if p.Content != "" {
-		hb.WriteElementOpen("div")
-		a.postHtmlToWriter(hb, p, true)
-		hb.WriteElementClose("div")
-	}
+	a.postHtmlToWriter(hb, p, true)
 	// a.renderPostGPX(hb, p, bc)
 	a.renderPostTax(hb, p, bc)
 }
@@ -893,7 +889,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 		func(hb *htmlbuilder.HtmlBuilder) {
 			a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
 			hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
-			a.renderPostHeadMeta(hb, p, rd.Canonical)
+			a.renderPostHeadMeta(hb, p)
 			if su := a.shortPostURL(p); su != "" {
 				hb.WriteElementOpen("link", "rel", "shortlink", "href", su)
 			}
@@ -935,12 +931,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				// Old content warning
 				a.renderOldContentWarning(hb, p, rd.Blog)
 				// Content
-				if p.Content != "" {
-					// Content
-					hb.WriteElementOpen("div", "class", "e-content")
-					a.postHtmlToWriter(hb, p, false)
-					hb.WriteElementClose("div")
-				}
+				a.postHtmlToWriter(hb, p, false)
 				// External Videp
 				a.renderPostVideo(hb, p)
 				// GPS Track
@@ -1006,7 +997,7 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 		hb, rd,
 		func(hb *htmlbuilder.HtmlBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
-			a.renderPostHeadMeta(hb, p, rd.Canonical)
+			a.renderPostHeadMeta(hb, p)
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")
@@ -1017,9 +1008,7 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Content
 			if p.Content != "" {
 				// Content
-				hb.WriteElementOpen("div", "class", "e-content")
 				a.postHtmlToWriter(hb, p, false)
-				hb.WriteElementClose("div")
 			}
 			// Author
 			a.renderAuthor(hb)
@@ -1537,7 +1526,9 @@ type settingsRenderData struct {
 	hideShareButton       bool
 	hideTranslateButton   bool
 	addReplyTitle         bool
+	addReplyContext       bool
 	addLikeTitle          bool
+	addLikeContext        bool
 	userNick              string
 	userName              string
 }
@@ -1593,12 +1584,26 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				addReplyTitleSetting,
 				srd.addReplyTitle,
 			)
+			// Add reply context
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsAddReplyContextPath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addreplycontextdesc"),
+				addReplyContextSetting,
+				srd.addReplyContext,
+			)
 			// Add like title
 			a.renderBooleanSetting(hb, rd,
 				rd.Blog.getRelativePath(settingsPath+settingsAddLikeTitlePath),
 				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addliketitledesc"),
 				addLikeTitleSetting,
 				srd.addLikeTitle,
+			)
+			// Add like context
+			a.renderBooleanSetting(hb, rd,
+				rd.Blog.getRelativePath(settingsPath+settingsAddLikeContextPath),
+				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addlikecontextdesc"),
+				addLikeContextSetting,
+				srd.addLikeContext,
 			)
 
 			// User settings

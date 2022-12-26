@@ -632,9 +632,11 @@ func (a *goBlog) micropubUpdateDelete(p *post, del any) {
 			case "in-reply-to":
 				delete(p.Parameters, a.cfg.Micropub.ReplyParam)
 				delete(p.Parameters, a.cfg.Micropub.ReplyTitleParam)
+				delete(p.Parameters, a.cfg.Micropub.ReplyContextParam)
 			case "like-of":
 				delete(p.Parameters, a.cfg.Micropub.LikeParam)
 				delete(p.Parameters, a.cfg.Micropub.LikeTitleParam)
+				delete(p.Parameters, a.cfg.Micropub.LikeContextParam)
 			case "bookmark-of":
 				delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
 			case "audio":

@@ -113,12 +113,6 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 		return a.db.deleteWebmention(m)
 	}
-	if cr := []rune(m.Content); len(cr) > 500 {
-		m.Content = string(cr[0:497]) + "…"
-	}
-	if tr := []rune(m.Title); len(tr) > 60 {
-		m.Title = string(tr[0:57]) + "…"
-	}
 	newStatus := webmentionStatusVerified
 	// Update or insert webmention
 	if a.db.webmentionExists(m) {

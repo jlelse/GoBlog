@@ -119,8 +119,10 @@ micropub:
   categoryParam: tags
   replyParam: replylink
   replyTitleParam: replytitle
+  replyContextParam: replycontext
   likeParam: likelink
   likeTitleParam: liketitle
+  likeContextParam: likecontext
   bookmarkParam: link
   audioParam: audio
   photoParam: images

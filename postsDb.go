@@ -98,21 +98,10 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 		}
 		p.Parameters[pk] = pvs
 	}
-	// Automatically add reply title
-	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" && p.firstParameter(a.cfg.Micropub.ReplyTitleParam) == "" &&
-		a.getBlogFromPost(p).addReplyTitle {
-		// Is reply, but has no reply title
-		if mf, err := a.parseMicroformats(replyLink, true); err == nil && mf.Title != "" {
-			p.addParameter(a.cfg.Micropub.ReplyTitleParam, mf.Title)
-		}
-	}
-	// Automatically add like title
-	if likeLink := p.firstParameter(a.cfg.Micropub.LikeParam); likeLink != "" && p.firstParameter(a.cfg.Micropub.LikeTitleParam) == "" &&
-		a.getBlogFromPost(p).addLikeTitle {
-		// Is like, but has no like title
-		if mf, err := a.parseMicroformats(likeLink, true); err == nil && mf.Title != "" {
-			p.addParameter(a.cfg.Micropub.LikeTitleParam, mf.Title)
-		}
+	// Add context for replies and likes
+	if new {
+		a.addReplyTitleAndContext(p)
+		a.addLikeTitleAndContext(p)
 	}
 	// Check path
 	if p.Path != "/" {

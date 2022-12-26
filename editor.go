@@ -229,11 +229,13 @@ func (a *goBlog) editorPostDesc(bc *configBlog) string {
 		a.cfg.Micropub.BookmarkParam,
 		a.cfg.Micropub.LikeParam,
 		a.cfg.Micropub.LikeTitleParam,
+		a.cfg.Micropub.LikeContextParam,
 		a.cfg.Micropub.LocationParam,
 		a.cfg.Micropub.PhotoParam,
 		a.cfg.Micropub.PhotoDescriptionParam,
 		a.cfg.Micropub.ReplyParam,
 		a.cfg.Micropub.ReplyTitleParam,
+		a.cfg.Micropub.ReplyContextParam,
 		gpxParameter,
 	} {
 		if param == "" {

@@ -57,8 +57,13 @@ func (a *goBlog) postHtmlToWriter(w io.Writer, p *post, absolute bool) {
 		hb.WriteElementClose("source")
 		hb.WriteElementClose("audio")
 	}
+	// Add IndieWeb context
+	a.renderPostReplyContext(hb, p)
+	a.renderPostLikeContext(hb, p)
 	// Render markdown
+	hb.WriteElementOpen("div", "class", "e-content")
 	_ = a.renderMarkdownToWriter(w, p.Content, absolute)
+	hb.WriteElementClose("div")
 	// Add bookmark links to the bottom
 	for _, l := range p.Parameters[a.cfg.Micropub.BookmarkParam] {
 		hb.WriteElementOpen("p")
@@ -78,9 +83,6 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 		hb.WriteElementClose("source")
 		hb.WriteElementClose("audio")
 	}
-	// Add IndieWeb context
-	a.renderPostReplyContext(hb, p, "p")
-	a.renderPostLikeContext(hb, p, "p")
 	// Add post HTML
 	a.postHtmlToWriter(hb, p, true)
 	// Add link to interactions and comments
@@ -96,9 +98,6 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 
 func (a *goBlog) minFeedHtml(w io.Writer, p *post) {
 	hb := htmlbuilder.NewHtmlBuilder(w)
-	// Add IndieWeb context
-	a.renderPostReplyContext(hb, p, "p")
-	a.renderPostLikeContext(hb, p, "p")
 	// Add post HTML
 	a.postHtmlToWriter(hb, p, true)
 }
@@ -219,12 +218,20 @@ func (a *goBlog) replyTitle(p *post) string {
 	return p.firstParameter(a.cfg.Micropub.ReplyTitleParam)
 }
 
+func (a *goBlog) replyContext(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.ReplyContextParam)
+}
+
 func (a *goBlog) likeLink(p *post) string {
 	return p.firstParameter(a.cfg.Micropub.LikeParam)
 }
 
 func (a *goBlog) likeTitle(p *post) string {
 	return p.firstParameter(a.cfg.Micropub.LikeTitleParam)
+}
+
+func (a *goBlog) likeContext(p *post) string {
+	return p.firstParameter(a.cfg.Micropub.LikeContextParam)
 }
 
 func (a *goBlog) photoLinks(p *post) []string {
@@ -268,6 +275,42 @@ func (p *post) getChannel() string {
 		return p.Blog
 	}
 	return p.Blog + "/" + p.Section
+}
+
+func (a *goBlog) addReplyTitleAndContext(p *post) {
+	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" {
+		addTitle := p.firstParameter(a.cfg.Micropub.ReplyTitleParam) == "" && a.getBlogFromPost(p).addReplyTitle
+		addContext := p.firstParameter(a.cfg.Micropub.ReplyContextParam) == "" && a.getBlogFromPost(p).addReplyContext
+		if !addTitle && !addContext {
+			return
+		}
+		if mf, err := a.parseMicroformats(replyLink, true); err == nil {
+			if addTitle && mf.Title != "" {
+				p.addParameter(a.cfg.Micropub.ReplyTitleParam, mf.Title)
+			}
+			if addContext && mf.Content != "" {
+				p.addParameter(a.cfg.Micropub.ReplyContextParam, mf.Content)
+			}
+		}
+	}
+}
+
+func (a *goBlog) addLikeTitleAndContext(p *post) {
+	if likeLink := p.firstParameter(a.cfg.Micropub.LikeParam); likeLink != "" {
+		addTitle := p.firstParameter(a.cfg.Micropub.LikeTitleParam) == "" && a.getBlogFromPost(p).addLikeTitle
+		addContext := p.firstParameter(a.cfg.Micropub.LikeContextParam) == "" && a.getBlogFromPost(p).addLikeContext
+		if !addTitle && !addContext {
+			return
+		}
+		if mf, err := a.parseMicroformats(likeLink, true); err == nil {
+			if addTitle && mf.Title != "" {
+				p.addParameter(a.cfg.Micropub.LikeTitleParam, mf.Title)
+			}
+			if addContext && mf.Content != "" {
+				p.addParameter(a.cfg.Micropub.LikeContextParam, mf.Content)
+			}
+		}
+	}
 }
 
 // Public because of rendering

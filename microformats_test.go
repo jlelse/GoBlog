@@ -29,7 +29,7 @@ func Test_parseMicroformats(t *testing.T) {
 	m, err := app.parseMicroformats("https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms", false)
 	require.NoError(t, err)
 
-	assert.Equal(t, "Micropub, Crossposting to Twitter, and Enabling “Tweetstorms”", m.Title)
+	assert.Equal(t, "Micropub, Crossposting to Twitter, and Enabling “Tweetsto…", m.Title)
 	assert.NotEmpty(t, m.Content)
 	assert.Equal(t, "Test Blogger", m.Author)
 	assert.Equal(t, "https://example.net/articles/micropub-crossposting-to-twitter-and-enabling-tweetstorms", m.Url)

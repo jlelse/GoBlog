@@ -85,6 +85,13 @@ func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, er
 	if m.Title != "" && strings.HasPrefix(m.Content, m.Title) {
 		m.Title = ""
 	}
+	// Shorten content and title if too long
+	if cr := []rune(m.Content); len(cr) > 500 {
+		m.Content = string(cr[0:497]) + "…"
+	}
+	if tr := []rune(m.Title); len(tr) > 60 {
+		m.Title = string(tr[0:57]) + "…"
+	}
 	return m, nil
 }
 

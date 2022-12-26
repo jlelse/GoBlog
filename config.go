@@ -101,7 +101,9 @@ type configBlog struct {
 	hideShareButton       bool
 	hideTranslateButton   bool
 	addReplyTitle         bool
+	addReplyContext       bool
 	addLikeTitle          bool
+	addLikeContext        bool
 	// Editor state WebSockets
 	esws sync.Map
 	esm  sync.Mutex
@@ -232,8 +234,10 @@ type configMicropub struct {
 	CategoryParam         string               `mapstructure:"categoryParam"`
 	ReplyParam            string               `mapstructure:"replyParam"`
 	ReplyTitleParam       string               `mapstructure:"replyTitleParam"`
+	ReplyContextParam     string               `mapstructure:"replyContextParam"`
 	LikeParam             string               `mapstructure:"likeParam"`
 	LikeTitleParam        string               `mapstructure:"likeTitleParam"`
+	LikeContextParam      string               `mapstructure:"likeContextParam"`
 	BookmarkParam         string               `mapstructure:"bookmarkParam"`
 	AudioParam            string               `mapstructure:"audioParam"`
 	PhotoParam            string               `mapstructure:"photoParam"`
@@ -520,25 +524,23 @@ func (a *goBlog) initConfig(logging bool) error {
 			br.Enabled = false
 		}
 		// Load other settings from database
-		bc.hideOldContentWarning, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideOldContentWarningSetting), false)
-		if err != nil {
-			return err
+		configs := []*bool{
+			&bc.hideOldContentWarning, &bc.hideShareButton, &bc.hideTranslateButton,
+			&bc.addReplyTitle, &bc.addReplyContext, &bc.addLikeTitle, &bc.addLikeContext,
 		}
-		bc.hideShareButton, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideShareButtonSetting), false)
-		if err != nil {
-			return err
+		settings := []string{
+			hideOldContentWarningSetting, hideShareButtonSetting, hideTranslateButtonSetting,
+			addReplyTitleSetting, addReplyContextSetting, addLikeTitleSetting, addLikeContextSetting,
 		}
-		bc.hideTranslateButton, err = a.getBooleanSettingValue(settingNameWithBlog(blog, hideTranslateButtonSetting), false)
-		if err != nil {
-			return err
+		defaults := []bool{
+			false, false, false,
+			false, false, false, false,
 		}
-		bc.addReplyTitle, err = a.getBooleanSettingValue(settingNameWithBlog(blog, addReplyTitleSetting), false)
-		if err != nil {
-			return err
-		}
-		bc.addLikeTitle, err = a.getBooleanSettingValue(settingNameWithBlog(blog, addLikeTitleSetting), false)
-		if err != nil {
-			return err
+		for i := range configs {
+			*configs[i], err = a.getBooleanSettingValue(settingNameWithBlog(blog, settings[i]), defaults[i])
+			if err != nil {
+				return err
+			}
 		}
 	}
 	// Log success
@@ -571,8 +573,10 @@ func createDefaultConfig() *config {
 			CategoryParam:         "tags",
 			ReplyParam:            "replylink",
 			ReplyTitleParam:       "replytitle",
+			ReplyContextParam:     "replycontext",
 			LikeParam:             "likelink",
 			LikeTitleParam:        "liketitle",
+			LikeContextParam:      "likecontext",
 			BookmarkParam:         "link",
 			AudioParam:            "audio",
 			PhotoParam:            "images",
