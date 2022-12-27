@@ -23,6 +23,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 			ct.NewMediaType(contenttype.HTML),
 			ct.NewMediaType(contenttype.AS),
 			ct.NewMediaType(contenttype.LDJSON),
+			ct.NewMediaType(contenttype.LDJSON + "; profile=\"https://www.w3.org/ns/activitystreams\""),
 		}
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
