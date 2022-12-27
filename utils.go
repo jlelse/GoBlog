@@ -403,3 +403,10 @@ func stringToInt(s string) int {
 func loStringNotEmpty(s string, _ int) bool {
 	return s != ""
 }
+
+func truncateStringWithEllipsis(s string, l int) string {
+	if tr := []rune(s); len(tr) > l && l > 3 {
+		return string(tr[0:l-3]) + "…"
+	}
+	return s
+}

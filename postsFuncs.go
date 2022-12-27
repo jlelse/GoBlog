@@ -128,6 +128,10 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	return
 }
 
+func (a *goBlog) fallbackTitle(p *post) string {
+	return truncateStringWithEllipsis(a.postSummary(p), 30)
+}
+
 func (a *goBlog) postTranslations(p *post) []*post {
 	translationkey := p.firstParameter("translationkey")
 	if translationkey == "" {

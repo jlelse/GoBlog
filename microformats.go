@@ -86,12 +86,8 @@ func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, er
 		m.Title = ""
 	}
 	// Shorten content and title if too long
-	if cr := []rune(m.Content); len(cr) > 500 {
-		m.Content = string(cr[0:497]) + "…"
-	}
-	if tr := []rune(m.Title); len(tr) > 60 {
-		m.Title = string(tr[0:57]) + "…"
-	}
+	m.Content = truncateStringWithEllipsis(m.Content, 500)
+	m.Title = truncateStringWithEllipsis(m.Title, 60)
 	return m, nil
 }
 

@@ -887,7 +887,11 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HtmlBuilder) {
-			a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
+			if p.RenderedTitle != "" {
+				a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
+			} else {
+				a.renderTitleTag(hb, rd.Blog, a.fallbackTitle(p))
+			}
 			hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
 			a.renderPostHeadMeta(hb, p)
 			if su := a.shortPostURL(p); su != "" {
