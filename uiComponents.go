@@ -375,7 +375,7 @@ func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
 	}
 	hb.WriteElementOpen("div", "class", "p-author h-card hide")
 	if a.hasProfileImage() {
-		hb.WriteElementOpen("data", "class", "u-photo", "value", a.profileImagePath(profileImageFormatJPEG, 0, 0))
+		hb.WriteElementOpen("data", "class", "u-photo", "value", a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 0, 0)))
 		hb.WriteElementClose("data")
 	}
 	if user.Name != "" {
