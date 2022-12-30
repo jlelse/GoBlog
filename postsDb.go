@@ -180,7 +180,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	}
 	// Trigger hooks
 	if p.Status == statusPublished && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
-		if o.new || (o.oldStatus != statusPublished && o.oldVisibility != visibilityPublic && o.oldVisibility != visibilityUnlisted) {
+		if o.new || o.oldStatus == statusScheduled || (o.oldStatus != statusPublished && o.oldVisibility != visibilityPublic && o.oldVisibility != visibilityUnlisted) {
 			defer a.postPostHooks(p)
 		} else {
 			defer a.postUpdateHooks(p)

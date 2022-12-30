@@ -10,6 +10,8 @@ import (
 
 func Test_postsScheduler(t *testing.T) {
 
+	updateHook, postHook := 0, 0
+
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
@@ -21,6 +23,12 @@ func Test_postsScheduler(t *testing.T) {
 			Lang: "en",
 		},
 	}
+	app.pPostHooks = append(app.pPostHooks, func(p *post) {
+		postHook++
+	})
+	app.pUpdateHooks = append(app.pUpdateHooks, func(p *post) {
+		updateHook++
+	})
 
 	_ = app.initConfig(false)
 	_ = app.initCache()
@@ -40,10 +48,16 @@ func Test_postsScheduler(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 
+	assert.Equal(t, 0, postHook)
+	assert.Equal(t, 0, updateHook)
+
 	app.checkScheduledPosts()
 
 	count, err = app.db.countPosts(&postsRequestConfig{status: []postStatus{statusScheduled}})
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
+
+	assert.Equal(t, 1, postHook)
+	assert.Equal(t, 0, updateHook)
 
 }
