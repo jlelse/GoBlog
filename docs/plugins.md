@@ -54,7 +54,9 @@ You can add webring links like this:
 ```yaml
 config:
   default: # Name of the blog
-    - title: Webring # Title to show for the webring
+    - title: Webring # Title to show for the webring (required)
+      # At least one of link, prev or next is required
+      link: https://example.org/ # Link to the webring
       prev: https://example.com/ # Link to previous webring site
       next: https://example.net/ # Link to next webring site
 ```

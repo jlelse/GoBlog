@@ -46,17 +46,26 @@ func (p *plugin) Render(hb *htmlbuilder.HtmlBuilder, t plugintypes.RenderType, d
 				for _, webringAny := range blogWebrings {
 					if webring, ok := webringAny.(map[string]any); ok {
 						title, titleOk := unwrapToString(webring["title"])
+						link, linkOk := unwrapToString(webring["link"])
 						prev, prevOk := unwrapToString(webring["prev"])
 						next, nextOk := unwrapToString(webring["next"])
-						if titleOk && (prevOk || nextOk) {
+						if titleOk && (linkOk || prevOk || nextOk) {
 							hb.WriteElementOpen("p")
 							if prevOk {
 								hb.WriteElementOpen("a", "href", prev)
 								hb.WriteEscaped("←")
 								hb.WriteElementClose("a")
+								hb.WriteEscaped(" ")
 							}
-							hb.WriteEscaped(" " + title + " ")
+							if linkOk {
+								hb.WriteElementOpen("a", "href", link)
+							}
+							hb.WriteEscaped(title)
+							if linkOk {
+								hb.WriteElementClose("a")
+							}
 							if nextOk {
+								hb.WriteEscaped(" ")
 								hb.WriteElementOpen("a", "href", next)
 								hb.WriteEscaped("→")
 								hb.WriteElementClose("a")
