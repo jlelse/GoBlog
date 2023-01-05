@@ -19,7 +19,6 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.3
-	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead
 	github.com/emersion/go-smtp v0.16.0
 	github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f
 	github.com/go-ap/client v0.0.0-20221211133508-e3087682099e
@@ -59,6 +58,7 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.14.3
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
+	github.com/xhit/go-simple-mail/v2 v2.13.0
 	github.com/yuin/goldmark v1.5.3
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
@@ -83,9 +83,11 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea // indirect
+	github.com/go-test/deep v1.1.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -119,6 +121,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
+	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect

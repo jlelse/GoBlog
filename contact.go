@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/emersion/go-sasl"
-	"github.com/emersion/go-smtp"
+	mail "github.com/xhit/go-simple-mail/v2"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
@@ -76,27 +74,35 @@ func (*goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
 	if cc == nil || cc.SMTPHost == "" || cc.EmailFrom == "" || cc.EmailTo == "" {
 		return fmt.Errorf("email not send as config is missing")
 	}
-	// Build email
-	email := bufferpool.Get()
-	defer bufferpool.Put(email)
-	_, _ = email.WriteString("Content-Type: text/plain; charset=UTF-8\n")
-	_, _ = fmt.Fprintf(email, "To: %s\n", cc.EmailTo)
-	if replyTo != "" {
-		_, _ = fmt.Fprintf(email, "Reply-To: %s\n", replyTo)
-	}
-	_, _ = fmt.Fprintf(email, "Date: %s\n", time.Now().UTC().Format(time.RFC1123Z))
-	_, _ = fmt.Fprintf(email, "From: %s\n", cc.EmailFrom)
-	subject := cc.EmailSubject
-	if subject == "" {
-		subject = "New contact message"
-	}
-	_, _ = fmt.Fprintf(email, "Subject: %s\n\n", subject)
-	_, _ = fmt.Fprintf(email, "%s\n", body)
-	// Send email using SMTP
-	auth := sasl.NewPlainClient("", cc.SMTPUser, cc.SMTPPassword)
+	// Connect to SMTP
+	smtpServer := mail.NewSMTPClient()
+	smtpServer.Host = cc.SMTPHost
 	port := cc.SMTPPort
 	if port == 0 {
 		port = 587
 	}
-	return smtp.SendMail(cc.SMTPHost+":"+strconv.Itoa(port), auth, cc.EmailFrom, []string{cc.EmailTo}, email)
+	smtpServer.Port = port
+	smtpServer.Username = cc.SMTPUser
+	smtpServer.Password = cc.SMTPPassword
+	smtpServer.KeepAlive = false
+	smtpClient, err := smtpServer.Connect()
+	if err != nil {
+		return err
+	}
+	// Build email
+	msg := mail.NewMSG()
+	msg.AddTo(cc.EmailTo)
+	msg.SetFrom(cc.EmailFrom)
+	if replyTo != "" {
+		msg.SetReplyTo(replyTo)
+	}
+	msg.SetDate(time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+	subject := cc.EmailSubject
+	if subject == "" {
+		subject = "New contact message"
+	}
+	msg.SetSubject(subject)
+	msg.SetBody(mail.TextPlain, body)
+	// Send mail
+	return msg.Send(smtpClient)
 }

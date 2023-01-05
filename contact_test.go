@@ -15,8 +15,6 @@ import (
 )
 
 func Test_contact(t *testing.T) {
-	t.SkipNow()
-
 	// Start the SMTP server
 	port, rd, cancel, err := mocksmtp.StartMockSMTPServer()
 	require.NoError(t, err)
