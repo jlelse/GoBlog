@@ -37,6 +37,9 @@ func (a *goBlog) sendNotification(text string) {
 		if _, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false); err != nil {
 			log.Println("Failed to send notification to Telegram:", err.Error())
 		}
+		if _, err := a.sendMatrix(cfg.Matrix, n.Text); err != nil {
+			log.Println("Failed to send notification to Matrix:", err.Error())
+		}
 	}
 }
 

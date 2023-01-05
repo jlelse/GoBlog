@@ -142,6 +142,13 @@ notifications:
     enabled: true # Enable it
     chatId: 123456 # Telegram chat ID (usually the user id on Telegram)
     botToken: BOT-TOKEN # Telegram bot token
+  matrix: # Receive notifications via Matrix
+    enabled: true # Enable it
+    homeserver: https://matrix.org # The bot's homeserver
+    username: username # The bot's username
+    password: pass123 # The bot's password
+    room: "#myroom:matrix.org" # The Matrix chat room for the notifications
+    deviceid: TestBlogNotifications # A unique device ID (to not clutter your login sessions) (optional)
 
 # Redirects
 pathRedirects:

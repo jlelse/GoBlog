@@ -11,6 +11,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
+	"maunium.net/go/mautrix"
 )
 
 type config struct {
@@ -278,6 +279,7 @@ type configActivityPub struct {
 type configNotifications struct {
 	Ntfy     *configNtfy     `mapstructure:"ntfy"`
 	Telegram *configTelegram `mapstructure:"telegram"`
+	Matrix   *configMatrix   `mapstructure:"matrix"`
 }
 
 type configNtfy struct {
@@ -294,6 +296,18 @@ type configTelegram struct {
 	ChatID          string `mapstructure:"chatId"`
 	BotToken        string `mapstructure:"botToken"`
 	InstantViewHash string `mapstructure:"instantViewHash"`
+}
+
+type configMatrix struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	HomeServer string `mapstructure:"homeserver"`
+	Username   string `mapstructure:"username"`
+	Password   string `mapstructure:"password"`
+	Room       string `mapstructure:"room"`
+	DeviceId   string `mapstructure:"deviceid"`
+	client     *mautrix.Client
+	err        error
+	clientInit sync.Once
 }
 
 type configPrivateMode struct {
