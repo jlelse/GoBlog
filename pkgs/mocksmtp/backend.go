@@ -21,15 +21,7 @@ type backend struct {
 
 var _ smtp.Backend = &backend{}
 
-func (b *backend) Login(_ *smtp.ConnectionState, username, password string) (smtp.Session, error) {
-	b.values.Usernames = append(b.values.Usernames, username)
-	b.values.Passwords = append(b.values.Passwords, password)
-	return &session{
-		values: b.values,
-	}, nil
-}
-
-func (b *backend) AnonymousLogin(_ *smtp.ConnectionState) (smtp.Session, error) {
+func (b *backend) NewSession(_ *smtp.Conn) (smtp.Session, error) {
 	return &session{
 		values: b.values,
 	}, nil
@@ -41,7 +33,13 @@ type session struct {
 
 var _ smtp.Session = &session{}
 
-func (s *session) Mail(from string, _ smtp.MailOptions) error {
+func (s *session) AuthPlain(username, password string) error {
+	s.values.Usernames = append(s.values.Usernames, username)
+	s.values.Passwords = append(s.values.Passwords, password)
+	return nil
+}
+
+func (s *session) Mail(from string, _ *smtp.MailOptions) error {
 	s.values.Froms = append(s.values.Froms, from)
 	return nil
 }

@@ -57,6 +57,8 @@ func Test_postsScheduler(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 
+	time.Sleep(time.Second)
+
 	assert.Equal(t, 1, postHook)
 	assert.Equal(t, 0, updateHook)
 
