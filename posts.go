@@ -52,6 +52,16 @@ const (
 	visibilityPrivate  postVisibility = "private"
 )
 
+func validPostStatus(s postStatus) bool {
+	return s == statusPublished || s == statusPublishedDeleted ||
+		s == statusDraft || s == statusDraftDeleted ||
+		s == statusScheduled || s == statusScheduledDeleted
+}
+
+func validPostVisibility(v postVisibility) bool {
+	return v == visibilityPublic || v == visibilityUnlisted || v == visibilityPrivate
+}
+
 func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	p, err := a.getPost(r.URL.Path)
 	if errors.Is(err, errPostNotFound) {

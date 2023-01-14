@@ -88,10 +88,14 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 				p.Status = statusScheduled
 			}
 		}
+	} else if !validPostStatus(p.Status) {
+		return errors.New("invalid post status")
 	}
 	// Check visibility
 	if p.Visibility == visibilityNil {
 		p.Visibility = visibilityPublic
+	} else if !validPostVisibility(p.Visibility) {
+		return errors.New("invalid post visibility")
 	}
 	// Cleanup params
 	for pk, pvs := range p.Parameters {

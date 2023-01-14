@@ -490,4 +490,22 @@ func Test_checkPost(t *testing.T) {
 		assert.NotEqual(t, oldUpdate, p.Updated)
 	})
 
+	t.Run("Invalid status should throw error", func(t *testing.T) {
+		p := &post{
+			Status: "unlisted",
+		}
+		err := app.checkPost(p, true)
+
+		assert.ErrorContains(t, err, "invalid post status")
+	})
+
+	t.Run("Invalid visibility should throw error", func(t *testing.T) {
+		p := &post{
+			Visibility: "published",
+		}
+		err := app.checkPost(p, true)
+
+		assert.ErrorContains(t, err, "invalid post visibility")
+	})
+
 }
