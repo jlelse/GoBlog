@@ -52,8 +52,8 @@ blogs:
         items:
           - title: Home # Title
             link: / # Site-relative or absolute links
-          - title: Notes
-            link: /notes
+          - title: Posts
+            link: /posts
 ```
 
 **example-nginx.conf**
