@@ -142,7 +142,9 @@ func Test_configHttps(t *testing.T) {
 
 func Test_configDefaults(t *testing.T) {
 	t.Run("Pagination", func(t *testing.T) {
-		app := &goBlog{}
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
 		err := app.initConfig(false)
 		require.NoError(t, err)
 		if assert.Len(t, app.cfg.Blogs, 1) {
