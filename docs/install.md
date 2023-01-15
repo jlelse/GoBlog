@@ -7,7 +7,6 @@ Create your config file (`./config/config.yml`) with inspiration from `example-c
 Then you can use Docker Compose to run GoBlog. Here's an example `docker-compose.yml` file:
 
 ```yaml
-version: "3"
 services:
     goblog:
         container_name: goblog
@@ -21,7 +20,7 @@ services:
             - TZ=Europe/Berlin # You timezone
 ```
 
-If you don't want to use a reverse proxy (like Caddy) you can also publish the ports directly from the GoBlog container. Remember to enable public https in the config, so GoBlog gets Let's Encrypt certificates.
+If you don't want to use a reverse proxy (like Caddy or nginx) you can also publish the ports directly from the GoBlog container. Remember to enable public https in the config, so GoBlog gets Let's Encrypt certificates.
 
 ```yaml
 goblog:
