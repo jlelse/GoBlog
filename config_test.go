@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createDefaultTestConfig(t *testing.T) *config {
@@ -137,4 +138,17 @@ func Test_configHttps(t *testing.T) {
 		assert.True(t, app.useSecureCookies())
 	})
 
+}
+
+func Test_configDefaults(t *testing.T) {
+	t.Run("Pagination", func(t *testing.T) {
+		app := &goBlog{}
+		err := app.initConfig(false)
+		require.NoError(t, err)
+		if assert.Len(t, app.cfg.Blogs, 1) {
+			for _, bc := range app.cfg.Blogs {
+				assert.Equal(t, 10, bc.Pagination)
+			}
+		}
+	})
 }

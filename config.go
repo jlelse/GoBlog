@@ -386,7 +386,6 @@ func (a *goBlog) initConfig(logging bool) error {
 	if err := a.initDatabase(logging); err != nil {
 		return err
 	}
-	// Check config
 	// Parse addresses and hostnames
 	if a.cfg.Server.PublicAddress == "" {
 		return errors.New("no public address configured")
@@ -505,6 +504,10 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	// Check config for each blog
 	for blog, bc := range a.cfg.Blogs {
+		// Check pagination
+		if bc.Pagination == 0 {
+			bc.Pagination = 10
+		}
 		// Check sections and add section if none exists
 		if len(bc.Sections) == 0 {
 			bc.Sections = createDefaultSections()
