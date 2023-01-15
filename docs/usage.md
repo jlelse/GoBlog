@@ -43,14 +43,14 @@ There's also the possibility to configure GoBlog to use Google Cloud's Text-to-S
 
 On receiving a webmention, a new comment or a contact form submission, GoBlog will create a new notification. Notifications are displayed on `/notifications` and can be deleted by the user.
 
-If configured, GoBlog will also send a notification using a Telegram and Matrix Bots or [Ntfy.sh](https://ntfy.sh/). 
+If configured, GoBlog will also send a notification using a Telegram bot, a Matrix user and an *unencrypted* Matrix channel, or [Ntfy.sh](https://ntfy.sh/). 
 
 ### Setting up Notifications with Ntfy
 
 1.  Create a "Topic" in the [Ntfy.sh Webapp](https://ntfy.sh/app) or another Ntfy instance. Using a randomly generated string as “Topic” is recommended.
-2.  Add a "notifications" section to your `config.yml`
+2.  Add a "notifications" section to your configuration file with the following configuration:
 
-```text-plain
+```yaml
 notifications:
   ntfy: # Receive notifications using Ntfy.sh
     enabled: true # Enable it
@@ -58,16 +58,16 @@ notifications:
     server: https://ntfy.sh # The server to use (default is https://ntfy.sh)
     user: myusername # The username to use (optional)
     password: mypassword # The password to use (optional)
-    email: notifications@yourdomain.tld # Email address for Ntfy Email Notificationsx`
+    email: notifications@yourdomain.tld # Email address for Ntfy Email Notifications
 ```
 
 ### Setting up Notifications with Matrix
 
 1.  Set up a new Matrix account that will act as the Bot.
-2.  Create a new _unencrypted_ room.
-3.  Add a "notifications" section to your `config.yml`:
+2.  Create a new *unencrypted* room.
+3.  Add a "notifications" section to your configuration file with the following configuration:
 
-```text-plain
+```yaml
 notifications:
   matrix: # Receive notifications via Matrix
     enabled: true # Enable it
@@ -98,9 +98,9 @@ To disable showing comments and interactions on a single post, add the parameter
 
 ## ActivityPub Support
 
-Publish and comment on the Fediverse by adding an "activitypub" section to `config.yml`
+Publish and comment to the Fediverse by adding an "activitypub" section to your configuration file:
 
-```text-plain
+```yaml
 # ActivityPub
 activityPub:
   enabled: true # Enable ActivityPub
@@ -108,11 +108,11 @@ activityPub:
     - tags
 ```
 
-This configuration creates a Fediverse account at @username@yourdomain.tld with the following features:
+This configuration creates a Fediverse account at `@blogname@yourdomain.tld` with the following features:
 
 ✅ Publishing  
 ✅ Replying (Unlisted/Public)  
-✅ Comments  
+✅ Converting incoming replies to blog comments  
 ✅ Incoming Likes/Reposts  
 ❌ Outgoing Likes/Reposts  
 ✅ Incoming @-mention  
@@ -122,9 +122,9 @@ This configuration creates a Fediverse account at @username@yourdomain.tld with 
 
 ## Redirects & Aliases
 
-Activate redirects by adding a “pathRedirects” section to `config.yml`
+Activate redirects by adding a `pathRedirects` section to your configuration file:
 
-```text-plain
+```yaml
 # Redirects
 pathRedirects:
   # Simple 302 redirect from /index.xml to .rss
@@ -136,9 +136,9 @@ pathRedirects:
     type: 301 # custom redirect type
 ```
 
-Individual posts can also have redirects by adding redirection paths using the “aliases” parameter:
+Individual posts can also have redirects by adding redirection paths using the `aliases` post parameter:
 
-```text-plain
+```text
 ---
 path: /about
 title: About me
@@ -154,48 +154,50 @@ This is an about me page located at /about and it redirects from /info and /me
 
 ### Export content to Markdown
 
-Use the export command: 
+Use the export command to export all posts as Markdown with the post parameters as frontmatter: 
 
-```textplain
-$ ./GoBlog export ./$exportpath
+```bash
+$goblogpath export ./$exportpath
 ```
 
 ### Fixing a GoBlog corrupted database
 
-While the ./GoBlog binary runs some temporary files are created in the data folder, these files are essential for the integrity of the database. If the database gets corrupted.
+While the GoBlog binary runs, next to the main SQLite database file some accompanying files (Write-Ahead-Log and shared memory for SQLite) are created in the data folder, these files are essential for the integrity of the database. If the database gets corrupted.
 
 Stop the GoBlog process, backup the database files and try to recover the database with sqlite:
 
-```text-plain
-$ sqlite3 db.sqlite ".recover" | sqlite3 newdb.sqlite
+```bash
+sqlite3 data/db.sqlite ".recover" | sqlite3 data/newdb.sqlite
 ```
 
 If this doesn't work look for more clues running: 
 
-```text-plain
-$ sqlite3 db.sqlite “PRAGMA integrity_check”
+```bash
+sqlite3 data/db.sqlite “PRAGMA integrity_check”
 ```
 
 ### Cleaning up the GoBlog database
 
 At the moment some options can't be modified via the UI, certain changes can be applied by accessing the database directly using sqlite.
 
-```text-plain
-$ sqlite3 dbfile.sqlite
+```bash
+sqlite3 data/db.sqlite
 ```
 
-#### Revoking Unused IndieAuth Tokens
+#### Revoking unused IndieAuth Tokens
 
 Tokens can be manually deleted:
 
-```text-plain
+```sql
 DELETE FROM indieauthtoken WHERE $condition;
 ```
 
+But they can also be revoked [using the IndieAuth API](https://www.w3.org/TR/indieauth/#token-revocation).
+
 #### Erasing deleted posts
 
-Completely removing deleted posts:
+GoBlog returns a 410 HTTP error for deleted posts, to stop that:
 
-```text-plain
-DELETE FROM deleted WHERE $condition;
+```sql
+DELETE FROM deleted WHERE path = '/deletedpost';
 ```

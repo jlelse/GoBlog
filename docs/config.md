@@ -32,14 +32,13 @@ user:
   password: password # Password for login
 
 # Blogs
-defaultBlog: blogName # Default blog code (needed because you can define multiple blogs)
+defaultBlog: main # Default blog name (needed because you can define multiple blogs)
 blogs:
-  blogName: # Blog code
+  main: # Blog name
     path: / # Path of blog
     lang: en # Language of blog
     title: My Cool Blog # Blog title
     description: "Welcome to this blog." # Blog description
-    pagination: 10 # Number of posts per page
     # Taxonomies
     taxonomies:
       - name: tags # Code of taxonomy (used via post parameters)
