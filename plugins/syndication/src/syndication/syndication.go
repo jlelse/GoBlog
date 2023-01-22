@@ -2,53 +2,64 @@ package syndication
 
 import (
 	"fmt"
+	"io"
 
+	"github.com/PuerkitoBio/goquery"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
-func GetPlugin() plugintypes.UI {
-	return &plugin{}
-}
-
 type plugin struct {
-	config map[string]any
+	app           plugintypes.App
+	parameterName string
 }
 
-func (*plugin) SetApp(_ plugintypes.App) {
-	// Ignore
+func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI) {
+	p := &plugin{}
+	return p, p, p
+}
+
+func (p *plugin) SetApp(app plugintypes.App) {
+	p.app = app
 }
 
 func (p *plugin) SetConfig(config map[string]any) {
-	p.config = config
+	p.parameterName = "syndication" // default
+	if configParameterAny, ok := config["parameter"]; ok {
+		if configParameter, ok := configParameterAny.(string); ok {
+			p.parameterName = configParameter // override default from config
+		}
+	}
 }
 
-func (p *plugin) Render(hb *htmlbuilder.HtmlBuilder, t plugintypes.RenderType, data plugintypes.RenderData, render plugintypes.RenderNextFunc) {
-	switch t {
-	case plugintypes.PostMainElementRenderType:
-		render(hb)
-		pd, ok := data.(plugintypes.PostRenderData)
-		if !ok {
-			fmt.Println("syndication plugin: data is not PostRenderData!")
-			return
-		}
-		parameterName := "syndication" // default
-		if configParameterAny, ok := p.config["parameter"]; ok {
-			if configParameter, ok := configParameterAny.(string); ok {
-				parameterName = configParameter // override default from config
-			}
-		}
-		syndicationLinks, ok := pd.GetPost().GetParameters()[parameterName]
-		if !ok || len(syndicationLinks) == 0 {
-			// No syndication links
-			return
-		}
-		for _, link := range syndicationLinks {
-			hb.WriteElementOpen("data", "value", link, "class", "u-syndication hide")
-			hb.WriteElementClose("data")
-		}
-		return
-	default:
-		render(hb)
+func (p *plugin) Render(rc plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
+	def := func() {
+		_, _ = io.Copy(modified, rendered)
 	}
+	post, err := p.app.GetPost(rc.GetPath())
+	if err != nil || post == nil {
+		def()
+		return
+	}
+	syndicationLinks, ok := post.GetParameters()[p.parameterName]
+	if !ok || len(syndicationLinks) == 0 {
+		def()
+		return
+	}
+	doc, err := goquery.NewDocumentFromReader(rendered)
+	if err != nil {
+		fmt.Println("syndication plugin: " + err.Error())
+		def()
+		return
+	}
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
+	for _, link := range syndicationLinks {
+		hb.WriteElementOpen("data", "value", link, "class", "u-syndication hide")
+		hb.WriteElementClose("data")
+	}
+	doc.Find("main.h-entry article").AppendHtml(buf.String())
+	_ = goquery.Render(modified, doc.Selection)
 }

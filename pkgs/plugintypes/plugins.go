@@ -1,38 +1,29 @@
 package plugintypes
 
 import (
+	"io"
 	"net/http"
-
-	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
-// SetApp is used in all plugin types to allow
-// GoBlog set it's app instance to be accessible by the plugin.
+// SetApp is used to allow GoBlog set its app instance to be accessible by the plugin.
 type SetApp interface {
-	SetApp(App)
+	SetApp(app App)
 }
 
-// SetConfig is used in all plugin types to allow
-// GoBlog set plugin configuration.
+// SetConfig is used in all plugin types to allow GoBlog set the plugin configuration.
 type SetConfig interface {
-	SetConfig(map[string]any)
+	SetConfig(config map[string]any)
 }
 
 type Exec interface {
-	SetApp
-	SetConfig
 	Exec()
 }
 
 type Middleware interface {
-	SetApp
-	SetConfig
-	Handler(http.Handler) http.Handler
+	Handler(next http.Handler) http.Handler
 	Prio() int
 }
 
 type UI interface {
-	SetApp
-	SetConfig
-	Render(*htmlbuilder.HtmlBuilder, RenderType, RenderData, RenderNextFunc)
+	Render(renderContext RenderContext, rendered io.Reader, modified io.Writer)
 }

@@ -11,35 +11,16 @@ import (
 var _ plugintypes.App = &goBlog{}
 var _ plugintypes.Database = &database{}
 var _ plugintypes.Post = &post{}
-var _ plugintypes.PostRenderData = &pluginPostRenderData{}
+var _ plugintypes.RenderContext = &pluginRenderContext{}
 
-func TestExecPlugin(t *testing.T) {
+func TestDemoPlugin(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Plugins = []*configPlugin{
 		{
-			Path:   "./plugins/demo",
-			Type:   "exec",
-			Import: "demoexec",
-		},
-	}
-
-	err := app.initConfig(false)
-	require.NoError(t, err)
-	err = app.initPlugins()
-	require.NoError(t, err)
-}
-
-func TestMiddlewarePlugin(t *testing.T) {
-	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
-	app.cfg.Plugins = []*configPlugin{
-		{
-			Path:   "./plugins/demo",
-			Type:   "middleware",
-			Import: "demomiddleware",
+			Path:   "embedded:demo",
+			Import: "demo",
 			Config: map[string]any{
 				"prio": 99,
 			},
@@ -51,10 +32,9 @@ func TestMiddlewarePlugin(t *testing.T) {
 	err = app.initPlugins()
 	require.NoError(t, err)
 
-	middlewarePlugins := getPluginsForType[plugintypes.Middleware](app, "middleware")
+	middlewarePlugins := app.getPlugins(pluginMiddlewareType)
 	if assert.Len(t, middlewarePlugins, 1) {
-		mdw := middlewarePlugins[0]
+		mdw := middlewarePlugins[0].(plugintypes.Middleware)
 		assert.Equal(t, 99, mdw.Prio())
 	}
-
 }

@@ -4,8 +4,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 type renderData struct {
@@ -39,12 +42,26 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Write status code
 	w.WriteHeader(statusCode)
 	// Render
-	pipeReader, pipeWriter := io.Pipe()
-	go func() {
-		f(htmlbuilder.NewHtmlBuilder(pipeWriter), data)
-		_ = pipeWriter.Close()
-	}()
-	_ = pipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pipeReader))
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	f(htmlbuilder.NewHtmlBuilder(buf), data)
+	// Check if UI plugins are registered
+	uiPlugins := a.getPlugins(pluginUiType)
+	if len(uiPlugins) > 0 {
+		pluginBuf := bufferpool.Get()
+		defer bufferpool.Put(pluginBuf)
+		for _, plug := range lo.Reverse(uiPlugins) {
+			pluginBuf.Reset()
+			plug.(plugintypes.UI).Render(&pluginRenderContext{
+				blog: data.BlogString,
+				path: r.URL.Path,
+			}, buf, pluginBuf)
+			buf.Reset()
+			_, _ = io.Copy(buf, pluginBuf)
+		}
+	}
+	// Return minified HTML
+	_ = a.min.Get().Minify(contenttype.HTML, w, buf)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
@@ -88,4 +105,19 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	if data.Data == nil {
 		data.Data = map[string]any{}
 	}
+}
+
+// Plugins
+
+type pluginRenderContext struct {
+	blog string
+	path string
+}
+
+func (d *pluginRenderContext) GetBlog() string {
+	return d.blog
+}
+
+func (d *pluginRenderContext) GetPath() string {
+	return d.path
 }
