@@ -55,7 +55,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		pluginPipeWriter.Close()
 	}()
 	// Return minified HTML
-	_ = a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader)
+	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }
 
 func (a *goBlog) chainUiPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
