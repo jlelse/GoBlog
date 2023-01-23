@@ -3,13 +3,14 @@ package plugintypes
 import (
 	"context"
 	"database/sql"
-
-	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
 // App is used to access GoBlog's app instance.
 type App interface {
+	// Get access to GoBlog's database
 	GetDatabase() Database
+	// Get a post from the database or an error when there is no post for the given path
+	GetPost(path string) (Post, error)
 }
 
 // Database is used to provide access to GoBlog's database.
@@ -24,39 +25,22 @@ type Database interface {
 
 // Post
 type Post interface {
+	// Get the post path
+	GetPath() string
+	// Get a string array map with all the post's parameters
 	GetParameters() map[string][]string
+	// Get the post section name
+	GetSection() string
+	// Get the published date string
+	GetPublished() string
+	// Get the updated date string
+	GetUpdated() string
 }
 
-// Blog
-type Blog interface {
+// RenderContext
+type RenderContext interface {
+	// Get the path of the request
+	GetPath() string
+	// Get the blog name
 	GetBlog() string
-}
-
-// RenderType
-type RenderType string
-
-// RenderData
-type RenderData interface {
-	// Empty
-}
-
-// RenderNextFunc
-type RenderNextFunc func(*htmlbuilder.HtmlBuilder)
-
-// Render main element content on post page, data = PostRenderData
-const PostMainElementRenderType RenderType = "post-main-content"
-
-// PostRenderData is RenderData containing a Post
-type PostRenderData interface {
-	RenderData
-	GetPost() Post
-}
-
-// Render footer element on every blog page, data = BlogRenderData
-const BlogFooterRenderType RenderType = "blog-footer"
-
-// BlogRenderData is RenderData containing a Blog
-type BlogRenderData interface {
-	RenderData
-	GetBlog() Blog
 }

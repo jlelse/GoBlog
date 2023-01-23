@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
 	"github.com/klauspost/compress/flate"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
 	"go.goblog.app/app/pkgs/plugintypes"
@@ -46,7 +47,7 @@ func (a *goBlog) startServer() (err error) {
 		h = h.Append(a.securityHeaders)
 	}
 	// Add plugin middlewares
-	middlewarePlugins := getPluginsForType[plugintypes.Middleware](a, middlewarePlugin)
+	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, index int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
 	sort.Slice(middlewarePlugins, func(i, j int) bool {
 		// Sort with descending prio
 		return middlewarePlugins[i].Prio() > middlewarePlugins[j].Prio()

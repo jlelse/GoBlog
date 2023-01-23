@@ -10,30 +10,7 @@ import (
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
-	"go.goblog.app/app/pkgs/plugintypes"
 )
-
-func (a *goBlog) renderWithPlugins(hb *htmlbuilder.HtmlBuilder, t plugintypes.RenderType, d plugintypes.RenderData, r plugintypes.RenderNextFunc) {
-	plugins := getPluginsForType[plugintypes.UI](a, uiPlugin)
-	if len(plugins) == 0 {
-		r(hb)
-		return
-	}
-	// Reverse plugins, so that the first one in the configuration is executed first
-	plugins = lo.Reverse(plugins)
-	plugins[0].Render(hb, t, d, a.wrapUiPlugins(t, d, r, plugins[1:]...))
-}
-
-func (a *goBlog) wrapUiPlugins(t plugintypes.RenderType, d plugintypes.RenderData, r plugintypes.RenderNextFunc, plugins ...plugintypes.UI) plugintypes.RenderNextFunc {
-	if len(plugins) == 0 {
-		// Last element in the chain
-		return r
-	}
-	return func(newHb *htmlbuilder.HtmlBuilder) {
-		// Wrap the next plugin
-		plugins[0].Render(newHb, t, d, a.wrapUiPlugins(t, d, r, plugins[1:]...))
-	}
-}
 
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {
 	a.renderPostTitle(hb, p)
@@ -164,34 +141,32 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	}
 	// Footer
 	hb.WriteElementOpen("footer")
-	a.renderWithPlugins(hb, plugintypes.BlogFooterRenderType, rd.Blog.pluginRenderData(), func(hb *htmlbuilder.HtmlBuilder) {
-		// Footer menu
-		if fm, ok := rd.Blog.Menus["footer"]; ok {
-			hb.WriteElementOpen("nav")
-			for i, item := range fm.Items {
-				if i > 0 {
-					hb.WriteUnescaped(" &bull; ")
-				}
-				hb.WriteElementOpen("a", "href", item.Link)
-				hb.WriteEscaped(a.renderMdTitle(item.Title))
-				hb.WriteElementClose("a")
+	// Footer menu
+	if fm, ok := rd.Blog.Menus["footer"]; ok {
+		hb.WriteElementOpen("nav")
+		for i, item := range fm.Items {
+			if i > 0 {
+				hb.WriteUnescaped(" &bull; ")
 			}
-			hb.WriteElementClose("nav")
+			hb.WriteElementOpen("a", "href", item.Link)
+			hb.WriteEscaped(a.renderMdTitle(item.Title))
+			hb.WriteElementClose("a")
 		}
-		// Copyright
-		hb.WriteElementOpen("p", "translate", "no")
-		hb.WriteUnescaped("&copy; ")
-		hb.WriteEscaped(time.Now().Format("2006"))
-		hb.WriteUnescaped(" ")
-		if user != nil && user.Name != "" {
-			hb.WriteEscaped(user.Name)
-		} else {
-			hb.WriteEscaped(renderedBlogTitle)
-		}
-		hb.WriteElementClose("p")
-		// Tor
-		a.renderTorNotice(hb, rd)
-	})
+		hb.WriteElementClose("nav")
+	}
+	// Copyright
+	hb.WriteElementOpen("p", "translate", "no")
+	hb.WriteUnescaped("&copy; ")
+	hb.WriteEscaped(time.Now().Format("2006"))
+	hb.WriteUnescaped(" ")
+	if user != nil && user.Name != "" {
+		hb.WriteEscaped(user.Name)
+	} else {
+		hb.WriteEscaped(renderedBlogTitle)
+	}
+	hb.WriteElementClose("p")
+	// Tor
+	a.renderTorNotice(hb, rd)
 	hb.WriteElementClose("footer")
 	// Easter egg
 	if rd.EasterEgg {
@@ -900,52 +875,50 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")
-			a.renderWithPlugins(hb, plugintypes.PostMainElementRenderType, p.pluginRenderData(), func(hb *htmlbuilder.HtmlBuilder) {
-				// URL (hidden just for microformats)
-				hb.WriteElementOpen("data", "value", a.getFullAddress(p.Path), "class", "u-url hide")
-				hb.WriteElementClose("data")
-				// Start article
-				hb.WriteElementOpen("article")
-				// Title
-				a.renderPostTitle(hb, p)
-				// Post meta
-				a.renderPostMeta(hb, p, rd.Blog, "post")
-				// Post actions
-				hb.WriteElementOpen("div", "class", "actions")
-				// Share button
-				a.renderShareButton(hb, p, rd.Blog)
-				// Translate button
-				a.renderTranslateButton(hb, p, rd.Blog)
-				// Speak button
-				hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
-				hb.WriteElementClose("button")
-				hb.WriteElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
-				hb.WriteElementClose("script")
-				// Close post actions
+			// URL (hidden just for microformats)
+			hb.WriteElementOpen("data", "value", a.getFullAddress(p.Path), "class", "u-url hide")
+			hb.WriteElementClose("data")
+			// Start article
+			hb.WriteElementOpen("article")
+			// Title
+			a.renderPostTitle(hb, p)
+			// Post meta
+			a.renderPostMeta(hb, p, rd.Blog, "post")
+			// Post actions
+			hb.WriteElementOpen("div", "class", "actions")
+			// Share button
+			a.renderShareButton(hb, p, rd.Blog)
+			// Translate button
+			a.renderTranslateButton(hb, p, rd.Blog)
+			// Speak button
+			hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
+			hb.WriteElementClose("button")
+			hb.WriteElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
+			hb.WriteElementClose("script")
+			// Close post actions
+			hb.WriteElementClose("div")
+			// TTS
+			if tts := p.TTS(); tts != "" {
+				hb.WriteElementOpen("div", "class", "p hide", "id", "tts")
+				hb.WriteElementOpen("audio", "controls", "", "preload", "none", "id", "tts-audio")
+				hb.WriteElementOpen("source", "src", tts)
+				hb.WriteElementClose("source")
+				hb.WriteElementClose("audio")
 				hb.WriteElementClose("div")
-				// TTS
-				if tts := p.TTS(); tts != "" {
-					hb.WriteElementOpen("div", "class", "p hide", "id", "tts")
-					hb.WriteElementOpen("audio", "controls", "", "preload", "none", "id", "tts-audio")
-					hb.WriteElementOpen("source", "src", tts)
-					hb.WriteElementClose("source")
-					hb.WriteElementClose("audio")
-					hb.WriteElementClose("div")
-				}
-				// Old content warning
-				a.renderOldContentWarning(hb, p, rd.Blog)
-				// Content
-				a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
-				// External Videp
-				a.renderPostVideo(hb, p)
-				// GPS Track
-				a.renderPostGPX(hb, p, rd.Blog)
-				// Taxonomies
-				a.renderPostTax(hb, p, rd.Blog)
-				hb.WriteElementClose("article")
-				// Author
-				a.renderAuthor(hb)
-			})
+			}
+			// Old content warning
+			a.renderOldContentWarning(hb, p, rd.Blog)
+			// Content
+			a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
+			// External Videp
+			a.renderPostVideo(hb, p)
+			// GPS Track
+			a.renderPostGPX(hb, p, rd.Blog)
+			// Taxonomies
+			a.renderPostTax(hb, p, rd.Blog)
+			hb.WriteElementClose("article")
+			// Author
+			a.renderAuthor(hb)
 			hb.WriteElementClose("main")
 			// Reactions
 			a.renderPostReactions(hb, p)

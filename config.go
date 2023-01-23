@@ -350,7 +350,6 @@ type configPprof struct {
 
 type configPlugin struct {
 	Path   string         `mapstructure:"path"`
-	Type   string         `mapstructure:"type"`
 	Import string         `mapstructure:"import"`
 	Config map[string]any `mapstructure:"config"`
 }

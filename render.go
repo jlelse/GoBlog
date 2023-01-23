@@ -6,6 +6,7 @@ import (
 
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 type renderData struct {
@@ -39,12 +40,35 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Write status code
 	w.WriteHeader(statusCode)
 	// Render
-	pipeReader, pipeWriter := io.Pipe()
+	renderPipeReader, renderPipeWriter := io.Pipe()
 	go func() {
-		f(htmlbuilder.NewHtmlBuilder(pipeWriter), data)
-		_ = pipeWriter.Close()
+		f(htmlbuilder.NewHtmlBuilder(renderPipeWriter), data)
+		renderPipeWriter.Close()
 	}()
-	_ = pipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pipeReader))
+	// Run UI plugins
+	pluginPipeReader, pluginPipeWriter := io.Pipe()
+	go func() {
+		a.chainUiPlugins(a.getPlugins(pluginUiType), &pluginRenderContext{
+			blog: data.BlogString,
+			path: r.URL.Path,
+		}, renderPipeReader, pluginPipeWriter)
+		pluginPipeWriter.Close()
+	}()
+	// Return minified HTML
+	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
+}
+
+func (a *goBlog) chainUiPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
+	if len(plugins) == 0 {
+		_, _ = io.Copy(modified, rendered)
+		return
+	}
+	reader, writer := io.Pipe()
+	go func() {
+		plugins[0].(plugintypes.UI).Render(rc, rendered, writer)
+		_ = writer.Close()
+	}()
+	a.chainUiPlugins(plugins[1:], rc, reader, modified)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
@@ -88,4 +112,19 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	if data.Data == nil {
 		data.Data = map[string]any{}
 	}
+}
+
+// Plugins
+
+type pluginRenderContext struct {
+	blog string
+	path string
+}
+
+func (d *pluginRenderContext) GetBlog() string {
+	return d.blog
+}
+
+func (d *pluginRenderContext) GetPath() string {
+	return d.path
 }
