@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
@@ -50,7 +49,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	if len(uiPlugins) > 0 {
 		pluginBuf := bufferpool.Get()
 		defer bufferpool.Put(pluginBuf)
-		for _, plug := range lo.Reverse(uiPlugins) {
+		for _, plug := range uiPlugins {
 			pluginBuf.Reset()
 			plug.(plugintypes.UI).Render(&pluginRenderContext{
 				blog: data.BlogString,
