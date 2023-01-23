@@ -150,6 +150,10 @@ aliases:
 This is an about me page located at /about and it redirects from /info and /me
 ```
 
+## Plugins
+
+There's a [seperate documentation section](./plugins.md) on how to use and implement plugins.
+
 ## Extra notes
 
 ### Export content to Markdown
