@@ -78,6 +78,22 @@ func (a *goBlog) GetPost(path string) (plugintypes.Post, error) {
 	return a.getPost(path)
 }
 
+func (p *post) GetPath() string {
+	return p.Path
+}
+
 func (p *post) GetParameters() map[string][]string {
 	return p.Parameters
+}
+
+func (p *post) GetSection() string {
+	return p.Section
+}
+
+func (p *post) GetPublished() string {
+	return p.Published
+}
+
+func (p *post) GetUpdated() string {
+	return p.Updated
 }

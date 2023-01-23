@@ -131,10 +131,26 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Middleware) Prio() int {
 type _go_goblog_app_app_pkgs_plugintypes_Post struct {
 	IValue         interface{}
 	WGetParameters func() map[string][]string
+	WGetPath       func() string
+	WGetPublished  func() string
+	WGetSection    func() string
+	WGetUpdated    func() string
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetParameters() map[string][]string {
 	return W.WGetParameters()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetPath() string {
+	return W.WGetPath()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetPublished() string {
+	return W.WGetPublished()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetSection() string {
+	return W.WGetSection()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetUpdated() string {
+	return W.WGetUpdated()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_RenderContext is an interface wrapper for RenderContext type

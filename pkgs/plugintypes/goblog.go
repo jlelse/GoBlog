@@ -25,8 +25,16 @@ type Database interface {
 
 // Post
 type Post interface {
+	// Get the post path
+	GetPath() string
 	// Get a string array map with all the post's parameters
 	GetParameters() map[string][]string
+	// Get the post section name
+	GetSection() string
+	// Get the published date string
+	GetPublished() string
+	// Get the updated date string
+	GetUpdated() string
 }
 
 // RenderContext
