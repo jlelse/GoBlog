@@ -62,6 +62,9 @@ func (a *goBlog) initPlugins() error {
 }
 
 func (a *goBlog) getPlugins(typ string) []any {
+	if a.pluginHost == nil {
+		return []any{}
+	}
 	return a.pluginHost.GetPlugins(typ)
 }
 

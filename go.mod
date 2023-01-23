@@ -56,7 +56,8 @@ require (
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
-	github.com/traefik/yaegi v0.14.3
+	// master
+	github.com/traefik/yaegi v0.14.4-0.20230117132604-1679870ea3c8
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/xhit/go-simple-mail/v2 v2.13.0
 	github.com/yuin/goldmark v1.5.3

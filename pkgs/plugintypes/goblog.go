@@ -7,7 +7,9 @@ import (
 
 // App is used to access GoBlog's app instance.
 type App interface {
+	// Get access to GoBlog's database
 	GetDatabase() Database
+	// Get a post from the database or an error when there is no post for the given path
 	GetPost(path string) (Post, error)
 }
 
@@ -23,11 +25,14 @@ type Database interface {
 
 // Post
 type Post interface {
+	// Get a string array map with all the post's parameters
 	GetParameters() map[string][]string
 }
 
 // RenderContext
 type RenderContext interface {
+	// Get the path of the request
 	GetPath() string
+	// Get the blog name
 	GetBlog() string
 }

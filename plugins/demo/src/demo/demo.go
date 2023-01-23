@@ -37,7 +37,7 @@ func (p *plugin) SetConfig(config map[string]any) {
 }
 
 // UI
-func (p *plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
+func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
 	doc, err := goquery.NewDocumentFromReader(rendered)
 	if err != nil {
 		fmt.Println("demoui plugin: " + err.Error())
