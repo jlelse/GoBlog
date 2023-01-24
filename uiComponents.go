@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
@@ -64,7 +65,8 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	}
 	// Show link to full post
 	hb.WriteElementOpen("p")
-	var prefix strings.Builder
+	prefix := builderpool.Get()
+	defer builderpool.Put(prefix)
 	if len(photos) > 0 {
 		// Contains photos
 		prefix.WriteString("🖼️")

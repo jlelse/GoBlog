@@ -12,6 +12,7 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 func (a *goBlog) checkPost(p *post, new bool) (err error) {
@@ -206,7 +207,8 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	var sqlBuilder strings.Builder
+	sqlBuilder := builderpool.Get()
+	defer builderpool.Put(sqlBuilder)
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -335,7 +337,8 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	var sqlBuilder strings.Builder
+	sqlBuilder := builderpool.Get()
+	defer builderpool.Put(sqlBuilder)
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -385,7 +388,8 @@ type postsRequestConfig struct {
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any) {
-	var queryBuilder strings.Builder
+	queryBuilder := builderpool.Get()
+	defer builderpool.Put(queryBuilder)
 	// Selection
 	queryBuilder.WriteString("select ")
 	queryBuilder.WriteString(selection)
@@ -519,7 +523,8 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	}
 	// Build query
 	sqlArgs := make([]any, 0)
-	var queryBuilder strings.Builder
+	queryBuilder := builderpool.Get()
+	defer builderpool.Put(queryBuilder)
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
 	// Paths
 	queryBuilder.WriteString(" path in (")
@@ -691,7 +696,8 @@ group by name;
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 	sqlArgs := []any{dbNoCache}
-	var nameValues strings.Builder
+	nameValues := builderpool.Get()
+	defer builderpool.Put(nameValues)
 	for i, n := range names {
 		if i > 0 {
 			nameValues.WriteString(", ")

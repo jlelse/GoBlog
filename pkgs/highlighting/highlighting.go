@@ -2,13 +2,13 @@ package highlighting
 
 import (
 	"io"
-	"strings"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
+	"go.goblog.app/app/pkgs/builderpool"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -60,7 +60,8 @@ func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, no
 	n := node.(*ast.FencedCodeBlock)
 
 	// Read code block content.
-	var buf strings.Builder
+	buf := builderpool.Get()
+	defer builderpool.Put(buf)
 	for _, line := range n.Lines().Sliced(0, n.Lines().Len()) {
 		buf.Write(line.Value(source))
 	}

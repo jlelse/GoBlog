@@ -5,10 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -107,7 +107,8 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 	// Get reactions
 	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
 		// Build query
-		var sqlBuf strings.Builder
+		sqlBuf := builderpool.Get()
+		defer builderpool.Put(sqlBuf)
 		sqlArgs := []any{}
 		sqlBuf.WriteString("select reaction, count from reactions where path=? and reaction in (")
 		sqlArgs = append(sqlArgs, path)

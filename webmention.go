@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -230,7 +231,8 @@ type webmentionsRequestConfig struct {
 }
 
 func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []any) {
-	var queryBuilder strings.Builder
+	queryBuilder := builderpool.Get()
+	defer builderpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, source, target, url, created, title, content, author, status from webmentions ")
 	if config != nil {
 		queryBuilder.WriteString("where 1")

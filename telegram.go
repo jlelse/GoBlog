@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/url"
 	"strconv"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 func (a *goBlog) initTelegram() {
@@ -135,7 +135,8 @@ func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) (html st
 	if !tg.enabled() {
 		return ""
 	}
-	var message strings.Builder
+	message := builderpool.Get()
+	defer builderpool.Put(message)
 	if title != "" {
 		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, title))
 		message.WriteString("\n\n")
