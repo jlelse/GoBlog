@@ -13,7 +13,6 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/highlighting"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
@@ -83,13 +82,12 @@ func (a *goBlog) renderText(s string) string {
 	if s == "" {
 		return ""
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err := a.renderMarkdownToWriter(buf, s, false)
-	if err != nil {
-		return ""
-	}
-	text, err := htmlTextFromReader(buf)
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(a.renderMarkdownToWriter(pw, s, false))
+	}()
+	text, err := htmlTextFromReader(pr)
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		return ""
 	}
@@ -100,13 +98,12 @@ func (a *goBlog) renderMdTitle(s string) string {
 	if s == "" {
 		return ""
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err := a.titleMd.Convert([]byte(s), buf)
-	if err != nil {
-		return ""
-	}
-	text, err := htmlTextFromReader(buf)
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(a.titleMd.Convert([]byte(s), pw))
+	}()
+	text, err := htmlTextFromReader(pr)
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		return ""
 	}

@@ -35,22 +35,22 @@ type microformatsResult struct {
 }
 
 func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, error) {
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
+	pr, pw := io.Pipe()
 	rb := requests.URL(u).
 		Method(http.MethodGet).
 		Accept(contenttype.HTMLUTF8).
 		Client(a.httpClient).
-		ToBytesBuffer(buf)
+		ToWriter(pw)
 	if cache {
 		a.initMicroformatsCache()
 		rb.Transport(httpcachetransport.NewHttpCacheTransport(a.httpClient.Transport, a.mfCache, 10*time.Minute))
 	}
-	err := rb.Fetch(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return parseMicroformatsFromReader(u, buf)
+	go func() {
+		_ = pw.CloseWithError(rb.Fetch(context.Background()))
+	}()
+	result, err := parseMicroformatsFromReader(u, pr)
+	_ = pr.CloseWithError(err)
+	return result, err
 }
 
 func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, error) {

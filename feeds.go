@@ -78,10 +78,8 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	}
 	pipeReader, pipeWriter := io.Pipe()
 	go func() {
-		writeErr := feedWriteFunc(pipeWriter)
-		_ = pipeWriter.CloseWithError(writeErr)
+		_ = pipeWriter.CloseWithError(feedWriteFunc(pipeWriter))
 	}()
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
-	minifyErr := a.min.Get().Minify(feedMediaType, w, pipeReader)
-	_ = pipeReader.CloseWithError(minifyErr)
+	_ = pipeReader.CloseWithError(a.min.Get().Minify(feedMediaType, w, pipeReader))
 }

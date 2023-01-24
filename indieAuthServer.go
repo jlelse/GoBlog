@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hacdias/indieauth/v2"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -44,14 +44,12 @@ func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
 		"scopes_supported":                           []string{"create", "update", "delete", "undelete", "media"},
 		"code_challenge_methods_supported":           indieauth.CodeChallengeMethods,
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(resp); err != nil {
-		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(resp))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 // Parse Authorization Request
@@ -168,14 +166,12 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		resp["access_token"] = token
 		resp["scope"] = strings.Join(data.Scopes, " ")
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err = json.NewEncoder(buf).Encode(resp); err != nil {
-		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(resp))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 // Save the authorization request and return the code
@@ -236,14 +232,12 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 			"scope":     strings.Join(data.Scopes, " "),
 		}
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err = json.NewEncoder(buf).Encode(res); err != nil {
-		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(res))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 // Checks the database for the token and returns the indieAuthData with client and scope.

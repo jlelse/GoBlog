@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -89,15 +88,12 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err = json.NewEncoder(buf).Encode(tracks)
-	if err != nil {
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(tracks))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = io.Copy(w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 const geoMapLocationsSubpath = "/locations.json"
@@ -135,13 +131,10 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err = json.NewEncoder(buf).Encode(locations)
-	if err != nil {
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(locations))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = io.Copy(w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
