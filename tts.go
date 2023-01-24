@@ -221,12 +221,8 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 	// Decode response
 	if encoded, ok := response["audioContent"]; ok {
 		if encodedStr, ok := encoded.(string); ok {
-			if audio, err := base64.StdEncoding.DecodeString(encodedStr); err == nil {
-				_, err := w.Write(audio)
-				return err
-			} else {
-				return err
-			}
+			_, err := io.Copy(w, base64.NewDecoder(base64.StdEncoding, strings.NewReader(encodedStr)))
+			return err
 		}
 	}
 	return errors.New("no audio content")

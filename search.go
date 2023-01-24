@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
-	"net/url"
 	"path"
-	"strings"
 )
 
 const defaultSearchPath = "/search"
@@ -38,16 +36,11 @@ func (a *goBlog) serveSearchResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchEncode(search string) string {
-	return url.PathEscape(strings.ReplaceAll(base64.StdEncoding.EncodeToString([]byte(search)), "/", "_"))
+	return base64.URLEncoding.EncodeToString([]byte(search))
 }
 
 func searchDecode(encoded string) string {
-	encoded, err := url.PathUnescape(encoded)
-	if err != nil {
-		return ""
-	}
-	encoded = strings.ReplaceAll(encoded, "_", "/")
-	db, err := base64.StdEncoding.DecodeString(encoded)
+	db, err := base64.URLEncoding.DecodeString(encoded)
 	if err != nil {
 		return ""
 	}
