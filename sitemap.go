@@ -3,12 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/xml"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/araddon/dateparse"
 	"github.com/snabb/sitemap"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -174,18 +174,16 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) writeSitemapXML(w http.ResponseWriter, r *http.Request, sm any) {
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	_, _ = buf.WriteString(xml.Header)
-	_, _ = buf.WriteString(`<?xml-stylesheet type="text/xsl" href="`)
-	_, _ = buf.WriteString(a.assetFileName("sitemap.xsl"))
-	_, _ = buf.WriteString(`" ?>`)
-	if err := xml.NewEncoder(buf).Encode(sm); err != nil {
-		a.serveError(w, r, "Failed to encode sitemap", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_, _ = io.WriteString(pw, xml.Header)
+		_, _ = io.WriteString(pw, `<?xml-stylesheet type="text/xsl" href="`)
+		_, _ = io.WriteString(pw, a.assetFileName("sitemap.xsl"))
+		_, _ = io.WriteString(pw, `" ?>`)
+		_ = pw.CloseWithError(xml.NewEncoder(pw).Encode(sm))
+	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = a.min.Get().Minify(contenttype.XML, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
 }
 
 const sitemapDatePathsSql = `

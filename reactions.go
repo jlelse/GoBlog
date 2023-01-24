@@ -5,10 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -88,15 +88,12 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err = json.NewEncoder(buf).Encode(reactions)
-	if err != nil {
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(reactions))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_, _ = io.Copy(w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
@@ -110,8 +107,7 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 	// Get reactions
 	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
 		// Build query
-		sqlBuf := bufferpool.Get()
-		defer bufferpool.Put(sqlBuf)
+		var sqlBuf strings.Builder
 		sqlArgs := []any{}
 		sqlBuf.WriteString("select reaction, count from reactions where path=? and reaction in (")
 		sqlArgs = append(sqlArgs, path)

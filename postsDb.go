@@ -206,8 +206,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	sqlBuilder := bufferpool.Get()
-	defer bufferpool.Put(sqlBuilder)
+	var sqlBuilder strings.Builder
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -336,7 +335,7 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
 	// Build SQL
-	sqlBuilder := bufferpool.Get()
+	var sqlBuilder strings.Builder
 	var sqlArgs = []any{dbNoCache}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
@@ -352,7 +351,6 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	sqlBuilder.WriteString("commit;")
 	// Execute
 	_, err := db.Exec(sqlBuilder.String(), sqlArgs...)
-	bufferpool.Put(sqlBuilder)
 	if err != nil {
 		return err
 	}
@@ -387,8 +385,7 @@ type postsRequestConfig struct {
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any) {
-	queryBuilder := bufferpool.Get()
-	defer bufferpool.Put(queryBuilder)
+	var queryBuilder strings.Builder
 	// Selection
 	queryBuilder.WriteString("select ")
 	queryBuilder.WriteString(selection)
@@ -413,11 +410,11 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 				queryBuilder.WriteString(", ")
 			}
 			named := "status" + strconv.Itoa(i)
-			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			args = append(args, sql.Named(named, status))
 		}
-		queryBuilder.WriteByte(')')
+		queryBuilder.WriteString(")")
 	}
 	if c.visibility != nil && len(c.visibility) > 0 {
 		queryBuilder.WriteString(" and visibility in (")
@@ -426,11 +423,11 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 				queryBuilder.WriteString(", ")
 			}
 			named := "visibility" + strconv.Itoa(i)
-			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			args = append(args, sql.Named(named, visibility))
 		}
-		queryBuilder.WriteByte(')')
+		queryBuilder.WriteString(")")
 	}
 	if c.blog != "" {
 		queryBuilder.WriteString(" and blog = @blog")
@@ -451,7 +448,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 				queryBuilder.WriteString(", ")
 			}
 			named := "param" + strconv.Itoa(i)
-			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			args = append(args, param)
 		}
@@ -477,11 +474,11 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 				queryBuilder.WriteString(", ")
 			}
 			named := "section" + strconv.Itoa(i)
-			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			args = append(args, sql.Named(named, section))
 		}
-		queryBuilder.WriteByte(')')
+		queryBuilder.WriteString(")")
 	}
 	if c.publishedYear != 0 {
 		queryBuilder.WriteString(" and substr(tolocal(published), 1, 4) = @publishedyear")
@@ -522,8 +519,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	}
 	// Build query
 	sqlArgs := make([]any, 0)
-	queryBuilder := bufferpool.Get()
-	defer bufferpool.Put(queryBuilder)
+	var queryBuilder strings.Builder
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
 	// Paths
 	queryBuilder.WriteString(" path in (")
@@ -532,11 +528,11 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 			queryBuilder.WriteString(", ")
 		}
 		named := "path" + strconv.Itoa(i)
-		queryBuilder.WriteByte('@')
+		queryBuilder.WriteString("@")
 		queryBuilder.WriteString(named)
 		sqlArgs = append(sqlArgs, sql.Named(named, p.Path))
 	}
-	queryBuilder.WriteByte(')')
+	queryBuilder.WriteString(")")
 	// Parameters
 	if len(parameters) > 0 {
 		queryBuilder.WriteString(" and parameter in (")
@@ -545,11 +541,11 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 				queryBuilder.WriteString(", ")
 			}
 			named := "param" + strconv.Itoa(i)
-			queryBuilder.WriteByte('@')
+			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			sqlArgs = append(sqlArgs, sql.Named(named, p))
 		}
-		queryBuilder.WriteByte(')')
+		queryBuilder.WriteString(")")
 	}
 	// Order
 	queryBuilder.WriteString(" order by id")
@@ -695,7 +691,7 @@ group by name;
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 	sqlArgs := []any{dbNoCache}
-	nameValues := bufferpool.Get()
+	var nameValues strings.Builder
 	for i, n := range names {
 		if i > 0 {
 			nameValues.WriteString(", ")
@@ -703,11 +699,10 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 		named := "name" + strconv.Itoa(i)
 		nameValues.WriteString("(@")
 		nameValues.WriteString(named)
-		nameValues.WriteByte(')')
+		nameValues.WriteString(")")
 		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
 	rows, err := db.Query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
-	bufferpool.Put(nameValues)
 	if err != nil {
 		return nil, err
 	}

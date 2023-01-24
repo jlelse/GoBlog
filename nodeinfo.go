@@ -5,29 +5,24 @@ import (
 	"io"
 	"net/http"
 
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err := json.NewEncoder(buf).Encode(map[string]any{
+	result := map[string]any{
 		"links": []map[string]any{
 			{
 				"href": a.getFullAddress("/nodeinfo"),
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
 			},
 		},
-	})
-	if err != nil {
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
 	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	mw := a.min.Get().Writer(contenttype.JSON, w)
-	_, _ = io.Copy(mw, buf)
-	_ = mw.Close()
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
@@ -35,9 +30,7 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},
 	})
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(map[string]any{
+	result := map[string]any{
 		"version": "2.1",
 		"software": map[string]any{
 			"name":       "goblog",
@@ -55,10 +48,11 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 			"webmention",
 		},
 		"metadata": map[string]any{},
-	}); err != nil {
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
 	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }

@@ -13,7 +13,6 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"gopkg.in/yaml.v3"
 )
@@ -76,14 +75,12 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(result); err != nil {
-		a.serveError(w, r, "Failed to encode json", http.StatusInternalServerError)
-		return
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
+	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 func (a *goBlog) getMicropubChannelsMap() []map[string]any {

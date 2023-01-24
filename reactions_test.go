@@ -136,13 +136,13 @@ func Test_reactionsHighLevel(t *testing.T) {
 	rec = httptest.NewRecorder()
 	app.getReactions(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "{\"❤️\":1}\n", rec.Body.String())
+	assert.Equal(t, "{\"❤️\":1}", rec.Body.String())
 
 	// Get reactions for a non-existing post
 	req = httptest.NewRequest(http.MethodGet, "/?path=/non-existing-post", nil)
 	rec = httptest.NewRecorder()
 	app.getReactions(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "{}\n", rec.Body.String())
+	assert.Equal(t, "{}", rec.Body.String())
 
 }

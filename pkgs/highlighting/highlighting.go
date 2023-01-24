@@ -2,13 +2,13 @@ package highlighting
 
 import (
 	"io"
+	"strings"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
-	"go.goblog.app/app/pkgs/bufferpool"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -60,8 +60,7 @@ func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, no
 	n := node.(*ast.FencedCodeBlock)
 
 	// Read code block content.
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
+	var buf strings.Builder
 	for _, line := range n.Lines().Sliced(0, n.Lines().Len()) {
 		buf.Write(line.Value(source))
 	}
@@ -70,7 +69,7 @@ func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, no
 	if highlight(w, buf.String(), string(n.Language(source)), r.formatter) != nil {
 		// Highlight failed, fallback to plain text.
 		_, _ = w.WriteString("<pre><code>")
-		r.Writer.RawWrite(w, buf.Bytes())
+		r.Writer.RawWrite(w, []byte(buf.String()))
 		_, _ = w.WriteString("</code></pre>\n")
 	}
 
