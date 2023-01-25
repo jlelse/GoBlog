@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
@@ -65,19 +64,18 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	}
 	// Show link to full post
 	hb.WriteElementOpen("p")
-	prefix := builderpool.Get()
-	defer builderpool.Put(prefix)
+	prefix := ""
 	if len(photos) > 0 {
 		// Contains photos
-		prefix.WriteString("🖼️")
+		prefix += "🖼️"
 	}
 	if p.hasTrack() {
 		// Has GPX track
-		prefix.WriteString("🗺️")
+		prefix += "🗺️"
 	}
-	if prefix.Len() > 0 {
-		prefix.WriteString(" ")
-		hb.WriteEscaped(prefix.String())
+	if len(prefix) > 0 {
+		hb.WriteEscaped(" ")
+		hb.WriteEscaped(prefix)
 	}
 	hb.WriteElementOpen("a", "class", "u-url", "href", p.Path)
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "view"))

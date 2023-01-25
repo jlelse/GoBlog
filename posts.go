@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/samber/lo"
 	"github.com/vcraescu/go-paginator"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -151,13 +152,14 @@ func (p *postPaginationAdapter) Slice(offset, length int, data any) error {
 }
 
 func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
+	blog, bc := a.getBlog(r)
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		a.serveActivityStreams(blog, w, r)
 		return
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path: a.getRelativePath(blog, ""),
+		path:     a.getRelativePath(blog, ""),
+		sections: lo.Values(bc.Sections),
 	})))
 }
 
@@ -261,6 +263,7 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 type indexConfig struct {
 	path             string
 	section          *configSection
+	sections         []*configSection
 	tax              *configTaxonomy
 	taxValue         string
 	parameter        string
@@ -284,13 +287,9 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		// Decode and sanitize search
 		search = cleanHTMLText(searchDecode(search))
 	}
-	var sections []string
+	sections := lo.Map(ic.sections, func(i *configSection, _ int) string { return i.Name })
 	if ic.section != nil {
-		sections = []string{ic.section.Name}
-	} else {
-		for sectionKey := range bc.Sections {
-			sections = append(sections, sectionKey)
-		}
+		sections = append(sections, ic.section.Name)
 	}
 	defaultStatus, defaultVisibility := a.getDefaultPostStates(r)
 	status := ic.status

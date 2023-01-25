@@ -8,7 +8,7 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
-	"go.goblog.app/app/pkgs/builderpool"
+	"go.goblog.app/app/pkgs/bufferpool"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -60,8 +60,8 @@ func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, no
 	n := node.(*ast.FencedCodeBlock)
 
 	// Read code block content.
-	buf := builderpool.Get()
-	defer builderpool.Put(buf)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
 	for _, line := range n.Lines().Sliced(0, n.Lines().Len()) {
 		buf.Write(line.Value(source))
 	}
@@ -70,7 +70,7 @@ func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, no
 	if highlight(w, buf.String(), string(n.Language(source)), r.formatter) != nil {
 		// Highlight failed, fallback to plain text.
 		_, _ = w.WriteString("<pre><code>")
-		r.Writer.RawWrite(w, []byte(buf.String()))
+		r.Writer.RawWrite(w, buf.Bytes())
 		_, _ = w.WriteString("</code></pre>\n")
 	}
 
