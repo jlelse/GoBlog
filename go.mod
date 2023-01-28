@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.4.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
-	github.com/carlmjohnson/requests v0.22.3
+	github.com/carlmjohnson/requests v0.23.1
 	// master
 	github.com/cretz/bine v0.2.1-0.20221201125941-b9d31d9c7866
 	github.com/dchest/captcha v1.0.0
@@ -21,7 +21,7 @@ require (
 	github.com/elnormous/contenttype v1.0.3
 	github.com/emersion/go-smtp v0.16.0
 	github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f
-	github.com/go-ap/client v0.0.0-20221211133508-e3087682099e
+	github.com/go-ap/client v0.0.0-20230125140507-b30e32f7fa90
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-fed/httpsig v1.1.0
@@ -41,7 +41,7 @@ require (
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mergestat/timediff v0.0.3
-	github.com/microcosm-cc/bluemonday v1.0.21
+	github.com/microcosm-cc/bluemonday v1.0.22
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0

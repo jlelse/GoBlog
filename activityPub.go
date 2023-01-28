@@ -381,7 +381,7 @@ func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
 			followersCollection.Items.Append(ap.IRI(follower.follower))
 		}
 		followersCollection.TotalItems = uint(len(followers))
-		a.serveAPItem(followersCollection, w, r)
+		a.serveAPItem(w, r, http.StatusOK, followersCollection)
 		return
 	}
 	a.render(w, r, a.renderActivityPubFollowers, &renderData{

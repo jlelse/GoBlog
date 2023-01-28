@@ -72,12 +72,16 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	status := http.StatusOK
+	if p.Deleted() {
+		status = http.StatusGone
+	}
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		if r.URL.Path == a.getRelativePath(p.Blog, "") {
-			a.serveActivityStreams(p.Blog, w, r)
+			a.serveActivityStreams(w, r, status, p.Blog)
 			return
 		}
-		a.serveActivityStreamsPost(p, w, r)
+		a.serveActivityStreamsPost(w, r, status, p)
 		return
 	}
 	canonical := p.firstParameter("original")
@@ -88,11 +92,10 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	if p.Path == a.getRelativePath(p.Blog, "") {
 		renderMethod = a.renderStaticHome
 	}
-	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))
-	status := http.StatusOK
-	if p.Deleted() {
-		status = http.StatusGone
+	if p.Visibility != visibilityPublic {
+		w.Header().Set("X-Robots-Tag", "noindex")
 	}
+	w.Header().Add("Link", fmt.Sprintf("<%s>; rel=shortlink", a.shortPostURL(p)))
 	a.renderWithStatusCode(w, r, status, renderMethod, &renderData{
 		BlogString: p.Blog,
 		Canonical:  canonical,
@@ -154,7 +157,7 @@ func (p *postPaginationAdapter) Slice(offset, length int, data any) error {
 func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
-		a.serveActivityStreams(blog, w, r)
+		a.serveActivityStreams(w, r, http.StatusOK, blog)
 		return
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{

@@ -38,8 +38,8 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	})
 }
 
-func (a *goBlog) serveActivityStreamsPost(p *post, w http.ResponseWriter, r *http.Request) {
-	a.serveAPItem(a.toAPNote(p), w, r)
+func (a *goBlog) serveActivityStreamsPost(w http.ResponseWriter, r *http.Request, status int, p *post) {
+	a.serveAPItem(w, r, status, a.toAPNote(p))
 }
 
 func (a *goBlog) toAPNote(p *post) *ap.Note {
@@ -159,11 +159,11 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 	return apBlog
 }
 
-func (a *goBlog) serveActivityStreams(blog string, w http.ResponseWriter, r *http.Request) {
-	a.serveAPItem(a.toApPerson(blog), w, r)
+func (a *goBlog) serveActivityStreams(w http.ResponseWriter, r *http.Request, status int, blog string) {
+	a.serveAPItem(w, r, status, a.toApPerson(blog))
 }
 
-func (a *goBlog) serveAPItem(item any, w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int, item any) {
 	// Encode
 	binary, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(item)
 	if err != nil {
