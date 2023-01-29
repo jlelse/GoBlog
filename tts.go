@@ -69,7 +69,16 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		parts = append(parts, a.renderMdTitle(title))
 	}
 	// Add body split into paragraphs because of 5000 character limit
-	parts = append(parts, strings.Split(htmlText(a.postHtml(&postHtmlOptions{p: p})), "\n\n")...)
+	phr, phw := io.Pipe()
+	go func() {
+		a.postHtmlToWriter(phw, &postHtmlOptions{p: p})
+		_ = phw.Close()
+	}()
+	postHtmlText, err := htmlTextFromReader(phr)
+	if err != nil {
+		return err
+	}
+	parts = append(parts, strings.Split(postHtmlText, "\n\n")...)
 
 	// Create TTS audio for each part
 	partReaders := []io.Reader{}
@@ -95,7 +104,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	hash := sha256.New()
-	err := mp3merge.MergeMP3(io.MultiWriter(buf, hash), partReaders...)
+	err = mp3merge.MergeMP3(io.MultiWriter(buf, hash), partReaders...)
 	if err != nil {
 		return err
 	}

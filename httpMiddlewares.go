@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 func noIndexHeader(next http.Handler) http.Handler {
@@ -40,19 +40,19 @@ func headAsGetHandler(next http.Handler) http.Handler {
 
 func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	// Build CSP domains list
-	cspBuilder := bufferpool.Get()
+	cspBuilder := builderpool.Get()
 	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
-			cspBuilder.WriteByte(' ')
+			cspBuilder.WriteString(" ")
 			cspBuilder.WriteString(u.Hostname())
 		}
 	}
 	if len(a.cfg.Server.CSPDomains) > 0 {
-		cspBuilder.WriteByte(' ')
+		cspBuilder.WriteString(" ")
 		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
 	}
 	cspDomains := cspBuilder.String()
-	bufferpool.Put(cspBuilder)
+	builderpool.Put(cspBuilder)
 	// Return handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")

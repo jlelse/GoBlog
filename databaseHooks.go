@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cast"
-	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 const dbHooksBegin contextKey = "begin"
@@ -25,7 +25,7 @@ func (db *database) dbAfter(ctx context.Context, query string, args ...any) {
 		return
 	}
 	dur := time.Since(ctx.Value(dbHooksBegin).(time.Time))
-	logBuilder := bufferpool.Get()
+	logBuilder := builderpool.Get()
 	logBuilder.WriteString("\nQuery: ")
 	logBuilder.WriteString(`"`)
 	logBuilder.WriteString(query)
@@ -52,7 +52,7 @@ func (db *database) dbAfter(ctx context.Context, query string, args ...any) {
 	logBuilder.WriteString("\nDuration: ")
 	logBuilder.WriteString(dur.String())
 	log.Println(logBuilder.String())
-	bufferpool.Put(logBuilder)
+	builderpool.Put(logBuilder)
 }
 
 func argToString(arg any) string {

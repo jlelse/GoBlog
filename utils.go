@@ -287,7 +287,10 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 
 func cleanHTMLText(s string) string {
 	// Clean HTML with UGC policy and return text
-	return htmlText(bluemonday.UGCPolicy().Sanitize(s))
+	pr, pw := io.Pipe()
+	go func() { _ = pw.CloseWithError(bluemonday.UGCPolicy().SanitizeReaderToWriter(strings.NewReader(s), pw)) }()
+	s, _ = htmlTextFromReader(pr)
+	return s
 }
 
 func defaultIfEmpty(s, d string) string {

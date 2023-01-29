@@ -137,7 +137,14 @@ func main() {
 	// Link check tool after init of markdown
 	if len(os.Args) >= 2 && os.Args[1] == "check" {
 		app.initMarkdown()
-		app.checkAllExternalLinks()
+		err = app.initTemplateStrings()
+		if err != nil {
+			app.logErrAndQuit("Failed to start check:", err.Error())
+		}
+		err = app.checkAllExternalLinks()
+		if err != nil {
+			app.logErrAndQuit("Failed to start check:", err.Error())
+		}
 		app.shutdown.ShutdownAndWait()
 		return
 	}
