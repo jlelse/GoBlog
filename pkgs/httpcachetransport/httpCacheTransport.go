@@ -14,6 +14,7 @@ type httpCacheTransport struct {
 	parent         http.RoundTripper
 	ristrettoCache *ristretto.Cache
 	ttl            time.Duration
+	body           bool
 }
 
 func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -27,7 +28,7 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	}
 	resp, err := t.parent.RoundTrip(r)
 	if err == nil && t.ristrettoCache != nil {
-		respBytes, err := httputil.DumpResponse(resp, true)
+		respBytes, err := httputil.DumpResponse(resp, t.body)
 		if err != nil {
 			return resp, err
 		}
@@ -41,5 +42,10 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 // Creates a new http.RoundTripper that caches all
 // request responses (by the request URL) in ristretto.
 func NewHttpCacheTransport(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration) http.RoundTripper {
-	return &httpCacheTransport{parent, ristrettoCache, ttl}
+	return &httpCacheTransport{parent, ristrettoCache, ttl, true}
+}
+
+// Like NewHttpCacheTransport but doesn't cache body
+func NewHttpCacheTransportNoBody(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration) http.RoundTripper {
+	return &httpCacheTransport{parent, ristrettoCache, ttl, false}
 }

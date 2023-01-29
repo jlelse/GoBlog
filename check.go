@@ -56,7 +56,7 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 	// Create HTTP client
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: httpcachetransport.NewHttpCacheTransport(gzhttp.Transport(&http.Transport{
+		Transport: httpcachetransport.NewHttpCacheTransportNoBody(gzhttp.Transport(&http.Transport{
 			DisableKeepAlives: true, MaxConnsPerHost: 1,
 		}), cache, 60*time.Minute),
 	}
@@ -66,7 +66,7 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 		status   int
 		err      error
 	}
-	p := pool.NewWithResults[*checkresult]().WithMaxGoroutines(5).WithContext(cancelContext)
+	p := pool.NewWithResults[*checkresult]().WithMaxGoroutines(10).WithContext(cancelContext)
 	for _, link := range allLinks {
 		link := link
 		p.Go(func(ctx context.Context) (result *checkresult, _ error) {
