@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"io/fs"
+	"net/http"
 	"reflect"
 
 	"go.goblog.app/app/pkgs/plugins"
@@ -76,6 +77,14 @@ func (a *goBlog) GetDatabase() plugintypes.Database {
 
 func (a *goBlog) GetPost(path string) (plugintypes.Post, error) {
 	return a.getPost(path)
+}
+
+func (a *goBlog) PurgeCache() {
+	a.cache.purge()
+}
+
+func (a *goBlog) GetHTTPClient() *http.Client {
+	return a.httpClient
 }
 
 func (p *post) GetPath() string {

@@ -15,3 +15,4 @@ var (
 
 // Dependencies
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/PuerkitoBio/goquery
+//go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/carlmjohnson/requests

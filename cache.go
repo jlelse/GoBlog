@@ -234,6 +234,9 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) *cacheI
 }
 
 func (c *cache) purge() {
+	if c == nil {
+		return
+	}
 	c.c.Clear()
 }
 

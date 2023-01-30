@@ -61,16 +61,24 @@ func init() {
 
 // _go_goblog_app_app_pkgs_plugintypes_App is an interface wrapper for App type
 type _go_goblog_app_app_pkgs_plugintypes_App struct {
-	IValue       interface{}
-	WGetDatabase func() plugintypes.Database
-	WGetPost     func(path string) (plugintypes.Post, error)
+	IValue         interface{}
+	WGetDatabase   func() plugintypes.Database
+	WGetHTTPClient func() *http.Client
+	WGetPost       func(path string) (plugintypes.Post, error)
+	WPurgeCache    func()
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetHTTPClient() *http.Client {
+	return W.WGetHTTPClient()
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintypes.Post, error) {
 	return W.WGetPost(path)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) PurgeCache() {
+	W.WPurgeCache()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Database is an interface wrapper for Database type
