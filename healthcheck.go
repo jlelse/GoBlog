@@ -20,7 +20,7 @@ func (a *goBlog) healthcheck() bool {
 		fmt.Println("healthcheck:", err.Error())
 		return false
 	}
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 	return resp.StatusCode == 200
 }
 

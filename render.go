@@ -43,7 +43,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	renderPipeReader, renderPipeWriter := io.Pipe()
 	go func() {
 		f(htmlbuilder.NewHtmlBuilder(renderPipeWriter), data)
-		renderPipeWriter.Close()
+		_ = renderPipeWriter.Close()
 	}()
 	// Run UI plugins
 	pluginPipeReader, pluginPipeWriter := io.Pipe()
@@ -52,7 +52,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 			blog: data.BlogString,
 			path: r.URL.Path,
 		}, renderPipeReader, pluginPipeWriter)
-		pluginPipeWriter.Close()
+		_ = pluginPipeWriter.Close()
 	}()
 	// Return minified HTML
 	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
@@ -69,6 +69,7 @@ func (a *goBlog) chainUiPlugins(plugins []any, rc *pluginRenderContext, rendered
 		_ = writer.Close()
 	}()
 	a.chainUiPlugins(plugins[1:], rc, reader, modified)
+	_ = reader.Close()
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

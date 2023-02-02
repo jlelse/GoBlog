@@ -1,6 +1,6 @@
 module go.goblog.app/app
 
-go 1.19
+go 1.20
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.4.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
-	github.com/carlmjohnson/requests v0.23.1
+	github.com/carlmjohnson/requests v0.23.2
 	// master
 	github.com/cretz/bine v0.2.1-0.20221201125941-b9d31d9c7866
 	github.com/dchest/captcha v1.0.0
@@ -61,7 +61,7 @@ require (
 	github.com/traefik/yaegi v0.14.4-0.20230117132604-1679870ea3c8
 	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
 	github.com/xhit/go-simple-mail/v2 v2.13.0
-	github.com/yuin/goldmark v1.5.3
+	github.com/yuin/goldmark v1.5.4
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.5.0
@@ -71,8 +71,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.13.0
 	nhooyr.io/websocket v1.8.7
-	// main
-	willnorris.com/go/microformats v1.1.2-0.20221115043057-ffbbdaef989e
+	willnorris.com/go/microformats v1.2.0
 )
 
 require (

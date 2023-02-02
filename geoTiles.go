@@ -15,11 +15,12 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Create a new request to proxy to the tile server
-		targetUrl := tileSource
-		targetUrl = strings.ReplaceAll(targetUrl, "{s}", chi.URLParam(r, "s"))
-		targetUrl = strings.ReplaceAll(targetUrl, "{z}", chi.URLParam(r, "z"))
-		targetUrl = strings.ReplaceAll(targetUrl, "{x}", chi.URLParam(r, "x"))
-		targetUrl = strings.ReplaceAll(targetUrl, "{y}", chi.URLParam(r, "y"))
+		targetUrl := strings.NewReplacer(
+			"{s}", chi.URLParam(r, "s"),
+			"{z}", chi.URLParam(r, "z"),
+			"{x}", chi.URLParam(r, "x"),
+			"{y}", chi.URLParam(r, "y"),
+		).Replace(tileSource)
 		proxyRequest, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, targetUrl, nil)
 		// Copy request headers
 		for _, k := range []string{
@@ -29,7 +30,6 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 			cacheControl,
 			"If-Modified-Since",
 			"If-None-Match",
-			"User-Agent",
 		} {
 			proxyRequest.Header.Set(k, r.Header.Get(k))
 		}

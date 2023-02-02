@@ -126,41 +126,36 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 	}
 	apIri := a.apIri(blog)
 	// Encode
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := json.NewEncoder(buf).Encode(map[string]any{
-		"subject": a.webfingerAccts[apIri],
-		"aliases": []string{
-			a.webfingerAccts[apIri],
-			apIri,
-		},
-		"links": []map[string]string{
-			{
-				"rel":  "self",
-				"type": contenttype.AS,
-				"href": apIri,
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(map[string]any{
+			"subject": a.webfingerAccts[apIri],
+			"aliases": []string{a.webfingerAccts[apIri], apIri},
+			"links": []map[string]string{
+				{
+					"rel": "self", "type": contenttype.AS, "href": apIri,
+				},
+				{
+					"rel":  "http://webfinger.net/rel/profile-page",
+					"type": "text/html", "href": apIri,
+				},
 			},
-			{
-				"rel":  "http://webfinger.net/rel/profile-page",
-				"type": "text/html",
-				"href": apIri,
-			},
-		},
-	}); err != nil {
-		a.serveError(w, r, "Encoding failed", http.StatusInternalServerError)
-		return
-	}
+		}))
+	}()
 	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
-	_ = a.min.Get().Minify(contenttype.JSON, w, buf)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
 const activityPubMentionsParameter = "activitypubmentions"
 
 func (a *goBlog) apCheckMentions(p *post) {
-	contentBuf := bufferpool.Get()
-	a.postHtmlToWriter(contentBuf, &postHtmlOptions{p: p})
-	links, err := allLinksFromHTML(contentBuf, a.fullPostURL(p))
-	bufferpool.Put(contentBuf)
+	pr, pw := io.Pipe()
+	go func() {
+		a.postHtmlToWriter(pw, &postHtmlOptions{p: p})
+		_ = pw.Close()
+	}()
+	links, err := allLinksFromHTML(pr, a.fullPostURL(p))
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		log.Println("Failed to extract links from post: " + err.Error())
 		return

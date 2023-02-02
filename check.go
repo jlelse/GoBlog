@@ -125,6 +125,7 @@ func (a *goBlog) allLinksToCheck(posts ...*post) ([]*stringPair, error) {
 				_ = pw.Close()
 			}()
 			links, err := allLinksFromHTML(pr, a.fullPostURL(post))
+			_ = pr.CloseWithError(err)
 			if err != nil {
 				return nil, err
 			}

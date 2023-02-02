@@ -173,7 +173,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	a.writeSitemapXML(w, r, sm)
 }
 
-func (a *goBlog) writeSitemapXML(w http.ResponseWriter, r *http.Request, sm any) {
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any) {
 	pr, pw := io.Pipe()
 	go func() {
 		_, _ = io.WriteString(pw, xml.Header)

@@ -87,28 +87,27 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		return "", tinifyErr
 	}
 	// Resize and download image
-	imgBuffer := bufferpool.Get()
-	defer bufferpool.Put(imgBuffer)
-	err = requests.
-		URL(compressedLocation).
-		Client(hc).
-		Method(http.MethodPost).
-		BasicAuth("api", tf.key).
-		BodyJSON(map[string]any{
-			"resize": map[string]any{
-				"method": "fit",
-				"width":  defaultCompressionWidth,
-				"height": defaultCompressionHeight,
-			},
-		}).
-		ToBytesBuffer(imgBuffer).
-		Fetch(context.Background())
-	if err != nil {
-		log.Println("Tinify error:", err.Error())
-		return "", tinifyErr
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(requests.
+			URL(compressedLocation).
+			Client(hc).
+			Method(http.MethodPost).
+			BasicAuth("api", tf.key).
+			BodyJSON(map[string]any{
+				"resize": map[string]any{
+					"method": "fit",
+					"width":  defaultCompressionWidth,
+					"height": defaultCompressionHeight,
+				},
+			}).
+			ToWriter(pw).
+			Fetch(context.Background()))
+	}()
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, imgBuffer, upload)
+	res, err := uploadCompressedFile(fileExtension, pr, upload)
+	_ = pr.CloseWithError(err)
+	return res, err
 }
 
 type cloudflare struct{}
@@ -121,19 +120,18 @@ func (*cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Cl
 	// Force jpeg
 	fileExtension := "jpeg"
 	// Compress
-	imgBuffer := bufferpool.Get()
-	defer bufferpool.Put(imgBuffer)
-	err := requests.
-		URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
-		Client(hc).
-		ToBytesBuffer(imgBuffer).
-		Fetch(context.Background())
-	if err != nil {
-		log.Println("Cloudflare error:", err.Error())
-		return "", errors.New("failed to compress image using cloudflare")
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(requests.
+			URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
+			Client(hc).
+			ToWriter(pw).
+			Fetch(context.Background()))
+	}()
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, imgBuffer, upload)
+	res, err := uploadCompressedFile(fileExtension, pr, upload)
+	_ = pr.CloseWithError(err)
+	return res, err
 }
 
 type localMediaCompressor struct{}
@@ -144,20 +142,13 @@ func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, h
 	if !allowed {
 		return "", nil
 	}
-	// Download image
-	imgBuffer := bufferpool.Get()
-	defer bufferpool.Put(imgBuffer)
-	err := requests.
-		URL(url).
-		Client(hc).
-		ToBytesBuffer(imgBuffer).
-		Fetch(context.Background())
-	if err != nil {
-		log.Println("Local compressor error:", err.Error())
-		return "", errors.New("failed to download image using local compressor")
-	}
-	// Decode image
-	img, err := imaging.Decode(imgBuffer, imaging.AutoOrientation(true))
+	// Download and decode image
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(requests.URL(url).Client(hc).ToWriter(pw).Fetch(context.Background()))
+	}()
+	img, err := imaging.Decode(pr, imaging.AutoOrientation(true))
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		log.Println("Local compressor error:", err.Error())
 		return "", errors.New("failed to compress image using local compressor")
@@ -165,20 +156,19 @@ func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, h
 	// Resize image
 	resizedImage := imaging.Fit(img, defaultCompressionWidth, defaultCompressionHeight, imaging.Lanczos)
 	// Encode image
-	resizedBuffer := bufferpool.Get()
-	defer bufferpool.Put(resizedBuffer)
-	switch fileExtension {
-	case "jpg", "jpeg":
-		err = imaging.Encode(resizedBuffer, resizedImage, imaging.JPEG, imaging.JPEGQuality(75))
-	case "png":
-		err = imaging.Encode(resizedBuffer, resizedImage, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
-	}
-	if err != nil {
-		log.Println("Local compressor error:", err.Error())
-		return "", errors.New("failed to compress image using local compressor")
-	}
+	pr, pw = io.Pipe()
+	go func() {
+		switch fileExtension {
+		case "png":
+			_ = pw.CloseWithError(imaging.Encode(pw, resizedImage, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression)))
+		default:
+			_ = pw.CloseWithError(imaging.Encode(pw, resizedImage, imaging.JPEG, imaging.JPEGQuality(75)))
+		}
+	}()
 	// Upload compressed file
-	return uploadCompressedFile(fileExtension, resizedBuffer, upload)
+	res, err := uploadCompressedFile(fileExtension, pr, upload)
+	_ = pr.CloseWithError(err)
+	return res, err
 }
 
 func uploadCompressedFile(fileExtension string, r io.Reader, upload mediaStorageSaveFunc) (string, error) {
@@ -186,7 +176,10 @@ func uploadCompressedFile(fileExtension string, r io.Reader, upload mediaStorage
 	hash := sha256.New()
 	tempBuffer := bufferpool.Get()
 	defer bufferpool.Put(tempBuffer)
-	_, _ = io.Copy(io.MultiWriter(tempBuffer, hash), r)
+	_, err := io.Copy(io.MultiWriter(tempBuffer, hash), r)
+	if err != nil {
+		return "", err
+	}
 	// Upload buffer
 	return upload(fmt.Sprintf("%x.%s", hash.Sum(nil), fileExtension), tempBuffer)
 }

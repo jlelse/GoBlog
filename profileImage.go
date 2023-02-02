@@ -19,7 +19,6 @@ import (
 	_ "embed"
 
 	"github.com/disintegration/imaging"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -91,19 +90,20 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 			quality = 75
 		}
 		// Read from database
-		var imageBytes []byte
+		var imageReader io.ReadCloser
 		if a.hasProfileImage() {
 			var err error
-			imageBytes, err = os.ReadFile(profileImageFile)
-			if err != nil || imageBytes == nil {
-				a.serveError(w, r, "Failed to read image file", http.StatusInternalServerError)
+			imageReader, err = os.Open(profileImageFile)
+			if err != nil {
+				a.serveError(w, r, "Failed to open image file", http.StatusInternalServerError)
 				return
 			}
 		} else {
-			imageBytes = defaultLogo
+			imageReader = io.NopCloser(bytes.NewReader(defaultLogo))
 		}
 		// Decode image
-		img, err := imaging.Decode(bytes.NewReader(imageBytes), imaging.AutoOrientation(true))
+		img, err := imaging.Decode(imageReader, imaging.AutoOrientation(true))
+		_ = imageReader.Close()
 		if err != nil {
 			a.serveError(w, r, "Failed to decode image", http.StatusInternalServerError)
 			return
@@ -111,16 +111,14 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		// Resize image
 		resizedImage := imaging.Fit(img, width, height, imaging.Lanczos)
 		// Encode
-		resizedBuffer := bufferpool.Get()
-		defer bufferpool.Put(resizedBuffer)
-		err = encode(resizedBuffer, resizedImage, quality)
-		if err != nil {
-			a.serveError(w, r, "Failed to encode image", http.StatusInternalServerError)
-			return
-		}
+		pr, pw := io.Pipe()
+		go func() {
+			_ = pw.CloseWithError(encode(pw, resizedImage, quality))
+		}()
 		// Return
 		w.Header().Set(contentType, mediaType)
-		_, _ = io.Copy(w, resizedBuffer)
+		_, err = io.Copy(w, pr)
+		_ = pr.CloseWithError(err)
 	}
 }
 

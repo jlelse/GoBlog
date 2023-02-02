@@ -8,7 +8,7 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, _ *http.Request) {
 	result := map[string]any{
 		"links": []map[string]any{
 			{
@@ -25,7 +25,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
-func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
 	localPosts, _ := a.db.countPosts(&postsRequestConfig{
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},

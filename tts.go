@@ -75,6 +75,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		_ = phw.Close()
 	}()
 	postHtmlText, err := htmlTextFromReader(phr)
+	_ = phr.CloseWithError(err)
 	if err != nil {
 		return err
 	}
@@ -82,14 +83,13 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 
 	// Create TTS audio for each part
 	partReaders := []io.Reader{}
+	partWriters := []*io.PipeWriter{}
 	var g errgroup.Group
 	for _, part := range parts {
 		part := part
 		pr, pw := io.Pipe()
-		defer func() {
-			pw.Close()
-		}()
 		partReaders = append(partReaders, pr)
+		partWriters = append(partWriters, pw)
 		g.Go(func() error {
 			// Build SSML
 			ssml := "<speak>" + html.EscapeString(part) + "<break time=\"500ms\"/></speak>"
@@ -105,6 +105,9 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	defer bufferpool.Put(buf)
 	hash := sha256.New()
 	err = mp3merge.MergeMP3(io.MultiWriter(buf, hash), partReaders...)
+	for _, pw := range partWriters {
+		_ = pw.CloseWithError(err)
+	}
 	if err != nil {
 		return err
 	}

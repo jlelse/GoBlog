@@ -33,7 +33,7 @@ var (
 
 // Server Metadata
 // https://indieauth.spec.indieweb.org/#x4-1-1-indieauth-server-metadata
-func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, _ *http.Request) {
 	resp := map[string]any{
 		"issuer":                 a.getInstanceRootURL(),
 		"authorization_endpoint": a.getFullAddress(indieAuthPath),

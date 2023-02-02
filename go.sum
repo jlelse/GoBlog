@@ -77,8 +77,8 @@ github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc h1:biVzkmvwrH8
 github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b h1:6+ZFm0flnudZzdSE0JxlhR2hKnGPcNB35BjQf4RYQDY=
 github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b/go.mod h1:S/7n9copUssQ56c7aAgHqftWO4LTf4xY6CGWt8Bc+3M=
-github.com/carlmjohnson/requests v0.23.1 h1:d8FpOZC6We3raxa3cW1oEyK+cNz4XSW8A6wjMkMsbOM=
-github.com/carlmjohnson/requests v0.23.1/go.mod h1:i/0+cvgndkM7SPtw911bcbYR4CP+/9vP/+TbcFqPz3A=
+github.com/carlmjohnson/requests v0.23.2 h1:SzaY+/5v8QOvt++7HTXe1xgmIb3wc/bYf2QJmrO73sM=
+github.com/carlmjohnson/requests v0.23.2/go.mod h1:09VwhOaRQYCraJcByjEuvuOGO1jxUjIx6vnAEkt2ges=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+qY=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
@@ -589,8 +589,8 @@ github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.3.7/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-github.com/yuin/goldmark v1.5.3 h1:3HUJmBFbQW9fhQOzMgseU134xfi6hU+mjWywx5Ty+/M=
-github.com/yuin/goldmark v1.5.3/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
+github.com/yuin/goldmark v1.5.4 h1:2uY/xC0roWy8IBEGLgB1ywIoEJFGmRrX21YQcvGZzjU=
+github.com/yuin/goldmark v1.5.4/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38 h1:XZjLcLoTPNZuxppY3gwhRqo/T2XF6JMGFFdkAjX3w1w=
 github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38/go.mod h1:RhP/RWpexdp+KHs7ghKnifRoIs/Bq4nDS7tRbCkOwKY=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
@@ -993,7 +993,7 @@ nhooyr.io/websocket v1.8.7/go.mod h1:B70DZP8IakI65RVQ51MsWP/8jndNma26DVA/nFSCgW0
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-willnorris.com/go/microformats v1.1.2-0.20221115043057-ffbbdaef989e h1:9dbX305ANi38nJlQP9ve2v6U1NQp9YFGP3JgrT7Rp7g=
-willnorris.com/go/microformats v1.1.2-0.20221115043057-ffbbdaef989e/go.mod h1:RrlwCSvib4qz+JICKiN7rON4phzQ3HAT7j6s4O2cZj4=
+willnorris.com/go/microformats v1.2.0 h1:73pzJCLJM69kYE5qsLI9OOC/7sImNVOzya9EQ0+1wmM=
+willnorris.com/go/microformats v1.2.0/go.mod h1:RrlwCSvib4qz+JICKiN7rON4phzQ3HAT7j6s4O2cZj4=
 willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0 h1:V5+O+YZHchEwu6ZmPcqT1dQ+mHgE356Q+w9SVOQ+QZg=
 willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0/go.mod h1:DgeruqKIsZtcDXVXNbBHa0YYEm88oAnK7PahkDtuCvw=
