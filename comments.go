@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 const commentPath = "/comment"
@@ -138,8 +138,8 @@ type commentsRequestConfig struct {
 }
 
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any) {
-	queryBuilder := bufferpool.Get()
-	defer bufferpool.Put(queryBuilder)
+	queryBuilder := builderpool.Get()
+	defer builderpool.Put(queryBuilder)
 	queryBuilder.WriteString("select id, target, name, website, comment, original from comments")
 	if config.id != 0 {
 		queryBuilder.WriteString(" where id = @id")

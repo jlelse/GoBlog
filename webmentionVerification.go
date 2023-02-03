@@ -141,13 +141,16 @@ func (a *goBlog) verifyMention(m *mention) error {
 }
 
 func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
-	linksBuffer, mfBuffer := bufferpool.Get(), bufferpool.Get()
-	defer bufferpool.Put(linksBuffer, mfBuffer)
-	if _, err := io.Copy(io.MultiWriter(linksBuffer, mfBuffer), body); err != nil {
-		return err
-	}
+	mfBuffer := bufferpool.Get()
+	defer bufferpool.Put(mfBuffer)
+	pr, pw := io.Pipe()
+	go func() {
+		_, err := io.Copy(io.MultiWriter(pw, mfBuffer), body)
+		_ = pw.CloseWithError(err)
+	}()
 	// Check if source mentions target
-	links, err := allLinksFromHTML(linksBuffer, defaultIfEmpty(m.NewSource, m.Source))
+	links, err := allLinksFromHTML(pr, defaultIfEmpty(m.NewSource, m.Source))
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/highlighting"
 )
@@ -114,11 +113,11 @@ func (a *goBlog) initChromaCSS() error {
 		return err
 	}
 	// Generate and minify CSS
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	err = chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(buf, chromaStyle)
-	if err != nil {
-		return err
-	}
-	return a.compileAsset(chromaPath, buf)
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(pw, chromaStyle))
+	}()
+	err = a.compileAsset(chromaPath, pr)
+	_ = pr.CloseWithError(err)
+	return err
 }

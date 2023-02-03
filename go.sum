@@ -168,8 +168,8 @@ github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm
 github.com/gin-gonic/gin v1.4.0/go.mod h1:OW2EZn3DO8Ln9oIKOvM++LBO+5UPHJJDH72/q/3rZdM=
 github.com/gin-gonic/gin v1.6.3/go.mod h1:75u5sXoLsGZoRN5Sgbi1eraJ4GU3++wFwWzhwvtwp4M=
 github.com/gin-gonic/gin v1.7.7 h1:3DoBmSbJbZAWqXJC3SLjAPfutPJJRN1U5pALB7EeTTs=
-github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f h1:UV5kupaU8AP8g8Bbsn53q87XCufW/E8wvnTHDKqjoR4=
-github.com/go-ap/activitypub v0.0.0-20221209114049-1ceafda50f9f/go.mod h1:1oVD0h0aPT3OEE1ZoSUoym/UGKzxe+e0y8K2AkQ1Hqs=
+github.com/go-ap/activitypub v0.0.0-20230203141357-c618b9dc33df h1:VLPWapyOUOTSK1KzNgAwoZDM7R0/XNdBt53xY8jS898=
+github.com/go-ap/activitypub v0.0.0-20230203141357-c618b9dc33df/go.mod h1:1oVD0h0aPT3OEE1ZoSUoym/UGKzxe+e0y8K2AkQ1Hqs=
 github.com/go-ap/client v0.0.0-20230125140507-b30e32f7fa90 h1:6RecS9v9M00TAnGpaAj4cRjGVZzFVuqXWoZrefGBFro=
 github.com/go-ap/client v0.0.0-20230125140507-b30e32f7fa90/go.mod h1:P5qNxXHk44o9OEmHxmjCFjS5jLZa4BZv6h7lHrmC1MA=
 github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea h1:ywGtLGVjJjMrq4mu35Qmu+NtlhlTk/gTayE6Bb4tQZk=
@@ -554,8 +554,8 @@ github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 h1:nrZ3ySNYwJ
 github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80/go.mod h1:iFyPdL66DjUD96XmzVL3ZntbzcflLnznH0fr99w5VqE=
 github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 h1:PM5hJF7HVfNWmCjMdEfbuOBNXSVF2cMFGgQTPdKCbwM=
 github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208/go.mod h1:BzWtXXrXzZUvMacR0oF/fbDDgUPO8L36tDMmRAf14ns=
-github.com/traefik/yaegi v0.14.4-0.20230117132604-1679870ea3c8 h1:/7StGZkjdW/GtwISKUGl2hz6TM+0eYYjTCxppbSAgnk=
-github.com/traefik/yaegi v0.14.4-0.20230117132604-1679870ea3c8/go.mod h1:AVRxhaI2G+nUsaM1zyktzwXn69G3t/AuTDrCiTds9p0=
+github.com/traefik/yaegi v0.14.4-0.20230203133205-0e3ea5732a87 h1:DoLt/8arxW4WLXQ+cdC+N2ezsAJDfycJMyRNsDQJgaU=
+github.com/traefik/yaegi v0.14.4-0.20230203133205-0e3ea5732a87/go.mod h1:AVRxhaI2G+nUsaM1zyktzwXn69G3t/AuTDrCiTds9p0=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=

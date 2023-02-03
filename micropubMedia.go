@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const micropubMediaSubPath = "/media"
 
 func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	// Check scope
 	if !a.micropubCheckScope(w, r, "media") {
 		return
@@ -28,22 +28,23 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form
 	err := r.ParseMultipartForm(0)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, "failed to parse multipart form", http.StatusBadRequest)
 		return
 	}
 	// Get file
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
+		a.serveError(w, r, "failed to get multipart file", http.StatusBadRequest)
 		return
 	}
-	// Read the file into temporary buffer and generate sha256 hash
+	defer file.Close()
+	// Generate sha256 hash for file
 	hash := sha256.New()
-	buffer := bufferpool.Get()
-	defer bufferpool.Put(buffer)
-	_, _ = io.Copy(buffer, io.TeeReader(file, hash))
-	_ = file.Close()
-	_ = r.Body.Close()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		a.serveError(w, r, "failed to get file hash", http.StatusBadRequest)
+		return
+	}
 	// Get file extension
 	fileExtension := filepath.Ext(header.Filename)
 	if fileExtension == "" {
@@ -59,9 +60,14 @@ func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
 	// Generate the file name
 	fileName := fmt.Sprintf("%x%s", hash.Sum(nil), fileExtension)
 	// Save file
-	location, err := a.saveMediaFile(fileName, buffer)
+	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
-		a.serveError(w, r, "failed to save original file: "+err.Error(), http.StatusInternalServerError)
+		a.serveError(w, r, "failed to read multipart file", http.StatusInternalServerError)
+		return
+	}
+	location, err := a.saveMediaFile(fileName, file)
+	if err != nil {
+		a.serveError(w, r, "failed to save original file", http.StatusInternalServerError)
 		return
 	}
 	// Try to compress file (only when not in private mode)
