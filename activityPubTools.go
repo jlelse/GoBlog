@@ -10,6 +10,7 @@ import (
 
 	"github.com/carlmjohnson/requests"
 	"github.com/go-chi/chi/v5"
+	"go.goblog.app/app/pkgs/bodylimit"
 )
 
 func (a *goBlog) apRemoteFollow(w http.ResponseWriter, r *http.Request) {
@@ -41,13 +42,17 @@ func (a *goBlog) apRemoteFollow(w http.ResponseWriter, r *http.Request) {
 			Links []*webfingerLinkType `json:"links"`
 		}
 		webfinger := &webfingerType{}
-		err := requests.URL(fmt.Sprintf("https://%s/.well-known/webfinger?resource=acct:%s@%s", instance, user, instance)).
-			Client(a.httpClient).
-			Handle(func(resp *http.Response) error {
-				defer resp.Body.Close()
-				return json.NewDecoder(io.LimitReader(resp.Body, 1000*1000)).Decode(webfinger)
-			}).
-			Fetch(r.Context())
+		pr, pw := io.Pipe()
+		go func() {
+			err := requests.
+				URL(fmt.Sprintf("https://%s/.well-known/webfinger?resource=acct:%s@%s", instance, user, instance)).
+				Client(a.httpClient).
+				ToWriter(pw).
+				Fetch(r.Context())
+			_ = pw.CloseWithError(err)
+		}()
+		err := json.NewDecoder(io.LimitReader(pr, 100*bodylimit.KB)).Decode(webfinger)
+		_ = pr.CloseWithError(err)
 		if err != nil {
 			a.serveError(w, r, "Failed to query webfinger", http.StatusInternalServerError)
 			return

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pquerna/otp/totp"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -51,8 +52,6 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// Remember to close body
-		defer r.Body.Close()
 		// Encode original request
 		headerBuffer, bodyBuffer := bufferpool.Get(), bufferpool.Get()
 		defer bufferpool.Put(headerBuffer, bodyBuffer)
@@ -62,13 +61,14 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 		_ = headerEncoder.Close()
 		// Encode body
 		bodyEncoder := base64.NewEncoder(base64.StdEncoding, bodyBuffer)
-		limit := int64(3 * 1000 * 1000) // 3 MB
+		limit := 3 * bodylimit.MB
 		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
 		if written == 0 {
 			// Maybe it's a form
 			_ = r.ParseForm()
 			// Encode form
-			written, _ = io.Copy(bodyEncoder, strings.NewReader(r.Form.Encode()))
+			sw, _ := io.WriteString(bodyEncoder, r.Form.Encode())
+			written = int64(sw)
 		}
 		bodyEncoder.Close()
 		if written >= limit {

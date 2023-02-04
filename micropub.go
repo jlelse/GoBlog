@@ -101,7 +101,6 @@ func (a *goBlog) getMicropubChannelsMap() []map[string]any {
 }
 
 func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	blog, _ := a.getBlog(r)
 	p := &post{Blog: blog}
 	switch mt, _, _ := mime.ParseMediaType(r.Header.Get(contentType)); mt {
@@ -125,7 +124,7 @@ func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
 		a.micropubCreatePostFromForm(w, r, p)
 	case contenttype.JSON:
 		parsedMfItem := &microformatItem{}
-		err := json.NewDecoder(io.LimitReader(r.Body, 10000000)).Decode(parsedMfItem)
+		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return

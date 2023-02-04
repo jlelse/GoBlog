@@ -15,7 +15,6 @@ import (
 const micropubMediaSubPath = "/media"
 
 func (a *goBlog) serveMicropubMedia(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	// Check scope
 	if !a.micropubCheckScope(w, r, "media") {
 		return

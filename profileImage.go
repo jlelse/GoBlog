@@ -194,7 +194,6 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 	}
 	_, err = io.Copy(dataFile, file)
 	_ = file.Close()
-	_ = r.Body.Close()
 	if err != nil {
 		a.serveError(w, r, "Failed to save image", http.StatusBadRequest)
 		return

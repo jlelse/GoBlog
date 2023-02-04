@@ -65,23 +65,27 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
+	// Get config
 	config := a.cfg.Blogs[blog].Blogroll
+	// Check cache
 	if cache := a.db.loadOutlineCache(blog); cache != nil {
 		return cache, nil
 	}
-	rb := requests.URL(config.Opml).Client(a.httpClient)
+	// Make request and parse OPML
+	pr, pw := io.Pipe()
+	rb := requests.URL(config.Opml).Client(a.httpClient).ToWriter(pw)
 	if config.AuthHeader != "" && config.AuthValue != "" {
 		rb.Header(config.AuthHeader, config.AuthValue)
 	}
-	var o *opml.OPML
-	err := rb.Handle(func(r *http.Response) (err error) {
-		defer r.Body.Close()
-		o, err = opml.Parse(r.Body)
-		return
-	}).Fetch(context.Background())
+	go func() {
+		_ = pw.CloseWithError(rb.Fetch(context.Background()))
+	}()
+	o, err := opml.Parse(pr)
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		return nil, err
 	}
+	// Filter and sort
 	outlines := o.Outlines
 	if len(config.Categories) > 0 {
 		filtered := []*opml.Outline{}
@@ -97,6 +101,7 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	} else {
 		outlines = sortOutlines(outlines)
 	}
+	// Cache
 	a.db.cacheOutlines(blog, outlines)
 	return outlines, nil
 }

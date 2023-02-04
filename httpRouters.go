@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"go.goblog.app/app/pkgs/bodylimit"
 )
 
 // Login
@@ -16,8 +17,8 @@ func (a *goBlog) loginRouter(r chi.Router) {
 func (a *goBlog) micropubRouter(r chi.Router) {
 	r.Use(a.checkIndieAuth)
 	r.Get("/", a.serveMicropubQuery)
-	r.Post("/", a.serveMicropubPost)
-	r.Post(micropubMediaSubPath, a.serveMicropubMedia)
+	r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/", a.serveMicropubPost)
+	r.With(bodylimit.BodyLimit(30*bodylimit.MB)).Post(micropubMediaSubPath, a.serveMicropubMedia)
 }
 
 // IndieAuth
@@ -25,10 +26,10 @@ func (a *goBlog) indieAuthRouter(r chi.Router) {
 	r.Route(indieAuthPath, func(r chi.Router) {
 		r.Get("/", a.indieAuthRequest)
 		r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
-		r.Post("/", a.indieAuthVerificationAuth)
-		r.Post(indieAuthTokenSubpath, a.indieAuthVerificationToken)
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/", a.indieAuthVerificationAuth)
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(indieAuthTokenSubpath, a.indieAuthVerificationToken)
 		r.Get(indieAuthTokenSubpath, a.indieAuthTokenVerification)
-		r.Post(indieAuthTokenRevocationSubpath, a.indieAuthTokenRevokation)
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(indieAuthTokenRevocationSubpath, a.indieAuthTokenRevokation)
 	})
 	r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/oauth-authorization-server", a.indieAuthMetadata)
 }
@@ -41,10 +42,10 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 	}
 	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
 		r.Route("/activitypub", func(r chi.Router) {
-			r.Post("/inbox/{blog}", a.apHandleInbox)
+			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/inbox/{blog}", a.apHandleInbox)
 			r.With(a.checkActivityStreamsRequest).Get("/followers/{blog}", a.apShowFollowers)
 			r.With(a.cacheMiddleware).Get("/remote_follow/{blog}", a.apRemoteFollow)
-			r.Post("/remote_follow/{blog}", a.apRemoteFollow)
+			r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/remote_follow/{blog}", a.apRemoteFollow)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(cacheLoggedIn, a.cacheMiddleware)
@@ -63,7 +64,7 @@ func (a *goBlog) webmentionsRouter(r chi.Router) {
 		return
 	}
 	// Endpoint
-	r.Post("/", a.handleWebmention)
+	r.With(bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.handleWebmention)
 	// Authenticated routes
 	r.Group(func(r chi.Router) {
 		r.Use(a.authMiddleware)
@@ -123,7 +124,7 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	// Reactions
 	if a.reactionsEnabled() {
 		r.Get("/reactions", a.getReactions)
-		r.Post("/reactions", a.postReaction)
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/reactions", a.postReaction)
 	}
 }
 
@@ -303,7 +304,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 						middleware.WithValue(pathKey, searchPath),
 					)
 					r.Get("/", a.serveSearch)
-					r.Post("/", a.serveSearch)
+					r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/", a.serveSearch)
 					searchResultPath := "/" + searchPlaceholder
 					r.Get(searchResultPath, a.serveSearchResult)
 					r.Get(searchResultPath+feedPath, a.serveSearchResult)
@@ -377,7 +378,7 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 					middleware.WithValue(pathKey, commentsPath),
 				)
 				r.With(a.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
-				r.With(a.captchaMiddleware).Post("/", a.createCommentFromRequest)
+				r.With(a.captchaMiddleware, bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.createCommentFromRequest)
 				r.Group(func(r chi.Router) {
 					// Admin
 					r.Use(a.authMiddleware)
@@ -441,7 +442,7 @@ func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 			r.Route(contactPath, func(r chi.Router) {
 				r.Use(a.privateModeHandler, a.cacheMiddleware)
 				r.Get("/", a.serveContactForm)
-				r.With(a.captchaMiddleware).Post("/", a.sendContactSubmission)
+				r.With(a.captchaMiddleware, bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.sendContactSubmission)
 			})
 		}
 	}

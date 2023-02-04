@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dchest/captcha"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -40,8 +41,6 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), captchaSolvedKey, true)))
 			return
 		}
-		// Remember to close body
-		defer r.Body.Close()
 		// Get captcha ID
 		captchaId := ""
 		if sesCaptchaId, ok := ses.Values["captchaid"]; ok {
@@ -64,13 +63,14 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		_ = headerEncoder.Close()
 		// Encode body
 		bodyEncoder := base64.NewEncoder(base64.StdEncoding, bodyBuffer)
-		limit := int64(1000 * 1000) // 1 MB
+		limit := 3 * bodylimit.MB
 		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
 		if written == 0 {
 			// Maybe it's a form
 			_ = r.ParseForm()
 			// Encode form
-			written, _ = io.Copy(bodyEncoder, strings.NewReader(r.Form.Encode()))
+			sw, _ := io.WriteString(bodyEncoder, r.Form.Encode())
+			written = int64(sw)
 		}
 		bodyEncoder.Close()
 		if written >= limit {

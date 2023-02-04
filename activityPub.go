@@ -201,6 +201,7 @@ func (a *goBlog) apCheckActivityPubReply(p *post) {
 }
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
+	// Get blog
 	blogName := chi.URLParam(r, "blog")
 	blog, ok := a.cfg.Blogs[blogName]
 	if !ok || blog == nil {
@@ -215,8 +216,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Parse activity
-	limit := int64(10 * 1000 * 1000) // 10 MB
-	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		a.serveError(w, r, "Failed to read body", http.StatusBadRequest)
 		return
