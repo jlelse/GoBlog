@@ -3,6 +3,8 @@ package plugintypes
 import (
 	"io"
 	"net/http"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // SetApp is used to allow GoBlog set its app instance to be accessible by the plugin.
@@ -33,4 +35,11 @@ type UI interface {
 	// rendered is a reader with all the rendered HTML, modify it and write it to modified. This is then returned to the client.
 	// The renderContext provides information such as the path of the request or the blog name.
 	Render(renderContext RenderContext, rendered io.Reader, modified io.Writer)
+}
+
+// UI2 plugins get called when rendering HTML.
+type UI2 interface {
+	// The renderContext provides information such as the path of the request or the blog name.
+	// The document can be used to add or modify HTML.
+	RenderWithDocument(renderContext RenderContext, doc *goquery.Document)
 }

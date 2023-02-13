@@ -33,6 +33,7 @@ You need to specify the path to the plugin (remember to mount the path to your G
 - `Exec` (Command that is executed in a Go routine when starting GoBlog) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Exec
 - `Middleware` (HTTP middleware to intercept or modify HTTP requests) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Middleware
 - `UI` (Modify rendered HTML) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI
+- `UI2` (Modify rendered HTML using a goquery document which improves performance and avoids multiple HTML parsing and rendering when using multiple plugins) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI2
 
 More types will be added later. Any plugin can implement multiple types, see the demo plugin as example.
 

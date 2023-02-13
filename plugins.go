@@ -18,6 +18,7 @@ const (
 	pluginSetAppType     = "setapp"
 	pluginSetConfigType  = "setconfig"
 	pluginUiType         = "ui"
+	pluginUi2Type        = "ui2"
 	pluginExecType       = "exec"
 	pluginMiddlewareType = "middleware"
 )
@@ -32,6 +33,7 @@ func (a *goBlog) initPlugins() error {
 			pluginSetAppType:     reflect.TypeOf((*plugintypes.SetApp)(nil)).Elem(),
 			pluginSetConfigType:  reflect.TypeOf((*plugintypes.SetConfig)(nil)).Elem(),
 			pluginUiType:         reflect.TypeOf((*plugintypes.UI)(nil)).Elem(),
+			pluginUi2Type:        reflect.TypeOf((*plugintypes.UI2)(nil)).Elem(),
 			pluginExecType:       reflect.TypeOf((*plugintypes.Exec)(nil)).Elem(),
 			pluginMiddlewareType: reflect.TypeOf((*plugintypes.Middleware)(nil)).Elem(),
 		},

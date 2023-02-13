@@ -19,11 +19,12 @@ type plugin struct {
 func GetPlugin() (
 	plugintypes.SetApp, plugintypes.SetConfig,
 	plugintypes.UI,
+	plugintypes.UI2,
 	plugintypes.Exec,
 	plugintypes.Middleware,
 ) {
 	p := &plugin{}
-	return p, p, p, p, p
+	return p, p, p, p, p, p
 }
 
 // SetApp
@@ -40,7 +41,7 @@ func (p *plugin) SetConfig(config map[string]any) {
 func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
 	doc, err := goquery.NewDocumentFromReader(rendered)
 	if err != nil {
-		fmt.Println("demoui plugin: " + err.Error())
+		fmt.Println("demo plugin: " + err.Error())
 		return
 	}
 	buf := bufferpool.Get()
@@ -51,6 +52,17 @@ func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified 
 	hb.WriteElementClose("p")
 	doc.Find("main.h-entry article div.e-content").AppendHtml(buf.String())
 	_ = goquery.Render(modified, doc.Selection)
+}
+
+// UI
+func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb.WriteElementOpen("p")
+	hb.WriteEscaped("Second end of post content")
+	hb.WriteElementClose("p")
+	doc.Find("main.h-entry article div.e-content").AppendHtml(buf.String())
 }
 
 // Exec

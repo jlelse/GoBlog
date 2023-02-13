@@ -55,6 +55,7 @@ func init() {
 		"ErrorJSON":          reflect.ValueOf(requests.ErrorJSON),
 		"GzipConfig":         reflect.ValueOf(requests.GzipConfig),
 		"HasStatusErr":       reflect.ValueOf(requests.HasStatusErr),
+		"LogTransport":       reflect.ValueOf(requests.LogTransport),
 		"MaxFollow":          reflect.ValueOf(requests.MaxFollow),
 		"NewCookieJar":       reflect.ValueOf(requests.NewCookieJar),
 		"NoFollow":           reflect.ValueOf(&requests.NoFollow).Elem(),

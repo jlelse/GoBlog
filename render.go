@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/PuerkitoBio/goquery"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
@@ -45,15 +46,30 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		f(htmlbuilder.NewHtmlBuilder(renderPipeWriter), data)
 		_ = renderPipeWriter.Close()
 	}()
+	// Create render context for plugins
+	rc := &pluginRenderContext{
+		blog: data.BlogString,
+		path: r.URL.Path,
+	}
 	// Run UI plugins
 	pluginPipeReader, pluginPipeWriter := io.Pipe()
 	go func() {
-		a.chainUiPlugins(a.getPlugins(pluginUiType), &pluginRenderContext{
-			blog: data.BlogString,
-			path: r.URL.Path,
-		}, renderPipeReader, pluginPipeWriter)
+		a.chainUiPlugins(a.getPlugins(pluginUiType), rc, renderPipeReader, pluginPipeWriter)
 		_ = pluginPipeWriter.Close()
 	}()
+	// Run UI2 plugins
+	ui2Plugins := a.getPlugins(pluginUi2Type)
+	if len(ui2Plugins) > 0 {
+		doc, _ := goquery.NewDocumentFromReader(pluginPipeReader)
+		_ = pluginPipeReader.Close()
+		for _, plugin := range ui2Plugins {
+			plugin.(plugintypes.UI2).RenderWithDocument(rc, doc)
+		}
+		pluginPipeReader, pluginPipeWriter = io.Pipe()
+		go func() {
+			_ = pluginPipeWriter.CloseWithError(goquery.Render(pluginPipeWriter, doc.Selection))
+		}()
+	}
 	// Return minified HTML
 	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }

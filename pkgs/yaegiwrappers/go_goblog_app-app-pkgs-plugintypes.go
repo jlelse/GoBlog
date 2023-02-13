@@ -27,6 +27,7 @@ package yaegiwrappers
 import (
 	"context"
 	"database/sql"
+	"github.com/PuerkitoBio/goquery"
 	"go.goblog.app/app/pkgs/plugintypes"
 	"io"
 	"net/http"
@@ -45,6 +46,7 @@ func init() {
 		"SetApp":        reflect.ValueOf((*plugintypes.SetApp)(nil)),
 		"SetConfig":     reflect.ValueOf((*plugintypes.SetConfig)(nil)),
 		"UI":            reflect.ValueOf((*plugintypes.UI)(nil)),
+		"UI2":           reflect.ValueOf((*plugintypes.UI2)(nil)),
 
 		// interface wrapper definitions
 		"_App":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
@@ -56,6 +58,7 @@ func init() {
 		"_SetApp":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
 		"_SetConfig":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
 		"_UI":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
+		"_UI2":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
 	}
 }
 
@@ -203,4 +206,14 @@ type _go_goblog_app_app_pkgs_plugintypes_UI struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_UI) Render(renderContext plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
 	W.WRender(renderContext, rendered, modified)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UI2 is an interface wrapper for UI2 type
+type _go_goblog_app_app_pkgs_plugintypes_UI2 struct {
+	IValue              interface{}
+	WRenderWithDocument func(renderContext plugintypes.RenderContext, doc *goquery.Document)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UI2) RenderWithDocument(renderContext plugintypes.RenderContext, doc *goquery.Document) {
+	W.WRenderWithDocument(renderContext, doc)
 }

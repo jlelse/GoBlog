@@ -2,7 +2,6 @@ package webrings
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/PuerkitoBio/goquery"
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -10,7 +9,7 @@ import (
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
-func GetPlugin() (plugintypes.SetConfig, plugintypes.UI) {
+func GetPlugin() (plugintypes.SetConfig, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p
 }
@@ -23,15 +22,10 @@ func (p *plugin) SetConfig(config map[string]any) {
 	p.config = config
 }
 
-func (p *plugin) Render(rc plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
+func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
 	blog := rc.GetBlog()
 	if blog == "" {
 		fmt.Println("webrings plugin: blog is empty!")
-		return
-	}
-	doc, err := goquery.NewDocumentFromReader(rendered)
-	if err != nil {
-		fmt.Println("webrings plugin: " + err.Error())
 		return
 	}
 	if blogWebringsAny, ok := p.config[blog]; ok {
@@ -74,7 +68,6 @@ func (p *plugin) Render(rc plugintypes.RenderContext, rendered io.Reader, modifi
 			}
 		}
 	}
-	_ = goquery.Render(modified, doc.Selection)
 }
 
 func unwrapToString(o any) (string, bool) {

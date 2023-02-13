@@ -162,7 +162,7 @@ func (a *goBlog) apCheckMentions(p *post) {
 	}
 	apc := a.apHttpClients[p.Blog]
 	mentions := []string{}
-	for _, link := range lo.Uniq(links) {
+	for _, link := range links {
 		act, err := apc.Actor(context.Background(), ap.IRI(link))
 		if err != nil || act == nil || act.Type != ap.PersonType {
 			continue

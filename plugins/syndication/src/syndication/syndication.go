@@ -1,9 +1,6 @@
 package syndication
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/PuerkitoBio/goquery"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
@@ -15,7 +12,7 @@ type plugin struct {
 	parameterName string
 }
 
-func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI) {
+func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p, p
 }
@@ -33,24 +30,13 @@ func (p *plugin) SetConfig(config map[string]any) {
 	}
 }
 
-func (p *plugin) Render(rc plugintypes.RenderContext, rendered io.Reader, modified io.Writer) {
-	def := func() {
-		_, _ = io.Copy(modified, rendered)
-	}
+func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
 	post, err := p.app.GetPost(rc.GetPath())
 	if err != nil || post == nil {
-		def()
 		return
 	}
 	syndicationLinks, ok := post.GetParameters()[p.parameterName]
 	if !ok || len(syndicationLinks) == 0 {
-		def()
-		return
-	}
-	doc, err := goquery.NewDocumentFromReader(rendered)
-	if err != nil {
-		fmt.Println("syndication plugin: " + err.Error())
-		def()
 		return
 	}
 	buf := bufferpool.Get()
@@ -61,5 +47,4 @@ func (p *plugin) Render(rc plugintypes.RenderContext, rendered io.Reader, modifi
 		hb.WriteElementClose("data")
 	}
 	doc.Find("main.h-entry article").AppendHtml(buf.String())
-	_ = goquery.Render(modified, doc.Selection)
 }
