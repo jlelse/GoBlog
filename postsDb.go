@@ -647,7 +647,14 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 
 func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	sections := lo.Keys(a.cfg.Blogs[blog].Sections)
-	query, params := buildPostsQuery(&postsRequestConfig{randomOrder: true, limit: 1, blog: blog, sections: sections}, "path")
+	query, params := buildPostsQuery(&postsRequestConfig{
+		randomOrder: true,
+		limit:       1,
+		blog:        blog,
+		sections:    sections,
+		visibility:  []postVisibility{visibilityPublic},
+		status:      []postStatus{statusPublished},
+	}, "path")
 	row, err := a.db.QueryRow(query, params...)
 	if err != nil {
 		return
