@@ -45,7 +45,10 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	photos := a.photoLinks(p)
 	if typ == photoSummary && len(photos) > 0 {
 		for _, photo := range photos {
-			_ = a.renderMarkdownToWriter(hb, fmt.Sprintf("![](%s)", photo), false)
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("img", "src", photo, "class", "u-photo")
+			hb.WriteElementClose("img")
+			hb.WriteElementClose("p")
 		}
 	}
 	// Post meta
@@ -64,18 +67,19 @@ func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *p
 	}
 	// Show link to full post
 	hb.WriteElementOpen("p")
-	prefix := ""
+	written := 0
 	if len(photos) > 0 {
 		// Contains photos
-		prefix += "🖼️"
+		hb.WriteEscaped("🖼️")
+		written++
 	}
 	if p.hasTrack() {
 		// Has GPX track
-		prefix += "🗺️"
+		hb.WriteEscaped("🗺️")
+		written++
 	}
-	if len(prefix) > 0 {
-		hb.WriteEscaped(" ")
-		hb.WriteEscaped(prefix)
+	if written > 0 {
+		hb.WriteUnescaped("&nbsp;")
 	}
 	hb.WriteElementOpen("a", "class", "u-url", "href", p.Path)
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "view"))

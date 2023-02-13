@@ -6,7 +6,6 @@ EXTRA="
 github.com/cretz/bine@master
 github.com/tkrajina/gpxgo@master
 github.com/yuin/goldmark-emoji@master
-github.com/traefik/yaegi@master
 "
 
 checkSkip() { 
