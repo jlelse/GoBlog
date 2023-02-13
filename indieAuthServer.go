@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hacdias/indieauth/v2"
+	"github.com/hacdias/indieauth/v3"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 

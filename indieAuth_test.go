@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hacdias/indieauth/v2"
+	"github.com/hacdias/indieauth/v3"
 	"github.com/stretchr/testify/assert"
 )
 

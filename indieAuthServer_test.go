@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/hacdias/indieauth/v2"
+	"github.com/hacdias/indieauth/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -11,7 +11,7 @@ import (
 	ct "github.com/elnormous/contenttype"
 	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
-	"github.com/hacdias/indieauth/v2"
+	"github.com/hacdias/indieauth/v3"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"

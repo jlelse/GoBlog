@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,7 +24,8 @@ import (
 	tdl "github.com/mergestat/timediff/locale"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/builderpool"
+	"golang.org/x/net/html"
 	"golang.org/x/text/language"
 )
 
@@ -58,13 +58,11 @@ func sortedStrings(s []string) []string {
 
 var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func randomString(n int, allowedChars ...[]rune) string {
-	letters := append(allowedChars, defaultLetters)[0]
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+func randomString(n int, allowedChars ...rune) string {
+	if len(allowedChars) == 0 {
+		allowedChars = append(allowedChars, defaultLetters...)
 	}
-	return string(b)
+	return lo.RandomString(n, allowedChars)
 }
 
 func isAbsoluteURL(s string) bool {
@@ -242,20 +240,28 @@ func htmlText(s string) string {
 	return text
 }
 
+// Build policy to only allow a subset of HTML tags
+var textPolicy = bluemonday.StrictPolicy().
+	AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
+	AllowElements("p").                                // Paragraphs
+	AllowElements("ol", "ul", "li").                   // Lists
+	AllowElements("blockquote")                        // Blockquotes
+
 func htmlTextFromReader(r io.Reader) (string, error) {
-	// Build policy to only allow a subset of HTML tags
-	textPolicy := bluemonday.StrictPolicy()
-	textPolicy.AllowElements("h1", "h2", "h3", "h4", "h5", "h6") // Headers
-	textPolicy.AllowElements("p")                                // Paragraphs
-	textPolicy.AllowElements("ol", "ul", "li")                   // Lists
-	textPolicy.AllowElements("blockquote")                       // Blockquotes
-	// Read filtered HTML into document
-	doc, err := goquery.NewDocumentFromReader(textPolicy.SanitizeReader(r))
+	// Filter HTML
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(textPolicy.SanitizeReaderToWriter(r, pw))
+	}()
+	// Read into document
+	doc, err := goquery.NewDocumentFromReader(pr)
+	_ = pr.CloseWithError(err)
 	if err != nil {
 		return "", err
 	}
-	text := bufferpool.Get()
-	defer bufferpool.Put(text)
+	// Parse text
+	text := builderpool.Get()
+	defer builderpool.Put(text)
 	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
 		// Input was real HTML, so build the text from the body
 		// Declare recursive function to print childs
@@ -272,7 +278,7 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 				if sel.Children().Length() > 0 { // Has children
 					printChilds(sel.Children()) // Recursive call to print childs
 				} else {
-					_, _ = text.WriteString(sel.Text()) // Print text
+					gqSelectionTextToStringWriter(sel, text) // Print text
 				}
 			})
 		}
@@ -283,6 +289,23 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 	}
 	// Trim whitespace and return
 	return strings.TrimSpace(text.String()), nil
+}
+
+func gqSelectionTextToStringWriter(sel *goquery.Selection, text io.StringWriter) {
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.TextNode {
+			_, _ = text.WriteString(n.Data)
+		}
+		if n.FirstChild != nil {
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				f(c)
+			}
+		}
+	}
+	for _, n := range sel.Nodes {
+		f(n)
+	}
 }
 
 func cleanHTMLText(s string) string {

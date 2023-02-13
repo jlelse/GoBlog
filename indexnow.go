@@ -76,7 +76,7 @@ func (a *goBlog) indexNowKey() []byte {
 		}
 		if keyBytes == nil {
 			// Generate 128 character key with hexadecimal characters
-			keyBytes = []byte(randomString(128, []rune("0123456789abcdef")))
+			keyBytes = []byte(randomString(128, []rune("0123456789abcdef")...))
 			// Store key in database
 			err = a.db.cachePersistently("indexnowkey", keyBytes)
 			if err != nil {

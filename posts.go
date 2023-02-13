@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/lo"
-	"github.com/vcraescu/go-paginator"
+	"github.com/vcraescu/go-paginator/v2"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 

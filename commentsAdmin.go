@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/vcraescu/go-paginator"
+	"github.com/vcraescu/go-paginator/v2"
 )
 
 type commentsPaginationAdapter struct {

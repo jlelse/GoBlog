@@ -30,7 +30,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hacdias/indieauth/v2 v2.1.0
+	github.com/hacdias/indieauth/v3 v3.0.1
 	github.com/jlaffaye/ftp v0.1.0
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
@@ -58,7 +58,7 @@ require (
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.15.0
-	github.com/vcraescu/go-paginator v1.0.1-0.20201114172518-2cfc59fe05c2
+	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/xhit/go-simple-mail/v2 v2.13.0
 	github.com/yuin/goldmark v1.5.4
 	// master
@@ -133,7 +133,7 @@ require (
 	github.com/valyala/fastjson v1.6.3 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
+	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
