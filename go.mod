@@ -7,7 +7,7 @@ require (
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
-	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/alecthomas/chroma/v2 v2.5.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
@@ -20,8 +20,8 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.3
 	github.com/emersion/go-smtp v0.16.0
-	github.com/go-ap/activitypub v0.0.0-20230204125704-b4f1d45500ae
-	github.com/go-ap/client v0.0.0-20230125140507-b30e32f7fa90
+	github.com/go-ap/activitypub v0.0.0-20230218112952-bfb607b04799
+	github.com/go-ap/client v0.0.0-20230218115938-0fe3ee2edd31
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-fed/httpsig v1.1.0
@@ -48,7 +48,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/samber/lo v1.37.0
 	github.com/schollz/sqlite3dump v1.3.1
-	github.com/snabb/sitemap v1.0.0
+	github.com/snabb/sitemap v1.0.3
 	github.com/sourcegraph/conc v0.2.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.15.0
@@ -64,11 +64,11 @@ require (
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
 	golang.org/x/crypto v0.6.0
-	golang.org/x/net v0.6.0
+	golang.org/x/net v0.7.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.7.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.13.0
+	maunium.net/go/mautrix v0.14.0
 	nhooyr.io/websocket v1.8.7
 	willnorris.com/go/microformats v1.2.0
 )
@@ -117,8 +117,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
-	github.com/rs/zerolog v1.28.0 // indirect
-	github.com/snabb/diagio v1.0.0 // indirect
+	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/snabb/diagio v1.0.1 // indirect
 	github.com/sourcegraph/sourcegraph/lib v0.0.0-20221216004406-749998a2ac74 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -130,7 +130,7 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
-	github.com/valyala/fastjson v1.6.3 // indirect
+	github.com/valyala/fastjson v1.6.4 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect

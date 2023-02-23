@@ -81,7 +81,7 @@ func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	links := []string{}
+	var links []string
 	doc.Find("a[href]").Each(func(_ int, item *goquery.Selection) {
 		if href, exists := item.Attr("href"); exists {
 			links = append(links, href)
@@ -265,9 +265,9 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
 		// Input was real HTML, so build the text from the body
 		// Declare recursive function to print childs
-		var printChilds func(childs *goquery.Selection)
-		printChilds = func(childs *goquery.Selection) {
-			childs.Each(func(i int, sel *goquery.Selection) {
+		var printChildren func(children *goquery.Selection)
+		printChildren = func(children *goquery.Selection) {
+			children.Each(func(i int, sel *goquery.Selection) {
 				if i > 0 && // Not first child
 					sel.Is("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote") { // All elements that start a new paragraph
 					_, _ = text.WriteString("\n\n")
@@ -276,13 +276,13 @@ func htmlTextFromReader(r io.Reader) (string, error) {
 					_, _ = fmt.Fprintf(text, "%d. ", i+1) // Add list item number
 				}
 				if sel.Children().Length() > 0 { // Has children
-					printChilds(sel.Children()) // Recursive call to print childs
+					printChildren(sel.Children()) // Recursive call to print children
 				} else {
 					gqSelectionTextToStringWriter(sel, text) // Print text
 				}
 			})
 		}
-		printChilds(bodyChild)
+		printChildren(bodyChild)
 	} else {
 		// Input was probably just text, so just use the text
 		_, _ = text.WriteString(doc.Text())
@@ -378,8 +378,9 @@ func saveToFile(reader io.Reader, fileName string) error {
 		return err
 	}
 	// Copy response to file
-	defer out.Close()
 	_, err = io.Copy(out, reader)
+	// Close file again
+	_ = out.Close()
 	return err
 }
 
@@ -412,7 +413,7 @@ func matchTimeDiffLocale(lang string) tdl.Locale {
 	timeDiffLocaleMutex.Lock()
 	defer timeDiffLocaleMutex.Unlock()
 	supportedLangs := []string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
-	supportedTags := []language.Tag{}
+	var supportedTags []language.Tag
 	for _, lang := range supportedLangs {
 		supportedTags = append(supportedTags, language.Make(lang))
 	}

@@ -43,7 +43,9 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	if err != nil {
 		return err
 	}
-	defer t.Close()
+	defer func() {
+		_ = t.Close()
+	}()
 	// Wait at most a few minutes to publish the service
 	listenCtx, listenCancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer listenCancel()
@@ -56,7 +58,9 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	if err != nil {
 		return err
 	}
-	defer onion.Close()
+	defer func() {
+		_ = onion.Close()
+	}()
 	a.torAddress = "http://" + onion.String()
 	torUrl, _ := url.Parse(a.torAddress)
 	a.torHostname = torUrl.Hostname()

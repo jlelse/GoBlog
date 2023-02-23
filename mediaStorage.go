@@ -130,7 +130,7 @@ func (l *localMediaStorage) files() (files []*mediaFile, err error) {
 				Name:     fi.Name(),
 				Location: l.location(fi.Name()),
 				Time:     fi.ModTime(),
-				Size:     int64(fi.Size()),
+				Size:     fi.Size(),
 			})
 		}
 	}
@@ -186,7 +186,9 @@ func (f *ftpMediaStorage) save(filename string, file io.Reader) (location string
 	if err != nil {
 		return "", err
 	}
-	defer c.Quit()
+	defer func() {
+		_ = c.Quit()
+	}()
 	if err = c.Stor(filename, file); err != nil {
 		return "", err
 	}
@@ -198,7 +200,9 @@ func (f *ftpMediaStorage) delete(filename string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer c.Quit()
+	defer func() {
+		_ = c.Quit()
+	}()
 	return c.Delete(filename)
 }
 
@@ -207,7 +211,9 @@ func (f *ftpMediaStorage) files() (files []*mediaFile, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer c.Quit()
+	defer func() {
+		_ = c.Quit()
+	}()
 	entries, err := c.List("")
 	if err != nil {
 		return nil, err

@@ -41,11 +41,11 @@ const (
 
 	statusNil              postStatus = ""
 	statusPublished        postStatus = "published"
-	statusPublishedDeleted postStatus = statusPublished + statusDeletedSuffix
+	statusPublishedDeleted            = statusPublished + statusDeletedSuffix
 	statusDraft            postStatus = "draft"
-	statusDraftDeleted     postStatus = statusDraft + statusDeletedSuffix
+	statusDraftDeleted                = statusDraft + statusDeletedSuffix
 	statusScheduled        postStatus = "scheduled"
-	statusScheduledDeleted postStatus = statusScheduled + statusDeletedSuffix
+	statusScheduledDeleted            = statusScheduled + statusDeletedSuffix
 
 	visibilityNil      postVisibility = ""
 	visibilityPublic   postVisibility = "public"

@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -32,13 +31,6 @@ type plugin struct {
 	Config *PluginConfig
 	plugin any
 }
-
-var (
-	// ErrValidatingPlugin is returned when the plugin fails to fully implement the interface of the plugin type.
-	ErrValidatingPlugin = errors.New("plugin does not implement type")
-	// ErrInitFunc is returned when the plugin has a faulty initialization function.
-	ErrInitFunc = errors.New("bad plugin init function")
-)
 
 const (
 	embeddedPrefix = "embedded:"
@@ -79,7 +71,7 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 
 	plugins = map[string]any{}
 
-	var filesystem fs.FS
+	var filesystem fs.FS = nil
 	if strings.HasPrefix(p.Config.Path, embeddedPrefix) {
 		filesystem = host.embeddedPlugins
 	}
@@ -87,6 +79,7 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 	interpreter := interp.New(interp.Options{
 		GoPath:               strings.TrimPrefix(p.Config.Path, embeddedPrefix),
 		SourcecodeFilesystem: filesystem,
+		Unrestricted:         true,
 	})
 
 	if err := interpreter.Use(stdlib.Symbols); err != nil {
