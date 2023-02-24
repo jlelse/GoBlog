@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"io"
 	"io/fs"
 	"net/http"
 	"reflect"
@@ -87,6 +88,14 @@ func (a *goBlog) PurgeCache() {
 
 func (a *goBlog) GetHTTPClient() *http.Client {
 	return a.httpClient
+}
+
+func (a *goBlog) CompileAsset(filename string, reader io.Reader) error {
+	return a.compileAsset(filename, reader)
+}
+
+func (a *goBlog) AssetPath(filename string) string {
+	return a.assetFileName(filename)
 }
 
 func (p *post) GetPath() string {

@@ -329,8 +329,8 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				return
 			}
 		}
-		// No post, check regex redirects or serve 404 error
-		alice.New(a.cacheMiddleware, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
+		// No post, check template assets (dynamically registered), regex redirects or serve 404 error
+		alice.New(a.cacheMiddleware, a.checkTemplateAssets, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
 	}
 }
 

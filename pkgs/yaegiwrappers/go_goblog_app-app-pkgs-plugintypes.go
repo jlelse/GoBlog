@@ -65,12 +65,20 @@ func init() {
 // _go_goblog_app_app_pkgs_plugintypes_App is an interface wrapper for App type
 type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	IValue         interface{}
+	WAssetPath     func(filename string) string
+	WCompileAsset  func(filename string, reader io.Reader) error
 	WGetDatabase   func() plugintypes.Database
 	WGetHTTPClient func() *http.Client
 	WGetPost       func(path string) (plugintypes.Post, error)
 	WPurgeCache    func()
 }
 
+func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) string {
+	return W.WAssetPath(filename)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CompileAsset(filename string, reader io.Reader) error {
+	return W.WCompileAsset(filename, reader)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
 }

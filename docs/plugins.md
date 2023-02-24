@@ -92,6 +92,14 @@ Third-party modules
 
 Some simple plugins are included in the main GoBlog repository. Some can be found elsewhere.
 
+### Custom CSS (Path `embedded:customcss`, Import `customcss`)
+
+A plugin that can add custom CSS to every HTML page. Just specify a CSS file and it will minify the file and append it to the rendered HTML head.
+
+#### Config
+
+`file` (string): Path to the custom CSS file.
+
 ### Demo (Path `embedded:demo`, Import `demo`)
 
 A simple demo plugin showcasing some of the features plugins can implement. Take a look at the source code, if you want to implement your own plugin.

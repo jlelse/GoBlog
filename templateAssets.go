@@ -89,6 +89,17 @@ func (a *goBlog) allAssetPaths() []string {
 	return paths
 }
 
+func (a *goBlog) checkTemplateAssets(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		af, ok := a.assetFiles[strings.TrimPrefix(r.URL.Path, "/")]
+		if !ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+		a.serveAssetFile(w, af)
+	})
+}
+
 // Gets only called by registered paths
 func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 	af, ok := a.assetFiles[strings.TrimPrefix(r.URL.Path, "/")]
@@ -96,6 +107,10 @@ func (a *goBlog) serveAsset(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
+	a.serveAssetFile(w, af)
+}
+
+func (*goBlog) serveAssetFile(w http.ResponseWriter, af *assetFile) {
 	w.Header().Set(cacheControl, "public,max-age=31536000,immutable")
 	w.Header().Set(contentType, af.contentType+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write(af.body)

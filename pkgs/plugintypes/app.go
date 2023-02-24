@@ -3,6 +3,7 @@ package plugintypes
 import (
 	"context"
 	"database/sql"
+	"io"
 	"net/http"
 )
 
@@ -16,6 +17,10 @@ type App interface {
 	PurgeCache()
 	// Get the HTTP client used by GoBlog
 	GetHTTPClient() *http.Client
+	// Compile an asset (like CSS, JS, etc.) and add it to use when rendering, for some filetypes, it also get's compressed
+	CompileAsset(filename string, reader io.Reader) error
+	// Get the asset path with the filename used when compiling the assert
+	AssetPath(filename string) string
 }
 
 // Database is used to provide access to GoBlog's database.

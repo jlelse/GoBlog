@@ -48,7 +48,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/samber/lo v1.37.0
 	github.com/schollz/sqlite3dump v1.3.1
-	github.com/snabb/sitemap v1.0.3
+	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.2.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.15.0
@@ -91,7 +91,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
 	github.com/go-ap/errors v0.0.0-20221205040414-01c1adfc98ea // indirect
-	github.com/go-test/deep v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -118,7 +117,7 @@ require (
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/rs/zerolog v1.29.0 // indirect
-	github.com/snabb/diagio v1.0.1 // indirect
+	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/sourcegraph/sourcegraph/lib v0.0.0-20221216004406-749998a2ac74 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
