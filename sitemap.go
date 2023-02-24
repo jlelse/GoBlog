@@ -1,8 +1,8 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -187,15 +187,16 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any)
 }
 
 const sitemapDatePathsSql = `
-with alldates as (
+with filteredposts as ( %s ),
+alldates as (
     select distinct 
         substr(published, 1, 4) as year,
         substr(published, 6, 2) as month,
         substr(published, 9, 2) as day
     from (
-            select tolocal(coalesce(published, '')) as published
-            from posts
-            where blog = @blog and status = @status and published != ''
+            select tolocal(published) as published
+            from filteredposts
+			where coalesce(published, '') != ''
         )
 )
 select distinct '/' || year from alldates
@@ -212,7 +213,12 @@ select distinct '/x/x/' || day from alldates;
 `
 
 func (a *goBlog) sitemapDatePaths(blog string) (paths []string, err error) {
-	rows, err := a.db.Query(sitemapDatePathsSql, sql.Named("blog", blog), sql.Named("status", statusPublished))
+	query, args := buildPostsQuery(&postsRequestConfig{
+		blog:       blog,
+		status:     []postStatus{statusPublished},
+		visibility: []postVisibility{visibilityPublic},
+	}, "published")
+	rows, err := a.db.Query(fmt.Sprintf(sitemapDatePathsSql, query), args...)
 	if err != nil {
 		return nil, err
 	}
