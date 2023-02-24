@@ -1,10 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -117,6 +118,12 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 			sm.Add(&sitemap.URL{
 				Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
 			})
+			datePaths, _ := a.sitemapDatePaths(b, []string{section.Name})
+			for _, p := range datePaths {
+				sm.Add(&sitemap.URL{
+					Loc: a.getFullAddress(bc.getRelativePath(path.Join(section.Name, p))),
+				})
+			}
 		}
 	}
 	// Taxonomies
@@ -138,7 +145,7 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 		}
 	}
 	// Date based archives
-	datePaths, _ := a.sitemapDatePaths(b)
+	datePaths, _ := a.sitemapDatePaths(b, []string{})
 	for _, p := range datePaths {
 		sm.Add(&sitemap.URL{
 			Loc: a.getFullAddress(bc.getRelativePath(p)),
@@ -187,15 +194,16 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any)
 }
 
 const sitemapDatePathsSql = `
-with alldates as (
+with filteredposts as ( %s ),
+alldates as (
     select distinct 
         substr(published, 1, 4) as year,
         substr(published, 6, 2) as month,
         substr(published, 9, 2) as day
     from (
-            select tolocal(coalesce(published, '')) as published
-            from posts
-            where blog = @blog and status = @status and published != ''
+            select tolocal(published) as published
+            from filteredposts
+			where coalesce(published, '') != ''
         )
 )
 select distinct '/' || year from alldates
@@ -211,8 +219,14 @@ union
 select distinct '/x/x/' || day from alldates;
 `
 
-func (a *goBlog) sitemapDatePaths(blog string) (paths []string, err error) {
-	rows, err := a.db.Query(sitemapDatePathsSql, sql.Named("blog", blog), sql.Named("status", statusPublished))
+func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []string, err error) {
+	query, args := buildPostsQuery(&postsRequestConfig{
+		blog:       blog,
+		sections:   sections,
+		status:     []postStatus{statusPublished},
+		visibility: []postVisibility{visibilityPublic},
+	}, "published")
+	rows, err := a.db.Query(fmt.Sprintf(sitemapDatePathsSql, query), args...)
 	if err != nil {
 		return nil, err
 	}
