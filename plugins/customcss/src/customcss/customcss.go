@@ -36,7 +36,7 @@ func (p *plugin) SetApp(app plugintypes.App) {
 	p.app = app
 }
 
-func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
+func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Document) {
 	if p.app == nil || p.customCSS == "" {
 		return
 	}
@@ -47,7 +47,9 @@ func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.D
 			fmt.Println("Failed to open custom css file: ", err.Error())
 			return
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 
 		err = p.app.CompileAsset("plugincustomcss.css", f)
 		if err != nil {

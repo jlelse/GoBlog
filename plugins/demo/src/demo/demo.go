@@ -54,8 +54,8 @@ func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified 
 	_ = goquery.Render(modified, doc.Selection)
 }
 
-// UI
-func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
+// UI2
+func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Document) {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	hb := htmlbuilder.NewHtmlBuilder(buf)
