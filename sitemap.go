@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -117,6 +118,12 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 			sm.Add(&sitemap.URL{
 				Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
 			})
+			datePaths, _ := a.sitemapDatePaths(b, []string{section.Name})
+			for _, p := range datePaths {
+				sm.Add(&sitemap.URL{
+					Loc: a.getFullAddress(bc.getRelativePath(path.Join(section.Name, p))),
+				})
+			}
 		}
 	}
 	// Taxonomies
@@ -138,7 +145,7 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 		}
 	}
 	// Date based archives
-	datePaths, _ := a.sitemapDatePaths(b)
+	datePaths, _ := a.sitemapDatePaths(b, nil)
 	for _, p := range datePaths {
 		sm.Add(&sitemap.URL{
 			Loc: a.getFullAddress(bc.getRelativePath(p)),
@@ -212,9 +219,10 @@ union
 select distinct '/x/x/' || day from alldates;
 `
 
-func (a *goBlog) sitemapDatePaths(blog string) (paths []string, err error) {
+func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []string, err error) {
 	query, args := buildPostsQuery(&postsRequestConfig{
 		blog:       blog,
+		sections:   sections,
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},
 	}, "published")

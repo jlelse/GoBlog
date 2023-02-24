@@ -215,6 +215,7 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 				r.Get(secPath, a.serveIndex)
 				r.Get(secPath+feedPath, a.serveIndex)
 				r.Get(secPath+paginationPath, a.serveIndex)
+				r.Group(a.dateRoutes(conf, section.Name))
 			})
 		}
 	}
@@ -251,7 +252,13 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 			a.cacheMiddleware,
 		)
 
-		yearPath := conf.getRelativePath(`/{year:(x|\d{4})}`)
+		r.Group(a.dateRoutes(conf, ""))
+	}
+}
+
+func (a *goBlog) dateRoutes(conf *configBlog, pathPrefix string) func(r chi.Router) {
+	return func(r chi.Router) {
+		yearPath := conf.getRelativePath(pathPrefix + `/{year:(x|\d{4})}`)
 		r.Get(yearPath, a.serveDate)
 		r.Get(yearPath+feedPath, a.serveDate)
 		r.Get(yearPath+paginationPath, a.serveDate)

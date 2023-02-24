@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -224,14 +225,21 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
-	_, bc := a.getBlog(r)
-	ic := &indexConfig{
-		path:  bc.getRelativePath(datePath),
-		title: title,
-		year:  year,
-		month: month,
-		day:   day,
+	var ic *indexConfig
+	if cv := r.Context().Value(indexConfigKey); cv != nil {
+		origIc := *(cv.(*indexConfig))
+		copyIc := origIc
+		ic = &copyIc
+		ic.path = path.Join(ic.path, datePath)
+		ic.titleSuffix = ": " + title
+	} else {
+		_, bc := a.getBlog(r)
+		ic = &indexConfig{
+			path:  bc.getRelativePath(datePath),
+			title: title,
+		}
 	}
+	ic.year, ic.month, ic.day = year, month, day
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, ic)))
 }
 
@@ -279,6 +287,7 @@ type indexConfig struct {
 	parameter        string
 	year, month, day int
 	title            string
+	titleSuffix      string
 	description      string
 	summaryTemplate  summaryTyp
 	status           []postStatus
@@ -342,6 +351,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	} else if search != "" {
 		title = fmt.Sprintf("%s: %s", bc.Search.Title, search)
 	}
+	title += ic.titleSuffix
 	// Description
 	var description string
 	if ic.description != "" {
