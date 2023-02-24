@@ -145,7 +145,7 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 		r.Group(a.blogTaxonomiesRouter(conf))
 
 		// Dates
-		r.With(a.privateModeHandler, a.cacheMiddleware).Group(a.blogDatesRouter(conf))
+		r.Group(a.blogDatesRouter(conf))
 
 		// Photos
 		r.Group(a.blogPhotosRouter(conf))
@@ -209,15 +209,10 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				secPath := conf.getRelativePath(section.Name)
 				r.Use(middleware.WithValue(indexConfigKey, &indexConfig{
-					path:        secPath,
-					section:     section,
-					title:       section.Title,
-					description: section.Description,
+					path:    secPath,
+					section: section,
 				}))
-				r.Route(secPath, func(r chi.Router) {
-					r.Get("/", a.serveIndex)
-					r.Group(a.blogDatesRouter(conf))
-				})
+				r.Get(secPath, a.serveIndex)
 				r.Get(secPath+feedPath, a.serveIndex)
 				r.Get(secPath+paginationPath, a.serveIndex)
 			})
@@ -251,6 +246,11 @@ func (a *goBlog) blogTaxonomiesRouter(conf *configBlog) func(r chi.Router) {
 // Blog - Dates
 func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
+		r.Use(
+			a.privateModeHandler,
+			a.cacheMiddleware,
+		)
+
 		yearPath := conf.getRelativePath(`/{year:(x|\d{4})}`)
 		r.Get(yearPath, a.serveDate)
 		r.Get(yearPath+feedPath, a.serveDate)
