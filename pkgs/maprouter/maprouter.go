@@ -5,7 +5,7 @@ import (
 )
 
 // Make sure interface is satisfied
-var _ http.Handler = &MapRouter{}
+var _ http.Handler = (*MapRouter)(nil)
 
 // Routes requests based on a map with routers
 type MapRouter struct {

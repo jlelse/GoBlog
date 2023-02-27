@@ -19,7 +19,7 @@ type backend struct {
 	values *ReceivedValues
 }
 
-var _ smtp.Backend = &backend{}
+var _ smtp.Backend = (*backend)(nil)
 
 func (b *backend) NewSession(_ *smtp.Conn) (smtp.Session, error) {
 	return &session{
@@ -31,7 +31,7 @@ type session struct {
 	values *ReceivedValues
 }
 
-var _ smtp.Session = &session{}
+var _ smtp.Session = (*session)(nil)
 
 func (s *session) AuthPlain(username, password string) error {
 	s.values.Usernames = append(s.values.Usernames, username)

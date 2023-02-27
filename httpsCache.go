@@ -8,7 +8,7 @@ import (
 )
 
 // Make sure the httpsCache type implements the Cache interface
-var _ autocert.Cache = &httpsCache{}
+var _ autocert.Cache = (*httpsCache)(nil)
 
 type httpsCache struct {
 	db *database

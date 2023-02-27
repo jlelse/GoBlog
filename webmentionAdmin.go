@@ -19,7 +19,7 @@ type webmentionPaginationAdapter struct {
 	db      *database
 }
 
-var _ paginator.Adapter = &webmentionPaginationAdapter{}
+var _ paginator.Adapter = (*webmentionPaginationAdapter)(nil)
 
 func (p *webmentionPaginationAdapter) Nums() (int64, error) {
 	p.getNums.Do(func() {
