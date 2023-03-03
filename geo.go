@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/carlmjohnson/requests"
@@ -52,7 +53,9 @@ func (a *goBlog) photonReverse(lat, lon float64, lang string) (*geojson.FeatureC
 	rb.Param("lat", fmt.Sprintf("%v", lat)).Param("lon", fmt.Sprintf("%v", lon))
 	rb.Param("lang", lo.If(lang == "de" || lang == "fr" || lang == "it", lang).Else("en")) // Photon only supports en, de, fr, it
 	// Do request
-	if err := rb.Fetch(context.Background()); err != nil {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelFunc()
+	if err := rb.Fetch(ctx); err != nil {
 		return nil, err
 	}
 	// Cache response
