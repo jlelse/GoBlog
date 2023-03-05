@@ -69,8 +69,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			// Maybe it's a form
 			_ = r.ParseForm()
 			// Encode form
-			sw, _ := io.WriteString(bodyEncoder, r.Form.Encode())
-			written = int64(sw)
+			written = int64(noError(io.WriteString(bodyEncoder, r.Form.Encode())))
 		}
 		_ = bodyEncoder.Close()
 		if written >= limit {

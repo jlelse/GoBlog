@@ -126,9 +126,9 @@ func (s *dbSessionStore) load(session *sessions.Session) (err error) {
 	if err = gob.NewDecoder(bytes.NewReader(data)).Decode(&session.Values); err != nil {
 		return err
 	}
-	session.Values[sessionCreatedOn] = timeNoErr(dateparse.ParseLocal(createdStr))
-	session.Values[sessionModifiedOn] = timeNoErr(dateparse.ParseLocal(modifiedStr))
-	session.Values[sessionExpiresOn] = timeNoErr(dateparse.ParseLocal(expiresStr))
+	session.Values[sessionCreatedOn] = noError(dateparse.ParseLocal(createdStr))
+	session.Values[sessionModifiedOn] = noError(dateparse.ParseLocal(modifiedStr))
+	session.Values[sessionExpiresOn] = noError(dateparse.ParseLocal(expiresStr))
 	return nil
 }
 

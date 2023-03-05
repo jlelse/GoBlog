@@ -139,8 +139,7 @@ type postPaginationAdapter struct {
 
 func (p *postPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		nums, _ := p.a.db.countPosts(p.config)
-		p.nums = int64(nums)
+		p.nums = int64(noError(p.a.db.countPosts(p.config)))
 	}
 	return p.nums, nil
 }

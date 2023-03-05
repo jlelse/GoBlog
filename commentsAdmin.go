@@ -20,8 +20,7 @@ type commentsPaginationAdapter struct {
 
 func (p *commentsPaginationAdapter) Nums() (int64, error) {
 	p.getNums.Do(func() {
-		nums, _ := p.db.countComments(p.config)
-		p.nums = int64(nums)
+		p.nums = int64(noError(p.db.countComments(p.config)))
 	})
 	return p.nums, nil
 }

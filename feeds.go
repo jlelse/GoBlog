@@ -55,8 +55,8 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Description: a.postSummary(p),
 			Id:          p.Path,
 			Content:     buf.String(),
-			Created:     timeNoErr(dateparse.ParseLocal(p.Published)),
-			Updated:     timeNoErr(dateparse.ParseLocal(p.Updated)),
+			Created:     noError(dateparse.ParseLocal(p.Published)),
+			Updated:     noError(dateparse.ParseLocal(p.Updated)),
 		})
 		bufferpool.Put(buf)
 	}

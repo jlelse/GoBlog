@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sourcegraph/conc/pool"
 	"github.com/vcraescu/go-paginator/v2"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -31,14 +32,20 @@ func (a *goBlog) sendNotification(text string) {
 		log.Println("Failed to save notification:", err.Error())
 	}
 	if cfg := a.cfg.Notifications; cfg != nil {
-		if err := a.sendNtfy(cfg.Ntfy, n.Text); err != nil {
-			log.Println("Failed to send notification to Ntfy:", err.Error())
-		}
-		if _, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false); err != nil {
-			log.Println("Failed to send notification to Telegram:", err.Error())
-		}
-		if _, err := a.sendMatrix(cfg.Matrix, n.Text); err != nil {
-			log.Println("Failed to send notification to Matrix:", err.Error())
+		p := pool.New().WithErrors()
+		p.Go(func() error {
+			return a.sendNtfy(cfg.Ntfy, n.Text)
+		})
+		p.Go(func() error {
+			_, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false)
+			return err
+		})
+		p.Go(func() error {
+			_, err := a.sendMatrix(cfg.Matrix, n.Text)
+			return err
+		})
+		if err := p.Wait(); err != nil {
+			log.Println("Failed to send notification:", err.Error())
 		}
 	}
 }
@@ -112,8 +119,7 @@ type notificationsPaginationAdapter struct {
 
 func (p *notificationsPaginationAdapter) Nums() (int64, error) {
 	if p.nums == 0 {
-		nums, _ := p.db.countNotifications(p.config)
-		p.nums = int64(nums)
+		p.nums = int64(noError(p.db.countNotifications(p.config)))
 	}
 	return p.nums, nil
 }

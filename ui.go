@@ -706,7 +706,6 @@ type contactRenderData struct {
 	title       string
 	description string
 	privacy     string
-	sent        bool
 }
 
 func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -721,14 +720,6 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			a.renderTitleTag(hb, rd.Blog, renderedTitle)
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
-			if cd.sent {
-				hb.WriteElementOpen("main")
-				hb.WriteElementOpen("p")
-				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "messagesent"))
-				hb.WriteElementClose("p")
-				hb.WriteElementClose("main")
-				return
-			}
 			hb.WriteElementOpen("main")
 			// Title
 			if renderedTitle != "" {
@@ -758,8 +749,18 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			} else {
 				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contactsend"))
 			}
-			hb.WriteElementClose("form")
-			hb.WriteElementClose("main")
+			hb.WriteElementsClose("form", "main")
+		},
+	)
+}
+
+func (a *goBlog) renderContactSent(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	a.renderBase(
+		hb, rd, nil,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			hb.WriteElementsOpen("main", "p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "messagesent"))
+			hb.WriteElementsClose("p", "main")
 		},
 	)
 }

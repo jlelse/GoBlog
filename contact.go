@@ -56,17 +56,15 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	// Add message text to message
 	_, _ = message.WriteString(formMessage)
 	// Send submission
-	if err := a.sendContactEmail(bc.Contact, message.String(), formEmail); err != nil {
-		log.Println(err.Error())
-	}
+	go func() {
+		if err := a.sendContactEmail(bc.Contact, message.String(), formEmail); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 	// Send notification
-	a.sendNotification(message.String())
+	go a.sendNotification(message.String())
 	// Give feedback
-	a.render(w, r, a.renderContact, &renderData{
-		Data: &contactRenderData{
-			sent: true,
-		},
-	})
+	a.render(w, r, a.renderContactSent, &renderData{})
 }
 
 func (*goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {

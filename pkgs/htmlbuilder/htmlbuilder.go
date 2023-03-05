@@ -65,8 +65,20 @@ func (h *HtmlBuilder) WriteElementOpen(tag string, attrs ...any) {
 	h.WriteUnescaped(`>`)
 }
 
+func (h *HtmlBuilder) WriteElementsOpen(tags ...string) {
+	for _, tag := range tags {
+		h.WriteElementOpen(tag)
+	}
+}
+
 func (h *HtmlBuilder) WriteElementClose(tag string) {
 	h.WriteUnescaped(`</`)
 	h.WriteUnescaped(tag)
 	h.WriteUnescaped(`>`)
+}
+
+func (h *HtmlBuilder) WriteElementsClose(tags ...string) {
+	for _, tag := range tags {
+		h.WriteElementClose(tag)
+	}
 }

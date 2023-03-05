@@ -170,7 +170,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Add posts to sitemap
 	for _, p := range posts {
 		item := &sitemap.URL{Loc: a.fullPostURL(p)}
-		lastMod := timeNoErr(dateparse.ParseLocal(defaultIfEmpty(p.Updated, p.Published)))
+		lastMod := noError(dateparse.ParseLocal(defaultIfEmpty(p.Updated, p.Published)))
 		if !lastMod.IsZero() {
 			item.LastMod = &lastMod
 		}

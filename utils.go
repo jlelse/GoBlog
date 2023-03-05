@@ -334,7 +334,7 @@ func containsStrings(s string, subStrings ...string) bool {
 	return false
 }
 
-func timeNoErr(t time.Time, _ error) time.Time {
+func noError[T any](t T, _ error) T {
 	return t
 }
 
