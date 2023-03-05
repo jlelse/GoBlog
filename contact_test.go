@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,6 +58,9 @@ func Test_contact(t *testing.T) {
 	req.Header.Add(contentType, contenttype.WWWForm)
 	app.sendContactSubmission(rec, req.WithContext(context.WithValue(req.Context(), blogKey, "en")))
 	require.Equal(t, http.StatusOK, rec.Code)
+
+	// Wait a second
+	time.Sleep(500 * time.Millisecond)
 
 	// Check sent mail
 	assert.Contains(t, rd.Usernames, "user")
