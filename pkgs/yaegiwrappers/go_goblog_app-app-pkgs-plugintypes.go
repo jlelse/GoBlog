@@ -47,6 +47,8 @@ func init() {
 		"SetConfig":     reflect.ValueOf((*plugintypes.SetConfig)(nil)),
 		"UI":            reflect.ValueOf((*plugintypes.UI)(nil)),
 		"UI2":           reflect.ValueOf((*plugintypes.UI2)(nil)),
+		"UIFooter":      reflect.ValueOf((*plugintypes.UIFooter)(nil)),
+		"UISummary":     reflect.ValueOf((*plugintypes.UISummary)(nil)),
 
 		// interface wrapper definitions
 		"_App":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
@@ -59,6 +61,8 @@ func init() {
 		"_SetConfig":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
 		"_UI":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
 		"_UI2":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
+		"_UIFooter":      reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
+		"_UISummary":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UISummary)(nil)),
 	}
 }
 
@@ -149,6 +153,8 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Middleware) Prio() int {
 // _go_goblog_app_app_pkgs_plugintypes_Post is an interface wrapper for Post type
 type _go_goblog_app_app_pkgs_plugintypes_Post struct {
 	IValue         interface{}
+	WGetContent    func() string
+	WGetParameter  func(parameter string) []string
 	WGetParameters func() map[string][]string
 	WGetPath       func() string
 	WGetPublished  func() string
@@ -156,6 +162,12 @@ type _go_goblog_app_app_pkgs_plugintypes_Post struct {
 	WGetUpdated    func() string
 }
 
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetContent() string {
+	return W.WGetContent()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetParameter(parameter string) []string {
+	return W.WGetParameter(parameter)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetParameters() map[string][]string {
 	return W.WGetParameters()
 }
@@ -177,6 +189,7 @@ type _go_goblog_app_app_pkgs_plugintypes_RenderContext struct {
 	IValue   interface{}
 	WGetBlog func() string
 	WGetPath func() string
+	WGetURL  func() string
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetBlog() string {
@@ -184,6 +197,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetBlog() string {
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetPath() string {
 	return W.WGetPath()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetURL() string {
+	return W.WGetURL()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_SetApp is an interface wrapper for SetApp type
@@ -224,4 +240,24 @@ type _go_goblog_app_app_pkgs_plugintypes_UI2 struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_UI2) RenderWithDocument(renderContext plugintypes.RenderContext, doc *goquery.Document) {
 	W.WRenderWithDocument(renderContext, doc)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UIFooter is an interface wrapper for UIFooter type
+type _go_goblog_app_app_pkgs_plugintypes_UIFooter struct {
+	IValue        interface{}
+	WRenderFooter func(renderContext plugintypes.RenderContext, doc *goquery.Document)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UIFooter) RenderFooter(renderContext plugintypes.RenderContext, doc *goquery.Document) {
+	W.WRenderFooter(renderContext, doc)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UISummary is an interface wrapper for UISummary type
+type _go_goblog_app_app_pkgs_plugintypes_UISummary struct {
+	IValue                interface{}
+	WRenderSummaryForPost func(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UISummary) RenderSummaryForPost(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document) {
+	W.WRenderSummaryForPost(renderContext, post, doc)
 }

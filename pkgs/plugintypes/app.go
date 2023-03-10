@@ -39,18 +39,24 @@ type Post interface {
 	GetPath() string
 	// Get a string array map with all the post's parameters
 	GetParameters() map[string][]string
+	// Get a single parameter array (a parameter can have multiple values)
+	GetParameter(parameter string) []string
 	// Get the post section name
 	GetSection() string
 	// Get the published date string
 	GetPublished() string
 	// Get the updated date string
 	GetUpdated() string
+	// Get the post content (markdown)
+	GetContent() string
 }
 
 // RenderContext
 type RenderContext interface {
 	// Get the path of the request
 	GetPath() string
+	// Get the URL
+	GetURL() string
 	// Get the blog name
 	GetBlog() string
 }

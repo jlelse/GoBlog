@@ -20,6 +20,8 @@ type renderData struct {
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
 	EasterEgg                  bool
+	// For plugins
+	prc *pluginRenderContext
 	// Not directly accessible
 	app *goBlog
 	req *http.Request
@@ -40,36 +42,26 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	w.Header().Set(contentType, contenttype.HTMLUTF8)
 	// Write status code
 	w.WriteHeader(statusCode)
-	// Render
+	// Render (with UI2 plugins)
 	renderPipeReader, renderPipeWriter := io.Pipe()
 	go func() {
-		f(htmlbuilder.NewHtmlBuilder(renderPipeWriter), data)
+		hb, finish := a.wrapForPlugins(
+			renderPipeWriter,
+			a.getPlugins(pluginUi2Type),
+			func(plugin any, doc *goquery.Document) {
+				plugin.(plugintypes.UI2).RenderWithDocument(data.prc, doc)
+			},
+		)
+		f(hb, data)
+		finish()
 		_ = renderPipeWriter.Close()
 	}()
-	// Create render context for plugins
-	rc := &pluginRenderContext{
-		blog: data.BlogString,
-		path: r.URL.Path,
-	}
-	// Run UI plugins
+	// Run io based UI plugins
 	pluginPipeReader, pluginPipeWriter := io.Pipe()
 	go func() {
-		a.chainUiPlugins(a.getPlugins(pluginUiType), rc, renderPipeReader, pluginPipeWriter)
+		a.chainUiPlugins(a.getPlugins(pluginUiType), data.prc, renderPipeReader, pluginPipeWriter)
 		_ = pluginPipeWriter.Close()
 	}()
-	// Run UI2 plugins
-	ui2Plugins := a.getPlugins(pluginUi2Type)
-	if len(ui2Plugins) > 0 {
-		doc, _ := goquery.NewDocumentFromReader(pluginPipeReader)
-		_ = pluginPipeReader.Close()
-		for _, plugin := range ui2Plugins {
-			plugin.(plugintypes.UI2).RenderWithDocument(rc, doc)
-		}
-		pluginPipeReader, pluginPipeWriter = io.Pipe()
-		go func() {
-			_ = pluginPipeWriter.CloseWithError(goquery.Render(pluginPipeWriter, doc.Selection))
-		}()
-	}
 	// Return minified HTML
 	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }
@@ -125,6 +117,14 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	if ee := a.cfg.EasterEgg; ee != nil && ee.Enabled {
 		data.EasterEgg = true
 	}
+	// Plugins
+	if data.prc == nil {
+		data.prc = &pluginRenderContext{
+			blog: data.BlogString,
+			path: r.URL.Path,
+			url:  a.getFullAddress(r.URL.Path),
+		}
+	}
 	// Data
 	if data.Data == nil {
 		data.Data = map[string]any{}
@@ -136,6 +136,7 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 type pluginRenderContext struct {
 	blog string
 	path string
+	url  string
 }
 
 func (d *pluginRenderContext) GetBlog() string {
@@ -144,4 +145,8 @@ func (d *pluginRenderContext) GetBlog() string {
 
 func (d *pluginRenderContext) GetPath() string {
 	return d.path
+}
+
+func (d *pluginRenderContext) GetURL() string {
+	return d.url
 }

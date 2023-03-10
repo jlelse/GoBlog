@@ -5,8 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 type summaryTyp string
@@ -17,13 +19,18 @@ const (
 )
 
 // post summary on index pages
-func (a *goBlog) renderSummary(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post, typ summaryTyp) {
+func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, bc *configBlog, p *post, typ summaryTyp) {
 	if bc == nil || p == nil {
 		return
 	}
 	if typ == "" {
 		typ = defaultSummary
 	}
+	// Plugin handling
+	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiSummaryType), func(plugin any, doc *goquery.Document) {
+		plugin.(plugintypes.UISummary).RenderSummaryForPost(rd.prc, p, doc)
+	})
+	defer finish()
 	// Start article
 	hb.WriteElementOpen("article", "class", "h-entry border-bottom")
 	if p.Priority > 0 {
@@ -673,4 +680,41 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteProfileImagePath),
 	)
 	hb.WriteElementClose("form")
+}
+
+func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	// Wrap plugins
+	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiFooterType), func(plugin any, doc *goquery.Document) {
+		plugin.(plugintypes.UIFooter).RenderFooter(rd.prc, doc)
+	})
+	defer finish()
+	// Render footer
+	hb.WriteElementOpen("footer")
+	// Footer menu
+	if fm, ok := rd.Blog.Menus["footer"]; ok {
+		hb.WriteElementOpen("nav")
+		for i, item := range fm.Items {
+			if i > 0 {
+				hb.WriteUnescaped(" &bull; ")
+			}
+			hb.WriteElementOpen("a", "href", item.Link)
+			hb.WriteEscaped(a.renderMdTitle(item.Title))
+			hb.WriteElementClose("a")
+		}
+		hb.WriteElementClose("nav")
+	}
+	// Copyright
+	hb.WriteElementOpen("p", "translate", "no")
+	hb.WriteUnescaped("&copy; ")
+	hb.WriteEscaped(time.Now().Format("2006"))
+	hb.WriteUnescaped(" ")
+	if user := a.cfg.User; user != nil && user.Name != "" {
+		hb.WriteEscaped(user.Name)
+	} else {
+		hb.WriteEscaped(a.renderMdTitle(rd.Blog.Title))
+	}
+	hb.WriteElementClose("p")
+	// Tor
+	a.renderTorNotice(hb, rd)
+	hb.WriteElementClose("footer")
 }

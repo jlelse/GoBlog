@@ -43,3 +43,18 @@ type UI2 interface {
 	// The document can be used to add or modify HTML.
 	RenderWithDocument(renderContext RenderContext, doc *goquery.Document)
 }
+
+// UISummary plugins get called when rendering the summary on indexes for a post.
+type UISummary interface {
+	// The renderContext provides information such as the path of the request or the blog name.
+	// The post contains information about the post for which to render the summary.
+	// The document can be used to add or modify the default HTML.
+	RenderSummaryForPost(renderContext RenderContext, post Post, doc *goquery.Document)
+}
+
+// UIFooter plugins get called when rendering the footer on each HTML page.
+type UIFooter interface {
+	// The renderContext provides information such as the path of the request or the blog name.
+	// The document can be used to add or modify the default HTML.
+	RenderFooter(renderContext RenderContext, doc *goquery.Document)
+}

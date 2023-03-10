@@ -27,13 +27,15 @@ You need to specify the path to the plugin (remember to mount the path to your G
 
 ## Types of plugins
 
-- `SetApp` (Access more GoBlog functionalities like the database) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetApp
-- `SetConfig` (Access the configuration provided for the plugin) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetConfig
+- `SetApp` (Access more GoBlog functionalities like the database) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetApp]
+- `SetConfig` (Access the configuration provided for the plugin) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetConfig]
 
-- `Exec` (Command that is executed in a Go routine when starting GoBlog) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Exec
-- `Middleware` (HTTP middleware to intercept or modify HTTP requests) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Middleware
-- `UI` (Modify rendered HTML) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI
-- `UI2` (Modify rendered HTML using a goquery document which improves performance and avoids multiple HTML parsing and rendering when using multiple plugins) - see https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI2
+- `Exec` (Command that is executed in a Go routine when starting GoBlog) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Exec]
+- `Middleware` (HTTP middleware to intercept or modify HTTP requests) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/]plugintypes#Middleware
+- `UI` (Modify rendered HTML) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI]
+- `UI2` (Modify rendered HTML using a goquery document which improves performance and avoids multiple HTML parsing and rendering when using multiple plugins) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI2]
+- `UISummary` (like UI2 for only the post summary on indexes) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UISummary]
+- `UIFooter` (like UI2 for only the post summary on indexes) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UIFooter]
 
 More types will be added later. Any plugin can implement multiple types, see the demo plugin as example.
 

@@ -22,6 +22,8 @@ const (
 	pluginUi2Type        = "ui2"
 	pluginExecType       = "exec"
 	pluginMiddlewareType = "middleware"
+	pluginUiSummaryType  = "uisummary"
+	pluginUiFooterType   = "uifooter"
 )
 
 func (a *goBlog) initPlugins() error {
@@ -37,6 +39,8 @@ func (a *goBlog) initPlugins() error {
 			pluginUi2Type:        reflect.TypeOf((*plugintypes.UI2)(nil)).Elem(),
 			pluginExecType:       reflect.TypeOf((*plugintypes.Exec)(nil)).Elem(),
 			pluginMiddlewareType: reflect.TypeOf((*plugintypes.Middleware)(nil)).Elem(),
+			pluginUiSummaryType:  reflect.TypeOf((*plugintypes.UISummary)(nil)).Elem(),
+			pluginUiFooterType:   reflect.TypeOf((*plugintypes.UIFooter)(nil)).Elem(),
 		},
 		yaegiwrappers.Symbols,
 		subFS,
@@ -106,6 +110,10 @@ func (p *post) GetParameters() map[string][]string {
 	return p.Parameters
 }
 
+func (p *post) GetParameter(parameter string) []string {
+	return p.Parameters[parameter]
+}
+
 func (p *post) GetSection() string {
 	return p.Section
 }
@@ -116,4 +124,8 @@ func (p *post) GetPublished() string {
 
 func (p *post) GetUpdated() string {
 	return p.Updated
+}
+
+func (p *post) GetContent() string {
+	return p.Content
 }

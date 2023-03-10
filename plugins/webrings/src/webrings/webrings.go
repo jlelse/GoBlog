@@ -9,7 +9,7 @@ import (
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
-func GetPlugin() (plugintypes.SetConfig, plugintypes.UI2) {
+func GetPlugin() (plugintypes.SetConfig, plugintypes.UIFooter) {
 	p := &plugin{}
 	return p, p
 }
@@ -22,7 +22,7 @@ func (p *plugin) SetConfig(config map[string]any) {
 	p.config = config
 }
 
-func (p *plugin) RenderWithDocument(rc plugintypes.RenderContext, doc *goquery.Document) {
+func (p *plugin) RenderFooter(rc plugintypes.RenderContext, doc *goquery.Document) {
 	blog := rc.GetBlog()
 	if blog == "" {
 		fmt.Println("webrings plugin: blog is empty!")

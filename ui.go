@@ -140,34 +140,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 		main(hb)
 	}
 	// Footer
-	hb.WriteElementOpen("footer")
-	// Footer menu
-	if fm, ok := rd.Blog.Menus["footer"]; ok {
-		hb.WriteElementOpen("nav")
-		for i, item := range fm.Items {
-			if i > 0 {
-				hb.WriteUnescaped(" &bull; ")
-			}
-			hb.WriteElementOpen("a", "href", item.Link)
-			hb.WriteEscaped(a.renderMdTitle(item.Title))
-			hb.WriteElementClose("a")
-		}
-		hb.WriteElementClose("nav")
-	}
-	// Copyright
-	hb.WriteElementOpen("p", "translate", "no")
-	hb.WriteUnescaped("&copy; ")
-	hb.WriteEscaped(time.Now().Format("2006"))
-	hb.WriteUnescaped(" ")
-	if user != nil && user.Name != "" {
-		hb.WriteEscaped(user.Name)
-	} else {
-		hb.WriteEscaped(renderedBlogTitle)
-	}
-	hb.WriteElementClose("p")
-	// Tor
-	a.renderTorNotice(hb, rd)
-	hb.WriteElementClose("footer")
+	a.renderFooter(hb, rd)
 	// Easter egg
 	if rd.EasterEgg {
 		hb.WriteElementOpen("script", "src", a.assetFileName("js/easteregg.js"), "defer", "")
@@ -409,7 +382,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			if id.posts != nil && len(id.posts) > 0 {
 				// Posts
 				for _, p := range id.posts {
-					a.renderSummary(hb, rd.Blog, p, id.summaryTemplate)
+					a.renderSummary(hb, rd, rd.Blog, p, id.summaryTemplate)
 				}
 			} else {
 				// No posts
