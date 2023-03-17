@@ -20,8 +20,8 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-smtp v0.16.0
-	github.com/go-ap/activitypub v0.0.0-20230307141717-3566110d71a0
-	github.com/go-ap/client v0.0.0-20230307141807-41be02b8fb96
+	github.com/go-ap/activitypub v0.0.0-20230317030458-892480c77bb6
+	github.com/go-ap/client v0.0.0-20230317030549-9bf6268ae536
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-fed/httpsig v1.1.0
@@ -36,7 +36,7 @@ require (
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.16.0
+	github.com/klauspost/compress v1.16.3
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.16
@@ -53,7 +53,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
-	github.com/tdewolff/minify/v2 v2.12.4
+	github.com/tdewolff/minify/v2 v2.12.5
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -68,14 +68,14 @@ require (
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.14.0
+	maunium.net/go/mautrix v0.15.0
 	nhooyr.io/websocket v1.8.7
 	willnorris.com/go/microformats v1.2.0
 )
 
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
-	git.sr.ht/~mariusor/lw v0.0.0-20221202111053-2dd31f3348e7 // indirect
+	git.sr.ht/~mariusor/lw v0.0.0-20230317075520-07e173563bf8 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
@@ -123,13 +123,14 @@ require (
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/exp v0.0.0-20230307190834-24139beb5833 // indirect
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
 	golang.org/x/image v0.6.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.29.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	maunium.net/go/maulogger/v2 v2.4.1 // indirect
 	willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0 // indirect
 )
