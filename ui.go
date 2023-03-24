@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/hacdias/indieauth/v3"
 	"github.com/kaorimatz/go-opml"
 	"github.com/mergestat/timediff"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {
@@ -847,7 +849,13 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementOpen("link", "rel", "shortlink", "href", su)
 			}
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(origHb *htmlbuilder.HtmlBuilder) {
+			// Wrap plugins
+			hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiPostType), func(plugin any, doc *goquery.Document) {
+				plugin.(plugintypes.UIPost).RenderPost(rd.prc, p, doc)
+			})
+			defer finish()
+			// Render...
 			hb.WriteElementOpen("main", "class", "h-entry")
 			// URL (hidden just for microformats)
 			hb.WriteElementOpen("data", "value", a.getFullAddress(p.Path), "class", "u-url hide")

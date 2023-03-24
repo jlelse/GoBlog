@@ -52,9 +52,35 @@ type UISummary interface {
 	RenderSummaryForPost(renderContext RenderContext, post Post, doc *goquery.Document)
 }
 
+// UIPost plugins get called when rendering the h-entry for a post. But only on the HTML frontend, not ActivityPub or feeds.
+type UIPost interface {
+	// The renderContext provides information such as the path of the request or the blog name.
+	// The post contains information about the post for which to render the summary.
+	// The document can be used to add or modify the default HTML. But it only contains the HTML for the post, not for the whole page.
+	RenderPost(renderContext RenderContext, post Post, doc *goquery.Document)
+}
+
 // UIFooter plugins get called when rendering the footer on each HTML page.
 type UIFooter interface {
 	// The renderContext provides information such as the path of the request or the blog name.
 	// The document can be used to add or modify the default HTML.
 	RenderFooter(renderContext RenderContext, doc *goquery.Document)
+}
+
+// PostCreatedHook plugins get called after a post is created.
+type PostCreatedHook interface {
+	// Handle the post.
+	PostCreated(post Post)
+}
+
+// PostUpdatedHook plugins get called after a post is updated.
+type PostUpdatedHook interface {
+	// Handle the post.
+	PostUpdated(post Post)
+}
+
+// PostUpdatedHook plugins get called after a post is deleted.
+type PostDeletedHook interface {
+	// Handle the post.
+	PostDeleted(post Post)
 }

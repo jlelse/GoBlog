@@ -79,8 +79,9 @@ func Test_markdown(t *testing.T) {
 
 		// Text
 
-		renderedText := app.renderText("**This** *is* [text](/)")
+		renderedText, err := app.renderText("**This** *is* [text](/)")
 		assert.Equal(t, "This is text", renderedText)
+		assert.NoError(t, err)
 
 		// Title
 

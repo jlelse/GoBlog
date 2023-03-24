@@ -27,17 +27,9 @@ You need to specify the path to the plugin (remember to mount the path to your G
 
 ## Types of plugins
 
-- `SetApp` (Access more GoBlog functionalities like the database) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetApp]
-- `SetConfig` (Access the configuration provided for the plugin) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#SetConfig]
+There are different plugin types for different functionalities a plugin wants to support. A plugin can implement multiple plugin types. You can find more information about the plugin types [in the Go documentation](https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes).
 
-- `Exec` (Command that is executed in a Go routine when starting GoBlog) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#Exec]
-- `Middleware` (HTTP middleware to intercept or modify HTTP requests) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/]plugintypes#Middleware
-- `UI` (Modify rendered HTML) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI]
-- `UI2` (Modify rendered HTML using a goquery document which improves performance and avoids multiple HTML parsing and rendering when using multiple plugins) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UI2]
-- `UISummary` (like UI2 for only the post summary on indexes) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UISummary]
-- `UIFooter` (like UI2 for only the post summary on indexes) - see [https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes#UIFooter]
-
-More types will be added later. Any plugin can implement multiple types, see the demo plugin as example.
+You can take a look at the demo plugin, which implements many of the plugin types.
 
 ## Plugin implementation
 
@@ -130,4 +122,23 @@ config:
       link: https://example.org/ # Link to the webring
       prev: https://example.com/ # Link to previous webring site
       next: https://example.net/ # Link to next webring site
+```
+
+### AI generated summary (Path `embedded:aitldr`, Import `aitldr`)
+
+A plugin that uses the ChatGPT API to generated a short one-sentence summary for the blog post (after creating or updating it). To prevent it from generating a summary for a post, add the following post parameter:
+
+```yaml
+noaitldr: "true"
+```
+
+#### Config
+
+```yaml
+config:
+  # Required
+  apikey: YOUR_OPEN_AI_API_KEY
+  # Optional:
+  default: # Name of the blog
+    title: "Custom title for the summary box:"
 ```

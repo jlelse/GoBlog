@@ -70,7 +70,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			// Register functions
 			for n, f := range map[string]any{
-				"mdtext":         a.renderText,
+				"mdtext":         a.renderTextSafe,
 				"tolocal":        toLocalSafe,
 				"toutc":          toUTCSafe,
 				"wordcount":      wordCount,

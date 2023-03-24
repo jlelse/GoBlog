@@ -16,14 +16,18 @@ import (
 var pluginsFS embed.FS
 
 const (
-	pluginSetAppType     = "setapp"
-	pluginSetConfigType  = "setconfig"
-	pluginUiType         = "ui"
-	pluginUi2Type        = "ui2"
-	pluginExecType       = "exec"
-	pluginMiddlewareType = "middleware"
-	pluginUiSummaryType  = "uisummary"
-	pluginUiFooterType   = "uifooter"
+	pluginSetAppType          = "setapp"
+	pluginSetConfigType       = "setconfig"
+	pluginUiType              = "ui"
+	pluginUi2Type             = "ui2"
+	pluginExecType            = "exec"
+	pluginMiddlewareType      = "middleware"
+	pluginUiSummaryType       = "uisummary"
+	pluginUiPostType          = "uiPost"
+	pluginUiFooterType        = "uifooter"
+	pluginPostCreatedHookType = "postcreatedhook"
+	pluginPostUpdatedHookType = "postupdatedhook"
+	pluginPostDeletedHookType = "postdeletedhook"
 )
 
 func (a *goBlog) initPlugins() error {
@@ -33,14 +37,18 @@ func (a *goBlog) initPlugins() error {
 	}
 	a.pluginHost = plugins.NewPluginHost(
 		map[string]reflect.Type{
-			pluginSetAppType:     reflect.TypeOf((*plugintypes.SetApp)(nil)).Elem(),
-			pluginSetConfigType:  reflect.TypeOf((*plugintypes.SetConfig)(nil)).Elem(),
-			pluginUiType:         reflect.TypeOf((*plugintypes.UI)(nil)).Elem(),
-			pluginUi2Type:        reflect.TypeOf((*plugintypes.UI2)(nil)).Elem(),
-			pluginExecType:       reflect.TypeOf((*plugintypes.Exec)(nil)).Elem(),
-			pluginMiddlewareType: reflect.TypeOf((*plugintypes.Middleware)(nil)).Elem(),
-			pluginUiSummaryType:  reflect.TypeOf((*plugintypes.UISummary)(nil)).Elem(),
-			pluginUiFooterType:   reflect.TypeOf((*plugintypes.UIFooter)(nil)).Elem(),
+			pluginSetAppType:          reflect.TypeOf((*plugintypes.SetApp)(nil)).Elem(),
+			pluginSetConfigType:       reflect.TypeOf((*plugintypes.SetConfig)(nil)).Elem(),
+			pluginUiType:              reflect.TypeOf((*plugintypes.UI)(nil)).Elem(),
+			pluginUi2Type:             reflect.TypeOf((*plugintypes.UI2)(nil)).Elem(),
+			pluginExecType:            reflect.TypeOf((*plugintypes.Exec)(nil)).Elem(),
+			pluginMiddlewareType:      reflect.TypeOf((*plugintypes.Middleware)(nil)).Elem(),
+			pluginUiSummaryType:       reflect.TypeOf((*plugintypes.UISummary)(nil)).Elem(),
+			pluginUiPostType:          reflect.TypeOf((*plugintypes.UIPost)(nil)).Elem(),
+			pluginUiFooterType:        reflect.TypeOf((*plugintypes.UIFooter)(nil)).Elem(),
+			pluginPostCreatedHookType: reflect.TypeOf((*plugintypes.PostCreatedHook)(nil)).Elem(),
+			pluginPostUpdatedHookType: reflect.TypeOf((*plugintypes.PostUpdatedHook)(nil)).Elem(),
+			pluginPostDeletedHookType: reflect.TypeOf((*plugintypes.PostDeletedHook)(nil)).Elem(),
 		},
 		yaegiwrappers.Symbols,
 		subFS,
@@ -86,6 +94,11 @@ func (a *goBlog) GetPost(path string) (plugintypes.Post, error) {
 	return a.getPost(path)
 }
 
+func (a *goBlog) GetBlog(name string) (plugintypes.Blog, bool) {
+	blog, ok := a.cfg.Blogs[name]
+	return blog, ok
+}
+
 func (a *goBlog) PurgeCache() {
 	a.cache.purge()
 }
@@ -102,6 +115,14 @@ func (a *goBlog) AssetPath(filename string) string {
 	return a.assetFileName(filename)
 }
 
+func (a *goBlog) SetPostParameter(path string, parameter string, values []string) error {
+	return a.db.replacePostParam(path, parameter, values)
+}
+
+func (a *goBlog) RenderMarkdownAsText(markdown string) (text string, err error) {
+	return a.renderText(markdown)
+}
+
 func (p *post) GetPath() string {
 	return p.Path
 }
@@ -112,6 +133,10 @@ func (p *post) GetParameters() map[string][]string {
 
 func (p *post) GetParameter(parameter string) []string {
 	return p.Parameters[parameter]
+}
+
+func (p *post) GetFirstParameterValue(parameter string) string {
+	return p.firstParameter(parameter)
 }
 
 func (p *post) GetSection() string {
@@ -128,4 +153,16 @@ func (p *post) GetUpdated() string {
 
 func (p *post) GetContent() string {
 	return p.Content
+}
+
+func (p *post) GetTitle() string {
+	return p.Title()
+}
+
+func (p *post) GetBlog() string {
+	return p.Blog
+}
+
+func (b *configBlog) GetLanguage() string {
+	return b.Lang
 }

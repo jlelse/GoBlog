@@ -120,7 +120,7 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	splitted := strings.Split(p.Content, summaryDivider)
 	hasDivider := len(splitted) > 1
 	markdown := splitted[0]
-	summary = a.renderText(markdown)
+	summary = a.renderTextSafe(markdown)
 	if !hasDivider {
 		summary = strings.Split(summary, "\n\n")[0]
 	}

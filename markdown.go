@@ -56,10 +56,7 @@ func (a *goBlog) initMarkdown() {
 		goldmark.WithParser(
 			// Override, no need for special Markdown parsers
 			parser.NewParser(
-				parser.WithBlockParsers(
-					util.Prioritized(parser.NewParagraphParser(), 1000)),
-				parser.WithInlineParsers(),
-				parser.WithParagraphTransformers(),
+				parser.WithBlockParsers(util.Prioritized(parser.NewParagraphParser(), 1000)),
 			),
 		),
 		goldmark.WithExtensions(
@@ -78,9 +75,9 @@ func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string, absoluteLink
 	return err
 }
 
-func (a *goBlog) renderText(s string) string {
+func (a *goBlog) renderText(s string) (string, error) {
 	if s == "" {
-		return ""
+		return "", nil
 	}
 	pr, pw := io.Pipe()
 	go func() {
@@ -89,9 +86,14 @@ func (a *goBlog) renderText(s string) string {
 	text, err := htmlTextFromReader(pr)
 	_ = pr.CloseWithError(err)
 	if err != nil {
-		return ""
+		return "", nil
 	}
-	return text
+	return text, nil
+}
+
+func (a *goBlog) renderTextSafe(s string) string {
+	r, _ := a.renderText(s)
+	return r
 }
 
 func (a *goBlog) renderMdTitle(s string) string {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 func (a *goBlog) preStartHooks() {
@@ -35,6 +36,9 @@ func (a *goBlog) postPostHooks(p *post) {
 	for _, f := range a.pPostHooks {
 		go f(p)
 	}
+	for _, plugin := range a.getPlugins(pluginPostCreatedHookType) {
+		go plugin.(plugintypes.PostCreatedHook).PostCreated(p)
+	}
 }
 
 func (a *goBlog) postUpdateHooks(p *post) {
@@ -52,6 +56,9 @@ func (a *goBlog) postUpdateHooks(p *post) {
 	for _, f := range a.pUpdateHooks {
 		go f(p)
 	}
+	for _, plugin := range a.getPlugins(pluginPostUpdatedHookType) {
+		go plugin.(plugintypes.PostUpdatedHook).PostUpdated(p)
+	}
 }
 
 func (a *goBlog) postDeleteHooks(p *post) {
@@ -67,6 +74,9 @@ func (a *goBlog) postDeleteHooks(p *post) {
 	}
 	for _, f := range a.pDeleteHooks {
 		go f(p)
+	}
+	for _, plugin := range a.getPlugins(pluginPostDeletedHookType) {
+		go plugin.(plugintypes.PostDeletedHook).PostDeleted(p)
 	}
 }
 

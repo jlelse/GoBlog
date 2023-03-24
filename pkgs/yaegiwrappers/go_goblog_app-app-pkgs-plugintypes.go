@@ -37,44 +37,57 @@ import (
 func init() {
 	Symbols["go.goblog.app/app/pkgs/plugintypes/plugintypes"] = map[string]reflect.Value{
 		// type definitions
-		"App":           reflect.ValueOf((*plugintypes.App)(nil)),
-		"Database":      reflect.ValueOf((*plugintypes.Database)(nil)),
-		"Exec":          reflect.ValueOf((*plugintypes.Exec)(nil)),
-		"Middleware":    reflect.ValueOf((*plugintypes.Middleware)(nil)),
-		"Post":          reflect.ValueOf((*plugintypes.Post)(nil)),
-		"RenderContext": reflect.ValueOf((*plugintypes.RenderContext)(nil)),
-		"SetApp":        reflect.ValueOf((*plugintypes.SetApp)(nil)),
-		"SetConfig":     reflect.ValueOf((*plugintypes.SetConfig)(nil)),
-		"UI":            reflect.ValueOf((*plugintypes.UI)(nil)),
-		"UI2":           reflect.ValueOf((*plugintypes.UI2)(nil)),
-		"UIFooter":      reflect.ValueOf((*plugintypes.UIFooter)(nil)),
-		"UISummary":     reflect.ValueOf((*plugintypes.UISummary)(nil)),
+		"App":             reflect.ValueOf((*plugintypes.App)(nil)),
+		"Blog":            reflect.ValueOf((*plugintypes.Blog)(nil)),
+		"Database":        reflect.ValueOf((*plugintypes.Database)(nil)),
+		"Exec":            reflect.ValueOf((*plugintypes.Exec)(nil)),
+		"Middleware":      reflect.ValueOf((*plugintypes.Middleware)(nil)),
+		"Post":            reflect.ValueOf((*plugintypes.Post)(nil)),
+		"PostCreatedHook": reflect.ValueOf((*plugintypes.PostCreatedHook)(nil)),
+		"PostDeletedHook": reflect.ValueOf((*plugintypes.PostDeletedHook)(nil)),
+		"PostUpdatedHook": reflect.ValueOf((*plugintypes.PostUpdatedHook)(nil)),
+		"RenderContext":   reflect.ValueOf((*plugintypes.RenderContext)(nil)),
+		"SetApp":          reflect.ValueOf((*plugintypes.SetApp)(nil)),
+		"SetConfig":       reflect.ValueOf((*plugintypes.SetConfig)(nil)),
+		"UI":              reflect.ValueOf((*plugintypes.UI)(nil)),
+		"UI2":             reflect.ValueOf((*plugintypes.UI2)(nil)),
+		"UIFooter":        reflect.ValueOf((*plugintypes.UIFooter)(nil)),
+		"UIPost":          reflect.ValueOf((*plugintypes.UIPost)(nil)),
+		"UISummary":       reflect.ValueOf((*plugintypes.UISummary)(nil)),
 
 		// interface wrapper definitions
-		"_App":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
-		"_Database":      reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
-		"_Exec":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
-		"_Middleware":    reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Middleware)(nil)),
-		"_Post":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Post)(nil)),
-		"_RenderContext": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_RenderContext)(nil)),
-		"_SetApp":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
-		"_SetConfig":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
-		"_UI":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
-		"_UI2":           reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
-		"_UIFooter":      reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
-		"_UISummary":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UISummary)(nil)),
+		"_App":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
+		"_Blog":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Blog)(nil)),
+		"_Database":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
+		"_Exec":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
+		"_Middleware":      reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Middleware)(nil)),
+		"_Post":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Post)(nil)),
+		"_PostCreatedHook": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_PostCreatedHook)(nil)),
+		"_PostDeletedHook": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_PostDeletedHook)(nil)),
+		"_PostUpdatedHook": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_PostUpdatedHook)(nil)),
+		"_RenderContext":   reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_RenderContext)(nil)),
+		"_SetApp":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
+		"_SetConfig":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
+		"_UI":              reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
+		"_UI2":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
+		"_UIFooter":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
+		"_UIPost":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIPost)(nil)),
+		"_UISummary":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UISummary)(nil)),
 	}
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_App is an interface wrapper for App type
 type _go_goblog_app_app_pkgs_plugintypes_App struct {
-	IValue         interface{}
-	WAssetPath     func(filename string) string
-	WCompileAsset  func(filename string, reader io.Reader) error
-	WGetDatabase   func() plugintypes.Database
-	WGetHTTPClient func() *http.Client
-	WGetPost       func(path string) (plugintypes.Post, error)
-	WPurgeCache    func()
+	IValue                interface{}
+	WAssetPath            func(filename string) string
+	WCompileAsset         func(filename string, reader io.Reader) error
+	WGetBlog              func(name string) (plugintypes.Blog, bool)
+	WGetDatabase          func() plugintypes.Database
+	WGetHTTPClient        func() *http.Client
+	WGetPost              func(path string) (plugintypes.Post, error)
+	WPurgeCache           func()
+	WRenderMarkdownAsText func(markdown string) (text string, err error)
+	WSetPostParameter     func(path string, parameter string, values []string) error
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) string {
@@ -82,6 +95,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) stri
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CompileAsset(filename string, reader io.Reader) error {
 	return W.WCompileAsset(filename, reader)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlog(name string) (plugintypes.Blog, bool) {
+	return W.WGetBlog(name)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
@@ -94,6 +110,22 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintyp
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) PurgeCache() {
 	W.WPurgeCache()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) RenderMarkdownAsText(markdown string) (text string, err error) {
+	return W.WRenderMarkdownAsText(markdown)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) SetPostParameter(path string, parameter string, values []string) error {
+	return W.WSetPostParameter(path, parameter, values)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_Blog is an interface wrapper for Blog type
+type _go_goblog_app_app_pkgs_plugintypes_Blog struct {
+	IValue       interface{}
+	WGetLanguage func() string
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_Blog) GetLanguage() string {
+	return W.WGetLanguage()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Database is an interface wrapper for Database type
@@ -152,18 +184,27 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Middleware) Prio() int {
 
 // _go_goblog_app_app_pkgs_plugintypes_Post is an interface wrapper for Post type
 type _go_goblog_app_app_pkgs_plugintypes_Post struct {
-	IValue         interface{}
-	WGetContent    func() string
-	WGetParameter  func(parameter string) []string
-	WGetParameters func() map[string][]string
-	WGetPath       func() string
-	WGetPublished  func() string
-	WGetSection    func() string
-	WGetUpdated    func() string
+	IValue                  interface{}
+	WGetBlog                func() string
+	WGetContent             func() string
+	WGetFirstParameterValue func(parameter string) string
+	WGetParameter           func(parameter string) []string
+	WGetParameters          func() map[string][]string
+	WGetPath                func() string
+	WGetPublished           func() string
+	WGetSection             func() string
+	WGetTitle               func() string
+	WGetUpdated             func() string
 }
 
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetBlog() string {
+	return W.WGetBlog()
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetContent() string {
 	return W.WGetContent()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetFirstParameterValue(parameter string) string {
+	return W.WGetFirstParameterValue(parameter)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetParameter(parameter string) []string {
 	return W.WGetParameter(parameter)
@@ -180,8 +221,41 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetPublished() string {
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetSection() string {
 	return W.WGetSection()
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetTitle() string {
+	return W.WGetTitle()
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetUpdated() string {
 	return W.WGetUpdated()
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_PostCreatedHook is an interface wrapper for PostCreatedHook type
+type _go_goblog_app_app_pkgs_plugintypes_PostCreatedHook struct {
+	IValue       interface{}
+	WPostCreated func(post plugintypes.Post)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_PostCreatedHook) PostCreated(post plugintypes.Post) {
+	W.WPostCreated(post)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_PostDeletedHook is an interface wrapper for PostDeletedHook type
+type _go_goblog_app_app_pkgs_plugintypes_PostDeletedHook struct {
+	IValue       interface{}
+	WPostDeleted func(post plugintypes.Post)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_PostDeletedHook) PostDeleted(post plugintypes.Post) {
+	W.WPostDeleted(post)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_PostUpdatedHook is an interface wrapper for PostUpdatedHook type
+type _go_goblog_app_app_pkgs_plugintypes_PostUpdatedHook struct {
+	IValue       interface{}
+	WPostUpdated func(post plugintypes.Post)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_PostUpdatedHook) PostUpdated(post plugintypes.Post) {
+	W.WPostUpdated(post)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_RenderContext is an interface wrapper for RenderContext type
@@ -250,6 +324,16 @@ type _go_goblog_app_app_pkgs_plugintypes_UIFooter struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_UIFooter) RenderFooter(renderContext plugintypes.RenderContext, doc *goquery.Document) {
 	W.WRenderFooter(renderContext, doc)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UIPost is an interface wrapper for UIPost type
+type _go_goblog_app_app_pkgs_plugintypes_UIPost struct {
+	IValue      interface{}
+	WRenderPost func(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UIPost) RenderPost(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document) {
+	W.WRenderPost(renderContext, post, doc)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_UISummary is an interface wrapper for UISummary type
