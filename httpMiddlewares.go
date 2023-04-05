@@ -52,15 +52,16 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
 	}
 	cspDomains := cspBuilder.String()
+	csp := "default-src 'self' blob:" + cspDomains + "; img-src 'self'" + cspDomains + " data:; frame-ancestors none;"
 	builderpool.Put(cspBuilder)
 	// Return handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-Xss-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self' blob:"+cspDomains+"; img-src 'self'"+cspDomains+" data:")
+		w.Header().Set("Content-Security-Policy", csp)
 		next.ServeHTTP(w, r)
 	})
 }
