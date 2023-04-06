@@ -36,7 +36,7 @@ require (
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.16.3
+	github.com/klauspost/compress v1.16.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.16
@@ -66,7 +66,7 @@ require (
 	golang.org/x/crypto v0.7.0
 	golang.org/x/net v0.8.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.8.0
+	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.15.0
 	nhooyr.io/websocket v1.8.7
@@ -81,7 +81,7 @@ require (
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.8.1 // indirect
+	github.com/dlclark/regexp2 v1.9.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
