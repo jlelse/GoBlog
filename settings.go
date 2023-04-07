@@ -88,33 +88,7 @@ func (a *goBlog) settingsDeleteSection(w http.ResponseWriter, r *http.Request) {
 const settingsCreateSectionPath = "/createsection"
 
 func (a *goBlog) settingsCreateSection(w http.ResponseWriter, r *http.Request) {
-	blog, bc := a.getBlog(r)
-	// Read values
-	sectionName := r.FormValue("sectionname")
-	sectionTitle := r.FormValue("sectiontitle")
-	if sectionName == "" || sectionTitle == "" {
-		a.serveError(w, r, "Missing values for name or title", http.StatusBadRequest)
-		return
-	}
-	// Create section
-	section := &configSection{
-		Name:  sectionName,
-		Title: sectionTitle,
-	}
-	err := a.saveSection(blog, section)
-	if err != nil {
-		a.serveError(w, r, "Failed to insert section into database", http.StatusInternalServerError)
-		return
-	}
-	// Reload sections
-	err = a.loadSections()
-	if err != nil {
-		a.serveError(w, r, "Failed to reload section configuration from the database", http.StatusInternalServerError)
-		return
-	}
-	a.reloadRouter()
-	a.cache.purge()
-	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+	a.settingsUpdateSection(w, r)
 }
 
 const settingsUpdateSectionPath = "/updatesection"
@@ -131,6 +105,7 @@ func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 	sectionDescription := r.FormValue("sectiondescription")
 	sectionPathTemplate := r.FormValue("sectionpathtemplate")
 	sectionShowFull := r.FormValue("sectionshowfull") == "on"
+	sectionHideOnStart := r.FormValue("sectionhideonstart") == "on"
 	// Create section
 	section := &configSection{
 		Name:         sectionName,
@@ -138,6 +113,7 @@ func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 		Description:  sectionDescription,
 		PathTemplate: sectionPathTemplate,
 		ShowFull:     sectionShowFull,
+		HideOnStart:  sectionHideOnStart,
 	}
 	err := a.saveSection(blog, section)
 	if err != nil {

@@ -63,8 +63,8 @@ require (
 	github.com/yuin/goldmark v1.5.4
 	// master
 	github.com/yuin/goldmark-emoji v1.0.2-0.20210607094911-0487583eca38
-	golang.org/x/crypto v0.7.0
-	golang.org/x/net v0.8.0
+	golang.org/x/crypto v0.8.0
+	golang.org/x/net v0.9.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -124,8 +124,8 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/image v0.6.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
+	golang.org/x/image v0.7.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

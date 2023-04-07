@@ -162,7 +162,7 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 	}
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
 		path:     a.getRelativePath(blog, ""),
-		sections: lo.Values(bc.Sections),
+		sections: lo.Filter(lo.Values(bc.Sections), func(s *configSection, _ int) bool { return !s.HideOnStart }),
 	})))
 }
 

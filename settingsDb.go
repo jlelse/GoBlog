@@ -78,14 +78,14 @@ func (a *goBlog) loadSections() error {
 }
 
 func (a *goBlog) getSections(blog string) (map[string]*configSection, error) {
-	rows, err := a.db.Query("select name, title, description, pathtemplate, showfull from sections where blog = @blog", sql.Named("blog", blog))
+	rows, err := a.db.Query("select name, title, description, pathtemplate, showfull, hideonstart from sections where blog = @blog", sql.Named("blog", blog))
 	if err != nil {
 		return nil, err
 	}
 	sections := map[string]*configSection{}
 	for rows.Next() {
 		section := &configSection{}
-		err = rows.Scan(&section.Name, &section.Title, &section.Description, &section.PathTemplate, &section.ShowFull)
+		err = rows.Scan(&section.Name, &section.Title, &section.Description, &section.PathTemplate, &section.ShowFull, &section.HideOnStart)
 		if err != nil {
 			return nil, err
 		}
@@ -109,8 +109,8 @@ func (a *goBlog) saveAllSections() error {
 func (a *goBlog) saveSection(blog string, section *configSection) error {
 	_, err := a.db.Exec(
 		`
-		insert into sections (blog, name, title, description, pathtemplate, showfull) values (@blog, @name, @title, @description, @pathtemplate, @showfull)
-		on conflict (blog, name) do update set title = @title2, description = @description2, pathtemplate = @pathtemplate2, showfull = @showfull2
+		insert into sections (blog, name, title, description, pathtemplate, showfull, hideonstart) values (@blog, @name, @title, @description, @pathtemplate, @showfull, @hideonstart)
+		on conflict (blog, name) do update set title = @title2, description = @description2, pathtemplate = @pathtemplate2, showfull = @showfull2, hideonstart = @hideonstart2
 		`,
 		sql.Named("blog", blog),
 		sql.Named("name", section.Name),
@@ -118,10 +118,12 @@ func (a *goBlog) saveSection(blog string, section *configSection) error {
 		sql.Named("description", section.Description),
 		sql.Named("pathtemplate", section.PathTemplate),
 		sql.Named("showfull", section.ShowFull),
+		sql.Named("hideonstart", section.HideOnStart),
 		sql.Named("title2", section.Title),
 		sql.Named("description2", section.Description),
 		sql.Named("pathtemplate2", section.PathTemplate),
 		sql.Named("showfull2", section.ShowFull),
+		sql.Named("hideonstart2", section.HideOnStart),
 	)
 	return err
 }

@@ -83,6 +83,7 @@ scheduledpostsdesc: "Posts with status `scheduled` that are published when the `
 scopes: "Scopes"
 search: "Search"
 sectiondescription: "Description"
+sectionhideonstart: "Hide on main index"
 sectionname: "Name"
 sectionpathtemplate: "Path template"
 sectionshowfull: "Show full content in summary"

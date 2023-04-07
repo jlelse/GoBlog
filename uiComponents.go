@@ -593,6 +593,12 @@ func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HtmlBuilder, rd *rend
 		hb.WriteElementOpen("label", "for", "showfull-"+section.Name)
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionshowfull"))
 		hb.WriteElementClose("label")
+		hb.WriteElementsClose("br")
+		// Hide on start
+		hb.WriteElementOpen("input", "type", "checkbox", "name", "sectionhideonstart", "id", "hideonstart-"+section.Name, lo.If(section.HideOnStart, "checked").Else(""), "")
+		hb.WriteElementOpen("label", "for", "hideonstart-"+section.Name)
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "sectionhideonstart"))
+		hb.WriteElementClose("label")
 
 		// Actions
 		hb.WriteElementOpen("div", "class", "p")

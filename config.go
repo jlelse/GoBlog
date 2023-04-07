@@ -115,6 +115,7 @@ type configSection struct {
 	Description  string `mapstructure:"description"`
 	PathTemplate string `mapstructure:"pathtemplate"`
 	ShowFull     bool   `mapstructure:"showFull"`
+	HideOnStart  bool   `mapstructure:"hideOnStart"`
 	Name         string
 }
 
