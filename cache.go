@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"sort"
 	"time"
 
-	"github.com/araddon/dateparse"
 	"github.com/dgraph-io/ristretto"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"golang.org/x/sync/singleflight"
@@ -20,7 +17,6 @@ const (
 	cacheLoggedInKey   contextKey = "cacheLoggedIn"
 	cacheExpirationKey contextKey = "cacheExpiration"
 
-	lastModified = "Last-Modified"
 	cacheControl = "Cache-Control"
 )
 
@@ -88,13 +84,6 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
-		if ifModifiedSinceHeader := r.Header.Get("If-Modified-Since"); ifModifiedSinceHeader != "" {
-			if t, err := dateparse.ParseAny(ifModifiedSinceHeader); err == nil && t.After(ci.creationTime) {
-				// send 304
-				w.WriteHeader(http.StatusNotModified)
-				return
-			}
-		}
 		// set status code
 		w.WriteHeader(ci.code)
 		// write cached body
@@ -156,24 +145,15 @@ func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	}
 	// Set cache headers
 	w.Header().Set("ETag", cache.eTag)
-	w.Header().Set(lastModified, cache.creationTime.UTC().Format(http.TimeFormat))
-	if w.Header().Get(cacheControl) == "" {
-		if cache.expiration != 0 {
-			w.Header().Set(cacheControl, fmt.Sprintf("public,max-age=%d,stale-while-revalidate=%d", cache.expiration, cache.expiration))
-		} else {
-			exp := a.cfg.Cache.Expiration
-			w.Header().Set(cacheControl, fmt.Sprintf("public,max-age=%d,s-max-age=%d,stale-while-revalidate=%d", exp, exp/3, exp))
-		}
-	}
+	w.Header().Set(cacheControl, "public,no-cache")
 }
 
 type cacheItem struct {
-	expiration   int
-	creationTime time.Time
-	eTag         string
-	code         int
-	header       http.Header
-	body         []byte
+	expiration int
+	eTag       string
+	code       int
+	header     http.Header
+	body       []byte
 }
 
 // Calculate byte size of cache item using size of header, body and etag
@@ -203,24 +183,12 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) *cacheI
 	rec := newCacheRecorder()
 	next.ServeHTTP(rec, cr)
 	item := rec.finish()
-	// Set eTag
-	item.eTag = item.header.Get("ETag")
-	if item.eTag == "" {
-		item.eTag = fmt.Sprintf("%x", sha256.Sum256(item.body))
-	}
-	// Set creation time
-	item.creationTime = time.Now()
-	if lm := item.header.Get(lastModified); lm != "" {
-		if parsedTime, te := dateparse.ParseLocal(lm); te == nil {
-			item.creationTime = parsedTime
-		}
-	}
 	// Set expiration
 	item.expiration, _ = cr.Context().Value(cacheExpirationKey).(int)
 	// Remove problematic headers
 	item.header.Del("Accept-Ranges")
 	item.header.Del("ETag")
-	item.header.Del(lastModified)
+	item.header.Del("Last-Modified")
 	// Save cache
 	if cch := item.header.Get(cacheControl); !containsStrings(cch, "no-store", "private", "no-cache") {
 		cost := int64(item.cost())

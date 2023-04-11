@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/stretchr/testify/assert"
@@ -14,9 +13,8 @@ import (
 
 func Benchmark_cacheItem_cost(b *testing.B) {
 	ci := &cacheItem{
-		creationTime: time.Now(),
-		eTag:         "abc",
-		code:         200,
+		eTag: "abc",
+		code: 200,
 		header: http.Header{
 			"Content-Type": []string{"text/html"},
 		},

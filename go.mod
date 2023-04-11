@@ -30,7 +30,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hacdias/indieauth/v3 v3.0.1
+	github.com/hacdias/indieauth/v3 v3.1.0
 	github.com/jlaffaye/ftp v0.1.0
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4

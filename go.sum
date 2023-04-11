@@ -238,8 +238,8 @@ github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/z
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWmnc=
 github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/hacdias/indieauth/v3 v3.0.1 h1:b/C2VlqOzijvVJuezFcGhEmMZyCvZgdHgLZIb9BOlxk=
-github.com/hacdias/indieauth/v3 v3.0.1/go.mod h1:mVMKFOoVMYgGb06HgXiSevyIJu3/GoRo/EujEXSpAKs=
+github.com/hacdias/indieauth/v3 v3.1.0 h1:aVj9hp9cNCYrlUnSybrG7vNSgJ1/4JIsSa0jsQ3zpHk=
+github.com/hacdias/indieauth/v3 v3.1.0/go.mod h1:EmGEAbqGNhCnJR6Uk00t83x7ASQeo0EBNf/5XiFvS9w=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
 github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=

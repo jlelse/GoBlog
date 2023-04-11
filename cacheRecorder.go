@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"net/http"
 )
 
@@ -21,6 +23,10 @@ func newCacheRecorder() *cacheRecorder {
 
 func (c *cacheRecorder) finish() *cacheItem {
 	c.done = true
+	c.item.eTag = c.item.header.Get("ETag")
+	if c.item.eTag == "" {
+		c.item.eTag = fmt.Sprintf("%x", sha256.Sum256(c.item.body))
+	}
 	return &c.item
 }
 
