@@ -93,6 +93,7 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(reactions))
 	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
+	w.Header().Set(cacheControl, "no-store")
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }
 
