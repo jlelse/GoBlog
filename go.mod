@@ -108,8 +108,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rs/xid v1.4.0 // indirect
-	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/zerolog v1.29.1 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

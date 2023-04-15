@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/carlmjohnson/requests"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
@@ -86,83 +86,71 @@ func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Rea
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
-	if action := r.FormValue("editoraction"); action != "" {
-		switch action {
-		case "loadupdate":
-			post, err := a.getPost(r.FormValue("path"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			a.render(w, r, a.renderEditor, &renderData{
-				Data: &editorRenderData{
-					presetParams:      parsePresetPostParamsFromQuery(r),
-					updatePostUrl:     a.fullPostURL(post),
-					updatePostContent: a.postToMfItem(post).Properties.Content[0],
-				},
-			})
-		case "updatepost":
-			buf := bufferpool.Get()
-			defer bufferpool.Put(buf)
-			err := json.NewEncoder(buf).Encode(map[string]any{
-				"action": actionUpdate,
-				"url":    r.FormValue("url"),
-				"replace": map[string][]string{
-					"content": {
-						r.FormValue("content"),
-					},
-				},
-			})
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, "", buf)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			req.Header.Set(contentType, contenttype.JSON)
-			a.editorMicropubPost(w, req, false)
-		case "upload":
-			a.editorMicropubPost(w, r, true)
-		case "tts":
-			parsedURL, err := url.Parse(r.FormValue("url"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			post, err := a.getPost(parsedURL.Path)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			if err = a.createPostTTSAudio(post); err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, post.Path, http.StatusFound)
-		case "helpgpx":
-			file, _, err := r.FormFile("file")
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			gpx, err := io.ReadAll(a.min.Get().Reader(contenttype.XML, file))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			w.Header().Set(contentType, contenttype.TextUTF8)
-			_ = yaml.NewEncoder(w).Encode(map[string]string{
-				"gpx": string(gpx),
-			})
-		default:
-			a.serveError(w, r, "Unknown editoraction", http.StatusBadRequest)
+	switch action := r.FormValue("editoraction"); action {
+	case "loadupdate":
+		post, err := a.getPost(r.FormValue("path"))
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
 		}
-		return
+		a.render(w, r, a.renderEditor, &renderData{
+			Data: &editorRenderData{
+				presetParams:      parsePresetPostParamsFromQuery(r),
+				updatePostUrl:     a.fullPostURL(post),
+				updatePostContent: a.postToMfItem(post).Properties.Content[0],
+			},
+		})
+	case "createpost", "updatepost":
+		reqBody := map[string]any{}
+		if action == "updatepost" {
+			reqBody["action"] = actionUpdate
+			reqBody["url"] = r.FormValue("url")
+			reqBody["replace"] = map[string][]string{"content": {r.FormValue("content")}}
+		} else {
+			reqBody["type"] = []string{"h-entry"}
+			reqBody["properties"] = map[string][]string{"content": {r.FormValue("content")}}
+		}
+		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
+		a.editorMicropubPost(w, req, false)
+	case "upload":
+		a.editorMicropubPost(w, r, true)
+	case "delete", "undelete":
+		req, _ := requests.URL("").Method(http.MethodPost).ContentType(contenttype.WWWForm).Param("action", action).Param("url", r.FormValue("url")).Request(r.Context())
+		a.editorMicropubPost(w, req, false)
+	case "tts":
+		parsedURL, err := url.Parse(r.FormValue("url"))
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		post, err := a.getPost(parsedURL.Path)
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err = a.createPostTTSAudio(post); err != nil {
+			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, post.Path, http.StatusFound)
+	case "helpgpx":
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		gpx, err := io.ReadAll(a.min.Get().Reader(contenttype.XML, file))
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set(contentType, contenttype.TextUTF8)
+		_ = yaml.NewEncoder(w).Encode(map[string]string{
+			"gpx": string(gpx),
+		})
+	default:
+		a.serveError(w, r, "Unknown or missing editoraction", http.StatusBadRequest)
 	}
-	a.editorMicropubPost(w, r, false)
 }
 
 func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {

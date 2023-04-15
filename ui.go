@@ -915,14 +915,14 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("form")
 				// Delete
 				hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
-				hb.WriteElementOpen("input", "type", "hidden", "name", "action", "value", "delete")
+				hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "delete")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
 				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 				hb.WriteElementClose("form")
 				// Undelete
 				if p.Deleted() {
 					hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
-					hb.WriteElementOpen("input", "type", "hidden", "name", "action", "value", "undelete")
+					hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "undelete")
 					hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
 					hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "undelete"))
 					hb.WriteElementClose("form")
@@ -1356,7 +1356,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("h2")
 			_ = a.renderMarkdownToWriter(hb, a.editorPostDesc(rd.Blog), false)
 			hb.WriteElementOpen("form", "method", "post", "class", "fw p")
-			hb.WriteElementOpen("input", "type", "hidden", "name", "h", "value", "entry")
+			hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "createpost")
 			hb.WriteElementOpen(
 				"input", "id", "templatebtn", "type", "button",
 				"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editorusetemplate"),
