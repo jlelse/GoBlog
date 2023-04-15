@@ -30,19 +30,19 @@ jobs:
         username: nologin
         password: ${{ secrets.GITEA_TOKEN }}
     - name: Test
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         push: false
         target: test
         tags: test
     - name: Build base image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         push: true
         target: base
         tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
     - name: Build tools image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         push: true
         target: tools
