@@ -35,18 +35,24 @@ jobs:
         push: false
         target: test
         tags: test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Build base image
       uses: docker/build-push-action@v4
       with:
         push: true
         target: base
         tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Build tools image
       uses: docker/build-push-action@v4
       with:
         push: true
         target: tools
         tags: ghcr.io/jlelse/goblog:tools,git.jlel.se/jlelse/goblog:tools
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Delete old untagged images
       uses: camargo/delete-untagged-action@v1
       with:
