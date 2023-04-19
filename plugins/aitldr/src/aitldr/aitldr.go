@@ -77,7 +77,7 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	hw.WriteEscaped(tldr)
 	hw.WriteElementsClose("i", "div")
 
-	doc.Find(".e-content").BeforeHtml(buf.String())
+	doc.Find(".h-entry > article > .e-content").BeforeHtml(buf.String())
 }
 
 const customCSS = ".aitldr { border: 1px dashed; padding: 1em; }"
@@ -177,7 +177,7 @@ func (p *plugin) createPrompt(post plugintypes.Post) string {
 			lang = blogLang
 		}
 	}
-	prompt := "Summarize the content of following text in one sentence in the language \"" + lang + "\". Answer with just the summary.\n\n\n"
+	prompt := "Summarize the content of following blog post in one sentence in the language \"" + lang + "\". Answer with just the summary.\n\n\n"
 	if title, err := p.app.RenderMarkdownAsText(post.GetTitle()); err == nil && title != "" {
 		prompt += title + "\n\n"
 	} else if err != nil {
