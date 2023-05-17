@@ -20,8 +20,8 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-smtp v0.16.0
-	github.com/go-ap/activitypub v0.0.0-20230509081506-c63baa5ec992
-	github.com/go-ap/client v0.0.0-20230509081643-66f4b336aaef
+	github.com/go-ap/activitypub v0.0.0-20230514141345-45936cc2f768
+	github.com/go-ap/client v0.0.0-20230514142616-d54d23930714
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-fed/httpsig v1.1.0
@@ -50,12 +50,12 @@ require (
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
-	github.com/spf13/cast v1.5.0
+	github.com/spf13/cast v1.5.1
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tdewolff/minify/v2 v2.12.5
 	// master
-	github.com/tkrajina/gpxgo v1.2.2-0.20220217201249-321f19554eec
+	github.com/tkrajina/gpxgo v1.2.2-0.20230507131050-3d45c43ea81b
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.15.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
@@ -68,7 +68,7 @@ require (
 	golang.org/x/sync v0.2.0
 	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.15.1
+	maunium.net/go/mautrix v0.15.2
 	nhooyr.io/websocket v1.8.7
 	willnorris.com/go/microformats v1.2.0
 )
@@ -81,7 +81,7 @@ require (
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.9.0 // indirect
+	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
@@ -115,7 +115,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
-	github.com/tdewolff/parse/v2 v2.6.5 // indirect
+	github.com/tdewolff/parse/v2 v2.6.6 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
+	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect

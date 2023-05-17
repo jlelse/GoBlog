@@ -1,54 +1,47 @@
-(function () {
+(() => {
+    const reactions = document.querySelector('#reactions');
+    const path = reactions.dataset.path;
+    const allowed = reactions.dataset.allowed.split(',');
 
-    // Get reactions element
-    let reactions = document.querySelector('#reactions')
+    const updateCounts = async () => {
+        try {
+            const response = await fetch('/-/reactions?path=' + encodeURI(path));
+            const json = await response.json();
 
-    // Get post path
-    let path = reactions.dataset.path
+            for (const reaction in json) {
+                const button = document.querySelector(`#reactions button[data-reaction="${reaction}"]`);
+                button.textContent = `${reaction} ${json[reaction]}`;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
-    // Define update counts function
-    let updateCounts = function () {
-        // Fetch reactions json
-        fetch('/-/reactions?path=' + encodeURI(path))
-            .then(response => response.json())
-            .then(json => {
-                // For every reaction
-                for (let reaction in json) {
-                    // Get reaction buttons
-                    let button = document.querySelector('#reactions button[data-reaction="' + reaction + '"]')
-                    // Set reaction count
-                    button.innerText = reaction + ' ' + json[reaction]
-                }
-            })
-    }
+    const handleReactionClick = (allowedReaction) => {
+        const data = new FormData();
+        data.append('path', path);
+        data.append('reaction', allowedReaction);
 
-    // Get allowed reactions
-    let allowed = reactions.dataset.allowed.split(',')
-    allowed.forEach(allowedReaction => {
+        return fetch('/-/reactions', { method: 'POST', body: data })
+            .then(updateCounts)
+            .catch((error) => {
+                console.error(error);
+            });
+    };
 
-        // Create reaction button
-        let button = document.createElement('button')
-        button.dataset.reaction = allowedReaction
+    allowed.forEach((allowedReaction) => {
+        const button = document.createElement('button');
+        button.dataset.reaction = allowedReaction;
+        button.addEventListener('click', () => handleReactionClick(allowedReaction));
+        button.textContent = allowedReaction;
+        reactions.appendChild(button);
+    });
 
-        // Set click event
-        button.addEventListener('click', function () {
-            // Send reaction to server
-            let data = new FormData()
-            data.append('path', path)
-            data.append('reaction', allowedReaction)
-            fetch('/-/reactions', { method: 'POST', body: data })
-                .then(updateCounts)
-        })
-
-        // Set reaction text
-        button.innerText = allowedReaction
-
-        // Add button to reactions element
-        reactions.appendChild(button)
-
-    })
-
-    // Update reaction counts
-    updateCounts()
-
-})()
+    (async () => {
+        try {
+            await updateCounts();
+        } catch (error) {
+            console.error(error);
+        }
+    })();
+})();
