@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.7.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
-	github.com/carlmjohnson/requests v0.23.3
+	github.com/carlmjohnson/requests v0.23.4
 	// master
 	github.com/cretz/bine v0.2.1-0.20221201125941-b9d31d9c7866
 	github.com/dchest/captcha v1.0.0
@@ -31,7 +31,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hacdias/indieauth/v3 v3.1.0
-	github.com/jlaffaye/ftp v0.1.0
+	github.com/jlaffaye/ftp v0.2.0
 	// master
 	github.com/jlelse/feeds v1.2.1-0.20210704161900-189f94254ad4
 	github.com/justinas/alice v1.2.0
@@ -39,9 +39,9 @@ require (
 	github.com/klauspost/compress v1.16.5
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/mergestat/timediff v0.0.3
-	github.com/microcosm-cc/bluemonday v1.0.23
+	github.com/microcosm-cc/bluemonday v1.0.24
 	github.com/mmcdole/gofeed v1.2.1
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/posener/wstest v1.2.0
@@ -51,9 +51,9 @@ require (
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.5.1
-	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.2
-	github.com/tdewolff/minify/v2 v2.12.5
+	github.com/spf13/viper v1.16.0
+	github.com/stretchr/testify v1.8.4
+	github.com/tdewolff/minify/v2 v2.12.6
 	// master
 	github.com/tkrajina/gpxgo v1.2.2-0.20230507131050-3d45c43ea81b
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -100,12 +100,12 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mmcdole/goxpp v1.1.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
