@@ -57,7 +57,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Content:     buf.String(),
 			Created:     noError(dateparse.ParseLocal(p.Published)),
 			Updated:     noError(dateparse.ParseLocal(p.Updated)),
-			Tags:        p.Parameters[a.cfg.Micropub.CategoryParam],
+			Tags:        sortedStrings(p.Parameters[a.cfg.Micropub.CategoryParam]),
 		})
 		bufferpool.Put(buf)
 	}

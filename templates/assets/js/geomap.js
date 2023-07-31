@@ -99,12 +99,12 @@
     // CSS
     let css = document.createElement('link')
     css.rel = 'stylesheet'
-    css.href = '/-/leaflet/leaflet.css?v=1.9.2'
+    css.href = '/-/leaflet/leaflet.css?v=1.9.4'
     document.head.appendChild(css)
 
     // JS
     let script = document.createElement('script')
-    script.src = '/-/leaflet/leaflet.js?v=1.9.2'
+    script.src = '/-/leaflet/leaflet.js?v=1.9.4'
     script.onload = loadMap
     document.head.appendChild(script)
 })()
