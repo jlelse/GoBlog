@@ -52,7 +52,7 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
 	}
 	cspDomains := cspBuilder.String()
-	csp := "default-src 'self' blob:" + cspDomains + "; img-src 'self'" + cspDomains + " data:; frame-ancestors none;"
+	csp := "default-src 'self' blob:" + cspDomains + "; img-src 'self'" + cspDomains + " data:; frame-ancestors 'none';"
 	builderpool.Put(cspBuilder)
 	// Return handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
