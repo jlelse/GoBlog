@@ -269,6 +269,10 @@ details summary {
 
 #map {
   height: 400px;
+
+  * {
+    max-width: unset;
+  }
 }
 
 #announcement {

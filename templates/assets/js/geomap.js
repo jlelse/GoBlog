@@ -46,17 +46,17 @@
         }).addTo(map)
 
         // Load map features
+        let cluster = L.markerClusterGroup().addTo(map)
 
-        let features = []
         function fitFeatures() {
             // Make the map fit the features
-            map.fitBounds(L.featureGroup(features).getBounds(), { padding: [5, 5] })
+            map.fitBounds(cluster.getBounds(), { padding: [5, 5] })
         }
 
         // Map page
         getMapJson(mapEl.dataset.locations, locations => {
             locations.forEach(loc => {
-                features.push(L.marker([loc.Lat, loc.Lon]).addTo(map).on('click', function () {
+                cluster.addLayer(L.marker([loc.Lat, loc.Lon]).on('click', function () {
                     window.open(loc.Post, '_blank').focus()
                 }))
             })
@@ -66,12 +66,12 @@
             tracks.forEach(track => {
                 track.Paths.forEach(path => {
                     // Use random color on map page for paths to better differentiate
-                    features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: randomColor() }).addTo(map).on('click', function () {
+                    cluster.addLayer(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: randomColor() }).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
                 track.Points.forEach(point => {
-                    features.push(L.marker([point.Lat, point.Lon]).addTo(map).on('click', function () {
+                    cluster.addLayer(L.marker([point.Lat, point.Lon]).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
@@ -81,13 +81,13 @@
         // Post map
         getMapJson(mapEl.dataset.paths, paths => {
             paths.forEach(path => {
-                features.push(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }).addTo(map))
+                cluster.addLayer(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }))
             })
             fitFeatures()
         })
         getMapJson(mapEl.dataset.points, points => {
             points.forEach(point => {
-                features.push(L.marker([point.Lat, point.Lon]).addTo(map))
+                cluster.addLayer(L.marker([point.Lat, point.Lon]))
             })
             fitFeatures()
         })
@@ -102,9 +102,26 @@
     css.href = '/-/leaflet/leaflet.css?v=1.9.4'
     document.head.appendChild(css)
 
+    // Marker Cluster plugin
+    let pluginCss1 = document.createElement('link')
+    pluginCss1.rel = 'stylesheet'
+    pluginCss1.href = '/-/leaflet/markercluster.css?v=1.5.3'
+    document.head.appendChild(pluginCss1)
+
+    let pluginCss2 = document.createElement('link')
+    pluginCss2.rel = 'stylesheet'
+    pluginCss2.href = '/-/leaflet/markercluster.default.css?v=1.5.3'
+    document.head.appendChild(pluginCss2)
+
     // JS
     let script = document.createElement('script')
     script.src = '/-/leaflet/leaflet.js?v=1.9.4'
-    script.onload = loadMap
+    script.onload = function () {
+        // Marker Cluster plugin
+        let plugin = document.createElement('script')
+        plugin.src = '/-/leaflet/markercluster.js?v=1.5.3'
+        plugin.onload = loadMap
+        document.head.appendChild(plugin)
+    }
     document.head.appendChild(script)
 })()

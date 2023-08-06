@@ -228,6 +228,9 @@ details summary > *:first-child {
 #map {
   height: 400px;
 }
+#map * {
+  max-width: unset;
+}
 
 #announcement {
   padding: 5px;
@@ -244,25 +247,21 @@ details summary > *:first-child {
     --primary: #000;
     color: #000;
   }
-
   body {
     font-family: serif;
     max-width: inherit;
   }
-
   nav,
-.actions,
-#tts,
-#interactions,
-#tor,
-#announcement {
+  .actions,
+  #tts,
+  #interactions,
+  #tor,
+  #announcement {
     display: none;
   }
-
   a {
     text-decoration: none;
   }
-
   .e-content a[href]:after {
     content: " [" attr(href) "]";
   }
