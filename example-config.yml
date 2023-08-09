@@ -178,6 +178,11 @@ tts:
 reactions:
   enabled: true # Enable reactions (default is false)
 
+# Block bots using the robots.txt
+robotstxt:
+  blockedBots: # List all bots that should be disallowed to crawl the site (default is empty)
+    - GPTBot
+
 # Blogs
 defaultBlog: en # Default blog (needed because you can define multiple blogs)
 blogs:

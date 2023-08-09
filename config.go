@@ -35,6 +35,7 @@ type config struct {
 	TTS           *configTTS             `mapstructure:"tts"`
 	Reactions     *configReactions       `mapstructure:"reactions"`
 	Pprof         *configPprof           `mapstructure:"pprof"`
+	RobotsTxt     *configRobotsTxt       `mapstructure:"robotstxt"`
 	Debug         bool                   `mapstructure:"debug"`
 	initialized   bool
 }
@@ -353,6 +354,10 @@ type configPlugin struct {
 	Path   string         `mapstructure:"path"`
 	Import string         `mapstructure:"import"`
 	Config map[string]any `mapstructure:"config"`
+}
+
+type configRobotsTxt struct {
+	BlockedBots []string `mapstructure:"blockedBots"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {
