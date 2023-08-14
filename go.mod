@@ -19,7 +19,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
-	github.com/emersion/go-smtp v0.17.0
+	github.com/emersion/go-smtp v0.18.0
 	github.com/go-ap/activitypub v0.0.0-20230807182453-602f717f6ca3
 	github.com/go-ap/client v0.0.0-20230807182802-7a0eddf496da
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
@@ -115,14 +115,14 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/tdewolff/parse/v2 v2.6.7 // indirect
-	github.com/tidwall/gjson v1.15.0 // indirect
+	github.com/tidwall/gjson v1.16.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230809094429-853ea248256d // indirect
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
