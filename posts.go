@@ -291,6 +291,7 @@ type indexConfig struct {
 	summaryTemplate  summaryTyp
 	status           []postStatus
 	visibility       []postVisibility
+	search           string
 }
 
 const defaultPhotosPath = "/photos"
@@ -300,11 +301,6 @@ const indexConfigKey contextKey = "indexConfig"
 func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	ic := r.Context().Value(indexConfigKey).(*indexConfig)
 	blog, bc := a.getBlog(r)
-	search := chi.URLParam(r, "search")
-	if search != "" {
-		// Decode and sanitize search
-		search = cleanHTMLText(searchDecode(search))
-	}
 	sections := lo.Map(ic.sections, func(i *configSection, _ int) string { return i.Name })
 	if ic.section != nil {
 		sections = append(sections, ic.section.Name)
@@ -324,7 +320,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		taxonomy:       ic.tax,
 		taxonomyValue:  ic.taxValue,
 		parameter:      ic.parameter,
-		search:         search,
+		search:         ic.search,
 		publishedYear:  ic.year,
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
@@ -347,8 +343,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		title = ic.section.Title
 	} else if ic.tax != nil {
 		title = fmt.Sprintf("%s: %s", ic.tax.Title, ic.taxValue)
-	} else if search != "" {
-		title = fmt.Sprintf("%s: %s", bc.Search.Title, search)
+	} else if ic.search != "" {
+		title = fmt.Sprintf("%s: %s", bc.Search.Title, ic.search)
 	}
 	title += ic.titleSuffix
 	// Description
@@ -363,12 +359,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		a.generateFeed(blog, ft, w, r, posts, title, description)
 		return
 	}
-	// Path
-	path := ic.path
-	if strings.Contains(path, searchPlaceholder) {
-		path = strings.ReplaceAll(path, searchPlaceholder, searchEncode(search))
-	}
 	// Navigation
+	path := ic.path
 	var hasPrev, hasNext bool
 	var prevPage, nextPage int
 	var prevPath, nextPath string

@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"net/http"
 	"path"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const defaultSearchPath = "/search"
@@ -30,8 +32,17 @@ func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveSearchResult(w http.ResponseWriter, r *http.Request) {
+	var searchParamValue, decodedSearch string
+	// Get search parameter from path
+	searchParamValue = chi.URLParam(r, "search")
+	if searchParamValue != "" {
+		// Decode and sanitize search
+		decodedSearch = cleanHTMLText(searchDecode(searchParamValue))
+	}
+	// Serve index
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
-		path: r.Context().Value(pathKey).(string) + "/" + searchPlaceholder,
+		path:   r.Context().Value(pathKey).(string) + "/" + searchParamValue,
+		search: decodedSearch,
 	})))
 }
 
