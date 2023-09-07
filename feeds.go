@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -24,14 +23,14 @@ const (
 	minJsonFeed feedType = "min.json"
 )
 
-func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description string) {
+func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description, path, query string) {
 	now := time.Now()
 	title = a.renderMdTitle(defaultIfEmpty(title, a.cfg.Blogs[blog].Title))
 	description = defaultIfEmpty(description, a.cfg.Blogs[blog].Description)
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,
-		Link:        &feeds.Link{Href: a.getFullAddress(strings.TrimSuffix(r.URL.Path, "."+string(f)))},
+		Link:        &feeds.Link{Href: a.getFullAddress(path) + query},
 		Created:     now,
 		Author: &feeds.Author{
 			Name:  a.cfg.User.Name,

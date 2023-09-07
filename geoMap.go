@@ -17,9 +17,9 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	canonical := a.getFullAddress(mapPath)
 
 	allPostsWithLocationRequestConfig := &postsRequestConfig{
-		blog:               blog,
-		parameters:         []string{a.cfg.Micropub.LocationParam, gpxParameter},
-		withOnlyParameters: []string{a.cfg.Micropub.LocationParam, gpxParameter},
+		blog:        blog,
+		anyParams:   []string{a.cfg.Micropub.LocationParam, gpxParameter},
+		fetchParams: []string{a.cfg.Micropub.LocationParam, gpxParameter},
 	}
 	allPostsWithLocationRequestConfig.status, allPostsWithLocationRequestConfig.visibility = a.getDefaultPostStates(r)
 
@@ -58,8 +58,8 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithTracksRequestConfig := &postsRequestConfig{
 		blog:                  blog,
-		parameters:            []string{gpxParameter},
-		withOnlyParameters:    []string{gpxParameter},
+		anyParams:             []string{gpxParameter},
+		fetchParams:           []string{gpxParameter},
 		excludeParameter:      showRouteParam,
 		excludeParameterValue: "false", // Don't show hidden route tracks
 	}
@@ -102,9 +102,9 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 
 	allPostsWithLocationRequestConfig := &postsRequestConfig{
-		blog:               blog,
-		parameters:         []string{a.cfg.Micropub.LocationParam},
-		withOnlyParameters: []string{a.cfg.Micropub.LocationParam},
+		blog:        blog,
+		anyParams:   []string{a.cfg.Micropub.LocationParam},
+		fetchParams: []string{a.cfg.Micropub.LocationParam},
 	}
 	allPostsWithLocationRequestConfig.status, allPostsWithLocationRequestConfig.visibility = a.getDefaultPostStates(r)
 

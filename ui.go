@@ -340,6 +340,7 @@ type indexRenderData struct {
 	posts              []*post
 	hasPrev, hasNext   bool
 	first, prev, next  string
+	paramUrlQuery      string
 	summaryTemplate    summaryTyp
 }
 
@@ -359,9 +360,9 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			if renderedIndexTitle != "" {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss"))
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom"))
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json"))
+			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramUrlQuery)
+			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramUrlQuery)
+			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramUrlQuery)
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
 			hb.WriteElementOpen("main", "class", "h-feed")
@@ -393,7 +394,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("p")
 			}
 			// Navigation
-			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev, id.next)
+			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev+id.paramUrlQuery, id.next+id.paramUrlQuery)
 			// Author
 			a.renderAuthor(hb)
 			hb.WriteElementClose("main")

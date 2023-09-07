@@ -162,10 +162,10 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Request posts
 	blog, _ := a.getBlog(r)
 	posts, _ := a.getPosts(&postsRequestConfig{
-		status:            []postStatus{statusPublished},
-		visibility:        []postVisibility{visibilityPublic},
-		blog:              blog,
-		withoutParameters: true,
+		status:             []postStatus{statusPublished},
+		visibility:         []postVisibility{visibilityPublic},
+		blog:               blog,
+		fetchWithoutParams: true,
 	})
 	// Add posts to sitemap
 	for _, p := range posts {
@@ -220,12 +220,15 @@ select distinct '/x/x/' || day from alldates;
 `
 
 func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []string, err error) {
-	query, args := buildPostsQuery(&postsRequestConfig{
+	query, args, err := buildPostsQuery(&postsRequestConfig{
 		blog:       blog,
 		sections:   sections,
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},
 	}, "published")
+	if err != nil {
+		return
+	}
 	rows, err := a.db.Query(fmt.Sprintf(sitemapDatePathsSql, query), args...)
 	if err != nil {
 		return nil, err

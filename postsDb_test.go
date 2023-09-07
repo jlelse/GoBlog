@@ -79,7 +79,7 @@ func Test_postsDb(t *testing.T) {
 	is.Equal(0, count)
 
 	// Check by multiple parameters
-	count, err = app.db.countPosts(&postsRequestConfig{parameters: []string{"tags", "title"}})
+	count, err = app.db.countPosts(&postsRequestConfig{anyParams: []string{"tags", "title"}})
 	must.NoError(err)
 	is.Equal(1, count)
 

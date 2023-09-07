@@ -373,21 +373,23 @@ type postsRequestConfig struct {
 	visibility                                  []postVisibility
 	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
-	parameters                                  []string // Ignores parameterValue
-	parameter                                   string   // Ignores parameters
-	parameterValue                              string
-	excludeParameter                            string // exclude posts that have a certain parameter (with non-empty value)
-	excludeParameterValue                       string // ... with exactly this value
+	anyParams                                   []string // filter for posts that have any of these parameters (with non-empty values)
+	allParams                                   []string // filter for posts that have all these parameters (with non-empty values)
+	allParamValues                              []string // ... with exactly these values
+	parameter                                   string   // filter for posts that have this parameter (with non-empty value)
+	parameterValue                              string   // ... with exactly this value
+	excludeParameter                            string   // exclude posts that have this parameter (with non-empty value)
+	excludeParameterValue                       string   // ... with exactly this value
 	publishedYear, publishedMonth, publishedDay int
 	publishedBefore                             time.Time
 	randomOrder                                 bool
 	priorityOrder                               bool
-	withoutParameters                           bool
-	withOnlyParameters                          []string
-	withoutRenderedTitle                        bool
+	fetchWithoutParams                          bool     // fetch posts without parameters
+	fetchParams                                 []string // only fetch these parameters
+	withoutRenderedTitle                        bool     // fetch posts without rendered title
 }
 
-func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any) {
+func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any, err error) {
 	queryBuilder := builderpool.Get()
 	defer builderpool.Put(queryBuilder)
 	// Selection
@@ -437,21 +439,40 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		queryBuilder.WriteString(" and blog = @blog")
 		args = append(args, sql.Named("blog", c.blog))
 	}
-	if c.parameter != "" {
-		if c.parameterValue != "" {
-			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @param and value = @paramval)")
-			args = append(args, sql.Named("param", c.parameter), sql.Named("paramval", c.parameterValue))
-		} else {
-			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @param and length(coalesce(value, '')) > 0)")
-			args = append(args, sql.Named("param", c.parameter))
+	allParams := append(c.allParams, c.parameter)
+	allParamValues := append(c.allParamValues, c.parameterValue)
+	if len(allParams) > 0 {
+		if len(allParamValues) > 0 && len(allParamValues) != len(allParams) {
+			return "", nil, errors.New("number of parameters != number of parameter values")
 		}
-	} else if len(c.parameters) > 0 {
+		for i, param := range allParams {
+			if param == "" {
+				continue
+			}
+			named := "allparam" + strconv.Itoa(i)
+			paramValue := allParamValues[i]
+			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @")
+			queryBuilder.WriteString(named)
+			queryBuilder.WriteString(" and ")
+			if paramValue != "" {
+				namedVal := "allparamval" + strconv.Itoa(i)
+				queryBuilder.WriteString("value = @")
+				queryBuilder.WriteString(namedVal)
+				args = append(args, sql.Named(namedVal, paramValue))
+			} else {
+				queryBuilder.WriteString("length(coalesce(value, '')) > 0")
+			}
+			queryBuilder.WriteString(")")
+			args = append(args, sql.Named(named, param))
+		}
+	}
+	if len(c.anyParams) > 0 {
 		queryBuilder.WriteString(" and path in (select path from post_parameters where parameter in (")
-		for i, param := range c.parameters {
+		for i, param := range c.anyParams {
 			if i > 0 {
 				queryBuilder.WriteString(", ")
 			}
-			named := "param" + strconv.Itoa(i)
+			named := "anyparam" + strconv.Itoa(i)
 			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
 			args = append(args, param)
@@ -514,7 +535,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		queryBuilder.WriteString(" limit @limit offset @offset")
 		args = append(args, sql.Named("limit", c.limit), sql.Named("offset", c.offset))
 	}
-	return queryBuilder.String(), args
+	return queryBuilder.String(), args, nil
 }
 
 func (d *database) loadPostParameters(posts []*post, parameters ...string) (err error) {
@@ -582,7 +603,10 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 
 func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
-	query, queryParams := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, visibility, priority")
+	query, queryParams, err := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, visibility, priority")
+	if err != nil {
+		return nil, err
+	}
 	rows, err := a.db.Query(query, queryParams...)
 	if err != nil {
 		return nil, err
@@ -608,8 +632,8 @@ func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error)
 		}
 		posts = append(posts, p)
 	}
-	if !config.withoutParameters {
-		err = a.db.loadPostParameters(posts, config.withOnlyParameters...)
+	if !config.fetchWithoutParams {
+		err = a.db.loadPostParameters(posts, config.fetchParams...)
 		if err != nil {
 			return nil, err
 		}
@@ -636,7 +660,10 @@ func (a *goBlog) getPost(path string) (*post, error) {
 }
 
 func (d *database) countPosts(config *postsRequestConfig) (count int, err error) {
-	query, params := buildPostsQuery(config, "path")
+	query, params, err := buildPostsQuery(config, "path")
+	if err != nil {
+		return
+	}
 	row, err := d.QueryRow("select count(distinct path) from ("+query+")", params...)
 	if err != nil {
 		return
@@ -647,7 +674,7 @@ func (d *database) countPosts(config *postsRequestConfig) (count int, err error)
 
 func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	sections := lo.Keys(a.cfg.Blogs[blog].Sections)
-	query, params := buildPostsQuery(&postsRequestConfig{
+	query, params, err := buildPostsQuery(&postsRequestConfig{
 		randomOrder: true,
 		limit:       1,
 		blog:        blog,
@@ -655,6 +682,9 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 		visibility:  []postVisibility{visibilityPublic},
 		status:      []postStatus{statusPublished},
 	}, "path")
+	if err != nil {
+		return
+	}
 	row, err := a.db.QueryRow(query, params...)
 	if err != nil {
 		return

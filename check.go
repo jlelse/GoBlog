@@ -20,9 +20,9 @@ import (
 
 func (a *goBlog) checkAllExternalLinks() error {
 	posts, err := a.getPosts(&postsRequestConfig{
-		status:            []postStatus{statusPublished},
-		visibility:        []postVisibility{visibilityPublic, visibilityUnlisted},
-		withoutParameters: true,
+		status:             []postStatus{statusPublished},
+		visibility:         []postVisibility{visibilityPublic, visibilityUnlisted},
+		fetchWithoutParams: true,
 	})
 	if err != nil {
 		return err
