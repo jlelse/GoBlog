@@ -26,8 +26,8 @@ func (*goBlog) wrapForPlugins(
 		_ = pw.Close()
 		wg.Wait()
 	}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		doc, err := goquery.NewDocumentFromReader(pr)
 		_ = pr.CloseWithError(err)
