@@ -62,10 +62,10 @@ type Compressor struct {
 func NewCompressor(level int, types ...string) *Compressor {
 	// If types are provided, set those as the allowed types. If none are
 	// provided, use the default list.
-	allowedTypes := map[string]any{}
-	for _, t := range lo.If(len(types) > 0, types).Else(defaultCompressibleContentTypes) {
-		allowedTypes[t] = nil
-	}
+	allowedTypes := lo.SliceToMap(
+		lo.If(len(types) > 0, types).Else(defaultCompressibleContentTypes),
+		func(t string) (string, any) { return t, nil },
+	)
 
 	c := &Compressor{
 		level:          level,

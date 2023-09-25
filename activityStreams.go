@@ -171,8 +171,8 @@ func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int,
 		return
 	}
 	// Send response
-	w.WriteHeader(status)
 	w.Header().Set(contentType, contenttype.ASUTF8)
+	w.WriteHeader(status)
 	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
 }
 
