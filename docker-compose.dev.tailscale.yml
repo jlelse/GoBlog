@@ -1,0 +1,8 @@
+services:
+  tailscale:
+    container_name: tailscale-goblog
+    hostname: goblog-dev
+    image: tailscale/tailscale
+    network_mode: host
+    environment:
+      TS_AUTHKEY: tskey-auth-YOUR-KEY

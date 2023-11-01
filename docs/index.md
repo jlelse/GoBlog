@@ -1,6 +1,6 @@
 # GoBlog
 
-With GoBlog [I](https://jlelse.blog) created my own blogging system, because it was too much work for me to implement all my ideas with already existing system. GoBlog is a dynamic blogging system, but inspired by Hugo, it has goals like performance and flexibility. It also implements many IndieWeb functionalities like Webmentions or IndieAuth to use your own blog as an identity on the internet.
+With GoBlog I ([Jan-Lukas Else](https://jlelse.blog)) created my own blogging system because it was too much work for me to implement all my ideas with an already existing system. GoBlog is a dynamic blogging system, but inspired by Hugo, it has goals like performance and flexibility. It also implements many IndieWeb functionalities like Webmentions or IndieAuth to use your own blog as an identity on the internet.
 
 License: MIT License
 
@@ -60,3 +60,4 @@ Here's an (incomplete) list of features:
 - [Administration paths](./admin-paths.md)
 - [GoBlog's storage system](./storage.md)
 - [GoBlog Plugins](./plugins.md)
+- [Local Development with HTTPS and Tailscale Funnel](./local-dev-https.md)

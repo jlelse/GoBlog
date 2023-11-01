@@ -3,8 +3,6 @@
 FLAGS="-tags=linux,libsqlite3,sqlite_fts5"
 EXTRA="
 github.com/cretz/bine@master
-github.com/tkrajina/gpxgo@master
-github.com/yuin/goldmark-emoji@master
 "
 
 # Update all direct dependencies to latest version

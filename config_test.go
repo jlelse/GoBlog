@@ -66,7 +66,7 @@ func Test_configPort(t *testing.T) {
 		assert.Equal(t, 3456, app.cfg.Server.Port)
 	})
 
-	t.Run("Custom port set overridden with public https", func(t *testing.T) {
+	t.Run("Custom port set with public https", func(t *testing.T) {
 		c := createDefaultTestConfig(t)
 		c.Server.Port = 3456
 		c.Server.PublicHTTPS = true
@@ -75,7 +75,7 @@ func Test_configPort(t *testing.T) {
 			cfg: c,
 		}
 		_ = app.initConfig(false)
-		assert.Equal(t, 443, app.cfg.Server.Port)
+		assert.Equal(t, 3456, app.cfg.Server.Port)
 	})
 
 }

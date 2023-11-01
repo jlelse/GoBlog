@@ -97,7 +97,8 @@ func (a *goBlog) startServer() (err error) {
 	a.shutdown.Add(shutdownServer(s, "main server"))
 	s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
 	if a.cfg.Server.PublicHTTPS {
-		err = s.Serve(a.getAutocertManager().Listener())
+		s.TLSConfig = a.getAutocertManager().TLSConfig()
+		err = s.ListenAndServeTLS("", "")
 	} else if a.cfg.Server.manualHttps {
 		err = s.ListenAndServeTLS(a.cfg.Server.HttpsCert, a.cfg.Server.HttpsKey)
 	} else {

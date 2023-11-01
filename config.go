@@ -435,7 +435,6 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	if a.cfg.Server.PublicHTTPS {
 		a.cfg.Server.HttpsRedirect = true
-		a.cfg.Server.Port = 443
 	}
 	// Check if any blog is configured
 	if a.cfg.Blogs == nil || len(a.cfg.Blogs) == 0 {
