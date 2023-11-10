@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/hacdias/indieauth/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 func Test_indieAuthServer(t *testing.T) {

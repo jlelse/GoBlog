@@ -11,11 +11,11 @@ import (
 	ct "github.com/elnormous/contenttype"
 	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
-	"github.com/hacdias/indieauth/v3"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/yuin/goldmark"
 	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
+	"go.hacdias.com/indielib/indieauth"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/sync/singleflight"
 )

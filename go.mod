@@ -30,7 +30,6 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.2.2
 	github.com/gorilla/websocket v1.5.1
-	github.com/hacdias/indieauth/v3 v3.3.0
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/jlelse/feeds v1.3.0
 	github.com/justinas/alice v1.2.0
@@ -60,6 +59,7 @@ require (
 	github.com/xhit/go-simple-mail/v2 v2.16.0
 	github.com/yuin/goldmark v1.6.0
 	github.com/yuin/goldmark-emoji v1.0.2
+	go.hacdias.com/indielib v0.1.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
 	golang.org/x/sync v0.5.0
