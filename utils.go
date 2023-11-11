@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/builderpool"
+	"go.goblog.app/app/pkgs/contenttype"
 	"golang.org/x/net/html"
 	"golang.org/x/text/language"
 )
@@ -438,4 +440,13 @@ func truncateStringWithEllipsis(s string, l int) string {
 		return string(tr[0:l-3]) + "…"
 	}
 	return s
+}
+
+func (a *goBlog) respondWithMinifiedJson(w http.ResponseWriter, v any) {
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(v))
+	}()
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
 }

@@ -2,16 +2,13 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"go.goblog.app/app/pkgs/contenttype"
 	"go.hacdias.com/indielib/indieauth"
 )
 
@@ -44,12 +41,7 @@ func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, _ *http.Request) {
 		"scopes_supported":                           []string{"create", "update", "delete", "undelete", "media"},
 		"code_challenge_methods_supported":           indieauth.CodeChallengeMethods,
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(resp))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, resp)
 }
 
 // Parse Authorization Request
@@ -166,12 +158,7 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		resp["access_token"] = token
 		resp["scope"] = strings.Join(data.Scopes, " ")
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(resp))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, resp)
 }
 
 // Save the authorization request and return the code
@@ -232,12 +219,7 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 			"scope":     strings.Join(data.Scopes, " "),
 		}
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(res))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, res)
 }
 
 // Checks the database for the token and returns the indieAuthData with client and scope.

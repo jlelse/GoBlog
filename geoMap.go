@@ -1,11 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
-
-	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const defaultGeoMapPath = "/map"
@@ -88,12 +84,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(tracks))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, tracks)
 }
 
 const geoMapLocationsSubpath = "/locations.json"
@@ -131,10 +122,5 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(locations))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, locations)
 }

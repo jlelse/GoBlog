@@ -1,11 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
-
-	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, _ *http.Request) {
@@ -17,12 +13,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, _ *http.Request) {
 			},
 		},
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, result)
 }
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
@@ -49,10 +40,5 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
 		},
 		"metadata": map[string]any{},
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, result)
 }

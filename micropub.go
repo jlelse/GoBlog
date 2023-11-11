@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -75,12 +74,7 @@ func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(result))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, result)
 }
 
 func (a *goBlog) getMicropubChannelsMap() []map[string]any {

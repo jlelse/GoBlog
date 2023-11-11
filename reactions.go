@@ -1,15 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/builderpool"
-	"go.goblog.app/app/pkgs/contenttype"
 )
 
 // Hardcoded for now
@@ -88,13 +85,8 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(reactions))
-	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
 	w.Header().Set(cacheControl, "no-store")
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	a.respondWithMinifiedJson(w, reactions)
 }
 
 func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
