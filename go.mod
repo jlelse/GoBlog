@@ -19,7 +19,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
-	github.com/emersion/go-smtp v0.18.1
+	github.com/emersion/go-smtp v0.19.0
 	github.com/go-ap/activitypub v0.0.0-20231105151936-af32623a589b
 	github.com/go-ap/client v0.0.0-20231105152939-03833203c71e
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
@@ -60,8 +60,8 @@ require (
 	github.com/yuin/goldmark v1.6.0
 	github.com/yuin/goldmark-emoji v1.0.2
 	go.hacdias.com/indielib v0.1.0
-	golang.org/x/crypto v0.14.0
-	golang.org/x/net v0.17.0
+	golang.org/x/crypto v0.15.0
+	golang.org/x/net v0.18.0
 	golang.org/x/sync v0.5.0
 	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -80,7 +80,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
+	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ap/errors v0.0.0-20231003111023-183eef4b31b7 // indirect
@@ -121,9 +121,9 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.mau.fi/util v0.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/image v0.13.0 // indirect
-	golang.org/x/oauth2 v0.13.0 // indirect
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+	golang.org/x/image v0.14.0 // indirect
+	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
