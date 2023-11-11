@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/hacdias/indieauth/v3"
 	"github.com/kaorimatz/go-opml"
 	"github.com/mergestat/timediff"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {

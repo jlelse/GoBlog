@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hacdias/indieauth/v3"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 // TODOs:

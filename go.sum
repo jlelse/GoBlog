@@ -227,8 +227,6 @@ github.com/gorilla/sessions v1.2.2/go.mod h1:ePLdVu+jbEgHH+KWw8I1z2wqd0BAdAQh/8L
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
-github.com/hacdias/indieauth/v3 v3.3.0 h1:znBRtGZ0CTQg3TgHS8wf7ONxkzWM8gJ17UjuX+qGD+0=
-github.com/hacdias/indieauth/v3 v3.3.0/go.mod h1:iB19em+Xc9+CYRntwRm6ZWltnljxPooGShMJ4FrsV74=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
 github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
@@ -426,6 +424,8 @@ github.com/yuin/goldmark v1.6.0 h1:boZcn2GTjpsynOsC0iJHnBWa4Bi0qzfJjthwauItG68=
 github.com/yuin/goldmark v1.6.0/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yuin/goldmark-emoji v1.0.2 h1:c/RgTShNgHTtc6xdz2KKI74jJr6rWi7FPgnP9GAsO5s=
 github.com/yuin/goldmark-emoji v1.0.2/go.mod h1:RhP/RWpexdp+KHs7ghKnifRoIs/Bq4nDS7tRbCkOwKY=
+go.hacdias.com/indielib v0.1.0 h1:culufO8/RgTEEQMJmK4HnwAS2qZF7nfvHOBWPjJ9R+o=
+go.hacdias.com/indielib v0.1.0/go.mod h1:zR/7VfuqHQSOmWB3S5fO5p7YQPaThnR5vYt33yMP05c=
 go.mau.fi/util v0.2.0 h1:AMGBEdg9Ya/smb/09dljo9wBwKr432EpfjDWF7aFQg0=
 go.mau.fi/util v0.2.0/go.mod h1:AxuJUMCxpzgJ5eV9JbPWKRH8aAJJidxetNdUj7qcb84=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

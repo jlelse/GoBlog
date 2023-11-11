@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hacdias/indieauth/v3"
 	"github.com/stretchr/testify/assert"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 func Test_checkIndieAuth(t *testing.T) {

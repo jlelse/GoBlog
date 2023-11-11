@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hacdias/indieauth/v3"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 const indieAuthScope contextKey = "scope"
