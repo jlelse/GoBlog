@@ -215,20 +215,20 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Update or create post
 	if o.new {
 		// New post, create it
-		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, visibility, priority) values (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+		sqlBuilder.WriteString("insert or rollback into posts (path, content, published, updated, blog, section, status, visibility, priority) values (?, ?, ?, ?, ?, ?, ?, ?, ?);")
 		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority)
 	} else {
 		// Delete post parameters
 		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
 		sqlArgs = append(sqlArgs, o.oldPath)
 		// Update old post
-		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ? where path = ?;")
+		sqlBuilder.WriteString("update or rollback posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ? where path = ?;")
 		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, o.oldPath)
 	}
 	// Insert post parameters
 	for param, value := range p.Parameters {
 		for _, value := range lo.Filter(value, loStringNotEmpty) {
-			sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+			sqlBuilder.WriteString("insert or rollback into post_parameters (path, parameter, value) values (?, ?, ?);")
 			sqlArgs = append(sqlArgs, p.Path, param, value)
 		}
 	}
