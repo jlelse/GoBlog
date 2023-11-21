@@ -1,0 +1,4 @@
+{
+    "go.buildTags": "linux,libsqlite3,sqlite_fts5",
+    "go.testTags": "linux,libsqlite3,sqlite_fts5"
+}
