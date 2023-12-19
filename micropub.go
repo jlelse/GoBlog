@@ -333,11 +333,12 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 		// Copy frontmatter to parameters
 		for key, value := range meta {
 			if a, ok := value.([]any); ok {
+				p.Parameters[key] = []string{}
 				for _, ae := range a {
 					p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
 				}
 			} else {
-				p.Parameters[key] = append(p.Parameters[key], cast.ToString(value))
+				p.Parameters[key] = []string{cast.ToString(value)}
 			}
 		}
 
