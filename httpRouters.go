@@ -16,9 +16,8 @@ func (a *goBlog) loginRouter(r chi.Router) {
 // Micropub
 func (a *goBlog) micropubRouter(r chi.Router) {
 	r.Use(a.checkIndieAuth)
-	r.Get("/", a.serveMicropubQuery)
-	r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/", a.serveMicropubPost)
-	r.With(bodylimit.BodyLimit(30*bodylimit.MB)).Post(micropubMediaSubPath, a.serveMicropubMedia)
+	r.Handle("/", a.getMicropubImplementation().getHandler())
+	r.Handle(micropubMediaSubPath, a.getMicropubImplementation().getMediaHandler())
 }
 
 // IndieAuth

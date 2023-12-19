@@ -74,10 +74,6 @@ func isAbsoluteURL(s string) bool {
 	return true
 }
 
-func allLinksFromHTMLString(html, baseURL string) ([]string, error) {
-	return allLinksFromHTML(strings.NewReader(html), baseURL)
-}
-
 func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {

@@ -164,8 +164,16 @@ func (p *post) isPublicPublishedSectionPost() bool {
 	return p.isPublishedSectionPost() && p.Visibility == visibilityPublic
 }
 
-func (a *goBlog) postToMfItem(p *post) *microformatItem {
+func (a *goBlog) postToMfMap(p *post) map[string]any {
+	return map[string]any{
+		"type":       []string{"h-entry"},
+		"properties": a.postMfProperties(p, true),
+	}
+}
+
+func (a *goBlog) postMfProperties(p *post, contentWithParams bool) map[string][]any {
 	var mfStatus, mfVisibility string
+
 	switch p.Status {
 	case statusDraft:
 		mfStatus = "draft"
@@ -174,6 +182,7 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	case statusPublishedDeleted, statusDraftDeleted, statusScheduledDeleted:
 		mfStatus = "deleted"
 	}
+
 	switch p.Visibility {
 	case visibilityPublic:
 		mfVisibility = "public"
@@ -182,26 +191,37 @@ func (a *goBlog) postToMfItem(p *post) *microformatItem {
 	case visibilityPrivate:
 		mfVisibility = "private"
 	}
-	return &microformatItem{
-		Type: []string{"h-entry"},
-		Properties: &microformatProperties{
-			Name:       p.Parameters["title"],
-			Published:  []string{p.Published},
-			Updated:    []string{p.Updated},
-			PostStatus: []string{mfStatus},
-			Visibility: []string{mfVisibility},
-			Category:   p.Parameters[a.cfg.Micropub.CategoryParam],
-			Content:    []string{p.contentWithParams()},
-			URL:        []string{a.fullPostURL(p)},
-			InReplyTo:  p.Parameters[a.cfg.Micropub.ReplyParam],
-			LikeOf:     p.Parameters[a.cfg.Micropub.LikeParam],
-			BookmarkOf: p.Parameters[a.cfg.Micropub.BookmarkParam],
-			MpSlug:     []string{p.Slug},
-			Audio:      p.Parameters[a.cfg.Micropub.AudioParam],
-			MpChannel:  []string{p.getChannel()},
-			// TODO: Photos
-		},
+
+	properties := map[string][]any{}
+	addIfNotEmpty := func(key string, value []string) {
+		if len(value) > 0 {
+			properties[key] = []any{}
+			for _, val := range value {
+				properties[key] = append(properties[key], val)
+			}
+		}
 	}
+	addIfNotEmpty("name", p.Parameters["title"])
+	addIfNotEmpty("published", []string{p.Published})
+	addIfNotEmpty("updated", []string{p.Updated})
+	addIfNotEmpty("post-status", []string{mfStatus})
+	addIfNotEmpty("visibility", []string{mfVisibility})
+	addIfNotEmpty("category", p.Parameters[a.cfg.Micropub.CategoryParam])
+	if contentWithParams {
+		addIfNotEmpty("content", []string{p.contentWithParams()})
+	} else {
+		addIfNotEmpty("content", []string{p.Content})
+	}
+	addIfNotEmpty("url", []string{a.fullPostURL(p)})
+	addIfNotEmpty("in-reply-to", p.Parameters[a.cfg.Micropub.ReplyParam])
+	addIfNotEmpty("like-of", p.Parameters[a.cfg.Micropub.LikeParam])
+	addIfNotEmpty("bookmark-of", p.Parameters[a.cfg.Micropub.BookmarkParam])
+	addIfNotEmpty("mp-slug", []string{p.Slug})
+	addIfNotEmpty("audio", p.Parameters[a.cfg.Micropub.AudioParam])
+	addIfNotEmpty("mp-channel", []string{p.getChannel()})
+	addIfNotEmpty("location", p.Parameters[a.cfg.Micropub.LocationParam])
+
+	return properties
 }
 
 func (a *goBlog) showFull(p *post) bool {

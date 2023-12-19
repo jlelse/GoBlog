@@ -78,6 +78,8 @@ type goBlog struct {
 	// Microformats
 	mfInit  sync.Once
 	mfCache *ristretto.Cache
+	// Micropub
+	mpImpl *micropubImplementation
 	// Minify
 	min minify.Minifier
 	// Plugins

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,12 +64,12 @@ func Benchmark_charCount(b *testing.B) {
 	}
 }
 
-func Test_allLinksFromHTMLString(t *testing.T) {
+func Test_allLinksFromHTML(t *testing.T) {
 	baseUrl := "https://example.net/post/abc"
 	html := `<a href="relative1">Test</a><a href="relative1">Test</a><a href="/relative2">Test</a><a href="https://example.com">Test</a>`
 	expected := []string{"https://example.net/post/relative1", "https://example.net/relative2", "https://example.com"}
 
-	result, err := allLinksFromHTMLString(html, baseUrl)
+	result, err := allLinksFromHTML(strings.NewReader(html), baseUrl)
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }

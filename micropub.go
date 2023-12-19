@@ -1,360 +1,337 @@
 package main
 
 import (
-	"encoding/json"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
-	"net/url"
+	urlpkg "net/url"
+	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/bodylimit"
+	"go.hacdias.com/indielib/micropub"
 	"gopkg.in/yaml.v3"
 )
 
-const micropubPath = "/micropub"
-
-func (a *goBlog) serveMicropubQuery(w http.ResponseWriter, r *http.Request) {
-	var result any
-	switch query := r.URL.Query(); query.Get("q") {
-	case "config":
-		channels := a.getMicropubChannelsMap()
-		result = map[string]any{
-			"channels":       channels,
-			"media-endpoint": a.getFullAddress(micropubPath + micropubMediaSubPath),
-			"visibility":     []postVisibility{visibilityPublic, visibilityUnlisted, visibilityPrivate},
-		}
-	case "source":
-		if urlString := query.Get("url"); urlString != "" {
-			u, err := url.Parse(query.Get("url"))
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			p, err := a.getPost(u.Path)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusBadRequest)
-				return
-			}
-			result = a.postToMfItem(p)
-		} else {
-			posts, err := a.getPosts(&postsRequestConfig{
-				limit:  stringToInt(query.Get("limit")),
-				offset: stringToInt(query.Get("offset")),
-			})
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			list := map[string][]*microformatItem{}
-			for _, p := range posts {
-				list["items"] = append(list["items"], a.postToMfItem(p))
-			}
-			result = list
-		}
-	case "category":
-		allCategories := []string{}
-		for blog := range a.cfg.Blogs {
-			values, err := a.db.allTaxonomyValues(blog, a.cfg.Micropub.CategoryParam)
-			if err != nil {
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			allCategories = append(allCategories, values...)
-		}
-		result = map[string]any{"categories": allCategories}
-	case "channel":
-		channels := a.getMicropubChannelsMap()
-		result = map[string]any{"channels": channels}
-	default:
-		a.serve404(w, r)
-		return
+func (a *goBlog) getMicropubImplementation() *micropubImplementation {
+	if a.mpImpl == nil {
+		a.mpImpl = &micropubImplementation{a: a}
 	}
-	a.respondWithMinifiedJson(w, result)
+	return a.mpImpl
 }
-
-func (a *goBlog) getMicropubChannelsMap() []map[string]any {
-	channels := []map[string]any{}
-	for b, bc := range a.cfg.Blogs {
-		channels = append(channels, map[string]any{
-			"name": fmt.Sprintf("%s: %s", b, bc.Title),
-			"uid":  b,
-		})
-		for s, sc := range bc.Sections {
-			channels = append(channels, map[string]any{
-				"name": fmt.Sprintf("%s/%s: %s", b, s, sc.Name),
-				"uid":  fmt.Sprintf("%s/%s", b, s),
-			})
-		}
-	}
-	return channels
-}
-
-func (a *goBlog) serveMicropubPost(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
-	p := &post{Blog: blog}
-	switch mt, _, _ := mime.ParseMediaType(r.Header.Get(contentType)); mt {
-	case contenttype.WWWForm, contenttype.MultipartForm:
-		_ = r.ParseMultipartForm(0)
-		if r.Form == nil {
-			a.serveError(w, r, "Failed to parse form", http.StatusBadRequest)
-			return
-		}
-		if action := micropubAction(r.Form.Get("action")); action != "" {
-			switch action {
-			case actionDelete:
-				a.micropubDelete(w, r, r.Form.Get("url"))
-			case actionUndelete:
-				a.micropubUndelete(w, r, r.Form.Get("url"))
-			default:
-				a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
-			}
-			return
-		}
-		a.micropubCreatePostFromForm(w, r, p)
-	case contenttype.JSON:
-		parsedMfItem := &microformatItem{}
-		err := json.NewDecoder(r.Body).Decode(parsedMfItem)
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if parsedMfItem.Action != "" {
-			switch parsedMfItem.Action {
-			case actionDelete:
-				a.micropubDelete(w, r, parsedMfItem.URL)
-			case actionUndelete:
-				a.micropubUndelete(w, r, parsedMfItem.URL)
-			case actionUpdate:
-				a.micropubUpdate(w, r, parsedMfItem.URL, parsedMfItem)
-			default:
-				a.serveError(w, r, "Action not supported", http.StatusNotImplemented)
-			}
-			return
-		}
-		a.micropubCreatePostFromJson(w, r, p, parsedMfItem)
-	default:
-		a.serveError(w, r, "wrong content type", http.StatusBadRequest)
-	}
-}
-
-func (a *goBlog) micropubParseValuePostParamsValueMap(entry *post, values map[string][]string) error {
-	if h, ok := values["h"]; ok && (len(h) != 1 || h[0] != "entry") {
-		return errors.New("only entry type is supported so far")
-	}
-	delete(values, "h")
-	entry.Parameters = map[string][]string{}
-	if content, ok := values["content"]; ok && len(content) > 0 {
-		entry.Content = content[0]
-		delete(values, "content")
-	}
-	if published, ok := values["published"]; ok && len(published) > 0 {
-		entry.Published = published[0]
-		delete(values, "published")
-	}
-	if updated, ok := values["updated"]; ok && len(updated) > 0 {
-		entry.Updated = updated[0]
-		delete(values, "updated")
-	}
-	if slug, ok := values["mp-slug"]; ok && len(slug) > 0 {
-		entry.Slug = slug[0]
-		delete(values, "mp-slug")
-	}
-	if channel, ok := values["mp-channel"]; ok && len(channel) > 0 {
-		entry.setChannel(channel[0])
-		delete(values, "mp-channel")
-	}
-	// Status
-	if status, ok := values["post-status"]; ok && len(status) > 0 {
-		statusStr := status[0]
-		entry.Status = micropubStatus(statusStr)
-		delete(values, "post-status")
-	}
-	// Visibility
-	if visibility, ok := values["visibility"]; ok && len(visibility) > 0 {
-		visibilityStr := visibility[0]
-		entry.Visibility = micropubVisibility(visibilityStr)
-		delete(values, "visibility")
-	}
-	// Parameter
-	if name, ok := values["name"]; ok {
-		entry.Parameters["title"] = name
-		delete(values, "name")
-	}
-	if category, ok := values["category"]; ok {
-		entry.Parameters[a.cfg.Micropub.CategoryParam] = category
-		delete(values, "category")
-	} else if categories, ok := values["category[]"]; ok {
-		entry.Parameters[a.cfg.Micropub.CategoryParam] = categories
-		delete(values, "category[]")
-	}
-	if inReplyTo, ok := values["in-reply-to"]; ok {
-		entry.Parameters[a.cfg.Micropub.ReplyParam] = inReplyTo
-		delete(values, "in-reply-to")
-	}
-	if likeOf, ok := values["like-of"]; ok {
-		entry.Parameters[a.cfg.Micropub.LikeParam] = likeOf
-		delete(values, "like-of")
-	}
-	if bookmarkOf, ok := values["bookmark-of"]; ok {
-		entry.Parameters[a.cfg.Micropub.BookmarkParam] = bookmarkOf
-		delete(values, "bookmark-of")
-	}
-	if audio, ok := values["audio"]; ok {
-		entry.Parameters[a.cfg.Micropub.AudioParam] = audio
-		delete(values, "audio")
-	} else if audio, ok := values["audio[]"]; ok {
-		entry.Parameters[a.cfg.Micropub.AudioParam] = audio
-		delete(values, "audio[]")
-	}
-	if photo, ok := values["photo"]; ok {
-		entry.Parameters[a.cfg.Micropub.PhotoParam] = photo
-		delete(values, "photo")
-	} else if photos, ok := values["photo[]"]; ok {
-		entry.Parameters[a.cfg.Micropub.PhotoParam] = photos
-		delete(values, "photo[]")
-	}
-	if photoAlt, ok := values["mp-photo-alt"]; ok {
-		entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = photoAlt
-		delete(values, "mp-photo-alt")
-	} else if photoAlts, ok := values["mp-photo-alt[]"]; ok {
-		entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = photoAlts
-		delete(values, "mp-photo-alt[]")
-	}
-	if location, ok := values["location"]; ok {
-		entry.Parameters[a.cfg.Micropub.LocationParam] = location
-		delete(values, "location")
-	}
-	for n, p := range values {
-		entry.Parameters[n] = append(entry.Parameters[n], p...)
-	}
-	return nil
-}
-
-type micropubAction string
 
 const (
-	actionUpdate   micropubAction = "update"
-	actionDelete   micropubAction = "delete"
-	actionUndelete micropubAction = "undelete"
+	micropubPath         = "/micropub"
+	micropubMediaSubPath = "/media"
 )
 
-type microformatItem struct {
-	Type       []string               `json:"type,omitempty"`
-	URL        string                 `json:"url,omitempty"`
-	Action     micropubAction         `json:"action,omitempty"`
-	Properties *microformatProperties `json:"properties,omitempty"`
-	Replace    map[string][]any       `json:"replace,omitempty"`
-	Add        map[string][]any       `json:"add,omitempty"`
-	Delete     any                    `json:"delete,omitempty"`
+type micropubImplementation struct {
+	a  *goBlog
+	h  http.Handler
+	mh http.Handler
 }
 
-type microformatProperties struct {
-	Name       []string `json:"name,omitempty"`
-	Published  []string `json:"published,omitempty"`
-	Updated    []string `json:"updated,omitempty"`
-	PostStatus []string `json:"post-status,omitempty"`
-	Visibility []string `json:"visibility,omitempty"`
-	Category   []string `json:"category,omitempty"`
-	Content    []string `json:"content,omitempty"`
-	URL        []string `json:"url,omitempty"`
-	InReplyTo  []string `json:"in-reply-to,omitempty"`
-	LikeOf     []string `json:"like-of,omitempty"`
-	BookmarkOf []string `json:"bookmark-of,omitempty"`
-	MpSlug     []string `json:"mp-slug,omitempty"`
-	Photo      []any    `json:"photo,omitempty"`
-	Audio      []string `json:"audio,omitempty"`
-	MpChannel  []string `json:"mp-channel,omitempty"`
-}
-
-func (a *goBlog) micropubParsePostParamsMfItem(entry *post, mf *microformatItem) error {
-	if len(mf.Type) != 1 || mf.Type[0] != "h-entry" {
-		return errors.New("only entry type is supported so far")
+func (s *micropubImplementation) getHandler() http.Handler {
+	if s.h == nil {
+		s.h = micropub.NewHandler(
+			s,
+			micropub.WithMediaEndpoint(s.a.getFullAddress(micropubPath+micropubMediaSubPath)),
+			micropub.WithGetCategories(s.getCategories),
+			micropub.WithGetChannels(s.getChannels),
+			micropub.WithGetVisibility(s.getVisibility),
+		)
 	}
+	return s.h
+}
+
+func (s *micropubImplementation) getCategories() []string {
+	allCategories := []string{}
+	for blog := range s.a.cfg.Blogs {
+		values, _ := s.a.db.allTaxonomyValues(blog, s.a.cfg.Micropub.CategoryParam)
+		allCategories = append(allCategories, values...)
+	}
+	return lo.Uniq(allCategories)
+}
+
+func (s *micropubImplementation) getChannels() []micropub.Channel {
+	allChannels := []micropub.Channel{}
+	for b, bc := range s.a.cfg.Blogs {
+		allChannels = append(allChannels, micropub.Channel{
+			Name: fmt.Sprintf("%s: %s", b, bc.Title),
+			UID:  b,
+		})
+		for s, sc := range bc.Sections {
+			allChannels = append(allChannels, micropub.Channel{
+				Name: fmt.Sprintf("%s/%s: %s", b, s, sc.Name),
+				UID:  fmt.Sprintf("%s/%s", b, s),
+			})
+		}
+	}
+	return allChannels
+}
+
+func (s *micropubImplementation) getVisibility() []string {
+	return []string{string(visibilityPrivate), string(visibilityUnlisted), string(visibilityPublic)}
+}
+
+func (s *micropubImplementation) getMediaHandler() http.Handler {
+	if s.mh == nil {
+		s.mh = micropub.NewMediaHandler(
+			s.UploadMedia,
+			s.HasScope,
+			micropub.WithMaxMemory(0),
+			micropub.WithMaxMediaSize(30*bodylimit.MB),
+		)
+	}
+	return s.mh
+}
+
+func (s *micropubImplementation) HasScope(r *http.Request, scope string) bool {
+	return strings.Contains(r.Context().Value(indieAuthScope).(string), scope)
+}
+
+func (s *micropubImplementation) Source(urlStr string) (map[string]any, error) {
+	url, err := urlpkg.Parse(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
+	}
+	p, err := s.a.getPost(url.Path)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
+	}
+	return s.a.postToMfMap(p), nil
+}
+
+func (s *micropubImplementation) SourceMany(limit, offset int) ([]map[string]any, error) {
+	posts, err := s.a.getPosts(&postsRequestConfig{
+		limit:  limit,
+		offset: offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
+	}
+	list := []map[string]any{}
+	for _, p := range posts {
+		list = append(list, s.a.postToMfMap(p))
+	}
+	return list, nil
+}
+
+func (s *micropubImplementation) Create(req *micropub.Request) (string, error) {
+	if req.Type != "h-entry" {
+		return "", fmt.Errorf("%w: only h-entry supported", micropub.ErrNotImplemented)
+	}
+	entry := &post{}
 	entry.Parameters = map[string][]string{}
-	if mf.Properties == nil {
-		return nil
+	allValues := lo.Assign(req.Properties, req.Commands)
+	// Parameters with special care
+	for photoNo, photo := range allValues["photo"] {
+		pp := s.a.cfg.Micropub.PhotoParam
+		pdp := s.a.cfg.Micropub.PhotoDescriptionParam
+		if photoLink, isPhotoLink := photo.(string); isPhotoLink {
+			entry.Parameters[pp] = append(entry.Parameters[pp], photoLink)
+			if len(allValues["photo-alt"]) > photoNo && allValues["photo-alt"][photoNo] != nil {
+				entry.Parameters[pdp] = append(entry.Parameters[pdp], cast.ToString(allValues["photo-alt"][photoNo]))
+			} else {
+				entry.Parameters[pdp] = append(entry.Parameters[pdp], "")
+			}
+		} else if photoObject, isPhotoObject := photo.(map[string]any); isPhotoObject {
+			entry.Parameters[pp] = append(entry.Parameters[pp], cast.ToString(photoObject["value"]))
+			entry.Parameters[pdp] = append(entry.Parameters[pdp], cast.ToString(photoObject["alt"]))
+		}
 	}
-	// Content
-	if len(mf.Properties.Content) > 0 && mf.Properties.Content[0] != "" {
-		entry.Content = mf.Properties.Content[0]
+	delete(allValues, "photo")
+	delete(allValues, "photo-alt")
+	delete(allValues, "file") // Micropublish.net fix
+	// Rest of parameters
+	for key, values := range allValues {
+		values := cast.ToStringSlice(values)
+		if len(values) == 0 {
+			continue
+		}
+		switch key {
+		case "content":
+			entry.Content = values[0]
+		case "published":
+			entry.Published = values[0]
+		case "updated":
+			entry.Updated = values[0]
+		case "slug":
+			entry.Slug = values[0]
+		case "channel":
+			entry.setChannel(values[0])
+		case "post-status":
+			entry.Status = micropubStatus(values[0])
+		case "visibility":
+			entry.Visibility = micropubVisibility(values[0])
+		default:
+			entry.Parameters[s.mapToParameterName(key)] = values
+		}
 	}
-	if len(mf.Properties.Published) > 0 {
-		entry.Published = mf.Properties.Published[0]
+	if err := s.a.extractParamsFromContent(entry); err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.Updated) > 0 {
-		entry.Updated = mf.Properties.Updated[0]
+	if err := s.a.createPost(entry); err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.MpSlug) > 0 {
-		entry.Slug = mf.Properties.MpSlug[0]
+	return s.a.fullPostURL(entry), nil
+}
+
+func (s *micropubImplementation) Update(req *micropub.Request) (string, error) {
+	// Get post
+	url, err := urlpkg.Parse(req.URL)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.MpChannel) > 0 {
-		entry.setChannel(mf.Properties.MpChannel[0])
+	postPath := defaultIfEmpty(url.Path, "/")
+	entry, err := s.a.getPost(postPath)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	// Status
-	if len(mf.Properties.PostStatus) > 0 {
-		status := mf.Properties.PostStatus[0]
-		entry.Status = micropubStatus(status)
+	// Check if post is marked as deleted
+	if entry.Deleted() {
+		return "", fmt.Errorf("%w: post is marked as deleted, undelete it first", micropub.ErrBadRequest)
 	}
-	// Visibility
-	if len(mf.Properties.Visibility) > 0 {
-		visibility := mf.Properties.Visibility[0]
-		entry.Visibility = micropubVisibility(visibility)
+	// Update post
+	oldPath := entry.Path
+	oldStatus := entry.Status
+	oldVisibility := entry.Visibility
+	if entry.Parameters == nil {
+		entry.Parameters = map[string][]string{}
 	}
-	// Parameter
-	if len(mf.Properties.Name) > 0 {
-		entry.Parameters["title"] = mf.Properties.Name
+	// Update properties
+	properties := s.a.postMfProperties(entry, false)
+	properties, err = micropubUpdateMfProperties(properties, req.Updates)
+	if err != nil {
+		return "", fmt.Errorf("failed to update properties: %w", err)
 	}
-	if len(mf.Properties.Category) > 0 {
-		entry.Parameters[a.cfg.Micropub.CategoryParam] = mf.Properties.Category
+	s.updatePostPropertiesFromMf(entry, properties)
+	err = s.a.extractParamsFromContent(entry)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.InReplyTo) > 0 {
-		entry.Parameters[a.cfg.Micropub.ReplyParam] = mf.Properties.InReplyTo
+	err = s.a.replacePost(entry, oldPath, oldStatus, oldVisibility)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.LikeOf) > 0 {
-		entry.Parameters[a.cfg.Micropub.LikeParam] = mf.Properties.LikeOf
+	return s.a.fullPostURL(entry), nil
+}
+
+func (s *micropubImplementation) Delete(urlStr string) error {
+	url, err := urlpkg.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.BookmarkOf) > 0 {
-		entry.Parameters[a.cfg.Micropub.BookmarkParam] = mf.Properties.BookmarkOf
+	if err := s.a.deletePost(url.Path); err != nil {
+		return fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.Audio) > 0 {
-		entry.Parameters[a.cfg.Micropub.AudioParam] = mf.Properties.Audio
+	return nil
+}
+
+func (s *micropubImplementation) Undelete(urlStr string) error {
+	url, err := urlpkg.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	if len(mf.Properties.Photo) > 0 {
-		for _, photo := range mf.Properties.Photo {
-			if theString, justString := photo.(string); justString {
-				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], theString)
-				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], "")
-			} else if thePhoto, isPhoto := photo.(map[string]any); isPhoto {
-				entry.Parameters[a.cfg.Micropub.PhotoParam] = append(entry.Parameters[a.cfg.Micropub.PhotoParam], cast.ToString(thePhoto["value"]))
-				entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam] = append(entry.Parameters[a.cfg.Micropub.PhotoDescriptionParam], cast.ToString(thePhoto["alt"]))
+	if err := s.a.undeletePost(url.Path); err != nil {
+		return fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
+	}
+	return nil
+}
+
+func (s *micropubImplementation) UploadMedia(file multipart.File, header *multipart.FileHeader) (string, error) {
+	// Generate sha256 hash for file
+	hash := sha256.New()
+	_, err := io.Copy(hash, file)
+	if err != nil {
+		return "", fmt.Errorf("%w: failed to get file hash", micropub.ErrBadRequest)
+	}
+	// Get file extension
+	fileExtension := filepath.Ext(header.Filename)
+	if fileExtension == "" {
+		// Find correct file extension if original filename does not contain one
+		mimeType := header.Header.Get(contentType)
+		if len(mimeType) > 0 {
+			allExtensions, _ := mime.ExtensionsByType(mimeType)
+			if len(allExtensions) > 0 {
+				fileExtension = allExtensions[0]
 			}
 		}
 	}
-	return nil
+	// Generate the file name
+	fileName := fmt.Sprintf("%x%s", hash.Sum(nil), fileExtension)
+	// Save file
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", fmt.Errorf("%w: failed to read multipart file", micropub.ErrBadRequest)
+	}
+	location, err := s.a.saveMediaFile(fileName, file)
+	if err != nil {
+		return "", fmt.Errorf("%w: failed to save original file", micropub.ErrBadRequest)
+	}
+	// Try to compress file (only when not in private mode)
+	if !s.a.isPrivate() {
+		compressedLocation, compressionErr := s.a.compressMediaFile(location)
+		if compressionErr != nil {
+			return "", fmt.Errorf("%w: failed to compress file: %w", micropub.ErrBadRequest, compressionErr)
+		}
+		// Overwrite location
+		if compressedLocation != "" {
+			location = compressedLocation
+		}
+	}
+	return location, nil
+}
+
+func (s *micropubImplementation) mapToParameterName(key string) string {
+	switch key {
+	case "name":
+		return "title"
+	case "category":
+		return s.a.cfg.Micropub.CategoryParam
+	case "in-reply-to":
+		return s.a.cfg.Micropub.ReplyParam
+	case "like-of":
+		return s.a.cfg.Micropub.LikeParam
+	case "bookmark-of":
+		return s.a.cfg.Micropub.BookmarkParam
+	case "audio":
+		return s.a.cfg.Micropub.AudioParam
+	case "location":
+		return s.a.cfg.Micropub.LocationParam
+	default:
+		return key
+	}
 }
 
 func (a *goBlog) extractParamsFromContent(p *post) error {
+	// Ensure parameters map is initialized
 	if p.Parameters == nil {
 		p.Parameters = map[string][]string{}
 	}
+
+	// Normalize line endings in content
 	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
+
+	// Check for frontmatter
 	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && strings.TrimSpace(split[0]) == "" {
-		// Contains frontmatter
+		// Extract frontmatter
 		fm := split[1]
 		meta := map[string]any{}
-		err := yaml.Unmarshal([]byte(fm), &meta)
-		if err != nil {
+		if err := yaml.Unmarshal([]byte(fm), &meta); err != nil {
 			return err
 		}
-		// Find section and copy frontmatter to params
+
+		// Copy frontmatter to parameters
 		for key, value := range meta {
-			// Delete existing content - replace
-			p.Parameters[key] = []string{}
 			if a, ok := value.([]any); ok {
 				for _, ae := range a {
 					p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
@@ -363,312 +340,47 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 				p.Parameters[key] = append(p.Parameters[key], cast.ToString(value))
 			}
 		}
+
 		// Remove frontmatter from content
 		p.Content = strings.Join(split[2:], "---\n")
 	}
-	// Check settings
-	if blog := p.Parameters["blog"]; len(blog) == 1 && blog[0] != "" {
-		p.Blog = blog[0]
-		delete(p.Parameters, "blog")
+
+	// Extract specific parameters
+	extractParam := func(paramName string, field any) {
+		if values, ok := p.Parameters[paramName]; len(values) == 1 && ok {
+			if stringPointer, ok := field.(*string); ok {
+				*stringPointer = values[0]
+			} else if stringFunc, ok := field.(func(string)); ok {
+				stringFunc(values[0])
+			}
+			delete(p.Parameters, paramName)
+		}
 	}
-	if path := p.Parameters["path"]; len(path) == 1 {
-		p.Path = path[0]
-		delete(p.Parameters, "path")
-	}
-	if section := p.Parameters["section"]; len(section) == 1 {
-		p.Section = section[0]
-		delete(p.Parameters, "section")
-	}
-	if slug := p.Parameters["slug"]; len(slug) == 1 {
-		p.Slug = slug[0]
-		delete(p.Parameters, "slug")
-	}
-	if published := p.Parameters["published"]; len(published) == 1 {
-		p.Published = published[0]
-		delete(p.Parameters, "published")
-	}
-	if updated := p.Parameters["updated"]; len(updated) == 1 {
-		p.Updated = updated[0]
-		delete(p.Parameters, "updated")
-	}
-	if status := p.Parameters["status"]; len(status) == 1 {
-		p.Status = postStatus(status[0])
-		delete(p.Parameters, "status")
-	}
-	if visibility := p.Parameters["visibility"]; len(visibility) == 1 {
-		p.Visibility = postVisibility(visibility[0])
-		delete(p.Parameters, "visibility")
-	}
-	if priority := p.Parameters["priority"]; len(priority) == 1 {
-		p.Priority = cast.ToInt(priority[0])
-		delete(p.Parameters, "priority")
-	}
+
+	extractParam("blog", &p.Blog)
+	extractParam("path", &p.Path)
+	extractParam("section", &p.Section)
+	extractParam("slug", &p.Slug)
+	extractParam("published", &p.Published)
+	extractParam("updated", &p.Updated)
+	extractParam("status", func(status string) { p.Status = postStatus(status) })
+	extractParam("visibility", func(visibility string) { p.Visibility = postVisibility(visibility) })
+	extractParam("priority", func(priority string) { p.Priority = cast.ToInt(priority) })
+
 	// Add images not in content
-	images := p.Parameters[a.cfg.Micropub.PhotoParam]
-	imageAlts := p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
+	images, imageAlts := p.Parameters[a.cfg.Micropub.PhotoParam], p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
 	useAlts := len(images) == len(imageAlts)
 	for i, image := range images {
 		if !strings.Contains(p.Content, image) {
-			if useAlts && len(imageAlts[i]) > 0 {
-				p.Content += "\n\n![" + imageAlts[i] + "](" + image + " \"" + imageAlts[i] + "\")"
+			if useAlts && imageAlts[i] != "" {
+				p.Content += fmt.Sprintf("\n\n![%s](%s \"%s\")", imageAlts[i], image, imageAlts[i])
 			} else {
-				p.Content += "\n\n![](" + image + ")"
+				p.Content += fmt.Sprintf("\n\n![](%s)", image)
 			}
 		}
 	}
+
 	return nil
-}
-
-func (a *goBlog) micropubCreatePostFromForm(w http.ResponseWriter, r *http.Request, p *post) {
-	err := a.micropubParseValuePostParamsValueMap(p, r.Form)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	a.micropubCreate(w, r, p)
-}
-
-func (a *goBlog) micropubCreatePostFromJson(w http.ResponseWriter, r *http.Request, p *post, parsedMfItem *microformatItem) {
-	err := a.micropubParsePostParamsMfItem(p, parsedMfItem)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	a.micropubCreate(w, r, p)
-}
-
-func (a *goBlog) micropubCheckScope(w http.ResponseWriter, r *http.Request, required string) bool {
-	if !strings.Contains(r.Context().Value(indieAuthScope).(string), required) {
-		a.serveError(w, r, required+" scope missing", http.StatusForbidden)
-		return false
-	}
-	return true
-}
-
-func (a *goBlog) micropubCreate(w http.ResponseWriter, r *http.Request, p *post) {
-	if !a.micropubCheckScope(w, r, "create") {
-		return
-	}
-	if err := a.extractParamsFromContent(p); err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := a.createPost(p); err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	http.Redirect(w, r, a.fullPostURL(p), http.StatusAccepted)
-}
-
-func (a *goBlog) micropubDelete(w http.ResponseWriter, r *http.Request, u string) {
-	if !a.micropubCheckScope(w, r, "delete") {
-		return
-	}
-	uu, err := url.Parse(u)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := a.deletePost(uu.Path); err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	http.Redirect(w, r, uu.String(), http.StatusNoContent)
-}
-
-func (a *goBlog) micropubUndelete(w http.ResponseWriter, r *http.Request, u string) {
-	if !a.micropubCheckScope(w, r, "undelete") {
-		return
-	}
-	uu, err := url.Parse(u)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err := a.undeletePost(uu.Path); err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	http.Redirect(w, r, uu.String(), http.StatusNoContent)
-}
-
-func (a *goBlog) micropubUpdate(w http.ResponseWriter, r *http.Request, u string, mf *microformatItem) {
-	if !a.micropubCheckScope(w, r, "update") {
-		return
-	}
-	uu, err := url.Parse(u)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	ppath := uu.Path
-	if ppath == "" {
-		// Probably homepage "/"
-		ppath = "/"
-	}
-	p, err := a.getPost(ppath)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// Check if post is marked as deleted
-	if p.Deleted() {
-		a.serveError(w, r, "post is marked as deleted, undelete it first", http.StatusBadRequest)
-		return
-	}
-	// Update post
-	oldPath := p.Path
-	oldStatus := p.Status
-	oldVisibility := p.Visibility
-	a.micropubUpdateReplace(p, mf.Replace)
-	a.micropubUpdateAdd(p, mf.Add)
-	a.micropubUpdateDelete(p, mf.Delete)
-	err = a.extractParamsFromContent(p)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	err = a.replacePost(p, oldPath, oldStatus, oldVisibility)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, a.fullPostURL(p), http.StatusNoContent)
-}
-
-func (a *goBlog) micropubUpdateReplace(p *post, replace map[string][]any) {
-	if content, ok := replace["content"]; ok && len(content) > 0 {
-		p.Content = cast.ToStringSlice(content)[0]
-	}
-	if published, ok := replace["published"]; ok && len(published) > 0 {
-		p.Published = cast.ToStringSlice(published)[0]
-	}
-	if updated, ok := replace["updated"]; ok && len(updated) > 0 {
-		p.Updated = cast.ToStringSlice(updated)[0]
-	}
-	// Status
-	if status, ok := replace["post-status"]; ok && len(status) > 0 {
-		statusStr := cast.ToStringSlice(status)[0]
-		p.Status = micropubStatus(statusStr)
-	}
-	// Visibility
-	if visibility, ok := replace["visibility"]; ok && len(visibility) > 0 {
-		visibilityStr := cast.ToStringSlice(visibility)[0]
-		p.Visibility = micropubVisibility(visibilityStr)
-	}
-	// Parameters
-	if name, ok := replace["name"]; ok && name != nil {
-		p.Parameters["title"] = cast.ToStringSlice(name)
-	}
-	if category, ok := replace["category"]; ok && category != nil {
-		p.Parameters[a.cfg.Micropub.CategoryParam] = cast.ToStringSlice(category)
-	}
-	if reply, ok := replace["in-reply-to"]; ok && reply != nil {
-		p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(reply)
-	}
-	if like, ok := replace["like-of"]; ok && like != nil {
-		p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(like)
-	}
-	if bookmark, ok := replace["bookmark-of"]; ok && bookmark != nil {
-		p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(bookmark)
-	}
-	if audio, ok := replace["audio"]; ok && audio != nil {
-		p.Parameters[a.cfg.Micropub.AudioParam] = cast.ToStringSlice(audio)
-	}
-	// TODO: photos
-}
-
-func (a *goBlog) micropubUpdateAdd(p *post, add map[string][]any) {
-	for key, value := range add {
-		switch key {
-		case "content":
-			p.Content += strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-		case "published":
-			p.Published = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-		case "updated":
-			p.Updated = strings.TrimSpace(strings.Join(cast.ToStringSlice(value), " "))
-		case "category":
-			p.Parameters[a.cfg.Micropub.CategoryParam] = append(p.Parameters[a.cfg.Micropub.CategoryParam], cast.ToStringSlice(value)...)
-		case "in-reply-to":
-			p.Parameters[a.cfg.Micropub.ReplyParam] = cast.ToStringSlice(value)
-		case "like-of":
-			p.Parameters[a.cfg.Micropub.LikeParam] = cast.ToStringSlice(value)
-		case "bookmark-of":
-			p.Parameters[a.cfg.Micropub.BookmarkParam] = cast.ToStringSlice(value)
-		case "audio":
-			p.Parameters[a.cfg.Micropub.AudioParam] = append(p.Parameters[a.cfg.Micropub.AudioParam], cast.ToStringSlice(value)...)
-			// TODO: photo
-		}
-	}
-}
-
-func (a *goBlog) micropubUpdateDelete(p *post, del any) {
-	if del == nil {
-		return
-	}
-	deleteProperties, ok := del.([]any)
-	if ok {
-		// Completely remove properties
-		for _, prop := range deleteProperties {
-			switch prop {
-			case "content":
-				p.Content = ""
-			case "published":
-				p.Published = ""
-			case "updated":
-				p.Updated = ""
-			case "category":
-				delete(p.Parameters, a.cfg.Micropub.CategoryParam)
-			case "in-reply-to":
-				delete(p.Parameters, a.cfg.Micropub.ReplyParam)
-				delete(p.Parameters, a.cfg.Micropub.ReplyTitleParam)
-				delete(p.Parameters, a.cfg.Micropub.ReplyContextParam)
-			case "like-of":
-				delete(p.Parameters, a.cfg.Micropub.LikeParam)
-				delete(p.Parameters, a.cfg.Micropub.LikeTitleParam)
-				delete(p.Parameters, a.cfg.Micropub.LikeContextParam)
-			case "bookmark-of":
-				delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
-			case "audio":
-				delete(p.Parameters, a.cfg.Micropub.AudioParam)
-			case "photo":
-				delete(p.Parameters, a.cfg.Micropub.PhotoParam)
-				delete(p.Parameters, a.cfg.Micropub.PhotoDescriptionParam)
-			}
-		}
-		// Return
-		return
-	}
-	toDelete, ok := del.(map[string]any)
-	if ok {
-		// Only delete parts of properties
-		for key, values := range toDelete {
-			switch key {
-			// Properties to completely delete
-			case "content":
-				p.Content = ""
-			case "published":
-				p.Published = ""
-			case "updated":
-				p.Updated = ""
-			case "in-reply-to":
-				delete(p.Parameters, a.cfg.Micropub.ReplyParam)
-				delete(p.Parameters, a.cfg.Micropub.ReplyTitleParam)
-			case "like-of":
-				delete(p.Parameters, a.cfg.Micropub.LikeParam)
-				delete(p.Parameters, a.cfg.Micropub.LikeTitleParam)
-			case "bookmark-of":
-				delete(p.Parameters, a.cfg.Micropub.BookmarkParam)
-			// Properties to delete part of
-			// TODO: Support partial deletes of more properties
-			case "category":
-				delValues := cast.ToStringSlice(values)
-				p.Parameters[a.cfg.Micropub.CategoryParam] = lo.Filter(p.Parameters[a.cfg.Micropub.CategoryParam], func(s string, _ int) bool {
-					return !lo.Contains(delValues, s)
-				})
-			}
-		}
-	}
 }
 
 func micropubStatus(status string) postStatus {
@@ -689,4 +401,98 @@ func micropubVisibility(visibility string) postVisibility {
 	default:
 		return visibilityPublic
 	}
+}
+
+func micropubUpdateMfProperties(properties map[string][]any, req micropub.RequestUpdate) (map[string][]any, error) {
+	if req.Replace != nil {
+		for key, value := range req.Replace {
+			properties[key] = value
+		}
+	}
+
+	if req.Add != nil {
+		for key, value := range req.Add {
+			if _, ok := properties[key]; !ok {
+				properties[key] = []any{}
+			}
+			properties[key] = append(properties[key], value...)
+		}
+	}
+
+	if req.Delete != nil {
+		if reflect.TypeOf(req.Delete).Kind() == reflect.Slice {
+			toDelete, ok := req.Delete.([]any)
+			if !ok {
+				return nil, errors.New("invalid delete array")
+			}
+			for _, key := range toDelete {
+				delete(properties, cast.ToString(key))
+			}
+		} else {
+			toDelete, ok := req.Delete.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid delete object: expected map[string]any, got: %s", reflect.TypeOf(req.Delete))
+			}
+			for key, v := range toDelete {
+				value, ok := v.([]any)
+				if !ok {
+					// Wrong type, ignore
+					continue
+				}
+				if _, ok := properties[key]; !ok {
+					// Parameter not present, ignore delete
+					continue
+				}
+				properties[key] = lo.Filter(properties[key], func(ss any, _ int) bool {
+					for _, s := range value {
+						if s == ss {
+							return false
+						}
+					}
+					return true
+				})
+			}
+		}
+	}
+	return properties, nil
+}
+
+func (s *micropubImplementation) updatePostPropertiesFromMf(p *post, properties map[string][]any) {
+	if properties == nil || p == nil {
+		return
+	}
+
+	// Ignore the following properties
+	delete(properties, "post-status")
+	delete(properties, "photo")
+	delete(properties, "photo-alt")
+
+	// Helper function
+	getFirstStringFromArray := func(arr any) string {
+		if strArr, ok := arr.([]any); ok && len(strArr) > 0 {
+			if str, ok := strArr[0].(string); ok {
+				return str
+			}
+		}
+		return ""
+	}
+
+	// Set other properties
+	p.Content = getFirstStringFromArray(properties["content"])
+	delete(properties, "content")
+	p.Published = getFirstStringFromArray(properties["published"])
+	delete(properties, "published")
+	p.Updated = getFirstStringFromArray(properties["updated"])
+	delete(properties, "updated")
+	p.Slug = getFirstStringFromArray(properties["mp-slug"])
+	delete(properties, "mp-slug")
+	p.setChannel(getFirstStringFromArray(properties["mp-channel"]))
+	delete(properties, "mp-channel")
+	p.Visibility = postVisibility(defaultIfEmpty(getFirstStringFromArray(properties["visibility"]), string(p.Visibility)))
+	delete(properties, "visibility")
+
+	for key, value := range properties {
+		p.Parameters[s.mapToParameterName(key)] = cast.ToStringSlice(value)
+	}
+
 }

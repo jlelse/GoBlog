@@ -14,6 +14,7 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.hacdias.com/indielib/micropub"
 	"gopkg.in/yaml.v3"
 	ws "nhooyr.io/websocket"
 )
@@ -97,26 +98,30 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			Data: &editorRenderData{
 				presetParams:      parsePresetPostParamsFromQuery(r),
 				updatePostUrl:     a.fullPostURL(post),
-				updatePostContent: a.postToMfItem(post).Properties.Content[0],
+				updatePostContent: post.contentWithParams(),
 			},
 		})
 	case "createpost", "updatepost":
 		reqBody := map[string]any{}
 		if action == "updatepost" {
-			reqBody["action"] = actionUpdate
+			reqBody["action"] = micropub.ActionUpdate
 			reqBody["url"] = r.FormValue("url")
 			reqBody["replace"] = map[string][]string{"content": {r.FormValue("content")}}
 		} else {
+			blog, _ := a.getBlog(r)
 			reqBody["type"] = []string{"h-entry"}
-			reqBody["properties"] = map[string][]string{"content": {r.FormValue("content")}}
+			reqBody["properties"] = map[string][]string{"content": {r.FormValue("content")}, "blog": {blog}}
 		}
 		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
-		a.editorMicropubPost(w, req, false)
+		a.editorMicropubPost(w, req, false, "")
 	case "upload":
-		a.editorMicropubPost(w, r, true)
+		a.editorMicropubPost(w, r, true, "")
 	case "delete", "undelete":
-		req, _ := requests.URL("").Method(http.MethodPost).ContentType(contenttype.WWWForm).Param("action", action).Param("url", r.FormValue("url")).Request(r.Context())
-		a.editorMicropubPost(w, req, false)
+		req, _ := requests.URL("").
+			Method(http.MethodPost).
+			BodyForm(url.Values{"action": {action}, "url": {r.FormValue("url")}}).
+			Request(r.Context())
+		a.editorMicropubPost(w, req, false, r.FormValue("url"))
 	case "tts":
 		parsedURL, err := url.Parse(r.FormValue("url"))
 		if err != nil {
@@ -153,12 +158,12 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool) {
+func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool, redirectSuccess string) {
 	recorder := httptest.NewRecorder()
 	if media {
-		addAllScopes(http.HandlerFunc(a.serveMicropubMedia)).ServeHTTP(recorder, r)
+		addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, r)
 	} else {
-		addAllScopes(http.HandlerFunc(a.serveMicropubPost)).ServeHTTP(recorder, r)
+		addAllScopes(a.getMicropubImplementation().getHandler()).ServeHTTP(recorder, r)
 	}
 	result := recorder.Result()
 	if location := result.Header.Get("Location"); location != "" {
@@ -166,7 +171,8 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 		return
 	}
 	if result.StatusCode >= 200 && result.StatusCode < 400 {
-		http.Redirect(w, r, editorPath, http.StatusFound)
+		redirectPath := defaultIfEmpty(redirectSuccess, editorPath)
+		http.Redirect(w, r, redirectPath, http.StatusFound)
 		return
 	}
 	w.WriteHeader(result.StatusCode)
