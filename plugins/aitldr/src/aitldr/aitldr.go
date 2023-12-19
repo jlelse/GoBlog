@@ -136,10 +136,12 @@ func (p *plugin) summarize(post plugintypes.Post) {
 		Method(http.MethodPost).
 		Header("Authorization", "Bearer "+apikey).
 		BodyJSON(map[string]any{
-			"model":       "gpt-3.5-turbo",
-			"temperature": 0,
-			"max_tokens":  200,
+			"model": "gpt-3.5-turbo-1106",
 			"messages": []apiMessage{
+				{
+					Role:    "system",
+					Content: p.systemMessage(),
+				},
 				{
 					Role:    "user",
 					Content: p.createPrompt(post),
@@ -170,21 +172,27 @@ func (p *plugin) summarize(post plugintypes.Post) {
 	p.app.PurgeCache()
 }
 
+func (p *plugin) systemMessage() string {
+	prompt := "You are a summary writing plugin in a blogging system. " +
+		"Your task is to generate concise and effective summaries for long blog posts. " +
+		"When given a full blog post, extract the key points and present them in a clear, brief format. " +
+		"The summary must be in the same language as the blog post, have a maximum length of 250 characters, contain no linebreaks, and be plain text. " +
+		"Importantly, the summary should be written in the first person perspective, as if the blog author themselves are summarizing the post. " +
+		"Avoid phrases like 'The author states' or 'The blogger argues', and instead write as if the author is speaking. " +
+		"Maintain the original intent and tone of the blog post in your summary. " +
+		"Always respond with just the summary content."
+	return prompt
+}
+
 func (p *plugin) createPrompt(post plugintypes.Post) string {
-	lang := "en"
-	if blog, ok := p.app.GetBlog(post.GetBlog()); ok {
-		if blogLang := blog.GetLanguage(); lang != "" {
-			lang = blogLang
-		}
-	}
-	prompt := "Summarize the content of following blog post in one sentence in the language \"" + lang + "\". Answer with just the summary.\n\n\n"
+	prompt := ""
 	if title, err := p.app.RenderMarkdownAsText(post.GetTitle()); err == nil && title != "" {
 		prompt += title + "\n\n"
 	} else if err != nil {
 		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error())
 	}
 	if text, err := p.app.RenderMarkdownAsText(post.GetContent()); err == nil && text != "" {
-		prompt += text + "\n\n"
+		prompt += text
 	} else if err != nil {
 		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error())
 	}
