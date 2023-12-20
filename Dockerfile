@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine3.18 as buildbase
+FROM golang:1.21-alpine3.18 AS buildbase
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
@@ -15,15 +15,15 @@ ADD strings/ /app/strings/
 ADD plugins/ /app/plugins/
 ADD logo/GoBlog.png /app/logo/GoBlog.png
 
-FROM buildbase as build
+FROM buildbase AS build
 
 RUN go build -ldflags '-w -s' -o GoBlog
 
-FROM build as test
+FROM build AS test
 
 RUN go test -timeout 300s -failfast -cover ./...
 
-FROM alpine:3.18 as base
+FROM alpine:3.18 AS base
 
 WORKDIR /app
 VOLUME /app/config
@@ -39,7 +39,7 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/m
 COPY templates/ /app/templates/
 COPY --from=build /app/GoBlog /bin/
 
-FROM base as tools
+FROM base AS tools
 
 RUN apk add --no-cache curl bash git
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite
