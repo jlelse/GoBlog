@@ -21,7 +21,8 @@ func (a *goBlog) serveFs(f fs.FS, basePath string) http.HandlerFunc {
 		switch path.Ext(fileName) {
 		case ".js":
 			w.Header().Set(contentType, contenttype.JSUTF8)
-			_ = a.min.Get().Minify(contenttype.JS, w, file)
+			// Can't minify, because minify throws errors for some JS files
+			_, _ = io.Copy(w, file)
 		case ".css":
 			w.Header().Set(contentType, contenttype.CSSUTF8)
 			_ = a.min.Get().Minify(contenttype.CSS, w, file)
