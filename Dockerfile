@@ -2,7 +2,7 @@ FROM golang:1.21-alpine3.18 as buildbase
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
 ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5"
 ADD *.go go.mod go.sum /app/
 ADD pkgs/ /app/pkgs/
@@ -35,11 +35,11 @@ CMD ["GoBlog"]
 HEALTHCHECK --interval=1m --timeout=10s CMD GoBlog healthcheck
 ENV GOMEMLIMIT=100MiB
 RUN apk add --no-cache tzdata tor
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
 COPY templates/ /app/templates/
 COPY --from=build /app/GoBlog /bin/
 
 FROM base as tools
 
 RUN apk add --no-cache curl bash git
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main sqlite
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite
