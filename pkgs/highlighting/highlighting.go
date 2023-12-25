@@ -95,7 +95,7 @@ type highlighting struct{}
 // Highlighting is a goldmark.Extender implementation.
 var Highlighting = &highlighting{}
 
-var Style = styles.Monokai
+var Style = styles.Get("monokai")
 
 // Extend implements goldmark.Extender.
 func (*highlighting) Extend(m goldmark.Markdown) {

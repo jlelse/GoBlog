@@ -47,11 +47,9 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 			fmt.Println("Failed to open custom css file: ", err.Error())
 			return
 		}
-		defer func() {
-			_ = f.Close()
-		}()
 
 		err = p.app.CompileAsset("plugincustomcss.css", f)
+		_ = f.Close()
 		if err != nil {
 			fmt.Println("Failed compile custom css: ", err.Error())
 			return

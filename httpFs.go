@@ -29,5 +29,6 @@ func (a *goBlog) serveFs(f fs.FS, basePath string) http.HandlerFunc {
 		default:
 			_, _ = io.Copy(w, file)
 		}
+		_ = file.Close()
 	}
 }
