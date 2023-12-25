@@ -88,6 +88,11 @@ func Test_urlHasExt(t *testing.T) {
 }
 
 func Test_htmlText(t *testing.T) {
+	htmlText := func(s string) string {
+		text, _ := htmlTextFromReader(strings.NewReader(s))
+		return text
+	}
+
 	// Text without HTML
 	assert.Equal(t, "This is a test", htmlText("This is a test"))
 	// Text without HTML and Emojis

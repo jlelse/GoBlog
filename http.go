@@ -263,7 +263,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		}
 		// Check if post or alias
 		path := r.URL.Path
-		row, err := a.db.QueryRow(`
+		row, err := a.db.QueryRowContext(r.Context(), `
 		-- normal posts
 		select 'post', status, visibility, 200 from posts where path = @path
 		union all

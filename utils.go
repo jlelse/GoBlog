@@ -233,11 +233,6 @@ func mBytesString(size int64) string {
 	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes())
 }
 
-func htmlText(s string) string {
-	text, _ := htmlTextFromReader(strings.NewReader(s))
-	return text
-}
-
 // Build policy to only allow a subset of HTML tags
 var textPolicy = bluemonday.StrictPolicy().
 	AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
@@ -411,10 +406,9 @@ func matchTimeDiffLocale(lang string) tdl.Locale {
 	timeDiffLocaleMutex.Lock()
 	defer timeDiffLocaleMutex.Unlock()
 	supportedLangs := []string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
-	var supportedTags []language.Tag
-	for _, lang := range supportedLangs {
-		supportedTags = append(supportedTags, language.Make(lang))
-	}
+	supportedTags := lo.Map(supportedLangs, func(lang string, _ int) language.Tag {
+		return language.Make(lang)
+	})
 	matcher := language.NewMatcher(supportedTags)
 	_, idx, _ := matcher.Match(language.Make(lang))
 	locale := tdl.Locale(supportedLangs[idx])

@@ -49,7 +49,7 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 	switch format {
 	case profileImageFormatPNG:
 		mediaType = "image/png"
-		encode = func(output io.Writer, img *image.NRGBA, quality int) error {
+		encode = func(output io.Writer, img *image.NRGBA, _ int) error {
 			return imaging.Encode(output, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
 		}
 	default:

@@ -171,6 +171,7 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) *cacheI
 	}
 	// No cache available
 	// Make and use copy of r
+	//nolint:contextcheck
 	cr := r.Clone(valueOnlyContext{r.Context()})
 	// Remove problematic headers
 	cr.Header.Del("If-Modified-Since")
