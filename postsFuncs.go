@@ -313,40 +313,32 @@ func (p *post) getChannel() string {
 	return p.Blog + "/" + p.Section
 }
 
-func (a *goBlog) addReplyTitleAndContext(p *post) {
-	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" {
-		addTitle := p.firstParameter(a.cfg.Micropub.ReplyTitleParam) == "" && a.getBlogFromPost(p).addReplyTitle
-		addContext := p.firstParameter(a.cfg.Micropub.ReplyContextParam) == "" && a.getBlogFromPost(p).addReplyContext
+func (a *goBlog) addTitleAndContext(p *post, linkParam, titleParam, contextParam string, addTitleFlag, addContextFlag bool) {
+	if link := p.firstParameter(linkParam); link != "" {
+		addTitle := p.firstParameter(titleParam) == "" && addTitleFlag
+		addContext := p.firstParameter(contextParam) == "" && addContextFlag
 		if !addTitle && !addContext {
 			return
 		}
-		if mf, err := a.parseMicroformats(replyLink, true); err == nil {
+		if mf, err := a.parseMicroformats(link, true); err == nil {
 			if addTitle && mf.Title != "" {
-				p.addParameter(a.cfg.Micropub.ReplyTitleParam, mf.Title)
+				p.addParameter(titleParam, mf.Title)
 			}
 			if addContext && mf.Content != "" {
-				p.addParameter(a.cfg.Micropub.ReplyContextParam, mf.Content)
+				p.addParameter(contextParam, mf.Content)
 			}
 		}
 	}
 }
 
+func (a *goBlog) addReplyTitleAndContext(p *post) {
+	bc := a.getBlogFromPost(p)
+	a.addTitleAndContext(p, a.cfg.Micropub.ReplyParam, a.cfg.Micropub.ReplyTitleParam, a.cfg.Micropub.ReplyContextParam, bc.addReplyTitle, bc.addReplyContext)
+}
+
 func (a *goBlog) addLikeTitleAndContext(p *post) {
-	if likeLink := p.firstParameter(a.cfg.Micropub.LikeParam); likeLink != "" {
-		addTitle := p.firstParameter(a.cfg.Micropub.LikeTitleParam) == "" && a.getBlogFromPost(p).addLikeTitle
-		addContext := p.firstParameter(a.cfg.Micropub.LikeContextParam) == "" && a.getBlogFromPost(p).addLikeContext
-		if !addTitle && !addContext {
-			return
-		}
-		if mf, err := a.parseMicroformats(likeLink, true); err == nil {
-			if addTitle && mf.Title != "" {
-				p.addParameter(a.cfg.Micropub.LikeTitleParam, mf.Title)
-			}
-			if addContext && mf.Content != "" {
-				p.addParameter(a.cfg.Micropub.LikeContextParam, mf.Content)
-			}
-		}
-	}
+	bc := a.getBlogFromPost(p)
+	a.addTitleAndContext(p, a.cfg.Micropub.LikeParam, a.cfg.Micropub.LikeTitleParam, a.cfg.Micropub.LikeContextParam, bc.addLikeTitle, bc.addLikeContext)
 }
 
 // Public because of rendering
