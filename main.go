@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 	netpprof "net/http/pprof"
@@ -22,17 +22,23 @@ func main() {
 	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
 	configfile := flag.String("config", "", "use a specific config file")
 
+	// Init app and logger
+	app := &goBlog{
+		httpClient: newHttpClient(),
+	}
+	app.initLog()
+
 	// Init CPU and memory profiling
 	flag.Parse()
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			log.Fatalln("could not create CPU profile: ", err)
+			app.fatal("could not create CPU profile", "err", err)
 			return
 		}
 		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatalln("could not start CPU profile: ", err)
+			app.fatal("could not start CPU profile", "err", err)
 			return
 		}
 		defer pprof.StopCPUProfile()
@@ -41,29 +47,25 @@ func main() {
 		defer func() {
 			f, err := os.Create(*memprofile)
 			if err != nil {
-				log.Fatalln("could not create memory profile: ", err.Error())
+				app.fatal("could not create memory profile", "err", err)
 				return
 			}
 			defer f.Close()
 			runtime.GC()
 			if err := pprof.WriteHeapProfile(f); err != nil {
-				log.Fatalln("could not write memory profile: ", err.Error())
+				app.fatal("could not write memory profile", "err", err)
 				return
 			}
 		}()
 	}
 
-	app := &goBlog{
-		httpClient: newHttpClient(),
-	}
-
 	// Initialize config
 	if err = app.loadConfigFile(*configfile); err != nil {
-		app.logErrAndQuit("Failed to load config file:", err.Error())
+		app.logErrAndQuit("Failed to load config file", "err", err)
 		return
 	}
 	if err = app.initConfig(false); err != nil {
-		app.logErrAndQuit("Failed to init config:", err.Error())
+		app.logErrAndQuit("Failed to init config", "err", err)
 		return
 	}
 
@@ -83,17 +85,17 @@ func main() {
 			AccountName: app.cfg.User.Nick,
 		})
 		if err != nil {
-			app.logErrAndQuit(err.Error())
+			app.logErrAndQuit("Failed to generate TOTP secret", "err", err)
 			return
 		}
-		log.Println("TOTP-Secret:", key.Secret())
+		fmt.Println("TOTP-Secret:", key.Secret())
 		app.shutdown.ShutdownAndWait()
 		return
 	}
 
 	// Initialize plugins
 	if err = app.initPlugins(); err != nil {
-		app.logErrAndQuit("Failed to init plugins:", err.Error())
+		app.logErrAndQuit("Failed to init plugins", "err", err)
 		return
 	}
 
@@ -119,13 +121,13 @@ func main() {
 			}
 			listener, err := net.Listen("tcp", pprofServer.Addr)
 			if err != nil {
-				log.Fatalln("Failed to start pprof server:", err.Error())
+				app.fatal("Failed to start pprof server", "err", err)
 				return
 			}
-			log.Println("Pprof server listening on", listener.Addr().String())
+			app.info("Pprof server listening", "addr", listener.Addr().String())
 			// Start server
 			if err := pprofServer.Serve(listener); err != nil {
-				log.Fatalln("Failed to start pprof server:", err.Error())
+				app.fatal("Failed to start pprof server", "err", err)
 				return
 			}
 		}()
@@ -139,11 +141,11 @@ func main() {
 		app.initMarkdown()
 		err = app.initTemplateStrings()
 		if err != nil {
-			app.logErrAndQuit("Failed to start check:", err.Error())
+			app.logErrAndQuit("Failed to start check", "err", err)
 		}
 		err = app.checkAllExternalLinks()
 		if err != nil {
-			app.logErrAndQuit("Failed to start check:", err.Error())
+			app.logErrAndQuit("Failed to start check", "err", err)
 		}
 		app.shutdown.ShutdownAndWait()
 		return
@@ -157,7 +159,7 @@ func main() {
 		}
 		err = app.exportMarkdownFiles(dir)
 		if err != nil {
-			app.logErrAndQuit("Failed to export markdown files:", err.Error())
+			app.logErrAndQuit("Failed to export markdown files", "err", err)
 			return
 		}
 		app.shutdown.ShutdownAndWait()
@@ -173,7 +175,7 @@ func main() {
 	// Start the server
 	err = app.startServer()
 	if err != nil {
-		app.logErrAndQuit("Failed to start server(s):", err.Error())
+		app.logErrAndQuit("Failed to start server(s)", "err", err)
 		return
 	}
 
@@ -184,31 +186,31 @@ func main() {
 func (app *goBlog) initComponents() {
 	var err error
 
-	log.Println("Initialize components...")
+	app.info("Initialize components...")
 
 	app.initMarkdown()
 	if err = app.initTemplateAssets(); err != nil { // Needs minify
-		app.logErrAndQuit("Failed to init template assets:", err.Error())
+		app.logErrAndQuit("Failed to init template assets", "err", err)
 		return
 	}
 	if err = app.initTemplateStrings(); err != nil {
-		app.logErrAndQuit("Failed to init template translations:", err.Error())
+		app.logErrAndQuit("Failed to init template translations", "err", err)
 		return
 	}
 	if err = app.initCache(); err != nil {
-		app.logErrAndQuit("Failed to init HTTP cache:", err.Error())
+		app.logErrAndQuit("Failed to init HTTP cache", "err", err)
 		return
 	}
 	if err = app.initRegexRedirects(); err != nil {
-		app.logErrAndQuit("Failed to init redirects:", err.Error())
+		app.logErrAndQuit("Failed to init redirects", "err", err)
 		return
 	}
 	if err = app.initHTTPLog(); err != nil {
-		app.logErrAndQuit("Failed to init HTTP logging:", err.Error())
+		app.logErrAndQuit("Failed to init HTTP logging", "err", err)
 		return
 	}
 	if err = app.initActivityPub(); err != nil {
-		app.logErrAndQuit("Failed to init ActivityPub:", err.Error())
+		app.logErrAndQuit("Failed to init ActivityPub", "err", err)
 		return
 	}
 	app.initWebmention()
@@ -221,11 +223,11 @@ func (app *goBlog) initComponents() {
 	app.initPostsDeleter()
 	app.initIndexNow()
 
-	log.Println("Initialized components")
+	app.info("Initialized components")
 }
 
-func (a *goBlog) logErrAndQuit(v ...any) {
-	log.Println(v...)
+func (a *goBlog) logErrAndQuit(msg string, args ...any) {
+	a.error(msg, args...)
 	a.shutdown.ShutdownAndWait()
 	os.Exit(1)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
@@ -101,7 +100,7 @@ func (a *goBlog) listenOnQueue(queueName string, wait time.Duration, process que
 			}
 			qi, err := a.peekQueue(queueContext, queueName)
 			if err != nil {
-				log.Println("queue peek error:", err.Error())
+				a.error("queue peek error", "err", err)
 				continue queueLoop
 			}
 			if qi == nil {
@@ -117,17 +116,17 @@ func (a *goBlog) listenOnQueue(queueName string, wait time.Duration, process que
 				qi,
 				func() {
 					if err := a.dequeue(qi); err != nil {
-						log.Println("queue dequeue error:", err.Error())
+						a.error("queue dequeue error", "err", err)
 					}
 				},
 				func(dur time.Duration) {
 					if err := a.reschedule(qi, dur); err != nil {
-						log.Println("queue reschedule error:", err.Error())
+						a.error("queue reschedule error", "err", err)
 					}
 				},
 			)
 		}
-		log.Println("stopped queue:", queueName)
+		a.info("stopped queue", "name", queueName)
 		wg.Done()
 	}()
 }

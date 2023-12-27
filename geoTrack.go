@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math"
 
 	"github.com/tkrajina/gpxgo/gpx"
@@ -51,7 +50,7 @@ func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, e
 	parseResult, err := trackParseGPX(gpxString)
 	if err != nil {
 		// Failed to parse, but just log error
-		log.Printf("failed to parse GPX: %v", err)
+		a.error("failed to parse GPX", "err", err)
 		return nil, nil
 	}
 

@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -157,7 +156,7 @@ func (a *goBlog) apCheckMentions(p *post) {
 	links, err := allLinksFromHTML(pr, a.fullPostURL(p))
 	_ = pr.CloseWithError(err)
 	if err != nil {
-		log.Println("Failed to extract links from post: " + err.Error())
+		a.error("ActivityPub: Failed to extract links from post", err)
 		return
 	}
 	apc := a.apHttpClients[p.Blog]
@@ -486,12 +485,12 @@ func (a *goBlog) apUndelete(p *post) {
 
 func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity) {
 	newFollower := follow.Actor.GetLink()
-	log.Println("New follow request from follower id:", newFollower.String())
+	a.info("AcitivyPub: New follow request from follower", "id", newFollower.String())
 	// Get remote actor
 	follower, err := a.apGetRemoteActor(newFollower, blogName)
 	if err != nil || follower == nil {
 		// Couldn't retrieve remote actor info
-		log.Println("Failed to retrieve remote actor info:", newFollower)
+		a.error("ActivityPub: Failed to retrieve remote actor info", "actor", newFollower)
 		return
 	}
 	// Add or update follower
@@ -529,7 +528,7 @@ func (a *goBlog) apSendProfileUpdates() {
 func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity, mentions ...string) {
 	inboxes, err := a.db.apGetAllInboxes(blog)
 	if err != nil {
-		log.Println("Failed to retrieve follower inboxes:", err.Error())
+		a.error("ActivityPub: Failed to retrieve follower inboxes", "err", err)
 		return
 	}
 	for _, m := range mentions {
@@ -583,7 +582,7 @@ func (a *goBlog) loadActivityPubPrivateKey() error {
 	if keyData, err := a.db.retrievePersistentCache("activitypub_key"); err == nil && keyData != nil {
 		privateKeyDecoded, _ := pem.Decode(keyData)
 		if privateKeyDecoded == nil {
-			log.Println("failed to decode cached private key")
+			a.error("ActivityPub: failed to decode cached private key")
 			// continue
 		} else {
 			key, err := x509.ParsePKCS1PrivateKey(privateKeyDecoded.Bytes)

@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"embed"
+	"fmt"
 	"io/fs"
-	"log"
 	"strings"
 
 	"github.com/lopezator/migrator"
@@ -13,7 +13,7 @@ import (
 //go:embed dbmigrations/*
 var dbMigrations embed.FS
 
-func migrateDb(db *sql.DB, logging bool) error {
+func (a *goBlog) migrateDb(db *sql.DB, logging bool) error {
 	var sqlMigrations []any
 	err := fs.WalkDir(dbMigrations, "dbmigrations", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.Type().IsDir() {
@@ -41,7 +41,7 @@ func migrateDb(db *sql.DB, logging bool) error {
 	m, err := migrator.New(
 		migrator.WithLogger(migrator.LoggerFunc(func(s string, i ...any) {
 			if logging {
-				log.Printf(s, i)
+				a.info(fmt.Sprintf(s, i...))
 			}
 		})),
 		migrator.Migrations(sqlMigrations...),

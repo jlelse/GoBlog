@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -49,7 +48,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
 			// Save mention directly
 			if err := a.createWebmention(a.fullPostURL(p), link); err != nil {
-				log.Println("Failed to create webmention:", err.Error())
+				a.error("Failed to create webmention", "err", err)
 			}
 			continue
 		}
@@ -64,10 +63,10 @@ func (a *goBlog) sendWebmentions(p *post) error {
 			continue
 		}
 		if err = a.sendWebmention(endpoint, a.fullPostURL(p), link); err != nil {
-			log.Println("Sending webmention to " + link + " failed")
+			a.error("Sending webmention failed", "link", link)
 			continue
 		}
-		log.Println("Sent webmention to " + link)
+		a.info("Sent webmention", "link", link)
 	}
 	return nil
 }

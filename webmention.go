@@ -52,35 +52,35 @@ func (a *goBlog) initWebmention() {
 func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 	m, err := a.extractMention(r)
 	if err != nil {
-		a.debug("Error extracting webmention:", err.Error())
+		a.debug("Error extracting webmention", "err", err)
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Target, a.cfg.Server.ShortPublicAddress)
 	hasLongPrefix := strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress)
 	if !hasShortPrefix && !hasLongPrefix {
-		a.debug("Webmention target not allowed:", m.Target)
+		a.debug("Webmention target not allowed", "target", m.Target)
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
 	if m.Target == m.Source {
-		a.debug("Webmention target and source are the same:", m.Target)
+		a.debug("Webmention target and source are the same", "target", m.Target)
 		a.serveError(w, r, "target and source are the same", http.StatusBadRequest)
 		return
 	}
 	if err = a.queueMention(m); err != nil {
-		a.debug("Failed to queue webmention", err.Error())
+		a.debug("Failed to queue webmention", "err", err)
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = fmt.Fprint(w, "Webmention accepted")
-	a.debug("Accepted webmention:", m.Source, m.Target)
+	a.debug("Accepted webmention", "source", m.Source, "target", m.Target)
 }
 
 func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 	if ct := r.Header.Get(contentType); !strings.Contains(ct, contenttype.WWWForm) {
-		a.debug("New webmention request with wrong content type:", ct)
+		a.debug("New webmention request with wrong content type", "ct", ct)
 		return nil, errors.New("unsupported Content-Type")
 	}
 	err := r.ParseForm()
@@ -90,7 +90,7 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 	source := r.Form.Get("source")
 	target := r.Form.Get("target")
 	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
-		a.debug("Invalid webmention request, source:", source, "target:", target)
+		a.debug("Invalid webmention request", "source", source, "target", target)
 		return nil, errors.New("invalid request")
 	}
 	return &mention{

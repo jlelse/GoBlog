@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -27,7 +26,7 @@ func (a *goBlog) initSessions() {
 			"delete from sessions where expires < @now",
 			sql.Named("now", utcNowString()),
 		); err != nil {
-			log.Println("Failed to delete expired sessions:", err.Error())
+			a.error("Failed to delete expired sessions", "err", err)
 		}
 	}
 	deleteExpiredSessions()

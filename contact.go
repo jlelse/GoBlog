@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -58,7 +57,7 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	// Send submission
 	go func() {
 		if err := a.sendContactEmail(bc.Contact, message.String(), formEmail); err != nil {
-			log.Println(err.Error())
+			a.error("Failed to send contact email", "err", err)
 		}
 	}()
 	// Send notification

@@ -6,7 +6,6 @@ import (
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,7 +33,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		return err
 	}
 	// Start tor
-	log.Println("Starting and registering onion service, please wait a couple of minutes...")
+	a.info("Starting and registering onion service")
 	t, err := tor.Start(context.Background(), &tor.StartConf{
 		TempDataDirBase: os.TempDir(),
 		NoAutoSocksPort: true,
@@ -64,7 +63,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	a.torAddress = "http://" + onion.String()
 	torUrl, _ := url.Parse(a.torAddress)
 	a.torHostname = torUrl.Hostname()
-	log.Println("Onion service published on " + a.torAddress)
+	a.info("Onion service published", "address", a.torAddress)
 	// Clear cache
 	a.cache.purge()
 	// Serve handler
@@ -74,7 +73,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		ReadTimeout:       5 * time.Minute,
 		WriteTimeout:      5 * time.Minute,
 	}
-	a.shutdown.Add(shutdownServer(s, "tor"))
+	a.shutdown.Add(a.shutdownServer(s, "tor"))
 	if err = s.Serve(onion); err != nil && err != http.ErrServerClosed {
 		return err
 	}

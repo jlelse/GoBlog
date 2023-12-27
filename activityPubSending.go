@@ -6,7 +6,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -26,7 +25,7 @@ func (a *goBlog) initAPSendQueue() {
 	a.listenOnQueue("ap", 30*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
 		var r apRequest
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&r); err != nil {
-			log.Println("activitypub queue:", err.Error())
+			a.error("Activitypub queue", "err", err)
 			dequeue()
 			return
 		}
@@ -40,7 +39,7 @@ func (a *goBlog) initAPSendQueue() {
 				bufferpool.Put(buf)
 				return
 			}
-			log.Println("AP request failed for the 20th time:", r.To)
+			a.info("AP request failed for the 20th time", "to", r.To)
 			_ = a.db.apRemoveInbox(r.To)
 		}
 		dequeue()

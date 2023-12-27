@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -17,6 +16,7 @@ import (
 )
 
 type database struct {
+	a *goBlog
 	// Basic things
 	db  *sql.DB            // database
 	em  sync.Mutex         // command execution (insert, update, delete ...)
@@ -35,7 +35,7 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 		return
 	}
 	if logging {
-		log.Println("Initialize database...")
+		a.info("Initialize database")
 	}
 	// Setup db
 	db, err := a.openDatabase(a.cfg.Db.File, logging)
@@ -46,9 +46,9 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 	a.db = db
 	a.shutdown.Add(func() {
 		if err := db.close(); err != nil {
-			log.Printf("Failed to close database: %v", err)
+			a.error("Failed to close database", "err", err)
 		} else {
-			log.Println("Closed database")
+			a.info("Closed database")
 		}
 	})
 	if a.cfg.Db.DumpFile != "" {
@@ -58,7 +58,7 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 		db.dump(a.cfg.Db.DumpFile)
 	}
 	if logging {
-		log.Println("Initialized database")
+		a.info("Initialized database")
 	}
 	return nil
 }
@@ -116,7 +116,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		return nil, errors.New("sqlite not compiled with FTS5")
 	}
 	// Migrate DB
-	err = migrateDb(db, logging)
+	err = a.migrateDb(db, logging)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +144,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		return nil, err
 	}
 	return &database{
+		a:     a,
 		db:    db,
 		debug: debug,
 		psc:   psc,
@@ -163,11 +164,11 @@ func (db *database) dump(file string) {
 	// Dump database
 	f, err := os.Create(file)
 	if err != nil {
-		log.Println("Error while dump db:", err.Error())
+		db.a.error("Error while dump db", "err", err)
 		return
 	}
 	if err = sqlite3dump.DumpDB(db.db, f, sqlite3dump.WithTransaction(true)); err != nil {
-		log.Println("Error while dump db:", err.Error())
+		db.a.error("Error while dump db", "err", err)
 	}
 }
 
@@ -202,7 +203,7 @@ func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error)
 	})
 	if err != nil {
 		if db.debug {
-			log.Printf(`Failed to prepare query "%s": %s`, query, err.Error())
+			db.a.error("Failed to prepare query", "query", query, "err", err)
 		}
 		return nil, args, err
 	}

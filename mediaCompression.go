@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image/png"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/carlmjohnson/requests"
@@ -42,17 +41,18 @@ func (a *goBlog) initMediaCompressors() {
 	}
 	config := a.cfg.Micropub.MediaStorage
 	if key := config.TinifyKey; key != "" {
-		a.compressors = append(a.compressors, &tinify{key})
+		a.compressors = append(a.compressors, &tinify{a: a, key: key})
 	}
 	if config.CloudflareCompressionEnabled {
 		a.compressors = append(a.compressors, &cloudflare{})
 	}
 	if config.LocalCompressionEnabled {
-		a.compressors = append(a.compressors, &localMediaCompressor{})
+		a.compressors = append(a.compressors, &localMediaCompressor{a: a})
 	}
 }
 
 type tinify struct {
+	a   *goBlog
 	key string
 }
 
@@ -78,12 +78,12 @@ func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Cli
 		ToHeaders(headers).
 		Fetch(context.Background())
 	if err != nil {
-		log.Println("Tinify error:", err.Error())
+		tf.a.error("Tinify error", "err", err)
 		return "", tinifyErr
 	}
 	compressedLocation := headers.Get("Location")
 	if compressedLocation == "" {
-		log.Println("Tinify error: location header missing")
+		tf.a.error("Tinify error: location header missing")
 		return "", tinifyErr
 	}
 	// Resize and download image
@@ -134,9 +134,11 @@ func (*cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Cl
 	return res, err
 }
 
-type localMediaCompressor struct{}
+type localMediaCompressor struct {
+	a *goBlog
+}
 
-func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
+func (lc *localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
 	// Check url
 	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
 	if !allowed {
@@ -150,7 +152,7 @@ func (*localMediaCompressor) compress(url string, upload mediaStorageSaveFunc, h
 	img, err := imaging.Decode(pr, imaging.AutoOrientation(true))
 	_ = pr.CloseWithError(err)
 	if err != nil {
-		log.Println("Local compressor error:", err.Error())
+		lc.a.error("Local compressor error", "err", err)
 		return "", errors.New("failed to compress image using local compressor")
 	}
 	// Resize image

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -21,12 +20,12 @@ func (a *goBlog) initWebmentionQueue() {
 	a.listenOnQueue("wm", 30*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
 		var m mention
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
-			log.Println("webmention queue:", err.Error())
+			a.error("webmention queue error", "err", err)
 			dequeue()
 			return
 		}
 		if err := a.verifyMention(&m); err != nil {
-			log.Printf("Failed to verify webmention from %s to %s: %s", m.Source, m.Target, err.Error())
+			a.error("Failed to verify webmention", "source", m.Source, "target", m.Target, "err", err)
 		}
 		dequeue()
 	})
@@ -59,9 +58,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	_ = targetResp.Body.Close()
 	// Check if target has a valid status code
 	if targetResp.StatusCode != http.StatusOK {
-		if a.cfg.Debug {
-			a.debug(fmt.Sprintf("Webmention for unknown path: %s", m.Target))
-		}
+		a.debug("Webmention for unknown path", "target", m.Target)
 		return a.db.deleteWebmention(m)
 	}
 	// Check if target has a redirect
@@ -94,9 +91,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	// Check if source has a valid status code
 	if sourceResp.StatusCode != http.StatusOK {
-		if a.cfg.Debug {
-			a.debug(fmt.Sprintf("Delete webmention because source doesn't have valid status code: %s", m.Source))
-		}
+		a.debug("Delete webmention because source doesn't have valid status code", "source", m.Source)
 		return a.db.deleteWebmention(m)
 	}
 	// Check if source has a redirect
@@ -108,17 +103,13 @@ func (a *goBlog) verifyMention(m *mention) error {
 	// Parse response body
 	err = a.verifyReader(m, sourceResp.Body)
 	if err != nil {
-		if a.cfg.Debug {
-			a.debug(fmt.Sprintf("Delete webmention because verifying %s threw error: %s", m.Source, err.Error()))
-		}
+		a.debug("Delete webmention because verifying source threw error", "source", m.Source, "err", err)
 		return a.db.deleteWebmention(m)
 	}
 	newStatus := webmentionStatusVerified
 	// Update or insert webmention
 	if a.db.webmentionExists(m) {
-		if a.cfg.Debug {
-			a.debug(fmt.Sprintf("Update webmention: %s => %s", m.Source, m.Target))
-		}
+		a.debug("Update webmention", "source", m.Source, "target", m.Target)
 		// Update webmention
 		err = a.db.updateWebmention(m, newStatus)
 		if err != nil {

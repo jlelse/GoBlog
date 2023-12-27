@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -104,8 +103,6 @@ func Test_captchaMiddleware(t *testing.T) {
 		_, captchaSolved := session.Values["captcha"].(bool)
 		assert.False(t, captchaSolved)
 
-		log.Println("Captcha ID:", captchaId)
-
 		// Check form values
 		doc, err := goquery.NewDocumentFromReader(res.Body)
 		_ = res.Body.Close()
@@ -156,8 +153,6 @@ func Test_captchaMiddleware(t *testing.T) {
 		assert.NotEmpty(t, captchaId)
 		_, captchaSolved = session.Values["captcha"].(bool)
 		assert.False(t, captchaSolved)
-
-		log.Println("Captcha ID:", captchaId)
 
 		// Check form values
 		doc, err = goquery.NewDocumentFromReader(res.Body)

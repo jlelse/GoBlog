@@ -2,7 +2,6 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"os/exec"
 	"time"
 
@@ -14,7 +13,7 @@ func (a *goBlog) preStartHooks() {
 	cfg := a.cfg.Hooks
 	for _, cmd := range cfg.PreStart {
 		func(cmd string) {
-			executeHookCommand("pre-start", cfg.Shell, cmd)
+			a.executeHookCommand("pre-start", cfg.Shell, cmd)
 		}(cmd)
 	}
 }
@@ -26,7 +25,7 @@ func (a *goBlog) postPostHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostPost {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-post", cmdTmplString, map[string]any{
+				a.executeHookTemplateCommand("post-post", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -46,7 +45,7 @@ func (a *goBlog) postUpdateHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostUpdate {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-update", cmdTmplString, map[string]any{
+				a.executeHookTemplateCommand("post-update", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -65,7 +64,7 @@ func (a *goBlog) postDeleteHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostDelete {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-delete", cmdTmplString, map[string]any{
+				a.executeHookTemplateCommand("post-delete", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -84,7 +83,7 @@ func (a *goBlog) postUndeleteHooks(p *post) {
 	if hc := a.cfg.Hooks; hc != nil {
 		for _, cmdTmplString := range hc.PostUndelete {
 			go func(p *post, cmdTmplString string) {
-				a.cfg.Hooks.executeTemplateCommand("post-undelete", cmdTmplString, map[string]any{
+				a.executeHookTemplateCommand("post-undelete", cmdTmplString, map[string]any{
 					"URL":  a.fullPostURL(p),
 					"Post": p,
 				})
@@ -96,19 +95,20 @@ func (a *goBlog) postUndeleteHooks(p *post) {
 	}
 }
 
-func (cfg *configHooks) executeTemplateCommand(hookType string, tmpl string, data map[string]any) {
+func (a *goBlog) executeHookTemplateCommand(hookType string, tmpl string, data map[string]any) {
+	cfg := a.cfg.Hooks
 	cmdTmpl, err := template.New("cmd").Parse(tmpl)
 	if err != nil {
-		log.Println("Failed to parse cmd template:", err.Error())
+		a.error("Failed to parse cmd template", "err", err)
 		return
 	}
 	cmdBuf := bufferpool.Get()
 	defer bufferpool.Put(cmdBuf)
 	if err = cmdTmpl.Execute(cmdBuf, data); err != nil {
-		log.Println("Failed to execute cmd template:", err.Error())
+		a.error("Failed to execute cmd template", "err", err)
 		return
 	}
-	executeHookCommand(hookType, cfg.Shell, cmdBuf.String())
+	a.executeHookCommand(hookType, cfg.Shell, cmdBuf.String())
 }
 
 type hourlyHookFunc func()
@@ -119,7 +119,7 @@ func (a *goBlog) startHourlyHooks() {
 	for _, cmd := range cfg.Hourly {
 		c := cmd
 		f := func() {
-			executeHookCommand("hourly", cfg.Shell, c)
+			a.executeHookCommand("hourly", cfg.Shell, c)
 		}
 		a.hourlyHooks = append(a.hourlyHooks, f)
 	}
@@ -135,7 +135,7 @@ func (a *goBlog) startHourlyHooks() {
 			ticker := time.NewTicker(1 * time.Hour)
 			a.shutdown.Add(func() {
 				ticker.Stop()
-				log.Println("Stopped hourly hooks")
+				a.info("Stopped hourly hooks")
 			})
 			for range ticker.C {
 				for _, f := range a.hourlyHooks {
@@ -145,19 +145,19 @@ func (a *goBlog) startHourlyHooks() {
 		})
 		a.shutdown.Add(func() {
 			if tr.Stop() {
-				log.Println("Canceled hourly hooks")
+				a.info("Canceled hourly hooks")
 			}
 		})
 	}
 }
 
-func executeHookCommand(hookType, shell, cmd string) {
-	log.Printf("Executing %v hook: %v", hookType, cmd)
+func (a *goBlog) executeHookCommand(hookType, shell, cmd string) {
+	a.info("Executing hook", "type", hookType, "cmd", cmd)
 	out, err := exec.Command(shell, "-c", cmd).CombinedOutput()
 	if err != nil {
-		log.Println("Failed to execute command:", err.Error())
+		a.error("Failed to execute command", "err", err, "cmd", cmd)
 	}
 	if len(out) > 0 {
-		log.Printf("Output:\n%v", string(out))
+		a.info("Hook output", "out", string(out))
 	}
 }

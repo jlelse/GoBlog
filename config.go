@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -386,6 +385,8 @@ func (a *goBlog) initConfig(logging bool) error {
 	if a.cfg.initialized {
 		return nil
 	}
+	// Update log level
+	a.updateLogLevel()
 	// Init database
 	if err := a.initDatabase(logging); err != nil {
 		return err
@@ -561,7 +562,7 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	// Log success
 	a.cfg.initialized = true
-	log.Println("Initialized configuration")
+	a.info("Initialized configuration")
 	return nil
 }
 

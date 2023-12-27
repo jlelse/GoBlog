@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -25,7 +24,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
-		log.Printf("Failed to get outlines: %v", err)
+		a.error("Blogroll: Failed to get outlines", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
@@ -48,7 +47,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
-		log.Printf("Failed to get outlines: %v", err)
+		a.error("Blogroll: Failed to get outlines", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}

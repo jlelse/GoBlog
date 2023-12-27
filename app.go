@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rsa"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -66,8 +67,11 @@ type goBlog struct {
 	inLoad sync.Once
 	// IndieAuth
 	ias *indieauth.Server
-	// Logs
+	// Logs (HTTP)
 	logf *rotatelogs.RotateLogs
+	// Logs (Program)
+	logger   *slog.Logger
+	logLevel *slog.LevelVar
 	// Markdown
 	md, absoluteMd, titleMd goldmark.Markdown
 	// Media

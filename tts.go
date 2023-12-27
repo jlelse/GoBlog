@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -38,7 +37,7 @@ func (a *goBlog) initTTS() {
 		// Create TTS audio
 		err := a.createPostTTSAudio(p)
 		if err != nil {
-			log.Printf("create post audio for %s failed: %v", p.Path, err)
+			a.error("create post audio failed", "path", p.Path, "err", err)
 		}
 	}
 	a.pPostHooks = append(a.pPostHooks, createOrUpdate)
@@ -47,7 +46,7 @@ func (a *goBlog) initTTS() {
 	a.pDeleteHooks = append(a.pDeleteHooks, func(p *post) {
 		// Try to delete the audio file
 		if a.deletePostTTSAudio(p) {
-			log.Println("deleted tts audio for", p.Path)
+			a.info("deleted tts audio", "path", p.Path)
 		}
 	})
 }
@@ -131,7 +130,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		// Already has tts audio, but with different location
 		// Try to delete the old audio file
 		if a.deletePostTTSAudio(p) {
-			log.Println("deleted old tts audio for", p.Path)
+			a.info("deleted old tts audio", "path", p.Path)
 		}
 	}
 
@@ -158,7 +157,7 @@ func (a *goBlog) deletePostTTSAudio(p *post) bool {
 	fileUrl, err := url.Parse(audio)
 	if err != nil {
 		// Failed to parse audio url
-		log.Println("failed to parse audio url:", err)
+		a.error("failed to parse audio url", "err", err, "audio", audio)
 		return false
 	}
 	fileName := path.Base(fileUrl.Path)
@@ -169,7 +168,7 @@ func (a *goBlog) deletePostTTSAudio(p *post) bool {
 	// Try to delete the audio file
 	err = a.deleteMediaFile(fileName)
 	if err != nil {
-		log.Println("failed to delete audio file:", err)
+		a.error("failed to delete audio file", "err", err, "file", fileName)
 		return false
 	}
 	return true

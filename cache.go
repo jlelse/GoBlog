@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -41,7 +40,7 @@ func (a *goBlog) initCache() (err error) {
 		ticker := time.NewTicker(15 * time.Minute)
 		for range ticker.C {
 			met := a.cache.c.Metrics
-			log.Println("\nCache:", met.String())
+			a.info("Cache metrics", "metrics", met.String())
 		}
 	}()
 	return

@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -29,7 +28,7 @@ func (a *goBlog) sendNotification(text string) {
 		Text: text,
 	}
 	if err := a.db.saveNotification(n); err != nil {
-		log.Println("Failed to save notification:", err.Error())
+		a.error("Failed to save notification", "err", err)
 	}
 	if cfg := a.cfg.Notifications; cfg != nil {
 		p := pool.New().WithErrors()
@@ -45,7 +44,7 @@ func (a *goBlog) sendNotification(text string) {
 			return err
 		})
 		if err := p.Wait(); err != nil {
-			log.Println("Failed to send notification:", err.Error())
+			a.error("Failed to send notification", "err", err)
 		}
 	}
 }

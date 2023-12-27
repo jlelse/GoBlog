@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 )
 
@@ -21,7 +20,7 @@ func (a *goBlog) startPostsScheduler() {
 	a.shutdown.Add(func() {
 		ticker.Stop()
 		done <- struct{}{}
-		log.Println("Posts scheduler stopped")
+		a.info("Posts scheduler stopped")
 	})
 }
 
@@ -31,16 +30,16 @@ func (a *goBlog) checkScheduledPosts() {
 		publishedBefore: time.Now(),
 	})
 	if err != nil {
-		log.Println("Error getting scheduled posts:", err)
+		a.error("Error getting scheduled posts", "err", err)
 		return
 	}
 	for _, post := range postsToPublish {
 		post.Status = statusPublished
 		err := a.replacePost(post, post.Path, statusScheduled, post.Visibility)
 		if err != nil {
-			log.Println("Error publishing scheduled post:", err)
+			a.error("Error publishing scheduled post", "err", err)
 			continue
 		}
-		log.Println("Published scheduled post:", post.Path)
+		a.info("Published scheduled post", "path", post.Path)
 	}
 }

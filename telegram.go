@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 
@@ -11,10 +10,10 @@ import (
 )
 
 func (a *goBlog) initTelegram() {
-	a.pPostHooks = append(a.pPostHooks, a.tgPost(false))
+	a.pPostHooks = append(a.pPostHooks, func(p *post) { a.tgPost(p, false) })
 	a.pUpdateHooks = append(a.pUpdateHooks, a.tgUpdate)
 	a.pDeleteHooks = append(a.pDeleteHooks, a.tgDelete)
-	a.pUndeleteHooks = append(a.pUndeleteHooks, a.tgPost(true))
+	a.pUndeleteHooks = append(a.pUndeleteHooks, func(p *post) { a.tgPost(p, true) })
 }
 
 func (tg *configTelegram) enabled() bool {
@@ -24,39 +23,37 @@ func (tg *configTelegram) enabled() bool {
 	return true
 }
 
-func (a *goBlog) tgPost(silent bool) func(*post) {
-	return func(p *post) {
-		if tg := a.getBlogFromPost(p).Telegram; tg.enabled() && p.isPublicPublishedSectionPost() {
-			tgChat := p.firstParameter("telegramchat")
-			tgMsg := p.firstParameter("telegrammsg")
-			if tgChat != "" && tgMsg != "" {
-				// Already posted
-				return
-			}
-			// Generate HTML
-			html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
-			if html == "" {
-				return
-			}
-			// Send message
-			chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML, silent)
-			if err != nil {
-				log.Printf("Failed to send post to Telegram: %v", err)
-				return
-			}
-			if chatId == 0 || msgId == 0 {
-				// Not sent
-				return
-			}
-			// Save chat and message id to post
-			err = a.db.replacePostParam(p.Path, "telegramchat", []string{strconv.FormatInt(chatId, 10)})
-			if err != nil {
-				log.Printf("Failed to save Telegram chat id: %v", err)
-			}
-			err = a.db.replacePostParam(p.Path, "telegrammsg", []string{strconv.Itoa(msgId)})
-			if err != nil {
-				log.Printf("Failed to save Telegram message id: %v", err)
-			}
+func (a *goBlog) tgPost(p *post, silent bool) {
+	if tg := a.getBlogFromPost(p).Telegram; tg.enabled() && p.isPublicPublishedSectionPost() {
+		tgChat := p.firstParameter("telegramchat")
+		tgMsg := p.firstParameter("telegrammsg")
+		if tgChat != "" && tgMsg != "" {
+			// Already posted
+			return
+		}
+		// Generate HTML
+		html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
+		if html == "" {
+			return
+		}
+		// Send message
+		chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML, silent)
+		if err != nil {
+			a.error("Failed to send post to Telegram", "err", err)
+			return
+		}
+		if chatId == 0 || msgId == 0 {
+			// Not sent
+			return
+		}
+		// Save chat and message id to post
+		err = a.db.replacePostParam(p.Path, "telegramchat", []string{strconv.FormatInt(chatId, 10)})
+		if err != nil {
+			a.error("Failed to save Telegram chat id", "err", err)
+		}
+		err = a.db.replacePostParam(p.Path, "telegrammsg", []string{strconv.Itoa(msgId)})
+		if err != nil {
+			a.error("Failed to save Telegram message id", "err", err)
 		}
 	}
 }
@@ -72,13 +69,13 @@ func (a *goBlog) tgUpdate(p *post) {
 		// Parse tgChat to int64
 		chatId, err := strconv.ParseInt(tgChat, 10, 64)
 		if err != nil {
-			log.Printf("Failed to parse Telegram chat ID: %v", err)
+			a.error("Failed to parse Telegram chat ID", "err", err)
 			return
 		}
 		// Parse tgMsg to int
 		messageId, err := strconv.Atoi(tgMsg)
 		if err != nil {
-			log.Printf("Failed to parse Telegram message ID: %v", err)
+			a.error("Failed to parse Telegram message ID", "err", err)
 			return
 		}
 		// Generate HTML
@@ -89,7 +86,7 @@ func (a *goBlog) tgUpdate(p *post) {
 		// Send update
 		err = a.updateTelegram(tg, chatId, messageId, html, "HTML")
 		if err != nil {
-			log.Printf("Failed to send update to Telegram: %v", err)
+			a.error("Failed to send update to Telegram", "err", err)
 		}
 	}
 }
@@ -105,28 +102,28 @@ func (a *goBlog) tgDelete(p *post) {
 		// Parse tgChat to int64
 		chatId, err := strconv.ParseInt(tgChat, 10, 64)
 		if err != nil {
-			log.Printf("Failed to parse Telegram chat ID: %v", err)
+			a.error("Failed to parse Telegram chat ID", "err", err)
 			return
 		}
 		// Parse tgMsg to int
 		messageId, err := strconv.Atoi(tgMsg)
 		if err != nil {
-			log.Printf("Failed to parse Telegram message ID: %v", err)
+			a.error("Failed to parse Telegram message ID", "err", err)
 			return
 		}
 		// Delete message
 		err = a.deleteTelegram(tg, chatId, messageId)
 		if err != nil {
-			log.Printf("Failed to delete Telegram message: %v", err)
+			a.error("Failed to delete Telegram message", "err", err)
 		}
 		// Delete chat and message id from post
 		err = a.db.replacePostParam(p.Path, "telegramchat", []string{})
 		if err != nil {
-			log.Printf("Failed to remove Telegram chat id: %v", err)
+			a.error("Failed to remove Telegram chat id", "err", err)
 		}
 		err = a.db.replacePostParam(p.Path, "telegrammsg", []string{})
 		if err != nil {
-			log.Printf("Failed to remove Telegram message id: %v", err)
+			a.error("Failed to remove Telegram message id", "err", err)
 		}
 	}
 }

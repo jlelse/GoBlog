@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"sort"
@@ -33,7 +32,7 @@ const (
 )
 
 func (a *goBlog) startServer() (err error) {
-	log.Println("Start server(s)...")
+	a.info("Start server(s)...")
 	// Load router
 	a.reloadRouter()
 	// Set basic middlewares
@@ -63,7 +62,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Tor {
 		go func() {
 			if err := a.startOnionService(finalHandler); err != nil {
-				log.Println("Tor failed:", err.Error())
+				a.error("Tor failed", "err", err)
 			}
 		}()
 	}
@@ -82,9 +81,9 @@ func (a *goBlog) startServer() (err error) {
 				ReadTimeout:       5 * time.Minute,
 				WriteTimeout:      5 * time.Minute,
 			}
-			a.shutdown.Add(shutdownServer(httpServer, "http server"))
+			a.shutdown.Add(a.shutdownServer(httpServer, "http server"))
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Println("Failed to start HTTP server:", err.Error())
+				a.error("Failed to start HTTP server", "err", err)
 			}
 		}()
 	}
@@ -94,7 +93,7 @@ func (a *goBlog) startServer() (err error) {
 		ReadTimeout:       5 * time.Minute,
 		WriteTimeout:      5 * time.Minute,
 	}
-	a.shutdown.Add(shutdownServer(s, "main server"))
+	a.shutdown.Add(a.shutdownServer(s, "main server"))
 	s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
 	if a.cfg.Server.PublicHTTPS {
 		s.TLSConfig = a.getAutocertManager().TLSConfig()
@@ -110,14 +109,14 @@ func (a *goBlog) startServer() (err error) {
 	return err
 }
 
-func shutdownServer(s *http.Server, name string) func() {
+func (a *goBlog) shutdownServer(s *http.Server, name string) func() {
 	return func() {
 		toc, c := context.WithTimeout(context.Background(), 5*time.Second)
 		defer c()
 		if err := s.Shutdown(toc); err != nil {
-			log.Printf("Error on server shutdown (%v): %v", name, err)
+			a.error("Error on server shutdown (%v): %v", name, err)
 		}
-		log.Println("Stopped server:", name)
+		a.info("Stopped server", "name", name)
 	}
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/carlmjohnson/requests"
@@ -50,7 +49,7 @@ func (a *goBlog) indexNow(url string) {
 	}
 	key := a.indexNowKey()
 	if len(key) == 0 {
-		log.Println("Skipping IndexNow")
+		a.info("Skipping IndexNow")
 		return
 	}
 	err := requests.URL("https://api.indexnow.org/indexnow").
@@ -59,10 +58,10 @@ func (a *goBlog) indexNow(url string) {
 		Param("key", string(key)).
 		Fetch(context.Background())
 	if err != nil {
-		log.Println("Sending IndexNow request failed:", err.Error())
+		a.error("Sending IndexNow request failed", "err", err)
 		return
 	} else {
-		log.Println("IndexNow request sent for", url)
+		a.info("IndexNow request sent", "url", url)
 	}
 }
 
@@ -71,7 +70,7 @@ func (a *goBlog) indexNowKey() []byte {
 		// Try to load key from database
 		keyBytes, err := a.db.retrievePersistentCache("indexnowkey")
 		if err != nil {
-			log.Println("Failed to retrieve cached IndexNow key:", err.Error())
+			a.error("Failed to retrieve cached IndexNow key", "err", err)
 			return
 		}
 		if keyBytes == nil {
@@ -80,7 +79,7 @@ func (a *goBlog) indexNowKey() []byte {
 			// Store key in database
 			err = a.db.cachePersistently("indexnowkey", keyBytes)
 			if err != nil {
-				log.Println("Failed to cache IndexNow key:", err.Error())
+				a.error("Failed to cache IndexNow key", "err", err)
 				return
 			}
 		}

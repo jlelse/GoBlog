@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -27,24 +26,24 @@ func (a *goBlog) checkAllExternalLinks() error {
 	if err != nil {
 		return err
 	}
-	return a.checkLinks(log.Writer(), posts...)
+	return a.checkLinks(posts...)
 }
 
-func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
+func (a *goBlog) checkLinks(posts ...*post) error {
 	// Get all links
 	allLinks, err := a.allLinksToCheck(posts...)
 	if err != nil {
 		return err
 	}
 	// Print some info
-	fmt.Fprintln(w, "Checking", len(allLinks), "links")
+	fmt.Println("Checking", len(allLinks), "links")
 	// Cancel context
 	cancelContext, cancelFunc := context.WithCancel(context.Background())
 	var done atomic.Bool
 	a.shutdown.Add(func() {
 		done.Store(true)
 		cancelFunc()
-		fmt.Fprintln(w, "Cancelled link check")
+		fmt.Println("Cancelled link check")
 	})
 	// Create HTTP cache
 	cache, err := ristretto.NewCache(&ristretto.Config{
@@ -106,11 +105,12 @@ func (a *goBlog) checkLinks(w io.Writer, posts ...*post) error {
 			continue
 		}
 		if r.err != nil {
-			fmt.Fprintf(w, "%s in %s: %s\n", r.link, r.in, r.err.Error())
+			fmt.Printf("%s in %s: %s\n", r.link, r.in, r.err.Error())
 		} else if !successStatus(r.status) {
-			fmt.Fprintf(w, "%s in %s: %d (%s)\n", r.link, r.in, r.status, http.StatusText(r.status))
+			fmt.Printf("%s in %s: %d (%s)\n", r.link, r.in, r.status, http.StatusText(r.status))
 		}
 	}
+	fmt.Println("Finished link check")
 	return nil
 }
 
