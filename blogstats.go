@@ -53,76 +53,58 @@ func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 const blogStatsSql = `
 with filtered as (
     select
-		path,
-		pub,
-		substr(pub, 1, 4) as year,
-		substr(pub, 6, 2) as month,
+		(CASE WHEN coalesce(pub, '') != '' THEN substr(pub, 1, 4) ELSE 'N' END) as year,
+		(CASE WHEN coalesce(pub, '') != '' THEN substr(pub, 6, 2) ELSE 'N' END) as month,
 		wordcount(content) as words,
 		charcount(content) as chars
 	from (
 		select
-			path,
 			tolocal(published) as pub,
 			mdtext(coalesce(content, '')) as content
 		from posts
 		where status = @status and visibility = @visibility and blog = @blog
 	)
+), aggregated as (
+	select
+        year,
+        month,
+        coalesce(count(*), 0) as pc,
+        coalesce(sum(words), 0) as wc,
+        coalesce(sum(chars), 0) as cc,
+        coalesce(round(avg(words), 0), 0) as wpp
+    from filtered
+    group by year, month
 )
 select *
 from (
 	select *
 	from (
-		select
-			year,
-			'A',
-			coalesce(count(path), 0) as pc,
-			coalesce(sum(words), 0) as wc,
-			coalesce(sum(chars), 0) as cc,
-			coalesce(round(sum(words)/count(path), 0), 0) as wpp
-		from filtered
-		where pub != ''
+		select year, 'A', sum(pc), sum(wc), sum(cc), round(sum(wc)/sum(pc), 0)
+		from aggregated
+		where year != 'N'
 		group by year
 		order by year desc
 	)
 	union all
 	select *
 	from (
-		select
-			year,
-			month,
-			coalesce(count(path), 0) as pc,
-			coalesce(sum(words), 0) as wc,
-			coalesce(sum(chars), 0) as cc,
-			coalesce(round(sum(words)/count(path), 0), 0) as wpp
-		from filtered
-		where pub != ''
-		group by year, month
+		select *
+		from aggregated
+		where year != 'N'
 		order by year desc, month desc
 	)
 	union all
 	select *
 	from (
-		select
-			'N',
-			'N',
-			coalesce(count(path), 0) as pc,
-			coalesce(sum(words), 0) as wc,
-			coalesce(sum(chars), 0) as cc,
-			coalesce(round(sum(words)/count(path), 0), 0) as wpp
-		from filtered
-		where pub == ''
+		select *
+		from aggregated
+		where year == 'N'
 	)
 	union all
 	select *
 	from (
-		select
-			'A',
-			'A',
-			coalesce(count(path), 0) as pc,
-			coalesce(sum(words), 0) as wc,
-			coalesce(sum(chars), 0) as cc,
-			coalesce(round(sum(words)/count(path), 0), 0) as wpp
-		from filtered
+		select 'A', 'A', sum(pc), sum(wc), sum(cc), round(sum(wc)/sum(pc), 0)
+		from aggregated
 	)
 );
 `
