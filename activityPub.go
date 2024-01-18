@@ -268,9 +268,13 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case ap.AnnounceType:
-		a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, activity.Object.GetLink()))
+		if announceTarget := activity.Object.GetLink().String(); announceTarget != "" && strings.HasPrefix(announceTarget, a.cfg.Server.PublicAddress) {
+			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceTarget))
+		}
 	case ap.LikeType:
-		a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, activity.Object.GetLink()))
+		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && strings.HasPrefix(likeTarget, a.cfg.Server.PublicAddress) {
+			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
+		}
 	}
 	// Return 200
 	w.WriteHeader(http.StatusOK)

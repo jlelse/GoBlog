@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 
 	"maunium.net/go/mautrix"
@@ -22,7 +23,7 @@ func (a *goBlog) getMatrixClient(mtx *configMatrix) (*mautrix.Client, error) {
 			return
 		}
 		mtxClient.Client = a.httpClient
-		_, err = mtxClient.Login(&mautrix.ReqLogin{
+		_, err = mtxClient.Login(context.Background(), &mautrix.ReqLogin{
 			Type: mautrix.AuthTypePassword,
 			Identifier: mautrix.UserIdentifier{
 				Type: mautrix.IdentifierTypeUser,
@@ -51,11 +52,11 @@ func (a *goBlog) sendMatrix(mtx *configMatrix, message string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	resolveResp, err := mtxClient.ResolveAlias(id.RoomAlias(mtx.Room))
+	resolveResp, err := mtxClient.ResolveAlias(context.Background(), id.RoomAlias(mtx.Room))
 	if err != nil {
 		return "", err
 	}
-	resp, err := mtxClient.SendText(resolveResp.RoomID, message)
+	resp, err := mtxClient.SendText(context.Background(), resolveResp.RoomID, message)
 	if err != nil {
 		return "", err
 	}
