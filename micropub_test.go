@@ -279,7 +279,7 @@ func Test_micropubUpdate(t *testing.T) {
 					"category":    {"test"},
 					"random":      {"def"},
 					"content":     {"New test"},
-					"post-status": {"published-deleted"},
+					"post-status": {"draft"},
 					"visibility":  {"unlisted"},
 				},
 			},
@@ -292,9 +292,38 @@ func Test_micropubUpdate(t *testing.T) {
 		assert.Equal(t, []string{"test"}, p.Parameters["tags"])
 		assert.Equal(t, []string{"def"}, p.Parameters["random"])
 		assert.Equal(t, "New test", p.Content)
-		assert.Equal(t, statusPublished, p.Status)
+		assert.Equal(t, statusDraft, p.Status)
 		assert.Nil(t, p.Parameters["post-status"])
 		assert.Equal(t, visibilityUnlisted, p.Visibility)
+	})
+
+	t.Run("Replace wrong status", func(t *testing.T) {
+		postPath := "/replace2"
+
+		err := app.createPost(&post{
+			Path:       postPath,
+			Content:    "",
+			Status:     statusPublished,
+			Visibility: visibilityPublic,
+			Parameters: map[string][]string{},
+		})
+		require.NoError(t, err)
+
+		_, err = app.getMicropubImplementation().Update(&micropub.Request{
+			URL: app.cfg.Server.PublicAddress + postPath,
+			Updates: micropub.RequestUpdate{
+				Replace: map[string][]any{
+					"post-status": {"published-deleted"},
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		p, err := app.getPost(postPath)
+		require.NoError(t, err)
+
+		assert.Equal(t, statusPublished, p.Status)
+		assert.Nil(t, p.Parameters["post-status"])
 	})
 
 	t.Run("Add", func(t *testing.T) {

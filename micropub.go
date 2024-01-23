@@ -465,7 +465,6 @@ func (s *micropubImplementation) updatePostPropertiesFromMf(p *post, properties 
 
 	// Ignore the following properties
 	delete(properties, "url")
-	delete(properties, "post-status")
 	delete(properties, "photo")
 	delete(properties, "photo-alt")
 
@@ -492,6 +491,12 @@ func (s *micropubImplementation) updatePostPropertiesFromMf(p *post, properties 
 	delete(properties, "mp-channel")
 	p.Visibility = postVisibility(defaultIfEmpty(getFirstStringFromArray(properties["visibility"]), string(p.Visibility)))
 	delete(properties, "visibility")
+	if newStatusString := getFirstStringFromArray(properties["post-status"]); newStatusString != "" {
+		if newStatus := postStatus(newStatusString); newStatus == statusPublished || newStatus == statusDraft {
+			p.Status = newStatus
+		}
+	}
+	delete(properties, "post-status")
 
 	for key, value := range properties {
 		p.Parameters[s.mapToParameterName(key)] = cast.ToStringSlice(value)
