@@ -464,6 +464,7 @@ func (s *micropubImplementation) updatePostPropertiesFromMf(p *post, properties 
 	}
 
 	// Ignore the following properties
+	delete(properties, "url")
 	delete(properties, "post-status")
 	delete(properties, "photo")
 	delete(properties, "photo-alt")
