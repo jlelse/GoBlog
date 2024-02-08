@@ -123,6 +123,10 @@ func (a *goBlog) RenderMarkdownAsText(markdown string) (text string, err error) 
 	return a.renderText(markdown)
 }
 
+func (a *goBlog) IsLoggedIn(req *http.Request) bool {
+	return a.isLoggedIn(req)
+}
+
 func (p *post) GetPath() string {
 	return p.Path
 }

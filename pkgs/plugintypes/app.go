@@ -27,6 +27,8 @@ type App interface {
 	SetPostParameter(path string, parameter string, values []string) error
 	// Render markdown as text (without HTML)
 	RenderMarkdownAsText(markdown string) (text string, err error)
+	// Check if user is logged in
+	IsLoggedIn(req *http.Request) bool
 }
 
 // Database is used to provide access to GoBlog's database.
@@ -77,4 +79,6 @@ type RenderContext interface {
 	GetURL() string
 	// Get the blog name
 	GetBlog() string
+	// Check if user is logged in
+	IsLoggedIn() bool
 }

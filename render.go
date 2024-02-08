@@ -120,9 +120,10 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 	// Plugins
 	if data.prc == nil {
 		data.prc = &pluginRenderContext{
-			blog: data.BlogString,
-			path: r.URL.Path,
-			url:  a.getFullAddress(r.URL.Path),
+			blog:     data.BlogString,
+			path:     r.URL.Path,
+			url:      a.getFullAddress(r.URL.Path),
+			loggedIn: a.isLoggedIn(r),
 		}
 	}
 	// Data
@@ -134,9 +135,10 @@ func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {
 // Plugins
 
 type pluginRenderContext struct {
-	blog string
-	path string
-	url  string
+	blog     string
+	path     string
+	url      string
+	loggedIn bool
 }
 
 func (d *pluginRenderContext) GetBlog() string {
@@ -149,4 +151,8 @@ func (d *pluginRenderContext) GetPath() string {
 
 func (d *pluginRenderContext) GetURL() string {
 	return d.url
+}
+
+func (d *pluginRenderContext) IsLoggedIn() bool {
+	return d.loggedIn
 }

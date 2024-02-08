@@ -85,6 +85,7 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	WGetDatabase          func() plugintypes.Database
 	WGetHTTPClient        func() *http.Client
 	WGetPost              func(path string) (plugintypes.Post, error)
+	WIsLoggedIn           func(req *http.Request) bool
 	WPurgeCache           func()
 	WRenderMarkdownAsText func(markdown string) (text string, err error)
 	WSetPostParameter     func(path string, parameter string, values []string) error
@@ -107,6 +108,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetHTTPClient() *http.Client {
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintypes.Post, error) {
 	return W.WGetPost(path)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) IsLoggedIn(req *http.Request) bool {
+	return W.WIsLoggedIn(req)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) PurgeCache() {
 	W.WPurgeCache()
@@ -260,10 +264,11 @@ func (W _go_goblog_app_app_pkgs_plugintypes_PostUpdatedHook) PostUpdated(post pl
 
 // _go_goblog_app_app_pkgs_plugintypes_RenderContext is an interface wrapper for RenderContext type
 type _go_goblog_app_app_pkgs_plugintypes_RenderContext struct {
-	IValue   interface{}
-	WGetBlog func() string
-	WGetPath func() string
-	WGetURL  func() string
+	IValue      interface{}
+	WGetBlog    func() string
+	WGetPath    func() string
+	WGetURL     func() string
+	WIsLoggedIn func() bool
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetBlog() string {
@@ -274,6 +279,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetPath() string {
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) GetURL() string {
 	return W.WGetURL()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_RenderContext) IsLoggedIn() bool {
+	return W.WIsLoggedIn()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_SetApp is an interface wrapper for SetApp type

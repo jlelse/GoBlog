@@ -907,7 +907,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			a.renderPostReactions(hb, p)
 			// Post edit actions
 			if rd.LoggedIn() {
-				hb.WriteElementOpen("div", "class", "actions")
+				hb.WriteElementOpen("div", "class", "actions", "id", "posteditactions")
 				// Update
 				hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor")+"#update")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "loadupdate")
