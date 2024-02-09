@@ -168,7 +168,7 @@ func (p *plugin) summarize(post plugintypes.Post) {
 		Method(http.MethodPost).
 		Header("Authorization", "Bearer "+apikey).
 		BodyJSON(map[string]any{
-			"model": "gpt-3.5-turbo-1106",
+			"model": "gpt-3.5-turbo-0125",
 			"messages": []apiMessage{
 				{
 					Role:    "system",
