@@ -23,12 +23,12 @@ type plugin struct {
 
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
-	plugintypes.PostCreatedHook, plugintypes.PostUpdatedHook,
+	plugintypes.PostCreatedHook,
 	plugintypes.UIPost, plugintypes.UI2,
 	plugintypes.Middleware,
 ) {
 	p := &plugin{}
-	return p, p, p, p, p, p, p
+	return p, p, p, p, p, p
 }
 
 func (p *plugin) SetApp(app plugintypes.App) {
@@ -40,10 +40,6 @@ func (p *plugin) SetConfig(config map[string]any) {
 }
 
 func (p *plugin) PostCreated(post plugintypes.Post) {
-	p.summarize(post)
-}
-
-func (p *plugin) PostUpdated(post plugintypes.Post) {
 	p.summarize(post)
 }
 
