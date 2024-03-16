@@ -282,7 +282,7 @@ func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HtmlBuilder, p *post, b
 	if b == nil || b.hideOldContentWarning || p == nil || !p.Old() {
 		return
 	}
-	hb.WriteElementOpen("strong", "class", "p border-top border-bottom")
+	hb.WriteElementOpen("strong", "class", "p border-top border-bottom", "id", "oldcontentwarning")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "oldcontent"))
 	hb.WriteElementClose("strong")
 }

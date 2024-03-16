@@ -81,6 +81,7 @@ Third-party modules
 
 - `github.com/PuerkitoBio/goquery` (Can be used to *manipulate* HTML in a jquery-like way)
 - `github.com/carlmjohnson/requests` (Can be used to do HTTP requests more easily)
+- `github.com/araddon/dateparse` (Can be used to parse dates more easily)
 
 ## Plugins
 

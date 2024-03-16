@@ -61,7 +61,7 @@ func Test_renderOldContentWarning(t *testing.T) {
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 	require.NoError(t, err)
 
-	assert.Equal(t, "<strong class=\"p border-top border-bottom\">⚠️ This entry is already over one year old. It may no longer be up to date. Opinions may have changed.</strong>", res)
+	assert.Equal(t, "<strong class=\"p border-top border-bottom\" id=\"oldcontentwarning\">⚠️ This entry is already over one year old. It may no longer be up to date. Opinions may have changed.</strong>", res)
 }
 
 func Test_renderInteractions(t *testing.T) {
