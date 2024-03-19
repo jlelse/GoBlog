@@ -19,6 +19,8 @@ type plugin struct {
 
 	config  map[string]any
 	initCSS sync.Once
+
+	apikey, model string
 }
 
 func GetPlugin() (
@@ -37,6 +39,17 @@ func (p *plugin) SetApp(app plugintypes.App) {
 
 func (p *plugin) SetConfig(config map[string]any) {
 	p.config = config
+
+	if k, ok := p.config["apikey"]; ok {
+		if ks, ok := k.(string); ok {
+			p.apikey = ks
+		}
+	}
+	if m, ok := p.config["model"]; ok {
+		if ms, ok := m.(string); ok {
+			p.model = ms
+		}
+	}
 }
 
 func (p *plugin) PostCreated(post plugintypes.Post) {
@@ -147,24 +160,23 @@ func (p *plugin) summarize(post plugintypes.Post) {
 		return
 	}
 
-	apikey := ""
-	if k, ok := p.config["apikey"]; ok {
-		if ks, ok := k.(string); ok {
-			apikey = ks
-		}
-	}
-	if apikey == "" {
+	if p.apikey == "" {
 		log.Println("Config for aitldr plugin not correct! apikey missing!")
 		return
 	}
 
 	var response apiResponse
 
+	model := "gpt-3.5-turbo"
+	if p.model != "" {
+		model = p.model
+	}
+
 	err := requests.URL("https://api.openai.com/v1/chat/completions").
 		Method(http.MethodPost).
-		Header("Authorization", "Bearer "+apikey).
+		Header("Authorization", "Bearer "+p.apikey).
 		BodyJSON(map[string]any{
-			"model": "gpt-3.5-turbo-0125",
+			"model": model,
 			"messages": []apiMessage{
 				{
 					Role:    "system",

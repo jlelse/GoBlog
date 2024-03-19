@@ -121,7 +121,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.mau.fi/util v0.4.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f // indirect
+	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81 // indirect
 	golang.org/x/image v0.15.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect

@@ -140,6 +140,7 @@ config:
   # Required
   apikey: YOUR_OPEN_AI_API_KEY
   # Optional:
+  model: gpt-4-turbo-preview # Choose a specific model, default is gpt-3.5-turbo
   default: # Name of the blog
     title: "Custom title for the summary box:"
 ```
