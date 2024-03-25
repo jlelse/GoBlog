@@ -20,8 +20,8 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-smtp v0.20.2
-	github.com/go-ap/activitypub v0.0.0-20240316125321-b61fd6a83225
-	github.com/go-ap/client v0.0.0-20240316125535-27e8db2c2547
+	github.com/go-ap/activitypub v0.0.0-20240324143732-70ec96f244e6
+	github.com/go-ap/client v0.0.0-20240324144035-f314cf467c26
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-fed/httpsig v1.1.0
@@ -72,7 +72,7 @@ require (
 
 require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
-	git.sr.ht/~mariusor/lw v0.0.0-20240313142800-531789c76b6d // indirect
+	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/mmcdole/goxpp v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/xid v1.5.0 // indirect
@@ -121,7 +121,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.mau.fi/util v0.4.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81 // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/image v0.15.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect

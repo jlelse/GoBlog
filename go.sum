@@ -8,8 +8,8 @@ git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b h1:zrGLEe
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b/go.mod h1:UNLE8cup2GTHbsE89xezRwq3GhKspPI9NyckPbgJEmw=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 h1:cliQ4HHsCo6xi2oWZYKWW4bly/Ory9FuTpFPRxj/mAg=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078/go.mod h1:g/V2Hjas6Z1UHUp4yIx6bATpNzJ7DYtD0FG3+xARWxs=
-git.sr.ht/~mariusor/lw v0.0.0-20240313142800-531789c76b6d h1:6bS3+FTFCD80nquIArt+jXc5yDpMqqao3IQW3ODQMEw=
-git.sr.ht/~mariusor/lw v0.0.0-20240313142800-531789c76b6d/go.mod h1:kXJ4JsgGBu7IVBKlrVvGjSLJmpsAGqZwq/JU/kTUaLw=
+git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 h1:MKtevO63p4vyFsjjJq6ejop64JQr6OxkpkYK6XmdQZE=
+git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052/go.mod h1:kXJ4JsgGBu7IVBKlrVvGjSLJmpsAGqZwq/JU/kTUaLw=
 github.com/PuerkitoBio/goquery v1.9.1 h1:mTL6XjbJTZdpfL+Gwl5U2h1l9yEkJjhmlTeV9VPW7UI=
 github.com/PuerkitoBio/goquery v1.9.1/go.mod h1:cW1n6TmIMDoORQU5IU/P1T3tGFunOeXEpGP2WHRwkbY=
 github.com/alecthomas/assert/v2 v2.6.0 h1:o3WJwILtexrEUk3cUVal3oiQY2tfgr/FHWiz/v2n4FU=
@@ -71,10 +71,10 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
-github.com/go-ap/activitypub v0.0.0-20240316125321-b61fd6a83225 h1:OoM81OclgRX7CUch4M7MmsH0NcmLWpFiSn7rhs6Y5ZU=
-github.com/go-ap/activitypub v0.0.0-20240316125321-b61fd6a83225/go.mod h1:yRUfFCoZY6C1CWalauqEQ5xYgSckzEBEO/2MBC6BOME=
-github.com/go-ap/client v0.0.0-20240316125535-27e8db2c2547 h1:3rTVjVuysXdoWTb8JaX39/ov46h38ki91SAJYy/xXeA=
-github.com/go-ap/client v0.0.0-20240316125535-27e8db2c2547/go.mod h1:YxuArEgQJgfr6T4Tx25+UkALaPYOC/MbnrwcsyTSusY=
+github.com/go-ap/activitypub v0.0.0-20240324143732-70ec96f244e6 h1:Jbro9bt9wIo3TXh9/Jb3ONn08TKslicD9rcD/Kgv6PM=
+github.com/go-ap/activitypub v0.0.0-20240324143732-70ec96f244e6/go.mod h1:yRUfFCoZY6C1CWalauqEQ5xYgSckzEBEO/2MBC6BOME=
+github.com/go-ap/client v0.0.0-20240324144035-f314cf467c26 h1:wreKpCqseRFew721P4LM8DjgzUIL6k08NyTHpBY5tos=
+github.com/go-ap/client v0.0.0-20240324144035-f314cf467c26/go.mod h1:G5UoLQWZAUC5Ozxjos/8DfB0mY3kEbWAYN4S3dYbBF8=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0 h1:H9MGShwybHLSln6K8RxHPMHiLcD86Lru+5TVW2TcXHY=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0/go.mod h1:5x8a6P/dhmMGFxWLcyYlyOuJ2lRNaHGhRv+yu8BaTSI=
 github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 h1:GMKIYXyXPGIp+hYiWOhfqK4A023HdgisDT4YGgf99mw=
@@ -203,8 +203,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/paulmach/go.geojson v1.5.0 h1:7mhpMK89SQdHFcEGomT7/LuJhwhEgfmpWYVlVmLEdQw=
 github.com/paulmach/go.geojson v1.5.0/go.mod h1:DgdUy2rRVDDVgKqrjMe2vZAHMfhDTrjVKt3LmHIXGbU=
-github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=
-github.com/pelletier/go-toml/v2 v2.1.1/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=
+github.com/pelletier/go-toml/v2 v2.2.0 h1:QLgLl2yMN7N+ruc31VynXs1vhMZa7CeHHejIeBAsoHo=
+github.com/pelletier/go-toml/v2 v2.2.0/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -312,8 +312,8 @@ golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/crypto v0.21.0 h1:X31++rzVUdKhX5sWmSOFZxx8UW/ldWx55cbf08iNAMA=
 golang.org/x/crypto v0.21.0/go.mod h1:0BP7YvVV9gBbVKyeTG0Gyn+gZm94bibOW5BjDEYAOMs=
-golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81 h1:6R2FC06FonbXQ8pK11/PDFY6N6LWlf9KlzibaCapmqc=
-golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81/go.mod h1:CQ1k9gNrJ50XIzaKCRR2hssIjF07kZFEiieALBM/ARQ=
+golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 h1:aAcj0Da7eBAtrTp03QXWvm88pSyOt+UgdZw2BFZ+lEw=
+golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8/go.mod h1:CQ1k9gNrJ50XIzaKCRR2hssIjF07kZFEiieALBM/ARQ=
 golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.15.0 h1:kOELfmgrmJlw4Cdb7g/QGuB3CvDrXbqEIww/pNtNBm8=
 golang.org/x/image v0.15.0/go.mod h1:HUYqC05R2ZcZ3ejNQsIHQDQiwWM4JBqmm6MKANTp4LE=
