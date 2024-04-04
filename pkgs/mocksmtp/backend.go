@@ -3,6 +3,7 @@ package mocksmtp
 import (
 	"io"
 
+	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
 )
 
@@ -32,11 +33,18 @@ type session struct {
 }
 
 var _ smtp.Session = (*session)(nil)
+var _ smtp.AuthSession = (*session)(nil)
 
-func (s *session) AuthPlain(username, password string) error {
-	s.values.Usernames = append(s.values.Usernames, username)
-	s.values.Passwords = append(s.values.Passwords, password)
-	return nil
+func (s *session) AuthMechanisms() []string {
+	return []string{sasl.Plain}
+}
+
+func (s *session) Auth(mech string) (sasl.Server, error) {
+	return sasl.NewPlainServer(func(identity, username, password string) error {
+		s.values.Usernames = append(s.values.Usernames, username)
+		s.values.Passwords = append(s.values.Passwords, password)
+		return nil
+	}), nil
 }
 
 func (s *session) Mail(from string, _ *smtp.MailOptions) error {
