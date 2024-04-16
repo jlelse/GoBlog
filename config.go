@@ -205,14 +205,15 @@ type configAnnouncement struct {
 }
 
 type configUser struct {
-	Nick         string               `mapstructure:"nick"`
-	Name         string               `mapstructure:"name"`
-	Password     string               `mapstructure:"password"`
-	TOTP         string               `mapstructure:"totp"`
-	AppPasswords []*configAppPassword `mapstructure:"appPasswords"`
-	Email        string               `mapstructure:"email"`
-	Link         string               `mapstructure:"link"`
-	Identities   []string             `mapstructure:"identities"`
+	Nick             string               `mapstructure:"nick"`
+	Name             string               `mapstructure:"name"`
+	Password         string               `mapstructure:"password"`
+	TOTP             string               `mapstructure:"totp"`
+	AppPasswords     []*configAppPassword `mapstructure:"appPasswords"`
+	Email            string               `mapstructure:"email"`
+	Link             string               `mapstructure:"link"`
+	Identities       []string             `mapstructure:"identities"`
+	ProfileImageFile string               `mapstructure:"profileImageFile"`
 }
 
 type configAppPassword struct {
@@ -463,6 +464,10 @@ func (a *goBlog) initConfig(logging bool) error {
 			b.Comments = &configComments{Enabled: false}
 		}
 	}
+	// Check if path for profile image is set
+	if a.cfg.User.ProfileImageFile == "" {
+		return errors.New("no file for profile image configured")
+	}
 	// Check if sections already migrated to db
 	const sectionMigrationKey = "sections_migrated"
 	if val, err := a.getSettingValue(sectionMigrationKey); err != nil {
@@ -580,8 +585,9 @@ func createDefaultConfig() *config {
 			Expiration: 600,
 		},
 		User: &configUser{
-			Nick:     "admin",
-			Password: "secret",
+			Nick:             "admin",
+			Password:         "secret",
+			ProfileImageFile: "data/profileImage",
 		},
 		Hooks: &configHooks{
 			Shell: "/bin/bash",

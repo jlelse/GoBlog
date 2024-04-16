@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -54,7 +55,7 @@ func Test_indieAuthServer(t *testing.T) {
 	)
 	require.NotNil(t, iac)
 
-	metadata, err := iac.DiscoverMetadata("https://example.org/")
+	metadata, err := iac.DiscoverMetadata(context.Background(), "https://example.org/")
 	require.NoError(t, err)
 	if assert.NotNil(t, metadata) {
 		assert.Equal(t, "https://example.org/indieauth", metadata.AuthorizationEndpoint)
@@ -63,7 +64,7 @@ func Test_indieAuthServer(t *testing.T) {
 
 	for _, test := range []int{1, 2} {
 
-		authinfo, redirect, err := iac.Authenticate("https://example.org/", "create")
+		authinfo, redirect, err := iac.Authenticate(context.Background(), "https://example.org/", "create")
 		require.NoError(t, err)
 		assert.NotNil(t, authinfo)
 		assert.NotEmpty(t, redirect)
@@ -120,14 +121,14 @@ func Test_indieAuthServer(t *testing.T) {
 
 		if test == 1 {
 
-			profile, err := iac.FetchProfile(authinfo, code)
+			profile, err := iac.FetchProfile(context.Background(), authinfo, code)
 			require.NoError(t, err)
 			assert.NotNil(t, profile)
 			assert.Equal(t, "https://example.org/", profile.Me)
 
 		} else if test == 2 {
 
-			token, _, err := iac.GetToken(authinfo, code)
+			token, _, err := iac.GetToken(context.Background(), authinfo, code)
 			require.NoError(t, err)
 			assert.NotNil(t, token)
 			assert.NotEqual(t, "", token.AccessToken)

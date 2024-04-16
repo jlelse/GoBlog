@@ -13,7 +13,7 @@ ADD hlsjs/ /app/hlsjs/
 ADD dbmigrations/ /app/dbmigrations/
 ADD strings/ /app/strings/
 ADD plugins/ /app/plugins/
-ADD logo/GoBlog.png /app/logo/GoBlog.png
+ADD logo/ /app/logo/
 
 FROM buildbase AS build
 

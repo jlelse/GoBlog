@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"mime/multipart"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -136,14 +138,10 @@ func Test_renderInteractions(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func Test_renderAuthor(t *testing.T) {
-	t.SkipNow()
-	// TODO: Add back some checks for image
-
+func Test_renderAuthorWithoutProfileImage(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	// app.cfg.User.Picture = "https://example.com/picture.jpg"
 	app.cfg.User.Name = "John Doe"
 
 	_ = app.initConfig(false)
@@ -157,5 +155,43 @@ func Test_renderAuthor(t *testing.T) {
 	_, err := goquery.NewDocumentFromReader(strings.NewReader(res))
 	require.NoError(t, err)
 
-	assert.Equal(t, "<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"https://example.com/picture.jpg\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>", res)
+	assert.Equal(t, "<div class=\"p-author h-card hide\"><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>", res)
+}
+
+func Test_renderAuthorWithProfileImage(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.User.Name = "John Doe"
+
+	_ = app.initConfig(false)
+
+	// Update profile image
+	requestBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(requestBody)
+	fileWriter, err := writer.CreateFormFile("file", "newprofile.jpg")
+	require.NoError(t, err)
+	_, err = fileWriter.Write(defaultLogo)
+	require.NoError(t, err)
+	writer.Close()
+	req := httptest.NewRequest("POST", "/update", requestBody)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rr := httptest.NewRecorder()
+
+	app.serveUpdateProfileImage(rr, req)
+
+	require.Equal(t, 302, rr.Code)
+	assert.Equal(t, []string{"/profile.jpg?q=100&v=e3da5a2d765ff693e7eb54cff717ae0f79ec79c06ed3e3adf6054a46c2824f32"}, rr.Header()["Location"])
+
+	// Check rendering
+	buf := &bytes.Buffer{}
+	hb := htmlbuilder.NewHtmlBuilder(buf)
+
+	app.renderAuthor(hb)
+	res := buf.String()
+
+	_, err = goquery.NewDocumentFromReader(strings.NewReader(res))
+	require.NoError(t, err)
+
+	assert.Equal(t, "<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"http://localhost:8080/profile.jpg?v=e3da5a2d765ff693e7eb54cff717ae0f79ec79c06ed3e3adf6054a46c2824f32\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>", res)
 }

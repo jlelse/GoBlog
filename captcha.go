@@ -121,10 +121,6 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// Check if session contains a captchaId and if captcha is solved
 	if sesCaptchaId, ok := ses.Values["captchaid"]; ok && captcha.VerifyString(sesCaptchaId.(string), r.FormValue("digits")) {
-		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-			return true
-		}
 		ses.Values["captcha"] = true
 		err = a.captchaSessions.Save(r, w, ses)
 		if err != nil {

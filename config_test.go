@@ -10,7 +10,9 @@ import (
 
 func createDefaultTestConfig(t *testing.T) *config {
 	c := createDefaultConfig()
-	c.Db.File = filepath.Join(t.TempDir(), "blog.db")
+	dir := t.TempDir()
+	c.Db.File = filepath.Join(dir, "blog.db")
+	c.User.ProfileImageFile = filepath.Join(dir, "profileImage")
 	return c
 }
 

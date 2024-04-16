@@ -3,10 +3,12 @@ package main
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/builderpool"
+	"github.com/tiptophelmet/cspolicy"
+	"github.com/tiptophelmet/cspolicy/directives"
+	"github.com/tiptophelmet/cspolicy/directives/constraint"
+	"github.com/tiptophelmet/cspolicy/src"
 )
 
 func noIndexHeader(next http.Handler) http.Handler {
@@ -40,27 +42,33 @@ func headAsGetHandler(next http.Handler) http.Handler {
 
 func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	// Build CSP domains list
-	cspBuilder := builderpool.Get()
+	allowedDomains := []string{}
 	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
 		if u, err := url.Parse(mp.MediaURL); err == nil {
-			cspBuilder.WriteString(" ")
-			cspBuilder.WriteString(u.Hostname())
+			allowedDomains = append(allowedDomains, u.Hostname())
 		}
 	}
-	if len(a.cfg.Server.CSPDomains) > 0 {
-		cspBuilder.WriteString(" ")
-		cspBuilder.WriteString(strings.Join(a.cfg.Server.CSPDomains, " "))
+	allowedDomains = append(allowedDomains, a.cfg.Server.CSPDomains...)
+	defaultSrcList := []src.SourceVal{src.Self(), src.Scheme("blob:")}
+	for _, d := range allowedDomains {
+		defaultSrcList = append(defaultSrcList, src.Host(d))
 	}
-	cspDomains := cspBuilder.String()
-	csp := "default-src 'self' blob:" + cspDomains + "; img-src 'self'" + cspDomains + " data:; frame-ancestors 'none';"
-	builderpool.Put(cspBuilder)
+	imgSrcList := []src.SourceVal{src.Self(), src.Scheme("data:")}
+	for _, d := range allowedDomains {
+		imgSrcList = append(imgSrcList, src.Host(d))
+	}
+	fac := &constraint.FrameAncestorsConstraint{}
+	fac.Sources(src.None())
+	csp := cspolicy.Build(
+		directives.DefaultSrc(defaultSrcList...),
+		directives.ImgSrc(imgSrcList...),
+		directives.FrameAncestors(fac),
+	)
 	// Return handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000;")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-Xss-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", csp)
 		next.ServeHTTP(w, r)
 	})

@@ -32,7 +32,6 @@ const (
 	profileImagePathJPEG         = profileImagePath + "." + string(profileImageFormatJPEG)
 	profileImagePathPNG          = profileImagePath + "." + string(profileImageFormatPNG)
 	profileImageSizeRegexPattern = `(?P<width>\d+)(x(?P<height>\d+))?`
-	profileImageFile             = "data/profileImage"
 
 	profileImageNoImageHash = "x"
 
@@ -93,7 +92,7 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		var imageReader io.ReadCloser
 		if a.hasProfileImage() {
 			var err error
-			imageReader, err = os.Open(profileImageFile)
+			imageReader, err = os.Open(a.cfg.User.ProfileImageFile)
 			if err != nil {
 				a.serveError(w, r, "Failed to open image file", http.StatusInternalServerError)
 				return
@@ -146,12 +145,12 @@ func (a *goBlog) profileImageHash() string {
 		if a.profileImageHashString != "" {
 			return nil, nil
 		}
-		if _, err := os.Stat(profileImageFile); err != nil {
+		if _, err := os.Stat(a.cfg.User.ProfileImageFile); err != nil {
 			a.profileImageHashString = profileImageNoImageHash
 			return nil, nil
 		}
 		hash := sha256.New()
-		file, err := os.Open(profileImageFile)
+		file, err := os.Open(a.cfg.User.ProfileImageFile)
 		if err != nil {
 			a.profileImageHashString = profileImageNoImageHash
 			return nil, nil
@@ -183,12 +182,12 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// Save the file locally
-	err = os.MkdirAll(filepath.Dir(profileImageFile), 0777)
+	err = os.MkdirAll(filepath.Dir(a.cfg.User.ProfileImageFile), 0777)
 	if err != nil {
 		a.serveError(w, r, "Failed to create directories", http.StatusBadRequest)
 		return
 	}
-	dataFile, err := os.OpenFile(profileImageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	dataFile, err := os.OpenFile(a.cfg.User.ProfileImageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		a.serveError(w, r, "Failed to open local file", http.StatusBadRequest)
 		return
@@ -210,7 +209,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 
 func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request) {
 	a.profileImageHashString = ""
-	if err := os.Remove(profileImageFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove(a.cfg.User.ProfileImageFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		a.serveError(w, r, "Failed to delete profile image", http.StatusInternalServerError)
 		return
 	}
