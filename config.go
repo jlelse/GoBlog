@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"net/http"
 	"net/url"
@@ -653,5 +654,5 @@ func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
 }
 
 func (a *goBlog) getBlogFromPost(p *post) *configBlog {
-	return a.cfg.Blogs[defaultIfEmpty(p.Blog, a.cfg.DefaultBlog)]
+	return a.cfg.Blogs[cmp.Or(p.Blog, a.cfg.DefaultBlog)]
 }

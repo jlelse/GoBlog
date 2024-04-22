@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/gob"
 	"errors"
@@ -126,7 +127,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 		if err != nil {
 			return err
 		}
-		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", defaultIfEmpty(m.NewSource, m.Source), defaultIfEmpty(m.NewTarget, m.Target)))
+		a.sendNotification(fmt.Sprintf("New webmention from %s to %s", cmp.Or(m.NewSource, m.Source), cmp.Or(m.NewTarget, m.Target)))
 	}
 	return err
 }
@@ -140,7 +141,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		_ = pw.CloseWithError(err)
 	}()
 	// Check if source mentions target
-	links, err := allLinksFromHTML(pr, defaultIfEmpty(m.NewSource, m.Source))
+	links, err := allLinksFromHTML(pr, cmp.Or(m.NewSource, m.Source))
 	_ = pr.CloseWithError(err)
 	if err != nil {
 		return err
@@ -164,7 +165,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			return false
 		}
 		_ = resp.Body.Close()
-		if resp.StatusCode == http.StatusOK && lowerUnescapedPath(resp.Request.URL.String()) == lowerUnescapedPath(defaultIfEmpty(m.NewTarget, m.Target)) {
+		if resp.StatusCode == http.StatusOK && lowerUnescapedPath(resp.Request.URL.String()) == lowerUnescapedPath(cmp.Or(m.NewTarget, m.Target)) {
 			return true
 		}
 		return false
@@ -172,10 +173,10 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		return errors.New("target not found in source")
 	}
 	// Fill mention attributes
-	mf, err := parseMicroformatsFromReader(defaultIfEmpty(m.NewSource, m.Source), mfBuffer)
+	mf, err := parseMicroformatsFromReader(cmp.Or(m.NewSource, m.Source), mfBuffer)
 	if err != nil {
 		return err
 	}
-	m.Title, m.Content, m.Author, m.Url = mf.Title, mf.Content, mf.Author, defaultIfEmpty(mf.Url, m.Source)
+	m.Title, m.Content, m.Author, m.Url = mf.Title, mf.Content, mf.Author, cmp.Or(mf.Url, m.Source)
 	return nil
 }

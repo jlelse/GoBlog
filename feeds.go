@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"io"
 	"net/http"
 	"time"
@@ -25,8 +26,8 @@ const (
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description, path, query string) {
 	now := time.Now()
-	title = a.renderMdTitle(defaultIfEmpty(title, a.cfg.Blogs[blog].Title))
-	description = defaultIfEmpty(description, a.cfg.Blogs[blog].Description)
+	title = a.renderMdTitle(cmp.Or(title, a.cfg.Blogs[blog].Title))
+	description = cmp.Or(description, a.cfg.Blogs[blog].Description)
 	feed := &feeds.Feed{
 		Title:       title,
 		Description: description,

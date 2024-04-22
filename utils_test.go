@@ -126,11 +126,6 @@ func Test_containsStrings(t *testing.T) {
 	assert.False(t, containsStrings("Test", "xx", "aa"))
 }
 
-func Test_defaultIfEmpty(t *testing.T) {
-	assert.Equal(t, "def", defaultIfEmpty("", "def"))
-	assert.Equal(t, "first", defaultIfEmpty("first", "def"))
-}
-
 func Test_matchTimeDiffLocale(t *testing.T) {
 	assert.Equal(t, "en", string(matchTimeDiffLocale("en-US")))
 	assert.Equal(t, "en", string(matchTimeDiffLocale("en")))

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -70,37 +71,37 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 	// Photos
 	if pc := bc.Photos; pc != nil && pc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(pc.Path, defaultPhotosPath))),
 		})
 	}
 	// Search
 	if bsc := bc.Search; bsc != nil && bsc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(bsc.Path, defaultSearchPath))),
 		})
 	}
 	// Stats
 	if bsc := bc.BlogStats; bsc != nil && bsc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))),
 		})
 	}
 	// Blogroll
 	if brc := bc.Blogroll; brc != nil && brc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(brc.Path, defaultBlogrollPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(brc.Path, defaultBlogrollPath))),
 		})
 	}
 	// Geo map
 	if mc := bc.Map; mc != nil && mc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(mc.Path, defaultGeoMapPath))),
 		})
 	}
 	// Contact
 	if cc := bc.Contact; cc != nil && cc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))),
+			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(cc.Path, defaultContactPath))),
 		})
 	}
 	// Write sitemap
@@ -170,7 +171,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Add posts to sitemap
 	for _, p := range posts {
 		item := &sitemap.URL{Loc: a.fullPostURL(p)}
-		lastMod := noError(dateparse.ParseLocal(defaultIfEmpty(p.Updated, p.Published)))
+		lastMod := noError(dateparse.ParseLocal(cmp.Or(p.Updated, p.Published)))
 		if !lastMod.IsZero() {
 			item.LastMod = &lastMod
 		}

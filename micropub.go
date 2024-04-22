@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -191,7 +192,7 @@ func (s *micropubImplementation) Update(req *micropub.Request) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	postPath := defaultIfEmpty(url.Path, "/")
+	postPath := cmp.Or(url.Path, "/")
 	entry, err := s.a.getPost(postPath)
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
@@ -489,7 +490,7 @@ func (s *micropubImplementation) updatePostPropertiesFromMf(p *post, properties 
 	delete(properties, "mp-slug")
 	p.setChannel(getFirstStringFromArray(properties["mp-channel"]))
 	delete(properties, "mp-channel")
-	p.Visibility = postVisibility(defaultIfEmpty(getFirstStringFromArray(properties["visibility"]), string(p.Visibility)))
+	p.Visibility = postVisibility(cmp.Or(getFirstStringFromArray(properties["visibility"]), string(p.Visibility)))
 	delete(properties, "visibility")
 	if newStatusString := getFirstStringFromArray(properties["post-status"]); newStatusString != "" {
 		if newStatus := postStatus(newStatusString); newStatus == statusPublished || newStatus == statusDraft {

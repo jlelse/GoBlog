@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"strings"
 	"time"
@@ -332,7 +333,7 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 		for _, mention := range m {
 			hb.WriteElementOpen("li")
 			hb.WriteElementOpen("a", "href", mention.Url, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
-			hb.WriteEscaped(defaultIfEmpty(mention.Author, mention.Url))
+			hb.WriteEscaped(cmp.Or(mention.Author, mention.Url))
 			hb.WriteElementClose("a")
 			if mention.Title != "" {
 				hb.WriteUnescaped(" ")
@@ -388,7 +389,7 @@ func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
 		hb.WriteElementClose("data")
 	}
 	if user.Name != "" {
-		hb.WriteElementOpen("a", "class", "p-name u-url", "rel", "me", "href", defaultIfEmpty(user.Link, "/"))
+		hb.WriteElementOpen("a", "class", "p-name u-url", "rel", "me", "href", cmp.Or(user.Link, "/"))
 		hb.WriteEscaped(user.Name)
 		hb.WriteElementClose("a")
 	}

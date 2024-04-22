@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/xml"
 	"io"
 	"net/http"
@@ -34,7 +35,7 @@ type openSearchDescriptionUrlParam struct {
 func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 	_, b := a.getBlog(r)
 	title := a.renderMdTitle(b.Title)
-	sURL := a.getFullAddress(b.getRelativePath(defaultIfEmpty(b.Search.Path, defaultSearchPath)))
+	sURL := a.getFullAddress(b.getRelativePath(cmp.Or(b.Search.Path, defaultSearchPath)))
 	openSearch := &openSearchDescription{
 		ShortName:   title,
 		Description: title,
@@ -60,7 +61,7 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 
 func openSearchUrl(b *configBlog) string {
 	if b.Search != nil && b.Search.Enabled {
-		return b.getRelativePath(defaultIfEmpty(b.Search.Path, defaultSearchPath) + "/opensearch.xml")
+		return b.getRelativePath(cmp.Or(b.Search.Path, defaultSearchPath) + "/opensearch.xml")
 	}
 	return ""
 }

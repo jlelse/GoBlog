@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"net/http"
 )
 
@@ -9,7 +10,7 @@ const defaultGeoMapPath = "/map"
 func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 
-	mapPath := bc.getRelativePath(defaultIfEmpty(bc.Map.Path, defaultGeoMapPath))
+	mapPath := bc.getRelativePath(cmp.Or(bc.Map.Path, defaultGeoMapPath))
 	canonical := a.getFullAddress(mapPath)
 
 	allPostsWithLocationRequestConfig := &postsRequestConfig{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -124,7 +125,7 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 		if p.Slug == "" {
 			p.Slug = fmt.Sprintf("%v-%02d-%02d-%v", published.Year(), int(published.Month()), published.Day(), randomString(5))
 		}
-		pathTmplString := defaultIfEmpty(
+		pathTmplString := cmp.Or(
 			a.getBlogFromPost(p).Sections[p.Section].PathTemplate,
 			"{{printf \""+a.getRelativePath(p.Blog, "/%v/%02d/%02d/%v")+"\" .Section .Year .Month .Slug}}",
 		)

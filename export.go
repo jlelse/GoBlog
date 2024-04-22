@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"os"
 	"path/filepath"
 )
@@ -12,7 +13,7 @@ func (a *goBlog) exportMarkdownFiles(dir string) error {
 	if err != nil {
 		return err
 	}
-	dir = defaultIfEmpty(dir, "export")
+	dir = cmp.Or(dir, "export")
 	for _, p := range posts {
 		filename := filepath.Join(dir, p.Path+".md")
 		filedir := filepath.Dir(filename)

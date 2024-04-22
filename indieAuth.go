@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"net/http"
 	"strings"
@@ -19,7 +20,7 @@ func (a *goBlog) initIndieAuth() {
 
 func (a *goBlog) checkIndieAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bearerToken := defaultIfEmpty(r.Header.Get("Authorization"), r.URL.Query().Get("access_token"))
+		bearerToken := cmp.Or(r.Header.Get("Authorization"), r.URL.Query().Get("access_token"))
 		data, err := a.db.indieAuthVerifyToken(bearerToken)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusUnauthorized)

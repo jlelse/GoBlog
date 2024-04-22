@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -44,7 +45,7 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	canonical := a.getFullAddress(bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id))))
 	a.render(w, r, a.renderComment, &renderData{
-		Canonical: defaultIfEmpty(comment.Original, canonical),
+		Canonical: cmp.Or(comment.Original, canonical),
 		Data:      comment,
 	})
 }
@@ -77,7 +78,7 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 	if comment == "" {
 		return "", http.StatusBadRequest, errors.New("comment is empty")
 	}
-	name = defaultIfEmpty(cleanHTMLText(name), "Anonymous")
+	name = cmp.Or(cleanHTMLText(name), "Anonymous")
 	website = cleanHTMLText(website)
 	original = cleanHTMLText(original)
 	if original != "" {

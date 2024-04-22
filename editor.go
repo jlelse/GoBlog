@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -171,7 +172,7 @@ func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, medi
 		return
 	}
 	if result.StatusCode >= 200 && result.StatusCode < 400 {
-		redirectPath := defaultIfEmpty(redirectSuccess, editorPath)
+		redirectPath := cmp.Or(redirectSuccess, editorPath)
 		http.Redirect(w, r, redirectPath, http.StatusFound)
 		return
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -112,8 +113,8 @@ func (db *database) webmentionExists(m *mention) bool {
 				and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))
 		)
 		`,
-		sql.Named("source", m.Source), sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
-		sql.Named("target", m.Target), sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("source", m.Source), sql.Named("newsource", cmp.Or(m.NewSource, m.Source)),
+		sql.Named("target", m.Target), sql.Named("newtarget", cmp.Or(m.NewTarget, m.Target)),
 	)
 	if err != nil {
 		return false
@@ -165,17 +166,17 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 				lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource2))
 				and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget2))
 			`,
-		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
-		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("newsource", cmp.Or(m.NewSource, m.Source)),
+		sql.Named("newtarget", cmp.Or(m.NewTarget, m.Target)),
 		sql.Named("url", m.Url),
 		sql.Named("status", newStatus),
 		sql.Named("title", m.Title),
 		sql.Named("content", m.Content),
 		sql.Named("author", m.Author),
 		sql.Named("source", m.Source),
-		sql.Named("newsource2", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("newsource2", cmp.Or(m.NewSource, m.Source)),
 		sql.Named("target", m.Target),
-		sql.Named("newtarget2", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("newtarget2", cmp.Or(m.NewTarget, m.Target)),
 	)
 	return err
 }
@@ -194,9 +195,9 @@ func (db *database) deleteWebmention(m *mention) error {
 	_, err := db.Exec(
 		"delete from webmentions where lowerunescaped(source) in (lowerunescaped(@source), lowerunescaped(@newsource)) and lowerunescaped(target) in (lowerunescaped(@target), lowerunescaped(@newtarget))",
 		sql.Named("source", m.Source),
-		sql.Named("newsource", defaultIfEmpty(m.NewSource, m.Source)),
+		sql.Named("newsource", cmp.Or(m.NewSource, m.Source)),
 		sql.Named("target", m.Target),
-		sql.Named("newtarget", defaultIfEmpty(m.NewTarget, m.Target)),
+		sql.Named("newtarget", cmp.Or(m.NewTarget, m.Target)),
 	)
 	return err
 }

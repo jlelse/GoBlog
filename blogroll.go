@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := bc.Blogroll
-	can := bc.getRelativePath(defaultIfEmpty(c.Path, defaultBlogrollPath))
+	can := bc.getRelativePath(cmp.Or(c.Path, defaultBlogrollPath))
 	a.render(w, r, a.renderBlogroll, &renderData{
 		Canonical: a.getFullAddress(can),
 		Data: &blogrollRenderData{

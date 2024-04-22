@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -59,7 +60,7 @@ func (a *goBlog) ttsEnabled() bool {
 
 func (a *goBlog) createPostTTSAudio(p *post) error {
 	// Get required values
-	lang := defaultIfEmpty(a.getBlogFromPost(p).Lang, "en")
+	lang := cmp.Or(a.getBlogFromPost(p).Lang, "en")
 
 	// Create TTS text parts
 	parts := []string{}

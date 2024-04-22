@@ -1,6 +1,8 @@
 package main
 
 import (
+	"cmp"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.goblog.app/app/pkgs/bodylimit"
@@ -278,7 +280,7 @@ func (a *goBlog) dateRoutes(conf *configBlog, pathPrefix string) func(r chi.Rout
 func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if pc := conf.Photos; pc != nil && pc.Enabled {
-			photoPath := conf.getRelativePath(defaultIfEmpty(pc.Path, defaultPhotosPath))
+			photoPath := conf.getRelativePath(cmp.Or(pc.Path, defaultPhotosPath))
 			r.Use(
 				a.privateModeHandler,
 				a.cacheMiddleware,
@@ -301,7 +303,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if bsc := conf.Search; bsc != nil && bsc.Enabled {
-			searchPath := conf.getRelativePath(defaultIfEmpty(bsc.Path, defaultSearchPath))
+			searchPath := conf.getRelativePath(cmp.Or(bsc.Path, defaultSearchPath))
 			r.Route(searchPath, func(r chi.Router) {
 				r.Group(func(r chi.Router) {
 					r.Use(
@@ -330,7 +332,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogRandomRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if rp := conf.RandomPost; rp != nil && rp.Enabled {
-			r.With(a.privateModeHandler).Get(conf.getRelativePath(defaultIfEmpty(rp.Path, defaultRandomPath)), a.redirectToRandomPost)
+			r.With(a.privateModeHandler).Get(conf.getRelativePath(cmp.Or(rp.Path, defaultRandomPath)), a.redirectToRandomPost)
 		}
 	}
 }
@@ -339,7 +341,7 @@ func (a *goBlog) blogRandomRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogOnThisDayRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if otd := conf.OnThisDay; otd != nil && otd.Enabled {
-			r.With(a.privateModeHandler).Get(conf.getRelativePath(defaultIfEmpty(otd.Path, defaultOnThisDayPath)), a.redirectToOnThisDay)
+			r.With(a.privateModeHandler).Get(conf.getRelativePath(cmp.Or(otd.Path, defaultOnThisDayPath)), a.redirectToOnThisDay)
 		}
 	}
 }
@@ -403,7 +405,7 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogStatsRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if bsc := conf.BlogStats; bsc != nil && bsc.Enabled {
-			statsPath := conf.getRelativePath(defaultIfEmpty(bsc.Path, defaultBlogStatsPath))
+			statsPath := conf.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))
 			r.Use(a.privateModeHandler)
 			r.With(a.cacheMiddleware).Get(statsPath, a.serveBlogStats)
 			r.With(cacheLoggedIn, a.cacheMiddleware).Get(statsPath+blogStatsTablePath, a.serveBlogStatsTable)
@@ -415,7 +417,7 @@ func (a *goBlog) blogStatsRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogBlogrollRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if brConfig := conf.Blogroll; brConfig != nil && brConfig.Enabled {
-			brPath := conf.getRelativePath(defaultIfEmpty(brConfig.Path, defaultBlogrollPath))
+			brPath := conf.getRelativePath(cmp.Or(brConfig.Path, defaultBlogrollPath))
 			r.Use(
 				a.privateModeHandler,
 				middleware.WithValue(cacheExpirationKey, a.defaultCacheExpiration()),
@@ -432,7 +434,7 @@ func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if mc := conf.Map; mc != nil && mc.Enabled {
 			r.Use(a.privateModeHandler, a.cacheMiddleware)
-			mapPath := conf.getRelativePath(defaultIfEmpty(mc.Path, defaultGeoMapPath))
+			mapPath := conf.getRelativePath(cmp.Or(mc.Path, defaultGeoMapPath))
 			r.Get(mapPath, a.serveGeoMap)
 			r.Get(mapPath+geoMapTracksSubpath, a.serveGeoMapTracks)
 			r.Get(mapPath+geoMapLocationsSubpath, a.serveGeoMapLocations)
@@ -444,7 +446,7 @@ func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if cc := conf.Contact; cc != nil && cc.Enabled {
-			contactPath := conf.getRelativePath(defaultIfEmpty(cc.Path, defaultContactPath))
+			contactPath := conf.getRelativePath(cmp.Or(cc.Path, defaultContactPath))
 			r.Route(contactPath, func(r chi.Router) {
 				r.Use(a.privateModeHandler, a.cacheMiddleware)
 				r.Get("/", a.serveContactForm)

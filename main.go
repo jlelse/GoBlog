@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"flag"
 	"fmt"
 	"net"
@@ -115,7 +116,7 @@ func main() {
 			pprofHandler.HandleFunc("/debug/pprof/trace", netpprof.Trace)
 			// Build server and listener
 			pprofServer := &http.Server{
-				Addr:              defaultIfEmpty(pprofCfg.Address, "localhost:0"),
+				Addr:              cmp.Or(pprofCfg.Address, "localhost:0"),
 				Handler:           pprofHandler,
 				ReadHeaderTimeout: 1 * time.Minute,
 			}

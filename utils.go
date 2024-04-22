@@ -311,13 +311,6 @@ func cleanHTMLText(s string) string {
 	return s
 }
 
-func defaultIfEmpty(s, d string) string {
-	if s == "" {
-		return d
-	}
-	return s
-}
-
 func containsStrings(s string, subStrings ...string) bool {
 	for _, ss := range subStrings {
 		if strings.Contains(s, ss) {

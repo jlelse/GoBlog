@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"database/sql"
 	"encoding/gob"
 	"net/http"
@@ -26,7 +27,7 @@ func (a *goBlog) initBlogStats() {
 
 func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
-	canonical := bc.getRelativePath(defaultIfEmpty(bc.BlogStats.Path, defaultBlogStatsPath))
+	canonical := bc.getRelativePath(cmp.Or(bc.BlogStats.Path, defaultBlogStatsPath))
 	a.render(w, r, a.renderBlogStats, &renderData{
 		Canonical: a.getFullAddress(canonical),
 		Data: &blogStatsRenderData{
