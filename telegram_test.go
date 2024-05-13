@@ -28,18 +28,8 @@ func Test_configTelegram_generateHTML(t *testing.T) {
 		BotToken: "abc",
 	}
 
-	// Without Instant View
-
 	expected := "Title\n\n<a href=\"https://example.com/s/1\">https://example.com/s/1</a>"
-	if got := tg.generateHTML("Title", "https://example.com/test", "https://example.com/s/1"); got != expected {
-		t.Errorf("Wrong result, got: %v", got)
-	}
-
-	// With Instant View
-
-	tg.InstantViewHash = "abc"
-	expected = "Title\n\n<a href=\"https://t.me/iv?rhash=abc&url=https%3A%2F%2Fexample.com%2Ftest\">https://example.com/s/1</a>"
-	if got := tg.generateHTML("Title", "https://example.com/test", "https://example.com/s/1"); got != expected {
+	if got := tg.generateHTML("Title", "https://example.com/s/1"); got != expected {
 		t.Errorf("Wrong result, got: %v", got)
 	}
 }
@@ -48,11 +38,6 @@ func Test_configTelegram_send(t *testing.T) {
 	fakeClient := newFakeHttpClient()
 
 	fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
-			rw.WriteHeader(http.StatusOK)
-			_, _ = rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
-			return
-		}
 		rw.WriteHeader(http.StatusOK)
 		_, _ = rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
 	}))
@@ -74,8 +59,7 @@ func Test_configTelegram_send(t *testing.T) {
 	assert.Equal(t, int64(789), chatId)
 
 	assert.NotNil(t, fakeClient.req)
-	assert.Equal(t, http.MethodPost, fakeClient.req.Method)
-	assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage", fakeClient.req.URL.String())
+	assert.Contains(t, fakeClient.req.URL.String(), "https://api.telegram.org/botbottoken/sendMessage")
 
 	req := fakeClient.req
 	assert.Equal(t, "chatid", req.FormValue("chat_id"))
@@ -99,11 +83,6 @@ func Test_telegram(t *testing.T) {
 	t.Run("Send post to Telegram", func(t *testing.T) {
 		fakeClient := newFakeHttpClient()
 		fakeClient.setHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-			if r.URL.String() == "https://api.telegram.org/botbottoken/getMe" {
-				rw.WriteHeader(http.StatusOK)
-				_, _ = rw.Write([]byte(`{"ok":true,"result":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"}}`))
-				return
-			}
 			rw.WriteHeader(http.StatusOK)
 			_, _ = rw.Write([]byte(`{"ok":true,"result":{"message_id":123,"from":{"id":123456789,"is_bot":true,"first_name":"Test","username":"testbot"},"chat":{"id":123456789,"first_name":"Test","username":"testbot"},"date":1564181818,"text":"Message"}}`))
 		}))
@@ -139,7 +118,7 @@ func Test_telegram(t *testing.T) {
 
 		app.pPostHooks[0](p)
 
-		assert.Equal(t, "https://api.telegram.org/botbottoken/sendMessage", fakeClient.req.URL.String())
+		assert.Contains(t, fakeClient.req.URL.String(), "https://api.telegram.org/botbottoken/sendMessage")
 
 		req := fakeClient.req
 		assert.Equal(t, "chatid", req.FormValue("chat_id"))

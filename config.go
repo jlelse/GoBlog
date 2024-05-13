@@ -294,10 +294,9 @@ type configNtfy struct {
 }
 
 type configTelegram struct {
-	Enabled         bool   `mapstructure:"enabled"`
-	ChatID          string `mapstructure:"chatId"`
-	BotToken        string `mapstructure:"botToken"`
-	InstantViewHash string `mapstructure:"instantViewHash"`
+	Enabled  bool   `mapstructure:"enabled"`
+	ChatID   string `mapstructure:"chatId"`
+	BotToken string `mapstructure:"botToken"`
 }
 
 type configMatrix struct {

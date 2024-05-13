@@ -1,11 +1,12 @@
 package main
 
 import (
-	"errors"
-	"net/url"
+	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/carlmjohnson/requests"
 	"go.goblog.app/app/pkgs/builderpool"
 )
 
@@ -23,21 +24,26 @@ func (tg *configTelegram) enabled() bool {
 	return true
 }
 
+const (
+	telegramChatParam = "telegramchat"
+	telegramMsgParam  = "telegrammsg"
+)
+
 func (a *goBlog) tgPost(p *post, silent bool) {
 	if tg := a.getBlogFromPost(p).Telegram; tg.enabled() && p.isPublicPublishedSectionPost() {
-		tgChat := p.firstParameter("telegramchat")
-		tgMsg := p.firstParameter("telegrammsg")
+		tgChat := p.firstParameter(telegramChatParam)
+		tgMsg := p.firstParameter(telegramMsgParam)
 		if tgChat != "" && tgMsg != "" {
 			// Already posted
 			return
 		}
 		// Generate HTML
-		html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
+		html := tg.generateHTML(p.RenderedTitle, a.shortPostURL(p))
 		if html == "" {
 			return
 		}
 		// Send message
-		chatId, msgId, err := a.sendTelegram(tg, html, tgbotapi.ModeHTML, silent)
+		chatId, msgId, err := a.sendTelegram(tg, html, "HTML", silent)
 		if err != nil {
 			a.error("Failed to send post to Telegram", "err", err)
 			return
@@ -47,12 +53,10 @@ func (a *goBlog) tgPost(p *post, silent bool) {
 			return
 		}
 		// Save chat and message id to post
-		err = a.db.replacePostParam(p.Path, "telegramchat", []string{strconv.FormatInt(chatId, 10)})
-		if err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramChatParam, []string{strconv.FormatInt(chatId, 10)}); err != nil {
 			a.error("Failed to save Telegram chat id", "err", err)
 		}
-		err = a.db.replacePostParam(p.Path, "telegrammsg", []string{strconv.Itoa(msgId)})
-		if err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramMsgParam, []string{strconv.Itoa(msgId)}); err != nil {
 			a.error("Failed to save Telegram message id", "err", err)
 		}
 	}
@@ -60,32 +64,19 @@ func (a *goBlog) tgPost(p *post, silent bool) {
 
 func (a *goBlog) tgUpdate(p *post) {
 	if tg := a.getBlogFromPost(p).Telegram; tg.enabled() {
-		tgChat := p.firstParameter("telegramchat")
-		tgMsg := p.firstParameter("telegrammsg")
+		tgChat := p.firstParameter(telegramChatParam)
+		tgMsg := p.firstParameter(telegramMsgParam)
 		if tgChat == "" || tgMsg == "" {
 			// Not send to Telegram
 			return
 		}
-		// Parse tgChat to int64
-		chatId, err := strconv.ParseInt(tgChat, 10, 64)
-		if err != nil {
-			a.error("Failed to parse Telegram chat ID", "err", err)
-			return
-		}
-		// Parse tgMsg to int
-		messageId, err := strconv.Atoi(tgMsg)
-		if err != nil {
-			a.error("Failed to parse Telegram message ID", "err", err)
-			return
-		}
 		// Generate HTML
-		html := tg.generateHTML(p.RenderedTitle, a.fullPostURL(p), a.shortPostURL(p))
+		html := tg.generateHTML(p.RenderedTitle, a.shortPostURL(p))
 		if html == "" {
 			return
 		}
 		// Send update
-		err = a.updateTelegram(tg, chatId, messageId, html, "HTML")
-		if err != nil {
+		if err := a.updateTelegram(tg, tgChat, tgMsg, html, "HTML"); err != nil {
 			a.error("Failed to send update to Telegram", "err", err)
 		}
 	}
@@ -93,143 +84,120 @@ func (a *goBlog) tgUpdate(p *post) {
 
 func (a *goBlog) tgDelete(p *post) {
 	if tg := a.getBlogFromPost(p).Telegram; tg.enabled() {
-		tgChat := p.firstParameter("telegramchat")
-		tgMsg := p.firstParameter("telegrammsg")
+		tgChat := p.firstParameter(telegramChatParam)
+		tgMsg := p.firstParameter(telegramMsgParam)
 		if tgChat == "" || tgMsg == "" {
 			// Not send to Telegram
 			return
 		}
-		// Parse tgChat to int64
-		chatId, err := strconv.ParseInt(tgChat, 10, 64)
-		if err != nil {
-			a.error("Failed to parse Telegram chat ID", "err", err)
-			return
-		}
-		// Parse tgMsg to int
-		messageId, err := strconv.Atoi(tgMsg)
-		if err != nil {
-			a.error("Failed to parse Telegram message ID", "err", err)
-			return
-		}
 		// Delete message
-		err = a.deleteTelegram(tg, chatId, messageId)
-		if err != nil {
+		if err := a.deleteTelegram(tg, tgChat, tgMsg); err != nil {
 			a.error("Failed to delete Telegram message", "err", err)
 		}
 		// Delete chat and message id from post
-		err = a.db.replacePostParam(p.Path, "telegramchat", []string{})
-		if err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramChatParam, []string{}); err != nil {
 			a.error("Failed to remove Telegram chat id", "err", err)
 		}
-		err = a.db.replacePostParam(p.Path, "telegrammsg", []string{})
-		if err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramMsgParam, []string{}); err != nil {
 			a.error("Failed to remove Telegram message id", "err", err)
 		}
 	}
 }
 
-func (tg *configTelegram) generateHTML(title, fullURL, shortURL string) (html string) {
+func (tg *configTelegram) generateHTML(title, shortURL string) string {
 	if !tg.enabled() {
 		return ""
 	}
 	message := builderpool.Get()
 	defer builderpool.Put(message)
+	tgReplacer := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
 	if title != "" {
-		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, title))
+		tgReplacer.WriteString(message, title)
 		message.WriteString("\n\n")
 	}
-	if tg.InstantViewHash != "" {
-		message.WriteString("<a href=\"https://t.me/iv?rhash=" + tg.InstantViewHash + "&url=" + url.QueryEscape(fullURL) + "\">")
-		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, shortURL))
-		message.WriteString("</a>")
-	} else {
-		message.WriteString("<a href=\"" + shortURL + "\">")
-		message.WriteString(tgbotapi.EscapeText(tgbotapi.ModeHTML, shortURL))
-		message.WriteString("</a>")
-	}
-	html = message.String()
-	return
+	message.WriteString("<a href=\"" + shortURL + "\">")
+	tgReplacer.WriteString(message, shortURL)
+	message.WriteString("</a>")
+	return message.String()
+}
+
+type telegramMessageResult struct {
+	OK          bool   `json:"ok"`
+	Description string `json:"description"`
+	Result      struct {
+		Chat struct {
+			ID int64 `json:"id"`
+		} `json:"chat"`
+		MessageID int `json:"message_id"`
+	} `json:"result"`
 }
 
 func (a *goBlog) sendTelegram(tg *configTelegram, message, mode string, silent bool) (int64, int, error) {
 	if !tg.enabled() {
 		return 0, 0, nil
 	}
-	bot, err := tgbotapi.NewBotAPIWithClient(tg.BotToken, tgbotapi.APIEndpoint, a.httpClient)
-	if err != nil {
+
+	telegramURL := "https://api.telegram.org/bot" + tg.BotToken + "/sendMessage"
+	result := &telegramMessageResult{}
+	if err := requests.URL(telegramURL).Client(a.httpClient).
+		Param("chat_id", tg.ChatID).
+		Param("text", message).
+		Param("parse_mode", mode).
+		Param("disable_notification", strconv.FormatBool(silent)).
+		ToJSON(result).
+		Fetch(context.Background()); err != nil {
 		return 0, 0, err
 	}
-	msg := tgbotapi.MessageConfig{
-		BaseChat: tgbotapi.BaseChat{
-			ChannelUsername:     tg.ChatID,
-			DisableNotification: silent,
-		},
-		Text:      message,
-		ParseMode: mode,
+
+	if !result.OK {
+		return 0, 0, fmt.Errorf("error from Telegram API: %s", result.Description)
 	}
-	res, err := bot.Send(msg)
-	if err != nil {
-		return 0, 0, err
-	}
-	return res.Chat.ID, res.MessageID, nil
+
+	return result.Result.Chat.ID, result.Result.MessageID, nil
 }
 
-func (a *goBlog) updateTelegram(tg *configTelegram, chatId int64, messageId int, message, mode string) error {
+func (a *goBlog) updateTelegram(tg *configTelegram, chatID, messageID, message, mode string) error {
 	if !tg.enabled() {
 		return nil
 	}
-	bot, err := tgbotapi.NewBotAPIWithClient(tg.BotToken, tgbotapi.APIEndpoint, a.httpClient)
-	if err != nil {
+
+	telegramURL := "https://api.telegram.org/bot" + tg.BotToken + "/editMessageText"
+	result := &telegramMessageResult{}
+	if err := requests.URL(telegramURL).Client(a.httpClient).
+		Param("chat_id", chatID).
+		Param("message_id", messageID).
+		Param("text", message).
+		Param("parse_mode", mode).
+		ToJSON(result).
+		Fetch(context.Background()); err != nil {
 		return err
 	}
-	// Check if chat is still the configured one
-	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			SuperGroupUsername: tg.ChatID,
-		},
-	})
-	if err != nil {
-		return err
+
+	if !result.OK {
+		return fmt.Errorf("error from Telegram API: %s", result.Description)
 	}
-	if chat.ID != chatId {
-		return errors.New("chat id mismatch")
-	}
-	// Send update
-	msg := tgbotapi.EditMessageTextConfig{
-		BaseEdit: tgbotapi.BaseEdit{
-			ChatID:    chatId,
-			MessageID: messageId,
-		},
-		Text:      message,
-		ParseMode: mode,
-	}
-	_, err = bot.Send(msg)
-	return err
+
+	return nil
 }
 
-func (a *goBlog) deleteTelegram(tg *configTelegram, chatId int64, messageId int) error {
+func (a *goBlog) deleteTelegram(tg *configTelegram, chatID, messageID string) error {
 	if !tg.enabled() {
 		return nil
 	}
-	bot, err := tgbotapi.NewBotAPIWithClient(tg.BotToken, tgbotapi.APIEndpoint, a.httpClient)
-	if err != nil {
+
+	telegramURL := "https://api.telegram.org/bot" + tg.BotToken + "/deleteMessage"
+	result := &telegramMessageResult{}
+	if err := requests.URL(telegramURL).Client(a.httpClient).
+		Param("chat_id", chatID).
+		Param("message_id", messageID).
+		ToJSON(result).
+		Fetch(context.Background()); err != nil {
 		return err
 	}
-	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			SuperGroupUsername: tg.ChatID,
-		},
-	})
-	if err != nil {
-		return err
+
+	if !result.OK {
+		return fmt.Errorf("error from Telegram API: %s", result.Description)
 	}
-	if chat.ID != chatId {
-		return errors.New("chat id mismatch")
-	}
-	msg := tgbotapi.DeleteMessageConfig{
-		ChatID:    chatId,
-		MessageID: messageId,
-	}
-	_, err = bot.Send(msg)
-	return err
+
+	return nil
 }

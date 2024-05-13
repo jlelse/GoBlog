@@ -255,7 +255,6 @@ blogs:
       enabled: true # Enable
       chatId: "@telegram" # Chat ID, usually channel username
       botToken: BOT-TOKEN # Telegram Bot Token
-      instantViewHash: INSTANT-VIEW-HASH # Use custom TG IV template
     # Comments
     comments:
       enabled: true # Enable comments
