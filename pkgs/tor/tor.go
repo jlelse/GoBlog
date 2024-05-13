@@ -76,10 +76,17 @@ func StartTor(privateKey ed25519.PrivateKey, remotePort int) (net.Listener, stri
 	cmd := exec.CommandContext(
 		context.Background(),
 		"tor", "--ignore-missing-torrc",
+		// Hidden Service configs
 		"--HiddenServiceDir", dir,
 		"--HiddenServicePort", strconv.Itoa(remotePort)+" "+listener.Addr().String(),
 		"--HiddenServiceVersion", "3",
+		"--HiddenServiceEnableIntroDoSDefense", "1",
+		// Disable SocksPort, we don't need it
 		"--SocksPort", "0",
+		// Limit to one process to reduce memory usage
+		"--NumCPUs", "1",
+		// Enable hardware acceleration, it might improve speed
+		"--HardwareAccel", "1",
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
