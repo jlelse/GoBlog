@@ -38,7 +38,6 @@ Here's an (incomplete) list of features:
 - Sitemap
 - Automatic HTTPS using Let's Encrypt
 - Tor Hidden Service
-- Tailscale integration for private blogs with HTTPS
 - Fast in-memory caching for even faster performance
 - Automatic asset minification of HTML, CSS and JavaScript
 - Statistics page with information about posts

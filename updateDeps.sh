@@ -1,9 +1,7 @@
 #!/bin/bash
 
 FLAGS="-tags=linux,libsqlite3,sqlite_fts5"
-EXTRA="
-github.com/cretz/bine@master
-"
+EXTRA=""
 
 # Update all direct dependencies to latest version
 echo "Check for updates..."

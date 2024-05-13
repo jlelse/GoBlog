@@ -55,7 +55,6 @@ type configServer struct {
 	HttpsKey            string   `mapstructure:"httpsKey"`
 	HttpsRedirect       bool     `mapstructure:"httpsRedirect"`
 	Tor                 bool     `mapstructure:"tor"`
-	TorSingleHop        bool     `mapstructure:"torSingleHop"`
 	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
 	CSPDomains          []string `mapstructure:"cspDomains"`
 	publicHostname      string

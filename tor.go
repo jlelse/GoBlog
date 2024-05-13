@@ -1,19 +1,17 @@
 package main
 
 import (
-	"context"
-	"crypto"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/cretz/bine/tor"
 	"github.com/go-chi/chi/v5/middleware"
+	"go.goblog.app/app/pkgs/tor"
 )
 
 const torUsedKey contextKey = "tor"
@@ -34,35 +32,12 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	}
 	// Start tor
 	a.info("Starting and registering onion service")
-	t, err := tor.Start(context.Background(), &tor.StartConf{
-		TempDataDirBase: os.TempDir(),
-		NoAutoSocksPort: true,
-		ExtraArgs:       a.torExtraArgs(),
-	})
+	listener, addr, cancel, err := tor.StartTor(torKey, 80)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = t.Close()
-	}()
-	// Wait at most a few minutes to publish the service
-	listenCtx, listenCancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer listenCancel()
-	// Create a v3 onion service to listen on any port but show as 80
-	onion, err := t.Listen(listenCtx, &tor.ListenConf{
-		Key:          torKey,
-		RemotePorts:  []int{80},
-		NonAnonymous: a.cfg.Server.TorSingleHop,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = onion.Close()
-	}()
-	a.torAddress = "http://" + onion.String()
-	torUrl, _ := url.Parse(a.torAddress)
-	a.torHostname = torUrl.Hostname()
+	a.torAddress = "http://" + addr
+	a.torHostname = addr
 	a.info("Onion service published", "address", a.torAddress)
 	// Clear cache
 	a.cache.purge()
@@ -74,15 +49,20 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 		WriteTimeout:      5 * time.Minute,
 	}
 	a.shutdown.Add(a.shutdownServer(s, "tor"))
-	if err = s.Serve(onion); err != nil && err != http.ErrServerClosed {
+	a.shutdown.Add(func() {
+		if err := cancel(); err != nil {
+			a.error("failed to shutdown tor", "err", err)
+		}
+	})
+	if err = s.Serve(listener); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
 }
 
-func (*goBlog) createTorPrivateKey(torDataPath string) (crypto.PrivateKey, error) {
+func (*goBlog) createTorPrivateKey(torDataPath string) (ed25519.PrivateKey, error) {
 	torKeyPath := filepath.Join(torDataPath, "onion.pk")
-	var torKey crypto.PrivateKey
+	var torKey ed25519.PrivateKey
 	if _, err := os.Stat(torKeyPath); os.IsNotExist(err) {
 		// Tor private key not found, create it
 		_, torKey, err = ed25519.GenerateKey(nil)
@@ -103,18 +83,15 @@ func (*goBlog) createTorPrivateKey(torDataPath string) (crypto.PrivateKey, error
 		d, _ := os.ReadFile(torKeyPath)
 		block, _ := pem.Decode(d)
 		x509Encoded := block.Bytes
-		torKey, err = x509.ParsePKCS8PrivateKey(x509Encoded)
+		parsedTorKey, err := x509.ParsePKCS8PrivateKey(x509Encoded)
 		if err != nil {
 			return nil, err
 		}
+		ok := false
+		torKey, ok = parsedTorKey.(ed25519.PrivateKey)
+		if !ok {
+			return nil, errors.New("could not parse Tor key as ed25519 private key")
+		}
 	}
 	return torKey, nil
-}
-
-func (a *goBlog) torExtraArgs() []string {
-	s := []string{"--SocksPort", "0"}
-	if a.cfg.Server.TorSingleHop {
-		s = append(s, "--HiddenServiceNonAnonymousMode", "1", "--HiddenServiceSingleHopMode", "1")
-	}
-	return s
 }

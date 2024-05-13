@@ -40,7 +40,6 @@ server:
   - media.example.com
   # Tor
   tor: true # Publish onion service, requires Tor to be installed and available in path
-  torSingleHop: true # Enable single hop mode (non-anonymous)
 
 # Cache
 cache:
