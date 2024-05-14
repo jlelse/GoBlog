@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 	"net/url"
+	"slices"
 
-	"github.com/samber/lo"
 	"github.com/tiptophelmet/cspolicy"
 	"github.com/tiptophelmet/cspolicy/directives"
 	"github.com/tiptophelmet/cspolicy/directives/constraint"
@@ -88,7 +88,7 @@ func keepSelectedQueryParams(paramsToKeep ...string) func(http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			query := r.URL.Query()
 			for param := range query {
-				if !lo.Contains(paramsToKeep, param) {
+				if !slices.Contains(paramsToKeep, param) {
 					query.Del(param)
 				}
 			}

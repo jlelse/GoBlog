@@ -14,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
-	"github.com/klauspost/compress/flate"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
@@ -41,7 +40,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	h = h.Append(middleware.Recoverer, httpcompress.Compress(flate.BestCompression))
+	h = h.Append(middleware.Recoverer, httpcompress.Compress())
 	if a.cfg.Server.SecurityHeaders {
 		h = h.Append(a.securityHeaders)
 	}
