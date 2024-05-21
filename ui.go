@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"time"
 
@@ -45,6 +46,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", fmt.Sprintf("RSS (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".rss"))
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".atom"))
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", fmt.Sprintf("JSON Feed (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".json"))
+	// Blogroll
+	if brConf := rd.Blog.Blogroll; brConf != nil && brConf.Enabled {
+		hb.WriteElementOpen("link", "rel", "blogroll", "type", "text/xml", "href", rd.Blog.getRelativePath(cmp.Or(brConf.Path, defaultBlogrollPath)+".opml"))
+	}
 	// Webmentions
 	hb.WriteElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
 	// Micropub

@@ -10,10 +10,7 @@ import (
 )
 
 func (ntfy *configNtfy) enabled() bool {
-	if ntfy == nil || !ntfy.Enabled || ntfy.Topic == "" {
-		return false
-	}
-	return true
+	return ntfy != nil && ntfy.Enabled && ntfy.Topic != ""
 }
 
 func (a *goBlog) sendNtfy(cfg *configNtfy, msg string) error {
