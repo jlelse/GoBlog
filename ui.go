@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"time"
 
@@ -47,8 +46,8 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".atom"))
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", fmt.Sprintf("JSON Feed (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".json"))
 	// Blogroll
-	if brConf := rd.Blog.Blogroll; brConf != nil && brConf.Enabled {
-		hb.WriteElementOpen("link", "rel", "blogroll", "type", "text/xml", "href", rd.Blog.getRelativePath(cmp.Or(brConf.Path, defaultBlogrollPath)+".opml"))
+	if brEnabled, brPath := rd.Blog.getBlogrollPath(); brEnabled {
+		hb.WriteElementOpen("link", "rel", "blogroll", "type", "text/xml", "href", brPath+blogrollDownloadFile)
 	}
 	// Webmentions
 	hb.WriteElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
@@ -613,6 +612,7 @@ type blogrollRenderData struct {
 	description string
 	outlines    []*opml.Outline
 	download    string
+	refresh     string
 }
 
 func (a *goBlog) renderBlogroll(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -647,34 +647,48 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("a")
 			hb.WriteElementClose("p")
 			// Outlines
-			for _, outline := range bd.outlines {
-				title := outline.Title
-				if title == "" {
-					title = outline.Text
+			for _, category := range bd.outlines {
+				categoryTitle := category.Title
+				if categoryTitle == "" {
+					categoryTitle = category.Text
 				}
-				hb.WriteElementOpen("h2", "id", urlize(title))
-				hb.WriteEscaped(fmt.Sprintf("%s (%d)", title, len(outline.Outlines)))
+				hb.WriteElementOpen("h2", "id", urlize(categoryTitle))
+				hb.WriteEscaped(fmt.Sprintf("%s (%d)", categoryTitle, len(category.Outlines)))
 				hb.WriteElementClose("h2")
 				hb.WriteElementOpen("ul")
-				for _, subOutline := range outline.Outlines {
-					subTitle := subOutline.Title
-					if subTitle == "" {
-						subTitle = subOutline.Text
+				for _, blog := range category.Outlines {
+					blogTitle := blog.Title
+					if blogTitle == "" {
+						blogTitle = blog.Text
 					}
 					hb.WriteElementOpen("li")
-					hb.WriteElementOpen("a", "href", subOutline.HTMLURL, "target", "_blank")
-					hb.WriteEscaped(subTitle)
+					hb.WriteElementOpen("a", "href", blog.HTMLURL, "target", "_blank")
+					hb.WriteEscaped(blogTitle)
 					hb.WriteElementClose("a")
 					hb.WriteUnescaped(" (")
-					hb.WriteElementOpen("a", "href", subOutline.XMLURL, "target", "_blank")
+					hb.WriteElementOpen("a", "href", blog.XMLURL, "target", "_blank")
 					hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "feed"))
 					hb.WriteElementClose("a")
 					hb.WriteUnescaped(")")
+					if blog.Description != "" {
+						hb.WriteEscaped(" — ")
+						hb.WriteElementOpen("i")
+						hb.WriteEscaped(blog.Description)
+						hb.WriteElementClose("i")
+					}
 					hb.WriteElementClose("li")
 				}
 				hb.WriteElementClose("ul")
 			}
 			hb.WriteElementClose("main")
+			// Actions
+			if rd.LoggedIn() {
+				hb.WriteElementOpen("div", "class", "actions")
+				hb.WriteElementOpen("form", "method", "post", "action", bd.refresh)
+				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
+				hb.WriteElementClose("form")
+				hb.WriteElementClose("div")
+			}
 			// Interactions
 			if rd.Blog.commentsEnabled() {
 				a.renderInteractions(hb, rd)

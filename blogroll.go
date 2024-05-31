@@ -17,7 +17,19 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-const defaultBlogrollPath = "/blogroll"
+const (
+	defaultBlogrollPath    = "/blogroll"
+	blogrollRefreshSubpath = "/refresh"
+	blogrollDownloadFile   = ".opml"
+)
+
+func (bc *configBlog) getBlogrollPath() (bool, string) {
+	if blogroll := bc.Blogroll; blogroll != nil && blogroll.Enabled {
+		path := bc.getRelativePath(cmp.Or(blogroll.Path, defaultBlogrollPath))
+		return true, path
+	}
+	return false, ""
+}
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
@@ -30,14 +42,15 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := bc.Blogroll
-	can := bc.getRelativePath(cmp.Or(c.Path, defaultBlogrollPath))
+	_, can := bc.getBlogrollPath()
 	a.render(w, r, a.renderBlogroll, &renderData{
 		Canonical: a.getFullAddress(can),
 		Data: &blogrollRenderData{
 			title:       c.Title,
 			description: c.Description,
 			outlines:    outlines.([]*opml.Outline),
-			download:    can + ".opml",
+			download:    can + blogrollDownloadFile,
+			refresh:     can + blogrollRefreshSubpath,
 		},
 	})
 }
@@ -62,6 +75,14 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
+}
+
+func (a *goBlog) refreshBlogroll(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	a.db.clearPersistentCache("blogroll_" + blog)
+	a.cache.purge()
+	_, brPath := bc.getBlogrollPath()
+	http.Redirect(w, r, brPath, http.StatusFound)
 }
 
 func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {

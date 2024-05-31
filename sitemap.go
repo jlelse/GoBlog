@@ -87,9 +87,9 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 		})
 	}
 	// Blogroll
-	if brc := bc.Blogroll; brc != nil && brc.Enabled {
+	if blogrollEnabled, blogrollPath := bc.getBlogrollPath(); blogrollEnabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(brc.Path, defaultBlogrollPath))),
+			Loc: a.getFullAddress(blogrollPath),
 		})
 	}
 	// Geo map

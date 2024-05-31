@@ -416,15 +416,14 @@ func (a *goBlog) blogStatsRouter(conf *configBlog) func(r chi.Router) {
 // Blog - Blogroll
 func (a *goBlog) blogBlogrollRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
-		if brConfig := conf.Blogroll; brConfig != nil && brConfig.Enabled {
-			brPath := conf.getRelativePath(cmp.Or(brConfig.Path, defaultBlogrollPath))
+		if brEnabled, brPath := conf.getBlogrollPath(); brEnabled {
 			r.Use(
 				a.privateModeHandler,
 				middleware.WithValue(cacheExpirationKey, a.defaultCacheExpiration()),
-				a.cacheMiddleware,
 			)
-			r.Get(brPath, a.serveBlogroll)
-			r.Get(brPath+".opml", a.serveBlogrollExport)
+			r.With(a.cacheMiddleware).Get(brPath, a.serveBlogroll)
+			r.With(a.cacheMiddleware).Get(brPath+blogrollDownloadFile, a.serveBlogrollExport)
+			r.With(a.authMiddleware).Post(brPath+blogrollRefreshSubpath, a.refreshBlogroll)
 		}
 	}
 }
