@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/klauspost/compress/flate"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/samber/lo"
@@ -68,7 +67,6 @@ func NewCompressor(types ...string) *Compressor {
 		allowedTypes:   allowedTypes,
 	}
 
-	c.SetEncoder("deflate", encoderDeflate)
 	c.SetEncoder("gzip", encoderGzip)
 	c.SetEncoder("zstd", encoderZstd)
 
@@ -257,19 +255,11 @@ func (cw *compressResponseWriter) Close() error {
 }
 
 func encoderGzip(w io.Writer) compressWriter {
-	gw, err := gzip.NewWriterLevel(w, gzip.DefaultCompression)
+	gw, err := gzip.NewWriterLevel(w, 5)
 	if err != nil {
 		return nil
 	}
 	return gw
-}
-
-func encoderDeflate(w io.Writer) compressWriter {
-	dw, err := flate.NewWriter(w, flate.DefaultCompression)
-	if err != nil {
-		return nil
-	}
-	return dw
 }
 
 func encoderZstd(w io.Writer) compressWriter {

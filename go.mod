@@ -2,6 +2,8 @@ module go.goblog.app/app
 
 go 1.22.0
 
+replace github.com/yuin/goldmark-emoji v1.0.2 => github.com/jlelse/goldmark-emoji v0.0.0-20240604064618-68e4be972ba7
+
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
@@ -47,7 +49,7 @@ require (
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.6.0
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tdewolff/minify/v2 v2.20.32
 	github.com/tiptophelmet/cspolicy v0.1.1
@@ -103,7 +105,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
-	github.com/sagikazarmark/locafero v0.4.0 // indirect
+	github.com/sagikazarmark/locafero v0.5.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
@@ -118,7 +120,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.mau.fi/util v0.4.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240530194437-404ba88c7ed0 // indirect
+	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc // indirect
 	golang.org/x/image v0.16.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
