@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -69,7 +70,9 @@ func (a *goBlog) verifyMention(m *mention) error {
 		}
 	}
 	// Request source
-	sourceReq, err := http.NewRequestWithContext(context.Background(), http.MethodGet, m.Source, nil)
+	timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer timeoutCancel()
+	sourceReq, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, m.Source, nil)
 	if err != nil {
 		return err
 	}
@@ -137,7 +140,7 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	defer bufferpool.Put(mfBuffer)
 	pr, pw := io.Pipe()
 	go func() {
-		_, err := io.Copy(io.MultiWriter(pw, mfBuffer), body)
+		_, err := io.Copy(io.MultiWriter(pw, mfBuffer), io.LimitReader(body, 10*bodylimit.MB))
 		_ = pw.CloseWithError(err)
 	}()
 	// Check if source mentions target
@@ -154,7 +157,9 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			return false
 		}
 		// Check if link is or redirects to target
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, m.Target, nil)
+		timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer timeoutCancel()
+		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, m.Target, nil)
 		if err != nil {
 			return false
 		}

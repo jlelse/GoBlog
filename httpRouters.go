@@ -65,7 +65,7 @@ func (a *goBlog) webmentionsRouter(r chi.Router) {
 		return
 	}
 	// Endpoint
-	r.With(bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.handleWebmention)
+	r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/", a.handleWebmention)
 	// Authenticated routes
 	r.Group(func(r chi.Router) {
 		r.Use(a.authMiddleware)
@@ -125,7 +125,7 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	// Reactions
 	if a.reactionsEnabled() {
 		r.Get("/reactions", a.getReactions)
-		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/reactions", a.postReaction)
+		r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/reactions", a.postReaction)
 	}
 }
 
@@ -312,7 +312,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 						middleware.WithValue(pathKey, searchPath),
 					)
 					r.Get("/", a.serveSearch)
-					r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/", a.serveSearch)
+					r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/", a.serveSearch)
 					searchResultPath := "/" + searchPlaceholder
 					r.Get(searchResultPath, a.serveSearchResult)
 					r.Get(searchResultPath+feedPath, a.serveSearchResult)

@@ -40,7 +40,7 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
-	h = h.Append(middleware.Recoverer, httpcompress.Compress())
+	h = h.Append(middleware.Recoverer, httpcompress.CompressMiddleware)
 	if a.cfg.Server.SecurityHeaders {
 		h = h.Append(a.securityHeaders)
 	}
