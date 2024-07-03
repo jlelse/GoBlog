@@ -64,6 +64,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 			hb.WriteElementOpen("link", "rel", "me", "href", i)
 		}
 	}
+	// Fediverse
+	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
+		hb.WriteElementOpen("meta", "name", "fediverse:creator", "content", fmt.Sprintf("@%s@%s", rd.BlogString, a.cfg.Server.publicHostname))
+	}
 	// Opensearch
 	if os := openSearchUrl(rd.Blog); os != "" {
 		hb.WriteElementOpen("link", "rel", "search", "type", "application/opensearchdescription+xml", "href", os, "title", renderedBlogTitle)
