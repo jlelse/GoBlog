@@ -1488,7 +1488,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("p")
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "enctype", "multipart/form-data")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "helpgpx")
-			hb.WriteElementOpen("input", "type", "file", "name", "file")
+			hb.WriteElementOpen("input", "type", "file", "name", "files", "multiple", "", "required", "")
 			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "upload"))
 			hb.WriteElementClose("form")
 

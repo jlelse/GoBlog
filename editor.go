@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/gpxhelper"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.hacdias.com/indielib/micropub"
 	"gopkg.in/yaml.v3"
@@ -140,19 +142,42 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, post.Path, http.StatusFound)
 	case "helpgpx":
-		file, _, err := r.FormFile("file")
+		err := r.ParseMultipartForm(0)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
-		gpx, err := io.ReadAll(a.min.Get().Reader(contenttype.XML, file))
+		files := r.MultipartForm.File["files"]
+		allFileContents := [][]byte{}
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			fileContent, err := io.ReadAll(file)
+			_ = file.Close()
+			if err != nil {
+				a.serveError(w, r, err.Error(), http.StatusBadRequest)
+				return
+			}
+			allFileContents = append(allFileContents, fileContent)
+		}
+		mergedGpx, err := gpxhelper.MergeGpx(allFileContents...)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
 		}
 		w.Header().Set(contentType, contenttype.TextUTF8)
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		err = a.min.Get().Minify(contenttype.XML, buf, bytes.NewReader(mergedGpx))
+		if err != nil {
+			a.serveError(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
 		_ = yaml.NewEncoder(w).Encode(map[string]string{
-			"gpx": string(gpx),
+			"gpx": buf.String(),
 		})
 	default:
 		a.serveError(w, r, "Unknown or missing editoraction", http.StatusBadRequest)
