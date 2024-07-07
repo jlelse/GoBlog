@@ -31,6 +31,8 @@ type trackResult struct {
 	PointsJSON       string
 	Kilometers       string
 	Hours            string
+	Uphill           string
+	Downhill         string
 	Name             string
 	MapAttribution   string
 	MinZoom, MaxZoom int
@@ -92,6 +94,11 @@ func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, e
 		)
 	}
 
+	if parseResult.ud != nil {
+		result.Uphill = lp.Sprintf("%.0f", parseResult.ud.Uphill)
+		result.Downhill = lp.Sprintf("%.0f", parseResult.ud.Downhill)
+	}
+
 	return result, nil
 }
 
@@ -104,14 +111,16 @@ type trackParseResult struct {
 	points  []*trackPoint
 	gpxData *gpx.GPX
 	md      *gpx.MovingData
+	ud      *gpx.UphillDownhill
 }
 
 func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 	result = &trackParseResult{}
 
 	type trackPath struct {
-		gpxMovingData *gpx.MovingData
-		points        []*trackPoint
+		gpxMovingData     *gpx.MovingData
+		gpxUphillDownhill *gpx.UphillDownhill
+		points            []*trackPoint
 	}
 
 	result.gpxData, err = gpx.ParseString(gpxString)
@@ -123,8 +132,10 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 	for _, track := range result.gpxData.Tracks {
 		for _, segment := range track.Segments {
 			md := segment.MovingData()
+			ud := segment.UphillDownhill()
 			path := &trackPath{
-				gpxMovingData: &md,
+				gpxMovingData:     &md,
+				gpxUphillDownhill: &ud,
 			}
 			for _, point := range segment.Points {
 				path.points = append(path.points, &trackPoint{
@@ -157,6 +168,14 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 			result.md.MovingTime = result.md.MovingTime + path.gpxMovingData.MovingTime
 			result.md.StoppedDistance = result.md.StoppedDistance + path.gpxMovingData.StoppedDistance
 			result.md.StoppedTime = result.md.StoppedTime + path.gpxMovingData.StoppedTime
+		}
+		// Combine uphill/downhill
+		if path.gpxUphillDownhill != nil {
+			if result.ud == nil {
+				result.ud = &gpx.UphillDownhill{}
+			}
+			result.ud.Uphill = result.ud.Uphill + path.gpxUphillDownhill.Uphill
+			result.ud.Downhill = result.ud.Downhill + path.gpxUphillDownhill.Downhill
 		}
 	}
 

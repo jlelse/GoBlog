@@ -502,6 +502,20 @@ func (a *goBlog) renderPostGPX(hb *htmlbuilder.HtmlBuilder, p *post, b *configBl
 	if track.Hours != "" {
 		hb.WriteUnescaped("⏱ ")
 		hb.WriteEscaped(track.Hours)
+		hb.WriteUnescaped(" ")
+	}
+	if track.Uphill != "" {
+		hb.WriteUnescaped("⬆️ ")
+		hb.WriteEscaped(track.Uphill)
+		hb.WriteUnescaped(" ")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "meters"))
+		hb.WriteUnescaped(" ")
+	}
+	if track.Downhill != "" {
+		hb.WriteUnescaped("⬇️ ")
+		hb.WriteEscaped(track.Downhill)
+		hb.WriteUnescaped(" ")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "meters"))
 	}
 	hb.WriteElementClose("p")
 	// Map (only show if it has features)
