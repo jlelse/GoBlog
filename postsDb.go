@@ -365,7 +365,7 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 
 type postsRequestConfig struct {
 	search                                      string
-	blog                                        string
+	blogs                                       []string
 	path                                        string
 	limit                                       int
 	offset                                      int
@@ -436,9 +436,18 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		}
 		queryBuilder.WriteString(")")
 	}
-	if c.blog != "" {
-		queryBuilder.WriteString(" and blog = @blog")
-		args = append(args, sql.Named("blog", c.blog))
+	if len(c.blogs) > 0 {
+		queryBuilder.WriteString(" and blog in (")
+		for i, blog := range c.blogs {
+			if i > 0 {
+				queryBuilder.WriteString(", ")
+			}
+			named := "blog" + strconv.Itoa(i)
+			queryBuilder.WriteString("@")
+			queryBuilder.WriteString(named)
+			args = append(args, sql.Named(named, blog))
+		}
+		queryBuilder.WriteString(")")
 	}
 	allParams := append(c.allParams, c.parameter)
 	allParamValues := append(c.allParamValues, c.parameterValue)
@@ -678,7 +687,7 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	query, params, err := buildPostsQuery(&postsRequestConfig{
 		randomOrder: true,
 		limit:       1,
-		blog:        blog,
+		blogs:       []string{blog},
 		sections:    sections,
 		visibility:  []postVisibility{visibilityPublic},
 		status:      []postStatus{statusPublished},

@@ -65,7 +65,7 @@ func Test_postsDb(t *testing.T) {
 
 	// Check drafts
 	drafts, _ := app.getPosts(&postsRequestConfig{
-		blog:   "en",
+		blogs:  []string{"en"},
 		status: []postStatus{statusDraft},
 	})
 	is.Len(drafts, 1)

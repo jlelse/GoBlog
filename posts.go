@@ -333,7 +333,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	// Create paginator
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
-		blog:           blog,
+		blogs:          []string{blog},
 		sections:       sections,
 		taxonomy:       ic.tax,
 		taxonomyValue:  ic.taxValue,

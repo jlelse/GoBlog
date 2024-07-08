@@ -165,7 +165,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	posts, _ := a.getPosts(&postsRequestConfig{
 		status:             []postStatus{statusPublished},
 		visibility:         []postVisibility{visibilityPublic},
-		blog:               blog,
+		blogs:              []string{blog},
 		fetchWithoutParams: true,
 	})
 	// Add posts to sitemap
@@ -222,7 +222,7 @@ select distinct '/x/x/' || day from alldates;
 
 func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []string, err error) {
 	query, args, err := buildPostsQuery(&postsRequestConfig{
-		blog:       blog,
+		blogs:      []string{blog},
 		sections:   sections,
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},

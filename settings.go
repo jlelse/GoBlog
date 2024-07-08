@@ -57,7 +57,7 @@ func (a *goBlog) settingsDeleteSection(w http.ResponseWriter, r *http.Request) {
 	section := r.FormValue("sectionname")
 	// Check if any post uses this section
 	count, err := a.db.countPosts(&postsRequestConfig{
-		blog:     blog,
+		blogs:    []string{blog},
 		sections: []string{section},
 	})
 	if err != nil {

@@ -3,9 +3,18 @@ package main
 import (
 	"cmp"
 	"net/http"
+
+	"github.com/samber/lo"
 )
 
 const defaultGeoMapPath = "/map"
+
+func (a *goBlog) blogsOnMap(blog string, bc *configBlog) []string {
+	if bc.Map != nil && bc.Map.AllBlogs {
+		return lo.Keys(a.cfg.Blogs)
+	}
+	return []string{blog}
+}
 
 func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
@@ -14,9 +23,11 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	canonical := a.getFullAddress(mapPath)
 
 	allPostsWithLocationRequestConfig := &postsRequestConfig{
-		blog:        blog,
-		anyParams:   []string{a.cfg.Micropub.LocationParam, gpxParameter},
-		fetchParams: []string{a.cfg.Micropub.LocationParam, gpxParameter},
+		blogs:                 a.blogsOnMap(blog, bc),
+		anyParams:             []string{a.cfg.Micropub.LocationParam, gpxParameter},
+		fetchWithoutParams:    true,
+		excludeParameter:      showRouteParam,
+		excludeParameterValue: "false", // Don't show hidden route tracks
 	}
 	allPostsWithLocationRequestConfig.status, allPostsWithLocationRequestConfig.visibility = a.getDefaultPostStates(r)
 
@@ -51,10 +62,10 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 const geoMapTracksSubpath = "/tracks.json"
 
 func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
+	blog, bc := a.getBlog(r)
 
 	allPostsWithTracksRequestConfig := &postsRequestConfig{
-		blog:                  blog,
+		blogs:                 a.blogsOnMap(blog, bc),
 		anyParams:             []string{gpxParameter},
 		fetchParams:           []string{gpxParameter},
 		excludeParameter:      showRouteParam,
@@ -91,10 +102,10 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 const geoMapLocationsSubpath = "/locations.json"
 
 func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
+	blog, bc := a.getBlog(r)
 
 	allPostsWithLocationRequestConfig := &postsRequestConfig{
-		blog:        blog,
+		blogs:       a.blogsOnMap(blog, bc),
 		anyParams:   []string{a.cfg.Micropub.LocationParam},
 		fetchParams: []string{a.cfg.Micropub.LocationParam},
 	}

@@ -181,8 +181,9 @@ type configComments struct {
 }
 
 type configGeoMap struct {
-	Enabled bool   `mapstructure:"enabled"`
-	Path    string `mapstructure:"path"`
+	Enabled  bool   `mapstructure:"enabled"`
+	Path     string `mapstructure:"path"`
+	AllBlogs bool   `mapstructure:"allBlogs"`
 }
 
 type configContact struct {
