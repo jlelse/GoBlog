@@ -10,40 +10,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       with:
         config-inline: |
           [registry."docker.io"]
             mirrors = ["mirror.gcr.io"]
     - name: Login to GitHub container registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Login to Gitea container registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: git.jlel.se
         username: nologin
         password: ${{ secrets.GITEA_TOKEN }}
     - name: Test
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v6
       with:
         push: false
         target: test
         tags: test
     - name: Build base image
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v6
       with:
         push: true
         target: base
         tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
         provenance: false
     - name: Build tools image
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v6
       with:
         push: true
         target: tools
