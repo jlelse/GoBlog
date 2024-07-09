@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
@@ -19,9 +20,8 @@ type database struct {
 	a *goBlog
 	// Basic things
 	db  *sql.DB            // database
-	em  sync.Mutex         // command execution (insert, update, delete ...)
-	sg  singleflight.Group // singleflight group for prepared statements
 	psc *ristretto.Cache   // prepared statement cache
+	sg  singleflight.Group // singleflight group for prepared statements
 	// Other things
 	pc    singleflight.Group // persistant cache
 	pcm   sync.Mutex         // post creation
@@ -30,9 +30,9 @@ type database struct {
 	debug bool
 }
 
-func (a *goBlog) initDatabase(logging bool) (err error) {
+func (a *goBlog) initDatabase(logging bool) error {
 	if a.db != nil && a.db.db != nil {
-		return
+		return nil
 	}
 	if logging {
 		a.info("Initialize database")
@@ -51,12 +51,14 @@ func (a *goBlog) initDatabase(logging bool) (err error) {
 			a.info("Closed database")
 		}
 	})
+
 	if a.cfg.Db.DumpFile != "" {
 		a.hourlyHooks = append(a.hourlyHooks, func() {
 			db.dump(a.cfg.Db.DumpFile)
 		})
 		db.dump(a.cfg.Db.DumpFile)
 	}
+
 	if logging {
 		a.info("Initialized database")
 	}
@@ -68,8 +70,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	dbDriverName := "goblog_db_" + uuid.NewString()
 	sql.Register(dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
-			// Register functions
-			for n, f := range map[string]any{
+			funcs := map[string]any{
 				"mdtext":         a.renderTextSafe,
 				"tolocal":        toLocalSafe,
 				"toutc":          toUTCSafe,
@@ -78,7 +79,8 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 				"urlize":         urlize,
 				"lowerx":         strings.ToLower,
 				"lowerunescaped": lowerUnescapedPath,
-			} {
+			}
+			for n, f := range funcs {
 				if err := c.RegisterFunc(n, f, true); err != nil {
 					return err
 				}
@@ -91,40 +93,25 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
-	numConns := 5
+
+	const numConns = 10
 	db.SetMaxOpenConns(numConns)
 	db.SetMaxIdleConns(numConns)
-	err = db.Ping()
-	if err != nil {
+
+	if err := db.Ping(); err != nil {
 		return nil, err
 	}
+
 	// Check available SQLite features
-	rows, err := db.Query("pragma compile_options")
-	if err != nil {
+	if err := checkSQLiteFeatures(db); err != nil {
 		return nil, err
 	}
-	cos := map[string]struct{}{}
-	var co string
-	for rows.Next() {
-		err = rows.Scan(&co)
-		if err != nil {
-			return nil, err
-		}
-		cos[co] = struct{}{}
-	}
-	if _, ok := cos["ENABLE_FTS5"]; !ok {
-		return nil, errors.New("sqlite not compiled with FTS5")
-	}
+
 	// Migrate DB
-	err = a.migrateDb(db, logging)
-	if err != nil {
+	if err := a.migrateDb(db, logging); err != nil {
 		return nil, err
 	}
-	// Debug
-	debug := false
-	if c := a.cfg.Db; c != nil && c.Debug {
-		debug = true
-	}
+
 	psc, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters:        1000,
 		MaxCost:            100,
@@ -134,6 +121,7 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	spc, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters:        5000,
 		MaxCost:            500,
@@ -143,40 +131,33 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &database{
 		a:     a,
 		db:    db,
-		debug: debug,
+		debug: a.cfg.Db != nil && a.cfg.Db.Debug,
 		psc:   psc,
 		spc:   spc,
 	}, nil
 }
 
-// Main features
-
-func (db *database) dump(file string) {
-	if db == nil || db.db == nil {
-		return
-	}
-	// Lock execution
-	db.em.Lock()
-	defer db.em.Unlock()
-	// Dump database
-	f, err := os.Create(file)
+func checkSQLiteFeatures(db *sql.DB) error {
+	rows, err := db.Query("pragma compile_options")
 	if err != nil {
-		db.a.error("Error while dump db", "err", err)
-		return
+		return err
 	}
-	if err = sqlite3dump.DumpDB(db.db, f, sqlite3dump.WithTransaction(true)); err != nil {
-		db.a.error("Error while dump db", "err", err)
-	}
-}
+	defer rows.Close()
 
-func (db *database) close() error {
-	if db == nil || db.db == nil {
-		return nil
+	for rows.Next() {
+		var option string
+		if err := rows.Scan(&option); err != nil {
+			return err
+		}
+		if option == "ENABLE_FTS5" {
+			return nil
+		}
 	}
-	return db.db.Close()
+	return errors.New("sqlite not compiled with FTS5")
 }
 
 func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error) {
@@ -187,18 +168,18 @@ func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error)
 		return nil, args[1:], nil
 	}
 	stmt, err, _ := db.sg.Do(query, func() (any, error) {
-		// Look if statement already exists
-		st, ok := db.psc.Get(query)
-		if ok {
+		// Check cache
+		if st, ok := db.psc.Get(query); ok {
 			return st, nil
 		}
 		// ... otherwise prepare ...
-		st, err := db.db.Prepare(query)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		st, err := db.db.PrepareContext(ctx, query)
 		if err != nil {
 			return nil, err
 		}
-		// ... and store it
-		db.psc.Set(query, st, 1)
+		db.psc.SetWithTTL(query, st, 1, 1*time.Minute)
 		return st, nil
 	})
 	if err != nil {
@@ -216,19 +197,14 @@ func (db *database) Exec(query string, args ...any) (sql.Result, error) {
 	return db.ExecContext(context.Background(), query, args...)
 }
 
-func (db *database) ExecContext(c context.Context, query string, args ...any) (sql.Result, error) {
+func (db *database) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
-	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
-	// Lock execution
-	db.em.Lock()
-	defer db.em.Unlock()
-	// Prepare context, call hook
-	ctx := db.dbBefore(c, query, args...)
+	ctx = db.dbBefore(ctx, query, args...)
 	defer db.dbAfter(ctx, query, args...)
-	// Execute
+
 	if st != nil {
 		return st.ExecContext(ctx, args...)
 	}
@@ -239,22 +215,19 @@ func (db *database) Query(query string, args ...any) (*sql.Rows, error) {
 	return db.QueryContext(context.Background(), query, args...)
 }
 
-func (db *database) QueryContext(c context.Context, query string, args ...any) (rows *sql.Rows, err error) {
+func (db *database) QueryContext(ctx context.Context, query string, args ...any) (rows *sql.Rows, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
-	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
-	// Prepare context, call hook
-	ctx := db.dbBefore(c, query, args...)
-	// Query
+	ctx = db.dbBefore(ctx, query, args...)
+	defer db.dbAfter(ctx, query, args...)
+
 	if st != nil {
 		rows, err = st.QueryContext(ctx, args...)
 	} else {
 		rows, err = db.db.QueryContext(ctx, query, args...)
 	}
-	// Call hook
-	db.dbAfter(ctx, query, args...)
 	return
 }
 
@@ -262,27 +235,44 @@ func (db *database) QueryRow(query string, args ...any) (*sql.Row, error) {
 	return db.QueryRowContext(context.Background(), query, args...)
 }
 
-func (db *database) QueryRowContext(c context.Context, query string, args ...any) (row *sql.Row, err error) {
+func (db *database) QueryRowContext(ctx context.Context, query string, args ...any) (row *sql.Row, err error) {
 	if db == nil || db.db == nil {
 		return nil, errors.New("database not initialized")
 	}
-	// Maybe prepare
 	st, args, _ := db.prepare(query, args...)
-	// Prepare context, call hook
-	ctx := db.dbBefore(c, query, args...)
-	// Query
+	ctx = db.dbBefore(ctx, query, args...)
+	defer db.dbAfter(ctx, query, args...)
+
 	if st != nil {
 		row = st.QueryRowContext(ctx, args...)
 	} else {
 		row = db.db.QueryRowContext(ctx, query, args...)
 	}
-	// Call hook
-	db.dbAfter(ctx, query, args...)
 	return
 }
 
-// Other things
+func (db *database) dump(file string) {
+	if db == nil || db.db == nil {
+		return
+	}
+	f, err := os.Create(file)
+	if err != nil {
+		db.a.error("Error while dump db", "err", err)
+		return
+	}
+	defer f.Close()
+	if err = sqlite3dump.DumpDB(db.db, f, sqlite3dump.WithTransaction(true)); err != nil {
+		db.a.error("Error while dump db", "err", err)
+	}
+}
 
-func (d *database) rebuildFTSIndex() {
-	_, _ = d.Exec("insert into posts_fts(posts_fts) values ('rebuild')")
+func (db *database) close() error {
+	if db == nil || db.db == nil {
+		return nil
+	}
+	return db.db.Close()
+}
+
+func (db *database) rebuildFTSIndex() {
+	_, _ = db.Exec("insert into posts_fts(posts_fts) values ('rebuild')")
 }
