@@ -14,6 +14,7 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/pool"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/httpcachetransport"
 )
 
@@ -57,7 +58,7 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 		Timeout: 30 * time.Second,
 		Transport: httpcachetransport.NewHttpCacheTransportNoBody(gzhttp.Transport(&http.Transport{
 			DisableKeepAlives: true, MaxConnsPerHost: 1,
-		}), cache, 60*time.Minute),
+		}), cache, 60*time.Minute, 5*bodylimit.MB),
 	}
 	// Process all links
 	type checkresult struct {

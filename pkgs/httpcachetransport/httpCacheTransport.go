@@ -3,6 +3,7 @@ package httpcachetransport
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"time"
@@ -15,6 +16,7 @@ type httpCacheTransport struct {
 	ristrettoCache *ristretto.Cache
 	ttl            time.Duration
 	body           bool
+	maxSize        int64
 }
 
 func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -26,9 +28,22 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 			}
 		}
 	}
+
 	resp, err := t.parent.RoundTrip(r)
 	if err == nil && t.ristrettoCache != nil {
-		respBytes, err := httputil.DumpResponse(resp, t.body)
+		// Limit the response size
+		limitedResp := &http.Response{
+			Status:        resp.Status,
+			StatusCode:    resp.StatusCode,
+			Proto:         resp.Proto,
+			ProtoMajor:    resp.ProtoMajor,
+			ProtoMinor:    resp.ProtoMinor,
+			Header:        resp.Header,
+			Body:          io.NopCloser(io.LimitReader(resp.Body, t.maxSize)),
+			ContentLength: -1,
+		}
+
+		respBytes, err := httputil.DumpResponse(limitedResp, t.body)
 		if err != nil {
 			return resp, err
 		}
@@ -41,11 +56,11 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 
 // Creates a new http.RoundTripper that caches all
 // request responses (by the request URL) in ristretto.
-func NewHttpCacheTransport(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration) http.RoundTripper {
-	return &httpCacheTransport{parent, ristrettoCache, ttl, true}
+func NewHttpCacheTransport(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration, maxSize int64) http.RoundTripper {
+	return &httpCacheTransport{parent, ristrettoCache, ttl, true, maxSize}
 }
 
 // Like NewHttpCacheTransport but doesn't cache body
-func NewHttpCacheTransportNoBody(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration) http.RoundTripper {
-	return &httpCacheTransport{parent, ristrettoCache, ttl, false}
+func NewHttpCacheTransportNoBody(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration, maxSize int64) http.RoundTripper {
+	return &httpCacheTransport{parent, ristrettoCache, ttl, false, maxSize}
 }

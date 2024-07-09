@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
 	"go.goblog.app/app/pkgs/plugintypes"
@@ -36,6 +37,7 @@ func (a *goBlog) startServer() (err error) {
 	a.reloadRouter()
 	// Set basic middlewares
 	h := alice.New()
+	h = h.Append(bodylimit.BodyLimit(100 * bodylimit.MB))
 	h = h.Append(middleware.Heartbeat("/ping"))
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)

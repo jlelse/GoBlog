@@ -11,6 +11,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"github.com/dgraph-io/ristretto"
 	"github.com/stretchr/testify/assert"
+	"go.goblog.app/app/pkgs/bodylimit"
 )
 
 const fakeResponse = `HTTP/1.1 200 OK
@@ -37,7 +38,7 @@ func TestHttpCacheTransport(t *testing.T) {
 	})
 
 	client := &http.Client{
-		Transport: NewHttpCacheTransport(orig, cache, time.Minute),
+		Transport: NewHttpCacheTransport(orig, cache, time.Minute, bodylimit.KB),
 	}
 
 	err := requests.URL("https://example.com/").Client(client).Fetch(context.Background())

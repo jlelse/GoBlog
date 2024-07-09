@@ -11,6 +11,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
 	"github.com/dgraph-io/ristretto"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/httpcachetransport"
@@ -43,7 +44,7 @@ func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, e
 		ToWriter(pw)
 	if cache {
 		a.initMicroformatsCache()
-		rb.Transport(httpcachetransport.NewHttpCacheTransport(a.httpClient.Transport, a.mfCache, 10*time.Minute))
+		rb.Transport(httpcachetransport.NewHttpCacheTransport(a.httpClient.Transport, a.mfCache, time.Minute, 5*bodylimit.MB))
 	}
 	go func() {
 		_ = pw.CloseWithError(rb.Fetch(context.Background()))
