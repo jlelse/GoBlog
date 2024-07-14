@@ -11,16 +11,16 @@ require (
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
-	github.com/carlmjohnson/requests v0.23.5
+	github.com/carlmjohnson/requests v0.24.1
 	github.com/dchest/captcha v1.0.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
-	github.com/emersion/go-smtp v0.21.2
+	github.com/emersion/go-smtp v0.21.3
 	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/client v0.0.0-20240408093509-f0721baa55c2
+	github.com/go-ap/client v0.0.0-20240710145250-eec2de3441ed
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
@@ -42,14 +42,14 @@ require (
 	github.com/paulmach/go.geojson v1.5.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.4.0
-	github.com/samber/lo v1.44.0
+	github.com/samber/lo v1.45.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.6.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tdewolff/minify/v2 v2.20.36
+	github.com/tdewolff/minify/v2 v2.20.37
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
@@ -58,7 +58,7 @@ require (
 	github.com/xhit/go-simple-mail/v2 v2.16.0
 	github.com/yuin/goldmark v1.7.4
 	github.com/yuin/goldmark-emoji v1.0.3
-	go.hacdias.com/indielib v0.3.0
+	go.hacdias.com/indielib v0.3.1
 	golang.org/x/crypto v0.25.0
 	golang.org/x/net v0.27.0
 	golang.org/x/sync v0.7.0
@@ -70,6 +70,7 @@ require (
 )
 
 require (
+	git.sr.ht/~mariusor/cache v0.0.0-20240710145102-0547ec402138 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
@@ -77,12 +78,12 @@ require (
 	github.com/boombuler/barcode v1.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dlclark/regexp2 v1.11.1 // indirect
+	github.com/dlclark/regexp2 v1.11.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0 // indirect
-	github.com/golang/glog v1.2.1 // indirect
+	github.com/golang/glog v1.2.2 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect

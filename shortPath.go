@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -41,7 +42,8 @@ func (db *database) shortenPath(p string) (string, error) {
 			return nil, err
 		}
 		// Cache result
-		db.spc.Set(p, sp, 1)
+		db.spc.SetWithTTL(p, sp, 1, 6*time.Hour)
+		db.spc.Wait()
 		return sp, nil
 	})
 	if err != nil {

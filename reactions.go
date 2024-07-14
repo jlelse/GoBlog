@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
@@ -132,7 +133,8 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 			reactions[reaction] = count
 		}
 		// Cache result
-		a.reactionsCache.Set(path, reactions, 1)
+		a.reactionsCache.SetWithTTL(path, reactions, 1, 6*time.Hour)
+		a.reactionsCache.Wait()
 		return reactions, nil
 	})
 	if err != nil || res == nil {

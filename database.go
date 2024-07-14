@@ -180,6 +180,7 @@ func (db *database) prepare(query string, args ...any) (*sql.Stmt, []any, error)
 			return nil, err
 		}
 		db.psc.SetWithTTL(query, st, 1, 1*time.Minute)
+		db.psc.Wait()
 		return st, nil
 	})
 	if err != nil {

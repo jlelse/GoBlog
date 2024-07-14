@@ -193,10 +193,12 @@ func (c *cache) getCache(key string, next http.Handler, r *http.Request) *cacheI
 	if cch := item.header.Get(cacheControl); !containsStrings(cch, "no-store", "private", "no-cache") {
 		cost := int64(item.cost())
 		if item.expiration == 0 {
-			c.c.Set(key, item, cost)
+			// Cache items max. 6 hours
+			c.c.SetWithTTL(key, item, cost, 6*time.Hour)
 		} else {
 			c.c.SetWithTTL(key, item, cost, time.Duration(item.expiration)*time.Second)
 		}
+		c.c.Wait()
 	}
 	return item
 }
