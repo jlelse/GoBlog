@@ -35,10 +35,10 @@ func Test_cacheItem_cost(t *testing.T) {
 		body: []byte("<html>abcdefghijklmnopqrstuvwxyz</html>"),
 		eTag: "abc",
 	}
-	bodyLen := len(ci.body)
-	assert.Equal(t, 39, bodyLen)
-	eTagLen := len(ci.eTag)
-	assert.Equal(t, 3, eTagLen)
+	bodyLen := int64(len(ci.body))
+	assert.Equal(t, int64(39), bodyLen)
+	eTagLen := int64(len(ci.eTag))
+	assert.Equal(t, int64(3), eTagLen)
 	assert.Greater(t, ci.cost(), bodyLen+eTagLen)
 }
 
@@ -46,7 +46,7 @@ func Benchmark_cacheKey(b *testing.B) {
 	req := httptest.NewRequest(http.MethodGet, "/abc?abc=def&hij=klm", nil)
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
-			cacheKey(req)
+			generateCacheKey(req)
 		}
 	})
 }
@@ -64,6 +64,6 @@ func Benchmark_cache_getCache(b *testing.B) {
 		_, _ = w.Write([]byte("abcdefghijklmnopqrstuvwxyz"))
 	})
 	for i := 0; i < b.N; i++ {
-		c.getCache(strconv.Itoa(i), handler, req)
+		c.getOrCreateCache(strconv.Itoa(i), handler, req)
 	}
 }

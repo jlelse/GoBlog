@@ -85,14 +85,13 @@ func (a *goBlog) verifyMention(m *mention) error {
 		if err != nil {
 			return err
 		}
-		defer sourceResp.Body.Close()
 	} else {
 		sourceResp, err = a.httpClient.Do(sourceReq)
 		if err != nil {
 			return err
 		}
-		defer sourceResp.Body.Close()
 	}
+	defer sourceResp.Body.Close()
 	// Check if source has a valid status code
 	if sourceResp.StatusCode != http.StatusOK {
 		a.debug("Delete webmention because source doesn't have valid status code", "source", m.Source)

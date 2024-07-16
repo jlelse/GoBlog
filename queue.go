@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,11 +12,13 @@ import (
 )
 
 type queueItem struct {
-	schedule time.Time
+	id       int
 	name     string
 	content  []byte
-	id       int
+	schedule time.Time
 }
+
+type queueProcessFunc func(qi *queueItem, dequeue func(), reschedule func(time.Duration))
 
 func (a *goBlog) enqueue(name string, content []byte, schedule time.Time) error {
 	if len(content) == 0 {
@@ -27,10 +30,7 @@ func (a *goBlog) enqueue(name string, content []byte, schedule time.Time) error 
 		sql.Named("content", content),
 		sql.Named("schedule", schedule.UTC().Format(time.RFC3339Nano)),
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (a *goBlog) reschedule(qi *queueItem, dur time.Duration) error {
@@ -58,75 +58,86 @@ func (a *goBlog) peekQueue(ctx context.Context, name string) (*queueItem, error)
 	if err != nil {
 		return nil, err
 	}
-	qi := &queueItem{}
+
+	var qi queueItem
 	var timeString string
-	if err = row.Scan(&qi.id, &qi.name, &qi.content, &timeString); err != nil {
+	if err := row.Scan(&qi.id, &qi.name, &qi.content, &timeString); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("scan queue item: %w", err)
 	}
+
 	t, err := dateparse.ParseIn(timeString, time.UTC)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse schedule time: %w", err)
 	}
 	qi.schedule = t
-	return qi, nil
-}
 
-type queueProcessFunc func(qi *queueItem, dequeue func(), reschedule func(time.Duration))
+	return &qi, nil
+}
 
 func (a *goBlog) listenOnQueue(queueName string, wait time.Duration, process queueProcessFunc) {
 	if process == nil {
 		return
 	}
 
-	endQueue := false
-	queueContext, cancelQueueContext := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
-
 	a.shutdown.Add(func() {
-		endQueue = true
-		cancelQueueContext()
+		cancel()
 		wg.Wait()
 	})
 
 	wg.Add(1)
 	go func() {
-	queueLoop:
-		for {
-			if endQueue {
-				break queueLoop
-			}
-			qi, err := a.peekQueue(queueContext, queueName)
-			if err != nil {
-				a.error("queue peek error", "err", err)
-				continue queueLoop
-			}
-			if qi == nil {
-				// No item in the queue, wait a moment
-				select {
-				case <-time.After(wait):
-					continue queueLoop
-				case <-queueContext.Done():
-					break queueLoop
-				}
-			}
-			process(
-				qi,
-				func() {
-					if err := a.dequeue(qi); err != nil {
-						a.error("queue dequeue error", "err", err)
-					}
-				},
-				func(dur time.Duration) {
-					if err := a.reschedule(qi, dur); err != nil {
-						a.error("queue reschedule error", "err", err)
-					}
-				},
-			)
-		}
-		a.info("stopped queue", "name", queueName)
+		a.processQueue(ctx, queueName, wait, process)
 		wg.Done()
+		a.info("stopped queue", "name", queueName)
 	}()
+}
+
+func (a *goBlog) processQueue(ctx context.Context, queueName string, wait time.Duration, process queueProcessFunc) {
+	for ctx.Err() == nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := a.processQueueItem(ctx, queueName, wait, process); err != nil {
+				a.error("process queue item", "err", err)
+			}
+		}
+	}
+}
+
+func (a *goBlog) processQueueItem(ctx context.Context, queueName string, wait time.Duration, process queueProcessFunc) error {
+	qi, err := a.peekQueue(ctx, queueName)
+	if err != nil {
+		return fmt.Errorf("peek queue: %w", err)
+	}
+
+	if qi == nil {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(wait):
+			return nil
+		}
+	}
+
+	process(
+		qi,
+		func() {
+			if err := a.dequeue(qi); err != nil {
+				a.error("queue dequeue error", "err", err)
+			}
+		},
+		func(dur time.Duration) {
+			if err := a.reschedule(qi, dur); err != nil {
+				a.error("queue reschedule error", "err", err)
+			}
+		},
+	)
+
+	return nil
 }

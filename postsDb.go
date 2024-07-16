@@ -210,7 +210,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Build SQL
 	sqlBuilder := builderpool.Get()
 	defer builderpool.Put(sqlBuilder)
-	var sqlArgs = []any{dbNoCache}
+	var sqlArgs = []any{}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
 	// Update or create post
@@ -264,7 +264,7 @@ func (a *goBlog) deletePost(path string) error {
 		// Post is already marked as deleted, delete it from database
 		if _, err = a.db.Exec(
 			`begin;	delete from posts where path = ?; insert or ignore into deleted (path) values (?); commit;`,
-			dbNoCache, p.Path, p.Path, p.Path,
+			p.Path, p.Path, p.Path,
 		); err != nil {
 			return err
 		}
@@ -285,7 +285,7 @@ func (a *goBlog) deletePost(path string) error {
 		// Mark post as deleted
 		if _, err = a.db.Exec(
 			`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; insert into post_parameters (path, parameter, value) values (?, 'deleted', ?); commit;`,
-			dbNoCache, p.Status, p.Path, p.Path, p.Path, deletedTime,
+			p.Status, p.Path, p.Path, p.Path, deletedTime,
 		); err != nil {
 			return err
 		}
@@ -318,7 +318,7 @@ func (a *goBlog) undeletePost(path string) error {
 	// Update database
 	if _, err = a.db.Exec(
 		`begin;	update posts set status = ? where path = ?; delete from post_parameters where path = ? and parameter = 'deleted'; commit;`,
-		dbNoCache, p.Status, p.Path, p.Path,
+		p.Status, p.Path, p.Path,
 	); err != nil {
 		return err
 	}
@@ -340,7 +340,7 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	// Build SQL
 	sqlBuilder := builderpool.Get()
 	defer builderpool.Put(sqlBuilder)
-	var sqlArgs = []any{dbNoCache}
+	var sqlArgs = []any{}
 	// Start transaction
 	sqlBuilder.WriteString("begin;")
 	// Delete old post
@@ -742,7 +742,7 @@ group by name;
 `
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
-	sqlArgs := []any{dbNoCache}
+	sqlArgs := []any{}
 	nameValues := builderpool.Get()
 	defer builderpool.Put(nameValues)
 	for i, n := range names {

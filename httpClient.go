@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"net/http"
 	"time"
 
@@ -13,6 +14,18 @@ func newHttpClient() *http.Client {
 		Transport: newAddUserAgentTransport(
 			gzhttp.Transport(
 				&http.Transport{
+					// Default
+					Proxy:                 http.ProxyFromEnvironment,
+					ForceAttemptHTTP2:     true,
+					MaxIdleConns:          100,
+					IdleConnTimeout:       90 * time.Second,
+					TLSHandshakeTimeout:   10 * time.Second,
+					ExpectContinueTimeout: 1 * time.Second,
+					DialContext: (&net.Dialer{
+						Timeout:   30 * time.Second,
+						KeepAlive: 30 * time.Second,
+					}).DialContext,
+					// Custom
 					DisableKeepAlives: true,
 				},
 			),
@@ -21,14 +34,14 @@ func newHttpClient() *http.Client {
 }
 
 type addUserAgentTransport struct {
-	t http.RoundTripper
+	parent http.RoundTripper
 }
 
 func (t *addUserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Header.Set(userAgent, appUserAgent)
-	return t.t.RoundTrip(r)
+	return t.parent.RoundTrip(r)
 }
 
-func newAddUserAgentTransport(t http.RoundTripper) *addUserAgentTransport {
-	return &addUserAgentTransport{t}
+func newAddUserAgentTransport(parent http.RoundTripper) *addUserAgentTransport {
+	return &addUserAgentTransport{parent}
 }

@@ -1,16 +1,17 @@
 package main
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"go.goblog.app/app/pkgs/tor"
 )
 
@@ -43,10 +44,13 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	a.cache.purge()
 	// Serve handler
 	s := &http.Server{
-		Handler:           middleware.WithValue(torUsedKey, true)(h),
+		Handler:           h,
 		ReadHeaderTimeout: 1 * time.Minute,
 		ReadTimeout:       5 * time.Minute,
 		WriteTimeout:      5 * time.Minute,
+		BaseContext: func(_ net.Listener) context.Context {
+			return context.WithValue(context.Background(), torUsedKey, true)
+		},
 	}
 	a.shutdown.Add(a.shutdownServer(s, "tor"))
 	a.shutdown.Add(func() {

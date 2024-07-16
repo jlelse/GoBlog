@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -368,23 +367,6 @@ func saveToFile(reader io.Reader, fileName string) error {
 	// Close file again
 	_ = out.Close()
 	return err
-}
-
-//nolint:containedctx
-type valueOnlyContext struct {
-	context.Context
-}
-
-func (valueOnlyContext) Deadline() (deadline time.Time, ok bool) {
-	return
-}
-
-func (valueOnlyContext) Done() <-chan struct{} {
-	return nil
-}
-
-func (valueOnlyContext) Err() error {
-	return nil
 }
 
 var timeDiffLocaleMap = map[string]tdl.Locale{}
