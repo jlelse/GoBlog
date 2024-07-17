@@ -18,8 +18,6 @@ func Test_shortenPath(t *testing.T) {
 	res1, err := db.shortenPath("/a")
 	require.NoError(t, err)
 
-	db.spc.Del("/a")
-
 	res2, err := db.shortenPath("/a")
 	require.NoError(t, err)
 
@@ -38,7 +36,6 @@ func Test_shortenPath(t *testing.T) {
 	assert.Equal(t, res2, res4)
 	assert.Equal(t, "/s/1", res4)
 
-	db.spc.Del("/a")
 	_, _ = db.Exec("delete from shortpath where id = 1")
 
 	res5, err := db.shortenPath("/c")

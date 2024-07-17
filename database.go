@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/google/uuid"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/schollz/sqlite3dump"
@@ -22,7 +21,6 @@ type database struct {
 	pc    singleflight.Group // persistant cache
 	pcm   sync.Mutex         // post creation
 	sp    singleflight.Group // singleflight group for short path requests
-	spc   *ristretto.Cache   // shortpath cache
 	debug bool
 }
 
@@ -108,21 +106,10 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 		return nil, err
 	}
 
-	spc, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters:        5000,
-		MaxCost:            500,
-		BufferItems:        64,
-		IgnoreInternalCost: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return &database{
 		a:     a,
 		db:    db,
 		debug: a.cfg.Db != nil && a.cfg.Db.Debug,
-		spc:   spc,
 	}, nil
 }
 
@@ -185,6 +172,64 @@ func (db *database) QueryRowContext(ctx context.Context, query string, args ...a
 	defer db.dbAfter(ctx, query, args...)
 
 	return db.db.QueryRowContext(ctx, query, args...), nil
+}
+
+type transaction struct {
+	tx *sql.Tx
+	db *database
+}
+
+func (db *database) Begin() (*transaction, error) {
+	return db.BeginTx(context.Background(), nil)
+}
+
+func (db *database) BeginTx(ctx context.Context, opts *sql.TxOptions) (*transaction, error) {
+	if db == nil || db.db == nil {
+		return nil, errors.New("database not initialized")
+	}
+	tx, err := db.db.BeginTx(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return &transaction{tx: tx, db: db}, nil
+}
+
+func (tx *transaction) Exec(query string, args ...any) (sql.Result, error) {
+	return tx.ExecContext(context.Background(), query, args...)
+}
+
+func (tx *transaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	ctx = tx.db.dbBefore(ctx, query, args...)
+	defer tx.db.dbAfter(ctx, query, args...)
+	return tx.tx.ExecContext(ctx, query, args...)
+}
+
+func (tx *transaction) Query(query string, args ...any) (*sql.Rows, error) {
+	return tx.QueryContext(context.Background(), query, args...)
+}
+
+func (tx *transaction) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	ctx = tx.db.dbBefore(ctx, query, args...)
+	defer tx.db.dbAfter(ctx, query, args...)
+	return tx.tx.QueryContext(ctx, query, args...)
+}
+
+func (tx *transaction) QueryRow(query string, args ...any) *sql.Row {
+	return tx.QueryRowContext(context.Background(), query, args...)
+}
+
+func (tx *transaction) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	ctx = tx.db.dbBefore(ctx, query, args...)
+	defer tx.db.dbAfter(ctx, query, args...)
+	return tx.tx.QueryRowContext(ctx, query, args...)
+}
+
+func (tx *transaction) Commit() error {
+	return tx.tx.Commit()
+}
+
+func (tx *transaction) Rollback() error {
+	return tx.tx.Rollback()
 }
 
 func (db *database) dump(file string) {

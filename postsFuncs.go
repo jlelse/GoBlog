@@ -20,7 +20,7 @@ func (a *goBlog) fullPostURL(p *post) string {
 func (a *goBlog) shortPostURL(p *post) string {
 	s, err := a.db.shortenPath(p.Path)
 	if err != nil {
-		return ""
+		return p.Path
 	}
 	if a.cfg.Server.ShortPublicAddress != "" {
 		return a.cfg.Server.ShortPublicAddress + s

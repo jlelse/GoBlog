@@ -3,51 +3,58 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"time"
-
-	"github.com/mattn/go-sqlite3"
+	"fmt"
 )
 
 func (db *database) shortenPath(p string) (string, error) {
 	if p == "" {
 		return "", errors.New("empty path")
 	}
-	spi, err, _ := db.sp.Do(p, func() (any, error) {
-		// Check if already cached
-		if spi, ok := db.spc.Get(p); ok {
-			return spi.(string), nil
-		}
-		// Insert in case it isn't shortened yet
-		_, err := db.Exec(`
-		insert or rollback into shortpath (id, path)
-		values (
-			-- next available id (reuse skipped ids due to bug)
-			(select min(id) + 1 from (select id from shortpath union all select 0) where id + 1 not in (select id from shortpath)),
-			@path
-		)`, sql.Named("path", p))
-		if err != nil {
-			if no, ok := err.(sqlite3.Error); !ok || sqlite3.ErrNo(no.ExtendedCode) != sqlite3.ErrNo(sqlite3.ErrConstraintUnique) {
-				// Some other error than unique constraint violation because path is already shortened
-				return nil, err
-			}
-		}
-		// Query short path
-		row, err := db.QueryRow("select printf('/s/%x', id) from shortpath where path = @path", sql.Named("path", p))
-		if err != nil {
-			return nil, err
-		}
-		var sp string
-		err = row.Scan(&sp)
-		if err != nil {
-			return nil, err
-		}
-		// Cache result
-		db.spc.SetWithTTL(p, sp, 1, 6*time.Hour)
-		db.spc.Wait()
-		return sp, nil
+
+	// Use singleflight to deduplicate concurrent requests and handle caching
+	v, err, _ := db.sp.Do(p, func() (interface{}, error) {
+		return db.shortenPathTransaction(p)
 	})
+
 	if err != nil {
 		return "", err
 	}
-	return spi.(string), nil
+
+	return v.(string), nil
+}
+
+func (db *database) shortenPathTransaction(p string) (string, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	var id int64
+	err = tx.QueryRow("select id from shortpath where path = @path", sql.Named("path", p)).Scan(&id)
+	if err == sql.ErrNoRows {
+		// Path doesn't exist, insert new entry
+		result, err := tx.Exec(`
+            insert into shortpath (id, path)
+			values (
+				(select min(id) + 1 from (select id from shortpath union all select 0) where id + 1 not in (select id from shortpath)),
+				@path
+			)
+        `, sql.Named("path", p))
+		if err != nil {
+			return "", err
+		}
+		id, err = result.LastInsertId()
+		if err != nil {
+			return "", err
+		}
+	} else if err != nil {
+		return "", err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("/s/%x", id), nil
 }
