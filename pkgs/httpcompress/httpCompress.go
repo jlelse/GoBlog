@@ -16,7 +16,7 @@ import (
 var (
 	zstdWriterPool = sync.Pool{
 		New: func() interface{} {
-			w, _ := zstd.NewWriter(nil)
+			w, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
 			return w
 		},
 	}
@@ -132,11 +132,11 @@ func (cw *compressWriter) Close() (err error) {
 	if cw.writer != nil {
 		if zw, ok := cw.writer.(*zstd.Encoder); ok {
 			err = zw.Close()
-			zw.Reset(io.Discard)
+			zw.Reset(nil)
 			zstdWriterPool.Put(zw)
 		} else if gw, ok := cw.writer.(*gzip.Writer); ok {
 			err = gw.Close()
-			gw.Reset(io.Discard)
+			gw.Reset(nil)
 			gzipWriterPool.Put(gw)
 		}
 		cw.writer = nil

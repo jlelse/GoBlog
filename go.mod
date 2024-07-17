@@ -42,7 +42,7 @@ require (
 	github.com/paulmach/go.geojson v1.5.0
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.4.0
-	github.com/samber/lo v1.45.0
+	github.com/samber/lo v1.46.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
@@ -64,7 +64,7 @@ require (
 	golang.org/x/sync v0.7.0
 	golang.org/x/text v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.18.1
+	maunium.net/go/mautrix v0.19.0
 	nhooyr.io/websocket v1.8.11
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
@@ -117,9 +117,9 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.mau.fi/util v0.5.0 // indirect
+	go.mau.fi/util v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
+	golang.org/x/exp v0.0.0-20240716175740-e3f259677ff7 // indirect
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
