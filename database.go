@@ -20,7 +20,7 @@ type database struct {
 	// Other things
 	pc    singleflight.Group // persistant cache
 	pcm   sync.Mutex         // post creation
-	sp    singleflight.Group // singleflight group for short path requests
+	sp    sync.Mutex         // short path creation
 	debug bool
 }
 
