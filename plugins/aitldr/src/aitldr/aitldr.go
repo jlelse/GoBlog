@@ -78,6 +78,20 @@ func (p *plugin) Prio() int {
 const postParam = "aitldr"
 
 func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document) {
+	// Add re-generation button
+	if renderContext.IsLoggedIn() {
+		buttonBuf := bufferpool.Get()
+		defer bufferpool.Put(buttonBuf)
+		buttonHw := htmlbuilder.NewHtmlBuilder(buttonBuf)
+		buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aitldr")
+		buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
+		buttonHw.WriteElementOpen("input", "type", "submit", "value", "Regenerate AI summary")
+		buttonHw.WriteElementClose("form")
+
+		doc.Find("#posteditactions").AppendHtml(buttonBuf.String())
+	}
+
+	// If the post has a summary, display it
 	tldr := post.GetFirstParameterValue(postParam)
 	if tldr == "" {
 		return
@@ -107,18 +121,6 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	hw.WriteElementsClose("i", "div")
 
 	doc.Find(".h-entry > article > .e-content").BeforeHtml(buf.String())
-
-	if renderContext.IsLoggedIn() {
-		buttonBuf := bufferpool.Get()
-		defer bufferpool.Put(buttonBuf)
-		buttonHw := htmlbuilder.NewHtmlBuilder(buttonBuf)
-		buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aitldr")
-		buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
-		buttonHw.WriteElementOpen("input", "type", "submit", "value", "Regenerate AI summary")
-		buttonHw.WriteElementClose("form")
-
-		doc.Find("#posteditactions").AppendHtml(buttonBuf.String())
-	}
 }
 
 const customCSS = ".aitldr { border: 1px dashed; padding: 1em; }"
@@ -213,15 +215,21 @@ func (p *plugin) summarize(post plugintypes.Post) {
 }
 
 func (p *plugin) systemMessage() string {
-	prompt := "You are a summary writing plugin in a blogging system. " +
-		"Your task is to generate concise and effective summaries for long blog posts. " +
-		"When given a full blog post, extract the key points and present them in a clear, brief format. " +
-		"The summary must be in the same language as the blog post, have a maximum length of 250 characters, contain no linebreaks, and be plain text. " +
-		"Importantly, the summary should be written in the first person perspective, as if the blog author themselves are summarizing the post. " +
-		"Avoid phrases like 'The author states' or 'The blogger argues', and instead write as if the author is speaking. " +
-		"Maintain the original intent and tone of the blog post in your summary. " +
-		"Always respond with just the summary content."
-	return prompt
+	return `You are a summary writing plugin for a blogging platform.
+
+Your task is to generate concise, first-person perspective summaries for lengthy blog posts, ensuring they capture the essence of the original content.
+
+Guidelines:
+1. Extract key points and present them in a clear, brief format.
+2. Summaries must be in the same language as the blog post.
+3. Limit the summary to a maximum of 250 characters, with no linebreaks.
+4. Provide plain text without any formatting.
+5. Write in the first person as if the author is summarizing their own post.
+6. Avoid phrases like 'The author states' or 'The blogger argues.' Write as though the author is speaking directly.
+7. Maintain the original intent and tone of the blog post.
+8. If the blog post is shorter than 250 characters, return the original content as the summary.
+
+Respond only with the summary content.`
 }
 
 func (p *plugin) createPrompt(post plugintypes.Post) string {
