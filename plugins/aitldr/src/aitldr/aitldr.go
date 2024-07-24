@@ -167,6 +167,12 @@ func (p *plugin) summarize(post plugintypes.Post) {
 		return
 	}
 
+	prompt := p.createPrompt(post)
+	if len(prompt) < 250 {
+		log.Println("aitldr: Skip summarizing as post is too short", post.GetPath())
+		return
+	}
+
 	var response apiResponse
 
 	model := "gpt-3.5-turbo"
@@ -186,7 +192,7 @@ func (p *plugin) summarize(post plugintypes.Post) {
 				},
 				{
 					Role:    "user",
-					Content: p.createPrompt(post),
+					Content: prompt,
 				},
 			},
 		}).
@@ -227,7 +233,6 @@ Guidelines:
 5. Write in the first person as if the author is summarizing their own post.
 6. Avoid phrases like 'The author states' or 'The blogger argues.' Write as though the author is speaking directly.
 7. Maintain the original intent and tone of the blog post.
-8. If the blog post is shorter than 250 characters, return the original content as the summary.
 
 Respond only with the summary content.`
 }
