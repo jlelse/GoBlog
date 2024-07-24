@@ -36,7 +36,7 @@ func Test_geoTrack(t *testing.T) {
 		},
 	}
 
-	resEn, err := app.getTrack(p, true)
+	resEn, err := app.getTrack(p)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, resEn.Paths)
@@ -46,7 +46,7 @@ func Test_geoTrack(t *testing.T) {
 
 	p.Blog = "de"
 
-	resDe, err := app.getTrack(p, true)
+	resDe, err := app.getTrack(p)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, resDe.Paths)
@@ -67,30 +67,11 @@ func Test_geoTrack(t *testing.T) {
 		},
 	}
 
-	resEn, err = app.getTrack(p, true)
+	resEn, err = app.getTrack(p)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, resEn.Paths)
 	assert.NotEmpty(t, resEn.Points)
-	assert.Equal(t, "0.08", resEn.Kilometers)
-	assert.Equal(t, "0:01:29", resEn.Hours)
-
-	// Test "privacy" feature to hide track
-
-	p = &post{
-		Blog: "en",
-		Parameters: map[string][]string{
-			"gpx":       {string(gpxBytes)},
-			"showroute": {"false"},
-		},
-	}
-
-	resEn, err = app.getTrack(p, p.showTrackRoute())
-	require.NoError(t, err)
-
-	assert.False(t, p.showTrackRoute())
-	assert.Empty(t, resEn.Paths)
-	assert.Empty(t, resEn.Points)
 	assert.Equal(t, "0.08", resEn.Kilometers)
 	assert.Equal(t, "0:01:29", resEn.Hours)
 
@@ -107,7 +88,7 @@ func Test_geoTrack(t *testing.T) {
 		},
 	}
 
-	resEn, err = app.getTrack(p, true)
+	resEn, err = app.getTrack(p)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, resEn.Paths)

@@ -2,7 +2,9 @@ package main
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -476,15 +478,23 @@ func (*goBlog) renderPostTitle(hb *htmlbuilder.HtmlBuilder, p *post) {
 	hb.WriteElementClose("h1")
 }
 
-func (a *goBlog) renderPostGPX(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+func (a *goBlog) renderPostTrack(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog, disableInteractiveMap bool) {
 	if p == nil || !p.hasTrack() {
 		return
 	}
-	track, err := a.getTrack(p, p.showTrackRoute())
+	track, err := a.getTrack(p)
 	if err != nil || track == nil {
 		return
 	}
-	// Track stats
+	a.renderPostTrackStatistics(hb, track, b)
+	if !disableInteractiveMap && p.showTrackRoute() && track.hasMapFeatures() {
+		a.renderPostTrackMap(hb, track)
+	} else if track.hasPath() {
+		a.renderPostTrackSVG(hb, track)
+	}
+}
+
+func (a *goBlog) renderPostTrackStatistics(hb *htmlbuilder.HtmlBuilder, track *trackResult, b *configBlog) {
 	hb.WriteElementOpen("p")
 	if track.Name != "" {
 		hb.WriteElementOpen("strong")
@@ -518,19 +528,60 @@ func (a *goBlog) renderPostGPX(hb *htmlbuilder.HtmlBuilder, p *post, b *configBl
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "meters"))
 	}
 	hb.WriteElementClose("p")
-	// Map (only show if it has features)
-	if track.hasMapFeatures() {
-		hb.WriteElementOpen(
-			"div", "id", "map", "class", "p",
-			"data-paths", track.PathsJSON,
-			"data-points", track.PointsJSON,
-			"data-minzoom", track.MinZoom, "data-maxzoom", track.MaxZoom,
-			"data-attribution", track.MapAttribution,
-		)
-		hb.WriteElementClose("div")
-		hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
-		hb.WriteElementClose("script")
+}
+
+func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HtmlBuilder, track *trackResult) {
+	pathsJSON, _ := json.Marshal(track.Paths)
+	pointsJSON, _ := json.Marshal(track.Points)
+	hb.WriteElementOpen(
+		"div", "id", "map", "class", "p",
+		"data-paths", string(pathsJSON),
+		"data-points", string(pointsJSON),
+		"data-minzoom", a.getMinZoom(),
+		"data-maxzoom", a.getMaxZoom(),
+		"data-attribution", a.getMapAttribution(),
+	)
+	hb.WriteElementClose("div")
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
+	hb.WriteElementClose("script")
+}
+
+func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackResult) {
+	const width, height = 700.0, 400.0
+	// Calculate min/max values
+	minLat, minLon := math.Inf(1), math.Inf(1)   // Positive infinity
+	maxLat, maxLon := math.Inf(-1), math.Inf(-1) // Negative infinity
+	for _, path := range track.Paths {
+		for _, point := range path {
+			minLat = math.Min(minLat, point.Lat)
+			maxLat = math.Max(maxLat, point.Lat)
+			minLon = math.Min(minLon, point.Lon)
+			maxLon = math.Max(maxLon, point.Lon)
+		}
 	}
+	// Calculate scaling and offsets
+	dataAspectRatio := (maxLon - minLon) / (maxLat - minLat)
+	svgAspectRatio := width / height
+	var scale, xOffset, yOffset float64
+	if dataAspectRatio > svgAspectRatio {
+		scale = width / (maxLon - minLon)
+		yOffset = (height - (maxLat-minLat)*scale) / 2
+	} else {
+		scale = height / (maxLat - minLat)
+		xOffset = (width - (maxLon-minLon)*scale) / 2
+	}
+	// Generate SVG
+	hb.WriteElementOpen("svg", "width", "100%", "viewbox", fmt.Sprintf("0 0 %.0f %.0f", width, height))
+	for _, path := range track.Paths {
+		hb.WriteString(`<polyline points="`)
+		for _, pt := range path {
+			x := xOffset + (pt.Lon-minLon)*scale
+			y := height - (yOffset + (pt.Lat-minLat)*scale)
+			hb.WriteString(fmt.Sprintf("%f,%f ", x, y))
+		}
+		hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)
+	}
+	hb.WriteElementClose("svg")
 }
 
 func (a *goBlog) renderPostReactions(hb *htmlbuilder.HtmlBuilder, p *post) {

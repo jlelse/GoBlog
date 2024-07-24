@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"math"
 
@@ -25,24 +24,24 @@ func (p *post) showTrackRoute() bool {
 }
 
 type trackResult struct {
-	Paths            [][]*trackPoint
-	PathsJSON        string
-	Points           []*trackPoint
-	PointsJSON       string
-	Kilometers       string
-	Hours            string
-	Uphill           string
-	Downhill         string
-	Name             string
-	MapAttribution   string
-	MinZoom, MaxZoom int
+	Paths      [][]*trackPoint
+	Points     []*trackPoint
+	Kilometers string
+	Hours      string
+	Uphill     string
+	Downhill   string
+	Name       string
+}
+
+func (t *trackResult) hasPath() bool {
+	return t.Paths != nil
 }
 
 func (t *trackResult) hasMapFeatures() bool {
-	return t.Points != nil || t.Paths != nil
+	return t.Points != nil || t.hasPath()
 }
 
-func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, err error) {
+func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	gpxString := p.firstParameter(gpxParameter)
 	if gpxString == "" {
 		return nil, errors.New("no gpx parameter in post")
@@ -63,27 +62,11 @@ func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, e
 		Name: parseResult.gpxData.Name,
 	}
 
-	if withMapFeatures {
-		// Add Paths
-		pathsJSON, err := json.Marshal(parseResult.paths)
-		if err != nil {
-			return nil, err
-		}
-		result.Paths = parseResult.paths
-		result.PathsJSON = string(pathsJSON)
-		// Add Points
-		pointsJSON, err := json.Marshal(parseResult.points)
-		if err != nil {
-			return nil, err
-		}
-		result.Points = parseResult.points
-		result.PointsJSON = string(pointsJSON)
-		// Map settings
-		result.MapAttribution = a.getMapAttribution()
-		result.MinZoom = a.getMinZoom()
-		result.MaxZoom = a.getMaxZoom()
-	}
-
+	// Add Paths
+	result.Paths = parseResult.paths
+	// Add Points
+	result.Points = parseResult.points
+	// Calculate moving statistics
 	if parseResult.md != nil {
 		result.Kilometers = lp.Sprintf("%.2f", parseResult.md.MovingDistance/1000)
 		result.Hours = lp.Sprintf(
@@ -93,7 +76,6 @@ func (a *goBlog) getTrack(p *post, withMapFeatures bool) (result *trackResult, e
 			math.Floor(math.Mod(parseResult.md.MovingTime, 60)),      // Seconds
 		)
 	}
-
 	if parseResult.ud != nil {
 		result.Uphill = lp.Sprintf("%.0f", parseResult.ud.Uphill)
 		result.Downhill = lp.Sprintf("%.0f", parseResult.ud.Downhill)
@@ -139,7 +121,7 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 			}
 			for _, point := range segment.Points {
 				path.points = append(path.points, &trackPoint{
-					Lat: point.GetLatitude(), Lon: point.GetLongitude(),
+					Lat: point.Latitude, Lon: point.Longitude,
 				})
 			}
 			paths = append(paths, path)
@@ -149,7 +131,7 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 		path := &trackPath{}
 		for _, point := range route.Points {
 			path.points = append(path.points, &trackPoint{
-				Lat: point.GetLatitude(), Lon: point.GetLongitude(),
+				Lat: point.Latitude, Lon: point.Longitude,
 			})
 		}
 		paths = append(paths, path)
@@ -182,7 +164,7 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 	result.points = []*trackPoint{}
 	for _, point := range result.gpxData.Waypoints {
 		result.points = append(result.points, &trackPoint{
-			Lat: point.GetLatitude(), Lon: point.GetLongitude(),
+			Lat: point.Latitude, Lon: point.Longitude,
 		})
 	}
 

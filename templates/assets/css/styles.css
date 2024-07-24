@@ -7,10 +7,10 @@
 }
 
 html {
+  scrollbar-color: var(--primary) transparent;
   --background: #fff;
   --primary: #000;
   color: #000;
-  scrollbar-color: var(--primary) transparent;
 }
 @media (prefers-color-scheme: dark) {
   html {

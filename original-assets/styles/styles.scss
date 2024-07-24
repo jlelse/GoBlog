@@ -36,11 +36,11 @@ $colors: (
 }
 
 html {
+  scrollbar-color: var(--primary) transparent;
   @include lightmode;
   @media (prefers-color-scheme: dark) {
     @include darkmode;
   }
-  scrollbar-color: var(--primary) transparent;
 }
 
 body {

@@ -73,7 +73,7 @@ func Test_getMaxZoom(t *testing.T) {
 		cfg: &config{},
 	}
 
-	assert.Equal(t, 20, app.getMaxZoom())
+	assert.Equal(t, 19, app.getMaxZoom())
 
 	app.cfg.MapTiles = &configMapTiles{
 		MaxZoom: 10,

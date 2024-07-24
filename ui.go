@@ -18,7 +18,7 @@ func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog
 	a.renderPostTitle(hb, p)
 	a.renderPostMeta(hb, p, bc, "preview")
 	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
-	// a.renderPostGPX(hb, p, bc)
+	a.renderPostTrack(hb, p, bc, true)
 	a.renderPostTax(hb, p, bc)
 }
 
@@ -919,7 +919,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// External Videp
 			a.renderPostVideo(hb, p)
 			// GPS Track
-			a.renderPostGPX(hb, p, rd.Blog)
+			a.renderPostTrack(hb, p, rd.Blog, false)
 			// Taxonomies
 			a.renderPostTax(hb, p, rd.Blog)
 			hb.WriteElementClose("article")

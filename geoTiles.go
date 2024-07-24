@@ -70,7 +70,7 @@ func (a *goBlog) getMaxZoom() int {
 	if c := a.cfg.MapTiles; c != nil && c.MaxZoom > 0 {
 		return c.MaxZoom
 	}
-	return 20
+	return 19
 }
 
 func (a *goBlog) getMapAttribution() string {

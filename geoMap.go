@@ -87,7 +87,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 
 	var tracks []*templateTrack
 	for _, p := range allPostsWithTracks {
-		if t, err := a.getTrack(p, true); err == nil && t != nil {
+		if t, err := a.getTrack(p); err == nil && t != nil {
 			tracks = append(tracks, &templateTrack{
 				Paths:  t.Paths,
 				Points: t.Points,
