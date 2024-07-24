@@ -10,6 +10,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/gpxhelper"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
 )
@@ -548,36 +549,37 @@ func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HtmlBuilder, track *trackRes
 
 func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackResult) {
 	const width, height = 700.0, 400.0
-	// Calculate min/max values
-	minLat, minLon := math.Inf(1), math.Inf(1)   // Positive infinity
-	maxLat, maxLon := math.Inf(-1), math.Inf(-1) // Negative infinity
+	// Calculate min/max values in Web Mercator projection
+	minX, minY := math.Inf(1), math.Inf(1)
+	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, path := range track.Paths {
 		for _, point := range path {
-			minLat = math.Min(minLat, point.Lat)
-			maxLat = math.Max(maxLat, point.Lat)
-			minLon = math.Min(minLon, point.Lon)
-			maxLon = math.Max(maxLon, point.Lon)
+			x, y := gpxhelper.WebMercatorX(point.Lon), gpxhelper.WebMercatorY(point.Lat)
+			minX = math.Min(minX, x)
+			maxX = math.Max(maxX, x)
+			minY = math.Min(minY, y)
+			maxY = math.Max(maxY, y)
 		}
 	}
 	// Calculate scaling and offsets
-	dataAspectRatio := (maxLon - minLon) / (maxLat - minLat)
+	dataAspectRatio := (maxX - minX) / (maxY - minY)
 	svgAspectRatio := width / height
 	var scale, xOffset, yOffset float64
 	if dataAspectRatio > svgAspectRatio {
-		scale = width / (maxLon - minLon)
-		yOffset = (height - (maxLat-minLat)*scale) / 2
+		scale = width / (maxX - minX)
+		yOffset = (height - (maxY-minY)*scale) / 2
 	} else {
-		scale = height / (maxLat - minLat)
-		xOffset = (width - (maxLon-minLon)*scale) / 2
+		scale = height / (maxY - minY)
+		xOffset = (width - (maxX-minX)*scale) / 2
 	}
 	// Generate SVG
 	hb.WriteElementOpen("svg", "width", "100%", "viewbox", fmt.Sprintf("0 0 %.0f %.0f", width, height))
 	for _, path := range track.Paths {
 		hb.WriteString(`<polyline points="`)
 		for _, pt := range path {
-			x := xOffset + (pt.Lon-minLon)*scale
-			y := height - (yOffset + (pt.Lat-minLat)*scale)
-			hb.WriteString(fmt.Sprintf("%f,%f ", x, y))
+			x := xOffset + (gpxhelper.WebMercatorX(pt.Lon)-minX)*scale
+			y := height - (yOffset + (gpxhelper.WebMercatorY(pt.Lat)-minY)*scale)
+			hb.WriteString(fmt.Sprintf("%.2f,%.2f ", x, y))
 		}
 		hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)
 	}
