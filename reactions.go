@@ -2,13 +2,17 @@ package main
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/builderpool"
+	"go.goblog.app/app/pkgs/contenttype"
 )
+
+const reactionsCacheTTL = 6 * time.Hour
 
 // Hardcoded for now
 var allowedReactions = []string{
@@ -57,11 +61,14 @@ func (a *goBlog) postReaction(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
+	// Save reaction
 	err := a.saveReaction(reaction, path)
 	if err != nil {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
+	// Return new values
+	a.getReactions(w, r)
 }
 
 func (a *goBlog) saveReaction(reaction, path string) error {
@@ -87,16 +94,17 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set(cacheControl, "no-store")
-	a.respondWithMinifiedJson(w, reactions)
+	w.Header().Set(contentType, contenttype.JSONUTF8)
+	io.WriteString(w, reactions)
 }
 
-func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
+func (a *goBlog) getReactionsFromDatabase(path string) (string, error) {
 	// Init
 	a.initReactions()
 	// Check cache
 	if val, cached := a.reactionsCache.Get(path); cached {
 		// Return from cache
-		return val.(map[string]int), nil
+		return val.(string), nil
 	}
 	// Get reactions
 	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
@@ -104,6 +112,7 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 		sqlBuf := builderpool.Get()
 		defer builderpool.Put(sqlBuf)
 		sqlArgs := []any{}
+		sqlBuf.WriteString("select json_group_object(reaction, count) as json_result from (")
 		sqlBuf.WriteString("select reaction, count from reactions where path=? and reaction in (")
 		sqlArgs = append(sqlArgs, path)
 		for i, reaction := range allowedReactions {
@@ -113,32 +122,25 @@ func (a *goBlog) getReactionsFromDatabase(path string) (map[string]int, error) {
 			sqlBuf.WriteString("?")
 			sqlArgs = append(sqlArgs, reaction)
 		}
-		sqlBuf.WriteString(") and path not in (select path from post_parameters where parameter=? and value=?)")
+		sqlBuf.WriteString(") and path not in (select path from post_parameters where parameter=? and value=?) and count > 0)")
 		sqlArgs = append(sqlArgs, reactionsPostParam, "false")
 		// Execute query
-		rows, err := a.db.Query(sqlBuf.String(), sqlArgs...)
+		row, err := a.db.QueryRow(sqlBuf.String(), sqlArgs...)
 		if err != nil {
 			return nil, err
 		}
-		// Build result
-		defer rows.Close()
-		reactions := map[string]int{}
-		for rows.Next() {
-			var reaction string
-			var count int
-			err = rows.Scan(&reaction, &count)
-			if err != nil {
-				return nil, err
-			}
-			reactions[reaction] = count
+		var jsonResult string
+		err = row.Scan(&jsonResult)
+		if err != nil {
+			return nil, err
 		}
 		// Cache result
-		a.reactionsCache.SetWithTTL(path, reactions, 1, 6*time.Hour)
+		a.reactionsCache.SetWithTTL(path, jsonResult, 1, reactionsCacheTTL)
 		a.reactionsCache.Wait()
-		return reactions, nil
+		return jsonResult, nil
 	})
 	if err != nil || res == nil {
-		return nil, err
+		return "", err
 	}
-	return res.(map[string]int), nil
+	return res.(string), nil
 }

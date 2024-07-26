@@ -42,8 +42,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	// Check if reaction count is 4
 	reacts, err := app.getReactionsFromDatabase("/testpost")
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(reacts))
-	assert.Equal(t, 4, reacts["❤️"])
+	assert.Equal(t, "{\"❤️\":4}", reacts)
 
 	// Change post path
 	err = app.replacePost(&post{
@@ -56,8 +55,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	// Check if reaction count is 4
 	reacts, err = app.getReactionsFromDatabase("/newpost")
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(reacts))
-	assert.Equal(t, 4, reacts["❤️"])
+	assert.Equal(t, "{\"❤️\":4}", reacts)
 
 	// Delete post
 	err = app.deletePost("/newpost")
@@ -68,7 +66,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	// Check if reaction count is 0
 	reacts, err = app.getReactionsFromDatabase("/newpost")
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(reacts))
+	assert.Equal(t, "{}", reacts)
 
 	// Create a post with disabled reactions
 	err = app.createPost(&post{
@@ -88,7 +86,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	// Check if reaction count is 0
 	reacts, err = app.getReactionsFromDatabase("/testpost2")
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(reacts))
+	assert.Equal(t, "{}", reacts)
 
 }
 
