@@ -8,7 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createDefaultTestConfig(t *testing.T) *config {
+type testConfigParam interface {
+	*testing.T | *testing.B
+	TempDir() string
+}
+
+func createDefaultTestConfig[V testConfigParam](t V) *config {
 	c := createDefaultConfig()
 	dir := t.TempDir()
 	c.Db.File = filepath.Join(dir, "blog.db")

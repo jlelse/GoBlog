@@ -15,6 +15,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+	app.cfg.Reactions = &configReactions{Enabled: true}
 
 	_ = app.initConfig(false)
 	_ = app.initCache()
@@ -94,6 +95,7 @@ func Test_reactionsHighLevel(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+	app.cfg.Reactions = &configReactions{Enabled: true}
 
 	_ = app.initConfig(false)
 	app.initMarkdown()

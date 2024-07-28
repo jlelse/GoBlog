@@ -4,11 +4,11 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -16,12 +16,9 @@ const reactionsCacheTTL = 6 * time.Hour
 
 // Hardcoded for now
 var allowedReactions = []string{
-	"❤️",
-	"👍",
-	"🎉",
-	"😂",
-	"😱",
+	"❤️", "👍", "🎉", "😂", "😱",
 }
+var allowedReactionsStr = strings.Join(allowedReactions, "")
 
 func (a *goBlog) reactionsEnabled() bool {
 	return a.cfg.Reactions != nil && a.cfg.Reactions.Enabled
@@ -98,6 +95,10 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, reactions)
 }
 
+const reactionsQuery = "select json_group_object(reaction, count) as json_result from (" +
+	"select reaction, count from reactions where path = ? and instr(?, reaction) > 0 " +
+	"and path not in (select path from post_parameters where parameter=? and value=?) and count > 0)"
+
 func (a *goBlog) getReactionsFromDatabase(path string) (string, error) {
 	// Init
 	a.initReactions()
@@ -108,24 +109,7 @@ func (a *goBlog) getReactionsFromDatabase(path string) (string, error) {
 	}
 	// Get reactions
 	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
-		// Build query
-		sqlBuf := builderpool.Get()
-		defer builderpool.Put(sqlBuf)
-		sqlArgs := []any{}
-		sqlBuf.WriteString("select json_group_object(reaction, count) as json_result from (")
-		sqlBuf.WriteString("select reaction, count from reactions where path=? and reaction in (")
-		sqlArgs = append(sqlArgs, path)
-		for i, reaction := range allowedReactions {
-			if i > 0 {
-				sqlBuf.WriteString(",")
-			}
-			sqlBuf.WriteString("?")
-			sqlArgs = append(sqlArgs, reaction)
-		}
-		sqlBuf.WriteString(") and path not in (select path from post_parameters where parameter=? and value=?) and count > 0)")
-		sqlArgs = append(sqlArgs, reactionsPostParam, "false")
-		// Execute query
-		row, err := a.db.QueryRow(sqlBuf.String(), sqlArgs...)
+		row, err := a.db.QueryRow(reactionsQuery, path, allowedReactionsStr, reactionsPostParam, "false")
 		if err != nil {
 			return nil, err
 		}

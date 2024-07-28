@@ -100,11 +100,7 @@ func Benchmark_markdown(b *testing.B) {
 	mdExp := string(markdownExample)
 
 	app := &goBlog{
-		cfg: &config{
-			Server: &configServer{
-				PublicAddress: "https://example.com",
-			},
-		},
+		cfg: createDefaultTestConfig(b),
 	}
 
 	app.initMarkdown()
