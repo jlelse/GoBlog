@@ -127,6 +127,9 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 		r.Get("/reactions", a.getReactions)
 		r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/reactions", a.postReaction)
 	}
+
+	// Reload router
+	r.With(a.authMiddleware).Get("/reload", a.serveReloadRouter)
 }
 
 // Blog

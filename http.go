@@ -139,6 +139,11 @@ func (a *goBlog) reloadRouter() {
 	a.d = a.buildRouter()
 }
 
+func (a *goBlog) serveReloadRouter(w http.ResponseWriter, r *http.Request) {
+	a.reloadRouter()
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func (a *goBlog) buildRouter() http.Handler {
 	mapRouter := &maprouter.MapRouter{
 		Handlers: map[string]http.Handler{},
