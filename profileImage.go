@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "embed"
 
@@ -141,24 +142,23 @@ func (a *goBlog) hasProfileImage() bool {
 }
 
 func (a *goBlog) profileImageHash() string {
-	_, _, _ = a.profileImageHashGroup.Do("", func() (interface{}, error) {
-		if a.profileImageHashString != "" {
-			return nil, nil
-		}
+	if a.profileImageHashGroup == nil {
+		a.profileImageHashGroup = new(sync.Once)
+	}
+	a.profileImageHashGroup.Do(func() {
 		if _, err := os.Stat(a.cfg.User.ProfileImageFile); err != nil {
 			a.profileImageHashString = profileImageNoImageHash
-			return nil, nil
+			return
 		}
 		hash := sha256.New()
 		file, err := os.Open(a.cfg.User.ProfileImageFile)
 		if err != nil {
 			a.profileImageHashString = profileImageNoImageHash
-			return nil, nil
+			return
 		}
 		_, _ = io.Copy(hash, file)
 		_ = file.Close()
 		a.profileImageHashString = fmt.Sprintf("%x", hash.Sum(nil))
-		return nil, nil
 	})
 	return a.profileImageHashString
 }
@@ -200,7 +200,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// Reset hash
-	a.profileImageHashString = ""
+	a.profileImageHashGroup = nil
 	// Clear http cache
 	a.cache.purge()
 	// Redirect
@@ -208,7 +208,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request) {
-	a.profileImageHashString = ""
+	a.profileImageHashGroup = nil
 	if err := os.Remove(a.cfg.User.ProfileImageFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		a.serveError(w, r, "Failed to delete profile image", http.StatusInternalServerError)
 		return

@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/dgraph-io/ristretto"
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/pool"
 	"go.goblog.app/app/pkgs/bodylimit"
+	cpkg "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/httpcachetransport"
 )
 
@@ -46,14 +46,8 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 		cancelFunc()
 		fmt.Println("Cancelled link check")
 	})
-	// Create HTTP cache
-	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 50000, MaxCost: 5000, BufferItems: 64, IgnoreInternalCost: true,
-	})
-	if err != nil {
-		return err
-	}
 	// Create HTTP client
+	cache := cpkg.New[string, []byte](time.Minute, 5000)
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: httpcachetransport.NewHttpCacheTransportNoBody(gzhttp.Transport(&http.Transport{

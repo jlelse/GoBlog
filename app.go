@@ -8,17 +8,18 @@ import (
 
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
-	"github.com/dgraph-io/ristretto"
 	ct "github.com/elnormous/contenttype"
 	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
+	"github.com/kaorimatz/go-opml"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/samber/go-singleflightx"
 	"github.com/yuin/goldmark"
+	c "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
 	"go.hacdias.com/indielib/indieauth"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/sync/singleflight"
 )
 
 type goBlog struct {
@@ -39,9 +40,9 @@ type goBlog struct {
 	autocertManager *autocert.Manager
 	autocertInit    sync.Once
 	// Blogroll
-	blogrollCacheGroup singleflight.Group
+	blogrollCacheGroup singleflightx.Group[string, []*opml.Outline]
 	// Blogstats
-	blogStatsCacheGroup singleflight.Group
+	blogStatsCacheGroup singleflightx.Group[string, *blogStatsData]
 	// Cache
 	cache *cache
 	// Config
@@ -81,7 +82,7 @@ type goBlog struct {
 	mediaStorage     mediaStorage
 	// Microformats
 	mfInit  sync.Once
-	mfCache *ristretto.Cache
+	mfCache *c.Cache[string, []byte]
 	// Micropub
 	mpImpl *micropubImplementation
 	// Minify
@@ -90,11 +91,11 @@ type goBlog struct {
 	pluginHost *plugins.PluginHost
 	// Profile image
 	profileImageHashString string
-	profileImageHashGroup  singleflight.Group
+	profileImageHashGroup  *sync.Once
 	// Reactions
 	reactionsInit  sync.Once
-	reactionsCache *ristretto.Cache
-	reactionsSfg   singleflight.Group
+	reactionsCache *c.Cache[string, string]
+	reactionsSfg   singleflightx.Group[string, string]
 	// Regex Redirects
 	regexRedirects []*regexRedirect
 	// Sessions

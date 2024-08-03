@@ -6,9 +6,11 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/stretchr/testify/assert"
+	"go.goblog.app/app/pkgs/bodylimit"
+	cpkg "go.goblog.app/app/pkgs/cache"
 )
 
 func Benchmark_cacheItem_cost(b *testing.B) {
@@ -53,11 +55,7 @@ func Benchmark_cacheKey(b *testing.B) {
 
 func Benchmark_cache_getCache(b *testing.B) {
 	c := &cache{}
-	c.c, _ = ristretto.NewCache(&ristretto.Config{
-		NumCounters: 40 * 1000,
-		MaxCost:     20 * 1000 * 1000,
-		BufferItems: 64,
-	})
+	c.c = cpkg.New[string, *cacheItem](time.Minute, 10*bodylimit.MB)
 	req := httptest.NewRequest(http.MethodGet, "/abc?abc=def&hij=klm", nil)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "abcdefghijklmnopqrstuvwxyz")

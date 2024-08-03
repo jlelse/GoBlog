@@ -10,17 +10,17 @@ import (
 
 	"github.com/google/uuid"
 	sqlite "github.com/mattn/go-sqlite3"
+	"github.com/samber/go-singleflightx"
 	"github.com/schollz/sqlite3dump"
-	"golang.org/x/sync/singleflight"
 )
 
 type database struct {
 	a  *goBlog
 	db *sql.DB
 	// Other things
-	pc    singleflight.Group // persistant cache
-	pcm   sync.Mutex         // post creation
-	sp    sync.Mutex         // short path creation
+	pc    singleflightx.Group[string, []byte] // persistant cache
+	pcm   sync.RWMutex                        // post creation
+	sp    sync.Mutex                          // short path creation
 	debug bool
 }
 

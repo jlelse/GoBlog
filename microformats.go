@@ -10,9 +10,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
-	"github.com/dgraph-io/ristretto"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
+	cpkg "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/httpcachetransport"
 	"willnorris.com/go/microformats"
@@ -20,12 +20,7 @@ import (
 
 func (a *goBlog) initMicroformatsCache() {
 	a.mfInit.Do(func() {
-		a.mfCache, _ = ristretto.NewCache(&ristretto.Config{
-			NumCounters:        100,
-			MaxCost:            10, // Cache http responses for 10 requests
-			BufferItems:        64,
-			IgnoreInternalCost: true,
-		})
+		a.mfCache = cpkg.New[string, []byte](time.Minute, 10)
 	})
 }
 

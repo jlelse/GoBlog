@@ -26,7 +26,7 @@ func (db *database) retrievePersistentCacheContext(c context.Context, key string
 	if db == nil {
 		return nil, errors.New("database is nil")
 	}
-	d, err, _ := db.pc.Do(key, func() (any, error) {
+	d, err, _ := db.pc.Do(key, func() ([]byte, error) {
 		if row, err := db.QueryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
 			return nil, err
 		} else {
@@ -40,10 +40,7 @@ func (db *database) retrievePersistentCacheContext(c context.Context, key string
 	if err != nil {
 		return nil, err
 	}
-	if d == nil {
-		return nil, nil
-	}
-	return d.([]byte), nil
+	return d, nil
 }
 
 func (db *database) clearPersistentCache(pattern string) error {

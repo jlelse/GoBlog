@@ -8,29 +8,27 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	cpkg "go.goblog.app/app/pkgs/cache"
 )
 
 type httpCacheTransport struct {
-	parent         http.RoundTripper
-	ristrettoCache *ristretto.Cache
-	ttl            time.Duration
-	body           bool
-	maxSize        int64
+	parent  http.RoundTripper
+	cache   *cpkg.Cache[string, []byte]
+	ttl     time.Duration
+	body    bool
+	maxSize int64
 }
 
 func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	requestUrl := r.URL.String()
-	if t.ristrettoCache != nil {
-		if cached, hasCached := t.ristrettoCache.Get(requestUrl); hasCached {
-			if cachedResp, ok := cached.([]byte); ok {
-				return http.ReadResponse(bufio.NewReader(bytes.NewReader(cachedResp)), r)
-			}
+	if t.cache != nil {
+		if cached, hasCached := t.cache.Get(requestUrl); hasCached {
+			return http.ReadResponse(bufio.NewReader(bytes.NewReader(cached)), r)
 		}
 	}
 
 	resp, err := t.parent.RoundTrip(r)
-	if err == nil && t.ristrettoCache != nil {
+	if err == nil && t.cache != nil {
 		// Limit the response size
 		limitedResp := &http.Response{
 			Status:        resp.Status,
@@ -47,8 +45,7 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 		if err != nil {
 			return resp, err
 		}
-		t.ristrettoCache.SetWithTTL(requestUrl, respBytes, 1, t.ttl)
-		t.ristrettoCache.Wait()
+		t.cache.Set(requestUrl, respBytes, t.ttl, 1)
 		return http.ReadResponse(bufio.NewReader(bytes.NewReader(respBytes)), r)
 	}
 	return resp, err
@@ -56,11 +53,11 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 
 // Creates a new http.RoundTripper that caches all
 // request responses (by the request URL) in ristretto.
-func NewHttpCacheTransport(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration, maxSize int64) http.RoundTripper {
-	return &httpCacheTransport{parent, ristrettoCache, ttl, true, maxSize}
+func NewHttpCacheTransport(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
+	return &httpCacheTransport{parent, c, ttl, true, maxSize}
 }
 
 // Like NewHttpCacheTransport but doesn't cache body
-func NewHttpCacheTransportNoBody(parent http.RoundTripper, ristrettoCache *ristretto.Cache, ttl time.Duration, maxSize int64) http.RoundTripper {
-	return &httpCacheTransport{parent, ristrettoCache, ttl, false, maxSize}
+func NewHttpCacheTransportNoBody(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
+	return &httpCacheTransport{parent, c, ttl, false, maxSize}
 }

@@ -38,7 +38,7 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogStatsTable(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
-	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (any, error) {
+	data, err, _ := a.blogStatsCacheGroup.Do(blog, func() (*blogStatsData, error) {
 		return a.db.getBlogStats(blog)
 	})
 	if err != nil {
@@ -127,8 +127,8 @@ func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 		return stats, nil
 	}
 	// Prevent creating posts while getting stats
-	db.pcm.Lock()
-	defer db.pcm.Unlock()
+	db.pcm.RLock()
+	defer db.pcm.RUnlock()
 	// Scan objects
 	currentStats := blogStatsRow{}
 	var currentMonth, currentYear string

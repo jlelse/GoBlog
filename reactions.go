@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/samber/lo"
+	c "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -35,19 +35,14 @@ func (a *goBlog) initReactions() {
 		if !a.reactionsEnabled() {
 			return
 		}
-		a.reactionsCache, _ = ristretto.NewCache(&ristretto.Config{
-			NumCounters:        1000,
-			MaxCost:            100, // Cache reactions for 100 posts
-			BufferItems:        64,
-			IgnoreInternalCost: true,
-		})
+		a.reactionsCache = c.New[string, string](time.Minute, 100)
 	})
 }
 
 func (a *goBlog) deleteReactionsCache(path string) {
 	a.initReactions()
 	if a.reactionsCache != nil {
-		a.reactionsCache.Del(path)
+		a.reactionsCache.Delete(path)
 	}
 }
 
@@ -77,7 +72,7 @@ func (a *goBlog) saveReaction(reaction, path string) error {
 	a.initReactions()
 	// Delete from cache
 	defer a.reactionsSfg.Forget(path)
-	defer a.reactionsCache.Del(path)
+	defer a.reactionsCache.Delete(path)
 	// Insert reaction
 	_, err := a.db.Exec("insert into reactions (path, reaction, count) values (?, ?, 1) on conflict (path, reaction) do update set count=count+1", path, reaction)
 	return err
@@ -105,26 +100,22 @@ func (a *goBlog) getReactionsFromDatabase(path string) (string, error) {
 	// Check cache
 	if val, cached := a.reactionsCache.Get(path); cached {
 		// Return from cache
-		return val.(string), nil
+		return val, nil
 	}
 	// Get reactions
-	res, err, _ := a.reactionsSfg.Do(path, func() (any, error) {
+	res, err, _ := a.reactionsSfg.Do(path, func() (string, error) {
 		row, err := a.db.QueryRow(reactionsQuery, path, allowedReactionsStr, reactionsPostParam, "false")
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		var jsonResult string
 		err = row.Scan(&jsonResult)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		// Cache result
-		a.reactionsCache.SetWithTTL(path, jsonResult, 1, reactionsCacheTTL)
-		a.reactionsCache.Wait()
+		a.reactionsCache.Set(path, jsonResult, reactionsCacheTTL, 1)
 		return jsonResult, nil
 	})
-	if err != nil || res == nil {
-		return "", err
-	}
-	return res.(string), nil
+	return res, err
 }

@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/samber/go-singleflightx"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
-	"golang.org/x/sync/singleflight"
+	c "go.goblog.app/app/pkgs/cache"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 )
 
 type cache struct {
-	g singleflight.Group
-	c *ristretto.Cache
+	g singleflightx.Group[string, *cacheItem]
+	c *c.Cache[string, *cacheItem]
 }
 
 func (a *goBlog) initCache() error {
@@ -29,30 +29,8 @@ func (a *goBlog) initCache() error {
 	if a.cfg.Cache != nil && !a.cfg.Cache.Enable {
 		return nil // Cache disabled
 	}
-
-	c, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 40000,
-		MaxCost:     20 * bodylimit.MB,
-		BufferItems: 64,
-		Metrics:     true,
-	})
-	if err != nil {
-		return err
-	}
-
-	a.cache.c = c
-	go a.logCacheMetrics()
+	a.cache.c = c.New[string, *cacheItem](time.Minute, 20*bodylimit.MB)
 	return nil
-}
-
-func (a *goBlog) logCacheMetrics() {
-	ticker := time.NewTicker(15 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		met := a.cache.c.Metrics
-		a.info("Cache metrics", "metrics", met.String())
-	}
 }
 
 func cacheLoggedIn(next http.Handler) http.Handler {
@@ -70,11 +48,10 @@ func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 		}
 
 		key := generateCacheKey(r)
-		cacheInterface, _, _ := a.cache.g.Do(key, func() (interface{}, error) {
+		ci, _, _ := a.cache.g.Do(key, func() (*cacheItem, error) {
 			return a.cache.getOrCreateCache(key, next, r), nil
 		})
 
-		ci := cacheInterface.(*cacheItem)
 		a.serveCachedResponse(w, r, ci)
 	})
 }
@@ -153,7 +130,7 @@ func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 
 func (c *cache) getOrCreateCache(key string, next http.Handler, r *http.Request) *cacheItem {
 	if rItem, ok := c.c.Get(key); ok {
-		return rItem.(*cacheItem)
+		return rItem
 	}
 
 	// Remove original timeout, add new one
@@ -201,8 +178,7 @@ func (c *cache) saveCache(key string, item *cacheItem) {
 	if item.expiration > 0 {
 		ttl = time.Duration(item.expiration) * time.Second
 	}
-	c.c.SetWithTTL(key, item, item.cost(), ttl)
-	c.c.Wait()
+	c.c.Set(key, item, ttl, item.cost())
 }
 
 func (c *cache) purge() {

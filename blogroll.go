@@ -33,7 +33,7 @@ func (bc *configBlog) getBlogrollPath() (bool, string) {
 
 func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
-	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (any, error) {
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() ([]*opml.Outline, error) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
@@ -48,7 +48,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 		Data: &blogrollRenderData{
 			title:       c.Title,
 			description: c.Description,
-			outlines:    outlines.([]*opml.Outline),
+			outlines:    outlines,
 			download:    can + blogrollDownloadFile,
 			refresh:     can + blogrollRefreshSubpath,
 		},
@@ -57,7 +57,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 
 func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
-	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() (any, error) {
+	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() ([]*opml.Outline, error) {
 		return a.getBlogrollOutlines(blog)
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		_ = pw.CloseWithError(opml.Render(pw, &opml.OPML{
 			Version:     "2.0",
 			DateCreated: time.Now().UTC(),
-			Outlines:    outlines.([]*opml.Outline),
+			Outlines:    outlines,
 		}))
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)

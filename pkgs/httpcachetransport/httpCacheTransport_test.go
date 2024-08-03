@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/dgraph-io/ristretto"
 	"github.com/stretchr/testify/assert"
 	"go.goblog.app/app/pkgs/bodylimit"
+	cpkg "go.goblog.app/app/pkgs/cache"
 )
 
 const fakeResponse = `HTTP/1.1 200 OK
@@ -23,12 +23,7 @@ Date: Wed, 14 Dec 2022 10:34:03 GMT
 </html>`
 
 func TestHttpCacheTransport(t *testing.T) {
-	cache, _ := ristretto.NewCache(&ristretto.Config{
-		NumCounters:        100,
-		MaxCost:            10,
-		BufferItems:        64,
-		IgnoreInternalCost: true,
-	})
+	cache := cpkg.New[string, []byte](time.Minute, 10)
 
 	counter := 0
 
