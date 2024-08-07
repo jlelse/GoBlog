@@ -25,11 +25,12 @@ type cache struct {
 }
 
 func (a *goBlog) initCache() error {
-	a.cache = &cache{}
 	if a.cfg.Cache != nil && !a.cfg.Cache.Enable {
 		return nil // Cache disabled
 	}
-	a.cache.c = c.New[string, *cacheItem](time.Minute, 20*bodylimit.MB)
+	a.cache = &cache{
+		c: c.New[string, *cacheItem](time.Minute, 20*bodylimit.MB),
+	}
 	return nil
 }
 
@@ -42,7 +43,7 @@ func cacheLoggedIn(next http.Handler) http.Handler {
 
 func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if a.cache.c == nil || !isCacheable(r) || a.shouldSkipLoggedIn(r) {
+		if a.cache == nil || a.cache.c == nil || !isCacheable(r) || a.shouldSkipLoggedIn(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -182,7 +183,7 @@ func (c *cache) saveCache(key string, item *cacheItem) {
 }
 
 func (c *cache) purge() {
-	if c == nil {
+	if c == nil || c.c == nil {
 		return
 	}
 	c.c.Clear()

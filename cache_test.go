@@ -65,3 +65,11 @@ func Benchmark_cache_getCache(b *testing.B) {
 		c.getOrCreateCache(strconv.Itoa(i), handler, req)
 	}
 }
+
+func Test_cache_purge_nil(t *testing.T) {
+	var c *cache = nil
+	c.purge()
+
+	c = &cache{c: nil}
+	c.purge()
+}

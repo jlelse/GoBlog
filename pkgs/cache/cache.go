@@ -51,6 +51,11 @@ func New[K comparable, V any](cleaningInterval time.Duration, maxCost int64) *Ca
 
 // Get gets the value for the given key.
 func (cache *Cache[K, V]) Get(key K) (V, bool) {
+	if cache == nil {
+		var zeroValue V
+		return zeroValue, false
+	}
+
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 
@@ -79,6 +84,10 @@ func (cache *Cache[K, V]) Get(key K) (V, bool) {
 // Set sets a value for the given key with an expiration duration and a cost.
 // If the duration is 0 or less, it will be stored forever.
 func (cache *Cache[K, V]) Set(key K, value V, duration time.Duration, cost int64) {
+	if cache == nil {
+		return
+	}
+
 	var expires int64
 	if duration > 0 {
 		expires = time.Now().Add(duration).UnixNano()
@@ -112,6 +121,10 @@ func (cache *Cache[K, V]) Set(key K, value V, duration time.Duration, cost int64
 
 // Delete deletes the key and its value from the cache.
 func (cache *Cache[K, V]) Delete(key K) {
+	if cache == nil {
+		return
+	}
+
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
@@ -122,6 +135,10 @@ func (cache *Cache[K, V]) Delete(key K) {
 
 // Clear removes all items from the cache.
 func (cache *Cache[K, V]) Clear() {
+	if cache == nil {
+		return
+	}
+
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 
@@ -132,6 +149,10 @@ func (cache *Cache[K, V]) Clear() {
 
 // Close closes the cache and frees up resources.
 func (cache *Cache[K, V]) Close() {
+	if cache == nil {
+		return
+	}
+
 	close(cache.close)
 	cache.Clear()
 }
