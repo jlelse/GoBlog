@@ -1,6 +1,6 @@
 module go.goblog.app/app
 
-go 1.22.0
+go 1.23.0
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
@@ -11,7 +11,8 @@ require (
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
-	github.com/carlmjohnson/requests v0.24.1
+	github.com/carlmjohnson/requests v0.24.2
+	github.com/coder/websocket v1.8.12
 	github.com/dchest/captcha v1.0.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
@@ -42,7 +43,7 @@ require (
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.4.0
 	github.com/samber/go-singleflightx v0.3.1
-	github.com/samber/lo v1.46.0
+	github.com/samber/lo v1.47.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
@@ -58,14 +59,13 @@ require (
 	github.com/xhit/go-simple-mail/v2 v2.16.0
 	github.com/yuin/goldmark v1.7.4
 	github.com/yuin/goldmark-emoji v1.0.3
-	go.hacdias.com/indielib v0.3.1
+	go.hacdias.com/indielib v0.4.0
 	golang.org/x/crypto v0.26.0
 	golang.org/x/net v0.28.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.19.0
-	nhooyr.io/websocket v1.8.11
+	maunium.net/go/mautrix v0.20.0
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
@@ -114,12 +114,12 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.mau.fi/util v0.6.0 // indirect
+	go.mau.fi/util v0.7.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
+	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/image v0.19.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0 // indirect
 )

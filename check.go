@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/klauspost/compress/gzhttp"
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/pool"
 	"go.goblog.app/app/pkgs/bodylimit"
@@ -50,9 +49,10 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 	cache := cpkg.New[string, []byte](time.Minute, 5000)
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: httpcachetransport.NewHttpCacheTransportNoBody(gzhttp.Transport(&http.Transport{
-			DisableKeepAlives: true, MaxConnsPerHost: 1,
-		}), cache, 60*time.Minute, 5*bodylimit.MB),
+		Transport: httpcachetransport.NewHttpCacheTransportNoBody(
+			newHttpTransport(),
+			cache, 60*time.Minute, 5*bodylimit.MB,
+		),
 	}
 	// Process all links
 	type checkresult struct {

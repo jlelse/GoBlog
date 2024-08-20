@@ -439,7 +439,7 @@ func (a *goBlog) initConfig(logging bool) error {
 		a.cfg.Server.HttpsRedirect = true
 	}
 	// Check if any blog is configured
-	if a.cfg.Blogs == nil || len(a.cfg.Blogs) == 0 {
+	if len(a.cfg.Blogs) == 0 {
 		a.cfg.Blogs = map[string]*configBlog{
 			"default": createDefaultBlog(),
 		}

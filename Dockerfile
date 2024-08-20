@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine3.20 AS buildbase
+FROM golang:1.23-alpine3.20 AS buildbase
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	ws "github.com/coder/websocket"
 	"github.com/google/uuid"
-	ws "nhooyr.io/websocket"
 )
 
 func (a *goBlog) serveEditorStateSync(w http.ResponseWriter, r *http.Request) {

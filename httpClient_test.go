@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -93,4 +94,28 @@ func Test_addUserAgent(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, appUserAgent, ua)
+}
+
+func Test_httpClientSocksProxy(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+
+	proxyCalled := false
+
+	go func() {
+		conn, err := listener.Accept()
+		require.NoError(t, err)
+
+		proxyCalled = true
+
+		_ = conn.Close()
+	}()
+
+	t.Setenv("HTTP_PROXY", "socks5h://"+addr+"/")
+
+	client := newHttpClient()
+	_ = requests.URL("http://example.com").Client(client).Fetch(context.Background())
+
+	assert.True(t, proxyCalled)
 }

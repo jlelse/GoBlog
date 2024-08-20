@@ -13,13 +13,13 @@ import (
 	"time"
 
 	"github.com/carlmjohnson/requests"
+	ws "github.com/coder/websocket"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/gpxhelper"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.hacdias.com/indielib/micropub"
 	"gopkg.in/yaml.v3"
-	ws "nhooyr.io/websocket"
 )
 
 const editorPath = "/editor"
