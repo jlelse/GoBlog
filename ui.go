@@ -390,7 +390,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			if titleOrDesc {
 				hb.WriteElementOpen("hr")
 			}
-			if id.posts != nil && len(id.posts) > 0 {
+			if len(id.posts) > 0 {
 				// Posts
 				for _, p := range id.posts {
 					a.renderSummary(hb, rd, rd.Blog, p, id.summaryTemplate)

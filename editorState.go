@@ -8,6 +8,7 @@ import (
 
 	ws "github.com/coder/websocket"
 	"github.com/google/uuid"
+	"go.goblog.app/app/pkgs/bodylimit"
 )
 
 func (a *goBlog) serveEditorStateSync(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +19,7 @@ func (a *goBlog) serveEditorStateSync(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	c.SetReadLimit(1 << 20) // 1MB
+	c.SetReadLimit(10 * bodylimit.MB)
 	defer c.Close(ws.StatusNormalClosure, "")
 	// Store connection to be able to send updates
 	connectionId := uuid.NewString()
@@ -28,21 +29,14 @@ func (a *goBlog) serveEditorStateSync(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Hour*6)
 	defer cancel()
 	// Send initial content
-	if r.URL.Query().Get("initial") == "1" {
-		initialState, err := a.getEditorStateFromDatabase(ctx, blog)
+	initialState, err := a.getEditorStateFromDatabase(ctx, blog)
+	if err != nil {
+		return
+	}
+	if initialState != nil {
+		err := c.Write(ctx, ws.MessageText, initialState)
 		if err != nil {
 			return
-		}
-		if initialState != nil {
-			w, err := c.Writer(ctx, ws.MessageText)
-			if err != nil {
-				return
-			}
-			_, err = w.Write(initialState)
-			if err != nil {
-				return
-			}
-			_ = w.Close()
 		}
 	}
 	// Listen for new messages
@@ -77,13 +71,7 @@ func (*goBlog) sendNewEditorStateToAllConnections(ctx context.Context, bc *confi
 		if !ok {
 			return true
 		}
-		w, err := c.Writer(ctx, ws.MessageText)
-		if err != nil {
-			bc.esws.Delete(key)
-			return true
-		}
-		defer w.Close()
-		_, err = w.Write(state)
+		err := c.Write(ctx, ws.MessageText, state)
 		if err != nil {
 			bc.esws.Delete(key)
 			return true

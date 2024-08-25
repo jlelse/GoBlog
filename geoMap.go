@@ -80,15 +80,15 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type templateTrack struct {
-		Paths  [][]*trackPoint
-		Points []*trackPoint
+		Paths  [][]trackPoint
+		Points []trackPoint
 		Post   string
 	}
 
-	var tracks []*templateTrack
+	var tracks []templateTrack
 	for _, p := range allPostsWithTracks {
 		if t, err := a.getTrack(p); err == nil && t != nil {
-			tracks = append(tracks, &templateTrack{
+			tracks = append(tracks, templateTrack{
 				Paths:  t.Paths,
 				Points: t.Points,
 				Post:   p.Path,
@@ -96,7 +96,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	a.respondWithMinifiedJson(w, tracks)
+	a.respondWithMinifiedJson(w, &tracks)
 }
 
 const geoMapLocationsSubpath = "/locations.json"
@@ -123,10 +123,10 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 		Post string
 	}
 
-	var locations []*templateLocation
+	var locations []templateLocation
 	for _, p := range allPostsWithLocations {
 		for _, g := range a.geoURIs(p) {
-			locations = append(locations, &templateLocation{
+			locations = append(locations, templateLocation{
 				Lat:  g.Latitude,
 				Lon:  g.Longitude,
 				Post: p.Path,
@@ -134,5 +134,5 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	a.respondWithMinifiedJson(w, locations)
+	a.respondWithMinifiedJson(w, &locations)
 }

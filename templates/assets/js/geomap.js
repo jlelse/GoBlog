@@ -66,12 +66,12 @@
             tracks.forEach(track => {
                 track.Paths.forEach(path => {
                     // Use random color on map page for paths to better differentiate
-                    cluster.addLayer(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: randomColor() }).on('click', function () {
+                    cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: randomColor() }).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
                 track.Points.forEach(point => {
-                    cluster.addLayer(L.marker([point.Lat, point.Lon]).on('click', function () {
+                    cluster.addLayer(L.marker([point[0], point[1]]).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
@@ -81,13 +81,13 @@
         // Post map
         getMapJson(mapEl.dataset.paths, paths => {
             paths.forEach(path => {
-                cluster.addLayer(L.polyline(path.map(point => [point.Lat, point.Lon]), { color: 'blue' }))
+                cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: 'blue' }))
             })
             fitFeatures()
         })
         getMapJson(mapEl.dataset.points, points => {
             points.forEach(point => {
-                cluster.addLayer(L.marker([point.Lat, point.Lon]))
+                cluster.addLayer(L.marker([point[0], point[1]]))
             })
             fitFeatures()
         })

@@ -554,7 +554,7 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackRes
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, path := range track.Paths {
 		for _, point := range path {
-			x, y := gpxhelper.WebMercatorX(point.Lon), gpxhelper.WebMercatorY(point.Lat)
+			x, y := gpxhelper.WebMercatorX(point.Lon()), gpxhelper.WebMercatorY(point.Lat())
 			minX = math.Min(minX, x)
 			maxX = math.Max(maxX, x)
 			minY = math.Min(minY, y)
@@ -577,8 +577,8 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackRes
 	for _, path := range track.Paths {
 		hb.WriteString(`<polyline points="`)
 		for _, pt := range path {
-			x := xOffset + (gpxhelper.WebMercatorX(pt.Lon)-minX)*scale
-			y := height - (yOffset + (gpxhelper.WebMercatorY(pt.Lat)-minY)*scale)
+			x := xOffset + (gpxhelper.WebMercatorX(pt.Lon())-minX)*scale
+			y := height - (yOffset + (gpxhelper.WebMercatorY(pt.Lat())-minY)*scale)
 			hb.WriteString(fmt.Sprintf("%.2f,%.2f ", x, y))
 		}
 		hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)

@@ -24,8 +24,8 @@ func (p *post) showTrackRoute() bool {
 }
 
 type trackResult struct {
-	Paths      [][]*trackPoint
-	Points     []*trackPoint
+	Paths      [][]trackPoint
+	Points     []trackPoint
 	Kilometers string
 	Hours      string
 	Uphill     string
@@ -84,25 +84,35 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	return result, nil
 }
 
-type trackPoint struct {
-	Lat, Lon float64
+type trackPoint [2]float64 // Lat, Lon
+
+func (p *trackPoint) Lat() float64 {
+	return p[0]
+}
+
+func (p *trackPoint) Lon() float64 {
+	return p[1]
 }
 
 type trackParseResult struct {
-	paths   [][]*trackPoint
-	points  []*trackPoint
+	paths   [][]trackPoint
+	points  []trackPoint
 	gpxData *gpx.GPX
 	md      *gpx.MovingData
 	ud      *gpx.UphillDownhill
 }
 
 func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
+	trunc := func(num float64) float64 {
+		return float64(int64(num*100000)) / 100000
+	}
+
 	result = &trackParseResult{}
 
 	type trackPath struct {
 		gpxMovingData     *gpx.MovingData
 		gpxUphillDownhill *gpx.UphillDownhill
-		points            []*trackPoint
+		points            []trackPoint
 	}
 
 	result.gpxData, err = gpx.ParseString(gpxString)
@@ -110,33 +120,33 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 		return nil, err
 	}
 
-	paths := make([]*trackPath, 0)
+	paths := make([]trackPath, 0)
 	for _, track := range result.gpxData.Tracks {
 		for _, segment := range track.Segments {
 			md := segment.MovingData()
 			ud := segment.UphillDownhill()
-			path := &trackPath{
+			path := trackPath{
 				gpxMovingData:     &md,
 				gpxUphillDownhill: &ud,
 			}
 			for _, point := range segment.Points {
-				path.points = append(path.points, &trackPoint{
-					Lat: point.Latitude, Lon: point.Longitude,
+				path.points = append(path.points, trackPoint{
+					trunc(point.Latitude), trunc(point.Longitude),
 				})
 			}
 			paths = append(paths, path)
 		}
 	}
 	for _, route := range result.gpxData.Routes {
-		path := &trackPath{}
+		path := trackPath{}
 		for _, point := range route.Points {
-			path.points = append(path.points, &trackPoint{
-				Lat: point.Latitude, Lon: point.Longitude,
+			path.points = append(path.points, trackPoint{
+				trunc(point.Latitude), trunc(point.Longitude),
 			})
 		}
 		paths = append(paths, path)
 	}
-	result.paths = make([][]*trackPoint, len(paths))
+	result.paths = make([][]trackPoint, len(paths))
 	for i, path := range paths {
 		// Add points
 		result.paths[i] = path.points
@@ -161,10 +171,10 @@ func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
 		}
 	}
 
-	result.points = []*trackPoint{}
+	result.points = []trackPoint{}
 	for _, point := range result.gpxData.Waypoints {
-		result.points = append(result.points, &trackPoint{
-			Lat: point.Latitude, Lon: point.Longitude,
+		result.points = append(result.points, trackPoint{
+			trunc(point.Latitude), trunc(point.Longitude),
 		})
 	}
 

@@ -410,7 +410,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		queryBuilder.WriteString(" and path = @path")
 		args = append(args, sql.Named("path", c.path))
 	}
-	if c.status != nil && len(c.status) > 0 {
+	if len(c.status) > 0 {
 		queryBuilder.WriteString(" and status in (")
 		for i, status := range c.status {
 			if i > 0 {
@@ -423,7 +423,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		}
 		queryBuilder.WriteString(")")
 	}
-	if c.visibility != nil && len(c.visibility) > 0 {
+	if len(c.visibility) > 0 {
 		queryBuilder.WriteString(" and visibility in (")
 		for i, visibility := range c.visibility {
 			if i > 0 {
