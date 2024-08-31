@@ -30,6 +30,8 @@ linters:
     - noctx
     - prealloc
     - unparam
+    - sqlclosecheck
+    - rowserrcheck
 linters-settings:
   gosimple:
     checks: ["all"]
