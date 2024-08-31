@@ -20,7 +20,7 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
 	github.com/emersion/go-smtp v0.21.3
 	github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594
-	github.com/go-ap/client v0.0.0-20240824180752-75601bb12b9e
+	github.com/go-ap/client v0.0.0-20240826175954-dd523526a531
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
@@ -70,7 +70,7 @@ require (
 )
 
 require (
-	git.sr.ht/~mariusor/cache v0.0.0-20240824201748-e72ac2562944 // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20240826175759-e4d5dbc2aa25 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
@@ -88,7 +88,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/lestrrat-go/strftime v1.0.6 // indirect
+	github.com/lestrrat-go/strftime v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

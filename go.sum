@@ -8,8 +8,8 @@ git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4 h1:p3c/vCY6M
 git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4/go.mod h1:ZFhxwbX+afhgbzh5rpkSJUp6vIduNPtIGDrsWpIcHTE=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b h1:zrGLEeWzv7bzGRUKsS42akQpszXwEU+8nXV2Z2iDSJM=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b/go.mod h1:UNLE8cup2GTHbsE89xezRwq3GhKspPI9NyckPbgJEmw=
-git.sr.ht/~mariusor/cache v0.0.0-20240824201748-e72ac2562944 h1:W8B6JqBEMb0ASYFFZEL2VjuO0y1g3aowOal3w2M2uAA=
-git.sr.ht/~mariusor/cache v0.0.0-20240824201748-e72ac2562944/go.mod h1:Yv1mSKccec0/7Jn75Zx03n7nt2SGccoX9E9jLOA62Hw=
+git.sr.ht/~mariusor/cache v0.0.0-20240826175759-e4d5dbc2aa25 h1:zQWITMIN/2gIzKvHb4ZI8kXOpes+ZdPrJNW0Qr1E6Vw=
+git.sr.ht/~mariusor/cache v0.0.0-20240826175759-e4d5dbc2aa25/go.mod h1:Yv1mSKccec0/7Jn75Zx03n7nt2SGccoX9E9jLOA62Hw=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 h1:cliQ4HHsCo6xi2oWZYKWW4bly/Ory9FuTpFPRxj/mAg=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078/go.mod h1:g/V2Hjas6Z1UHUp4yIx6bATpNzJ7DYtD0FG3+xARWxs=
 git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 h1:MKtevO63p4vyFsjjJq6ejop64JQr6OxkpkYK6XmdQZE=
@@ -67,8 +67,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594 h1:er3GvGCm7bJwHostjZlsRy7uiUuCquUVF9Fe0TrwiPI=
 github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594/go.mod h1:yRUfFCoZY6C1CWalauqEQ5xYgSckzEBEO/2MBC6BOME=
-github.com/go-ap/client v0.0.0-20240824180752-75601bb12b9e h1:Knkn3nDcKWJtDxJYl/NJkrh67gXoKEm7bwxHN/iHwNc=
-github.com/go-ap/client v0.0.0-20240824180752-75601bb12b9e/go.mod h1:ChSnshME44nArX+gVCGYezXunHCtGOTaumhqsThxPWs=
+github.com/go-ap/client v0.0.0-20240826175954-dd523526a531 h1:c37pX4+87Ifp/pmYhkONdN1IXaxw9iIoDgWj8tiwn0w=
+github.com/go-ap/client v0.0.0-20240826175954-dd523526a531/go.mod h1:2l/4y8SyLCtdKBcYk/UF2B2PYsEA17qh2f6/S0iOvaU=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0 h1:H9MGShwybHLSln6K8RxHPMHiLcD86Lru+5TVW2TcXHY=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0/go.mod h1:5x8a6P/dhmMGFxWLcyYlyOuJ2lRNaHGhRv+yu8BaTSI=
 github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 h1:GMKIYXyXPGIp+hYiWOhfqK4A023HdgisDT4YGgf99mw=
@@ -150,8 +150,8 @@ github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc h1:RKf14vYWi2t
 github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc/go.mod h1:kopuH9ugFRkIXf3YoqHKyrJ9YfUFsckUU9S7B+XP+is=
 github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible h1:Y6sqxHMyB1D2YSzWkLibYKgg+SwmyFU9dF2hn6MdTj4=
 github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible/go.mod h1:ZQnN8lSECaebrkQytbHj4xNgtg8CR7RYXnPok8e0EHA=
-github.com/lestrrat-go/strftime v1.0.6 h1:CFGsDEt1pOpFNU+TJB0nhz9jl+K0hZSLE205AhTIGQQ=
-github.com/lestrrat-go/strftime v1.0.6/go.mod h1:f7jQKgV5nnJpYgdEasS+/y7EsTb8ykN2z68n3TtcTaw=
+github.com/lestrrat-go/strftime v1.1.0 h1:gMESpZy44/4pXLO/m+sL0yBd1W6LjgjrrD4a68Gapyg=
+github.com/lestrrat-go/strftime v1.1.0/go.mod h1:uzeIB52CeUJenCo1syghlugshMysrqUT51HlxphXVeI=
 github.com/lopezator/migrator v0.3.1 h1:ZFPT6aC7+nGWkqhleynABZ6ftycSf6hmHHLOaryq1Og=
 github.com/lopezator/migrator v0.3.1/go.mod h1:X+lHDMZ9Ci3/KdbypJcQYFFwipVrJsX4fRCQ4QLauYk=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
