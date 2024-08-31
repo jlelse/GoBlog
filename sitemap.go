@@ -234,6 +234,7 @@ func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []strin
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var path string
 	for rows.Next() {
 		err = rows.Scan(&path)

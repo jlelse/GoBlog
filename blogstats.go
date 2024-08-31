@@ -141,6 +141,7 @@ func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&currentYear, &currentMonth, &currentStats.Posts, &currentStats.Words, &currentStats.Chars, &currentStats.WordsPerPost)
 		if currentYear == "A" && currentMonth == "A" {

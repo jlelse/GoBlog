@@ -88,6 +88,7 @@ func (db *database) getNotifications(config *notificationsRequestConfig) ([]*not
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		n := &notification{}
 		err = rows.Scan(&n.ID, &n.Time, &n.Text)

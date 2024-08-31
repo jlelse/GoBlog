@@ -590,6 +590,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	// Result
 	var path, name, value string
 	params := map[string]map[string][]string{}
@@ -621,6 +622,7 @@ func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	// Prepare row scanning
 	var path, content, published, updated, blog, section, status, visibility string
 	var priority int
@@ -716,6 +718,7 @@ func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, er
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var values []string
 	var value string
 	for rows.Next() {
@@ -759,6 +762,7 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	counts = make([]int, len(names))
 	var name string
 	var count int

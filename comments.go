@@ -161,6 +161,7 @@ func (db *database) getComments(config *commentsRequestConfig) ([]*comment, erro
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		c := &comment{}
 		err = rows.Scan(&c.ID, &c.Target, &c.Name, &c.Website, &c.Comment, &c.Original)

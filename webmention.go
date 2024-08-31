@@ -274,6 +274,7 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		m := &mention{}
 		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Url, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)

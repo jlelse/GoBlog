@@ -400,6 +400,7 @@ func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var inbox string
 	for rows.Next() {
 		err = rows.Scan(&inbox)
@@ -420,6 +421,7 @@ func (db *database) apGetAllFollowers(blog string) (followers []*apFollower, err
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var follower, inbox, username string
 	for rows.Next() {
 		err = rows.Scan(&follower, &inbox, &username)

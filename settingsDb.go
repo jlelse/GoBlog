@@ -82,6 +82,7 @@ func (a *goBlog) getSections(blog string) (map[string]*configSection, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	sections := map[string]*configSection{}
 	for rows.Next() {
 		section := &configSection{}
