@@ -24,7 +24,7 @@ type database struct {
 	// Other things
 	pc    singleflightx.Group[string, []byte] // persistant cache
 	pcm   sync.RWMutex                        // post creation
-	sp    sync.Mutex                          // short path creation
+	sp    singleflightx.Group[string, string] // short path creation
 	debug bool
 }
 
@@ -198,64 +198,6 @@ func (db *database) QueryRowContext(ctx context.Context, query string, args ...a
 	ctx = db.dbBefore(ctx, query, args...)
 	defer db.dbAfter(ctx, query, args...)
 	return db.readDb.QueryRowContext(ctx, query, args...), nil
-}
-
-type transaction struct {
-	tx *sql.Tx
-	db *database
-}
-
-func (db *database) Begin() (*transaction, error) {
-	return db.BeginTx(context.Background(), nil)
-}
-
-func (db *database) BeginTx(ctx context.Context, opts *sql.TxOptions) (*transaction, error) {
-	if db == nil || db.writeDb == nil {
-		return nil, errors.New("database not initialized")
-	}
-	tx, err := db.writeDb.BeginTx(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	return &transaction{tx: tx, db: db}, nil
-}
-
-func (tx *transaction) Exec(query string, args ...any) (sql.Result, error) {
-	return tx.ExecContext(context.Background(), query, args...)
-}
-
-func (tx *transaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	ctx = tx.db.dbBefore(ctx, query, args...)
-	defer tx.db.dbAfter(ctx, query, args...)
-	return tx.tx.ExecContext(ctx, query, args...)
-}
-
-func (tx *transaction) Query(query string, args ...any) (*sql.Rows, error) {
-	return tx.QueryContext(context.Background(), query, args...)
-}
-
-func (tx *transaction) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	ctx = tx.db.dbBefore(ctx, query, args...)
-	defer tx.db.dbAfter(ctx, query, args...)
-	return tx.tx.QueryContext(ctx, query, args...)
-}
-
-func (tx *transaction) QueryRow(query string, args ...any) *sql.Row {
-	return tx.QueryRowContext(context.Background(), query, args...)
-}
-
-func (tx *transaction) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	ctx = tx.db.dbBefore(ctx, query, args...)
-	defer tx.db.dbAfter(ctx, query, args...)
-	return tx.tx.QueryRowContext(ctx, query, args...)
-}
-
-func (tx *transaction) Commit() error {
-	return tx.tx.Commit()
-}
-
-func (tx *transaction) Rollback() error {
-	return tx.tx.Rollback()
 }
 
 func (db *database) dump(file string) {
