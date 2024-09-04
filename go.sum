@@ -8,8 +8,8 @@ git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4 h1:p3c/vCY6M
 git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4/go.mod h1:ZFhxwbX+afhgbzh5rpkSJUp6vIduNPtIGDrsWpIcHTE=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b h1:zrGLEeWzv7bzGRUKsS42akQpszXwEU+8nXV2Z2iDSJM=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b/go.mod h1:UNLE8cup2GTHbsE89xezRwq3GhKspPI9NyckPbgJEmw=
-git.sr.ht/~mariusor/cache v0.0.0-20240826175759-e4d5dbc2aa25 h1:zQWITMIN/2gIzKvHb4ZI8kXOpes+ZdPrJNW0Qr1E6Vw=
-git.sr.ht/~mariusor/cache v0.0.0-20240826175759-e4d5dbc2aa25/go.mod h1:Yv1mSKccec0/7Jn75Zx03n7nt2SGccoX9E9jLOA62Hw=
+git.sr.ht/~mariusor/cache v0.0.0-20240903182617-9cd70c7b90f5 h1:Ne+MnYUgyjrhTqugAoeImYbH6ic+BphskVLTJnKYaaY=
+git.sr.ht/~mariusor/cache v0.0.0-20240903182617-9cd70c7b90f5/go.mod h1:Yv1mSKccec0/7Jn75Zx03n7nt2SGccoX9E9jLOA62Hw=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 h1:cliQ4HHsCo6xi2oWZYKWW4bly/Ory9FuTpFPRxj/mAg=
 git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078/go.mod h1:g/V2Hjas6Z1UHUp4yIx6bATpNzJ7DYtD0FG3+xARWxs=
 git.sr.ht/~mariusor/lw v0.0.0-20240323171419-d538df4af052 h1:MKtevO63p4vyFsjjJq6ejop64JQr6OxkpkYK6XmdQZE=
@@ -67,8 +67,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594 h1:er3GvGCm7bJwHostjZlsRy7uiUuCquUVF9Fe0TrwiPI=
 github.com/go-ap/activitypub v0.0.0-20240408091739-ba76b44c2594/go.mod h1:yRUfFCoZY6C1CWalauqEQ5xYgSckzEBEO/2MBC6BOME=
-github.com/go-ap/client v0.0.0-20240826175954-dd523526a531 h1:c37pX4+87Ifp/pmYhkONdN1IXaxw9iIoDgWj8tiwn0w=
-github.com/go-ap/client v0.0.0-20240826175954-dd523526a531/go.mod h1:2l/4y8SyLCtdKBcYk/UF2B2PYsEA17qh2f6/S0iOvaU=
+github.com/go-ap/client v0.0.0-20240903140120-3e6ae9fe585e h1:mdeTwfLw49/WdYq3kIVlwJd4goaes8tS35tROTHTwhA=
+github.com/go-ap/client v0.0.0-20240903140120-3e6ae9fe585e/go.mod h1:y3vCIKDbdc5TkPBYyauaz2p3ur/4k/hrZbx6JRRi7Yo=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0 h1:H9MGShwybHLSln6K8RxHPMHiLcD86Lru+5TVW2TcXHY=
 github.com/go-ap/errors v0.0.0-20240304112515-6077fa9c17b0/go.mod h1:5x8a6P/dhmMGFxWLcyYlyOuJ2lRNaHGhRv+yu8BaTSI=
 github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 h1:GMKIYXyXPGIp+hYiWOhfqK4A023HdgisDT4YGgf99mw=

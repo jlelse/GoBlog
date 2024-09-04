@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/url"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -18,9 +17,8 @@ import (
 )
 
 type database struct {
-	a       *goBlog
-	writeDb *sql.DB
-	readDb  *sql.DB
+	a                       *goBlog
+	writeDb, readDb, dumpDb *sql.DB
 	// Other things
 	pc    singleflightx.Group[string, []byte] // persistant cache
 	pcm   sync.RWMutex                        // post creation
@@ -36,7 +34,8 @@ func (a *goBlog) initDatabase(logging bool) error {
 		a.info("Initialize database")
 	}
 	// Setup db
-	db, err := a.openDatabase(a.cfg.Db.File, logging)
+	dumpEnabled := a.cfg.Db.DumpFile != ""
+	db, err := a.openDatabase(a.cfg.Db.File, logging, dumpEnabled)
 	if err != nil {
 		return err
 	}
@@ -50,7 +49,7 @@ func (a *goBlog) initDatabase(logging bool) error {
 		}
 	})
 
-	if a.cfg.Db.DumpFile != "" {
+	if dumpEnabled {
 		a.hourlyHooks = append(a.hourlyHooks, func() {
 			db.dump(a.cfg.Db.DumpFile)
 		})
@@ -63,7 +62,7 @@ func (a *goBlog) initDatabase(logging bool) error {
 	return nil
 }
 
-func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
+func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error) {
 	file = lo.If(strings.Contains(file, "?"), file+"&").Else(file + "?")
 	// Register driver
 	dbDriverName := "goblog_db_" + uuid.NewString()
@@ -101,8 +100,6 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	}
 	writeDb.SetMaxOpenConns(1)
 	writeDb.SetMaxIdleConns(1)
-	writeDb.SetConnMaxIdleTime(0)
-	writeDb.SetConnMaxLifetime(0)
 	if err := writeDb.Ping(); err != nil {
 		return nil, err
 	}
@@ -126,18 +123,27 @@ func (a *goBlog) openDatabase(file string, logging bool) (*database, error) {
 	if err != nil {
 		return nil, err
 	}
-	readDb.SetMaxOpenConns(max(4, runtime.NumCPU()))
-	readDb.SetMaxIdleConns(max(4, runtime.NumCPU()))
-	readDb.SetConnMaxIdleTime(0)
-	readDb.SetConnMaxLifetime(0)
 	if err := readDb.Ping(); err != nil {
 		return nil, err
+	}
+	// Dump db
+	var dumpDb *sql.DB
+	if dump {
+		dumpDb, err = sql.Open("sqlite3", file+readParams.Encode())
+		if err != nil {
+			return nil, err
+		}
+		dumpDb.SetMaxIdleConns(0)
+		if err := dumpDb.Ping(); err != nil {
+			return nil, err
+		}
 	}
 	// Create custom database struct
 	return &database{
 		a:       a,
 		writeDb: writeDb,
 		readDb:  readDb,
+		dumpDb:  dumpDb,
 		debug:   a.cfg.Db != nil && a.cfg.Db.Debug,
 	}, nil
 }
@@ -210,18 +216,22 @@ func (db *database) dump(file string) {
 		return
 	}
 	defer f.Close()
-	if err = sqlite3dump.DumpDB(db.readDb, f, sqlite3dump.WithTransaction(false)); err != nil {
+	if err = sqlite3dump.DumpDB(db.dumpDb, f, sqlite3dump.WithTransaction(false)); err != nil {
 		db.a.error("Error while dump db", "err", err)
 	}
 }
 
 func (db *database) close() error {
-	if db == nil || (db.writeDb == nil && db.readDb == nil) {
+	if db == nil {
 		return nil
 	}
-	writeErr := db.writeDb.Close()
-	readErr := db.readDb.Close()
-	return errors.Join(writeErr, readErr)
+	var errs []error
+	for _, db := range []*sql.DB{db.writeDb, db.readDb, db.dumpDb} {
+		if db != nil {
+			errs = append(errs, db.Close())
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (db *database) rebuildFTSIndex() {

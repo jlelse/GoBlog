@@ -10,7 +10,7 @@ func Test_database(t *testing.T) {
 			cfg: &config{},
 		}
 
-		db, err := app.openDatabase("file::memory:?cache=shared", false)
+		db, err := app.openDatabase("file::memory:?cache=shared", false, false)
 		if err != nil {
 			t.Fatalf("Error: %v", err)
 		}
