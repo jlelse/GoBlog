@@ -81,7 +81,7 @@
         // Post map
         getMapJson(mapEl.dataset.paths, paths => {
             paths.forEach(path => {
-                cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: 'blue' }))
+                cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: randomColor() }))
             })
             fitFeatures()
         })
