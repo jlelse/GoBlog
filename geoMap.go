@@ -118,18 +118,20 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type templateLocation struct {
-		Lat  float64
-		Lon  float64
-		Post string
+		Point trackPoint
+		Post  string
+	}
+
+	trunc := func(num float64) float64 {
+		return float64(int64(num*100000)) / 100000
 	}
 
 	var locations []templateLocation
 	for _, p := range allPostsWithLocations {
 		for _, g := range a.geoURIs(p) {
 			locations = append(locations, templateLocation{
-				Lat:  g.Latitude,
-				Lon:  g.Longitude,
-				Post: p.Path,
+				Point: trackPoint{trunc(g.Latitude), trunc(g.Longitude)},
+				Post:  p.Path,
 			})
 		}
 	}

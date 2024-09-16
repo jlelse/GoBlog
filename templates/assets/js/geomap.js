@@ -1,22 +1,19 @@
 (function () {
     function randomColor() {
-        let color = '#'
-        for (let i = 0; i < 3; i++) {
-            color += Math.floor(10 + Math.random() * 246).toString(16)
-        }
-        return color
+        // Generate one of 30 different colors
+        return `hsl(${Math.floor(Math.random() * 30) * 12}, 100%, 50%)`
     }
 
     function getMapJson(data, callback) {
         if (!data) {
             return
         } else if (data.startsWith('url:')) {
-            let url = data.substring(4)
-            let req = new XMLHttpRequest()
+            const url = data.substring(4)
+            const req = new XMLHttpRequest()
             req.open('GET', url)
             req.onload = function () {
                 if (req.status == 200) {
-                    let parsed = JSON.parse(req.responseText)
+                    const parsed = JSON.parse(req.responseText)
                     if (parsed && parsed.length > 0) {
                         callback(parsed)
                     }
@@ -32,10 +29,10 @@
 
     function loadMap() {
         // Get the map element
-        let mapEl = document.getElementById('map')
+        const mapEl = document.getElementById('map')
 
         // Create Leaflet map
-        let map = L.map('map', {
+        const map = L.map('map', {
             minZoom: mapEl.dataset.minzoom,
             maxZoom: mapEl.dataset.maxzoom
         })
@@ -46,7 +43,7 @@
         }).addTo(map)
 
         // Load map features
-        let cluster = L.markerClusterGroup().addTo(map)
+        const cluster = L.markerClusterGroup().addTo(map)
 
         function fitFeatures() {
             // Make the map fit the features
@@ -55,9 +52,9 @@
 
         // Map page
         getMapJson(mapEl.dataset.locations, locations => {
-            locations.forEach(loc => {
-                cluster.addLayer(L.marker([loc.Lat, loc.Lon]).on('click', function () {
-                    window.open(loc.Post, '_blank').focus()
+            locations.forEach(location => {
+                cluster.addLayer(L.marker(location.Point).on('click', function () {
+                    window.open(location.Post, '_blank').focus()
                 }))
             })
             fitFeatures()
@@ -66,12 +63,12 @@
             tracks.forEach(track => {
                 track.Paths.forEach(path => {
                     // Use random color on map page for paths to better differentiate
-                    cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: randomColor() }).on('click', function () {
+                    cluster.addLayer(L.polyline(path, { color: randomColor() }).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
                 track.Points.forEach(point => {
-                    cluster.addLayer(L.marker([point[0], point[1]]).on('click', function () {
+                    cluster.addLayer(L.marker(point).on('click', function () {
                         window.open(track.Post, '_blank').focus()
                     }))
                 })
@@ -81,13 +78,13 @@
         // Post map
         getMapJson(mapEl.dataset.paths, paths => {
             paths.forEach(path => {
-                cluster.addLayer(L.polyline(path.map(point => [point[0], point[1]]), { color: randomColor() }))
+                cluster.addLayer(L.polyline(path, { color: randomColor() }))
             })
             fitFeatures()
         })
         getMapJson(mapEl.dataset.points, points => {
             points.forEach(point => {
-                cluster.addLayer(L.marker([point[0], point[1]]))
+                cluster.addLayer(L.marker(point))
             })
             fitFeatures()
         })
@@ -97,28 +94,28 @@
     // Add Leaflet to the page
 
     // CSS
-    let css = document.createElement('link')
+    const css = document.createElement('link')
     css.rel = 'stylesheet'
     css.href = '/-/leaflet/leaflet.css?v=1.9.4'
     document.head.appendChild(css)
 
     // Marker Cluster plugin
-    let pluginCss1 = document.createElement('link')
+    const pluginCss1 = document.createElement('link')
     pluginCss1.rel = 'stylesheet'
     pluginCss1.href = '/-/leaflet/markercluster.css?v=1.5.3'
     document.head.appendChild(pluginCss1)
 
-    let pluginCss2 = document.createElement('link')
+    const pluginCss2 = document.createElement('link')
     pluginCss2.rel = 'stylesheet'
     pluginCss2.href = '/-/leaflet/markercluster.default.css?v=1.5.3'
     document.head.appendChild(pluginCss2)
 
     // JS
-    let script = document.createElement('script')
+    const script = document.createElement('script')
     script.src = '/-/leaflet/leaflet.js?v=1.9.4'
     script.onload = function () {
         // Marker Cluster plugin
-        let plugin = document.createElement('script')
+        const plugin = document.createElement('script')
         plugin.src = '/-/leaflet/markercluster.js?v=1.5.3'
         plugin.onload = loadMap
         document.head.appendChild(plugin)
