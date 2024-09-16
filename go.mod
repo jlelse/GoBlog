@@ -65,11 +65,12 @@ require (
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.18.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.20.0
+	maunium.net/go/mautrix v0.21.0
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	git.sr.ht/~mariusor/cache v0.0.0-20240905174905-d68f888f114e // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120 // indirect
@@ -114,7 +115,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.mau.fi/util v0.7.0 // indirect
+	go.mau.fi/util v0.8.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/image v0.20.0 // indirect

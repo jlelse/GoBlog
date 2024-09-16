@@ -55,6 +55,7 @@ func init() {
 		"ErrURL":             reflect.ValueOf(requests.ErrURL),
 		"ErrValidator":       reflect.ValueOf(requests.ErrValidator),
 		"ErrorJSON":          reflect.ValueOf(requests.ErrorJSON),
+		"ErrorTransport":     reflect.ValueOf(requests.ErrorTransport),
 		"GzipConfig":         reflect.ValueOf(requests.GzipConfig),
 		"HasStatusErr":       reflect.ValueOf(requests.HasStatusErr),
 		"JSONDeserializer":   reflect.ValueOf(&requests.JSONDeserializer).Elem(),
