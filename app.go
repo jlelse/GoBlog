@@ -13,6 +13,7 @@ import (
 	"github.com/go-fed/httpsig"
 	"github.com/kaorimatz/go-opml"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	geojson "github.com/paulmach/go.geojson"
 	"github.com/samber/go-singleflightx"
 	"github.com/yuin/goldmark"
 	c "go.goblog.app/app/pkgs/cache"
@@ -52,7 +53,7 @@ type goBlog struct {
 	// Errors
 	errorCheckMediaTypes []ct.MediaType
 	// Geo
-	photonMutex sync.Mutex
+	photonGroup singleflightx.Group[string, *geojson.FeatureCollection]
 	// Hooks
 	pPostHooks     []postHookFunc
 	pUpdateHooks   []postHookFunc
