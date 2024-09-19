@@ -143,7 +143,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, post.Path, http.StatusFound)
 	case "helpgpx":
-		err := r.ParseMultipartForm(0)
+		err := r.ParseMultipartForm(10 * bodylimit.MB)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return

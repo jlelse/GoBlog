@@ -1,7 +1,12 @@
 package main
 
 import (
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_database(t *testing.T) {
@@ -60,4 +65,18 @@ func Test_database(t *testing.T) {
 			t.Fatalf("Error: %v", err)
 		}
 	})
+}
+
+func Test_database_dump(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Db.DumpFile = strings.ReplaceAll(app.cfg.Db.File, ".db", ".sql")
+	_ = app.initConfig(false)
+
+	// Check if dump exists
+	dumpBytes, err := os.ReadFile(app.cfg.Db.DumpFile)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(dumpBytes), "CREATE TABLE")
 }

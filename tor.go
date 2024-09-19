@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/x509"
@@ -13,16 +14,13 @@ import (
 	"time"
 
 	"go.goblog.app/app/pkgs/tor"
+	"go.goblog.app/app/pkgs/utils"
 )
 
 const torUsedKey contextKey = "tor"
 
 func (a *goBlog) startOnionService(h http.Handler) error {
 	torDataPath, err := filepath.Abs("data/tor")
-	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(torDataPath, 0777)
 	if err != nil {
 		return err
 	}
@@ -78,8 +76,7 @@ func (*goBlog) createTorPrivateKey(torDataPath string) (ed25519.PrivateKey, erro
 			return nil, err
 		}
 		pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-		err = os.WriteFile(torKeyPath, pemEncoded, 0600)
-		if err != nil {
+		if err := utils.SaveToFileWithMode(bytes.NewReader(pemEncoded), torKeyPath, 0777, 0600); err != nil {
 			return nil, err
 		}
 	} else {

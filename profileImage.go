@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,7 +19,9 @@ import (
 	_ "embed"
 
 	"github.com/disintegration/imaging"
+	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/utils"
 )
 
 type profileImageFormat string
@@ -170,33 +171,20 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// Parse multipart form
-	err := r.ParseMultipartForm(0)
-	if err != nil {
+	if err := r.ParseMultipartForm(10 * bodylimit.MB); err != nil {
 		a.serveError(w, r, "Failed to parse multipart form", http.StatusBadRequest)
 		return
 	}
-	// Get file
+	// Get form file
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		a.serveError(w, r, "Failed to read file", http.StatusBadRequest)
 		return
 	}
+	defer file.Close()
 	// Save the file locally
-	err = os.MkdirAll(filepath.Dir(a.cfg.User.ProfileImageFile), 0777)
-	if err != nil {
-		a.serveError(w, r, "Failed to create directories", http.StatusBadRequest)
-		return
-	}
-	dataFile, err := os.OpenFile(a.cfg.User.ProfileImageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		a.serveError(w, r, "Failed to open local file", http.StatusBadRequest)
-		return
-	}
-	_, err = io.Copy(dataFile, file)
-	_ = file.Close()
-	_ = dataFile.Close()
-	if err != nil {
-		a.serveError(w, r, "Failed to save image", http.StatusBadRequest)
+	if err := utils.SaveToFileWithMode(file, a.cfg.User.ProfileImageFile, 0777, 0755); err != nil {
+		a.serveError(w, r, "Failed to save to storage", http.StatusBadRequest)
 		return
 	}
 	// Reset hash

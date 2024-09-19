@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -350,23 +348,6 @@ func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, 
 		req.URL.Path = "/"
 	}
 	return newHandlerClient(handler).Do(req)
-}
-
-func saveToFile(reader io.Reader, fileName string) error {
-	// Create folder path if not exists
-	if err := os.MkdirAll(filepath.Dir(fileName), os.ModePerm); err != nil {
-		return err
-	}
-	// Create file
-	out, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	// Copy response to file
-	_, err = io.Copy(out, reader)
-	// Close file again
-	_ = out.Close()
-	return err
 }
 
 var timeDiffLocaleMap = map[string]tdl.Locale{}

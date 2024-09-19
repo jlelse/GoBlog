@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 
@@ -14,6 +14,7 @@ import (
 	"github.com/samber/go-singleflightx"
 	"github.com/samber/lo"
 	"github.com/schollz/sqlite3dump"
+	"go.goblog.app/app/pkgs/utils"
 )
 
 type database struct {
@@ -50,10 +51,15 @@ func (a *goBlog) initDatabase(logging bool) error {
 	})
 
 	if dumpEnabled {
+		dumpFunc := func() {
+			if err := db.dump(a.cfg.Db.DumpFile); err != nil {
+				a.error("Error while dump db", "err", err)
+			}
+		}
 		a.hourlyHooks = append(a.hourlyHooks, func() {
-			db.dump(a.cfg.Db.DumpFile)
+			dumpFunc()
 		})
-		db.dump(a.cfg.Db.DumpFile)
+		dumpFunc()
 	}
 
 	if logging {
@@ -206,19 +212,17 @@ func (db *database) QueryRowContext(ctx context.Context, query string, args ...a
 	return db.readDb.QueryRowContext(ctx, query, args...), nil
 }
 
-func (db *database) dump(file string) {
-	if db == nil || db.readDb == nil {
-		return
+func (db *database) dump(file string) error {
+	if db == nil || db.dumpDb == nil {
+		return errors.New("database not initialised")
 	}
-	f, err := os.Create(file)
-	if err != nil {
-		db.a.error("Error while dump db", "err", err)
-		return
-	}
-	defer f.Close()
-	if err = sqlite3dump.DumpDB(db.dumpDb, f, sqlite3dump.WithTransaction(false)); err != nil {
-		db.a.error("Error while dump db", "err", err)
-	}
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(sqlite3dump.DumpDB(db.dumpDb, pw, sqlite3dump.WithTransaction(false)))
+	}()
+	err := utils.SaveToFile(pr, file)
+	_ = pr.Close()
+	return err
 }
 
 func (db *database) close() error {

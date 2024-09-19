@@ -2,8 +2,10 @@ package main
 
 import (
 	"cmp"
-	"os"
 	"path/filepath"
+	"strings"
+
+	"go.goblog.app/app/pkgs/utils"
 )
 
 func (a *goBlog) exportMarkdownFiles(dir string) error {
@@ -16,11 +18,7 @@ func (a *goBlog) exportMarkdownFiles(dir string) error {
 	dir = cmp.Or(dir, "export")
 	for _, p := range posts {
 		filename := filepath.Join(dir, p.Path+".md")
-		filedir := filepath.Dir(filename)
-		_ = os.MkdirAll(filedir, 0777)
-		//nolint:gosec
-		err = os.WriteFile(filename, []byte(p.contentWithParams()), 0666)
-		if err != nil {
+		if err := utils.SaveToFile(strings.NewReader(p.contentWithParams()), filename); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package tor
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/sha512"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.goblog.app/app/pkgs/utils"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -48,21 +50,18 @@ func StartTor(privateKey ed25519.PrivateKey, remotePort int) (net.Listener, stri
 	// Write the keys to a file
 	secretKeyFilePath := filepath.Join(dir, "hs_ed25519_secret_key")
 	secretKeyFileContent := append([]byte("== ed25519v1-secret: type0 ==\x00\x00\x00"), deriveSecretKey(privateKey)...)
-	err = os.WriteFile(secretKeyFilePath, secretKeyFileContent, 0600)
-	if err != nil {
+	if err := utils.SaveToFileWithMode(bytes.NewReader(secretKeyFileContent), secretKeyFilePath, os.ModePerm, 0600); err != nil {
 		return nil, "", nil, fmt.Errorf("failed to write private key: %v", err)
 	}
 
 	publicKeyFilePath := filepath.Join(dir, "hs_ed25519_public_key")
 	publicKeyFileContent := append([]byte("== ed25519v1-public: type0 ==\x00\x00\x00"), publicKey...)
-	err = os.WriteFile(publicKeyFilePath, publicKeyFileContent, 0600)
-	if err != nil {
+	if err := utils.SaveToFileWithMode(bytes.NewReader(publicKeyFileContent), publicKeyFilePath, os.ModePerm, 0600); err != nil {
 		return nil, "", nil, fmt.Errorf("failed to write public key: %v", err)
 	}
 
 	hostnameFilePath := filepath.Join(dir, "hostname")
-	err = os.WriteFile(hostnameFilePath, []byte(onion), 0600)
-	if err != nil {
+	if err := utils.SaveToFileWithMode(strings.NewReader(onion), hostnameFilePath, os.ModePerm, 0600); err != nil {
 		return nil, "", nil, fmt.Errorf("failed to write hostname: %v", err)
 	}
 

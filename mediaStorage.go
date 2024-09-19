@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jlaffaye/ftp"
+	"go.goblog.app/app/pkgs/utils"
 )
 
 func (a *goBlog) initMediaStorage() {
@@ -99,7 +100,7 @@ func (a *goBlog) initLocalMediaStorage() mediaStorage {
 }
 
 func (l *localMediaStorage) save(filename string, file io.Reader) (location string, err error) {
-	if err = saveToFile(file, filepath.Join(l.path, filename)); err != nil {
+	if err = utils.SaveToFile(file, filepath.Join(l.path, filename)); err != nil {
 		return "", err
 	}
 	return l.location(filename), nil
