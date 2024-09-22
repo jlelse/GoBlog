@@ -1392,8 +1392,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				"class", "monospace h400p",
 				"id", "create-input",
 				"data-preview", "post-preview",
-				"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
-				"data-syncws", rd.Blog.getRelativePath("/editor/sync"),
+				"data-ws", rd.Blog.getRelativePath("/editor/ws?preview=1&sync=1"),
 				"data-template", a.editorPostTemplate(rd.BlogString, rd.Blog, edrd.presetParams),
 			)
 			hb.WriteElementClose("textarea")
@@ -1416,7 +1415,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 					"name", "content",
 					"class", "monospace h400p",
 					"data-preview", "update-preview",
-					"data-previewws", rd.Blog.getRelativePath("/editor/preview"),
+					"data-ws", rd.Blog.getRelativePath("/editor/ws?preview=1"),
 				)
 				hb.WriteEscaped(edrd.updatePostContent)
 				hb.WriteElementClose("textarea")

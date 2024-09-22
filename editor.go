@@ -3,22 +3,18 @@ package main
 import (
 	"bytes"
 	"cmp"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/carlmjohnson/requests"
-	ws "github.com/coder/websocket"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/gpxhelper"
-	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.hacdias.com/indielib/micropub"
 	"gopkg.in/yaml.v3"
 )
@@ -31,63 +27,6 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 			presetParams: parsePresetPostParamsFromQuery(r),
 		},
 	})
-}
-
-func (a *goBlog) serveEditorPreview(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
-	c, err := ws.Accept(w, r, &ws.AcceptOptions{CompressionMode: ws.CompressionContextTakeover})
-	if err != nil {
-		return
-	}
-	c.SetReadLimit(10 * bodylimit.MB)
-	defer c.Close(ws.StatusNormalClosure, "")
-	ctx, cancel := context.WithTimeout(r.Context(), time.Hour*6)
-	defer cancel()
-	for {
-		// Retrieve content
-		mt, message, err := c.Reader(ctx)
-		if err != nil {
-			break
-		}
-		if mt != ws.MessageText {
-			continue
-		}
-		// Create preview
-		w, err := c.Writer(ctx, ws.MessageText)
-		if err != nil {
-			break
-		}
-		a.createMarkdownPreview(w, blog, message)
-		if err = w.Close(); err != nil {
-			break
-		}
-	}
-}
-
-func (a *goBlog) createMarkdownPreview(w io.Writer, blog string, markdown io.Reader) {
-	md, err := io.ReadAll(markdown)
-	if err != nil {
-		_, _ = io.WriteString(w, err.Error())
-		return
-	}
-	p := &post{
-		Blog:    blog,
-		Content: string(md),
-	}
-	if err = a.extractParamsFromContent(p); err != nil {
-		_, _ = io.WriteString(w, err.Error())
-		return
-	}
-	if err := a.checkPost(p, true); err != nil {
-		_, _ = io.WriteString(w, err.Error())
-		return
-	}
-	if t := p.Title(); t != "" {
-		p.RenderedTitle = a.renderMdTitle(t)
-	}
-	// Render post (using post's blog config)
-	hb := htmlbuilder.NewHtmlBuilder(w)
-	a.renderEditorPreview(hb, a.getBlogFromPost(p), p)
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {

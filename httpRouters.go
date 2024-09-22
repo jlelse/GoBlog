@@ -373,8 +373,7 @@ func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 		r.Get("/deleted", a.serveDeleted)
 		r.Get("/deleted"+feedPath, a.serveDeleted)
 		r.Get("/deleted"+paginationPath, a.serveDeleted)
-		r.HandleFunc("/preview", a.serveEditorPreview)
-		r.HandleFunc("/sync", a.serveEditorStateSync)
+		r.HandleFunc("/ws", a.serveEditorWebsocket)
 	}
 }
 
