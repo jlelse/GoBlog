@@ -951,6 +951,17 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 					hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "undelete"))
 					hb.WriteElementClose("form")
 				}
+				// Change visibility
+				for _, visibility := range []postVisibility{visibilityPublic, visibilityUnlisted, visibilityPrivate} {
+					if p.Visibility != visibility {
+						hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))
+						hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "visibility")
+						hb.WriteElementOpen("input", "type", "hidden", "name", "visibility", "value", string(visibility))
+						hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", rd.Canonical)
+						hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "changevisibility-"+string(visibility)))
+						hb.WriteElementClose("form")
+					}
+				}
 				// TTS
 				if a.ttsEnabled() {
 					hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath("/editor"))

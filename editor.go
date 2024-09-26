@@ -65,6 +65,13 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			BodyForm(url.Values{"action": {action}, "url": {r.FormValue("url")}}).
 			Request(r.Context())
 		a.editorMicropubPost(w, req, false, r.FormValue("url"))
+	case "visibility":
+		reqBody := map[string]any{}
+		reqBody["action"] = micropub.ActionUpdate
+		reqBody["url"] = r.FormValue("url")
+		reqBody["replace"] = map[string][]string{"visibility": {r.FormValue("visibility")}}
+		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
+		a.editorMicropubPost(w, req, false, r.FormValue("url"))
 	case "tts":
 		parsedURL, err := url.Parse(r.FormValue("url"))
 		if err != nil {
