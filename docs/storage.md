@@ -22,7 +22,9 @@ posts
 posts_fts
 queue
 reactions
+sections
 sessions
+settings
 shortpath
 webmentions
 ```

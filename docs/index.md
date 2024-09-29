@@ -49,6 +49,7 @@ Here's an (incomplete) list of features:
 - Short URLs with option for a separate short domain
 - Command to check for broken links
 - Command to export all posts to Markdown files
+- Authentication security with TOTP 2FA and passkeys
 
 ## More information about GoBlog:
 

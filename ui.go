@@ -228,8 +228,23 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Submit
 			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 			hb.WriteElementClose("form")
+			// WebAuthn login
+			hasPasskey := a.hasWebAuthnCredential()
+			if hasPasskey {
+				hb.WriteElementOpen("form", "class", "fw p")
+				hb.WriteElementOpen(
+					"input", "id", "loginwebauthn", "type", "button", "class", "hide",
+					"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "loginpasskey"),
+				)
+				hb.WriteElementClose("form")
+			}
 			// Author (required for some IndieWeb apps)
 			a.renderAuthor(hb)
+			// Scripts
+			if hasPasskey {
+				hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "defer", "")
+				hb.WriteElementClose("script")
+			}
 			hb.WriteElementClose("main")
 		},
 	)
@@ -1609,6 +1624,8 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementOpen("script", "src", a.assetFileName("js/settings.js"), "defer", "")
 			hb.WriteElementClose("script")
 			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+			hb.WriteElementClose("script")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "defer", "")
 			hb.WriteElementClose("script")
 
 			hb.WriteElementClose("main")

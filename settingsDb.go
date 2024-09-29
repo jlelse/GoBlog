@@ -62,6 +62,14 @@ func (a *goBlog) saveSettingValue(name, value string) error {
 	return err
 }
 
+func (a *goBlog) deleteSettingValue(name string) error {
+	_, err := a.db.Exec(
+		"delete from settings where name = @name",
+		sql.Named("name", name),
+	)
+	return err
+}
+
 func (a *goBlog) saveBooleanSettingValue(name string, value bool) error {
 	return a.saveSettingValue(name, lo.If(value, "1").Else("0"))
 }

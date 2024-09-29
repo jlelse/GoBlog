@@ -214,6 +214,10 @@ func (app *goBlog) initComponents() {
 		app.logErrAndQuit("Failed to init ActivityPub", "err", err)
 		return
 	}
+	if err = app.initWebAuthn(); err != nil {
+		app.logErrAndQuit("Failed to init WebAuthn", "err", err)
+		return
+	}
 	app.initWebmention()
 	app.initTelegram()
 	app.initBlogStats()

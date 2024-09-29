@@ -51,6 +51,16 @@ func (a *goBlog) initSessions() {
 		},
 		db: a.db,
 	}
+	a.webauthnSessions = &dbSessionStore{
+		options: &sessions.Options{
+			Secure:   a.useSecureCookies(),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   int((10 * time.Minute).Seconds()),
+			Path:     "/", // Cookie for all pages
+		},
+		db: a.db,
+	}
 }
 
 type dbSessionStore struct {

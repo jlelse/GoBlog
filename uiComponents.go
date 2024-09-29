@@ -754,6 +754,26 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteProfileImagePath),
 	)
 	hb.WriteElementClose("form")
+
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkey"))
+	hb.WriteElementClose("h3")
+
+	hb.WriteElementOpen("form", "class", "fw p")
+	hb.WriteElementOpen(
+		"input", "id", "registerwebauthn", "type", "button", "class", "hide",
+		"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerupdatepasskey"),
+	)
+	hb.WriteElementClose("form")
+
+	if a.hasWebAuthnCredential() {
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+		hb.WriteElementOpen(
+			"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepasskey"),
+			"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath),
+		)
+		hb.WriteElementClose("form")
+	}
 }
 
 func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {

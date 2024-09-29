@@ -11,6 +11,7 @@ import (
 	ct "github.com/elnormous/contenttype"
 	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/kaorimatz/go-opml"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	geojson "github.com/paulmach/go.geojson"
@@ -100,7 +101,7 @@ type goBlog struct {
 	// Regex Redirects
 	regexRedirects []*regexRedirect
 	// Sessions
-	loginSessions, captchaSessions *dbSessionStore
+	loginSessions, captchaSessions, webauthnSessions *dbSessionStore
 	// Shutdown
 	shutdown shutdowner.Shutdowner
 	// Template strings
@@ -108,4 +109,6 @@ type goBlog struct {
 	// Tor
 	torAddress  string
 	torHostname string
+	// WebAuthn
+	webAuthn *webauthn.WebAuthn
 }

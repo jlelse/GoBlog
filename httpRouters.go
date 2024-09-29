@@ -10,9 +10,15 @@ import (
 
 // Login
 func (a *goBlog) loginRouter(r chi.Router) {
-	r.Use(a.authMiddleware)
-	r.Get("/login", serveLogin)
-	r.Get("/logout", a.serveLogout)
+	r.Group(func(r chi.Router) {
+		r.Use(a.authMiddleware)
+		r.Get("/login", serveLogin)
+		r.Get("/logout", a.serveLogout)
+		r.Post("/webauthn/registration/begin", a.beginWebAuthnRegistration)
+		r.Post("/webauthn/registration/finish", a.finishWebAuthnRegistration)
+	})
+	r.Post("/webauthn/login/begin", a.beginWebAuthnLogin)
+	r.Post("/webauthn/login/finish", a.finishWebAuthnLogin)
 }
 
 // Micropub
@@ -487,5 +493,6 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.Post(settingsUpdateUserPath, a.settingsUpdateUser)
 		r.Post(settingsUpdateProfileImagePath, a.serveUpdateProfileImage)
 		r.Post(settingsDeleteProfileImagePath, a.serveDeleteProfileImage)
+		r.Post(settingsDeletePasskeyPath, a.settingsDeletePasskey)
 	}
 }
