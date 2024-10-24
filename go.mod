@@ -17,10 +17,10 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
-	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43
+	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
 	github.com/go-ap/activitypub v0.0.0-20240910141749-b4b8c8aa484c
-	github.com/go-ap/client v0.0.0-20240910141951-13a4f3c4fd53
+	github.com/go-ap/client v0.0.0-20241018095317-40afc0dd1456
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
@@ -33,10 +33,10 @@ require (
 	github.com/jlelse/feeds v1.3.0
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.17.10
+	github.com/klauspost/compress v1.17.11
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-sqlite3 v1.14.23
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mergestat/timediff v0.0.3
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
@@ -51,28 +51,28 @@ require (
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tdewolff/minify/v2 v2.20.37
+	github.com/tdewolff/minify/v2 v2.21.0
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/xhit/go-simple-mail/v2 v2.16.0
-	github.com/yuin/goldmark v1.7.4
-	github.com/yuin/goldmark-emoji v1.0.3
+	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark-emoji v1.0.4
 	go.hacdias.com/indielib v0.4.0
-	golang.org/x/crypto v0.27.0
-	golang.org/x/net v0.29.0
+	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/text v0.18.0
+	golang.org/x/text v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.21.0
+	maunium.net/go/mautrix v0.21.1
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	git.sr.ht/~mariusor/cache v0.0.0-20240905174905-d68f888f114e // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20241023163359-470536270d66 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568 // indirect
-	github.com/go-webauthn/x v0.1.14 // indirect
+	github.com/go-webauthn/x v0.1.15 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/go-tpm v0.9.1 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
@@ -113,20 +113,20 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.7.15 // indirect
-	github.com/tidwall/gjson v1.17.3 // indirect
+	github.com/tdewolff/parse/v2 v2.7.18 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mau.fi/util v0.8.0 // indirect
+	go.mau.fi/util v0.8.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-	golang.org/x/image v0.20.0 // indirect
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
+	golang.org/x/image v0.21.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	willnorris.com/go/webmention v0.0.0-20220108183051-4a23794272f0 // indirect
 )
