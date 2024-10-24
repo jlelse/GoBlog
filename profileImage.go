@@ -18,7 +18,7 @@ import (
 
 	_ "embed"
 
-	"github.com/disintegration/imaging"
+	"github.com/kovidgoyal/imaging"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/utils"

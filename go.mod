@@ -14,7 +14,6 @@ require (
 	github.com/carlmjohnson/requests v0.24.2
 	github.com/coder/websocket v1.8.12
 	github.com/dchest/captcha v1.0.0
-	github.com/disintegration/imaging v1.6.2
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
@@ -34,6 +33,7 @@ require (
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/klauspost/compress v1.17.11
+	github.com/kovidgoyal/imaging v1.6.3
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-sqlite3 v1.14.24

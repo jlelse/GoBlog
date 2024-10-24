@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/disintegration/imaging"
+	"github.com/kovidgoyal/imaging"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
