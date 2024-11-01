@@ -1,15 +1,20 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/araddon/dateparse"
+	"github.com/carlmjohnson/requests"
 	"github.com/jlaffaye/ftp"
+	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/utils"
 )
 
@@ -145,21 +150,87 @@ func (l *localMediaStorage) location(name string) string {
 	return fmt.Sprintf("/m/%s", name)
 }
 
+type bunnyMediaStorage struct {
+	address    string       // required
+	apiKey     string       // required
+	mediaURL   string       // required
+	httpClient *http.Client // required
+}
+
 func (a *goBlog) initBunnyCdnMediaStorage() mediaStorage {
 	config := a.cfg.Micropub.MediaStorage
 	if config == nil || config.BunnyStorageName == "" || config.BunnyStorageKey == "" || config.MediaURL == "" {
 		return nil
 	}
-	address := "storage.bunnycdn.com:21"
+	address := "storage.bunnycdn.com"
 	if config.BunnyStorageRegion != "" {
 		address = fmt.Sprintf("%s.%s", strings.ToLower(config.BunnyStorageRegion), address)
 	}
-	return &ftpMediaStorage{
-		address:  address,
-		user:     config.BunnyStorageName,
-		password: config.BunnyStorageKey,
-		mediaURL: config.MediaURL,
+	address = "https://" + address + "/" + config.BunnyStorageName + "/"
+	return &bunnyMediaStorage{
+		httpClient: a.httpClient,
+		mediaURL:   config.MediaURL,
+		address:    address,
+		apiKey:     config.BunnyStorageKey,
 	}
+}
+
+type bunnyFileInfo struct {
+	ObjectName  string `json:"ObjectName"`
+	Length      int64  `json:"Length"`
+	LastChanged string `json:"LastChanged"`
+	IsDirectory bool   `json:"IsDirectory"`
+}
+
+func (f *bunnyMediaStorage) save(filename string, file io.Reader) (location string, err error) {
+	err = requests.URL(f.address+filename).
+		Method(http.MethodPut).
+		Client(f.httpClient).
+		Header("AccessKey", f.apiKey).
+		Header("Content-Type", "application/octet-stream").
+		BodyReader(file).
+		Fetch(context.Background())
+	if err != nil {
+		return "", err
+	}
+	return f.location(filename), nil
+}
+
+func (f *bunnyMediaStorage) delete(filename string) (err error) {
+	return requests.URL(f.address+filename).
+		Method(http.MethodDelete).
+		Client(f.httpClient).
+		Header("AccessKey", f.apiKey).
+		Fetch(context.Background())
+}
+
+func (f *bunnyMediaStorage) files() (files []*mediaFile, err error) {
+	var bunnyFiles []bunnyFileInfo
+	err = requests.URL(f.address).
+		Client(f.httpClient).
+		Header("AccessKey", f.apiKey).
+		Header("Accept", contenttype.JSON).
+		ToJSON(&bunnyFiles).
+		Fetch(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range bunnyFiles {
+		if !s.IsDirectory {
+			t, _ := dateparse.ParseIn(s.LastChanged, time.UTC)
+			files = append(files, &mediaFile{
+				Name:     s.ObjectName,
+				Location: f.location(s.ObjectName),
+				Time:     t,
+				Size:     int64(s.Length),
+			})
+		}
+	}
+	return files, nil
+}
+
+func (f *bunnyMediaStorage) location(name string) string {
+	return fmt.Sprintf("%s/%s", f.mediaURL, name)
 }
 
 type ftpMediaStorage struct {

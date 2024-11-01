@@ -731,17 +731,18 @@ func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, er
 }
 
 const mediaUseSql = `
-with mediafiles (name) as (values %s)
-select name, count(path) as count from (
-    select distinct m.name, p.path
-    from mediafiles m, post_parameters p
-    where instr(p.value, m.name) > 0
-    union
-    select distinct m.name, p.path
-    from mediafiles m, posts_fts p
-    where p.content match '"' || m.name || '"'
+WITH mediafiles (name) AS (VALUES XXX)
+SELECT name, COUNT(DISTINCT path) AS count
+FROM (
+    SELECT m.name, p.path
+    FROM mediafiles m, post_parameters p
+    WHERE p.value LIKE '%' || m.name || '%'
+    UNION ALL
+    SELECT m.name, p.path
+    FROM mediafiles m, posts_fts p
+    WHERE p.content MATCH '"' || m.name || '"'
 )
-group by name;
+GROUP BY name;
 `
 
 func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
@@ -758,12 +759,12 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 		nameValues.WriteString(")")
 		sqlArgs = append(sqlArgs, sql.Named(named, n))
 	}
-	rows, err := db.Query(fmt.Sprintf(mediaUseSql, nameValues.String()), sqlArgs...)
+	rows, err := db.Query(strings.Replace(mediaUseSql, "XXX", nameValues.String(), 1), sqlArgs...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	counts = make([]int, len(names))
+	countMap := make(map[string]int)
 	var name string
 	var count int
 	for rows.Next() {
@@ -771,12 +772,11 @@ func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
 		if err != nil {
 			return nil, err
 		}
-		for i, n := range names {
-			if n == name {
-				counts[i] = count
-				break
-			}
-		}
+		countMap[name] = count
+	}
+	counts = make([]int, len(names))
+	for i, n := range names {
+		counts[i] = countMap[n]
 	}
 	return counts, nil
 }
