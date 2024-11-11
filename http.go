@@ -25,7 +25,7 @@ import (
 const (
 	contentType  = "Content-Type"
 	userAgent    = "User-Agent"
-	appUserAgent = "GoBlog"
+	appUserAgent = "GoBlog/1.0"
 
 	blogKey contextKey = "blog"
 	pathKey contextKey = "httpPath"

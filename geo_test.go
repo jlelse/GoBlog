@@ -42,15 +42,15 @@ func Test_geo(t *testing.T) {
 
 	assert.Equal(t, "52.5163, 13.3774", gt)
 
-	// Test original Photon request
-	fc.setFakeResponse(http.StatusOK, `{"features":[{"geometry":{"coordinates":[13.3774202,52.5162623],"type":"Point"},"type":"Feature","properties":{"osm_id":38345682,"osm_type":"W","extent":[13.3772052,52.5162623,13.3774202,52.5162476],"country":"Deutschland","osm_key":"highway","city":"Berlin","countrycode":"DE","district":"Mitte","osm_value":"service","postcode":"10117","name":"Platz des 18. März","type":"street"}}],"type":"FeatureCollection"}`)
+	// Test original Nominatim request
+	fc.setFakeResponse(http.StatusOK, `{"type":"FeatureCollection","licence":"Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright","features":[{"type":"Feature","properties":{"place_id":134066932,"osm_type":"relation","osm_id":1402158,"place_rank":21,"category":"boundary","type":"postal_code","importance":0.12008875486381318,"addresstype":"postcode","name":"10117","display_name":"10117, Mitte, Berlin, Deutschland","address":{"postcode":"10117","suburb":"Mitte","borough":"Mitte","city":"Berlin","ISO3166-2-lvl4":"DE-BE","country":"Deutschland","country_code":"de"}},"bbox":[13.3710363,52.5069995,13.4057347,52.5281501],"geometry":{"type": "Point","coordinates": [13.38776860055452, 52.5175184]}}]}`)
 
 	gt = app.geoTitle(gu, "de")
 
 	require.NotNil(t, fc.req)
-	assert.Equal(t, "https://photon.komoot.io/reverse?lang=de&lat=52.51627&lon=13.37737", fc.req.URL.String())
+	assert.Equal(t, "https://nominatim.openstreetmap.org/reverse?accept-language=de%2C+en&format=geojson&lat=52.51627&layer=address&lon=13.37737&zoom=14", fc.req.URL.String())
 
-	assert.Equal(t, "Berlin, Deutschland", gt)
+	assert.Equal(t, "Mitte, Berlin, Deutschland", gt)
 
 	// Test cache
 	fc.setFakeResponse(http.StatusOK, "")
@@ -59,6 +59,6 @@ func Test_geo(t *testing.T) {
 
 	assert.Nil(t, fc.req)
 
-	assert.Equal(t, "Berlin, Deutschland", gt)
+	assert.Equal(t, "Mitte, Berlin, Deutschland", gt)
 
 }

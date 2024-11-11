@@ -54,7 +54,7 @@ type goBlog struct {
 	// Errors
 	errorCheckMediaTypes []ct.MediaType
 	// Geo
-	photonGroup singleflightx.Group[string, *geojson.FeatureCollection]
+	nominatimGroup singleflightx.Group[string, *geojson.FeatureCollection]
 	// Hooks
 	pPostHooks     []postHookFunc
 	pUpdateHooks   []postHookFunc
