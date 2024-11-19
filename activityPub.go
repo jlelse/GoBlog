@@ -107,9 +107,11 @@ func (a *goBlog) apEnabled() bool {
 }
 
 func (a *goBlog) prepareWebfinger() {
+	a.apUserHandle = map[string]string{}
 	a.webfingerResources = map[string]*configBlog{}
 	a.webfingerAccts = map[string]string{}
 	for name, blog := range a.cfg.Blogs {
+		a.apUserHandle[name] = "@" + name + "@" + a.cfg.Server.publicHostname
 		acct := "acct:" + name + "@" + a.cfg.Server.publicHostname
 		a.webfingerResources[acct] = blog
 		a.webfingerResources[a.apIri(blog)] = blog

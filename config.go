@@ -274,8 +274,9 @@ type configRegexRedirect struct {
 }
 
 type configActivityPub struct {
-	Enabled        bool     `mapstructure:"enabled"`
-	TagsTaxonomies []string `mapstructure:"tagsTaxonomies"`
+	Enabled            bool     `mapstructure:"enabled"`
+	TagsTaxonomies     []string `mapstructure:"tagsTaxonomies"`
+	AttributionDomains []string `mapstructure:"attributionDomains"`
 }
 
 type configNotifications struct {

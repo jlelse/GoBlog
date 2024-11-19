@@ -18,8 +18,8 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20241104140659-be99a725f9d5
-	github.com/go-ap/client v0.0.0-20241104140838-929b90e84e8a
+	github.com/go-ap/activitypub v0.0.0-20241114170014-e897df079e3d
+	github.com/go-ap/client v0.0.0-20241114180623-d0658a04422c
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
@@ -66,7 +66,7 @@ require (
 	golang.org/x/sync v0.9.0
 	golang.org/x/text v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.21.1
+	maunium.net/go/mautrix v0.22.0
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
@@ -74,7 +74,8 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	git.sr.ht/~mariusor/cache v0.0.0-20241026131931-1ae5432a2760 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
-	git.sr.ht/~mariusor/lw v0.0.0-20240906100438-00d2184b2120 // indirect
+	git.sr.ht/~mariusor/lw v0.0.0-20241117105956-4b4009e28502 // indirect
+	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
@@ -121,7 +122,7 @@ require (
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mau.fi/util v0.8.1 // indirect
+	go.mau.fi/util v0.8.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/image v0.22.0 // indirect

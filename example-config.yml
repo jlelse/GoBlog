@@ -90,6 +90,8 @@ activityPub:
   enabled: true # Enable ActivityPub
   tagsTaxonomies: # Post taxonomies to use as "Hashtags"
     - tags
+  attributionDomains: # Domains allowed to use fediverse:creator for your ActivityPub actors in published articles
+    - example.com # Add your blog at least
 
 # Webmention
 webmention:

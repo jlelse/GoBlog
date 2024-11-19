@@ -125,12 +125,15 @@ func (a *goBlog) activityPubId(p *post) ap.IRI {
 	return ap.IRI(fu)
 }
 
-func (a *goBlog) toApPerson(blog string) *ap.Person {
+func (a *goBlog) toApPerson(blog string) *goBlogPerson {
 	b := a.cfg.Blogs[blog]
 
 	apIri := a.apAPIri(b)
 
-	apBlog := ap.PersonNew(apIri)
+	apBlog := &goBlogPerson{
+		Person:      *ap.PersonNew(apIri),
+		AlsoKnownAs: nil,
+	}
 	apBlog.URL = apIri
 
 	apBlog.Name.Set(ap.DefaultLang, ap.Content(a.renderMdTitle(b.Title)))
@@ -155,6 +158,12 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 		icon.URL = ap.IRI(a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 0, 0)))
 		apBlog.Icon = icon
 	}
+
+	var attributionDomains ap.ItemCollection
+	for _, ad := range a.cfg.ActivityPub.AttributionDomains {
+		attributionDomains = append(attributionDomains, ap.IRI(ad))
+	}
+	apBlog.AttributionDomains = attributionDomains
 
 	return apBlog
 }
@@ -183,4 +192,53 @@ func apUsername(person *ap.Person) string {
 		return person.GetLink().String()
 	}
 	return fmt.Sprintf("@%s@%s", preferredUsername, u.Host)
+}
+
+// Modified types
+
+type goBlogPerson struct {
+	ap.Person
+	AlsoKnownAs        ap.ItemCollection `jsonld:"alsoKnownAs,omitempty"`
+	AttributionDomains ap.ItemCollection `jsonld:"attributionDomains,omitempty"`
+}
+
+func (a goBlogPerson) MarshalJSON() ([]byte, error) {
+	// Taken from AP library, Person.MarshalJSON
+
+	b := make([]byte, 0)
+	notEmpty := false
+	ap.JSONWrite(&b, '{')
+
+	ap.OnObject(a.Person, func(o *ap.Object) error {
+		notEmpty = ap.JSONWriteObjectValue(&b, *o)
+		return nil
+	})
+	if a.Inbox != nil {
+		notEmpty = ap.JSONWriteItemProp(&b, "inbox", a.Inbox) || notEmpty
+	}
+	if a.Following != nil {
+		notEmpty = ap.JSONWriteItemProp(&b, "following", a.Following) || notEmpty
+	}
+	if a.Followers != nil {
+		notEmpty = ap.JSONWriteItemProp(&b, "followers", a.Followers) || notEmpty
+	}
+	if a.PreferredUsername != nil {
+		notEmpty = ap.JSONWriteNaturalLanguageProp(&b, "preferredUsername", a.PreferredUsername) || notEmpty
+	}
+	if len(a.PublicKey.PublicKeyPem)+len(a.PublicKey.ID) > 0 {
+		if v, err := a.PublicKey.MarshalJSON(); err == nil && len(v) > 0 {
+			notEmpty = ap.JSONWriteProp(&b, "publicKey", v) || notEmpty
+		}
+	}
+
+	// Custom
+	if len(a.AttributionDomains) > 0 {
+		notEmpty = ap.JSONWriteItemCollectionProp(&b, "attributionDomains", a.AttributionDomains, false)
+	}
+
+	if notEmpty {
+		ap.JSONWrite(&b, '}')
+		return b, nil
+	}
+	return nil, nil
 }

@@ -416,6 +416,11 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post) {
 	for _, img := range a.photoLinks(p) {
 		hb.WriteElementOpen("meta", "itemprop", "image", "content", img)
 	}
+	if a.apEnabled() {
+		if userHandle, ok := a.apUserHandle[p.Blog]; ok {
+			hb.WriteElementOpen("meta", "name", "fediverse:creator", "property", "fediverse:creator", "content", userHandle)
+		}
+	}
 }
 
 // TOR notice in the footer

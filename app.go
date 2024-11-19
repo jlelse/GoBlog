@@ -33,6 +33,7 @@ type goBlog struct {
 	apHttpClients      map[string]*apc.C
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
+	apUserHandle       map[string]string
 	// ActivityStreams
 	asCheckMediaTypes []ct.MediaType
 	// Assets
