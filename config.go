@@ -277,6 +277,7 @@ type configActivityPub struct {
 	Enabled            bool     `mapstructure:"enabled"`
 	TagsTaxonomies     []string `mapstructure:"tagsTaxonomies"`
 	AttributionDomains []string `mapstructure:"attributionDomains"`
+	AlsoKnownAs        []string `mapstructure:"alsoKnownAs"`
 }
 
 type configNotifications struct {

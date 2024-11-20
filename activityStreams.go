@@ -165,6 +165,12 @@ func (a *goBlog) toApPerson(blog string) *goBlogPerson {
 	}
 	apBlog.AttributionDomains = attributionDomains
 
+	var alsoKnownAs ap.ItemCollection
+	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
+		alsoKnownAs = append(alsoKnownAs, ap.IRI(aka))
+	}
+	apBlog.AlsoKnownAs = alsoKnownAs
+
 	return apBlog
 }
 
@@ -232,6 +238,9 @@ func (a goBlogPerson) MarshalJSON() ([]byte, error) {
 	}
 
 	// Custom
+	if len(a.AlsoKnownAs) > 0 {
+		notEmpty = ap.JSONWriteItemCollectionProp(&b, "alsoKnownAs", a.AlsoKnownAs, false)
+	}
 	if len(a.AttributionDomains) > 0 {
 		notEmpty = ap.JSONWriteItemCollectionProp(&b, "attributionDomains", a.AttributionDomains, false)
 	}

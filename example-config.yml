@@ -92,6 +92,8 @@ activityPub:
     - tags
   attributionDomains: # Domains allowed to use fediverse:creator for your ActivityPub actors in published articles
     - example.com # Add your blog at least
+  alsoKnownAs: # Alias identities, add your old Fediverse user if you want to migrate followers to GoBlog
+    - https://example.com/users/example
 
 # Webmention
 webmention:
