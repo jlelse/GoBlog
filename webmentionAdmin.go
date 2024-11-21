@@ -16,14 +16,14 @@ type webmentionPaginationAdapter struct {
 	config  *webmentionsRequestConfig
 	nums    int64
 	getNums sync.Once
-	db      *database
+	a       *goBlog
 }
 
 var _ paginator.Adapter = (*webmentionPaginationAdapter)(nil)
 
 func (p *webmentionPaginationAdapter) Nums() (int64, error) {
 	p.getNums.Do(func() {
-		p.nums = int64(noError(p.db.countWebmentions(p.config)))
+		p.nums = int64(noError(p.a.db.countWebmentions(p.config)))
 	})
 	return p.nums, nil
 }
@@ -33,7 +33,7 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data any) error 
 	modifiedConfig.offset = offset
 	modifiedConfig.limit = length
 
-	wms, err := p.db.getWebmentions(&modifiedConfig)
+	wms, err := p.a.getWebmentions(&modifiedConfig)
 	reflect.ValueOf(data).Elem().Set(reflect.ValueOf(&wms).Elem())
 	return err
 }
@@ -50,7 +50,7 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{
 		status:     status,
 		sourcelike: sourcelike,
-	}, db: a.db}, 5)
+	}, a: a}, 5)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var mentions []*mention
 	err := p.Results(&mentions)

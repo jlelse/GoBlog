@@ -385,6 +385,7 @@ type postsRequestConfig struct {
 	publishedBefore                             time.Time
 	randomOrder                                 bool
 	priorityOrder                               bool
+	ascendingOrder                              bool
 	fetchWithoutParams                          bool     // fetch posts without parameters
 	fetchParams                                 []string // only fetch these parameters
 	withoutRenderedTitle                        bool     // fetch posts without rendered title
@@ -535,10 +536,17 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	queryBuilder.WriteString(" order by ")
 	if c.randomOrder {
 		queryBuilder.WriteString("random()")
-	} else if c.priorityOrder {
-		queryBuilder.WriteString("priority desc, published desc")
 	} else {
-		queryBuilder.WriteString("published desc")
+		if c.priorityOrder {
+			queryBuilder.WriteString("priority desc, published")
+		} else {
+			queryBuilder.WriteString("published")
+		}
+		if c.ascendingOrder {
+			queryBuilder.WriteString(" asc")
+		} else {
+			queryBuilder.WriteString(" desc")
+		}
 	}
 	// Limit & Offset
 	if c.limit != 0 || c.offset != 0 {

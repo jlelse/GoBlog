@@ -30,7 +30,7 @@ func Test_webmentions(t *testing.T) {
 		Author:  "Test-Author",
 	}, webmentionStatusVerified)
 
-	mentions, err := app.db.getWebmentions(&webmentionsRequestConfig{
+	mentions, err := app.getWebmentions(&webmentionsRequestConfig{
 		sourcelike: "example.xyz",
 	})
 	require.NoError(t, err)
@@ -45,13 +45,13 @@ func Test_webmentions(t *testing.T) {
 	exists := app.db.webmentionExists(&mention{Source: "Https://Example.net/test", Target: "Https://Example.com/TÄst"})
 	assert.True(t, exists)
 
-	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
+	mentions = app.getWebmentionsByAddress("https://example.com/täst")
 	assert.Len(t, mentions, 0)
 
-	mentions = app.db.getWebmentionsByAddress("")
+	mentions = app.getWebmentionsByAddress("")
 	assert.Len(t, mentions, 0)
 
-	mentions, err = app.db.getWebmentions(&webmentionsRequestConfig{
+	mentions, err = app.getWebmentions(&webmentionsRequestConfig{
 		sourcelike: "example.net",
 	})
 	require.NoError(t, err)
@@ -59,10 +59,10 @@ func Test_webmentions(t *testing.T) {
 		_ = app.db.approveWebmentionId(mentions[0].ID)
 	}
 
-	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
+	mentions = app.getWebmentionsByAddress("https://example.com/täst")
 	assert.Len(t, mentions, 1)
 
-	mentions = app.db.getWebmentionsByAddress("https://example.com/t%C3%A4st")
+	mentions = app.getWebmentionsByAddress("https://example.com/t%C3%A4st")
 	assert.Len(t, mentions, 1)
 
 	err = app.db.deleteWebmention(&mention{
@@ -71,7 +71,7 @@ func Test_webmentions(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	mentions = app.db.getWebmentionsByAddress("https://example.com/täst")
+	mentions = app.getWebmentionsByAddress("https://example.com/täst")
 	assert.Len(t, mentions, 0)
 
 }

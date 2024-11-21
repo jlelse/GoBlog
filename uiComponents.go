@@ -350,6 +350,29 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 				hb.WriteEscaped(mention.Content)
 				hb.WriteElementClose("i")
 			}
+			if len(mention.Replies) > 0 {
+				hb.WriteElementOpen("ul")
+				for _, reply := range mention.Replies {
+					hb.WriteElementOpen("li")
+					hb.WriteElementOpen("a", "href", reply.Path, "target", "_blank")
+					hb.WriteEscaped(cmp.Or(a.cfg.User.Name, a.getFullAddress(reply.Path)))
+					hb.WriteElementClose("a")
+					if reply.RenderedTitle != "" {
+						hb.WriteUnescaped(" ")
+						hb.WriteElementOpen("strong")
+						hb.WriteEscaped(reply.RenderedTitle)
+						hb.WriteElementClose("strong")
+					}
+					if summary := a.postSummary(reply); summary != "" {
+						hb.WriteUnescaped(" ")
+						hb.WriteElementOpen("i")
+						hb.WriteEscaped(summary)
+						hb.WriteElementClose("i")
+					}
+					hb.WriteElementClose("li")
+				}
+				hb.WriteElementClose("ul")
+			}
 			if len(mention.Submentions) > 0 {
 				renderMentions(mention.Submentions)
 			}
@@ -357,7 +380,7 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 		}
 		hb.WriteElementClose("ul")
 	}
-	renderMentions(a.db.getWebmentionsByAddress(rd.Canonical))
+	renderMentions(a.getWebmentionsByAddress(rd.Canonical))
 	// Show form to send a webmention
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", "/webmention")
 	hb.WriteElementOpen("label", "for", "wm-source", "class", "p")

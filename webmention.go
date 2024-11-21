@@ -35,6 +35,7 @@ type mention struct {
 	Author      string
 	Status      webmentionStatus
 	Submentions []*mention
+	Replies     []*post
 }
 
 func (a *goBlog) initWebmention() {
@@ -208,7 +209,7 @@ func (db *database) approveWebmentionId(id int) error {
 }
 
 func (a *goBlog) reverifyWebmentionId(id int) error {
-	m, err := a.db.getWebmentions(&webmentionsRequestConfig{
+	m, err := a.getWebmentions(&webmentionsRequestConfig{
 		id:    id,
 		limit: 1,
 	})
@@ -229,6 +230,7 @@ type webmentionsRequestConfig struct {
 	asc           bool
 	offset, limit int
 	submentions   bool
+	replies       bool
 }
 
 func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args []any) {
@@ -267,10 +269,10 @@ func buildWebmentionsQuery(config *webmentionsRequestConfig) (query string, args
 	return queryBuilder.String(), args
 }
 
-func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
+func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, error) {
 	mentions := []*mention{}
 	query, args := buildWebmentionsQuery(config)
-	rows, err := db.Query(query, args...)
+	rows, err := a.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -285,11 +287,23 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 			m.Url = m.Source
 		}
 		if config.submentions {
-			m.Submentions, err = db.getWebmentions(&webmentionsRequestConfig{
+			m.Submentions, err = a.getWebmentions(&webmentionsRequestConfig{
 				target:      m.Source,
 				submentions: false, // prevent infinite recursion
 				asc:         config.asc,
 				status:      config.status,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		if config.replies {
+			m.Replies, err = a.getPosts(&postsRequestConfig{
+				parameter:      a.cfg.Micropub.ReplyParam,
+				parameterValue: m.Source,
+				visibility:     []postVisibility{visibilityPublic, visibilityUnlisted},
+				fetchParams:    []string{"title", "summary"},
+				ascendingOrder: true,
 			})
 			if err != nil {
 				return nil, err
@@ -300,15 +314,16 @@ func (db *database) getWebmentions(config *webmentionsRequestConfig) ([]*mention
 	return mentions, nil
 }
 
-func (db *database) getWebmentionsByAddress(address string) []*mention {
+func (a *goBlog) getWebmentionsByAddress(address string) []*mention {
 	if address == "" {
 		return nil
 	}
-	mentions, _ := db.getWebmentions(&webmentionsRequestConfig{
+	mentions, _ := a.getWebmentions(&webmentionsRequestConfig{
 		target:      address,
 		status:      webmentionStatusApproved,
 		asc:         true,
 		submentions: true,
+		replies:     true,
 	})
 	return mentions
 }
