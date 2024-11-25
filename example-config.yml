@@ -264,6 +264,8 @@ blogs:
       pds: https://bsky.social # PDS, bsky.social is the default
       handle: example.com # ATProto "username"
       password: TOKEN # The password for the handle, on Bluesky create an app password
+      tagsTaxonomies:
+        - tags # Default
     # Comments
     comments:
       enabled: true # Enable comments

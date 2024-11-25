@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/carlmjohnson/requests"
+	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -37,7 +38,7 @@ func (a *goBlog) atprotoPost(p *post) {
 			a.error("Failed to create ATProto session", "err", err)
 			return
 		}
-		atp := a.toAtprotoPost(p)
+		atp := a.toAtprotoPost(atproto, p)
 		resp, err := a.publishPost(atproto, session, atp)
 		if err != nil {
 			a.error("Failed to send post to ATProto", "err", err)
@@ -149,15 +150,16 @@ func (a *goBlog) deleteAtprotoRecord(atproto *configAtproto, session *atprotoSes
 }
 
 type atprotoPost struct {
-	Type      string        `json:"$type"`           // Type of the post.
-	Text      string        `json:"text"`            // Text content of the post.
-	CreatedAt string        `json:"createdAt"`       // ISO 8601 timestamp of post creation.
-	Langs     []string      `json:"langs,omitempty"` // Optional languages the post supports.
-	Embed     *atprotoEmbed `json:"embed,omitempty"`
+	Type      string          `json:"$type"`
+	Text      string          `json:"text"`
+	CreatedAt string          `json:"createdAt"`
+	Langs     []string        `json:"langs,omitempty"`
+	Embed     *atprotoEmbed   `json:"embed,omitempty"`
+	Facets    []*atprotoFacet `json:"facets,omitempty"`
 }
 
 type atprotoEmbed struct {
-	Type     string                `json:"$type"` // Type of the post.
+	Type     string                `json:"$type"`
 	External *atprotoEmbedExternal `json:"external,omitempty"`
 }
 
@@ -167,20 +169,93 @@ type atprotoEmbedExternal struct {
 	Description string `json:"description"`
 }
 
-func (a *goBlog) toAtprotoPost(p *post) *atprotoPost {
+type atprotoFacet struct {
+	Features []atprotoFeature `json:"features"`
+	Index    atprotoIndex     `json:"index"`
+}
+
+type atprotoFeature struct {
+	Type string `json:"$type"`
+	URI  string `json:"uri,omitempty"`
+	Tag  string `json:"tag,omitempty"`
+}
+
+type atprotoIndex struct {
+	ByteEnd   int `json:"byteEnd"`
+	ByteStart int `json:"byteStart"`
+}
+
+func (a *goBlog) toAtprotoPost(atp *configAtproto, p *post) *atprotoPost {
+	postTitle := cmp.Or(p.RenderedTitle, a.fallbackTitle(p))
+	postDescription := a.postSummary(p)
 	bc := a.getBlogFromPost(p)
-	return &atprotoPost{
+	result := &atprotoPost{
 		Type:      "app.bsky.feed.post",
-		Text:      "",
 		CreatedAt: cmp.Or(toLocalSafe(p.Published), time.Now().Format(time.RFC3339)),
 		Langs:     []string{bc.Lang},
 		Embed: &atprotoEmbed{
 			Type: "app.bsky.embed.external",
 			External: &atprotoEmbedExternal{
 				URI:         a.getFullAddress(p.Path),
-				Title:       cmp.Or(p.RenderedTitle, a.fallbackTitle(p), "-"),
-				Description: cmp.Or(a.postSummary(p), "-"),
+				Title:       cmp.Or(postTitle, "-"),
+				Description: cmp.Or(postDescription, "-"),
 			},
 		},
 	}
+	// Build text of ATProto post
+	builder := builderpool.Get()
+	defer builderpool.Put(builder)
+	facets := []*atprotoFacet{}
+	// Add title first and add two line breaks
+	if postTitle != "" {
+		builder.WriteString(postTitle)
+		builder.WriteString("\n\n")
+	}
+	// Add short link
+	start := builder.Len()
+	link := a.shortPostURL(p)
+	builder.WriteString(link)
+	end := builder.Len()
+	facets = append(facets, &atprotoFacet{
+		Features: []atprotoFeature{{
+			Type: "app.bsky.richtext.facet#link",
+			URI:  link,
+		}},
+		Index: atprotoIndex{
+			ByteStart: start,
+			ByteEnd:   end,
+		},
+	})
+	// Add hashtags
+	if len(atp.TagsTaxonomies) == 0 {
+		atp.TagsTaxonomies = append(atp.TagsTaxonomies, "tags")
+	}
+	firstTag := true
+	for _, tagTax := range atp.TagsTaxonomies {
+		for _, tag := range p.Parameters[tagTax] {
+			if firstTag {
+				_, _ = builder.WriteString("\n\n")
+				firstTag = false
+			} else {
+				_, _ = builder.WriteString(" ")
+			}
+			start = builder.Len()
+			builder.WriteString("#" + tag)
+			end = builder.Len()
+			facets = append(facets, &atprotoFacet{
+				Features: []atprotoFeature{{
+					Type: "app.bsky.richtext.facet#tag",
+					Tag:  tag,
+				}},
+				Index: atprotoIndex{
+					ByteStart: start,
+					ByteEnd:   end,
+				},
+			})
+		}
+	}
+	// Set result text
+	result.Text = builder.String()
+	result.Facets = facets
+	return result
 }

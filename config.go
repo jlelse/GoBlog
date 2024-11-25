@@ -363,10 +363,11 @@ type configRobotsTxt struct {
 }
 
 type configAtproto struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	Pds      string `mapstructure:"pds"`
-	Handle   string `mapstructure:"handle"`
-	Password string `mapstructure:"password"`
+	Enabled        bool     `mapstructure:"enabled"`
+	Pds            string   `mapstructure:"pds"`
+	Handle         string   `mapstructure:"handle"`
+	Password       string   `mapstructure:"password"`
+	TagsTaxonomies []string `mapstructure:"tagsTaxonomies"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {
