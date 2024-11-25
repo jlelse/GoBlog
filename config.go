@@ -96,6 +96,7 @@ type configBlog struct {
 	Map            *configGeoMap             `mapstructure:"map"`
 	Contact        *configContact            `mapstructure:"contact"`
 	Announcement   *configAnnouncement       `mapstructure:"announcement"`
+	Atproto        *configAtproto            `mapstructure:"atproto"`
 	// Configs read from database
 	hideOldContentWarning bool
 	hideShareButton       bool
@@ -359,6 +360,13 @@ type configPlugin struct {
 
 type configRobotsTxt struct {
 	BlockedBots []string `mapstructure:"blockedBots"`
+}
+
+type configAtproto struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Pds      string `mapstructure:"pds"`
+	Handle   string `mapstructure:"handle"`
+	Password string `mapstructure:"password"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {

@@ -120,6 +120,20 @@ This configuration creates a Fediverse account at `@blogname@yourdomain.tld` wit
 ✅ Followers  
 ❌ Following
 
+## ATProto / Bluesky Support
+
+Unlike ActivityPub, GoBlog won't act as a PDS (Personal Data Server), but will use your PDS's API to create a post with a link to newly published posts on your blog. As the Bluesky App View doesn't support showing updates yet, support for sending updates also isn't implemented yet.
+
+In your blog config, add the following section:
+
+```yaml
+atproto:
+  enabled: true # Enable
+  pds: https://bsky.social # PDS, bsky.social is the default
+  handle: example.com # ATProto "username"
+  password: TOKEN # The password for the handle, on Bluesky create an app password
+```
+
 ## Redirects & Aliases
 
 Activate redirects by adding a `pathRedirects` section to your configuration file:

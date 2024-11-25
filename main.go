@@ -220,6 +220,7 @@ func (app *goBlog) initComponents() {
 	}
 	app.initWebmention()
 	app.initTelegram()
+	app.initAtproto()
 	app.initBlogStats()
 	app.initTTS()
 	app.initSessions()

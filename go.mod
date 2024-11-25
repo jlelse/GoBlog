@@ -11,15 +11,15 @@ require (
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
-	github.com/carlmjohnson/requests v0.24.2
+	github.com/carlmjohnson/requests v0.24.3
 	github.com/coder/websocket v1.8.12
 	github.com/dchest/captcha v1.0.0
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20241114170014-e897df079e3d
-	github.com/go-ap/client v0.0.0-20241114180623-d0658a04422c
+	github.com/go-ap/activitypub v0.0.0-20241124171425-a40ea88b2b60
+	github.com/go-ap/client v0.0.0-20241124171814-fdaae75e78ba
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-fed/httpsig v1.1.0
@@ -50,8 +50,8 @@ require (
 	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.9.0
-	github.com/tdewolff/minify/v2 v2.21.1
+	github.com/stretchr/testify v1.10.0
+	github.com/tdewolff/minify/v2 v2.21.2
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
