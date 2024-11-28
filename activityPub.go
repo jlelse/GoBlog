@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -291,31 +292,27 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 		// ignore other objects for now
 		return
 	}
-	visible := true
-	if !object.To.Contains(ap.PublicNS) && !object.CC.Contains(ap.PublicNS) {
-		visible = false
+	// Get information from the note
+	noteUri := object.GetLink().String()
+	actorName := cmp.Or(requestActor.Name.First().Value.String(), apUsername(requestActor))
+	actorLink := requestActor.GetLink().String()
+	if requestActor.URL != nil {
+		actorLink = requestActor.URL.GetLink().String()
 	}
+	content := object.Content.First().Value.String()
+	// Handle reply
 	if inReplyTo := object.InReplyTo; inReplyTo != nil {
 		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
-			// It's a reply
-			original := object.GetLink().String()
-			name := requestActor.Name.First().Value.String()
-			if username := apUsername(requestActor); name == "" && username != "" {
-				name = username
-			}
-			website := requestActor.GetLink().String()
-			if actorUrl := requestActor.URL.GetLink(); actorUrl != "" {
-				website = actorUrl.String()
-			}
-			content := object.Content.First().Value.String()
-			if visible {
-				_, _, _ = a.createComment(blog, replyTarget, content, name, website, original)
+			if object.To.Contains(ap.PublicNS) || object.CC.Contains(ap.PublicNS) {
+				// Public reply - comment
+				_, _, _ = a.createComment(blog, replyTarget, content, actorName, actorLink, noteUri)
 				return
 			} else {
+				// Private reply - notification
 				buf := bufferpool.Get()
 				defer bufferpool.Put(buf)
-				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(original))
-				fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(name), cleanHTMLText(website))
+				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(noteUri))
+				fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(actorName), cleanHTMLText(actorLink))
 				buf.WriteString("\n\n")
 				buf.WriteString(cleanHTMLText(content))
 				a.sendNotification(buf.String())
@@ -323,8 +320,19 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 			}
 		}
 	}
-	// Might be a private reply or mention etc.
-	// TODO: handle them
+	// Handle mention
+	if blogIri := ap.IRI(a.apIri(blog)); object.To.Contains(blogIri) || object.CC.Contains(blogIri) {
+		// Notification
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		fmt.Fprintf(buf, "New ActivityPub mention on %s\n", cleanHTMLText(noteUri))
+		fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(actorName), cleanHTMLText(actorLink))
+		buf.WriteString("\n\n")
+		buf.WriteString(cleanHTMLText(content))
+		a.sendNotification(buf.String())
+		return
+	}
+	// Ignore other cases, maybe it's just spam
 }
 
 func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, error) {
