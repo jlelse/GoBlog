@@ -65,6 +65,13 @@ func (p *plugin) Handler(next http.Handler) http.Handler {
 			} else {
 				next.ServeHTTP(w, r)
 			}
+		} else if r.Method == http.MethodPost && r.URL.Path == "/x/aitldr/delete" && p.app.IsLoggedIn(r) {
+			if post, err := p.app.GetPost(r.FormValue("post")); err == nil {
+				p.deleteSummary(post)
+				http.Redirect(w, r, post.GetPath(), http.StatusFound)
+			} else {
+				next.ServeHTTP(w, r)
+			}
 		} else {
 			next.ServeHTTP(w, r)
 		}
@@ -78,6 +85,8 @@ func (p *plugin) Prio() int {
 const postParam = "aitldr"
 
 func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document) {
+	tldr := post.GetFirstParameterValue(postParam)
+
 	// Add re-generation button
 	if renderContext.IsLoggedIn() {
 		buttonBuf := bufferpool.Get()
@@ -85,14 +94,19 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 		buttonHw := htmlbuilder.NewHtmlBuilder(buttonBuf)
 		buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aitldr")
 		buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
-		buttonHw.WriteElementOpen("input", "type", "submit", "value", "Regenerate AI summary")
+		buttonHw.WriteElementOpen("input", "type", "submit", "value", "(Re-)Generate AI summary")
 		buttonHw.WriteElementClose("form")
+		if tldr != "" {
+			buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aitldr/delete")
+			buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
+			buttonHw.WriteElementOpen("input", "type", "submit", "value", "Delete AI summary")
+			buttonHw.WriteElementClose("form")
+		}
 
 		doc.Find("#posteditactions").AppendHtml(buttonBuf.String())
 	}
 
 	// If the post has a summary, display it
-	tldr := post.GetFirstParameterValue(postParam)
 	if tldr == "" {
 		return
 	}
@@ -250,4 +264,14 @@ func (p *plugin) createPrompt(post plugintypes.Post) string {
 		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error())
 	}
 	return prompt
+}
+
+func (p *plugin) deleteSummary(post plugintypes.Post) {
+	err := p.app.SetPostParameter(post.GetPath(), postParam, []string{})
+	if err != nil {
+		log.Println("aitldr plugin:", err.Error())
+		return
+	}
+
+	p.app.PurgeCache()
 }
