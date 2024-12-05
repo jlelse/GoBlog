@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -331,7 +332,7 @@ func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("p")
 			// Content
 			hb.WriteElementOpen("p", "class", "e-content")
-			hb.WriteUnescaped(c.Comment) // Already escaped
+			hb.WriteUnescaped(strings.ReplaceAll(c.Comment, "\n", "<br>")) // Already escaped
 			hb.WriteElementClose("p")
 			// Original
 			if c.Original != "" {
@@ -1266,7 +1267,7 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData
 				hb.WriteElementClose("p")
 				// Comment
 				hb.WriteElementOpen("p")
-				hb.WriteUnescaped(c.Comment)
+				hb.WriteUnescaped(strings.ReplaceAll(c.Comment, "\n", "<br>"))
 				hb.WriteElementClose("p")
 				// Delete form
 				hb.WriteElementOpen("form", "class", "actions", "method", "post", "action", rd.Blog.getRelativePath(commentPath+commentDeleteSubPath))
