@@ -18,10 +18,10 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20241208161221-f05aa52782bd
-	github.com/go-ap/client v0.0.0-20241208193750-e95b8f2587fd
+	github.com/go-ap/activitypub v0.0.0-20241212161521-36eb87cc3381
+	github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-webauthn/webauthn v0.11.2
 	github.com/google/uuid v1.6.0
@@ -48,7 +48,7 @@ require (
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
-	github.com/spf13/cast v1.7.0
+	github.com/spf13/cast v1.7.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tdewolff/minify/v2 v2.21.2
@@ -60,19 +60,19 @@ require (
 	github.com/xhit/go-simple-mail/v2 v2.16.0
 	github.com/yuin/goldmark v1.7.8
 	github.com/yuin/goldmark-emoji v1.0.4
-	go.hacdias.com/indielib v0.4.0
+	go.hacdias.com/indielib v0.4.1
 	golang.org/x/crypto v0.31.0
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.22.0
+	maunium.net/go/mautrix v0.22.1
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	git.sr.ht/~mariusor/cache v0.0.0-20241026131931-1ae5432a2760 // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20241212172633-e1563652acb4 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20241117105956-4b4009e28502 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e // indirect
@@ -84,10 +84,10 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/go-ap/errors v0.0.0-20240910140019-1e9d33cc1568 // indirect
+	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467 // indirect
 	github.com/go-webauthn/x v0.1.15 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
-	github.com/google/go-tpm v0.9.1 // indirect
+	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -122,9 +122,9 @@ require (
 	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mau.fi/util v0.8.2 // indirect
+	go.mau.fi/util v0.8.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20241210194714-1829a127f884 // indirect
+	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
 	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
