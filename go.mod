@@ -29,7 +29,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/jlaffaye/ftp v0.2.0
-	github.com/jlelse/feeds v1.3.0
+	github.com/jlelse/feeds v1.4.0
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
 	github.com/klauspost/compress v1.17.11
