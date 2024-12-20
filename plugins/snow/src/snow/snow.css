@@ -1,0 +1,21 @@
+.snowflake {
+    position: absolute;
+    top: -10px;
+    font-size: 1.5em;
+    pointer-events: none;
+    animation-name: fall;
+    animation-timing-function: linear;
+    animation-iteration-count: 1;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-10px) translateX(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(95vh) translateX(0);
+        opacity: 0;
+    }
+}
