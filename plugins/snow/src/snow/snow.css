@@ -1,7 +1,6 @@
 .snowflake {
-    position: absolute;
-    top: -10px;
-    font-size: 1.5em;
+    position: fixed;
+    top: -10vh;
     pointer-events: none;
     animation-name: fall;
     animation-timing-function: linear;
@@ -10,12 +9,12 @@
 
 @keyframes fall {
     0% {
-        transform: translateY(-10px) translateX(0);
+        transform: translateY(-10vh) translateX(0);
         opacity: 1;
     }
 
     100% {
-        transform: translateY(95vh) translateX(0);
+        transform: translateY(110vh) translateX(0);
         opacity: 0;
     }
 }
