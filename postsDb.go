@@ -374,13 +374,13 @@ type postsRequestConfig struct {
 	visibility                                  []postVisibility
 	taxonomy                                    *configTaxonomy
 	taxonomyValue                               string
-	anyParams                                   []string // filter for posts that have any of these parameters (with non-empty values)
-	allParams                                   []string // filter for posts that have all these parameters (with non-empty values)
-	allParamValues                              []string // ... with exactly these values
-	parameter                                   string   // filter for posts that have this parameter (with non-empty value)
-	parameterValue                              string   // ... with exactly this value
-	excludeParameter                            string   // exclude posts that have this parameter (with non-empty value)
-	excludeParameterValue                       string   // ... with exactly this value
+	anyParams                                   []string   // filter for posts that have any of these parameters (with non-empty values)
+	allParams                                   []string   // filter for posts that have all these parameters (with non-empty values)
+	allParamValues                              [][]string // ... with exactly these values
+	parameter                                   string     // filter for posts that have this parameter (with non-empty value)
+	parameterValue                              string     // ... with exactly this value
+	excludeParameter                            string     // exclude posts that have this parameter (with non-empty value)
+	excludeParameterValue                       string     // ... with exactly this value
 	publishedYear, publishedMonth, publishedDay int
 	publishedBefore                             time.Time
 	randomOrder                                 bool
@@ -451,7 +451,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		queryBuilder.WriteString(")")
 	}
 	allParams := append(c.allParams, c.parameter)
-	allParamValues := append(c.allParamValues, c.parameterValue)
+	allParamValues := append(c.allParamValues, []string{c.parameterValue})
 	if len(allParams) > 0 {
 		if len(allParamValues) > 0 && len(allParamValues) != len(allParams) {
 			return "", nil, errors.New("number of parameters != number of parameter values")
@@ -461,15 +461,22 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 				continue
 			}
 			named := "allparam" + strconv.Itoa(i)
-			paramValue := allParamValues[i]
 			queryBuilder.WriteString(" and path in (select path from post_parameters where parameter = @")
 			queryBuilder.WriteString(named)
 			queryBuilder.WriteString(" and ")
-			if paramValue != "" {
-				namedVal := "allparamval" + strconv.Itoa(i)
-				queryBuilder.WriteString("value = @")
-				queryBuilder.WriteString(namedVal)
-				args = append(args, sql.Named(namedVal, paramValue))
+			paramValues := lo.Filter(allParamValues[i], func(i string, _ int) bool { return i != "" })
+			if len(paramValues) > 0 {
+				queryBuilder.WriteString("value in (")
+				for ii, paramValue := range paramValues {
+					if ii > 0 {
+						queryBuilder.WriteString(", ")
+					}
+					queryBuilder.WriteString("@")
+					namedVal := "allparamval" + strconv.Itoa(i) + "x" + strconv.Itoa(ii)
+					queryBuilder.WriteString(namedVal)
+					args = append(args, sql.Named(namedVal, paramValue))
+				}
+				queryBuilder.WriteString(")")
 			} else {
 				queryBuilder.WriteString("length(coalesce(value, '')) > 0")
 			}

@@ -299,8 +299,8 @@ func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, e
 		}
 		if config.replies {
 			m.Replies, err = a.getPosts(&postsRequestConfig{
-				parameter:      a.cfg.Micropub.ReplyParam,
-				parameterValue: m.Source,
+				allParams:      []string{a.cfg.Micropub.ReplyParam},
+				allParamValues: [][]string{{m.Source, m.Url}},
 				visibility:     []postVisibility{visibilityPublic, visibilityUnlisted},
 				fetchParams:    []string{"title", "summary"},
 				ascendingOrder: true,

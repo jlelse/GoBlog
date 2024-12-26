@@ -316,13 +316,13 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		visibility = defaultVisibility
 	}
 	// Parameter filter
-	params, paramValues := []string{}, []string{}
+	params, paramValues := []string{}, [][]string{}
 	paramUrlValues := url.Values{}
 	for param, values := range r.URL.Query() {
 		if strings.HasPrefix(param, "p:") {
 			paramKey := strings.TrimPrefix(param, "p:")
 			for _, value := range values {
-				params, paramValues = append(params, paramKey), append(paramValues, value)
+				params, paramValues = append(params, paramKey), append(paramValues, []string{value})
 				paramUrlValues.Add(param, value)
 			}
 		}
