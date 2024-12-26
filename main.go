@@ -167,6 +167,27 @@ func main() {
 		return
 	}
 
+	// ActivityPub refetch followers
+	if len(os.Args) >= 2 && os.Args[1] == "activitypub" {
+		if !app.apEnabled() {
+			app.logErrAndQuit("ActivityPub not enabled")
+			return
+		}
+		if err = app.initActivityPubBase(); err != nil {
+			app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+			return
+		}
+		if len(os.Args) >= 4 && os.Args[2] == "refetch-followers" {
+			blog := os.Args[3]
+			if err = app.apRefetchFollowers(blog); err != nil {
+				app.logErrAndQuit("Failed to refetch ActivityPub followers", "blog", blog, "err", err)
+				return
+			}
+			app.shutdown.ShutdownAndWait()
+			return
+		}
+	}
+
 	// Initialize components
 	app.initComponents()
 

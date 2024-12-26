@@ -58,6 +58,23 @@ func (a *goBlog) initActivityPub() error {
 	})
 	// Prepare webfinger
 	a.prepareWebfinger()
+	// Init base
+	if err := a.initActivityPubBase(); err != nil {
+		return err
+	}
+	// Init send queue
+	a.initAPSendQueue()
+	// Send profile updates
+	go func() {
+		// First wait a bit
+		time.Sleep(time.Second * 10)
+		// Then send profile update
+		a.apSendProfileUpdates()
+	}()
+	return nil
+}
+
+func (a *goBlog) initActivityPubBase() error {
 	// Read key and prepare signing
 	err := a.loadActivityPubPrivateKey()
 	if err != nil {
@@ -83,15 +100,6 @@ func (a *goBlog) initActivityPub() error {
 			}),
 		)
 	}
-	// Init send queue
-	a.initAPSendQueue()
-	// Send profile updates
-	go func() {
-		// First wait a bit
-		time.Sleep(time.Second * 10)
-		// Then send profile update
-		a.apSendProfileUpdates()
-	}()
 	return nil
 }
 
@@ -650,4 +658,32 @@ func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
 	a.apSignMutex.Lock()
 	defer a.apSignMutex.Unlock()
 	return a.apSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBuf.Bytes())
+}
+
+func (a *goBlog) apRefetchFollowers(blogName string) error {
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		return err
+	}
+	for _, fol := range followers {
+		actor, err := a.apGetRemoteActor(ap.IRI(fol.follower), blogName)
+		if err != nil || actor == nil {
+			a.error("ActivityPub: Failed to retrieve remote actor info", "actor", fol.follower)
+			continue
+		}
+		inbox := actor.Inbox.GetLink()
+		if endpoints := actor.Endpoints; endpoints != nil && endpoints.SharedInbox != nil && endpoints.SharedInbox.GetLink() != "" {
+			inbox = endpoints.SharedInbox.GetLink()
+		}
+		if inbox == "" {
+			a.error("ActivityPub: Failed to get inbox for actor", "actor", fol.follower)
+			continue
+		}
+		username := apUsername(actor)
+		if err = a.db.apAddFollower(blogName, actor.GetLink().String(), inbox.String(), username); err != nil {
+			a.error("ActivityPub: Failed to update follower info", "err", err)
+			return err
+		}
+	}
+	return nil
 }
