@@ -18,7 +18,7 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20241212161521-36eb87cc3381
+	github.com/go-ap/activitypub v0.0.0-20241223153938-9c1f6077f836
 	github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.2.0
@@ -85,7 +85,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467 // indirect
-	github.com/go-webauthn/x v0.1.15 // indirect
+	github.com/go-webauthn/x v0.1.16 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
