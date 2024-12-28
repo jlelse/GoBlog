@@ -144,3 +144,11 @@ config:
   default: # Name of the blog
     title: "Custom title for the summary box:"
 ```
+
+### Snow (Path `embedded:snow`, Import `snow`)
+
+A simple plugin that adds a snow animation to the page using some simple CSS and JavaScript.
+
+#### Config
+
+This plugin has no config options.
