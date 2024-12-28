@@ -35,7 +35,7 @@ func (a *goBlog) checkScheduledPosts() {
 	}
 	for _, post := range postsToPublish {
 		post.Status = statusPublished
-		err := a.replacePost(post, post.Path, statusScheduled, post.Visibility)
+		err := a.replacePost(post, post.Path, statusScheduled, post.Visibility, true)
 		if err != nil {
 			a.error("Error publishing scheduled post", "err", err)
 			continue

@@ -16,7 +16,7 @@ import (
 	"go.goblog.app/app/pkgs/builderpool"
 )
 
-func (a *goBlog) checkPost(p *post, new bool) (err error) {
+func (a *goBlog) checkPost(p *post, new, noUpdated bool) (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -64,12 +64,14 @@ func (a *goBlog) checkPost(p *post, new bool) (err error) {
 		p.Published = nowString
 	}
 	// Maybe set updated date
-	if !new && p.Published != "" {
+	if new || noUpdated {
+		// Do nothing
+	} else if p.Published != "" {
 		if published, err := dateparse.ParseLocal(p.Published); err == nil && now.After(published) {
 			// Has published date in the past, so add updated date
 			p.Updated = nowString
 		}
-	} else if !new && p.Updated != "" {
+	} else if p.Updated != "" {
 		if updated, err := dateparse.ParseLocal(p.Updated); err == nil && now.After(updated) {
 			// Has updated date in the past, so add new updated date
 			p.Updated = nowString
@@ -158,20 +160,26 @@ func (a *goBlog) createPost(p *post) error {
 	return a.createOrReplacePost(p, &postCreationOptions{new: true})
 }
 
-func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus, oldVisibility postVisibility) error {
-	return a.createOrReplacePost(p, &postCreationOptions{new: false, oldPath: oldPath, oldStatus: oldStatus, oldVisibility: oldVisibility})
+func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus, oldVisibility postVisibility, noUpdated bool) error {
+	return a.createOrReplacePost(p, &postCreationOptions{
+		new:           false,
+		oldPath:       oldPath,
+		oldStatus:     oldStatus,
+		oldVisibility: oldVisibility,
+		noUpdated:     noUpdated,
+	})
 }
 
 type postCreationOptions struct {
-	new           bool
-	oldPath       string
-	oldStatus     postStatus
-	oldVisibility postVisibility
+	new, noUpdated bool
+	oldPath        string
+	oldStatus      postStatus
+	oldVisibility  postVisibility
 }
 
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	// Check post
-	if err := a.checkPost(p, o.new); err != nil {
+	if err := a.checkPost(p, o.new, o.noUpdated); err != nil {
 		return err
 	}
 	// Save to db

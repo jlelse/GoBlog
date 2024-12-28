@@ -16,8 +16,8 @@ git.sr.ht/~mariusor/lw v0.0.0-20241117105956-4b4009e28502 h1:vHrLbbAzwxsIqPiIuYD
 git.sr.ht/~mariusor/lw v0.0.0-20241117105956-4b4009e28502/go.mod h1:kXJ4JsgGBu7IVBKlrVvGjSLJmpsAGqZwq/JU/kTUaLw=
 git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e h1:IrPLQI6txX0tCcdTBNjvF16UZk6SFb9MqyVE0TKVFJ4=
 git.sr.ht/~mariusor/mask v0.0.0-20240327084502-ef2a9438457e/go.mod h1:Mw0HVQc45uMVOiZNDngXg6zQiO2h/yTsNhI5cm0uk3A=
-github.com/PuerkitoBio/goquery v1.10.0 h1:6fiXdLuUvYs2OJSvNRqlNPoBm6YABE226xrbavY5Wv4=
-github.com/PuerkitoBio/goquery v1.10.0/go.mod h1:TjZZl68Q3eGHNBA8CWaxAN7rOU1EbDz3CWuolcO5Yu4=
+github.com/PuerkitoBio/goquery v1.10.1 h1:Y8JGYUkXWTGRB6Ars3+j3kN0xg1YqqlwvdTV8WTFQcU=
+github.com/PuerkitoBio/goquery v1.10.1/go.mod h1:IYiHrOMps66ag56LEH7QYDDupKXyo5A8qrjIx3ZtujY=
 github.com/alecthomas/assert/v2 v2.7.0 h1:QtqSACNS3tF7oasA8CU6A6sXZSBDqnm7RfpLl9bZqbE=
 github.com/alecthomas/assert/v2 v2.7.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/chroma/v2 v2.14.0 h1:R3+wzpnUArGcQz7fCETQBzO5n9IMNi13iIs46aU4V9E=
@@ -66,10 +66,10 @@ github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/
 github.com/fsnotify/fsnotify v1.8.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv5E=
 github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
-github.com/go-ap/activitypub v0.0.0-20241223153938-9c1f6077f836 h1:LrcUX5TUtk5sRkSs7OE0gzXRBy4wU1nu6hC6plcniuc=
-github.com/go-ap/activitypub v0.0.0-20241223153938-9c1f6077f836/go.mod h1:5UpNlwO44EF+iKBvyr2djy6vKwsvai9h6KH6N9OL2ZI=
-github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3 h1:nMF0d9OEjUyaxNB1wvAvRILxVXklnc8nF0vegPLoNg8=
-github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3/go.mod h1:aEowIV4wYt3Y6HexHcRA9JfSx08J8VemNR1RTd+TehQ=
+github.com/go-ap/activitypub v0.0.0-20241228090954-75890bd9cfda h1:BcuDVID/DpaTdPn5jjuaS9d2U1g2/agTRNEQu+fgU6Q=
+github.com/go-ap/activitypub v0.0.0-20241228090954-75890bd9cfda/go.mod h1:5UpNlwO44EF+iKBvyr2djy6vKwsvai9h6KH6N9OL2ZI=
+github.com/go-ap/client v0.0.0-20241228091406-581647f214a8 h1:C15a668u8xRLBiWcq1cUjEH4Ykh8VvgJgsSFYBnsAME=
+github.com/go-ap/client v0.0.0-20241228091406-581647f214a8/go.mod h1:zO+J2RiLS1yP2mmEnC1EQC9j4YNMrXUKsQXPXu8czSE=
 github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467 h1:sltFaR21xTEWIfw/UCfiNb2d7ET0YIQyTv4v1hVUlTw=
 github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467/go.mod h1:Vkh+Z3f24K8nMsJKXo1FHn5ebPsXvB/WDH5JRtYqdNo=
 github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73 h1:GMKIYXyXPGIp+hYiWOhfqK4A023HdgisDT4YGgf99mw=

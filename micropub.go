@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/samber/lo"
@@ -187,6 +188,11 @@ func (s *micropubImplementation) Create(req *micropub.Request) (string, error) {
 }
 
 func (s *micropubImplementation) Update(req *micropub.Request) (string, error) {
+	// Get editor options
+	editorOptions := req.Updates.Replace["goblog-editor"]
+	if editorOptions == nil {
+		editorOptions = []any{}
+	}
 	// Get post
 	url, err := urlpkg.Parse(req.URL)
 	if err != nil {
@@ -219,7 +225,7 @@ func (s *micropubImplementation) Update(req *micropub.Request) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
-	err = s.a.replacePost(entry, oldPath, oldStatus, oldVisibility)
+	err = s.a.replacePost(entry, oldPath, oldStatus, oldVisibility, slices.Contains(editorOptions, "noupdated"))
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
@@ -407,6 +413,7 @@ func micropubVisibility(visibility string) postVisibility {
 
 func micropubUpdateMfProperties(properties map[string][]any, req micropub.RequestUpdate) (map[string][]any, error) {
 	if req.Replace != nil {
+		delete(req.Replace, "goblog-editor")
 		for key, value := range req.Replace {
 			properties[key] = value
 		}

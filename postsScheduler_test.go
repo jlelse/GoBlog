@@ -62,4 +62,10 @@ func Test_postsScheduler(t *testing.T) {
 	assert.Equal(t, 1, postHook)
 	assert.Equal(t, 0, updateHook)
 
+	// Check that the published post has no updated date
+	p, err := app.db.a.getPost("/test/abc")
+	require.NoError(t, err)
+	assert.NotEmpty(t, p.Published)
+	assert.Empty(t, p.Updated)
+
 }

@@ -434,7 +434,7 @@ func Test_checkPost(t *testing.T) {
 
 	t.Run("New post should get published date", func(t *testing.T) {
 		p := &post{}
-		app.checkPost(p, true)
+		app.checkPost(p, true, false)
 
 		assert.NotEmpty(t, p.Published)
 	})
@@ -443,7 +443,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Path: "/abc",
 		}
-		app.checkPost(p, true)
+		app.checkPost(p, true, false)
 
 		assert.Empty(t, p.Published)
 	})
@@ -452,7 +452,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Published: time.Now().Local().Add(-1 * time.Hour).Format(time.RFC3339),
 		}
-		app.checkPost(p, false)
+		app.checkPost(p, false, false)
 
 		assert.NotEmpty(t, p.Updated)
 	})
@@ -461,7 +461,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Published: time.Now().Local().Add(time.Hour).Format(time.RFC3339),
 		}
-		app.checkPost(p, false)
+		app.checkPost(p, false, false)
 
 		assert.Empty(t, p.Updated)
 	})
@@ -472,7 +472,7 @@ func Test_checkPost(t *testing.T) {
 			Published: time.Now().Local().Add(-2 * time.Hour).Format(time.RFC3339),
 			Updated:   oldUpdate,
 		}
-		app.checkPost(p, false)
+		app.checkPost(p, false, false)
 
 		assert.NotEmpty(t, p.Updated)
 		assert.NotEqual(t, oldUpdate, p.Updated)
@@ -483,7 +483,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Updated: oldUpdate,
 		}
-		app.checkPost(p, false)
+		app.checkPost(p, false, false)
 
 		assert.Empty(t, p.Published)
 		assert.NotEmpty(t, p.Updated)
@@ -494,7 +494,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Status: "unlisted",
 		}
-		err := app.checkPost(p, true)
+		err := app.checkPost(p, true, false)
 
 		assert.ErrorContains(t, err, "invalid post status")
 	})
@@ -503,7 +503,7 @@ func Test_checkPost(t *testing.T) {
 		p := &post{
 			Visibility: "published",
 		}
-		err := app.checkPost(p, true)
+		err := app.checkPost(p, true, false)
 
 		assert.ErrorContains(t, err, "invalid post visibility")
 	})

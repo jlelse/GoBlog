@@ -49,7 +49,10 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		if action == "updatepost" {
 			reqBody["action"] = micropub.ActionUpdate
 			reqBody["url"] = r.FormValue("url")
-			reqBody["replace"] = map[string][]string{"content": {r.FormValue("content")}}
+			reqBody["replace"] = map[string][]string{
+				"content":       {r.FormValue("content")},
+				"goblog-editor": r.Form["options"],
+			}
 		} else {
 			blog, _ := a.getBlog(r)
 			reqBody["type"] = []string{"h-entry"}

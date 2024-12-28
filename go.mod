@@ -7,7 +7,7 @@ require (
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
-	github.com/PuerkitoBio/goquery v1.10.0
+	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
@@ -18,8 +18,8 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20241223153938-9c1f6077f836
-	github.com/go-ap/client v0.0.0-20241212174032-4826270ad6a3
+	github.com/go-ap/activitypub v0.0.0-20241228090954-75890bd9cfda
+	github.com/go-ap/client v0.0.0-20241228091406-581647f214a8
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-fed/httpsig v1.1.0

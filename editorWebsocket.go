@@ -166,7 +166,7 @@ func (a *goBlog) sendEditorPreview(ctx context.Context, c *ws.Conn, blog string,
 		_, werr := io.WriteString(w, err.Error())
 		return errors.Join(werr, w.Close())
 	}
-	if err := a.checkPost(p, true); err != nil {
+	if err := a.checkPost(p, true, true); err != nil {
 		_, werr := io.WriteString(w, err.Error())
 		return errors.Join(werr, w.Close())
 	}
