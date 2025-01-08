@@ -260,10 +260,6 @@ type configMicropubMedia struct {
 	FTPAddress  string `mapstructure:"ftpAddress"`
 	FTPUser     string `mapstructure:"ftpUser"`
 	FTPPassword string `mapstructure:"ftpPassword"`
-	// Tinify
-	TinifyKey string `mapstructure:"tinifyKey"`
-	// Cloudflare
-	CloudflareCompressionEnabled bool `mapstructure:"cloudflareCompressionEnabled"`
 	// Local
 	LocalCompressionEnabled bool `mapstructure:"localCompressionEnabled"`
 }

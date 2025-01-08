@@ -40,98 +40,9 @@ func (a *goBlog) initMediaCompressors() {
 		return
 	}
 	config := a.cfg.Micropub.MediaStorage
-	if key := config.TinifyKey; key != "" {
-		a.compressors = append(a.compressors, &tinify{a: a, key: key})
-	}
-	if config.CloudflareCompressionEnabled {
-		a.compressors = append(a.compressors, &cloudflare{})
-	}
 	if config.LocalCompressionEnabled {
 		a.compressors = append(a.compressors, &localMediaCompressor{a: a})
 	}
-}
-
-type tinify struct {
-	a   *goBlog
-	key string
-}
-
-func (tf *tinify) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
-	tinifyErr := errors.New("failed to compress image using tinify")
-	// Check url
-	fileExtension, allowed := urlHasExt(url, "jpg", "jpeg", "png")
-	if !allowed {
-		return "", nil
-	}
-	// Compress
-	headers := http.Header{}
-	err := requests.
-		URL("https://api.tinify.com/shrink").
-		Client(hc).
-		Method(http.MethodPost).
-		BasicAuth("api", tf.key).
-		BodyJSON(map[string]any{
-			"source": map[string]any{
-				"url": url,
-			},
-		}).
-		ToHeaders(headers).
-		Fetch(context.Background())
-	if err != nil {
-		tf.a.error("Tinify error", "err", err)
-		return "", tinifyErr
-	}
-	compressedLocation := headers.Get("Location")
-	if compressedLocation == "" {
-		tf.a.error("Tinify error: location header missing")
-		return "", tinifyErr
-	}
-	// Resize and download image
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(requests.
-			URL(compressedLocation).
-			Client(hc).
-			Method(http.MethodPost).
-			BasicAuth("api", tf.key).
-			BodyJSON(map[string]any{
-				"resize": map[string]any{
-					"method": "fit",
-					"width":  defaultCompressionWidth,
-					"height": defaultCompressionHeight,
-				},
-			}).
-			ToWriter(pw).
-			Fetch(context.Background()))
-	}()
-	// Upload compressed file
-	res, err := uploadCompressedFile(fileExtension, pr, upload)
-	_ = pr.CloseWithError(err)
-	return res, err
-}
-
-type cloudflare struct{}
-
-func (*cloudflare) compress(url string, upload mediaStorageSaveFunc, hc *http.Client) (string, error) {
-	// Check url
-	if _, allowed := urlHasExt(url, "jpg", "jpeg", "png"); !allowed {
-		return "", nil
-	}
-	// Force jpeg
-	fileExtension := "jpeg"
-	// Compress
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(requests.
-			URL(fmt.Sprintf("https://www.cloudflare.com/cdn-cgi/image/f=jpeg,q=75,metadata=none,fit=scale-down,w=%d,h=%d/%s", defaultCompressionWidth, defaultCompressionHeight, url)).
-			Client(hc).
-			ToWriter(pw).
-			Fetch(context.Background()))
-	}()
-	// Upload compressed file
-	res, err := uploadCompressedFile(fileExtension, pr, upload)
-	_ = pr.CloseWithError(err)
-	return res, err
 }
 
 type localMediaCompressor struct {

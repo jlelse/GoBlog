@@ -20,18 +20,7 @@ By default, GoBlog stores all uploaded files in the `media` subdirectory of the 
 
 To reduce the data transfer for blog visitors, GoBlog can compress the media files after they have been uploaded. If configured, media files with supported file extensions get compressed and the compressed file gets stored as well.
 
-GoBlog currently supports the following media compression providers:
-
-- [Cloudflare](https://cloudflare.com/) (no API key required)
-- [Tinify](https://tinify.com/) (API key required)
-
-Take a look at the `example-config.yml` on how to configure the compression providers.
-
-It is possible to configure multiple compression providers. If one fails, the next one is tried. The current priority is as follows:
-
-1. Tinify
-2. Cloudflare
-3. Local compression
+Take a look at the `example-config.yml` on how to configure the compression.
 
 ## Text-to-Speech
 
