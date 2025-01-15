@@ -819,7 +819,11 @@ func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			if i > 0 {
 				hb.WriteUnescaped(" &bull; ")
 			}
-			hb.WriteElementOpen("a", "href", item.Link)
+			if strings.Contains(item.Link, "https://") {
+				hb.WriteElementOpen("a", "href", item.Link, "target", "_blank")
+			} else {
+				hb.WriteElementOpen("a", "href", item.Link)
+			}
 			hb.WriteEscaped(a.renderMdTitle(item.Title))
 			hb.WriteElementClose("a")
 		}
