@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Healthcheck tool
-	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
+	if index := findIndex(os.Args, "healthcheck"); len(os.Args) >= index && index != -1 {
 		// Connect to public address + "/ping" and exit with 0 when successful
 		health := app.healthcheckExitCode()
 		app.shutdown.ShutdownAndWait()
@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// Tool to generate TOTP secret
-	if len(os.Args) >= 2 && os.Args[1] == "totp-secret" {
+	if index := findIndex(os.Args, "totp-secret"); len(os.Args) >= index && index != -1 {
 		key, err := totp.Generate(totp.GenerateOpts{
 			Issuer:      app.cfg.Server.PublicAddress,
 			AccountName: app.cfg.User.Nick,
@@ -138,7 +138,7 @@ func main() {
 	app.preStartHooks()
 
 	// Link check tool after init of markdown
-	if len(os.Args) >= 2 && os.Args[1] == "check" {
+	if index := findIndex(os.Args, "check"); len(os.Args) >= index && index != -1 {
 		app.initMarkdown()
 		err = app.initTemplateStrings()
 		if err != nil {
@@ -153,10 +153,10 @@ func main() {
 	}
 
 	// Markdown export
-	if len(os.Args) >= 2 && os.Args[1] == "export" {
+	if index := findIndex(os.Args, "export"); len(os.Args) >= index+1 && index != -1 {
 		var dir string
 		if len(os.Args) >= 3 {
-			dir = os.Args[2]
+			dir = os.Args[index+1]
 		}
 		err = app.exportMarkdownFiles(dir)
 		if err != nil {
@@ -168,7 +168,7 @@ func main() {
 	}
 
 	// ActivityPub refetch followers
-	if len(os.Args) >= 2 && os.Args[1] == "activitypub" {
+	if index := findIndex(os.Args, "activitypub"); len(os.Args) >= index && index != -1 {
 		if !app.apEnabled() {
 			app.logErrAndQuit("ActivityPub not enabled")
 			return
@@ -177,8 +177,8 @@ func main() {
 			app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
 			return
 		}
-		if len(os.Args) >= 4 && os.Args[2] == "refetch-followers" {
-			blog := os.Args[3]
+		if i2 := findIndex(os.Args, "refetch-followers"); len(os.Args) >= i2+1 && i2 != -1 {
+			blog := os.Args[i2+1]
 			if err = app.apRefetchFollowers(blog); err != nil {
 				app.logErrAndQuit("Failed to refetch ActivityPub followers", "blog", blog, "err", err)
 				return
@@ -257,4 +257,13 @@ func (a *goBlog) logErrAndQuit(msg string, args ...any) {
 	a.error(msg, args...)
 	a.shutdown.ShutdownAndWait()
 	os.Exit(1)
+}
+
+func findIndex(slice []string, val string) int {
+	for i, v := range slice {
+		if v == val {
+			return i
+		}
+	}
+	return -1 // Value not found
 }
