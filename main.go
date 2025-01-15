@@ -167,6 +167,21 @@ func main() {
 		return
 	}
 
+	// Markdown IMPORT
+	if importIndex := findIndex(os.Args, "import"); len(os.Args) > importIndex+1 && importIndex != -1 {
+		var dir string
+		if len(os.Args) >= 3 {
+			dir = os.Args[importIndex+1]
+		}
+		err = app.importMarkdownFiles(dir)
+		if err != nil {
+			app.logErrAndQuit("Failed to import markdown files", "err", err)
+			return
+		}
+		app.shutdown.ShutdownAndWait()
+		return
+	}
+
 	// ActivityPub refetch followers
 	if index := findIndex(os.Args, "activitypub"); len(os.Args) >= index && index != -1 {
 		if !app.apEnabled() {
