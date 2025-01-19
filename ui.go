@@ -107,7 +107,11 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 			if i > 0 {
 				hb.WriteUnescaped(" &bull; ")
 			}
-			hb.WriteElementOpen("a", "href", item.Link)
+			if strings.Contains(item.Link, "https://") {
+				hb.WriteElementOpen("a", "href", item.Link, "target", "_blank")
+			} else {
+				hb.WriteElementOpen("a", "href", item.Link)
+			}
 			hb.WriteEscaped(a.renderMdTitle(item.Title))
 			hb.WriteElementClose("a")
 		}
