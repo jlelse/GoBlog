@@ -12,6 +12,7 @@ var (
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/plugintypes
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/htmlbuilder
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/bufferpool
+//go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers go.goblog.app/app/pkgs/builderpool
 
 // Dependencies
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/PuerkitoBio/goquery

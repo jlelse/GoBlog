@@ -76,6 +76,7 @@ GoBlog modules:
 - `go.goblog.app/app/pkgs/plugintypes` (Needed for every plugin)
 - `go.goblog.app/app/pkgs/htmlbuilder` (Can be used to generate HTML)
 - `go.goblog.app/app/pkgs/bufferpool` (Can be used to manage `bytes.Buffer`s more efficiently)
+- `go.goblog.app/app/pkgs/builderpool` (Can be used to manage `strings.Builder`s more efficiently)
 
 Third-party modules
 
@@ -148,6 +149,14 @@ config:
 ### Snow (Path `embedded:snow`, Import `snow`)
 
 A simple plugin that adds a snow animation to the page using some simple CSS and JavaScript.
+
+#### Config
+
+This plugin has no config options.
+
+### AI Bot Block (Path `embedded:aibotblock`, Import `aibotblock`)
+
+A simple plugin that enhances the `/robots.txt` with AI bot user-agents and also blocks requests made by them. Source for the user-agents is [this GitHub repository](https://github.com/ai-robots-txt/ai.robots.txt).
 
 #### Config
 

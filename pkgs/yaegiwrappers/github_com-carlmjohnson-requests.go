@@ -2,7 +2,7 @@
 
 // MIT License
 //
-// Copyright (c) 2020 - 2024 Jan-Lukas Else
+// Copyright (c) 2020 - 2025 Jan-Lukas Else
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,7 @@ func init() {
 		"BodyFile":           reflect.ValueOf(requests.BodyFile),
 		"BodyForm":           reflect.ValueOf(requests.BodyForm),
 		"BodyJSON":           reflect.ValueOf(requests.BodyJSON),
+		"BodyMultipart":      reflect.ValueOf(requests.BodyMultipart),
 		"BodyReader":         reflect.ValueOf(requests.BodyReader),
 		"BodySerializer":     reflect.ValueOf(requests.BodySerializer),
 		"BodyWriter":         reflect.ValueOf(requests.BodyWriter),
