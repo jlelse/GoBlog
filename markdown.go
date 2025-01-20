@@ -18,55 +18,54 @@ import (
 )
 
 func (a *goBlog) initMarkdown() {
-	if a.md != nil && a.absoluteMd != nil && a.titleMd != nil {
-		// Already initialized
-		return
-	}
-	defaultGoldmarkOptions := []goldmark.Option{
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithExtensions(
-			extension.Table,
-			extension.Strikethrough,
-			extension.Footnote,
-			extension.Typographer,
-			extension.Linkify,
-			marktag.Mark,
-			emoji.Emoji,
-			highlighting.Highlighting,
-		),
-	}
-	publicAddress := ""
-	if srv := a.cfg.Server; srv != nil {
-		publicAddress = srv.PublicAddress
-	}
-	a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
-		absoluteLinks: false,
-		publicAddress: publicAddress,
-	}))...)
-	a.absoluteMd = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
-		absoluteLinks: true,
-		publicAddress: publicAddress,
-	}))...)
-	a.titleMd = goldmark.New(
-		goldmark.WithParser(
-			// Override, no need for special Markdown parsers
-			parser.NewParser(
-				parser.WithBlockParsers(util.Prioritized(parser.NewParagraphParser(), 1000)),
+	a.initMarkdownOnce.Do(func() {
+		defaultGoldmarkOptions := []goldmark.Option{
+			goldmark.WithRendererOptions(
+				html.WithUnsafe(),
 			),
-		),
-		goldmark.WithExtensions(
-			extension.Typographer,
-			emoji.Emoji,
-		),
-	)
+			goldmark.WithParserOptions(
+				parser.WithAutoHeadingID(),
+			),
+			goldmark.WithExtensions(
+				extension.Table,
+				extension.Strikethrough,
+				extension.Footnote,
+				extension.Typographer,
+				extension.Linkify,
+				marktag.Mark,
+				emoji.Emoji,
+				highlighting.Highlighting,
+			),
+		}
+		publicAddress := ""
+		if srv := a.cfg.Server; srv != nil {
+			publicAddress = srv.PublicAddress
+		}
+		a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
+			absoluteLinks: false,
+			publicAddress: publicAddress,
+		}))...)
+		a.absoluteMd = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
+			absoluteLinks: true,
+			publicAddress: publicAddress,
+		}))...)
+		a.titleMd = goldmark.New(
+			goldmark.WithParser(
+				// Override, no need for special Markdown parsers
+				parser.NewParser(
+					parser.WithBlockParsers(util.Prioritized(parser.NewParagraphParser(), 1000)),
+				),
+			),
+			goldmark.WithExtensions(
+				extension.Typographer,
+				emoji.Emoji,
+			),
+		)
+	})
 }
 
 func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string, absoluteLinks bool) (err error) {
+	a.initMarkdown()
 	if absoluteLinks {
 		err = a.absoluteMd.Convert([]byte(source), w)
 	} else {
@@ -100,6 +99,7 @@ func (a *goBlog) renderMdTitle(s string) string {
 	if s == "" {
 		return ""
 	}
+	a.initMarkdown()
 	pr, pw := io.Pipe()
 	go func() {
 		_ = pw.CloseWithError(a.titleMd.Convert([]byte(s), pw))

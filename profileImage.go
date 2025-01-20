@@ -190,7 +190,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 	// Reset hash
 	a.profileImageHashGroup = nil
 	// Clear http cache
-	a.cache.purge()
+	a.purgeCache()
 	// Redirect
 	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0, 100), http.StatusFound)
 }
@@ -201,6 +201,6 @@ func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request)
 		a.serveError(w, r, "Failed to delete profile image", http.StatusInternalServerError)
 		return
 	}
-	a.cache.purge()
+	a.purgeCache()
 	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0, 100), http.StatusFound)
 }

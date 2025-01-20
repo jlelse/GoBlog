@@ -48,6 +48,7 @@ func (a *goBlog) beginWebAuthnRegistration(w http.ResponseWriter, r *http.Reques
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
+	a.initSessionStores()
 	ses, err := a.webauthnSessions.New(r, "wa")
 	if err != nil {
 		a.debug("failed to create new webauthn registration session", "err", err)
@@ -67,6 +68,7 @@ func (a *goBlog) beginWebAuthnRegistration(w http.ResponseWriter, r *http.Reques
 }
 
 func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Request) {
+	a.initSessionStores()
 	ses, err := a.webauthnSessions.Get(r, "wa")
 	if err != nil {
 		a.debug("failed to get webauthn session", "err", err)
@@ -107,6 +109,7 @@ func (a *goBlog) beginWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
+	a.initSessionStores()
 	ses, err := a.webauthnSessions.New(r, "wa")
 	if err != nil {
 		a.debug("failed to create new webauthn login session", "err", err)
@@ -126,6 +129,7 @@ func (a *goBlog) beginWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
+	a.initSessionStores()
 	ses, err := a.webauthnSessions.Get(r, "wa")
 	if err != nil {
 		a.debug("failed to get webauthn session", "err", err)

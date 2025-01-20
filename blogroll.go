@@ -80,7 +80,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 func (a *goBlog) refreshBlogroll(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	a.db.clearPersistentCache("blogroll_" + blog)
-	a.cache.purge()
+	a.purgeCache()
 	_, brPath := bc.getBlogrollPath()
 	http.Redirect(w, r, brPath, http.StatusFound)
 }

@@ -33,7 +33,7 @@ func (a *goBlog) serveCommentsEditor(w http.ResponseWriter, r *http.Request) {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		a.cache.purge()
+		a.purgeCache()
 		// Resend webmention
 		commentAddress := bc.getRelativePath(path.Join(commentPath, strconv.Itoa(id)))
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(comment.Target))

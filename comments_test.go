@@ -33,7 +33,6 @@ func Test_comments(t *testing.T) {
 	err := app.initConfig(false)
 	require.NoError(t, err)
 	_ = app.initTemplateStrings()
-	app.initSessions()
 
 	t.Run("Successful comment", func(t *testing.T) {
 
@@ -208,10 +207,7 @@ func Test_commentsUpdateByOriginal(t *testing.T) {
 
 	err := app.initConfig(false)
 	require.NoError(t, err)
-	err = app.initCache()
 	require.NoError(t, err)
-	app.initMarkdown()
-	app.initSessions()
 
 	bc := app.cfg.Blogs[app.cfg.DefaultBlog]
 

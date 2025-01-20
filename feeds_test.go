@@ -17,10 +17,7 @@ func Test_feeds(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
 	_ = app.initTemplateStrings()
-	_ = app.initCache()
-	app.initSessions()
 
 	app.d = app.buildRouter()
 	handlerClient := newHandlerClient(app.d)

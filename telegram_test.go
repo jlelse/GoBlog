@@ -103,7 +103,6 @@ func Test_telegram(t *testing.T) {
 		}
 		_ = app.initConfig(false)
 
-		app.initMarkdown()
 		app.initTelegram()
 
 		p := &post{

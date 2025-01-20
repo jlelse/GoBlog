@@ -23,8 +23,6 @@ func Test_captchaMiddleware(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	app.d = alice.New(app.checkIsCaptcha, app.captchaMiddleware).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {

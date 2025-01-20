@@ -201,7 +201,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 		}
 	}
 	// Purge cache
-	a.cache.purge()
+	a.purgeCache()
 	a.deleteReactionsCache(p.Path)
 	return nil
 }
@@ -279,7 +279,7 @@ func (a *goBlog) deletePost(path string) error {
 		// Rebuild FTS index
 		a.db.rebuildFTSIndex()
 		// Purge cache
-		a.cache.purge()
+		a.purgeCache()
 		a.deleteReactionsCache(p.Path)
 	} else {
 		// Update post status
@@ -300,7 +300,7 @@ func (a *goBlog) deletePost(path string) error {
 		// Rebuild FTS index
 		a.db.rebuildFTSIndex()
 		// Purge cache
-		a.cache.purge()
+		a.purgeCache()
 		// Trigger hooks
 		a.postDeleteHooks(p)
 	}
@@ -333,7 +333,7 @@ func (a *goBlog) undeletePost(path string) error {
 	// Rebuild FTS index
 	a.db.rebuildFTSIndex()
 	// Purge cache
-	a.cache.purge()
+	a.purgeCache()
 	// Trigger hooks
 	a.postUndeleteHooks(p)
 	return nil

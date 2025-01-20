@@ -30,8 +30,6 @@ func Test_authMiddleware(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	app.d = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

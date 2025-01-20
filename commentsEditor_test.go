@@ -21,10 +21,7 @@ func Test_commentsEditor(t *testing.T) {
 
 	err := app.initConfig(false)
 	require.NoError(t, err)
-	err = app.initCache()
 	require.NoError(t, err)
-	app.initMarkdown()
-	app.initSessions()
 
 	bc := app.cfg.Blogs[app.cfg.DefaultBlog]
 

@@ -81,7 +81,7 @@ func (a *goBlog) settingsDeleteSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.reloadRouter()
-	a.cache.purge()
+	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }
 
@@ -127,7 +127,7 @@ func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.reloadRouter()
-	a.cache.purge()
+	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }
 
@@ -157,7 +157,7 @@ const settingsHideOldContentWarningPath = "/oldcontentwarning"
 func (a *goBlog) settingsHideOldContentWarning() http.HandlerFunc {
 	return a.booleanBlogSettingHandler(hideOldContentWarningSetting, func(cb *configBlog, b bool) {
 		cb.hideOldContentWarning = b
-		a.cache.purge()
+		a.purgeCache()
 	})
 }
 
@@ -166,7 +166,7 @@ const settingsHideShareButtonPath = "/sharebutton"
 func (a *goBlog) settingsHideShareButton() http.HandlerFunc {
 	return a.booleanBlogSettingHandler(hideShareButtonSetting, func(cb *configBlog, b bool) {
 		cb.hideShareButton = b
-		a.cache.purge()
+		a.purgeCache()
 	})
 }
 
@@ -175,7 +175,7 @@ const settingsHideTranslateButtonPath = "/translatebutton"
 func (a *goBlog) settingsHideTranslateButton() http.HandlerFunc {
 	return a.booleanBlogSettingHandler(hideTranslateButtonSetting, func(cb *configBlog, b bool) {
 		cb.hideTranslateButton = b
-		a.cache.purge()
+		a.purgeCache()
 	})
 }
 
@@ -235,6 +235,6 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	a.cfg.User.Nick = userNick
 	a.cfg.User.Name = userName
-	a.cache.purge()
+	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

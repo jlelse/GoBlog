@@ -12,10 +12,12 @@ import (
 const indieAuthScope contextKey = "scope"
 
 func (a *goBlog) initIndieAuth() {
-	a.ias = indieauth.NewServer(
-		false,
-		a.httpClient,
-	)
+	a.initIndieAuthOnce.Do(func() {
+		a.ias = indieauth.NewServer(
+			false,
+			a.httpClient,
+		)
+	})
 }
 
 func (a *goBlog) checkIndieAuth(next http.Handler) http.Handler {

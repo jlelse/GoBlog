@@ -31,7 +31,6 @@ func Test_postsScheduler(t *testing.T) {
 	})
 
 	_ = app.initConfig(false)
-	_ = app.initCache()
 
 	err := app.db.savePost(&post{
 		Path:       "/test/abc",

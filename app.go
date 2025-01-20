@@ -71,6 +71,8 @@ type goBlog struct {
 	inLoad sync.Once
 	// IndieAuth
 	ias *indieauth.Server
+	// Inits
+	initLogOnce, initMarkdownOnce, initSessionStoresOnce, initIndieAuthOnce, initCacheOnce sync.Once
 	// Logs (HTTP)
 	logf *rotatelogs.RotateLogs
 	// Logs (Program)

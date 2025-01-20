@@ -1,254 +1,200 @@
 package main
 
 import (
-	"cmp"
-	"flag"
 	"fmt"
-	"net"
-	"net/http"
-	netpprof "net/http/pprof"
+	"io"
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"time"
 
 	"github.com/pquerna/otp/totp"
+	"github.com/spf13/cobra"
+	"go.goblog.app/app/pkgs/utils"
 )
 
 func main() {
-	var err error
+	rootCmd := &cobra.Command{
+		Use:   "GoBlog",
+		Short: "Main application, without any command, the app gets started.",
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if err := app.initPlugins(); err != nil {
+				app.logErrAndQuit("Failed to init plugins", "err", err)
+				return
+			}
+			app.preStartHooks()
+			initializeComponents(app)
+			app.startHourlyHooks()
+			app.startPprofServer()
+			if err := app.startServer(); err != nil {
+				app.logErrAndQuit("Failed to start server(s)", "err", err)
+			}
+			app.shutdown.Wait()
+		},
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if cpuprofile, _ := cmd.Flags().GetString("cpuprofile"); cpuprofile != "" {
+				r, w := io.Pipe()
+				go func() {
+					_ = w.CloseWithError(pprof.StartCPUProfile(w))
+				}()
+				go func() {
+					_ = r.CloseWithError(utils.SaveToFile(r, cpuprofile))
+				}()
+			}
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			pprof.StopCPUProfile()
+			if memprofile, _ := cmd.Flags().GetString("memprofile"); memprofile != "" {
+				runtime.GC()
+				r, w := io.Pipe()
+				go func() {
+					_ = w.CloseWithError(pprof.WriteHeapProfile(w))
+				}()
+				_ = r.CloseWithError(utils.SaveToFile(r, memprofile))
+			}
+		},
+	}
 
-	// Command line flags
-	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
-	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
-	configfile := flag.String("config", "", "use a specific config file")
+	// Add flags
+	rootCmd.PersistentFlags().String("cpuprofile", "", "write CPU profile to file")
+	rootCmd.PersistentFlags().String("memprofile", "", "write memory profile to file")
+	rootCmd.PersistentFlags().String("config", "", "use a specific config file")
 
-	// Init app and logger
+	// Healthcheck command
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "healthcheck",
+		Short: "Perform health check",
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			health := app.healthcheckExitCode()
+			app.shutdown.ShutdownAndWait()
+			os.Exit(health)
+		},
+	})
+
+	// TOTP secret generation command
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "totp-secret",
+		Short: "Generate TOTP secret",
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			key, err := totp.Generate(totp.GenerateOpts{
+				Issuer:      app.cfg.Server.PublicAddress,
+				AccountName: app.cfg.User.Nick,
+			})
+			if err != nil {
+				app.logErrAndQuit("Failed to generate TOTP secret", "err", err)
+				return
+			}
+			fmt.Println("TOTP-Secret:", key.Secret())
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+
+	// Link check tool
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "check",
+		Short: "Check all external links",
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if err := app.initTemplateStrings(); err != nil {
+				app.logErrAndQuit("Failed to start check", "err", err)
+			}
+			if err := app.checkAllExternalLinks(); err != nil {
+				app.logErrAndQuit("Failed to check links", "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+
+	// Markdown export command
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "export [directory]",
+		Short: "Export markdown files",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			var dir string
+			if len(args) > 0 {
+				dir = args[0]
+			}
+			if err := app.exportMarkdownFiles(dir); err != nil {
+				app.logErrAndQuit("Failed to export markdown files", "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+
+	// ActivityPub refetch followers
+	activityPubCmd := &cobra.Command{
+		Use:   "activitypub",
+		Short: "ActivityPub related tasks",
+	}
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "refetch-followers blog",
+		Short: "Refetch ActivityPub followers",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			blog := args[0]
+			if err := app.apRefetchFollowers(blog); err != nil {
+				app.logErrAndQuit("Failed to refetch ActivityPub followers", "blog", blog, "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+	rootCmd.AddCommand(activityPubCmd)
+
+	// Execute the root command
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func initializeApp(cmd *cobra.Command) *goBlog {
 	app := &goBlog{
 		httpClient: newHttpClient(),
 	}
-	app.initLog()
-
-	// Init CPU and memory profiling
-	flag.Parse()
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			app.fatal("could not create CPU profile", "err", err)
-			return
-		}
-		defer f.Close()
-		if err := pprof.StartCPUProfile(f); err != nil {
-			app.fatal("could not start CPU profile", "err", err)
-			return
-		}
-		defer pprof.StopCPUProfile()
-	}
-	if *memprofile != "" {
-		defer func() {
-			f, err := os.Create(*memprofile)
-			if err != nil {
-				app.fatal("could not create memory profile", "err", err)
-				return
-			}
-			defer f.Close()
-			runtime.GC()
-			if err := pprof.WriteHeapProfile(f); err != nil {
-				app.fatal("could not write memory profile", "err", err)
-				return
-			}
-		}()
-	}
-
-	// Initialize config
-	if err = app.loadConfigFile(*configfile); err != nil {
+	configfile, _ := cmd.Flags().GetString("config")
+	if err := app.loadConfigFile(configfile); err != nil {
 		app.logErrAndQuit("Failed to load config file", "err", err)
-		return
+		return nil
 	}
-	if err = app.initConfig(false); err != nil {
+	if err := app.initConfig(false); err != nil {
 		app.logErrAndQuit("Failed to init config", "err", err)
-		return
+		return nil
 	}
-
-	// Healthcheck tool
-	if len(os.Args) >= 2 && os.Args[1] == "healthcheck" {
-		// Connect to public address + "/ping" and exit with 0 when successful
-		health := app.healthcheckExitCode()
-		app.shutdown.ShutdownAndWait()
-		os.Exit(health)
-		return
-	}
-
-	// Tool to generate TOTP secret
-	if len(os.Args) >= 2 && os.Args[1] == "totp-secret" {
-		key, err := totp.Generate(totp.GenerateOpts{
-			Issuer:      app.cfg.Server.PublicAddress,
-			AccountName: app.cfg.User.Nick,
-		})
-		if err != nil {
-			app.logErrAndQuit("Failed to generate TOTP secret", "err", err)
-			return
-		}
-		fmt.Println("TOTP-Secret:", key.Secret())
-		app.shutdown.ShutdownAndWait()
-		return
-	}
-
-	// Initialize plugins
-	if err = app.initPlugins(); err != nil {
-		app.logErrAndQuit("Failed to init plugins", "err", err)
-		return
-	}
-
-	// Start pprof server
-	if pprofCfg := app.cfg.Pprof; pprofCfg != nil && pprofCfg.Enabled {
-		go func() {
-			// Build handler
-			pprofHandler := http.NewServeMux()
-			pprofHandler.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-				http.Redirect(rw, r, "/debug/pprof/", http.StatusFound)
-			})
-			pprofHandler.HandleFunc("/debug/pprof/", netpprof.Index)
-			pprofHandler.HandleFunc("/debug/pprof/{action}", netpprof.Index)
-			pprofHandler.HandleFunc("/debug/pprof/cmdline", netpprof.Cmdline)
-			pprofHandler.HandleFunc("/debug/pprof/profile", netpprof.Profile)
-			pprofHandler.HandleFunc("/debug/pprof/symbol", netpprof.Symbol)
-			pprofHandler.HandleFunc("/debug/pprof/trace", netpprof.Trace)
-			// Build server and listener
-			pprofServer := &http.Server{
-				Addr:              cmp.Or(pprofCfg.Address, "localhost:0"),
-				Handler:           pprofHandler,
-				ReadHeaderTimeout: 1 * time.Minute,
-			}
-			listener, err := net.Listen("tcp", pprofServer.Addr)
-			if err != nil {
-				app.fatal("Failed to start pprof server", "err", err)
-				return
-			}
-			app.info("Pprof server listening", "addr", listener.Addr().String())
-			// Start server
-			if err := pprofServer.Serve(listener); err != nil {
-				app.fatal("Failed to start pprof server", "err", err)
-				return
-			}
-		}()
-	}
-
-	// Execute pre-start hooks
-	app.preStartHooks()
-
-	// Link check tool after init of markdown
-	if len(os.Args) >= 2 && os.Args[1] == "check" {
-		app.initMarkdown()
-		err = app.initTemplateStrings()
-		if err != nil {
-			app.logErrAndQuit("Failed to start check", "err", err)
-		}
-		err = app.checkAllExternalLinks()
-		if err != nil {
-			app.logErrAndQuit("Failed to start check", "err", err)
-		}
-		app.shutdown.ShutdownAndWait()
-		return
-	}
-
-	// Markdown export
-	if len(os.Args) >= 2 && os.Args[1] == "export" {
-		var dir string
-		if len(os.Args) >= 3 {
-			dir = os.Args[2]
-		}
-		err = app.exportMarkdownFiles(dir)
-		if err != nil {
-			app.logErrAndQuit("Failed to export markdown files", "err", err)
-			return
-		}
-		app.shutdown.ShutdownAndWait()
-		return
-	}
-
-	// ActivityPub refetch followers
-	if len(os.Args) >= 2 && os.Args[1] == "activitypub" {
-		if !app.apEnabled() {
-			app.logErrAndQuit("ActivityPub not enabled")
-			return
-		}
-		if err = app.initActivityPubBase(); err != nil {
-			app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
-			return
-		}
-		if len(os.Args) >= 4 && os.Args[2] == "refetch-followers" {
-			blog := os.Args[3]
-			if err = app.apRefetchFollowers(blog); err != nil {
-				app.logErrAndQuit("Failed to refetch ActivityPub followers", "blog", blog, "err", err)
-				return
-			}
-			app.shutdown.ShutdownAndWait()
-			return
-		}
-	}
-
-	// Initialize components
-	app.initComponents()
-
-	// Start cron hooks
-	app.startHourlyHooks()
-
-	// Start the server
-	err = app.startServer()
-	if err != nil {
-		app.logErrAndQuit("Failed to start server(s)", "err", err)
-		return
-	}
-
-	// Wait till everything is shutdown
-	app.shutdown.Wait()
+	return app
 }
 
-func (app *goBlog) initComponents() {
-	var err error
-
+func initializeComponents(app *goBlog) {
 	app.info("Initialize components...")
 
-	app.initMarkdown()
-	if err = app.initTemplateAssets(); err != nil { // Needs minify
-		app.logErrAndQuit("Failed to init template assets", "err", err)
-		return
+	for _, f := range []func() error{
+		app.initTemplateAssets, app.initTemplateStrings, app.initRegexRedirects,
+		app.initHTTPLog, app.initActivityPub, app.initWebAuthn,
+	} {
+		if err := f(); err != nil {
+			app.logErrAndQuit("Failed to initialize", "err", err)
+			return
+		}
 	}
-	if err = app.initTemplateStrings(); err != nil {
-		app.logErrAndQuit("Failed to init template translations", "err", err)
-		return
+	for _, f := range []func(){
+		app.initWebmention, app.initTelegram, app.initAtproto, app.initBlogStats,
+		app.initTTS, app.initSessions, app.startPostsScheduler, app.initPostsDeleter,
+		app.initIndexNow,
+	} {
+		f()
 	}
-	if err = app.initCache(); err != nil {
-		app.logErrAndQuit("Failed to init HTTP cache", "err", err)
-		return
-	}
-	if err = app.initRegexRedirects(); err != nil {
-		app.logErrAndQuit("Failed to init redirects", "err", err)
-		return
-	}
-	if err = app.initHTTPLog(); err != nil {
-		app.logErrAndQuit("Failed to init HTTP logging", "err", err)
-		return
-	}
-	if err = app.initActivityPub(); err != nil {
-		app.logErrAndQuit("Failed to init ActivityPub", "err", err)
-		return
-	}
-	if err = app.initWebAuthn(); err != nil {
-		app.logErrAndQuit("Failed to init WebAuthn", "err", err)
-		return
-	}
-	app.initWebmention()
-	app.initTelegram()
-	app.initAtproto()
-	app.initBlogStats()
-	app.initTTS()
-	app.initSessions()
-	app.initIndieAuth()
-	app.startPostsScheduler()
-	app.initPostsDeleter()
-	app.initIndexNow()
 
 	app.info("Initialized components")
 }

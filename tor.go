@@ -39,7 +39,7 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	a.torHostname = addr
 	a.info("Onion service published", "address", a.torAddress)
 	// Clear cache
-	a.cache.purge()
+	a.purgeCache()
 	// Serve handler
 	s := &http.Server{
 		Handler:           h,

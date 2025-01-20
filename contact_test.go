@@ -44,7 +44,6 @@ func Test_contact(t *testing.T) {
 	app.cfg.DefaultBlog = "en"
 
 	_ = app.initConfig(false)
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	// Make contact form request

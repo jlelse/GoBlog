@@ -14,7 +14,6 @@ func Test_export(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	_ = app.initConfig(false)
-	app.initMarkdown()
 
 	err := app.db.savePost(&post{
 		Path:    "/test/abc",

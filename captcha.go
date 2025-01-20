@@ -31,6 +31,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		// Check session
+		a.initSessionStores()
 		ses, err := a.captchaSessions.Get(r, "c")
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -114,6 +115,7 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchaheaders")))
 	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Get session
+	a.initSessionStores()
 	ses, err := a.captchaSessions.Get(r, "c")
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)

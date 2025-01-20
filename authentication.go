@@ -35,6 +35,7 @@ func (a *goBlog) checkAppPasswords(username, password string) bool {
 
 // Check if cookie is known and logged in
 func (a *goBlog) checkLoginCookie(r *http.Request) bool {
+	a.initSessionStores()
 	ses, err := a.loginSessions.Get(r, "l")
 	if err == nil && ses != nil {
 		if login, ok := ses.Values["login"]; ok && login.(bool) {
@@ -120,6 +121,7 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))
 	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Cookie
+	a.initSessionStores()
 	ses, err := a.loginSessions.Get(r, "l")
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -170,6 +172,7 @@ func serveLogin(w http.ResponseWriter, r *http.Request) {
 
 // HandlerFunc to delete login session and cookie
 func (a *goBlog) serveLogout(w http.ResponseWriter, r *http.Request) {
+	a.initSessionStores()
 	if ses, err := a.loginSessions.Get(r, "l"); err == nil && ses != nil {
 		_ = a.loginSessions.Delete(r, w, ses)
 	}

@@ -31,36 +31,41 @@ func (a *goBlog) initSessions() {
 	}
 	deleteExpiredSessions()
 	a.hourlyHooks = append(a.hourlyHooks, deleteExpiredSessions)
-	a.loginSessions = &dbSessionStore{
-		options: &sessions.Options{
-			Secure:   a.useSecureCookies(),
-			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   int((7 * 24 * time.Hour).Seconds()),
-			Path:     "/", // Cookie for all pages
-		},
-		db: a.db,
-	}
-	a.captchaSessions = &dbSessionStore{
-		options: &sessions.Options{
-			Secure:   a.useSecureCookies(),
-			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   int((24 * time.Hour).Seconds()),
-			Path:     "/", // Cookie for all pages
-		},
-		db: a.db,
-	}
-	a.webauthnSessions = &dbSessionStore{
-		options: &sessions.Options{
-			Secure:   a.useSecureCookies(),
-			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   int((10 * time.Minute).Seconds()),
-			Path:     "/", // Cookie for all pages
-		},
-		db: a.db,
-	}
+}
+
+func (a *goBlog) initSessionStores() {
+	a.initSessionStoresOnce.Do(func() {
+		a.loginSessions = &dbSessionStore{
+			options: &sessions.Options{
+				Secure:   a.useSecureCookies(),
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+				Path:     "/", // Cookie for all pages
+			},
+			db: a.db,
+		}
+		a.captchaSessions = &dbSessionStore{
+			options: &sessions.Options{
+				Secure:   a.useSecureCookies(),
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   int((24 * time.Hour).Seconds()),
+				Path:     "/", // Cookie for all pages
+			},
+			db: a.db,
+		}
+		a.webauthnSessions = &dbSessionStore{
+			options: &sessions.Options{
+				Secure:   a.useSecureCookies(),
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   int((10 * time.Minute).Seconds()),
+				Path:     "/", // Cookie for all pages
+			},
+			db: a.db,
+		}
+	})
 }
 
 type dbSessionStore struct {

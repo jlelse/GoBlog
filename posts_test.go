@@ -18,9 +18,6 @@ func Test_serveDate(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	_ = app.initCache()
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()
@@ -110,9 +107,6 @@ func Test_servePost(t *testing.T) {
 	})
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	_ = app.initCache()
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()

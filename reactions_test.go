@@ -18,7 +18,6 @@ func Test_reactionsLowLevel(t *testing.T) {
 	app.cfg.Reactions = &configReactions{Enabled: true}
 
 	_ = app.initConfig(false)
-	_ = app.initCache()
 
 	err := app.saveReaction("🖕", "/testpost")
 	assert.ErrorContains(t, err, "not allowed")
@@ -98,9 +97,6 @@ func Test_reactionsHighLevel(t *testing.T) {
 	app.cfg.Reactions = &configReactions{Enabled: true}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	app.initSessions()
-	_ = app.initCache()
 
 	// Send unsuccessful reaction
 	form := url.Values{

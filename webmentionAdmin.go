@@ -131,7 +131,7 @@ func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if action == "delete" || action == "approve" {
-		a.cache.purge()
+		a.purgeCache()
 	}
 	redirectTo := r.FormValue("redir")
 	if redirectTo == "" {

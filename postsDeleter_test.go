@@ -13,7 +13,6 @@ func Test_checkDeletedPosts(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	_ = app.initCache()
 
 	// Create a post
 	err := app.createPost(&post{

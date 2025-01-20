@@ -24,14 +24,20 @@ type cache struct {
 	c *c.Cache[string, *cacheItem]
 }
 
-func (a *goBlog) initCache() error {
-	if a.cfg.Cache != nil && !a.cfg.Cache.Enable {
-		return nil // Cache disabled
-	}
-	a.cache = &cache{
-		c: c.New[string, *cacheItem](time.Minute, 20*bodylimit.MB),
-	}
-	return nil
+func (a *goBlog) initCache() {
+	a.initCacheOnce.Do(func() {
+		if a.cfg.Cache != nil && !a.cfg.Cache.Enable {
+			return
+		}
+		a.cache = &cache{
+			c: c.New[string, *cacheItem](time.Minute, 20*bodylimit.MB),
+		}
+	})
+}
+
+func (a *goBlog) purgeCache() {
+	a.initCache()
+	a.cache.purge()
 }
 
 func cacheLoggedIn(next http.Handler) http.Handler {
@@ -42,6 +48,7 @@ func cacheLoggedIn(next http.Handler) http.Handler {
 }
 
 func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
+	a.initCache()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.cache == nil || a.cache.c == nil || !isCacheable(r) || a.shouldSkipLoggedIn(r) {
 			next.ServeHTTP(w, r)

@@ -21,7 +21,6 @@ func Test_renderPostTax(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
 
 	p := &post{
 		Parameters: map[string][]string{
@@ -75,8 +74,6 @@ func Test_renderInteractions(t *testing.T) {
 	app.cfg.Server.PublicAddress = "https://example.com"
 
 	_ = app.initConfig(false)
-	_ = app.initCache()
-	app.initMarkdown()
 	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()

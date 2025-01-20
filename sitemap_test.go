@@ -18,8 +18,6 @@ func Test_sitemap(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	_ = app.initCache()
 
 	app.d = app.buildRouter()
 

@@ -47,6 +47,7 @@ func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, _ *http.Request) {
 // Parse Authorization Request
 // https://indieauth.spec.indieweb.org/#authorization-request
 func (a *goBlog) indieAuthRequest(w http.ResponseWriter, r *http.Request) {
+	a.initIndieAuth()
 	iareq, err := a.ias.ParseAuthorization(r)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
@@ -62,6 +63,7 @@ func (a *goBlog) indieAuthRequest(w http.ResponseWriter, r *http.Request) {
 // Authorization response
 // https://indieauth.spec.indieweb.org/#authorization-response
 func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
+	a.initIndieAuth()
 	iareq, err := a.ias.ParseAuthorization(r)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
@@ -138,6 +140,7 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		return
 	}
 	// Validate token exchange
+	a.initIndieAuth()
 	if err = a.ias.ValidateTokenExchange(data, r); err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return

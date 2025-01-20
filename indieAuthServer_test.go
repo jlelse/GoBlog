@@ -37,13 +37,11 @@ func Test_indieAuthServer(t *testing.T) {
 	app.cfg.Cache.Enable = false
 
 	_ = app.initConfig(false)
-	app.initIndieAuth()
-	_ = app.initCache()
-	app.initSessions()
 	_ = app.initTemplateStrings()
 
 	app.d = app.buildRouter()
 
+	app.initIndieAuth()
 	app.ias.Client = newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

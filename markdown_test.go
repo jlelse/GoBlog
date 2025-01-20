@@ -27,8 +27,6 @@ func Test_markdown(t *testing.T) {
 			},
 		}
 
-		app.initMarkdown()
-
 		// Relative / absolute links
 
 		rendered, err := app.renderMarkdown("[Relative](/relative)", false)
@@ -102,8 +100,6 @@ func Benchmark_markdown(b *testing.B) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(b),
 	}
-
-	app.initMarkdown()
 
 	b.Run("Markdown Rendering", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {

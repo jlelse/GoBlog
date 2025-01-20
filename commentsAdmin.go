@@ -93,6 +93,6 @@ func (a *goBlog) commentsAdminDelete(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.cache.purge()
+	a.purgeCache()
 	http.Redirect(w, r, ".", http.StatusFound)
 }

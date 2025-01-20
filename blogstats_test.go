@@ -33,10 +33,7 @@ func Test_blogStats(t *testing.T) {
 	app.cfg.DefaultBlog = "en"
 
 	_ = app.initConfig(false)
-	_ = app.initCache()
-	app.initMarkdown()
 	_ = app.initTemplateStrings()
-	app.initSessions()
 
 	// Insert post
 

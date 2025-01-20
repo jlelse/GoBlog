@@ -142,7 +142,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	}
 
 	// Purge cache
-	a.cache.purge()
+	a.purgeCache()
 
 	return nil
 }

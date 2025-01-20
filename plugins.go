@@ -100,7 +100,7 @@ func (a *goBlog) GetBlog(name string) (plugintypes.Blog, bool) {
 }
 
 func (a *goBlog) PurgeCache() {
-	a.cache.purge()
+	a.purgeCache()
 }
 
 func (a *goBlog) GetHTTPClient() *http.Client {

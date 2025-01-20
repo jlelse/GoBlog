@@ -26,8 +26,6 @@ func Test_postsDb(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	_ = app.initCache()
 
 	now := toLocalSafe(time.Now().String())
 	nowPlus1Hour := toLocalSafe(time.Now().Add(1 * time.Hour).String())
@@ -233,7 +231,6 @@ func Test_ftsWithoutTitle(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	_ = app.initConfig(false)
-	app.initMarkdown()
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -260,7 +257,6 @@ func Test_postsPriority(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	_ = app.initConfig(false)
-	app.initMarkdown()
 
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
@@ -386,8 +382,6 @@ func Test_postDeletesParams(t *testing.T) {
 	}
 
 	_ = app.initConfig(false)
-	app.initMarkdown()
-	_ = app.initCache()
 
 	err := app.createPost(&post{
 		Path:    "/test/abc",

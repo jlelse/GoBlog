@@ -16,7 +16,6 @@ func Test_editorPreview(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	_ = app.initConfig(false)
-	app.initMarkdown()
 	_ = app.initTemplateStrings()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
