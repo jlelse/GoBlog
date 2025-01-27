@@ -7,9 +7,11 @@ import (
 	"time"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/plugintypes"
 	"gopkg.in/yaml.v3"
 )
 
@@ -55,7 +57,10 @@ func (a *goBlog) postHtml(o *postHtmlOptions) (res string) {
 
 func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
 	// Build HTML
-	hb := htmlbuilder.NewHtmlBuilder(w)
+	hb, finish := a.wrapForPlugins(w, a.getPlugins(pluginUiPostContentType), func(plugin any, doc *goquery.Document) {
+		plugin.(plugintypes.UIPostContent).RenderPostContent(o.p, doc)
+	})
+	defer finish()
 	// Add audio to the top
 	for _, a := range o.p.Parameters[a.cfg.Micropub.AudioParam] {
 		hb.WriteElementOpen("audio", "controls", "preload", "none")
@@ -70,7 +75,7 @@ func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
 	a.renderPostLikeContext(hb, o.p)
 	// Render markdown
 	hb.WriteElementOpen("div", "class", "e-content")
-	_ = a.renderMarkdownToWriter(w, o.p.Content, o.absolute)
+	_ = a.renderMarkdownToWriter(hb, o.p.Content, o.absolute)
 	hb.WriteElementClose("div")
 	// Add bookmark links to the bottom
 	for _, l := range o.p.Parameters[a.cfg.Micropub.BookmarkParam] {

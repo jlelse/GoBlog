@@ -24,6 +24,7 @@ const (
 	pluginMiddlewareType      = "middleware"
 	pluginUiSummaryType       = "uisummary"
 	pluginUiPostType          = "uiPost"
+	pluginUiPostContentType   = "uiPostContent"
 	pluginUiFooterType        = "uifooter"
 	pluginPostCreatedHookType = "postcreatedhook"
 	pluginPostUpdatedHookType = "postupdatedhook"
@@ -45,6 +46,7 @@ func (a *goBlog) initPlugins() error {
 			pluginMiddlewareType:      reflect.TypeOf((*plugintypes.Middleware)(nil)).Elem(),
 			pluginUiSummaryType:       reflect.TypeOf((*plugintypes.UISummary)(nil)).Elem(),
 			pluginUiPostType:          reflect.TypeOf((*plugintypes.UIPost)(nil)).Elem(),
+			pluginUiPostContentType:   reflect.TypeOf((*plugintypes.UIPostContent)(nil)).Elem(),
 			pluginUiFooterType:        reflect.TypeOf((*plugintypes.UIFooter)(nil)).Elem(),
 			pluginPostCreatedHookType: reflect.TypeOf((*plugintypes.PostCreatedHook)(nil)).Elem(),
 			pluginPostUpdatedHookType: reflect.TypeOf((*plugintypes.PostUpdatedHook)(nil)).Elem(),

@@ -60,6 +60,14 @@ type UIPost interface {
 	RenderPost(renderContext RenderContext, post Post, doc *goquery.Document)
 }
 
+// UIPostContent plugins get called when the content for a post is generated.
+// This is triggered from all places where the post content is displayed, so on the HTML view as well as feeds, ActivityPub etc.
+type UIPostContent interface {
+	// The post contains information about the post for which to render the summary.
+	// The document can be used to add or modify the default HTML. But it only contains the HTML for the post content, not for the whole page.
+	RenderPostContent(post Post, doc *goquery.Document)
+}
+
 // UIFooter plugins get called when rendering the footer on each HTML page.
 type UIFooter interface {
 	// The renderContext provides information such as the path of the request or the blog name.

@@ -53,6 +53,7 @@ func init() {
 		"UI2":             reflect.ValueOf((*plugintypes.UI2)(nil)),
 		"UIFooter":        reflect.ValueOf((*plugintypes.UIFooter)(nil)),
 		"UIPost":          reflect.ValueOf((*plugintypes.UIPost)(nil)),
+		"UIPostContent":   reflect.ValueOf((*plugintypes.UIPostContent)(nil)),
 		"UISummary":       reflect.ValueOf((*plugintypes.UISummary)(nil)),
 
 		// interface wrapper definitions
@@ -72,6 +73,7 @@ func init() {
 		"_UI2":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
 		"_UIFooter":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
 		"_UIPost":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIPost)(nil)),
+		"_UIPostContent":   reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIPostContent)(nil)),
 		"_UISummary":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UISummary)(nil)),
 	}
 }
@@ -342,6 +344,16 @@ type _go_goblog_app_app_pkgs_plugintypes_UIPost struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_UIPost) RenderPost(renderContext plugintypes.RenderContext, post plugintypes.Post, doc *goquery.Document) {
 	W.WRenderPost(renderContext, post, doc)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UIPostContent is an interface wrapper for UIPostContent type
+type _go_goblog_app_app_pkgs_plugintypes_UIPostContent struct {
+	IValue             interface{}
+	WRenderPostContent func(post plugintypes.Post, doc *goquery.Document)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UIPostContent) RenderPostContent(post plugintypes.Post, doc *goquery.Document) {
+	W.WRenderPostContent(post, doc)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_UISummary is an interface wrapper for UISummary type

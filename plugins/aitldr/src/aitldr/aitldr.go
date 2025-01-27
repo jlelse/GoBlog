@@ -189,7 +189,7 @@ func (p *plugin) summarize(post plugintypes.Post) {
 
 	var response apiResponse
 
-	model := "gpt-3.5-turbo"
+	model := "gpt-4o"
 	if p.model != "" {
 		model = p.model
 	}

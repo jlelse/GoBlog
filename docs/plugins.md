@@ -141,9 +141,29 @@ config:
   # Required
   apikey: YOUR_OPEN_AI_API_KEY
   # Optional:
-  model: gpt-4-turbo-preview # Choose a specific model, default is gpt-3.5-turbo
+  model: gpt-4o # Choose a specific model, default is gpt-4o
   default: # Name of the blog
     title: "Custom title for the summary box:"
+```
+
+### AI generated image captions (Path `embedded:aiimage`, Import `aiimage`)
+
+A plugin that uses the ChatGPT API to generated short image captions for images in the blog post (saved in the `images` parameter). It can be triggered by a press on a button on the post. To prevent it from generating captions for a post, add the following post parameter:
+
+```yaml
+noaiimage: "true"
+```
+
+#### Config
+
+```yaml
+config:
+  # Required
+  apikey: YOUR_OPEN_AI_API_KEY
+  # Optional:
+  model: gpt-4o # Choose a specific model, default is gpt-4o
+  default: # Name of the blog
+    title: "Custom prefix for the caption:"
 ```
 
 ### Snow (Path `embedded:snow`, Import `snow`)
