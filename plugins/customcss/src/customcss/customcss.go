@@ -16,7 +16,6 @@ type plugin struct {
 
 	customCSS string
 	init      sync.Once
-	inited    bool
 }
 
 func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI2) {
@@ -55,13 +54,8 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 			return
 		}
 
-		p.inited = true
 		fmt.Println("Custom CSS compiled")
 	})
-
-	if !p.inited {
-		return
-	}
 
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)

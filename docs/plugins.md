@@ -181,3 +181,11 @@ A simple plugin that enhances the `/robots.txt` with AI bot user-agents and also
 #### Config
 
 This plugin has no config options.
+
+### Image tooltips (Path `embedded:imagetooltips`, Import `imagetooltips`)
+
+A simple plugin that shows image titles in an alert when clicking on the image. This improves the user experience on mobile devices where hovering over the image to trigger a tooltip is not possible.
+
+#### Config
+
+This plugin has no config options.
