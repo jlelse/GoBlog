@@ -93,12 +93,12 @@ func (a *goBlog) initActivityPubBase() error {
 	// Init http client
 	a.apHttpClients = map[string]*apc.C{}
 	for blog, bc := range a.cfg.Blogs {
-		a.apHttpClients[blog] = apc.New(
-			apc.WithHTTPClient(a.httpClient),
-			apc.WithSignFn(func(r *http.Request) error {
-				return a.signRequest(r, a.apIri(bc))
-			}),
+		httpClient := cloneHttpClient(a.httpClient)
+		httpClient.Transport = a.newactivityPubSignRequestTransport(httpClient.Transport, string(a.apAPIri(bc)))
+		apcClient := apc.New(
+			apc.WithHTTPClient(httpClient),
 		)
+		a.apHttpClients[blog] = apcClient
 	}
 	return nil
 }

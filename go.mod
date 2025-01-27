@@ -18,8 +18,8 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
-	github.com/go-ap/activitypub v0.0.0-20250112165501-7b898763a1e9
-	github.com/go-ap/client v0.0.0-20250116154255-8aac5051bbd0
+	github.com/go-ap/activitypub v0.0.0-20250124194921-d52b4c694e14
+	github.com/go-ap/client v0.0.0-20250126153921-26e3111da3d7
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-fed/httpsig v1.1.0
@@ -44,7 +44,7 @@ require (
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.4.0
 	github.com/samber/go-singleflightx v0.3.2
-	github.com/samber/lo v1.47.0
+	github.com/samber/lo v1.49.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/sourcegraph/conc v0.3.0
@@ -73,7 +73,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	git.sr.ht/~mariusor/cache v0.0.0-20241212172633-e1563652acb4 // indirect
+	git.sr.ht/~mariusor/cache v0.0.0-20250122165545-14c90d7a9de8 // indirect
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	git.sr.ht/~mariusor/lw v0.0.0-20250114195945-ba9c7bcca3c1 // indirect
 	git.sr.ht/~mariusor/mask v0.0.0-20250114195353-98705a6977b7 // indirect
@@ -85,7 +85,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/go-ap/errors v0.0.0-20241212155021-5a598b6bf467 // indirect
+	github.com/go-ap/errors v0.0.0-20250124135319-3da8adefd4a9 // indirect
 	github.com/go-webauthn/x v0.1.16 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/go-tpm v0.9.3 // indirect
