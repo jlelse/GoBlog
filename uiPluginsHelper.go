@@ -8,10 +8,16 @@ import (
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
+const (
+	selectorBodyInner = "body > *"
+	selectorHtml      = "html"
+)
+
 func (*goBlog) wrapForPlugins(
 	originalWriter io.Writer,
 	plugins []any,
 	pluginRender func(plugin any, doc *goquery.Document),
+	selector string,
 ) (wrappedHb *htmlbuilder.HtmlBuilder, finish func()) {
 	if len(plugins) == 0 {
 		// No plugins, nothing to wrap
@@ -34,7 +40,8 @@ func (*goBlog) wrapForPlugins(
 		for _, plugin := range plugins {
 			pluginRender(plugin, doc)
 		}
-		_ = goquery.Render(originalWriter, doc.Selection)
+		finalSelection := doc.Selection.Find(selector)
+		_ = goquery.Render(originalWriter, finalSelection)
 	}()
 	return htmlbuilder.NewHtmlBuilder(pw), finish
 }

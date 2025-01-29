@@ -51,6 +51,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 			func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UI2).RenderWithDocument(data.prc, doc)
 			},
+			selectorHtml,
 		)
 		f(hb, data)
 		finish()

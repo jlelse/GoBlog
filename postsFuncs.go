@@ -59,7 +59,7 @@ func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
 	// Build HTML
 	hb, finish := a.wrapForPlugins(w, a.getPlugins(pluginUiPostContentType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIPostContent).RenderPostContent(o.p, doc)
-	})
+	}, selectorBodyInner)
 	defer finish()
 	// Add audio to the top
 	for _, a := range o.p.Parameters[a.cfg.Micropub.AudioParam] {

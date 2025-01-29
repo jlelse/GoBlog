@@ -893,7 +893,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Wrap plugins
 			hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiPostType), func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UIPost).RenderPost(rd.prc, p, doc)
-			})
+			}, selectorBodyInner)
 			defer finish()
 			// Render...
 			hb.WriteElementOpen("main", "class", "h-entry")

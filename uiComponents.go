@@ -33,7 +33,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, 
 	// Plugin handling
 	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiSummaryType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UISummary).RenderSummaryForPost(rd.prc, p, doc)
-	})
+	}, selectorBodyInner)
 	defer finish()
 	// Start article
 	hb.WriteElementOpen("article", "class", "h-entry border-bottom")
@@ -808,7 +808,7 @@ func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	// Wrap plugins
 	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiFooterType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIFooter).RenderFooter(rd.prc, doc)
-	})
+	}, selectorBodyInner)
 	defer finish()
 	// Render footer
 	hb.WriteElementOpen("footer")
