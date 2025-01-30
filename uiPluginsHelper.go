@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	selectorBodyInner = "body > *"
-	selectorHtml      = "html"
+	selectorBodyInner = "body"
 )
 
 func (*goBlog) wrapForPlugins(
@@ -40,8 +39,13 @@ func (*goBlog) wrapForPlugins(
 		for _, plugin := range plugins {
 			pluginRender(plugin, doc)
 		}
-		finalSelection := doc.Selection.Find(selector)
-		_ = goquery.Render(originalWriter, finalSelection)
+		finalSelection := doc.Selection
+		if selector != "" {
+			finalSelection = finalSelection.Find(selector).Children()
+		}
+		finalSelection.Each(func(_ int, s *goquery.Selection) {
+			_ = goquery.Render(originalWriter, s)
+		})
 	}()
 	return htmlbuilder.NewHtmlBuilder(pw), finish
 }
