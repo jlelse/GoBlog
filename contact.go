@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
+	"testing"
 
-	mail "github.com/xhit/go-simple-mail/v2"
+	"github.com/wneessen/go-mail"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
@@ -71,35 +71,50 @@ func (*goBlog) sendContactEmail(cc *configContact, body, replyTo string) error {
 	if cc == nil || cc.SMTPHost == "" || cc.EmailFrom == "" || cc.EmailTo == "" {
 		return fmt.Errorf("email not send as config is missing")
 	}
-	// Connect to SMTP
-	smtpServer := mail.NewSMTPClient()
-	smtpServer.Host = cc.SMTPHost
-	port := cc.SMTPPort
-	if port == 0 {
-		port = 587
-	}
-	smtpServer.Port = port
-	smtpServer.Username = cc.SMTPUser
-	smtpServer.Password = cc.SMTPPassword
-	smtpServer.KeepAlive = false
-	smtpClient, err := smtpServer.Connect()
-	if err != nil {
+	// Create mail
+	message := mail.NewMsg()
+	if err := message.From(cc.EmailFrom); err != nil {
 		return err
 	}
-	// Build email
-	msg := mail.NewMSG()
-	msg.AddTo(cc.EmailTo)
-	msg.SetFrom(cc.EmailFrom)
-	if replyTo != "" {
-		msg.SetReplyTo(replyTo)
+	if err := message.To(cc.EmailTo); err != nil {
+		return err
 	}
-	msg.SetDate(time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
+	if replyTo != "" {
+		if err := message.ReplyTo(replyTo); err != nil {
+			return err
+		}
+	}
+	message.SetDate()
 	subject := cc.EmailSubject
 	if subject == "" {
 		subject = "New contact message"
 	}
-	msg.SetSubject(subject)
-	msg.SetBody(mail.TextPlain, body)
-	// Send mail
-	return msg.Send(smtpClient)
+	message.Subject(subject)
+	message.SetBodyString(mail.TypeTextPlain, body)
+	// Deliver the mail via SMTP
+	port := 587
+	if cc.SMTPPort != 0 {
+		port = cc.SMTPPort
+	}
+	client, err := mail.NewClient(
+		cc.SMTPHost,
+		mail.WithPort(port),
+		mail.WithUsername(cc.SMTPUser),
+		mail.WithPassword(cc.SMTPPassword),
+		mail.WithSMTPAuth(mail.SMTPAuthAutoDiscover),
+		mail.WithTLSPolicy(mail.TLSOpportunistic),
+	)
+	if err != nil {
+		return err
+	}
+	if cc.SMTPSSL {
+		client.SetSSLPort(true, false)
+	}
+
+	// For tests, don't use auto discover
+	if testing.Testing() {
+		client.SetSMTPAuth(mail.SMTPAuthPlain)
+	}
+
+	return client.DialAndSend(message)
 }

@@ -197,6 +197,7 @@ type configContact struct {
 	SMTPPort      int    `mapstructure:"smtpPort"`
 	SMTPUser      string `mapstructure:"smtpUser"`
 	SMTPPassword  string `mapstructure:"smtpPassword"`
+	SMTPSSL       bool   `mapstructure:"smtpSSL"`
 	EmailFrom     string `mapstructure:"emailFrom"`
 	EmailTo       string `mapstructure:"emailTo"`
 	EmailSubject  string `mapstructure:"emailSubject"`

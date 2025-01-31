@@ -19,7 +19,7 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.21.3
 	github.com/go-ap/activitypub v0.0.0-20250124194921-d52b4c694e14
-	github.com/go-ap/client v0.0.0-20250128143823-82049bed7555
+	github.com/go-ap/client v0.0.0-20250131093345-c5680a9e664b
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-fed/httpsig v1.1.0
@@ -58,7 +58,7 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
-	github.com/xhit/go-simple-mail/v2 v2.16.0
+	github.com/wneessen/go-mail v0.6.1
 	github.com/yuin/goldmark v1.7.8
 	github.com/yuin/goldmark-emoji v1.0.4
 	go.hacdias.com/indielib v0.4.1
@@ -114,14 +114,13 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdewolff/parse/v2 v2.7.20 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	github.com/toorop/go-dkim v0.0.0-20240103092955-90b7d1423f92 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.8.4 // indirect
