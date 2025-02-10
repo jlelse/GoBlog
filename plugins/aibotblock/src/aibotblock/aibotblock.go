@@ -31,7 +31,7 @@ func GetPlugin() (
 	p := &plugin{
 		botsCache:      []string{},
 		robotsTxtCache: "",
-		lastCached:     time.Now().AddDate(-1, 0, 0),
+		lastCached:     time.Now().AddDate(-2, 0, 0),
 	}
 	return p, p
 }
@@ -76,7 +76,7 @@ func (p *plugin) shouldBlock(userAgent string) bool {
 }
 
 func (p *plugin) updateCache() {
-	if len(p.botsCache) == 0 || time.Since(p.lastCached) > 6*time.Hour {
+	if len(p.botsCache) == 0 || time.Since(p.lastCached) > 24*time.Hour {
 		p.mutex.Lock()
 		defer p.mutex.Unlock()
 		var resp map[string]any
@@ -85,6 +85,7 @@ func (p *plugin) updateCache() {
 		err := requests.
 			URL("https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/refs/heads/main/robots.json").
 			ToJSON(&resp).
+			Client(p.app.GetHTTPClient()).
 			Fetch(timeoutCtx)
 		if err == nil {
 			newCache := []string{}
