@@ -30,7 +30,7 @@ Requirements:
 
 - Linux
 - git
-- go >= 1.23
+- go >= 1.24
 - libsqlite3 with FTS5 and JSON enabled >= 3.38 (the newer the better)
 
 Build command:
