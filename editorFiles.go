@@ -72,6 +72,7 @@ func (a *goBlog) serveEditorFilesUsesResults(w http.ResponseWriter, r *http.Requ
 		path:         bc.getRelativePath(editorPath + editorFileUsesPath + "/" + filename),
 		usesFile:     filename,
 		withoutFeeds: true,
+		allBlogs:     true,
 	})))
 }
 

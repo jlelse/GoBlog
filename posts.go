@@ -295,6 +295,7 @@ type indexConfig struct {
 	search           string
 	usesFile         string
 	withoutFeeds     bool
+	allBlogs         bool
 }
 
 const defaultPhotosPath = "/photos"
@@ -335,7 +336,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	// Create paginator
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
-		blogs:          []string{blog},
+		blogs:          lo.If(!ic.allBlogs, []string{blog}).Else([]string{}),
 		sections:       sections,
 		taxonomy:       ic.tax,
 		taxonomyValue:  ic.taxValue,
