@@ -40,7 +40,7 @@ editorpostdesc: "💡 Empty parameters are removed automatically. More possible 
 editorusetemplate: "Use template"
 emailopt: "Email (optional)"
 feed: "Feed"
-fileuses: "file uses"
+fileuses: "File uses"
 follow: "Follow"
 followusingactivitypub: "Follow using ActivityPub"
 general: "General"

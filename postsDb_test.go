@@ -306,7 +306,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 	err := app.db.savePost(&post{
 		Path:      "/test/abc",
 		Content:   "ABC test.jpg DEF",
-		Published: toLocalSafe(time.Now().String()),
+		Published: toLocalSafe(time.Now().Add(-1 * time.Hour).String()),
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusDraft,
@@ -338,11 +338,13 @@ func Test_usesOfMediaFile(t *testing.T) {
 	}, &postCreationOptions{new: true})
 	require.NoError(t, err)
 
-	counts, err := app.db.usesOfMediaFile("test.jpg")
+	results, err := app.getPosts(&postsRequestConfig{
+		usesFile: "test.jpg",
+	})
 	require.NoError(t, err)
-	assert.Len(t, counts, 1)
-	if assert.NotEmpty(t, counts) {
-		assert.Equal(t, 2, counts[0])
+	if assert.Len(t, results, 2) {
+		assert.Equal(t, "/test/def", results[0].Path)
+		assert.Equal(t, "/test/abc", results[1].Path)
 	}
 }
 

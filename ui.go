@@ -366,6 +366,7 @@ type indexRenderData struct {
 	first, prev, next  string
 	paramUrlQuery      string
 	summaryTemplate    summaryTyp
+	withoutFeeds       bool
 }
 
 func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -384,9 +385,11 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			if renderedIndexTitle != "" {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramUrlQuery)
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramUrlQuery)
-			hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramUrlQuery)
+			if !id.withoutFeeds {
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramUrlQuery)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramUrlQuery)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramUrlQuery)
+			}
 		},
 		func(hb *htmlbuilder.HtmlBuilder) {
 			hb.WriteElementOpen("main", "class", "h-feed")
@@ -1104,7 +1107,6 @@ func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 
 type editorFilesRenderData struct {
 	files []*mediaFile
-	uses  []int
 }
 
 func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
@@ -1127,24 +1129,28 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HtmlBuilder, rd *renderData) 
 			if len(ef.files) > 0 {
 				// Form
 				hb.WriteElementOpen("form", "method", "post", "class", "fw p")
-				// Select with number of uses
+				// Select
 				hb.WriteElementOpen("select", "name", "filename")
-				usesString := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses")
-				for i, f := range ef.files {
+				for _, f := range ef.files {
 					hb.WriteElementOpen("option", "value", f.Name)
-					hb.WriteEscaped(fmt.Sprintf("%s (%s), %s, ~%d %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size), ef.uses[i], usesString))
+					hb.WriteEscaped(fmt.Sprintf("%s (%s), %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size)))
 					hb.WriteElementClose("option")
 				}
 				hb.WriteElementClose("select")
 				// View button
 				hb.WriteElementOpen(
 					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "view"),
-					"formaction", rd.Blog.getRelativePath("/editor/files/view"),
+					"formaction", rd.Blog.getRelativePath(editorPath+editorFileViewPath),
+				)
+				// Uses button
+				hb.WriteElementOpen(
+					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses"),
+					"formaction", rd.Blog.getRelativePath(editorPath+editorFileUsesPath),
 				)
 				// Delete button
 				hb.WriteElementOpen(
 					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
-					"formaction", rd.Blog.getRelativePath("/editor/files/delete"),
+					"formaction", rd.Blog.getRelativePath(editorPath+editorFileDeletePath),
 					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
 				)
 				hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
@@ -1489,7 +1495,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("form")
 			// Media files
 			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/editor/files"))
+			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(editorPath+editorFilesPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mediafiles"))
 			hb.WriteElementClose("a")
 			hb.WriteElementClose("p")

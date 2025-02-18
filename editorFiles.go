@@ -1,10 +1,19 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"sort"
 
-	"github.com/samber/lo"
+	"github.com/go-chi/chi/v5"
+)
+
+const (
+	editorFilesPath               = "/files"
+	editorFileViewPath            = editorFilesPath + "/view"
+	editorFileUsesPath            = editorFilesPath + "/uses"
+	editorFileUsesPathPlaceholder = "/{filename}"
+	editorFileDeletePath          = editorFilesPath + "/delete"
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
@@ -25,20 +34,10 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Time.After(files[j].Time)
 	})
-	// Find uses
-	fileNames := lo.Map(files, func(f *mediaFile, _ int) string {
-		return f.Name
-	})
-	uses, err := a.db.usesOfMediaFile(fileNames...)
-	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	// Serve HTML
 	a.render(w, r, a.renderEditorFiles, &renderData{
 		Data: &editorFilesRenderData{
 			files: files,
-			uses:  uses,
 		},
 	})
 }
@@ -52,6 +51,30 @@ func (a *goBlog) serveEditorFilesView(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, a.mediaFileLocation(filename), http.StatusFound)
 }
 
+func (a *goBlog) serveEditorFilesUses(w http.ResponseWriter, r *http.Request) {
+	filename := r.FormValue("filename")
+	if filename == "" {
+		a.serveError(w, r, "No file selected", http.StatusBadRequest)
+		return
+	}
+	_, bc := a.getBlog(r)
+	http.Redirect(w, r, bc.getRelativePath(editorPath)+editorFileUsesPath+"/"+filename, http.StatusFound)
+}
+
+func (a *goBlog) serveEditorFilesUsesResults(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	if filename == "" {
+		a.serveError(w, r, "No file selected", http.StatusBadRequest)
+		return
+	}
+	_, bc := a.getBlog(r)
+	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
+		path:         bc.getRelativePath(editorPath + editorFileUsesPath + "/" + filename),
+		usesFile:     filename,
+		withoutFeeds: true,
+	})))
+}
+
 func (a *goBlog) serveEditorFilesDelete(w http.ResponseWriter, r *http.Request) {
 	filename := r.FormValue("filename")
 	if filename == "" {
@@ -63,5 +86,5 @@ func (a *goBlog) serveEditorFilesDelete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	_, bc := a.getBlog(r)
-	http.Redirect(w, r, bc.getRelativePath("/editor/files"), http.StatusFound)
+	http.Redirect(w, r, bc.getRelativePath(editorPath+editorFilesPath), http.StatusFound)
 }

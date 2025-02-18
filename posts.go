@@ -293,6 +293,8 @@ type indexConfig struct {
 	status           []postStatus
 	visibility       []postVisibility
 	search           string
+	usesFile         string
+	withoutFeeds     bool
 }
 
 const defaultPhotosPath = "/photos"
@@ -344,6 +346,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		publishedYear:  ic.year,
 		publishedMonth: ic.month,
 		publishedDay:   ic.day,
+		usesFile:       ic.usesFile,
 		status:         status,
 		visibility:     visibility,
 		priorityOrder:  true,
@@ -418,6 +421,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			next:            nextPath,
 			summaryTemplate: summaryTemplate,
 			paramUrlQuery:   paramUrlQuery,
+			withoutFeeds:    ic.withoutFeeds,
 		},
 	})
 }

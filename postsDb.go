@@ -397,6 +397,7 @@ type postsRequestConfig struct {
 	fetchWithoutParams                          bool     // fetch posts without parameters
 	fetchParams                                 []string // only fetch these parameters
 	withoutRenderedTitle                        bool     // fetch posts without rendered title
+	usesFile                                    string
 }
 
 func buildPostsQuery(c *postsRequestConfig, selection string) (query string, args []any, err error) {
@@ -405,16 +406,13 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	// Selection
 	queryBuilder.WriteString("select ")
 	queryBuilder.WriteString(selection)
-	queryBuilder.WriteString(" from ")
-	// Table
-	if c.search != "" {
-		queryBuilder.WriteString("(select p.* from posts_fts(@search) ps, posts p where ps.path = p.path)")
-		args = append(args, sql.Named("search", c.search))
-	} else {
-		queryBuilder.WriteString("posts")
-	}
+	queryBuilder.WriteString(" from posts")
 	// Filter
 	queryBuilder.WriteString(" where 1")
+	if c.search != "" {
+		queryBuilder.WriteString(" and path in (select ps.path from posts_fts(@search) ps)")
+		args = append(args, sql.Named("search", c.search))
+	}
 	if c.path != "" {
 		queryBuilder.WriteString(" and path = @path")
 		args = append(args, sql.Named("path", c.path))
@@ -546,6 +544,10 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	if !c.publishedBefore.IsZero() {
 		queryBuilder.WriteString(" and toutc(published) < @publishedbefore")
 		args = append(args, sql.Named("publishedbefore", c.publishedBefore.UTC().Format(time.RFC3339)))
+	}
+	if c.usesFile != "" {
+		queryBuilder.WriteString(" and path in (select ps.path from posts_fts ps where ps.content MATCH '\"' || @usesfile || '\"' union all select pp.path from post_parameters pp where pp.value LIKE '%' || @usesfile || '%' )")
+		args = append(args, sql.Named("usesfile", c.usesFile))
 	}
 	// Order
 	queryBuilder.WriteString(" order by ")
@@ -751,55 +753,4 @@ func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, er
 		values = append(values, value)
 	}
 	return values, nil
-}
-
-const mediaUseSql = `
-WITH mediafiles (name) AS (VALUES XXX)
-SELECT name, COUNT(DISTINCT path) AS count
-FROM (
-    SELECT m.name, p.path
-    FROM mediafiles m, post_parameters p
-    WHERE p.value LIKE '%' || m.name || '%'
-    UNION ALL
-    SELECT m.name, p.path
-    FROM mediafiles m, posts_fts p
-    WHERE p.content MATCH '"' || m.name || '"'
-)
-GROUP BY name;
-`
-
-func (db *database) usesOfMediaFile(names ...string) (counts []int, err error) {
-	sqlArgs := []any{}
-	nameValues := builderpool.Get()
-	defer builderpool.Put(nameValues)
-	for i, n := range names {
-		if i > 0 {
-			nameValues.WriteString(", ")
-		}
-		named := "name" + strconv.Itoa(i)
-		nameValues.WriteString("(@")
-		nameValues.WriteString(named)
-		nameValues.WriteString(")")
-		sqlArgs = append(sqlArgs, sql.Named(named, n))
-	}
-	rows, err := db.Query(strings.Replace(mediaUseSql, "XXX", nameValues.String(), 1), sqlArgs...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	countMap := make(map[string]int)
-	var name string
-	var count int
-	for rows.Next() {
-		err = rows.Scan(&name, &count)
-		if err != nil {
-			return nil, err
-		}
-		countMap[name] = count
-	}
-	counts = make([]int, len(names))
-	for i, n := range names {
-		counts[i] = countMap[n]
-	}
-	return counts, nil
 }
