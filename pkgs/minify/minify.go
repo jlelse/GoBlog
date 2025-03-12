@@ -21,7 +21,9 @@ func (m *Minifier) init() {
 	m.i.Do(func() {
 		m.m = minify.New()
 		// HTML
-		m.m.AddFunc(contenttype.HTML, mHtml.Minify)
+		m.m.AddFunc(contenttype.HTML, (&mHtml.Minifier{
+			KeepDocumentTags: true,
+		}).Minify)
 		// CSS
 		m.m.AddFunc(contenttype.CSS, mCss.Minify)
 		// JS
