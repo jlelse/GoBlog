@@ -20,7 +20,7 @@ type plugin struct {
 	config  map[string]any
 	initCSS sync.Once
 
-	apikey, model string
+	apikey, model, endpoint string
 }
 
 func GetPlugin() (
@@ -48,6 +48,11 @@ func (p *plugin) SetConfig(config map[string]any) {
 	if m, ok := p.config["model"]; ok {
 		if ms, ok := m.(string); ok {
 			p.model = ms
+		}
+	}
+	if e, ok := p.config["endpoint"]; ok {
+		if es, ok := e.(string); ok {
+			p.endpoint = es
 		}
 	}
 }
@@ -194,22 +199,29 @@ func (p *plugin) summarize(post plugintypes.Post) {
 		model = p.model
 	}
 
-	err := requests.URL("https://api.openai.com/v1/chat/completions").
+	endpoint := "https://api.openai.com/v1/chat/completions"
+	if p.endpoint != "" {
+		endpoint = p.endpoint
+	}
+
+	requestBody := map[string]any{
+		"model": model,
+		"messages": []apiMessage{
+			{
+				Role:    "system",
+				Content: p.systemMessage(),
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+	}
+
+	err := requests.URL(endpoint).
 		Method(http.MethodPost).
 		Header("Authorization", "Bearer "+p.apikey).
-		BodyJSON(map[string]any{
-			"model": model,
-			"messages": []apiMessage{
-				{
-					Role:    "system",
-					Content: p.systemMessage(),
-				},
-				{
-					Role:    "user",
-					Content: prompt,
-				},
-			},
-		}).
+		BodyJSON(requestBody).
 		ToJSON(&response).
 		Fetch(context.Background())
 

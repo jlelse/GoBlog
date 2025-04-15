@@ -19,7 +19,7 @@ type plugin struct {
 
 	config map[string]any
 
-	apikey, model string
+	apikey, model, endpoint string
 }
 
 func GetPlugin() (
@@ -46,6 +46,11 @@ func (p *plugin) SetConfig(config map[string]any) {
 	if m, ok := p.config["model"]; ok {
 		if ms, ok := m.(string); ok {
 			p.model = ms
+		}
+	}
+	if e, ok := p.config["endpoint"]; ok {
+		if es, ok := e.(string); ok {
+			p.endpoint = es
 		}
 	}
 }
@@ -187,6 +192,11 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 		model = p.model
 	}
 
+	endpoint := "https://api.openai.com/v1/chat/completions"
+	if p.endpoint != "" {
+		endpoint = p.endpoint
+	}
+
 	blog, _ := p.app.GetBlog(post.GetBlog())
 	postLang := blog.GetLanguage()
 
@@ -217,7 +227,7 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 		}
 
 		var response apiResponse
-		err := requests.URL("https://api.openai.com/v1/chat/completions").
+		err := requests.URL(endpoint).
 			Method(http.MethodPost).
 			Header("Authorization", "Bearer "+p.apikey).
 			BodyJSON(requestBody).
@@ -249,10 +259,11 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 }
 
 func (p *plugin) systemMessage(language string) string {
-	return `Generate concise, factual captions (5-15 words) describing the main subject and action in an image.
+	return `Generate a single concise, factual caption (5-15 words) describing the main subject and action in the image.
 Focus on clarity and accessibility for visually impaired users.
 Avoid opinions, interpretations, or creative embellishments.
-Generate the response in language '` + language + `'.`
+Generate the response in language '` + language + `'.
+Return the pure caption.`
 }
 
 func (p *plugin) deleteCaptions(post plugintypes.Post) {

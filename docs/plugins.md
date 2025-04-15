@@ -142,6 +142,7 @@ config:
   apikey: YOUR_OPEN_AI_API_KEY
   # Optional:
   model: gpt-4o # Choose a specific model, default is gpt-4o
+  endpoint: https://api.scaleway.ai/.../chat/completions # Use custom OpenAI compatible REST endpoint
   default: # Name of the blog
     title: "Custom title for the summary box:"
 ```
@@ -162,6 +163,7 @@ config:
   apikey: YOUR_OPEN_AI_API_KEY
   # Optional:
   model: gpt-4o # Choose a specific model, default is gpt-4o
+  endpoint: https://api.scaleway.ai/.../chat/completions # Use custom OpenAI compatible REST endpoint
   default: # Name of the blog
     title: "Custom prefix for the caption:"
 ```
