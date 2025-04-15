@@ -66,9 +66,9 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	result.Paths = parseResult.paths
 	// Add Points
 	result.Points = parseResult.points
-	// Calculate moving statistics
+	// Calculate statistics
 	if parseResult.md != nil {
-		result.Kilometers = lp.Sprintf("%.2f", parseResult.md.MovingDistance/1000)
+		result.Kilometers = lp.Sprintf("%.2f", (parseResult.md.MovingDistance+parseResult.md.StoppedDistance)/1000)
 		result.Hours = lp.Sprintf(
 			"%.0f:%02.0f:%02.0f",
 			math.Floor(parseResult.md.MovingTime/3600),               // Hours

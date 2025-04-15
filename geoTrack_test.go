@@ -41,7 +41,7 @@ func Test_geoTrack(t *testing.T) {
 
 	assert.NotEmpty(t, resEn.Paths)
 	assert.Empty(t, resEn.Points)
-	assert.Equal(t, "2.70", resEn.Kilometers)
+	assert.Equal(t, "2.78", resEn.Kilometers)
 	assert.Equal(t, "0:42:53", resEn.Hours)
 
 	p.Blog = "de"
@@ -51,7 +51,7 @@ func Test_geoTrack(t *testing.T) {
 
 	assert.NotEmpty(t, resDe.Paths)
 	assert.Empty(t, resDe.Points)
-	assert.Equal(t, "2,70", resDe.Kilometers)
+	assert.Equal(t, "2,78", resDe.Kilometers)
 	assert.Equal(t, "0:42:53", resDe.Hours)
 
 	// Second file (with track and waypoint)
@@ -72,7 +72,7 @@ func Test_geoTrack(t *testing.T) {
 
 	assert.NotEmpty(t, resEn.Paths)
 	assert.NotEmpty(t, resEn.Points)
-	assert.Equal(t, "0.08", resEn.Kilometers)
+	assert.Equal(t, "0.12", resEn.Kilometers)
 	assert.Equal(t, "0:01:29", resEn.Hours)
 
 	// Third file (just with route)
