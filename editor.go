@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -54,9 +55,21 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				"goblog-editor": r.Form["options"],
 			}
 		} else {
+			// Handle files first
+			images, gpx, statusCode, err := a.editorHandleFileAttachments(r)
+			if err != nil {
+				a.serveError(w, r, err.Error(), statusCode)
+				return
+			}
+			// Then handle the rest of the request
 			blog, _ := a.getBlog(r)
 			reqBody["type"] = []string{"h-entry"}
-			reqBody["properties"] = map[string][]string{"content": {r.FormValue("content")}, "blog": {blog}}
+			reqBody["properties"] = map[string][]string{
+				"content":                 {r.FormValue("content")},
+				"blog":                    {blog},
+				a.cfg.Micropub.PhotoParam: images,
+				gpxParameter:              {gpx},
+			}
 		}
 		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
 		a.editorMicropubPost(w, req, false, "")
@@ -132,6 +145,88 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	default:
 		a.serveError(w, r, "Unknown or missing editoraction", http.StatusBadRequest)
 	}
+}
+
+func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, gpx string, statusCode int, rerr error) {
+	err := r.ParseMultipartForm(10 * bodylimit.MB)
+	if err != nil {
+		return nil, "", http.StatusBadRequest, err
+	}
+	files := []*multipart.FileHeader{}
+	for _, name := range []string{"files1", "files2", "files3"} {
+		files = append(files, r.MultipartForm.File[name]...)
+	}
+	if len(files) > 0 {
+		gpxFiles := [][]byte{}
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			defer file.Close()
+			// Create a new request for each file (if it's a GPX use, collect it first, later merge using the helper)
+			if strings.HasSuffix(fileHeader.Filename, ".gpx") {
+				fileContent, err := io.ReadAll(file)
+				if err != nil {
+					return nil, "", http.StatusBadRequest, err
+				}
+				gpxFiles = append(gpxFiles, fileContent)
+				_ = file.Close()
+				continue
+			}
+			// Create a new multipart request with the file and get the location header that is returned
+			requestBody := bufferpool.Get()
+			defer bufferpool.Put(requestBody)
+			mpw := multipart.NewWriter(requestBody)
+			part, err := mpw.CreateFormFile("file", fileHeader.Filename)
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			_, err = io.Copy(part, file)
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			err = mpw.Close()
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			req, err := requests.URL("").
+				Method(http.MethodPost).
+				BodyReader(requestBody).
+				Header(contentType, mpw.FormDataContentType()).
+				Request(r.Context())
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			recorder := httptest.NewRecorder()
+			addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
+			result := recorder.Result()
+			_ = result.Body.Close()
+			if result.StatusCode != http.StatusCreated {
+				return nil, "", result.StatusCode, fmt.Errorf("failed to upload file")
+			}
+			location := result.Header.Get("Location")
+			if location == "" {
+				return nil, "", http.StatusBadRequest, fmt.Errorf("failed to get location header")
+			}
+			images = append(images, location)
+		}
+		// Merge the GPX files
+		if len(gpxFiles) > 0 {
+			mergedGpx, err := gpxhelper.MergeGpx(gpxFiles...)
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			buf := bufferpool.Get()
+			defer bufferpool.Put(buf)
+			err = a.min.Get().Minify(contenttype.XML, buf, bytes.NewReader(mergedGpx))
+			if err != nil {
+				return nil, "", http.StatusBadRequest, err
+			}
+			gpx = buf.String()
+		}
+	}
+	return images, gpx, 0, nil
 }
 
 func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool, redirectSuccess string) {

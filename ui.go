@@ -1412,7 +1412,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"))
 			hb.WriteElementClose("h2")
 			_ = a.renderMarkdownToWriter(hb, a.editorPostDesc(rd.Blog), false)
-			hb.WriteElementOpen("form", "method", "post", "class", "fw p")
+			hb.WriteElementOpen("form", "method", "post", "enctype", "multipart/form-data", "class", "fw p")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "createpost")
 			hb.WriteElementOpen(
 				"input", "id", "templatebtn", "type", "button",
@@ -1429,6 +1429,9 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				"data-template", a.editorPostTemplate(rd.BlogString, rd.Blog, edrd.presetParams),
 			)
 			hb.WriteElementClose("textarea")
+			for i := 1; i <= 3; i++ {
+				hb.WriteElementOpen("input", "type", "file", "name", fmt.Sprintf("files%d", i), "multiple", "")
+			}
 			hb.WriteElementOpen("div", "id", "post-preview", "class", "hide")
 			hb.WriteElementClose("div")
 			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"))
