@@ -339,13 +339,20 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 
 		// Copy frontmatter to parameters
 		for key, value := range meta {
-			if a, ok := value.([]any); ok {
+			// For parameters starting with "+", use existing parameters and just append
+			// For other parameters, create a new slice
+			if !strings.HasPrefix(key, "+") {
 				p.Parameters[key] = []string{}
+			} else {
+				key = strings.TrimPrefix(key, "+")
+			}
+			// Append to existing parameters
+			if a, ok := value.([]any); ok {
 				for _, ae := range a {
 					p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
 				}
 			} else {
-				p.Parameters[key] = []string{cast.ToString(value)}
+				p.Parameters[key] = append(p.Parameters[key], cast.ToString(value))
 			}
 		}
 
