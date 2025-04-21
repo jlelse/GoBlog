@@ -40,6 +40,12 @@ func Test_markdown(t *testing.T) {
 		assert.Contains(t, string(rendered), `href="https://example.com/relative"`)
 		assert.NotContains(t, string(rendered), `target="_blank"`)
 
+		rendered, err = app.renderMarkdown("[Relative](#relative)", true)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `href="https://example.com#relative"`)
+		assert.NotContains(t, string(rendered), `target="_blank"`)
+
 		// Images
 
 		rendered, err = app.renderMarkdown("![](/relative)", false)
@@ -60,6 +66,18 @@ func Test_markdown(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Contains(t, string(rendered), `title="Test-Title"`)
+
+		// Image alt text
+
+		rendered, err = app.renderMarkdown(`![Test-Alt](/test)`, false)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `alt="Test-Alt"`)
+
+		rendered, err = app.renderMarkdown(`![*Test-Alt*](/test)`, false)
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `alt="Test-Alt"`)
 
 		// External links
 

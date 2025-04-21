@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"io"
 
 	marktag "git.jlel.se/jlelse/goldmark-mark"
@@ -13,6 +12,7 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
+	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/highlighting"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
@@ -140,29 +140,29 @@ func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
 }
 
 func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	hb := htmlbuilder.NewHtmlBuilder(w)
 	if entering {
 		n := node.(*ast.Link)
-		_, _ = w.WriteString("<a href=\"")
-		// Make URL absolute if it's relative
-		newDestination := util.URLEscape(n.Destination, true)
-		if c.absoluteLinks && c.publicAddress != "" && (bytes.HasPrefix(newDestination, []byte("/")) || bytes.HasPrefix(newDestination, []byte("#"))) {
-			_, _ = w.Write(util.EscapeHTML([]byte(c.publicAddress)))
+		dest := string(n.Destination)
+		if c.absoluteLinks && c.publicAddress != "" {
+			resolved, err := resolveURLReferences(c.publicAddress, dest)
+			if err != nil {
+				return ast.WalkStop, err
+			}
+			if len(resolved) > 0 {
+				dest = resolved[0]
+			}
 		}
-		_, _ = w.Write(util.EscapeHTML(newDestination))
-		_, _ = w.WriteRune('"')
-		// Open external links (links that start with "http") in new tab
+		tagOpts := []any{"href", dest}
 		if isAbsoluteURL(string(n.Destination)) {
-			_, _ = w.WriteString(` target="_blank" rel="noopener"`)
+			tagOpts = append(tagOpts, "target", "_blank", "rel", "noopener")
 		}
-		// Title
 		if n.Title != nil {
-			_, _ = w.WriteString(" title=\"")
-			_, _ = w.Write(n.Title)
-			_, _ = w.WriteRune('"')
+			tagOpts = append(tagOpts, "title", string(n.Title))
 		}
-		_, _ = w.WriteRune('>')
+		hb.WriteElementOpen("a", tagOpts...)
 	} else {
-		_, _ = w.WriteString("</a>")
+		hb.WriteElementClose("a")
 	}
 	return ast.WalkContinue, nil
 }
@@ -185,11 +185,29 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	}
 	hb := htmlbuilder.NewHtmlBuilder(w)
 	hb.WriteElementOpen("a", "href", dest)
-	imgEls := []any{"src", dest, "alt", string(n.Text(source)), "loading", "lazy"}
+	imgEls := []any{"src", dest, "alt", c.extractTextFromChildren(n, source), "loading", "lazy"}
 	if len(n.Title) > 0 {
 		imgEls = append(imgEls, "title", string(n.Title))
 	}
 	hb.WriteElementOpen("img", imgEls...)
 	hb.WriteElementClose("a")
 	return ast.WalkSkipChildren, nil
+}
+
+func (r *customRenderer) extractTextFromChildren(node ast.Node, source []byte) string {
+	if node == nil {
+		return ""
+	}
+	b := builderpool.Get()
+	defer builderpool.Put(b)
+	for c := node.FirstChild(); c != nil; c = c.NextSibling() {
+		if s, ok := c.(*ast.String); ok {
+			b.Write(s.Value)
+		} else if t, ok := c.(*ast.Text); ok {
+			b.Write(t.Segment.Value(source))
+		} else {
+			b.WriteString(r.extractTextFromChildren(c, source))
+		}
+	}
+	return b.String()
 }

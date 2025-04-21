@@ -36,7 +36,7 @@ require (
 	github.com/kovidgoyal/imaging v1.6.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-sqlite3 v1.14.27
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/mergestat/timediff v0.0.3
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
@@ -59,15 +59,15 @@ require (
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.6.2
-	github.com/yuin/goldmark v1.7.9
-	github.com/yuin/goldmark-emoji v1.0.5
+	github.com/yuin/goldmark v1.7.10
+	github.com/yuin/goldmark-emoji v1.0.6
 	go.hacdias.com/indielib v0.4.3
 	golang.org/x/crypto v0.37.0
 	golang.org/x/net v0.39.0
 	golang.org/x/sync v0.13.0
 	golang.org/x/text v0.24.0
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.23.2
+	maunium.net/go/mautrix v0.23.3
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
 )
 
