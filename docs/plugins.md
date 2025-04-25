@@ -191,3 +191,19 @@ A simple plugin that shows image titles in an alert when clicking on the image. 
 #### Config
 
 This plugin has no config options.
+
+### Telegram Bot (Path `embedded:telegrambot`, Import `telegrambot`)
+
+A plugin that enabled posting via a Telegram bot. Send the bot your post and it will publish it and respond with a link to the post. To set parameters, you can use the same syntax as in the editor with frontmatter in your post content.
+
+The bot can also be used to upload file. Just send the bot your file or your image and it will upload it and respond with the link.
+
+#### Config
+
+```yaml
+config:
+  # Required
+  token: YOUR_TELEGRAM_BOT_TOKEN
+  # Also required
+  allowed: YOUR_TG_USERNAME
+```

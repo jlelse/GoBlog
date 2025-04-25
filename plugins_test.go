@@ -38,3 +38,24 @@ func TestDemoPlugin(t *testing.T) {
 		assert.Equal(t, 99, mdw.Prio())
 	}
 }
+
+func TestPluginInterfaceFunctionality(t *testing.T) {
+
+	t.Run("Test create post", func(t *testing.T) {
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+
+		err := app.initConfig(false)
+		require.NoError(t, err)
+
+		p, err := app.CreatePost(`---
+title: Test post
+---
+Test post content`)
+		require.NoError(t, err)
+		assert.Equal(t, "Test post", p.GetTitle())
+		assert.Equal(t, "Test post content", p.GetContent())
+	})
+
+}

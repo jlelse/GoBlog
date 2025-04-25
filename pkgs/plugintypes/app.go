@@ -25,10 +25,16 @@ type App interface {
 	AssetPath(filename string) string
 	// Set parameter values for a post path
 	SetPostParameter(path string, parameter string, values []string) error
+	// Create a new post with just the content (parameters are extracted from the content)
+	CreatePost(content string) (Post, error)
+	// Upload a file to the media storage and return the URL
+	UploadMedia(file io.Reader, filename string, mimetype string) (string, error)
 	// Render markdown as text (without HTML)
 	RenderMarkdownAsText(markdown string) (text string, err error)
 	// Check if user is logged in
 	IsLoggedIn(req *http.Request) bool
+	// Get the full address of a path (including the domain)
+	GetFullAddress(path string) string
 }
 
 // Database is used to provide access to GoBlog's database.

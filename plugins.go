@@ -2,11 +2,15 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/plugins"
 	"go.goblog.app/app/pkgs/plugintypes"
 	"go.goblog.app/app/pkgs/yaegiwrappers"
@@ -121,12 +125,62 @@ func (a *goBlog) SetPostParameter(path string, parameter string, values []string
 	return a.db.replacePostParam(path, parameter, values)
 }
 
+func (a *goBlog) CreatePost(content string) (plugintypes.Post, error) {
+	p := &post{
+		Content: content,
+	}
+	err := a.extractParamsFromContent(p)
+	if err != nil {
+		return nil, err
+	}
+	err = a.createPost(p)
+	if err != nil {
+		return nil, err
+	}
+	return p, err
+}
+
+func (a *goBlog) UploadMedia(file io.Reader, filename string, _ string) (string, error) {
+	recorder := httptest.NewRecorder()
+	// Create a multipart form request
+	body := bufferpool.Get()
+	defer bufferpool.Put(body)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return "", err
+	}
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	// Execute the request
+	addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
+	// Handle the recorder result
+	res := recorder.Result()
+	if recorder.Code < 200 || recorder.Code >= 400 {
+		return "", fmt.Errorf("upload result: %s", res.Status)
+	}
+	// Extract the location header from the response
+	return res.Header.Get("Location"), nil
+}
+
 func (a *goBlog) RenderMarkdownAsText(markdown string) (text string, err error) {
 	return a.renderText(markdown)
 }
 
 func (a *goBlog) IsLoggedIn(req *http.Request) bool {
 	return a.isLoggedIn(req)
+}
+
+func (a *goBlog) GetFullAddress(path string) string {
+	return a.getFullAddress(path)
 }
 
 func (p *post) GetPath() string {
