@@ -360,3 +360,144 @@ func Test_micropubUpdate(t *testing.T) {
 		assert.Nil(t, p.Parameters["post-status"])
 	})
 }
+
+func Test_extractFrontmatter(t *testing.T) {
+	testCases := []struct {
+		name            string
+		inputContent    string
+		expectedParams  map[string][]string
+		expectedContent string
+		expectError     bool
+	}{
+		{
+			name: "Valid frontmatter with multiple parameters",
+			inputContent: `---
+blog: default
+path: /test/post
+tags:
+  - test
+  - test2
+---
+This is the content of the post.`,
+			expectedParams: map[string][]string{
+				"blog": {"default"},
+				"path": {"/test/post"},
+				"tags": {"test", "test2"},
+			},
+			expectedContent: "This is the content of the post.",
+			expectError:     false,
+		},
+		{
+			name: "Valid frontmatter with single parameter",
+			inputContent: `---
+title: Test Post
+---
+Content of the post.`,
+			expectedParams: map[string][]string{
+				"title": {"Test Post"},
+			},
+			expectedContent: "Content of the post.",
+			expectError:     false,
+		},
+		{
+			name:            "No frontmatter",
+			inputContent:    `This is just content without frontmatter.`,
+			expectedParams:  map[string][]string{},
+			expectedContent: "This is just content without frontmatter.",
+			expectError:     false,
+		},
+		{
+			name: "Invalid frontmatter format",
+			inputContent: `---
+invalid_yaml: [unclosed
+---
+Content of the post.`,
+			expectedParams: map[string][]string{},
+			expectedContent: `---
+invalid_yaml: [unclosed
+---
+Content of the post.`,
+			expectError: true,
+		},
+		{
+			name: "Frontmatter with '+' prefixed keys",
+			inputContent: `---
++tags:
+  - test
+  - test2
++category: blog
+---
+Post content.`,
+			expectedParams: map[string][]string{
+				"tags":     {"test", "test2"},
+				"category": {"blog"},
+			},
+			expectedContent: "Post content.",
+			expectError:     false,
+		},
+		{
+			name: "Frontmatter separated by '+++'",
+			inputContent: `+++
+title: Test Post
+tags:
+  - example
+  - test
++++
+This is the content of the post.`,
+			expectedParams: map[string][]string{
+				"title": {"Test Post"},
+				"tags":  {"example", "test"},
+			},
+			expectedContent: "This is the content of the post.",
+			expectError:     false,
+		},
+		{
+			name: "Frontmatter separated by 'xxx'",
+			inputContent: `xxx
+title: Another Test Post
+category: blog
+xxx
+Here is the content of the post.`,
+			expectedParams: map[string][]string{
+				"title":    {"Another Test Post"},
+				"category": {"blog"},
+			},
+			expectedContent: "Here is the content of the post.",
+			expectError:     false,
+		},
+		{
+			name: "Frontmatter with 5 dashes",
+			inputContent: `-----
+title: Test Post
+tags:
+  - test
+-----
+This is the content of the post.`,
+			expectedParams: map[string][]string{
+				"title": {"Test Post"},
+				"tags":  {"test"},
+			},
+			expectedContent: "This is the content of the post.",
+			expectError:     false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &post{
+				Content:    tc.inputContent,
+				Parameters: map[string][]string{},
+			}
+
+			err := extractFrontmatter(p)
+
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedParams, p.Parameters)
+				assert.Equal(t, tc.expectedContent, p.Content)
+			}
+		})
+	}
+}

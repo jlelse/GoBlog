@@ -129,7 +129,7 @@ func (a *goBlog) CreatePost(content string) (plugintypes.Post, error) {
 	p := &post{
 		Content: content,
 	}
-	err := a.extractParamsFromContent(p)
+	err := a.processContentAndParameters(p)
 	if err != nil {
 		return nil, err
 	}

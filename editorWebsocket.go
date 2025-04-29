@@ -162,7 +162,7 @@ func (a *goBlog) sendEditorPreview(ctx context.Context, c *ws.Conn, blog string,
 		Blog:    blog,
 		Content: string(md),
 	}
-	if err := a.extractParamsFromContent(p); err != nil {
+	if err := a.processContentAndParameters(p); err != nil {
 		_, werr := io.WriteString(w, err.Error())
 		return errors.Join(werr, w.Close())
 	}

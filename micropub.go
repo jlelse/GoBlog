@@ -178,7 +178,7 @@ func (s *micropubImplementation) Create(req *micropub.Request) (string, error) {
 			entry.Parameters[s.mapToParameterName(key)] = values
 		}
 	}
-	if err := s.a.extractParamsFromContent(entry); err != nil {
+	if err := s.a.processContentAndParameters(entry); err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
 	if err := s.a.createPost(entry); err != nil {
@@ -221,7 +221,7 @@ func (s *micropubImplementation) Update(req *micropub.Request) (string, error) {
 		return "", fmt.Errorf("failed to update properties: %w", err)
 	}
 	s.updatePostPropertiesFromMf(entry, properties)
-	err = s.a.extractParamsFromContent(entry)
+	err = s.a.processContentAndParameters(entry)
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", micropub.ErrBadRequest, err)
 	}
@@ -319,7 +319,7 @@ func (s *micropubImplementation) mapToParameterName(key string) string {
 	}
 }
 
-func (a *goBlog) extractParamsFromContent(p *post) error {
+func (a *goBlog) processContentAndParameters(p *post) error {
 	// Ensure parameters map is initialized
 	if p.Parameters == nil {
 		p.Parameters = map[string][]string{}
@@ -329,35 +329,9 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
 
 	// Check for frontmatter
-	if split := strings.Split(p.Content, "---\n"); len(split) >= 3 && strings.TrimSpace(split[0]) == "" {
-		// Extract frontmatter
-		fm := split[1]
-		meta := map[string]any{}
-		if err := yaml.Unmarshal([]byte(fm), &meta); err != nil {
-			return err
-		}
-
-		// Copy frontmatter to parameters
-		for key, value := range meta {
-			// For parameters starting with "+", use existing parameters and just append
-			// For other parameters, create a new slice
-			if !strings.HasPrefix(key, "+") {
-				p.Parameters[key] = []string{}
-			} else {
-				key = strings.TrimPrefix(key, "+")
-			}
-			// Append to existing parameters
-			if a, ok := value.([]any); ok {
-				for _, ae := range a {
-					p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
-				}
-			} else {
-				p.Parameters[key] = append(p.Parameters[key], cast.ToString(value))
-			}
-		}
-
-		// Remove frontmatter from content
-		p.Content = strings.Join(split[2:], "---\n")
+	err := extractFrontmatter(p)
+	if err != nil {
+		return err
 	}
 
 	// Extract specific parameters
@@ -395,6 +369,50 @@ func (a *goBlog) extractParamsFromContent(p *post) error {
 		}
 	}
 
+	return nil
+}
+
+func extractFrontmatter(p *post) error {
+	lines := strings.Split(p.Content, "\n")
+	if len(lines) > 2 {
+		// Check if the first line contains a repeated character
+		firstLine := strings.TrimSpace(lines[0])
+		if len(firstLine) >= 3 && strings.Count(firstLine, string(firstLine[0])) == len(firstLine) {
+			separator := firstLine
+			// Find the next occurrence of the separator
+			for i := 1; i < len(lines); i++ {
+				if strings.TrimSpace(lines[i]) == separator {
+					// Extract frontmatter
+					fm := strings.Join(lines[1:i], "\n")
+					meta := map[string]any{}
+					if err := yaml.Unmarshal([]byte(fm), &meta); err != nil {
+						return err
+					}
+					// Copy frontmatter to parameters
+					for key, value := range meta {
+						// For parameters starting with "+", use existing parameters and just append
+						// For other parameters, create a new slice
+						if !strings.HasPrefix(key, "+") {
+							p.Parameters[key] = []string{}
+						} else {
+							key = strings.TrimPrefix(key, "+")
+						}
+						// Append to existing parameters
+						if a, ok := value.([]any); ok {
+							for _, ae := range a {
+								p.Parameters[key] = append(p.Parameters[key], cast.ToString(ae))
+							}
+						} else {
+							p.Parameters[key] = append(p.Parameters[key], cast.ToString(value))
+						}
+					}
+					// Remove frontmatter from content
+					p.Content = strings.Join(lines[i+1:], "\n")
+					break
+				}
+			}
+		}
+	}
 	return nil
 }
 
