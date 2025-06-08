@@ -19,7 +19,6 @@ import (
 	"time"
 
 	ap "github.com/go-ap/activitypub"
-	apc "github.com/go-ap/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
@@ -91,14 +90,11 @@ func (a *goBlog) initActivityPubBase() error {
 		return err
 	}
 	// Init http client
-	a.apHttpClients = map[string]*apc.C{}
+	a.apHttpClients = map[string]*http.Client{}
 	for blog, bc := range a.cfg.Blogs {
 		httpClient := cloneHttpClient(a.httpClient)
 		httpClient.Transport = a.newactivityPubSignRequestTransport(httpClient.Transport, string(a.apAPIri(bc)))
-		apcClient := apc.New(
-			apc.WithHTTPClient(httpClient),
-		)
-		a.apHttpClients[blog] = apcClient
+		a.apHttpClients[blog] = httpClient
 	}
 	return nil
 }
@@ -170,10 +166,9 @@ func (a *goBlog) apCheckMentions(p *post) {
 		a.error("ActivityPub: Failed to extract links from post", err)
 		return
 	}
-	apc := a.apHttpClients[p.Blog]
 	mentions := []string{}
 	for _, link := range links {
-		act, err := apc.Actor(context.Background(), ap.IRI(link))
+		act, err := a.apGetRemoteActor(p.Blog, ap.IRI(link))
 		if err != nil || act == nil || act.Type != ap.PersonType {
 			continue
 		}
@@ -193,8 +188,7 @@ func (a *goBlog) apCheckActivityPubReply(p *post) {
 	if replyLink == "" {
 		return
 	}
-	apc := a.apHttpClients[p.Blog]
-	item, err := apc.LoadIRI(ap.IRI(replyLink))
+	item, err := a.apLoadRemoteIRI(p.Blog, ap.IRI(replyLink))
 	if err != nil || item == nil || !ap.IsObject(item) {
 		return
 	}
@@ -349,7 +343,7 @@ func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, err
 		// Error with signature header etc.
 		return nil, err
 	}
-	actor, err := a.apGetRemoteActor(ap.IRI(verifier.KeyId()), blog)
+	actor, err := a.apGetRemoteActor(blog, ap.IRI(verifier.KeyId()))
 	if err != nil || actor == nil {
 		// Actor not found or something else bad
 		return nil, errors.New("failed to get actor")
@@ -407,10 +401,6 @@ func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
 			followers: followers,
 		},
 	})
-}
-
-func (a *goBlog) apGetRemoteActor(iri ap.IRI, blog string) (*ap.Actor, error) {
-	return a.apHttpClients[blog].Actor(context.Background(), iri)
 }
 
 func (db *database) apGetAllInboxes(blog string) (inboxes []string, err error) {
@@ -511,10 +501,10 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 	newFollower := follow.Actor.GetLink()
 	a.info("AcitivyPub: New follow request from follower", "id", newFollower.String())
 	// Get remote actor
-	follower, err := a.apGetRemoteActor(newFollower, blogName)
+	follower, err := a.apGetRemoteActor(blogName, newFollower)
 	if err != nil || follower == nil {
 		// Couldn't retrieve remote actor info
-		a.error("ActivityPub: Failed to retrieve remote actor info", "actor", newFollower)
+		a.error("ActivityPub: Failed to retrieve remote actor info", "actor", newFollower, "err", err)
 		return
 	}
 	// Add or update follower
@@ -560,8 +550,7 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity, mentio
 			if m == "" {
 				return
 			}
-			apc := a.apHttpClients[blog]
-			actor, err := apc.Actor(context.Background(), ap.IRI(m))
+			actor, err := a.apGetRemoteActor(blog, ap.IRI(m))
 			if err != nil || actor == nil || actor.Inbox == nil || actor.Inbox.GetLink() == "" {
 				return
 			}
@@ -666,9 +655,9 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 		return err
 	}
 	for _, fol := range followers {
-		actor, err := a.apGetRemoteActor(ap.IRI(fol.follower), blogName)
+		actor, err := a.apGetRemoteActor(blogName, ap.IRI(fol.follower))
 		if err != nil || actor == nil {
-			a.error("ActivityPub: Failed to retrieve remote actor info", "actor", fol.follower)
+			a.error("ActivityPub: Failed to retrieve remote actor info", "actor", fol.follower, "err", err)
 			continue
 		}
 		inbox := actor.Inbox.GetLink()
@@ -686,4 +675,81 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 		}
 	}
 	return nil
+}
+
+func (a *goBlog) apGetRemoteActor(blog string, iri ap.IRI) (*ap.Actor, error) {
+	item, err := a.apLoadRemoteIRI(blog, iri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load remote actor: %w", err)
+	}
+	if item == nil {
+		return nil, fmt.Errorf("failed to load remote actor, item is nil: %s", iri)
+	}
+	var actor *ap.Actor
+	err = ap.OnActor(item, func(act *ap.Actor) error {
+		actor = act
+		return nil
+	})
+	return actor, err
+}
+
+// Inspired by go-ap/client's LoadIRI
+func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
+	if len(id) == 0 {
+		return nil, fmt.Errorf("invalid IRI, nil value: %s", id)
+	}
+	if _, err := id.URL(); err != nil {
+		return nil, fmt.Errorf("trying to load an invalid IRI: %s, Error: %v", id, err)
+	}
+
+	var req *http.Request
+	var resp *http.Response
+	var err error
+
+	if a.apHttpClients[blog] == nil {
+		return nil, fmt.Errorf("no ActivityPub HTTP client for blog: %s", blog)
+	}
+
+	if req, err = http.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		id.String(),
+		nil,
+	); err != nil {
+		return nil, fmt.Errorf("failed to create request for IRI: %s, Error: %v", id, err)
+	}
+
+	req.Header.Add("Accept", contenttype.LDJSON)
+	req.Header.Add("Accept", contenttype.AS)
+	req.Header.Add("Accept", contenttype.JSON)
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	req.Header.Set("Host", req.URL.Host)
+
+	if resp, err = a.apHttpClients[blog].Do(req); err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		err := fmt.Errorf("unable to load from the AP endpoint: nil response, IRI: %s", id)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err := fmt.Errorf("unable to load from the AP endpoint: invalid status %d, IRI: %s", resp.StatusCode, id)
+		return nil, err
+	}
+
+	var body []byte
+	if body, err = io.ReadAll(resp.Body); err != nil {
+		err := fmt.Errorf("failed to read response body, IRI: %s, Err: %v", id, err)
+		return nil, err
+	}
+
+	it, err := ap.UnmarshalJSON(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return it, nil
 }

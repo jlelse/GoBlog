@@ -1,22 +1,38 @@
-name: Master workflow
+name: Main workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
-  docker:
-    name: Test and build Docker images
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Run tests in Docker (test stage)
+        uses: docker/build-push-action@v6
+        with:
+          target: test
+          tags: test
+          push: false
+
+  build:
+    if: github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      with:
-        config-inline: |
-          [registry."docker.io"]
-            mirrors = ["mirror.gcr.io"]
     - name: Login to GitHub container registry
       uses: docker/login-action@v3
       with:
@@ -29,12 +45,6 @@ jobs:
         registry: git.jlel.se
         username: nologin
         password: ${{ secrets.GITEA_TOKEN }}
-    - name: Test
-      uses: docker/build-push-action@v6
-      with:
-        push: false
-        target: test
-        tags: test
     - name: Build base image
       uses: docker/build-push-action@v6
       with:
@@ -49,8 +59,18 @@ jobs:
         target: tools
         tags: ghcr.io/jlelse/goblog:tools,git.jlel.se/jlelse/goblog:tools
         provenance: false
-    - name: Delete old untagged images
-      uses: camargo/delete-untagged-action@v1
-      with:
-        github-token: ${{ secrets.DELETE_PACKAGES_TOKEN }}
-        personal-account: true
+
+  cleanup:
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with: 
+          package-name: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'

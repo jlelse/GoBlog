@@ -9,7 +9,6 @@ import (
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
 	ts "git.jlel.se/jlelse/template-strings"
 	ct "github.com/elnormous/contenttype"
-	apc "github.com/go-ap/client"
 	"github.com/go-fed/httpsig"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/kaorimatz/go-opml"
@@ -30,7 +29,7 @@ type goBlog struct {
 	apPubKeyBytes      []byte
 	apSigner           httpsig.Signer
 	apSignMutex        sync.Mutex
-	apHttpClients      map[string]*apc.C
+	apHttpClients      map[string]*http.Client
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
 	apUserHandle       map[string]string
