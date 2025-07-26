@@ -41,6 +41,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Url: a.profileImagePath(profileImageFormatJPEG, 0, 0),
 		},
 	}
+	fallbackTitle := r.URL.Query().Has("fallbacktitle")
 	for _, p := range posts {
 		buf := bufferpool.Get()
 		switch f {
@@ -49,8 +50,12 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		default:
 			a.feedHtml(buf, p)
 		}
+		itemTitle := p.RenderedTitle
+		if fallbackTitle && itemTitle == "" {
+			itemTitle = a.fallbackTitle(p)
+		}
 		feed.Add(&feeds.Item{
-			Title:       p.RenderedTitle,
+			Title:       itemTitle,
 			Link:        &feeds.Link{Href: a.fullPostURL(p)},
 			Description: a.postSummary(p),
 			Id:          p.Path,
