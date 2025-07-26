@@ -35,7 +35,7 @@ require (
 	github.com/kovidgoyal/imaging v1.6.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/mattn/go-sqlite3 v1.14.29
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
@@ -51,14 +51,14 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
-	github.com/tdewolff/minify/v2 v2.23.9
+	github.com/tdewolff/minify/v2 v2.23.10
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.6.2
-	github.com/yuin/goldmark v1.7.12
+	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-emoji v1.0.6
 	go.hacdias.com/indielib v0.4.3
 	golang.org/x/crypto v0.40.0
@@ -75,7 +75,7 @@ require (
 	git.sr.ht/~mariusor/go-xsd-duration v0.0.0-20220703122237-02e73435a078 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
-	github.com/boombuler/barcode v1.0.2 // indirect
+	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
