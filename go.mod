@@ -1,6 +1,6 @@
 module go.goblog.app/app
 
-go 1.24
+go 1.24.0
 
 require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
@@ -8,7 +8,7 @@ require (
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
 	github.com/PuerkitoBio/goquery v1.10.3
-	github.com/alecthomas/chroma/v2 v2.19.0
+	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.24.3
@@ -17,8 +17,8 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
-	github.com/emersion/go-smtp v0.23.0
-	github.com/go-ap/activitypub v0.0.0-20250707121747-61ebb8da72cd
+	github.com/emersion/go-smtp v0.24.0
+	github.com/go-ap/activitypub v0.0.0-20250810115208-cb73b20a1742
 	github.com/go-ap/jsonld v0.0.0-20221030091449-f2a191312c73
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-fed/httpsig v1.1.0
@@ -35,7 +35,7 @@ require (
 	github.com/kovidgoyal/imaging v1.6.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-sqlite3 v1.14.29
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
@@ -46,25 +46,24 @@ require (
 	github.com/samber/lo v1.51.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
-	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.9.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
-	github.com/tdewolff/minify/v2 v2.23.10
+	github.com/tdewolff/minify/v2 v2.23.11
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
-	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
+	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.6.2
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-emoji v1.0.6
 	go.hacdias.com/indielib v0.4.3
-	golang.org/x/crypto v0.40.0
-	golang.org/x/net v0.42.0
+	golang.org/x/crypto v0.41.0
+	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.24.2
 	willnorris.com/go/microformats v1.2.1-0.20240301064101-b5d1b9d2120e
@@ -83,8 +82,8 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-ap/errors v0.0.0-20250527110557-c8db454e53fd // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/go-webauthn/x v0.1.23 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
+	github.com/go-webauthn/x v0.1.24 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -93,7 +92,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jonboulle/clockwork v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/lestrrat-go/strftime v1.1.0 // indirect
+	github.com/lestrrat-go/strftime v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -104,12 +103,13 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
-	github.com/sagikazarmark/locafero v0.9.0 // indirect
+	github.com/sagikazarmark/locafero v0.10.0 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.1 // indirect
+	github.com/tdewolff/parse/v2 v2.8.2-0.20250806174018-50048bb39781 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -117,10 +117,9 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.8.8 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
-	golang.org/x/image v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6 // indirect
+	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	willnorris.com/go/webmention v0.0.0-20250531043116-33a44c5fb605 // indirect
 )

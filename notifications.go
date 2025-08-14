@@ -2,14 +2,15 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sourcegraph/conc/pool"
 	"github.com/vcraescu/go-paginator/v2"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -31,20 +32,33 @@ func (a *goBlog) sendNotification(text string) {
 		a.error("Failed to save notification", "err", err)
 	}
 	if cfg := a.cfg.Notifications; cfg != nil {
-		p := pool.New().WithErrors()
-		p.Go(func() error {
-			return a.sendNtfy(cfg.Ntfy, n.Text)
-		})
-		p.Go(func() error {
-			_, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false)
-			return err
-		})
-		p.Go(func() error {
-			_, err := a.sendMatrix(cfg.Matrix, n.Text)
-			return err
-		})
-		if err := p.Wait(); err != nil {
-			a.error("Failed to send notification", "err", err)
+		var wg sync.WaitGroup
+		errCh := make(chan error, 3)
+		run := func(f func() error) {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := f(); err != nil {
+					errCh <- err
+				}
+			}()
+		}
+
+		run(func() error { return a.sendNtfy(cfg.Ntfy, n.Text) })
+		run(func() error { _, _, err := a.sendTelegram(cfg.Telegram, n.Text, "", false); return err })
+		run(func() error { _, err := a.sendMatrix(cfg.Matrix, n.Text); return err })
+
+		wg.Wait()
+		close(errCh)
+
+		var joined error
+		for err := range errCh {
+			if err != nil {
+				joined = errors.Join(joined, err)
+			}
+		}
+		if joined != nil {
+			a.error("Failed to send notification", "err", joined)
 		}
 	}
 }

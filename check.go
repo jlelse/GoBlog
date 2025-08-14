@@ -6,12 +6,12 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/carlmjohnson/requests"
 	"github.com/samber/lo"
-	"github.com/sourcegraph/conc/pool"
 	"go.goblog.app/app/pkgs/bodylimit"
 	cpkg "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/httpcachetransport"
@@ -60,42 +60,52 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 		status   int
 		err      error
 	}
-	p := pool.NewWithResults[*checkresult]().WithMaxGoroutines(10).WithContext(cancelContext)
+
+	// concurrency control
+	maxGoroutines := 10
+	sem := make(chan struct{}, maxGoroutines)
+	var wg sync.WaitGroup
+	resultsCh := make(chan *checkresult, len(allLinks))
+
 	for _, link := range allLinks {
-		link := link
-		p.Go(func(ctx context.Context) (result *checkresult, _ error) {
+		if done.Load() {
+			break
+		}
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(lp *stringPair) {
+			defer func() { <-sem; wg.Done() }()
 			if done.Load() {
-				return nil, nil
+				return
 			}
-			result = &checkresult{
-				in:   link.First,
-				link: link.Second,
-			}
+			res := &checkresult{in: lp.First, link: lp.Second}
 			// Build request
-			req, err := requests.URL(link.Second).
+			req, err := requests.URL(lp.Second).
 				UserAgent("Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0").
 				Accept("text/html").
 				Header("Accept-Language", "en-US,en;q=0.5").
-				Request(ctx)
+				Request(cancelContext)
 			if err != nil {
-				result.err = err
+				res.err = err
+				resultsCh <- res
 				return
 			}
 			// Do request
 			resp, err := client.Do(req)
 			if err != nil {
-				result.err = err
+				res.err = err
+				resultsCh <- res
 				return
 			}
-			// Save status code
-			result.status = resp.StatusCode
-			// Close request
+			res.status = resp.StatusCode
 			_ = resp.Body.Close()
-			return
-		})
+			resultsCh <- res
+		}(link)
 	}
-	results, _ := p.Wait()
-	for _, r := range results {
+
+	wg.Wait()
+	close(resultsCh)
+	for r := range resultsCh {
 		if r == nil {
 			continue
 		}
@@ -110,28 +120,44 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 }
 
 func (a *goBlog) allLinksToCheck(posts ...*post) ([]*stringPair, error) {
-	p := pool.NewWithResults[[]*stringPair]().WithErrors()
-	for _, post := range posts {
-		post := post
-		p.Go(func() ([]*stringPair, error) {
+	// We'll run these in parallel but collect results and errors
+	type res struct {
+		links []*stringPair
+		err   error
+	}
+	ch := make(chan res, len(posts))
+	var wg sync.WaitGroup
+	for _, pst := range posts {
+		wg.Add(1)
+		go func(pst *post) {
+			defer wg.Done()
 			pr, pw := io.Pipe()
 			go func() {
-				a.postHtmlToWriter(pw, &postHtmlOptions{p: post, absolute: true})
+				a.postHtmlToWriter(pw, &postHtmlOptions{p: pst, absolute: true})
 				_ = pw.Close()
 			}()
-			links, err := allLinksFromHTML(pr, a.fullPostURL(post))
+			links, err := allLinksFromHTML(pr, a.fullPostURL(pst))
 			_ = pr.CloseWithError(err)
 			if err != nil {
-				return nil, err
+				ch <- res{nil, err}
+				return
 			}
 			// Remove internal links
 			links = lo.Filter(links, func(i string, _ int) bool { return !strings.HasPrefix(i, a.cfg.Server.PublicAddress) })
 			// Map to string pair
-			return lo.Map(links, func(s string, _ int) *stringPair { return &stringPair{a.fullPostURL(post), s} }), nil
-		})
+			ch <- res{lo.Map(links, func(s string, _ int) *stringPair { return &stringPair{a.fullPostURL(pst), s} }), nil}
+		}(pst)
 	}
-	results, err := p.Wait()
-	return lo.Flatten(results), err
+	wg.Wait()
+	close(ch)
+	var all [][]*stringPair
+	for r := range ch {
+		if r.err != nil {
+			return nil, r.err
+		}
+		all = append(all, r.links)
+	}
+	return lo.Flatten(all), nil
 }
 
 func successStatus(status int) bool {
