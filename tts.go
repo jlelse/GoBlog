@@ -86,7 +86,6 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	partWriters := []*io.PipeWriter{}
 	var g errgroup.Group
 	for _, part := range parts {
-		part := part
 		pr, pw := io.Pipe()
 		partReaders = append(partReaders, pr)
 		partWriters = append(partWriters, pw)

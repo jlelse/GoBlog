@@ -24,7 +24,7 @@ func (a *goBlog) geoTitle(g *gogeouri.Geo, lang string) string {
 		return fallbackTitle
 	}
 	feature := fc.Features[0]
-	address, ok := feature.Properties["address"].(map[string]interface{})
+	address, ok := feature.Properties["address"].(map[string]any)
 	if !ok {
 		return fallbackTitle
 	}

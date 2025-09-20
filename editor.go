@@ -339,8 +339,7 @@ func (a *goBlog) editorPostDesc(bc *configBlog) string {
 func parsePresetPostParamsFromQuery(r *http.Request) map[string][]string {
 	m := map[string][]string{}
 	for key, param := range r.URL.Query() {
-		if strings.HasPrefix(key, "p:") {
-			paramKey := strings.TrimPrefix(key, "p:")
+		if paramKey, ok := strings.CutPrefix(key, "p:"); ok {
 			m[paramKey] = append(m[paramKey], param...)
 		}
 	}

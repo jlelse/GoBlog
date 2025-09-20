@@ -34,7 +34,7 @@ func Test_reactionsLowLevel(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 4 reactions
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		err = app.saveReaction("❤️", "/testpost")
 		assert.NoError(t, err)
 	}

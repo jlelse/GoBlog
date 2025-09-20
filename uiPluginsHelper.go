@@ -31,9 +31,7 @@ func (*goBlog) wrapForPlugins(
 		_ = pw.Close()
 		wg.Wait()
 	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		doc, err := goquery.NewDocumentFromReader(pr)
 		_ = pr.CloseWithError(err)
 		for _, plugin := range plugins {
@@ -46,6 +44,6 @@ func (*goBlog) wrapForPlugins(
 		finalSelection.Each(func(_ int, s *goquery.Selection) {
 			_ = goquery.Render(originalWriter, s)
 		})
-	}()
+	})
 	return htmlbuilder.NewHtmlBuilder(pw), finish
 }

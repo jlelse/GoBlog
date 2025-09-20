@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -183,10 +184,5 @@ func (m *microformatsResult) fillAuthor(mf *microformats.Microformat) {
 }
 
 func mfHasType(mf *microformats.Microformat, typ string) bool {
-	for _, t := range mf.Type {
-		if typ == t {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(mf.Type, typ)
 }

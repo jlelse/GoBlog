@@ -15,13 +15,13 @@ import (
 
 var (
 	zstdWriterPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			w, _ := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
 			return w
 		},
 	}
 	gzipWriterPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			w, _ := gzip.NewWriterLevel(nil, gzip.DefaultCompression)
 			return w
 		},

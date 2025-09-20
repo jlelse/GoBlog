@@ -120,7 +120,7 @@ func Benchmark_markdown(b *testing.B) {
 	}
 
 	b.Run("Markdown Rendering", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_, err := app.renderMarkdown(mdExp, true)
 			if err != nil {
 				b.Errorf("Error: %v", err)
@@ -129,13 +129,13 @@ func Benchmark_markdown(b *testing.B) {
 	})
 
 	b.Run("Title Rendering", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			app.renderMdTitle("**Test**")
 		}
 	})
 
 	b.Run("Text Rendering", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			app.renderText("**Test**")
 		}
 	})

@@ -117,14 +117,16 @@ func Test_indieAuthServer(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, code)
 
-		if test == 1 {
+		switch test {
+
+		case 1:
 
 			profile, err := iac.FetchProfile(context.Background(), authinfo, code)
 			require.NoError(t, err)
 			assert.NotNil(t, profile)
 			assert.Equal(t, "https://example.org/", profile.Me)
 
-		} else if test == 2 {
+		case 2:
 
 			token, _, err := iac.GetToken(context.Background(), authinfo, code)
 			require.NoError(t, err)

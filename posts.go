@@ -322,8 +322,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	params, paramValues := []string{}, [][]string{}
 	paramUrlValues := url.Values{}
 	for param, values := range r.URL.Query() {
-		if strings.HasPrefix(param, "p:") {
-			paramKey := strings.TrimPrefix(param, "p:")
+		if paramKey, ok := strings.CutPrefix(param, "p:"); ok {
 			for _, value := range values {
 				params, paramValues = append(params, paramKey), append(paramValues, []string{value})
 				paramUrlValues.Add(param, value)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"net/url"
 	"sort"
@@ -128,9 +129,7 @@ func (a *goBlog) serveCachedResponse(w http.ResponseWriter, r *http.Request, ci 
 
 func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
 	// Copy headers
-	for k, v := range cache.header.Clone() {
-		w.Header()[k] = v
-	}
+	maps.Copy(w.Header(), cache.header.Clone())
 	// Set cache headers
 	w.Header().Set("ETag", cache.eTag)
 	w.Header().Set(cacheControl, "public,no-cache")

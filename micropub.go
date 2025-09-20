@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -439,9 +440,7 @@ func micropubVisibility(visibility string) postVisibility {
 func micropubUpdateMfProperties(properties map[string][]any, req micropub.RequestUpdate) (map[string][]any, error) {
 	if req.Replace != nil {
 		delete(req.Replace, "goblog-editor")
-		for key, value := range req.Replace {
-			properties[key] = value
-		}
+		maps.Copy(properties, req.Replace)
 	}
 
 	if req.Add != nil {
@@ -478,12 +477,7 @@ func micropubUpdateMfProperties(properties map[string][]any, req micropub.Reques
 					continue
 				}
 				properties[key] = lo.Filter(properties[key], func(ss any, _ int) bool {
-					for _, s := range value {
-						if s == ss {
-							return false
-						}
-					}
-					return true
+					return !slices.Contains(value, ss)
 				})
 			}
 		}

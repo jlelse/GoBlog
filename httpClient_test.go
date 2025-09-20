@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -33,9 +34,7 @@ func newFakeHttpClient() *fakeHttpClient {
 			res := rec.Result()
 			fc.res = res
 			// Copy the headers from the response recorder
-			for k, v := range rec.Header() {
-				rw.Header()[k] = v
-			}
+			maps.Copy(rw.Header(), rec.Header())
 			// Copy result status code and body
 			rw.WriteHeader(rec.Code)
 			_, _ = io.Copy(rw, rec.Body)

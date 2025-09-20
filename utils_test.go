@@ -24,7 +24,7 @@ func Fuzz_urlize(f *testing.F) {
 }
 
 func Benchmark_urlize(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		urlize("äbc ef")
 	}
 }
@@ -49,7 +49,7 @@ func Test_wordCount(t *testing.T) {
 }
 
 func Benchmark_wordCount(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		wordCount("abc def abc")
 	}
 }
@@ -59,7 +59,7 @@ func Test_charCount(t *testing.T) {
 }
 
 func Benchmark_charCount(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		charCount("  t  e\n  s  t €.☺️")
 	}
 }

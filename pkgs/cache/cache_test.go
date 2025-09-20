@@ -63,7 +63,7 @@ func TestLRUEviction(t *testing.T) {
 	c := New[string, string](time.Minute, 10)
 	defer c.Close()
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		c.Set(string(rune('a'+i)), string(rune('A'+i)), 0, 1)
 	}
 
@@ -196,12 +196,12 @@ func TestConcurrentSetGet(t *testing.T) {
 		c.Get(k)
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go set(string(rune('a'+i)), string(rune('A'+i)))
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go get(string(rune('a' + i)))
 	}
@@ -225,12 +225,12 @@ func TestConcurrentSetDelete(t *testing.T) {
 		c.Delete(k)
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go set(string(rune('a'+i)), string(rune('A'+i)))
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go delete(string(rune('a' + i)))
 	}
@@ -259,17 +259,17 @@ func TestConcurrentSetGetDelete(t *testing.T) {
 		c.Delete(k)
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go set(string(rune('a'+i)), string(rune('A'+i)))
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go get(string(rune('a' + i)))
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go delete(string(rune('a' + i)))
 	}

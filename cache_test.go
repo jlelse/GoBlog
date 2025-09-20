@@ -61,7 +61,7 @@ func Benchmark_cache_getCache(b *testing.B) {
 		_, _ = io.WriteString(w, "abcdefghijklmnopqrstuvwxyz")
 		_, _ = w.Write([]byte("abcdefghijklmnopqrstuvwxyz"))
 	})
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		c.getOrCreateCache(strconv.Itoa(i), handler, req)
 	}
 }

@@ -35,13 +35,11 @@ func (a *goBlog) sendNotification(text string) {
 		var wg sync.WaitGroup
 		errCh := make(chan error, 3)
 		run := func(f func() error) {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				if err := f(); err != nil {
 					errCh <- err
 				}
-			}()
+			})
 		}
 
 		run(func() error { return a.sendNtfy(cfg.Ntfy, n.Text) })
