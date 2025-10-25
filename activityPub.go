@@ -296,12 +296,12 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 	}
 	// Get information from the note
 	noteUri := object.GetLink().String()
-	actorName := cmp.Or(requestActor.Name.First().Value.String(), apUsername(requestActor))
+	actorName := cmp.Or(requestActor.Name.First().String(), apUsername(requestActor))
 	actorLink := requestActor.GetLink().String()
 	if requestActor.URL != nil {
 		actorLink = requestActor.URL.GetLink().String()
 	}
-	content := object.Content.First().Value.String()
+	content := object.Content.First().String()
 	// Handle reply
 	if inReplyTo := object.InReplyTo; inReplyTo != nil {
 		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {

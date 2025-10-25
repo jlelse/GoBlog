@@ -62,11 +62,11 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Name and Type
 	if title := p.RenderedTitle; title != "" {
 		note.Type = ap.ArticleType
-		note.Name.Add(ap.DefaultLangRef(title))
+		note.Name = ap.DefaultNaturalLanguage(title)
 	}
 	// Content
 	note.MediaType = ap.MimeType(contenttype.HTML)
-	note.Content.Add(ap.DefaultLangRef(a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true})))
+	note.Content = ap.DefaultNaturalLanguage(a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true}))
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		var attachments ap.ItemCollection
@@ -81,7 +81,7 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	for _, tagTax := range a.cfg.ActivityPub.TagsTaxonomies {
 		for _, tag := range p.Parameters[tagTax] {
 			apTag := &ap.Object{Type: "Hashtag"}
-			apTag.Name.Add(ap.DefaultLangRef(tag))
+			apTag.Name = ap.DefaultNaturalLanguage(tag)
 			apTag.URL = ap.IRI(a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))))
 			note.Tag.Append(apTag)
 		}
@@ -192,7 +192,7 @@ func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int,
 }
 
 func apUsername(person *ap.Person) string {
-	preferredUsername := person.PreferredUsername.First().Value.String()
+	preferredUsername := person.PreferredUsername.First().String()
 	u, err := url.Parse(person.GetLink().String())
 	if err != nil || u == nil || u.Host == "" || preferredUsername == "" {
 		return person.GetLink().String()
