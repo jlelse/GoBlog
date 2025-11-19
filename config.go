@@ -81,7 +81,7 @@ type configBlog struct {
 	Description    string                    `mapstructure:"description"`
 	Pagination     int                       `mapstructure:"pagination"`
 	DefaultSection string                    `mapstructure:"defaultsection"`
-	Sections       map[string]*configSection `mapstructure:"sections"`
+	Sections       map[string]*configSection `mapstructure:"sections"` // Moved to web ui, but keep it loading the db state to this struct and the initial migration from config to db.
 	Taxonomies     []*configTaxonomy         `mapstructure:"taxonomies"`
 	Menus          map[string]*configMenu    `mapstructure:"menus"`
 	Photos         *configPhotos             `mapstructure:"photos"`
