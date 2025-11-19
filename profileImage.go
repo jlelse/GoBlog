@@ -46,16 +46,16 @@ var defaultLogo []byte
 
 func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 	var mediaType string
-	var encode func(output io.Writer, img *image.NRGBA, quality int) error
+	var encode func(output io.Writer, img image.Image, quality int) error
 	switch format {
 	case profileImageFormatPNG:
 		mediaType = "image/png"
-		encode = func(output io.Writer, img *image.NRGBA, _ int) error {
+		encode = func(output io.Writer, img image.Image, _ int) error {
 			return imaging.Encode(output, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
 		}
 	default:
 		mediaType = "image/jpeg"
-		encode = func(output io.Writer, img *image.NRGBA, quality int) error {
+		encode = func(output io.Writer, img image.Image, quality int) error {
 			return imaging.Encode(output, img, imaging.JPEG, imaging.JPEGQuality(quality))
 		}
 	}
