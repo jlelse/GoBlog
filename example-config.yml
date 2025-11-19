@@ -1,4 +1,9 @@
 # This is an example configuration for GoBlog
+# 
+# IMPORTANT: Only add configuration options to your config file that
+# you want to change from the default.
+# 
+# Disclaimer:
 # Until there's an official release configuration may change
 # Keep a look at the commit history
 
