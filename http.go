@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -19,7 +20,6 @@ import (
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
 	"go.goblog.app/app/pkgs/plugintypes"
-	"golang.org/x/net/context"
 )
 
 const (
