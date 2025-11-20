@@ -251,12 +251,9 @@ details summary > *:first-child {
     font-family: serif;
     max-width: inherit;
   }
-  nav,
-  .actions,
-  #tts,
-  #interactions,
-  #tor,
-  #announcement {
+  body > *:not(header):not(main),
+  header > *:not(h1):not(p),
+  .actions, #interactions {
     display: none;
   }
   a {
@@ -264,5 +261,12 @@ details summary > *:first-child {
   }
   .e-content a[href]:after {
     content: " [" attr(href) "]";
+  }
+  img, #map {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, p {
+    page-break-after: avoid;
+    page-break-inside: avoid;
   }
 }

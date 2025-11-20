@@ -5,25 +5,26 @@ $colors: (
   primary-dark: #fff
 );
 
+@use "sass:map";
 @mixin color($property, $varName) {
-  #{$property}: map-get($colors, $varName);
-  #{$property}: var(--#{$varName}, map-get($colors, $varName));
+  #{$property}: map.get($colors, $varName);
+  #{$property}: var(--#{$varName}, map.get($colors, $varName));
 }
 
 @mixin color-border($property, $val1, $val2, $varName) {
-  #{$property}: #{$val1} #{$val2} map-get($colors, $varName);
-  #{$property}: #{$val1} #{$val2} var(--#{$varName}, map-get($colors, $varName));
+  #{$property}: #{$val1} #{$val2} map.get($colors, $varName);
+  #{$property}: #{$val1} #{$val2} var(--#{$varName}, map.get($colors, $varName));
 }
 
 @mixin lightmode {
-  --background: #{map-get($colors, background)};
-  --primary: #{map-get($colors, primary)};
+  --background: #{map.get($colors, background)};
+  --primary: #{map.get($colors, primary)};
   color: #000;
 }
 
 @mixin darkmode {
-  --background: #{map-get($colors, background-dark)};
-  --primary: #{map-get($colors, primary-dark)};
+  --background: #{map.get($colors, background-dark)};
+  --primary: #{map.get($colors, primary-dark)};
   color: #fff;
 }
 
@@ -289,7 +290,6 @@ details summary {
   box-shadow: none;
 }
 
-// Print
 @media print {
   html {
     @include lightmode;
@@ -300,12 +300,9 @@ details summary {
     max-width: inherit;
   }
 
-  nav,
-  .actions,
-  #tts,
-  #interactions,
-  #tor,
-  #announcement {
+  body > *:not(header):not(main),
+  header > *:not(h1):not(p),
+  .actions, #interactions {
     display: none;
   }
 
@@ -313,8 +310,19 @@ details summary {
     text-decoration: none;
   }
 
-  // Show link
+  // Show link URLs in content
   .e-content a[href]:after {
     content: " [" attr(href) "]";
+  }
+
+  // Improve images and map for print
+  img, #map {
+    page-break-inside: avoid;
+  }
+
+  // Avoid page breaks in headings and paragraphs
+  h1, h2, h3, p {
+    page-break-after: avoid;
+    page-break-inside: avoid;
   }
 }
