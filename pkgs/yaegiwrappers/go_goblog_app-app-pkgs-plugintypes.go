@@ -83,14 +83,17 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	IValue                interface{}
 	WAssetPath            func(filename string) string
 	WCompileAsset         func(filename string, reader io.Reader) error
+	WCreatePost           func(content string) (plugintypes.Post, error)
 	WGetBlog              func(name string) (plugintypes.Blog, bool)
 	WGetDatabase          func() plugintypes.Database
+	WGetFullAddress       func(path string) string
 	WGetHTTPClient        func() *http.Client
 	WGetPost              func(path string) (plugintypes.Post, error)
 	WIsLoggedIn           func(req *http.Request) bool
 	WPurgeCache           func()
 	WRenderMarkdownAsText func(markdown string) (text string, err error)
 	WSetPostParameter     func(path string, parameter string, values []string) error
+	WUploadMedia          func(file io.Reader, filename string, mimetype string) (string, error)
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) string {
@@ -99,11 +102,17 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) stri
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CompileAsset(filename string, reader io.Reader) error {
 	return W.WCompileAsset(filename, reader)
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CreatePost(content string) (plugintypes.Post, error) {
+	return W.WCreatePost(content)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlog(name string) (plugintypes.Blog, bool) {
 	return W.WGetBlog(name)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetFullAddress(path string) string {
+	return W.WGetFullAddress(path)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetHTTPClient() *http.Client {
 	return W.WGetHTTPClient()
@@ -122,6 +131,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) RenderMarkdownAsText(markdown s
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) SetPostParameter(path string, parameter string, values []string) error {
 	return W.WSetPostParameter(path, parameter, values)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) UploadMedia(file io.Reader, filename string, mimetype string) (string, error) {
+	return W.WUploadMedia(file, filename, mimetype)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Blog is an interface wrapper for Blog type
