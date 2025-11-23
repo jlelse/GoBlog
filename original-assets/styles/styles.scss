@@ -6,6 +6,7 @@ $colors: (
 );
 
 @use "sass:map";
+
 @mixin color($property, $varName) {
   #{$property}: map.get($colors, $varName);
   #{$property}: var(--#{$varName}, map.get($colors, $varName));
@@ -39,6 +40,7 @@ $colors: (
 html {
   scrollbar-color: var(--primary) transparent;
   @include lightmode;
+
   @media (prefers-color-scheme: dark) {
     @include darkmode;
   }
@@ -54,13 +56,14 @@ body {
   padding: 10px;
   word-break: break-word;
   overflow-wrap: break-word;
-  
+
   * {
     max-width: 100%;
   }
 }
 
-a, hr {
+a,
+hr {
   @include color(color, primary);
 }
 
@@ -79,15 +82,20 @@ header {
   }
 }
 
-h1 a, h2 a {
+h1 a,
+h2 a {
   text-decoration: none;
 }
 
-img, audio {
+img,
+audio {
   @extend .fw;
 }
 
-button, input, textarea, select {
+button,
+input,
+textarea,
+select {
   @include color-border(border, 1px, solid, primary);
   border-radius: 0;
   @include color(background, background);
@@ -109,15 +117,14 @@ button, input, textarea, select {
   @extend button;
 }
 
-// Disable this because it causes CSS to break in Firefox ESR (check again in the future)
-// input[type=file]::file-selector-button, input[type=file]::-webkit-file-upload-button {
-// @extend .button;
-// }
-
 form {
-  input, textarea, select {
+
+  input,
+  textarea,
+  select {
     margin-bottom: 5px;
   }
+
   textarea {
     display: block;
   }
@@ -126,7 +133,16 @@ form {
 form.fw {
   @extend .fw;
 
-  input:not([type]), input[type="submit"], input[type="button"], input[type="text"], input[type="email"], input[type="url"], input[type="password"], input[type="file"], textarea, select {
+  input:not([type]),
+  input[type="submit"],
+  input[type="button"],
+  input[type="text"],
+  input[type="email"],
+  input[type="url"],
+  input[type="password"],
+  input[type="file"],
+  textarea,
+  select {
     @extend .fw;
   }
 }
@@ -143,7 +159,8 @@ pre {
   white-space: pre-wrap;
 }
 
-mark, :not(pre) > code {
+mark,
+:not(pre)>code {
   font-size: 1rem;
   @extend .invert;
 }
@@ -166,7 +183,9 @@ table {
   overflow-x: auto;
 }
 
-tr, td, th {
+tr,
+td,
+th {
   @include color-border(border, 1px, solid, primary);
   padding: 5px;
 }
@@ -182,8 +201,9 @@ footer {
 }
 
 details summary {
+
   // Show first child of summary inline
-  > *:first-child {
+  >*:first-child {
     display: inline;
   }
 }
@@ -245,6 +265,7 @@ details summary {
 .invert {
   @include color(color, background);
   @include color(background, primary);
+
   &::selection {
     @include color(color, primary);
     @include color(background, background);
@@ -268,6 +289,70 @@ details summary {
   }
 }
 
+#shareModal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow: auto;
+
+  &.hide {
+    display: none;
+  }
+}
+
+#shareModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  z-index: 0;
+}
+
+#shareModalPanel {
+  position: relative;
+  margin: 2rem auto;
+  padding: 1rem;
+  width: min(90vw, 32rem);
+  @include color(background, background);
+  @include color-border(border, 1px, solid, primary);
+  z-index: 1;
+}
+
+#shareModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+button.share-modal-close {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#shareModalHeader,
+#shareModalNative,
+#shareModalCopy {
+  margin-bottom: 1rem;
+}
+
+#shareModalServices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  * {
+    flex: 1 1 140px;
+  }
+}
+
 #map {
   height: 400px;
 
@@ -278,8 +363,9 @@ details summary {
 
 #announcement {
   @extend .invert;
-	padding: 5px;
-	text-align: center;
+  padding: 5px;
+  text-align: center;
+
   * {
     @extend .invert;
   }
@@ -300,9 +386,10 @@ details summary {
     max-width: inherit;
   }
 
-  body > *:not(header):not(main),
-  header > *:not(h1):not(p),
-  .actions, #interactions {
+  body>*:not(header):not(main),
+  header>*:not(h1):not(p),
+  .actions,
+  #interactions {
     display: none;
   }
 
@@ -316,12 +403,16 @@ details summary {
   }
 
   // Improve images and map for print
-  img, #map {
+  img,
+  #map {
     page-break-inside: avoid;
   }
 
   // Avoid page breaks in headings and paragraphs
-  h1, h2, h3, p {
+  h1,
+  h2,
+  h3,
+  p {
     page-break-after: avoid;
     page-break-inside: avoid;
   }

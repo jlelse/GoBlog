@@ -10,6 +10,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/gpxhelper"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
@@ -292,12 +293,43 @@ func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HtmlBuilder, p *post, b
 }
 
 func (a *goBlog) renderShareButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
-	if b == nil || b.hideShareButton {
+	if b == nil || b.hideShareButton || p == nil {
 		return
 	}
-	hb.WriteElementOpen("a", "class", "button", "href", fmt.Sprintf("https://www.addtoany.com/share#url=%s%s", a.shortPostURL(p), lo.If(p.RenderedTitle != "", "&title="+p.RenderedTitle).Else("")), "target", "_blank", "rel", "nofollow noopener noreferrer")
+
+	// Share button
+	hb.WriteElementOpen(
+		"button",
+		"type", "button",
+		"id", "shareBtn",
+		"class", "button",
+	)
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "share"))
-	hb.WriteElementClose("a")
+	hb.WriteElementClose("button")
+
+	// Share modal
+	hb.WriteElementOpen("div", "id", "shareModal", "class", "hide")
+	hb.WriteElement("div", "id", "shareModalOverlay", "class", "share-modal-close")
+	hb.WriteElementOpen("div", "id", "shareModalPanel")
+	hb.WriteElementOpen("div", "id", "shareModalHeader")
+	hb.WriteElementOpen("strong")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "sharemodalheading"))
+	hb.WriteElementClose("strong")
+	hb.WriteElementOpen("button", "type", "button", "class", "share-modal-close")
+	hb.WriteEscaped("×")
+	hb.WriteElementsClose("button", "div")
+	hb.WriteElementOpen("button", "id", "shareModalNative", "type", "button", "class", "button fw hide")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "sharenativeshare"))
+	hb.WriteElementClose("button")
+	hb.WriteElementOpen("button", "id", "shareModalCopy", "type", "button", "class", "button fw", "data-share-copy-feedback", a.ts.GetTemplateStringVariant(b.Lang, "sharecopyfeedback"))
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "sharecopy"))
+	hb.WriteElementClose("button")
+	hb.WriteElement("div", "id", "shareModalServices")
+	hb.WriteElementsClose("div", "div")
+	hb.WriteElementOpen("script", "type", contenttype.JSON, "id", "shareData")
+	_ = json.NewEncoder(hb).Encode(newShareData(cmp.Or(p.RenderedTitle, a.fallbackTitle(p)), a.shortPostURL(p)))
+	hb.WriteElementClose("script")
+	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"))
 }
 
 func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {

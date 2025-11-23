@@ -1,4 +1,7 @@
-.sans-serif, button, .button, input, textarea, select, body {
+.sans-serif, button, .button,
+input,
+textarea,
+select, body {
   font-family: sans-serif;
 }
 
@@ -36,7 +39,8 @@ body * {
   max-width: 100%;
 }
 
-a, hr {
+a,
+hr {
   color: #000;
   color: var(--primary, #000);
 }
@@ -56,11 +60,15 @@ header * {
   margin-bottom: 0;
 }
 
-h1 a, h2 a {
+h1 a,
+h2 a {
   text-decoration: none;
 }
 
-button, .button, input, textarea, select {
+button, .button,
+input,
+textarea,
+select {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
   border-radius: 0;
@@ -75,12 +83,17 @@ button, .button, input, textarea, select {
   line-height: 1.5;
   outline: none;
 }
-button:focus, .button:focus, input:focus, textarea:focus, select:focus {
+button:focus, .button:focus,
+input:focus,
+textarea:focus,
+select:focus {
   outline: 3px solid #000;
   outline: 3px solid var(--primary, #000);
 }
 
-form input, form textarea, form select {
+form input,
+form textarea,
+form select {
   margin-bottom: 5px;
 }
 form textarea {
@@ -101,7 +114,8 @@ pre {
   white-space: pre-wrap;
 }
 
-mark, :not(pre) > code {
+mark,
+:not(pre) > code {
   font-size: 1rem;
 }
 
@@ -122,7 +136,9 @@ table {
   overflow-x: auto;
 }
 
-tr, td, th {
+tr,
+td,
+th {
   border: 1px solid #000;
   border: 1px solid var(--primary, #000);
   padding: 5px;
@@ -164,7 +180,17 @@ details summary > *:first-child {
   display: inline;
 }
 
-.fw, img, audio, form.fw, form.fw input:not([type]), form.fw input[type=submit], form.fw input[type=button], form.fw input[type=text], form.fw input[type=email], form.fw input[type=url], form.fw input[type=password], form.fw input[type=file], form.fw textarea, form.fw select {
+.fw, img,
+audio, form.fw, form.fw input:not([type]),
+form.fw input[type=submit],
+form.fw input[type=button],
+form.fw input[type=text],
+form.fw input[type=email],
+form.fw input[type=url],
+form.fw input[type=password],
+form.fw input[type=file],
+form.fw textarea,
+form.fw select {
   width: 100%;
 }
 
@@ -196,13 +222,15 @@ details summary > *:first-child {
   transition: transform 2s ease;
 }
 
-.invert, #announcement *, #announcement, mark, :not(pre) > code {
+.invert, #announcement *, #announcement, mark,
+:not(pre) > code {
   color: #fff;
   color: var(--background, #fff);
   background: #000;
   background: var(--primary, #000);
 }
-.invert::selection, #announcement ::selection, #announcement::selection, mark::selection, :not(pre) > code::selection {
+.invert::selection, #announcement ::selection, #announcement::selection, mark::selection,
+:not(pre) > code::selection {
   color: #000;
   color: var(--primary, #000);
   background: #fff;
@@ -223,6 +251,70 @@ details summary > *:first-child {
 }
 .actions * {
   text-align: center;
+}
+
+#shareModal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow: auto;
+}
+#shareModal.hide {
+  display: none;
+}
+
+#shareModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  z-index: 0;
+}
+
+#shareModalPanel {
+  position: relative;
+  margin: 2rem auto;
+  padding: 1rem;
+  width: min(90vw, 32rem);
+  background: #fff;
+  background: var(--background, #fff);
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+  z-index: 1;
+}
+
+#shareModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+button.share-modal-close, .share-modal-close.button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#shareModalHeader,
+#shareModalNative,
+#shareModalCopy {
+  margin-bottom: 1rem;
+}
+
+#shareModalServices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+#shareModalServices * {
+  flex: 1 1 140px;
 }
 
 #map {
@@ -253,7 +345,8 @@ details summary > *:first-child {
   }
   body > *:not(header):not(main),
   header > *:not(h1):not(p),
-  .actions, #interactions {
+  .actions,
+  #interactions {
     display: none;
   }
   a {
@@ -262,10 +355,14 @@ details summary > *:first-child {
   .e-content a[href]:after {
     content: " [" attr(href) "]";
   }
-  img, #map {
+  img,
+  #map {
     page-break-inside: avoid;
   }
-  h1, h2, h3, p {
+  h1,
+  h2,
+  h3,
+  p {
     page-break-after: avoid;
     page-break-inside: avoid;
   }

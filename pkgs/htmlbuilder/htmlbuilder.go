@@ -82,3 +82,8 @@ func (h *HtmlBuilder) WriteElementsClose(tags ...string) {
 		h.WriteElementClose(tag)
 	}
 }
+
+func (h *HtmlBuilder) WriteElement(tag string, attrs ...any) {
+	h.WriteElementOpen(tag, attrs...)
+	h.WriteElementClose(tag)
+}
