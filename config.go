@@ -101,6 +101,7 @@ type configBlog struct {
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	hideSpeakButton       bool
 	addReplyTitle         bool
 	addReplyContext       bool
 	addLikeTitle          bool
@@ -555,15 +556,15 @@ func (a *goBlog) initConfig(logging bool) error {
 		}
 		// Load other settings from database
 		configs := []*bool{
-			&bc.hideOldContentWarning, &bc.hideShareButton, &bc.hideTranslateButton,
+			&bc.hideOldContentWarning, &bc.hideShareButton, &bc.hideTranslateButton, &bc.hideSpeakButton,
 			&bc.addReplyTitle, &bc.addReplyContext, &bc.addLikeTitle, &bc.addLikeContext,
 		}
 		settings := []string{
-			hideOldContentWarningSetting, hideShareButtonSetting, hideTranslateButtonSetting,
+			hideOldContentWarningSetting, hideShareButtonSetting, hideTranslateButtonSetting, hideSpeakButtonSetting,
 			addReplyTitleSetting, addReplyContextSetting, addLikeTitleSetting, addLikeContextSetting,
 		}
 		defaults := []bool{
-			false, false, false,
+			false, false, false, false,
 			false, false, false, false,
 		}
 		for i := range configs {

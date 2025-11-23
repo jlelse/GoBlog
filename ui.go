@@ -916,14 +916,16 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Translate button
 			a.renderTranslateButton(hb, p, rd.Blog)
 			// Speak button
-			hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
-			hb.WriteElementClose("button")
-			hb.WriteElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
-			hb.WriteElementClose("script")
+			if !rd.Blog.hideSpeakButton {
+				hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
+				hb.WriteElementClose("button")
+				hb.WriteElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
+				hb.WriteElementClose("script")
+			}
 			// Close post actions
 			hb.WriteElementClose("div")
 			// TTS
-			if tts := p.TTS(); tts != "" {
+			if tts := p.TTS(); tts != "" && !rd.Blog.hideSpeakButton {
 				hb.WriteElementOpen("div", "class", "p hide", "id", "tts")
 				hb.WriteElementOpen("audio", "controls", "", "preload", "none", "id", "tts-audio")
 				hb.WriteElementOpen("source", "src", tts)
@@ -1546,6 +1548,7 @@ type settingsRenderData struct {
 	hideOldContentWarning bool
 	hideShareButton       bool
 	hideTranslateButton   bool
+	hideSpeakButton       bool
 	addReplyTitle         bool
 	addReplyContext       bool
 	addLikeTitle          bool
@@ -1577,55 +1580,24 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "general"))
 			hb.WriteElementClose("h2")
 
-			// Hide old content warning
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsHideOldContentWarningPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hideoldcontentwarningdesc"),
-				hideOldContentWarningSetting,
-				srd.hideOldContentWarning,
-			)
-			// Hide share button
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsHideShareButtonPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hidesharebuttondesc"),
-				hideShareButtonSetting,
-				srd.hideShareButton,
-			)
-			// Hide translate button
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsHideTranslateButtonPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "hidetranslatebuttondesc"),
-				hideTranslateButtonSetting,
-				srd.hideTranslateButton,
-			)
-			// Add reply title
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsAddReplyTitlePath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addreplytitledesc"),
-				addReplyTitleSetting,
-				srd.addReplyTitle,
-			)
-			// Add reply context
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsAddReplyContextPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addreplycontextdesc"),
-				addReplyContextSetting,
-				srd.addReplyContext,
-			)
-			// Add like title
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsAddLikeTitlePath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addliketitledesc"),
-				addLikeTitleSetting,
-				srd.addLikeTitle,
-			)
-			// Add like context
-			a.renderBooleanSetting(hb, rd,
-				rd.Blog.getRelativePath(settingsPath+settingsAddLikeContextPath),
-				a.ts.GetTemplateStringVariant(rd.Blog.Lang, "addlikecontextdesc"),
-				addLikeContextSetting,
-				srd.addLikeContext,
-			)
+			booleanSettings := []struct {
+				path           string
+				name           string
+				descriptionKey string
+				value          bool
+			}{
+				{rd.Blog.getRelativePath(settingsPath + settingsHideOldContentWarningPath), hideOldContentWarningSetting, "hideoldcontentwarningdesc", srd.hideOldContentWarning},
+				{rd.Blog.getRelativePath(settingsPath + settingsHideShareButtonPath), hideShareButtonSetting, "hidesharebuttondesc", srd.hideShareButton},
+				{rd.Blog.getRelativePath(settingsPath + settingsHideTranslateButtonPath), hideTranslateButtonSetting, "hidetranslatebuttondesc", srd.hideTranslateButton},
+				{rd.Blog.getRelativePath(settingsPath + settingsHideSpeakButtonPath), hideSpeakButtonSetting, "hidespeakbuttondesc", srd.hideSpeakButton},
+				{rd.Blog.getRelativePath(settingsPath + settingsAddReplyTitlePath), addReplyTitleSetting, "addreplytitledesc", srd.addReplyTitle},
+				{rd.Blog.getRelativePath(settingsPath + settingsAddReplyContextPath), addReplyContextSetting, "addreplycontextdesc", srd.addReplyContext},
+				{rd.Blog.getRelativePath(settingsPath + settingsAddLikeTitlePath), addLikeTitleSetting, "addliketitledesc", srd.addLikeTitle},
+				{rd.Blog.getRelativePath(settingsPath + settingsAddLikeContextPath), addLikeContextSetting, "addlikecontextdesc", srd.addLikeContext},
+			}
+			for _, bs := range booleanSettings {
+				a.renderBooleanSetting(hb, rd, bs.path, a.ts.GetTemplateStringVariant(rd.Blog.Lang, bs.descriptionKey), bs.name, bs.value)
+			}
 
 			// User settings
 			a.renderUserSettings(hb, rd, srd)

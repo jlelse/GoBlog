@@ -17,6 +17,7 @@ const (
 	hideOldContentWarningSetting = "hideoldcontentwarning"
 	hideShareButtonSetting       = "hidesharebutton"
 	hideTranslateButtonSetting   = "hidetranslatebutton"
+	hideSpeakButtonSetting       = "hidespeakbutton"
 	userNickSetting              = "usernick"
 	userNameSetting              = "username"
 	addReplyTitleSetting         = "addreplytitle"

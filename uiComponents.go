@@ -725,7 +725,7 @@ func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HtmlBuilder, rd *rend
 	hb.WriteElementOpen("div")
 	hb.WriteElementOpen(
 		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"),
-		"formaction", rd.Blog.getRelativePath(settingsPath+settingsCreateSectionPath),
+		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateSectionPath),
 	)
 	hb.WriteElementClose("div")
 	hb.WriteElementClose("form")

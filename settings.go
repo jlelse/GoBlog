@@ -23,6 +23,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hideOldContentWarning: bc.hideOldContentWarning,
 			hideShareButton:       bc.hideShareButton,
 			hideTranslateButton:   bc.hideTranslateButton,
+			hideSpeakButton:       bc.hideSpeakButton,
 			addReplyTitle:         bc.addReplyTitle,
 			addReplyContext:       bc.addReplyContext,
 			addLikeTitle:          bc.addLikeTitle,
@@ -48,6 +49,29 @@ func (a *goBlog) booleanBlogSettingHandler(settingName string, apply func(*confi
 		apply(bc, settingValue)
 		http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 	})
+}
+
+func (a *goBlog) getBooleanSettingHandler(settingName string) http.HandlerFunc {
+	var apply func(*configBlog, bool)
+	switch settingName {
+	case hideOldContentWarningSetting:
+		apply = func(cb *configBlog, b bool) { cb.hideOldContentWarning = b; a.purgeCache() }
+	case hideShareButtonSetting:
+		apply = func(cb *configBlog, b bool) { cb.hideShareButton = b; a.purgeCache() }
+	case hideTranslateButtonSetting:
+		apply = func(cb *configBlog, b bool) { cb.hideTranslateButton = b; a.purgeCache() }
+	case hideSpeakButtonSetting:
+		apply = func(cb *configBlog, b bool) { cb.hideSpeakButton = b; a.purgeCache() }
+	case addReplyTitleSetting:
+		apply = func(cb *configBlog, b bool) { cb.addReplyTitle = b }
+	case addReplyContextSetting:
+		apply = func(cb *configBlog, b bool) { cb.addReplyContext = b }
+	case addLikeTitleSetting:
+		apply = func(cb *configBlog, b bool) { cb.addLikeTitle = b }
+	case addLikeContextSetting:
+		apply = func(cb *configBlog, b bool) { cb.addLikeContext = b }
+	}
+	return a.booleanBlogSettingHandler(settingName, apply)
 }
 
 const settingsDeleteSectionPath = "/deletesection"
@@ -83,12 +107,6 @@ func (a *goBlog) settingsDeleteSection(w http.ResponseWriter, r *http.Request) {
 	a.reloadRouter()
 	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
-}
-
-const settingsCreateSectionPath = "/createsection"
-
-func (a *goBlog) settingsCreateSection(w http.ResponseWriter, r *http.Request) {
-	a.settingsUpdateSection(w, r)
 }
 
 const settingsUpdateSectionPath = "/updatesection"
@@ -155,60 +173,49 @@ func (a *goBlog) settingsUpdateDefaultSection(w http.ResponseWriter, r *http.Req
 const settingsHideOldContentWarningPath = "/oldcontentwarning"
 
 func (a *goBlog) settingsHideOldContentWarning() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(hideOldContentWarningSetting, func(cb *configBlog, b bool) {
-		cb.hideOldContentWarning = b
-		a.purgeCache()
-	})
+	return a.getBooleanSettingHandler(hideOldContentWarningSetting)
 }
 
 const settingsHideShareButtonPath = "/sharebutton"
 
 func (a *goBlog) settingsHideShareButton() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(hideShareButtonSetting, func(cb *configBlog, b bool) {
-		cb.hideShareButton = b
-		a.purgeCache()
-	})
+	return a.getBooleanSettingHandler(hideShareButtonSetting)
 }
 
 const settingsHideTranslateButtonPath = "/translatebutton"
 
 func (a *goBlog) settingsHideTranslateButton() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(hideTranslateButtonSetting, func(cb *configBlog, b bool) {
-		cb.hideTranslateButton = b
-		a.purgeCache()
-	})
+	return a.getBooleanSettingHandler(hideTranslateButtonSetting)
+}
+
+const settingsHideSpeakButtonPath = "/speakbutton"
+
+func (a *goBlog) settingsHideSpeakButton() http.HandlerFunc {
+	return a.getBooleanSettingHandler(hideSpeakButtonSetting)
 }
 
 const settingsAddReplyTitlePath = "/replytitle"
 
 func (a *goBlog) settingsAddReplyTitle() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(addReplyTitleSetting, func(cb *configBlog, b bool) {
-		cb.addReplyTitle = b
-	})
+	return a.getBooleanSettingHandler(addReplyTitleSetting)
 }
 
 const settingsAddReplyContextPath = "/replycontext"
 
 func (a *goBlog) settingsAddReplyContext() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(addReplyContextSetting, func(cb *configBlog, b bool) {
-		cb.addReplyContext = b
-	})
+	return a.getBooleanSettingHandler(addReplyContextSetting)
 }
 
 const settingsAddLikeTitlePath = "/liketitle"
 
 func (a *goBlog) settingsAddLikeTitle() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(addLikeTitleSetting, func(cb *configBlog, b bool) {
-		cb.addLikeTitle = b
-	})
+	return a.getBooleanSettingHandler(addLikeTitleSetting)
 }
 
 const settingsAddLikeContextPath = "/likecontext"
 
 func (a *goBlog) settingsAddLikeContext() http.HandlerFunc {
-	return a.booleanBlogSettingHandler(addLikeContextSetting, func(cb *configBlog, b bool) {
-		cb.addLikeContext = b
-	})
+	return a.getBooleanSettingHandler(addLikeContextSetting)
 }
 
 const settingsUpdateUserPath = "/user"

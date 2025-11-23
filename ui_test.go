@@ -192,3 +192,56 @@ func Test_renderAuthorWithProfileImage(t *testing.T) {
 
 	assert.Equal(t, "<div class=\"p-author h-card hide\"><data class=\"u-photo\" value=\"http://localhost:8080/profile.jpg?v=e3da5a2d765ff693e7eb54cff717ae0f79ec79c06ed3e3adf6054a46c2824f32\"></data><a class=\"p-name u-url\" rel=\"me\" href=\"/\">John Doe</a></div>", res)
 }
+
+func Test_renderSettings(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+
+	_ = app.initConfig(false)
+	_ = app.initTemplateStrings()
+
+	req := httptest.NewRequest("GET", "/settings", nil)
+	rr := httptest.NewRecorder()
+
+	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+		app.renderSettings(hb, rd)
+	}, &renderData{
+		Data: &settingsRenderData{
+			blog:                  "default",
+			hideOldContentWarning: true,
+			hideShareButton:       false,
+			hideSpeakButton:       false,
+			hideTranslateButton:   true,
+			addReplyTitle:         false,
+			addReplyContext:       true,
+			addLikeTitle:          false,
+			addLikeContext:        true,
+			userNick:              "testnick",
+			userName:              "Test User",
+		},
+	})
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(rr.Body.String()))
+	require.NoError(t, err)
+
+	// Check that boolean settings are rendered
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/oldcontentwarning\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/sharebutton\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/translatebutton\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/speakbutton\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/replytitle\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/replycontext\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/liketitle\"]").Length())
+	assert.Equal(t, 1, doc.Find("form[action=\"/settings/likecontext\"]").Length())
+
+	// Check that checked state is correct
+	assert.Equal(t, 1, doc.Find("input[name=\"hideoldcontentwarning\"][checked]").Length())
+	assert.Equal(t, 0, doc.Find("input[name=\"hidesharebutton\"][checked]").Length())
+	assert.Equal(t, 1, doc.Find("input[name=\"hidetranslatebutton\"][checked]").Length())
+	assert.Equal(t, 0, doc.Find("input[name=\"hidespeakbutton\"][checked]").Length())
+	assert.Equal(t, 0, doc.Find("input[name=\"addreplytitle\"][checked]").Length())
+	assert.Equal(t, 1, doc.Find("input[name=\"addreplycontext\"][checked]").Length())
+	assert.Equal(t, 0, doc.Find("input[name=\"addliketitle\"][checked]").Length())
+	assert.Equal(t, 1, doc.Find("input[name=\"addlikecontext\"][checked]").Length())
+}

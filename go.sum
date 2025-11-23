@@ -59,8 +59,8 @@ github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/fxamacker/cbor/v2 v2.9.0 h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sapM=
 github.com/fxamacker/cbor/v2 v2.9.0/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
-github.com/go-ap/activitypub v0.0.0-20251119152743-e014e45d622c h1:TEmZiKXR4GmSlxpwwf+ESCgntKiRqq7sROHF2E4EdV0=
-github.com/go-ap/activitypub v0.0.0-20251119152743-e014e45d622c/go.mod h1:C2UNwLIIYpx0bKL1lDE11StUcdwAwMCNb+w8Evc1l0Y=
+github.com/go-ap/activitypub v0.0.0-20251119200117-f535d00430a0 h1:nQfv1kWdbg9YidD7rCJrOHJV2NPhRTZ4zKQh9c2raB4=
+github.com/go-ap/activitypub v0.0.0-20251119200117-f535d00430a0/go.mod h1:C2UNwLIIYpx0bKL1lDE11StUcdwAwMCNb+w8Evc1l0Y=
 github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4 h1:Kpa0XF3gCAdeRSFzliN9jgg35KvsCchv3KRCRIJhi6s=
 github.com/go-ap/errors v0.0.0-20250905102357-4480b47a00c4/go.mod h1:qHHr/m8ECbV2lkT1j5VaNnauKFV1nUo+i8S53Wtrb0A=
 github.com/go-ap/jsonld v0.0.0-20250905102310-8480b0fe24d9 h1:gaBrU/E+usPHIafDIC2EwvZbehvgAEuu78Jk0zjxw5w=
@@ -298,8 +298,8 @@ golang.org/x/crypto v0.13.0/go.mod h1:y6Z2r+Rw4iayiXXAIxJIDAJ1zMW4yaTpebo8fPOliY
 golang.org/x/crypto v0.19.0/go.mod h1:Iy9bg/ha4yyC70EfRS8jz+B6ybOBKMaSxLj6P6oBDfU=
 golang.org/x/crypto v0.23.0/go.mod h1:CKFgDieR+mRhux2Lsu27y0fO304Db0wZe70UKqHu0v8=
 golang.org/x/crypto v0.31.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
-golang.org/x/crypto v0.44.0 h1:A97SsFvM3AIwEEmTBiaxPPTYpDC47w720rdiiUvgoAU=
-golang.org/x/crypto v0.44.0/go.mod h1:013i+Nw79BMiQiMsOPcVCB5ZIJbYkerPrGnOa00tvmc=
+golang.org/x/crypto v0.45.0 h1:jMBrvKuj23MTlT0bQEOBcAE0mjg8mK9RXFhRH6nyF3Q=
+golang.org/x/crypto v0.45.0/go.mod h1:XTGrrkGJve7CYK7J8PEww4aY7gM3qMCElcJQ8n8JdX4=
 golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 h1:zfMcR1Cs4KNuomFFgGefv5N0czO2XZpUbxGUy8i8ug0=
 golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6/go.mod h1:46edojNIoXTNOhySWIWdix628clX9ODXwPsQuG6hsK0=
 golang.org/x/image v0.33.0 h1:LXRZRnv1+zGd5XBUVRFmYEphyyKJjQjCRiOuAP3sZfQ=
