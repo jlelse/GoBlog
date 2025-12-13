@@ -23,7 +23,7 @@ FROM build AS test
 
 RUN go test -timeout 300s -failfast -cover ./...
 
-FROM alpine:3.22 AS base
+FROM alpine:3.23 AS base
 
 WORKDIR /app
 VOLUME /app/config
