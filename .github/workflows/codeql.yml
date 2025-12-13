@@ -30,7 +30,7 @@ jobs:
         go-version: 'stable'
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
         queries: security-and-quality
@@ -39,6 +39,6 @@ jobs:
       run: go build -tags=linux,sqlite_fts5 -o GoBlog
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{matrix.language}}"
