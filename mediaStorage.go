@@ -56,7 +56,11 @@ func (a *goBlog) deleteMediaFile(filename string) error {
 	if a.mediaStorage == nil {
 		return errNoMediaStorageConfigured
 	}
-	return a.mediaStorage.delete(filepath.Base(filename))
+	filename = filepath.Base(filename)
+	if !isValidMediaFilename(filename) {
+		return fmt.Errorf("invalid filename: %s", filename)
+	}
+	return a.mediaStorage.delete(filename)
 }
 
 type mediaFile struct {
@@ -319,4 +323,11 @@ func (f *ftpMediaStorage) connection() (*ftp.ServerConn, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+func isValidMediaFilename(filename string) bool {
+	if filename == "" || strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return false
+	}
+	return true
 }
