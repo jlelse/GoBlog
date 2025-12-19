@@ -19,7 +19,7 @@ func UnmarshalJSON(data []byte) (Item, error) {
 		}
 		return nil, err
 	}
-	
+
 	// Based on type, unmarshal into the appropriate struct
 	switch peek.Type {
 	case PersonType:

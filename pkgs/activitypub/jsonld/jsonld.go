@@ -2,6 +2,7 @@
 package jsonld
 
 import (
+	"bytes"
 	"encoding/json"
 )
 
@@ -26,31 +27,48 @@ func WithContext(contexts ...IRI) *ContextBuilder {
 
 // Marshal marshals an object with the configured contexts
 func (cb *ContextBuilder) Marshal(obj interface{}) ([]byte, error) {
-	// Create a wrapper with @context
-	wrapper := map[string]interface{}{
-		"@context": cb.contexts,
-	}
-	
-	// Marshal the object first to get its JSON representation
-	objData, err := json.Marshal(obj)
-	if err != nil {
+	// Marshal the object using an encoder with HTML escaping disabled
+	var objBuf bytes.Buffer
+	objEnc := json.NewEncoder(&objBuf)
+	objEnc.SetEscapeHTML(false)
+	if err := objEnc.Encode(obj); err != nil {
 		return nil, err
 	}
-	
-	// Unmarshal into a map
-	var objMap map[string]interface{}
-	if err := json.Unmarshal(objData, &objMap); err != nil {
+	objData := objBuf.Bytes()
+	// Remove trailing newline added by Encoder
+	if len(objData) > 0 && objData[len(objData)-1] == '\n' {
+		objData = objData[:len(objData)-1]
+	}
+
+	// Marshal the context using an encoder with HTML escaping disabled
+	var ctxBuf bytes.Buffer
+	ctxEnc := json.NewEncoder(&ctxBuf)
+	ctxEnc.SetEscapeHTML(false)
+	if err := ctxEnc.Encode(cb.contexts); err != nil {
 		return nil, err
 	}
-	
-	// Remove any existing @context from the object
-	delete(objMap, "@context")
-	
-	// Merge the object fields into the wrapper
-	for k, v := range objMap {
-		wrapper[k] = v
+	ctxData := ctxBuf.Bytes()
+	// Remove trailing newline
+	if len(ctxData) > 0 && ctxData[len(ctxData)-1] == '\n' {
+		ctxData = ctxData[:len(ctxData)-1]
 	}
-	
-	// Marshal the final result
-	return json.Marshal(wrapper)
+
+	// Build the output manually to preserve field order
+	// Start with {"@context": and the marshaled context
+	result := []byte(`{"@context":`)
+	result = append(result, ctxData...)
+
+	// Remove the opening brace from objData if present
+	objDataStr := string(objData)
+	if len(objDataStr) > 0 && objDataStr[0] == '{' {
+		objDataStr = objDataStr[1:]
+	}
+
+	// Append a comma and the rest of the object
+	if len(objDataStr) > 0 && objDataStr[0] != '}' {
+		result = append(result, ',')
+	}
+	result = append(result, []byte(objDataStr)...)
+
+	return result, nil
 }

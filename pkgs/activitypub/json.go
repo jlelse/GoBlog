@@ -1,9 +1,31 @@
 package activitypub
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
+
+// MarshalJSONNoHTMLEscape marshals v to JSON without HTML escaping
+func MarshalJSONNoHTMLEscape(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	// Remove trailing newline added by Encoder
+	result := buf.Bytes()
+	if len(result) > 0 && result[len(result)-1] == '\n' {
+		result = result[:len(result)-1]
+	}
+	return result, nil
+}
+
+// marshalJSONNoHTMLEscape is the internal version
+func marshalJSONNoHTMLEscape(v interface{}) ([]byte, error) {
+	return MarshalJSONNoHTMLEscape(v)
+}
 
 // JSONWrite appends data to a byte slice
 func JSONWrite(b *[]byte, data ...byte) {
@@ -30,7 +52,7 @@ func JSONWriteItemProp(b *[]byte, name string, item Item) bool {
 	if item == nil {
 		return false
 	}
-	val, err := json.Marshal(item)
+	val, err := marshalJSONNoHTMLEscape(item)
 	if err != nil || len(val) == 0 {
 		return false
 	}
@@ -42,7 +64,7 @@ func JSONWriteNaturalLanguageProp(b *[]byte, name string, val NaturalLanguageVal
 	if len(val) == 0 {
 		return false
 	}
-	data, err := json.Marshal(val)
+	data, err := marshalJSONNoHTMLEscape(val)
 	if err != nil || len(data) == 0 {
 		return false
 	}
@@ -54,7 +76,7 @@ func JSONWriteItemCollectionProp(b *[]byte, name string, col ItemCollection, fla
 	if len(col) == 0 {
 		return false
 	}
-	data, err := json.Marshal(col)
+	data, err := marshalJSONNoHTMLEscape(col)
 	if err != nil || len(data) == 0 {
 		return false
 	}
@@ -64,13 +86,18 @@ func JSONWriteItemCollectionProp(b *[]byte, name string, col ItemCollection, fla
 // JSONWriteObjectValue writes an Object's fields to JSON
 func JSONWriteObjectValue(b *[]byte, o Object) bool {
 	notEmpty := false
-	
+
+	// Order: id, type, mediaType, name, summary, content, attachment, attributedTo, inReplyTo, tag, href/url, to, cc, published, updated
 	if o.ID != "" {
 		notEmpty = JSONWriteItemProp(b, "id", o.ID) || notEmpty
 	}
 	if o.Type != "" {
-		val, _ := json.Marshal(string(o.Type))
+		val, _ := marshalJSONNoHTMLEscape(string(o.Type))
 		notEmpty = JSONWriteProp(b, "type", val) || notEmpty
+	}
+	if o.MediaType != "" {
+		val, _ := marshalJSONNoHTMLEscape(string(o.MediaType))
+		notEmpty = JSONWriteProp(b, "mediaType", val) || notEmpty
 	}
 	if len(o.Name) > 0 {
 		notEmpty = JSONWriteNaturalLanguageProp(b, "name", o.Name) || notEmpty
@@ -81,22 +108,26 @@ func JSONWriteObjectValue(b *[]byte, o Object) bool {
 	if len(o.Content) > 0 {
 		notEmpty = JSONWriteNaturalLanguageProp(b, "content", o.Content) || notEmpty
 	}
-	if o.MediaType != "" {
-		val, _ := json.Marshal(string(o.MediaType))
-		notEmpty = JSONWriteProp(b, "mediaType", val) || notEmpty
-	}
 	if o.Attachment != nil {
-		val, _ := json.Marshal(o.Attachment)
+		val, _ := marshalJSONNoHTMLEscape(o.Attachment)
 		notEmpty = JSONWriteProp(b, "attachment", val) || notEmpty
 	}
 	if o.AttributedTo != nil {
 		notEmpty = JSONWriteItemProp(b, "attributedTo", o.AttributedTo) || notEmpty
 	}
+	if o.InReplyTo != nil {
+		notEmpty = JSONWriteItemProp(b, "inReplyTo", o.InReplyTo) || notEmpty
+	}
 	if len(o.Tag) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(b, "tag", o.Tag, false) || notEmpty
 	}
 	if o.URL != nil {
-		notEmpty = JSONWriteItemProp(b, "url", o.URL) || notEmpty
+		// Use "href" for Mention type, "url" for others
+		fieldName := "url"
+		if o.Type == MentionType {
+			fieldName = "href"
+		}
+		notEmpty = JSONWriteItemProp(b, fieldName, o.URL) || notEmpty
 	}
 	if len(o.To) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(b, "to", o.To, false) || notEmpty
@@ -104,18 +135,15 @@ func JSONWriteObjectValue(b *[]byte, o Object) bool {
 	if len(o.CC) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(b, "cc", o.CC, false) || notEmpty
 	}
-	if o.InReplyTo != nil {
-		notEmpty = JSONWriteItemProp(b, "inReplyTo", o.InReplyTo) || notEmpty
-	}
 	if !o.Published.IsZero() {
-		val, _ := json.Marshal(o.Published)
+		val, _ := marshalJSONNoHTMLEscape(o.Published)
 		notEmpty = JSONWriteProp(b, "published", val) || notEmpty
 	}
 	if !o.Updated.IsZero() {
-		val, _ := json.Marshal(o.Updated)
+		val, _ := marshalJSONNoHTMLEscape(o.Updated)
 		notEmpty = JSONWriteProp(b, "updated", val) || notEmpty
 	}
-	
+
 	return notEmpty
 }
 
@@ -123,14 +151,14 @@ func JSONWriteObjectValue(b *[]byte, o Object) bool {
 func (a Activity) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	JSONWrite(&b, '{')
-	
+
 	notEmpty := false
-	
+
 	if a.ID != "" {
 		notEmpty = JSONWriteItemProp(&b, "id", a.ID) || notEmpty
 	}
 	if a.Type != "" {
-		val, _ := json.Marshal(string(a.Type))
+		val, _ := marshalJSONNoHTMLEscape(string(a.Type))
 		notEmpty = JSONWriteProp(&b, "type", val) || notEmpty
 	}
 	if a.Actor != nil {
@@ -146,14 +174,14 @@ func (a Activity) MarshalJSON() ([]byte, error) {
 		notEmpty = JSONWriteItemCollectionProp(&b, "cc", a.CC, false) || notEmpty
 	}
 	if !a.Published.IsZero() {
-		val, _ := json.Marshal(a.Published)
+		val, _ := marshalJSONNoHTMLEscape(a.Published)
 		notEmpty = JSONWriteProp(&b, "published", val) || notEmpty
 	}
 	if !a.Updated.IsZero() {
-		val, _ := json.Marshal(a.Updated)
+		val, _ := marshalJSONNoHTMLEscape(a.Updated)
 		notEmpty = JSONWriteProp(&b, "updated", val) || notEmpty
 	}
-	
+
 	if notEmpty {
 		JSONWrite(&b, '}')
 		return b, nil
@@ -172,11 +200,11 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 	}{
 		Alias: (*Alias)(a),
 	}
-	
+
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
-	
+
 	// Unmarshal Item fields
 	if len(aux.Actor) > 0 {
 		item, err := unmarshalItem(aux.Actor)
@@ -190,7 +218,7 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 			a.Object = item
 		}
 	}
-	
+
 	return nil
 }
 
@@ -198,12 +226,33 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 func (p Person) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	JSONWrite(&b, '{')
-	
-	notEmpty := JSONWriteObjectValue(&b, p.Object)
-	
-	if len(p.PreferredUsername) > 0 {
-		notEmpty = JSONWriteNaturalLanguageProp(&b, "preferredUsername", p.PreferredUsername) || notEmpty
+
+	notEmpty := false
+
+	// Write Object fields in custom order: id, type, name, summary, icon, url
+	if p.Object.ID != "" {
+		notEmpty = JSONWriteItemProp(&b, "id", p.Object.ID) || notEmpty
 	}
+	if p.Object.Type != "" {
+		val, _ := marshalJSONNoHTMLEscape(string(p.Object.Type))
+		notEmpty = JSONWriteProp(&b, "type", val) || notEmpty
+	}
+	if len(p.Object.Name) > 0 {
+		notEmpty = JSONWriteNaturalLanguageProp(&b, "name", p.Object.Name) || notEmpty
+	}
+	if len(p.Object.Summary) > 0 {
+		notEmpty = JSONWriteNaturalLanguageProp(&b, "summary", p.Object.Summary) || notEmpty
+	}
+	if p.Icon != nil {
+		if v, err := marshalJSONNoHTMLEscape(p.Icon); err == nil && len(v) > 0 {
+			notEmpty = JSONWriteProp(&b, "icon", v) || notEmpty
+		}
+	}
+	if p.Object.URL != nil {
+		notEmpty = JSONWriteItemProp(&b, "url", p.Object.URL) || notEmpty
+	}
+
+	// Person-specific fields
 	if p.Inbox != "" {
 		notEmpty = JSONWriteItemProp(&b, "inbox", p.Inbox) || notEmpty
 	}
@@ -216,22 +265,20 @@ func (p Person) MarshalJSON() ([]byte, error) {
 	if p.Followers != "" {
 		notEmpty = JSONWriteItemProp(&b, "followers", p.Followers) || notEmpty
 	}
+	if len(p.PreferredUsername) > 0 {
+		notEmpty = JSONWriteNaturalLanguageProp(&b, "preferredUsername", p.PreferredUsername) || notEmpty
+	}
 	if len(p.PublicKey.PublicKeyPem)+len(p.PublicKey.ID) > 0 {
-		if v, err := json.Marshal(p.PublicKey); err == nil && len(v) > 0 {
+		if v, err := marshalJSONNoHTMLEscape(p.PublicKey); err == nil && len(v) > 0 {
 			notEmpty = JSONWriteProp(&b, "publicKey", v) || notEmpty
 		}
 	}
 	if p.Endpoints != nil {
-		if v, err := json.Marshal(p.Endpoints); err == nil && len(v) > 0 {
+		if v, err := marshalJSONNoHTMLEscape(p.Endpoints); err == nil && len(v) > 0 {
 			notEmpty = JSONWriteProp(&b, "endpoints", v) || notEmpty
 		}
 	}
-	if p.Icon != nil {
-		if v, err := json.Marshal(p.Icon); err == nil && len(v) > 0 {
-			notEmpty = JSONWriteProp(&b, "icon", v) || notEmpty
-		}
-	}
-	
+
 	if notEmpty {
 		JSONWrite(&b, '}')
 		return b, nil
@@ -245,7 +292,7 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &p.Object); err != nil {
 		return err
 	}
-	
+
 	// Then unmarshal Person-specific fields
 	aux := &struct {
 		PreferredUsername NaturalLanguageValues `json:"preferredUsername,omitempty"`
@@ -257,11 +304,11 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 		Endpoints         *Endpoints            `json:"endpoints,omitempty"`
 		Icon              json.RawMessage       `json:"icon,omitempty"`
 	}{}
-	
+
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
-	
+
 	p.PreferredUsername = aux.PreferredUsername
 	p.Inbox = aux.Inbox
 	p.Outbox = aux.Outbox
@@ -276,7 +323,7 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 			p.Icon = &iconObj
 		}
 	}
-	
+
 	return nil
 }
 
@@ -284,9 +331,9 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 func (o Object) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	JSONWrite(&b, '{')
-	
+
 	notEmpty := JSONWriteObjectValue(&b, o)
-	
+
 	if notEmpty {
 		JSONWrite(&b, '}')
 		return b, nil
@@ -299,18 +346,18 @@ func (o *Object) UnmarshalJSON(data []byte) error {
 	// Use a type alias to avoid recursion
 	type Alias Object
 	aux := &struct {
-		AttributedTo json.RawMessage   `json:"attributedTo,omitempty"`
-		InReplyTo    json.RawMessage   `json:"inReplyTo,omitempty"`
-		URL          json.RawMessage   `json:"url,omitempty"`
+		AttributedTo json.RawMessage `json:"attributedTo,omitempty"`
+		InReplyTo    json.RawMessage `json:"inReplyTo,omitempty"`
+		URL          json.RawMessage `json:"url,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(o),
 	}
-	
+
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
-	
+
 	// Unmarshal Item fields
 	if len(aux.AttributedTo) > 0 {
 		item, err := unmarshalItem(aux.AttributedTo)
@@ -330,7 +377,7 @@ func (o *Object) UnmarshalJSON(data []byte) error {
 			o.URL = item
 		}
 	}
-	
+
 	return nil
 }
 
@@ -338,17 +385,17 @@ func (o *Object) UnmarshalJSON(data []byte) error {
 func (c Collection) MarshalJSON() ([]byte, error) {
 	b := make([]byte, 0)
 	JSONWrite(&b, '{')
-	
+
 	notEmpty := JSONWriteObjectValue(&b, c.Object)
-	
+
 	if c.TotalItems > 0 {
-		val, _ := json.Marshal(c.TotalItems)
+		val, _ := marshalJSONNoHTMLEscape(c.TotalItems)
 		notEmpty = JSONWriteProp(&b, "totalItems", val) || notEmpty
 	}
 	if len(c.Items) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(&b, "items", c.Items, false) || notEmpty
 	}
-	
+
 	if notEmpty {
 		JSONWrite(&b, '}')
 		return b, nil
@@ -362,19 +409,19 @@ func (c *Collection) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &c.Object); err != nil {
 		return err
 	}
-	
+
 	// Then unmarshal Collection-specific fields
 	aux := &struct {
 		TotalItems uint           `json:"totalItems,omitempty"`
 		Items      ItemCollection `json:"items,omitempty"`
 	}{}
-	
+
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
-	
+
 	c.TotalItems = aux.TotalItems
 	c.Items = aux.Items
-	
+
 	return nil
 }

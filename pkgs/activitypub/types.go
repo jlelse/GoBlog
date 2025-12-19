@@ -3,6 +3,7 @@
 package activitypub
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,9 +12,9 @@ import (
 
 // ActivityPub namespaces
 const (
-	ActivityBaseURI  = "https://www.w3.org/ns/activitystreams"
+	ActivityBaseURI    = "https://www.w3.org/ns/activitystreams"
 	SecurityContextURI = "https://w3id.org/security/v1"
-	PublicNS         = IRI("https://www.w3.org/ns/activitystreams#Public")
+	PublicNS           = IRI("https://www.w3.org/ns/activitystreams#Public")
 )
 
 // ActivityType represents the type of an ActivityPub object
@@ -21,15 +22,15 @@ type ActivityType string
 
 // Common ActivityPub types
 const (
-	ObjectType     ActivityType = "Object"
+	ObjectType      ActivityType = "Object"
 	ActivityObjType ActivityType = "Activity"
-	NoteType       ActivityType = "Note"
-	ArticleType    ActivityType = "Article"
-	PersonType     ActivityType = "Person"
-	ImageType      ActivityType = "Image"
-	MentionType    ActivityType = "Mention"
-	CollectionType ActivityType = "Collection"
-	
+	NoteType        ActivityType = "Note"
+	ArticleType     ActivityType = "Article"
+	PersonType      ActivityType = "Person"
+	ImageType       ActivityType = "Image"
+	MentionType     ActivityType = "Mention"
+	CollectionType  ActivityType = "Collection"
+
 	// Activity types
 	CreateType   ActivityType = "Create"
 	UpdateType   ActivityType = "Update"
@@ -135,8 +136,19 @@ func (n NaturalLanguageValues) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 	if len(n) == 1 && n[0].Lang == "" {
-		// Single value without language tag
-		return json.Marshal(n[0].Value)
+		// Single value without language tag - use no HTML escaping
+		var buf bytes.Buffer
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(false)
+		if err := enc.Encode(n[0].Value); err != nil {
+			return nil, err
+		}
+		// Remove trailing newline
+		result := buf.Bytes()
+		if len(result) > 0 && result[len(result)-1] == '\n' {
+			result = result[:len(result)-1]
+		}
+		return result, nil
 	}
 	// Multiple values or language tagged
 	m := make(map[string]string)
@@ -147,7 +159,18 @@ func (n NaturalLanguageValues) MarshalJSON() ([]byte, error) {
 		}
 		m[lang] = v.Value
 	}
-	return json.Marshal(m)
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(m); err != nil {
+		return nil, err
+	}
+	// Remove trailing newline
+	result := buf.Bytes()
+	if len(result) > 0 && result[len(result)-1] == '\n' {
+		result = result[:len(result)-1]
+	}
+	return result, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler for NaturalLanguageValues
@@ -158,7 +181,7 @@ func (n *NaturalLanguageValues) UnmarshalJSON(data []byte) error {
 		*n = NaturalLanguageValues{{Value: s, Lang: ""}}
 		return nil
 	}
-	
+
 	// Try as map
 	var m map[string]string
 	if err := json.Unmarshal(data, &m); err == nil {
@@ -171,7 +194,7 @@ func (n *NaturalLanguageValues) UnmarshalJSON(data []byte) error {
 		}
 		return nil
 	}
-	
+
 	return fmt.Errorf("invalid natural language value")
 }
 
@@ -216,18 +239,23 @@ func (i ItemCollection) MarshalJSON() ([]byte, error) {
 	if len(i) == 0 {
 		return []byte("null"), nil
 	}
-	if len(i) == 1 {
-		return json.Marshal(i[0])
-	}
-	arr := make([]json.RawMessage, len(i))
+	// Always marshal as array for consistency
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	arr := make([]Item, len(i))
 	for idx, item := range i {
-		data, err := json.Marshal(item)
-		if err != nil {
-			return nil, err
-		}
-		arr[idx] = data
+		arr[idx] = item
 	}
-	return json.Marshal(arr)
+	if err := enc.Encode(arr); err != nil {
+		return nil, err
+	}
+	// Remove trailing newline
+	result := buf.Bytes()
+	if len(result) > 0 && result[len(result)-1] == '\n' {
+		result = result[:len(result)-1]
+	}
+	return result, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler for ItemCollection
@@ -245,7 +273,7 @@ func (i *ItemCollection) UnmarshalJSON(data []byte) error {
 		}
 		return nil
 	}
-	
+
 	// Try as single item
 	item, err := unmarshalItem(data)
 	if err != nil {
@@ -262,13 +290,13 @@ func unmarshalItem(data []byte) (Item, error) {
 	if err := json.Unmarshal(data, &iri); err == nil {
 		return IRI(iri), nil
 	}
-	
+
 	// Try as object
 	var obj Object
 	if err := json.Unmarshal(data, &obj); err == nil {
 		return &obj, nil
 	}
-	
+
 	return nil, fmt.Errorf("invalid item")
 }
 
@@ -305,7 +333,7 @@ func (e *Endpoints) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return err
 	}
-	
+
 	if raw, ok := m["sharedInbox"]; ok {
 		item, err := unmarshalItem(raw)
 		if err != nil {
@@ -313,7 +341,7 @@ func (e *Endpoints) UnmarshalJSON(data []byte) error {
 		}
 		e.SharedInbox = item
 	}
-	
+
 	return nil
 }
 
@@ -381,15 +409,15 @@ type Image = Object
 
 // Activity represents an ActivityPub Activity
 type Activity struct {
-	Context      interface{}           `json:"@context,omitempty"`
-	ID           IRI                   `json:"id,omitempty"`
-	Type         ActivityType          `json:"type,omitempty"`
-	Actor        Item                  `json:"actor,omitempty"`
-	Object       Item                  `json:"object,omitempty"`
-	To           ItemCollection        `json:"to,omitempty"`
-	CC           ItemCollection        `json:"cc,omitempty"`
-	Published    time.Time             `json:"published,omitempty"`
-	Updated      time.Time             `json:"updated,omitempty"`
+	Context   interface{}    `json:"@context,omitempty"`
+	ID        IRI            `json:"id,omitempty"`
+	Type      ActivityType   `json:"type,omitempty"`
+	Actor     Item           `json:"actor,omitempty"`
+	Object    Item           `json:"object,omitempty"`
+	To        ItemCollection `json:"to,omitempty"`
+	CC        ItemCollection `json:"cc,omitempty"`
+	Published time.Time      `json:"published,omitempty"`
+	Updated   time.Time      `json:"updated,omitempty"`
 }
 
 // GetLink returns the activity's ID

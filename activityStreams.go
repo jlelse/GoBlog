@@ -209,18 +209,39 @@ type goBlogPerson struct {
 }
 
 func (a goBlogPerson) MarshalJSON() ([]byte, error) {
-	// Taken from AP library, Person.MarshalJSON
-
 	b := make([]byte, 0)
 	activitypub.JSONWrite(&b, '{')
 
 	notEmpty := false
-	activitypub.OnObject(&a.Person.Object, func(o *activitypub.Object) error {
-		notEmpty = activitypub.JSONWriteObjectValue(&b, *o) || notEmpty
-		return nil
-	})
+
+	// Write Object fields in custom order: id, type, name, summary, icon, url
+	if a.Person.Object.ID != "" {
+		notEmpty = activitypub.JSONWriteItemProp(&b, "id", a.Person.Object.ID) || notEmpty
+	}
+	if a.Person.Object.Type != "" {
+		val, _ := activitypub.MarshalJSONNoHTMLEscape(string(a.Person.Object.Type))
+		notEmpty = activitypub.JSONWriteProp(&b, "type", val) || notEmpty
+	}
+	if len(a.Person.Object.Name) > 0 {
+		notEmpty = activitypub.JSONWriteNaturalLanguageProp(&b, "name", a.Person.Object.Name) || notEmpty
+	}
+	if len(a.Person.Object.Summary) > 0 {
+		notEmpty = activitypub.JSONWriteNaturalLanguageProp(&b, "summary", a.Person.Object.Summary) || notEmpty
+	}
+	if a.Icon != nil {
+		val, _ := activitypub.MarshalJSONNoHTMLEscape(a.Icon)
+		notEmpty = activitypub.JSONWriteProp(&b, "icon", val) || notEmpty
+	}
+	if a.Person.Object.URL != nil {
+		notEmpty = activitypub.JSONWriteItemProp(&b, "url", a.Person.Object.URL) || notEmpty
+	}
+
+	// Person-specific fields
 	if a.Inbox != "" {
 		notEmpty = activitypub.JSONWriteItemProp(&b, "inbox", a.Inbox) || notEmpty
+	}
+	if a.Outbox != "" {
+		notEmpty = activitypub.JSONWriteItemProp(&b, "outbox", a.Outbox) || notEmpty
 	}
 	if a.Following != "" {
 		notEmpty = activitypub.JSONWriteItemProp(&b, "following", a.Following) || notEmpty
@@ -235,6 +256,10 @@ func (a goBlogPerson) MarshalJSON() ([]byte, error) {
 		if v, err := a.PublicKey.MarshalJSON(); err == nil && len(v) > 0 {
 			notEmpty = activitypub.JSONWriteProp(&b, "publicKey", v) || notEmpty
 		}
+	}
+	if a.Endpoints != nil {
+		val, _ := activitypub.MarshalJSONNoHTMLEscape(a.Endpoints)
+		notEmpty = activitypub.JSONWriteProp(&b, "endpoints", val) || notEmpty
 	}
 
 	// Custom
