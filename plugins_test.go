@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -136,4 +138,142 @@ Test post content`)
 		assert.Equal(t, "Test post content", p.GetContent())
 	})
 
+}
+
+func TestEmbeddedPluginImageTooltipsAndCustomCSS(t *testing.T) {
+	tmpDir := t.TempDir()
+	cssFile := filepath.Join(tmpDir, "custom.css")
+	require.NoError(t, os.WriteFile(cssFile, []byte(".x{color:red;}"), 0o644))
+
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Plugins = []*configPlugin{
+		{
+			Path:   "embedded:imagetooltips",
+			Import: "imagetooltips",
+		},
+		{
+			Path:   "embedded:customcss",
+			Import: "customcss",
+			Config: map[string]any{"file": cssFile},
+		},
+	}
+
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initPlugins())
+	app.assetFileNames = map[string]string{}
+	app.assetFiles = map[string]*assetFile{}
+
+	req := httptest.NewRequest(http.MethodGet, "/p/img", nil)
+	rr := httptest.NewRecorder()
+
+	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, _ *renderData) {
+		hb.WriteElementOpen("head")
+		hb.WriteElementClose("head")
+		hb.WriteElementOpen("main")
+		hb.WriteElementOpen("div", "class", "e-content")
+		hb.WriteElementOpen("a", "href", "#")
+		hb.WriteElementOpen("img", "src", "/image.jpg", "title", "tooltip")
+		hb.WriteElementClose("img")
+		hb.WriteElementClose("a")
+		hb.WriteElementClose("div")
+		hb.WriteElementClose("main")
+	}, &renderData{
+		BlogString: app.cfg.DefaultBlog,
+	})
+
+	body := rr.Body.String()
+	assert.NotContains(t, body, "<a href=\"#\"><img") // anchor removed
+	assert.Contains(t, app.assetFileNames, "imagetooltips.js")
+	assert.Contains(t, app.assetFileNames, "plugincustomcss.css")
+}
+
+func TestEmbeddedPluginSyndication(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Plugins = []*configPlugin{
+		{
+			Path:   "embedded:syndication",
+			Import: "syndication",
+		},
+	}
+
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initPlugins())
+	app.assetFileNames = map[string]string{}
+	app.assetFiles = map[string]*assetFile{}
+
+	createdPost, err := app.CreatePost(`---
+title: Syndication Test
+path: /syndicated
+syndication:
+  - https://example.com/post
+---
+content`)
+	require.NoError(t, err)
+	p := createdPost.(*post)
+
+	req := httptest.NewRequest(http.MethodGet, p.Path, nil)
+	rr := httptest.NewRecorder()
+
+	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, _ *renderData) {
+		hb.WriteElementOpen("main", "class", "h-entry")
+		hb.WriteElementOpen("article")
+		hb.WriteElementOpen("div", "class", "e-content")
+		hb.WriteEscaped(p.Content)
+		hb.WriteElementClose("div")
+		hb.WriteElementClose("article")
+		hb.WriteElementClose("main")
+	}, &renderData{
+		BlogString: app.cfg.DefaultBlog,
+	})
+
+	body := rr.Body.String()
+	assert.Contains(t, body, `class="u-syndication hide"`)
+	assert.Contains(t, body, "https://example.com/post")
+}
+
+func TestEmbeddedPluginWebringsFooter(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Plugins = []*configPlugin{
+		{
+			Path:   "embedded:webrings",
+			Import: "webrings",
+			Config: map[string]any{
+				"default": []any{
+					map[string]any{
+						"title": "My Ring",
+						"link":  "https://ring.example.com",
+						"prev":  "https://ring.example.com/prev",
+						"next":  "https://ring.example.com/next",
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initPlugins())
+
+	footerPlugins := app.getPlugins(pluginUiFooterType)
+	require.Len(t, footerPlugins, 1)
+	fp := footerPlugins[0].(plugintypes.UIFooter)
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader("<footer></footer>"))
+	require.NoError(t, err)
+
+	fp.RenderFooter(&pluginRenderContext{
+		blog: app.cfg.DefaultBlog,
+	}, doc)
+
+	html, err := doc.Find("footer").Html()
+	require.NoError(t, err)
+	assert.Contains(t, html, "My Ring")
+	assert.Contains(t, html, "ring.example.com")
+	assert.Contains(t, html, "→")
+	assert.Contains(t, html, "←")
 }

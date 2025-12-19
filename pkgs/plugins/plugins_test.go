@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/traefik/yaegi/interp"
+	"go.goblog.app/app/pkgs/plugintypes"
+	"go.goblog.app/app/pkgs/yaegiwrappers"
 )
 
 //go:embed sample/*
@@ -42,4 +44,44 @@ func TestLoadPluginFailsOnMissingSource(t *testing.T) {
 		ImportPath: "missing",
 	})
 	assert.Error(t, err)
+}
+
+func TestLoadPluginRegistersHooks(t *testing.T) {
+	source := fstest.MapFS{
+		"hooktest/src/hooktest/hooktest.go": {
+			Data: []byte(`package hooktest
+
+import "go.goblog.app/app/pkgs/plugintypes"
+
+type plugin struct{}
+
+func GetPlugin() (plugintypes.PostCreatedHook, plugintypes.PostUpdatedHook) {
+	return plugin{}, plugin{}
+}
+
+func (plugin) PostCreated(_ plugintypes.Post) {}
+func (plugin) PostUpdated(_ plugintypes.Post) {}
+`),
+		},
+	}
+
+	host := NewPluginHost(
+		map[string]reflect.Type{
+			"postcreated": reflect.TypeOf((*plugintypes.PostCreatedHook)(nil)).Elem(),
+			"postupdated": reflect.TypeOf((*plugintypes.PostUpdatedHook)(nil)).Elem(),
+		},
+		yaegiwrappers.Symbols,
+		source,
+	)
+
+	plugins, err := host.LoadPlugin(&PluginConfig{
+		Path:       "embedded:hooktest",
+		ImportPath: "hooktest",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, plugins, "postcreated")
+	assert.Contains(t, plugins, "postupdated")
+
+	assert.Len(t, host.GetPlugins("postcreated"), 1)
+	assert.Len(t, host.GetPlugins("postupdated"), 1)
 }
