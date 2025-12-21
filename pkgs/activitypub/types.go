@@ -363,8 +363,8 @@ type Object struct {
 	CC           ItemCollection        `json:"cc,omitempty"`
 	Tag          ItemCollection        `json:"tag,omitempty"`
 	Attachment   any                   `json:"attachment,omitempty"`
-	Published    time.Time             `json:"published,omitempty"`
-	Updated      time.Time             `json:"updated,omitempty"`
+	Published    time.Time             `json:"published,omitzero"`
+	Updated      time.Time             `json:"updated,omitzero"`
 }
 
 // GetLink returns the object's ID
@@ -398,7 +398,7 @@ type Person struct {
 	Outbox             IRI                   `json:"outbox,omitempty"`
 	Following          IRI                   `json:"following,omitempty"`
 	Followers          IRI                   `json:"followers,omitempty"`
-	PublicKey          PublicKey             `json:"publicKey,omitempty"`
+	PublicKey          PublicKey             `json:"publicKey"`
 	Endpoints          *Endpoints            `json:"endpoints,omitempty"`
 	Icon               any                   `json:"icon,omitempty"`
 	AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
@@ -420,8 +420,8 @@ type Activity struct {
 	Object    Item           `json:"object,omitempty"`
 	To        ItemCollection `json:"to,omitempty"`
 	CC        ItemCollection `json:"cc,omitempty"`
-	Published time.Time      `json:"published,omitempty"`
-	Updated   time.Time      `json:"updated,omitempty"`
+	Published time.Time      `json:"published,omitzero"`
+	Updated   time.Time      `json:"updated,omitzero"`
 }
 
 // GetLink returns the activity's ID

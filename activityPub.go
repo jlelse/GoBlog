@@ -22,7 +22,7 @@ import (
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
-	"go.goblog.app/app/pkgs/activitypub"
+	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -168,8 +168,8 @@ func (a *goBlog) apCheckMentions(p *post) {
 	}
 	mentions := []string{}
 	for _, link := range links {
-		act, err := a.apGetRemoteActor(p.Blog, activitypub.IRI(link))
-		if err != nil || act == nil || act.Type != activitypub.PersonType {
+		act, err := a.apGetRemoteActor(p.Blog, ap.IRI(link))
+		if err != nil || act == nil || act.Type != ap.PersonType {
 			continue
 		}
 		mentions = append(mentions, link)
@@ -188,11 +188,11 @@ func (a *goBlog) apCheckActivityPubReply(p *post) {
 	if replyLink == "" {
 		return
 	}
-	item, err := a.apLoadRemoteIRI(p.Blog, activitypub.IRI(replyLink))
-	if err != nil || item == nil || !activitypub.IsObject(item) {
+	item, err := a.apLoadRemoteIRI(p.Blog, ap.IRI(replyLink))
+	if err != nil || item == nil || !ap.IsObject(item) {
 		return
 	}
-	obj, err := activitypub.ToObject(item)
+	obj, err := ap.ToObject(item)
 	if err != nil || obj == nil || obj.GetLink() == "" || obj.AttributedTo == nil || obj.AttributedTo.GetLink() == "" {
 		return
 	}
@@ -225,13 +225,13 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	apItem, err := activitypub.UnmarshalJSON(body)
+	apItem, err := ap.UnmarshalJSON(body)
 	if err != nil {
 		a.serveError(w, r, "Failed to decode body", http.StatusBadRequest)
 		return
 	}
 	// Check if it's an activity
-	activity, err := activitypub.ToActivity(apItem)
+	activity, err := ap.ToActivity(apItem)
 	if err != nil {
 		a.serveError(w, r, "No activity", http.StatusBadRequest)
 		return
@@ -248,20 +248,20 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	// Handle activity
 	switch activity.GetType() {
-	case activitypub.FollowType:
+	case ap.FollowType:
 		a.apAccept(blogName, blog, activity)
-	case activitypub.UndoType:
+	case ap.UndoType:
 		if activity.Object.IsObject() {
-			objectActivity, err := activitypub.ToActivity(activity.Object)
-			if err == nil && objectActivity.GetType() == activitypub.FollowType && objectActivity.Actor.GetLink() == activityActor {
+			objectActivity, err := ap.ToActivity(activity.Object)
+			if err == nil && objectActivity.GetType() == ap.FollowType && objectActivity.Actor.GetLink() == activityActor {
 				_ = a.db.apRemoveFollower(blogName, activityActor.String())
 			}
 		}
-	case activitypub.CreateType, activitypub.UpdateType:
+	case ap.CreateType, ap.UpdateType:
 		if activity.Object.IsObject() {
 			a.apOnCreateUpdate(blog, requestActor, activity)
 		}
-	case activitypub.DeleteType, activitypub.BlockType:
+	case ap.DeleteType, ap.BlockType:
 		if activity.Object.GetLink() == activityActor {
 			_ = a.db.apRemoveFollower(blogName, activityActor.String())
 		} else {
@@ -272,11 +272,11 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 				_ = a.db.deleteWebmentionUUrl(activity.Object.GetLink().String())
 			}
 		}
-	case activitypub.AnnounceType:
+	case ap.AnnounceType:
 		if announceTarget := activity.Object.GetLink().String(); announceTarget != "" && strings.HasPrefix(announceTarget, a.cfg.Server.PublicAddress) {
 			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceTarget))
 		}
-	case activitypub.LikeType:
+	case ap.LikeType:
 		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && strings.HasPrefix(likeTarget, a.cfg.Server.PublicAddress) {
 			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
 		}
@@ -285,12 +285,12 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *activitypub.Actor, activity *activitypub.Activity) {
-	object, err := activitypub.ToObject(activity.Object)
+func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, activity *ap.Activity) {
+	object, err := ap.ToObject(activity.Object)
 	if err != nil {
 		return
 	}
-	if object.GetType() != activitypub.NoteType && object.GetType() != activitypub.ArticleType {
+	if object.GetType() != ap.NoteType && object.GetType() != ap.ArticleType {
 		// ignore other objects for now
 		return
 	}
@@ -305,7 +305,7 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *activitypub.Ac
 	// Handle reply
 	if inReplyTo := object.InReplyTo; inReplyTo != nil {
 		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
-			if object.To.Contains(activitypub.PublicNS) || object.CC.Contains(activitypub.PublicNS) {
+			if object.To.Contains(ap.PublicNS) || object.CC.Contains(ap.PublicNS) {
 				// Public reply - comment
 				_, _, _ = a.createComment(blog, replyTarget, content, actorName, actorLink, noteUri)
 				return
@@ -323,7 +323,7 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *activitypub.Ac
 		}
 	}
 	// Handle mention
-	if blogIri := activitypub.IRI(a.apIri(blog)); object.To.Contains(blogIri) || object.CC.Contains(blogIri) {
+	if blogIri := ap.IRI(a.apIri(blog)); object.To.Contains(blogIri) || object.CC.Contains(blogIri) {
 		// Notification
 		buf := bufferpool.Get()
 		defer bufferpool.Put(buf)
@@ -337,13 +337,13 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *activitypub.Ac
 	// Ignore other cases, maybe it's just spam
 }
 
-func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*activitypub.Actor, error) {
+func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, error) {
 	verifier, err := httpsig.NewVerifier(r)
 	if err != nil {
 		// Error with signature header etc.
 		return nil, err
 	}
-	actor, err := a.apGetRemoteActor(blog, activitypub.IRI(verifier.KeyId()))
+	actor, err := a.apGetRemoteActor(blog, ap.IRI(verifier.KeyId()))
 	if err != nil || actor == nil {
 		// Actor not found or something else bad
 		return nil, errors.New("failed to get actor")
@@ -369,8 +369,8 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, `<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"><Link rel="lrdd" type="application/xrd+xml" template="https://`+r.Host+`/.well-known/webfinger?resource={uri}"/></XRD>`)
 }
 
-func (a *goBlog) apGetFollowersCollectionId(blogName string, blog *configBlog) activitypub.IRI {
-	return activitypub.IRI(a.apIri(blog) + "/activitypub/followers/" + blogName)
+func (a *goBlog) apGetFollowersCollectionId(blogName string, blog *configBlog) ap.IRI {
+	return ap.IRI(a.apIri(blog) + "/activitypub/followers/" + blogName)
 }
 
 func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
@@ -386,9 +386,9 @@ func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
-		followersCollection := activitypub.CollectionNew(a.apGetFollowersCollectionId(blogName, blog))
+		followersCollection := ap.CollectionNew(a.apGetFollowersCollectionId(blogName, blog))
 		for _, follower := range followers {
-			followersCollection.Items.Append(activitypub.IRI(follower.follower))
+			followersCollection.Items.Append(ap.IRI(follower.follower))
 		}
 		followersCollection.TotalItems = uint(len(followers))
 		a.serveAPItem(w, r, http.StatusOK, followersCollection)
@@ -461,7 +461,7 @@ func (db *database) apRemoveInbox(inbox string) error {
 
 func (a *goBlog) apPost(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	c := activitypub.CreateNew(a.apNewID(blogConfig), a.toAPNote(p))
+	c := ap.CreateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	c.Actor = a.apAPIri(blogConfig)
 	c.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, c, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -469,7 +469,7 @@ func (a *goBlog) apPost(p *post) {
 
 func (a *goBlog) apUpdate(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	u := activitypub.UpdateNew(a.apNewID(blogConfig), a.toAPNote(p))
+	u := ap.UpdateNew(a.apNewID(blogConfig), a.toAPNote(p))
 	u.Actor = a.apAPIri(blogConfig)
 	u.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, u, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -477,7 +477,7 @@ func (a *goBlog) apUpdate(p *post) {
 
 func (a *goBlog) apDelete(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	d := activitypub.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
+	d := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
 	d.Actor = a.apAPIri(blogConfig)
 	d.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, d, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -497,7 +497,7 @@ func (a *goBlog) apUndelete(p *post) {
 	a.apPost(p)
 }
 
-func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *activitypub.Activity) {
+func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity) {
 	newFollower := follow.Actor.GetLink()
 	a.info("AcitivyPub: New follow request from follower", "id", newFollower.String())
 	// Get remote actor
@@ -520,7 +520,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *activitypub
 		return
 	}
 	// Send accept response to the new follower
-	accept := activitypub.AcceptNew(a.apNewID(blog), follow)
+	accept := ap.AcceptNew(a.apNewID(blog), follow)
 	accept.To.Append(newFollower)
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
@@ -531,15 +531,15 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *activitypub
 func (a *goBlog) apSendProfileUpdates() {
 	for blog, config := range a.cfg.Blogs {
 		person := a.toApPerson(blog)
-		update := activitypub.UpdateNew(a.apNewID(config), person)
+		update := ap.UpdateNew(a.apNewID(config), person)
 		update.Actor = a.apAPIri(config)
 		update.Published = time.Now()
-		update.To.Append(activitypub.PublicNS, a.apGetFollowersCollectionId(blog, config))
+		update.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(blog, config))
 		a.apSendToAllFollowers(blog, update)
 	}
 }
 
-func (a *goBlog) apSendToAllFollowers(blog string, activity *activitypub.Activity, mentions ...string) {
+func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity, mentions ...string) {
 	inboxes, err := a.db.apGetAllInboxes(blog)
 	if err != nil {
 		a.error("ActivityPub: Failed to retrieve follower inboxes", "err", err)
@@ -550,7 +550,7 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity *activitypub.Activit
 			if m == "" {
 				return
 			}
-			actor, err := a.apGetRemoteActor(blog, activitypub.IRI(m))
+			actor, err := a.apGetRemoteActor(blog, ap.IRI(m))
 			if err != nil || actor == nil || actor.Inbox == "" || actor.Inbox.GetLink() == "" {
 				return
 			}
@@ -561,7 +561,7 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity *activitypub.Activit
 	a.apSendTo(a.apIri(a.cfg.Blogs[blog]), activity, inboxes...)
 }
 
-func (a *goBlog) apSendTo(blogIri string, activity *activitypub.Activity, inboxes ...string) {
+func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...string) {
 	for _, i := range lo.Uniq(inboxes) {
 		go func(inbox string) {
 			_ = a.apQueueSendSigned(blogIri, inbox, activity)
@@ -569,16 +569,16 @@ func (a *goBlog) apSendTo(blogIri string, activity *activitypub.Activity, inboxe
 	}
 }
 
-func (a *goBlog) apNewID(blog *configBlog) activitypub.ID {
-	return activitypub.ID(a.apIri(blog) + "#" + uuid.NewString())
+func (a *goBlog) apNewID(blog *configBlog) ap.ID {
+	return ap.ID(a.apIri(blog) + "#" + uuid.NewString())
 }
 
 func (a *goBlog) apIri(b *configBlog) string {
 	return a.getFullAddress(b.getRelativePath(""))
 }
 
-func (a *goBlog) apAPIri(b *configBlog) activitypub.IRI {
-	return activitypub.IRI(a.apIri(b))
+func (a *goBlog) apAPIri(b *configBlog) ap.IRI {
+	return ap.IRI(a.apIri(b))
 }
 
 func apRequestIsSuccess(code int) bool {
@@ -655,7 +655,7 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 		return err
 	}
 	for _, fol := range followers {
-		actor, err := a.apGetRemoteActor(blogName, activitypub.IRI(fol.follower))
+		actor, err := a.apGetRemoteActor(blogName, ap.IRI(fol.follower))
 		if err != nil || actor == nil {
 			a.error("ActivityPub: Failed to retrieve remote actor info", "actor", fol.follower, "err", err)
 			continue
@@ -677,7 +677,7 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 	return nil
 }
 
-func (a *goBlog) apGetRemoteActor(blog string, iri activitypub.IRI) (*activitypub.Actor, error) {
+func (a *goBlog) apGetRemoteActor(blog string, iri ap.IRI) (*ap.Actor, error) {
 	item, err := a.apLoadRemoteIRI(blog, iri)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load remote actor: %w", err)
@@ -685,8 +685,8 @@ func (a *goBlog) apGetRemoteActor(blog string, iri activitypub.IRI) (*activitypu
 	if item == nil {
 		return nil, fmt.Errorf("failed to load remote actor, item is nil: %s", iri)
 	}
-	var actor *activitypub.Actor
-	err = activitypub.OnActor(item, func(act *activitypub.Actor) error {
+	var actor *ap.Actor
+	err = ap.OnActor(item, func(act *ap.Actor) error {
 		actor = act
 		return nil
 	})
@@ -694,7 +694,7 @@ func (a *goBlog) apGetRemoteActor(blog string, iri activitypub.IRI) (*activitypu
 }
 
 // Inspired by go-ap/client's LoadIRI
-func (a *goBlog) apLoadRemoteIRI(blog string, id activitypub.IRI) (activitypub.Item, error) {
+func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
 	if len(id) == 0 {
 		return nil, fmt.Errorf("invalid IRI, nil value: %s", id)
 	}
@@ -746,7 +746,7 @@ func (a *goBlog) apLoadRemoteIRI(blog string, id activitypub.IRI) (activitypub.I
 		return nil, err
 	}
 
-	it, err := activitypub.UnmarshalJSON(body)
+	it, err := ap.UnmarshalJSON(body)
 	if err != nil {
 		return nil, err
 	}

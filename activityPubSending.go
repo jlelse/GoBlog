@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"go.goblog.app/app/pkgs/activitypub"
+	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/activitypub/jsonld"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -47,7 +47,7 @@ func (a *goBlog) initAPSendQueue() {
 }
 
 func (a *goBlog) apQueueSendSigned(blogIri, to string, activity any) error {
-	body, err := jsonld.WithContext(jsonld.IRI(activitypub.ActivityBaseURI), jsonld.IRI(activitypub.SecurityContextURI)).Marshal(activity)
+	body, err := jsonld.WithContext(jsonld.IRI(ap.ActivityBaseURI), jsonld.IRI(ap.SecurityContextURI)).Marshal(activity)
 	if err != nil {
 		return err
 	}
