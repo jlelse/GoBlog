@@ -348,6 +348,97 @@ func Test_activityPubId(t *testing.T) {
 	assert.Equal(t, activitypub.IRI("https://example.com/test?activitypubversion=123456789"), id)
 }
 
+func Test_toApPerson(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"testblog": {
+			Title:       "Test Blog",
+			Description: "A test blog",
+		},
+	}
+	app.cfg.ActivityPub = &configActivityPub{
+		AlsoKnownAs:        []string{"https://example.com/aka1"},
+		AttributionDomains: []string{"example.com"},
+	}
+	app.apPubKeyBytes = []byte("test-key")
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	_ = app.initTemplateStrings()
+
+	person := app.toApPerson("testblog")
+
+	assert.Equal(t, "Test Blog", person.Name.First().String())
+	assert.Equal(t, "A test blog", person.Summary.First().String())
+	assert.Equal(t, "testblog", person.PreferredUsername.First().String())
+	assert.Equal(t, activitypub.IRI("https://example.com"), person.ID)
+	assert.Equal(t, activitypub.IRI("https://example.com"), person.URL)
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/inbox/testblog"), person.Inbox)
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/testblog"), person.Followers)
+	assert.Len(t, person.AlsoKnownAs, 1)
+	assert.Len(t, person.AttributionDomains, 1)
+
+	// JSON validation
+	const expectedPersonJSON = `{"@context":["https://www.w3.org/ns/activitystreams","https://w3id.org/security/v1"],"id":"https://example.com","type":"Person","name":"Test Blog","summary":"A test blog","url":"https://example.com","inbox":"https://example.com/activitypub/inbox/testblog","followers":"https://example.com/activitypub/followers/testblog","preferredUsername":"testblog","publicKey":{"id":"https://example.com#main-key","owner":"https://example.com","publicKeyPem":"-----BEGIN PUBLIC KEY-----\ndGVzdC1rZXk=\n-----END PUBLIC KEY-----\n"},"alsoKnownAs":["https://example.com/aka1"],"attributionDomains":["example.com"]}`
+	binary, err := jsonld.WithContext(jsonld.IRI(activitypub.ActivityBaseURI), jsonld.IRI(activitypub.SecurityContextURI)).Marshal(person)
+	require.NoError(t, err)
+	assert.Equal(t, expectedPersonJSON, string(binary))
+}
+
+func Test_toApPerson_WithProfileImage(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"testblog": {
+			Title:       "Test Blog",
+			Description: "A test blog",
+		},
+	}
+	app.cfg.ActivityPub = &configActivityPub{
+		AlsoKnownAs:        []string{"https://example.com/aka1"},
+		AttributionDomains: []string{"example.com"},
+	}
+	app.apPubKeyBytes = []byte("test-key")
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	_ = app.initTemplateStrings()
+
+	// Create temporary profile image file (empty to have known hash)
+	tempFile := filepath.Join(t.TempDir(), "profile.jpg")
+	err = os.WriteFile(tempFile, []byte{}, 0644)
+	require.NoError(t, err)
+	app.cfg.User.ProfileImageFile = tempFile
+	app.profileImageHashGroup = nil // Reset to recompute hash
+
+	person := app.toApPerson("testblog")
+
+	assert.Equal(t, "Test Blog", person.Name.First().String())
+	assert.Equal(t, "A test blog", person.Summary.First().String())
+	assert.Equal(t, "testblog", person.PreferredUsername.First().String())
+	assert.Equal(t, activitypub.IRI("https://example.com"), person.ID)
+	assert.Equal(t, activitypub.IRI("https://example.com"), person.URL)
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/inbox/testblog"), person.Inbox)
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/testblog"), person.Followers)
+	assert.Len(t, person.AlsoKnownAs, 1)
+	assert.Len(t, person.AttributionDomains, 1)
+	assert.NotNil(t, person.Icon)
+	iconObj, ok := person.Icon.(*activitypub.Object)
+	require.True(t, ok)
+	assert.Equal(t, activitypub.ImageType, iconObj.Type)
+	assert.Equal(t, activitypub.MimeType("image/jpeg"), iconObj.MediaType)
+	assert.Equal(t, activitypub.IRI("https://example.com/profile.jpg?v=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"), iconObj.URL)
+
+	// JSON validation
+	const expectedPersonWithIconJSON = `{"@context":["https://www.w3.org/ns/activitystreams","https://w3id.org/security/v1"],"id":"https://example.com","type":"Person","name":"Test Blog","summary":"A test blog","icon":{"type":"Image","mediaType":"image/jpeg","url":"https://example.com/profile.jpg?v=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},"url":"https://example.com","inbox":"https://example.com/activitypub/inbox/testblog","followers":"https://example.com/activitypub/followers/testblog","preferredUsername":"testblog","publicKey":{"id":"https://example.com#main-key","owner":"https://example.com","publicKeyPem":"-----BEGIN PUBLIC KEY-----\ndGVzdC1rZXk=\n-----END PUBLIC KEY-----\n"},"alsoKnownAs":["https://example.com/aka1"],"attributionDomains":["example.com"]}`
+	binary, err := jsonld.WithContext(jsonld.IRI(activitypub.ActivityBaseURI), jsonld.IRI(activitypub.SecurityContextURI)).Marshal(person)
+	require.NoError(t, err)
+	assert.Equal(t, expectedPersonWithIconJSON, string(binary))
+}
+
 func Test_serveActivityStreams(t *testing.T) {
 	// Integration test for serveActivityStreams with Person
 	app := &goBlog{
