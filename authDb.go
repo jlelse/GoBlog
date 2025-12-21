@@ -15,6 +15,9 @@ import (
 
 const (
 	bcryptCost = 12
+	// Settings keys for auth data
+	passwordHashSettingsKey = "passwordhash"
+	totpSecretSettingsKey   = "totpsecret"
 )
 
 // Password functions
@@ -40,27 +43,14 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// getPasswordHash returns the stored password hash
+// getPasswordHash returns the stored password hash from settings table
 func (a *goBlog) getPasswordHash() (string, error) {
-	row, err := a.db.QueryRow("select password_hash from user_auth where id = 1")
-	if err != nil {
-		return "", err
-	}
-	var hash string
-	err = row.Scan(&hash)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	return hash, err
+	return a.getSettingValue(passwordHashSettingsKey)
 }
 
-// setPasswordHash stores the password hash
+// setPasswordHash stores the password hash in settings table
 func (a *goBlog) setPasswordHash(hash string) error {
-	_, err := a.db.Exec(
-		"insert into user_auth (id, password_hash) values (1, @hash) on conflict (id) do update set password_hash = @hash",
-		sql.Named("hash", hash),
-	)
-	return err
+	return a.saveSettingValue(passwordHashSettingsKey, hash)
 }
 
 // setPassword hashes and stores the password
@@ -92,27 +82,14 @@ func (a *goBlog) hasPassword() (bool, error) {
 
 // TOTP functions
 
-// getTOTPSecret returns the stored TOTP secret
+// getTOTPSecret returns the stored TOTP secret from settings table
 func (a *goBlog) getTOTPSecret() (string, error) {
-	row, err := a.db.QueryRow("select secret from user_totp where id = 1")
-	if err != nil {
-		return "", err
-	}
-	var secret string
-	err = row.Scan(&secret)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	return secret, err
+	return a.getSettingValue(totpSecretSettingsKey)
 }
 
-// setTOTPSecret stores the TOTP secret
+// setTOTPSecret stores the TOTP secret in settings table
 func (a *goBlog) setTOTPSecret(secret string) error {
-	_, err := a.db.Exec(
-		"insert into user_totp (id, secret) values (1, @secret) on conflict (id) do update set secret = @secret",
-		sql.Named("secret", secret),
-	)
-	return err
+	return a.saveSettingValue(totpSecretSettingsKey, secret)
 }
 
 // hasTOTP checks if TOTP is configured
@@ -351,6 +328,11 @@ func (a *goBlog) setAuthMigrated() error {
 	return a.saveSettingValue(authMigratedSettingsKey, "1")
 }
 
+// hasDeprecatedConfig checks if deprecated auth config options are still present
+func (a *goBlog) hasDeprecatedConfig() bool {
+	return a.cfg.User.Password != "" || a.cfg.User.TOTP != "" || len(a.cfg.User.AppPasswords) > 0
+}
+
 // migrateAuthFromConfig migrates authentication data from config to database
 func (a *goBlog) migrateAuthFromConfig() error {
 	if a.isAuthMigrated() {
@@ -403,6 +385,49 @@ func (a *goBlog) migrateAuthFromConfig() error {
 		a.info("Migrated app password from config to database", "name", apw.Username)
 	}
 
+	// Migrate legacy passkey to new passkeys table
+	if err := a.migrateLegacyPasskey(); err != nil {
+		a.debug("Failed to migrate legacy passkey", "err", err)
+	}
+
 	// Mark as migrated
 	return a.setAuthMigrated()
+}
+
+// migrateLegacyPasskey migrates the old single passkey from settings to the new passkeys table
+func (a *goBlog) migrateLegacyPasskey() error {
+	// Check if there's a legacy passkey
+	jsonStr, err := a.getSettingValue(webauthnCredSettingsKey)
+	if err != nil || jsonStr == "" {
+		return nil // No legacy passkey to migrate
+	}
+
+	// Check if passkeys table already has entries
+	hasPasskeys, _ := a.hasPasskeys()
+	if hasPasskeys {
+		// Already have passkeys, just delete the legacy one
+		if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
+			a.debug("Failed to delete legacy passkey setting", "err", err)
+		}
+		return nil
+	}
+
+	// Parse the legacy credential
+	var cred webauthn.Credential
+	if err := json.Unmarshal([]byte(jsonStr), &cred); err != nil {
+		return err
+	}
+
+	// Create a new passkey from the legacy credential
+	passkeyID := base64.RawURLEncoding.EncodeToString(cred.ID)
+	if err := a.savePasskey(passkeyID, "Passkey", &cred); err != nil {
+		return err
+	}
+
+	// Delete the legacy setting
+	if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
+		a.debug("Failed to delete legacy passkey setting after migration", "err", err)
+	}
+	a.info("Migrated legacy passkey to new passkeys table")
+	return nil
 }

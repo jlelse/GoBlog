@@ -28,6 +28,9 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if password is set in database
 	hasDBPassword, _ := a.hasPassword()
 
+	// Check for success message
+	successMsg := r.URL.Query().Get("msg")
+
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
 			blog:                  blog,
@@ -47,6 +50,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			appPasswords:          appPasswords,
 			hasTOTP:               hasTOTP,
 			hasDBPassword:         hasDBPassword,
+			successMsg:            successMsg,
 		},
 	})
 }
@@ -296,7 +300,7 @@ func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+	http.Redirect(w, r, bc.getRelativePath(settingsPath)+"?msg=passwordupdated", http.StatusFound)
 }
 
 func (a *goBlog) settingsDeletePassword(w http.ResponseWriter, r *http.Request) {

@@ -1559,6 +1559,7 @@ type settingsRenderData struct {
 	appPasswords          []*AppPassword
 	hasTOTP               bool
 	hasDBPassword         bool
+	successMsg            string
 }
 
 type appPasswordCreatedRenderData struct {
@@ -1583,6 +1584,13 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
 			hb.WriteElementClose("h1")
+
+			// Success message
+			if srd.successMsg != "" {
+				hb.WriteElementOpen("p", "class", "success")
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, srd.successMsg))
+				hb.WriteElementClose("p")
+			}
 
 			// General
 			hb.WriteElementOpen("h2")
