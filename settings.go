@@ -329,7 +329,6 @@ const (
 // totpSetupRenderData contains data for the TOTP setup page
 type totpSetupRenderData struct {
 	secret string
-	qrCode string
 }
 
 func (a *goBlog) settingsGenerateTOTP(w http.ResponseWriter, r *http.Request) {
@@ -343,11 +342,10 @@ func (a *goBlog) settingsGenerateTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render the TOTP setup page with QR code
+	// Render the TOTP setup page
 	a.render(w, r, a.renderTOTPSetup, &renderData{
 		Data: &totpSetupRenderData{
 			secret: key.Secret(),
-			qrCode: key.URL(),
 		},
 	})
 }

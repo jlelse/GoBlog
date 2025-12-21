@@ -1649,10 +1649,6 @@ func (a *goBlog) renderTOTPSetup(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementOpen("p")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsetupinstructions"))
 			hb.WriteElementClose("p")
-			// QR Code (using Google Charts API for QR code generation)
-			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("img", "src", "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl="+data.qrCode, "alt", "TOTP QR Code")
-			hb.WriteElementClose("p")
 			// Secret for manual entry
 			hb.WriteElementOpen("p")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsecretmanual"))
