@@ -281,6 +281,14 @@ func (p Person) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	// GoBlog-specific fields
+	if len(p.AlsoKnownAs) > 0 {
+		notEmpty = JSONWriteItemCollectionProp(&b, "alsoKnownAs", p.AlsoKnownAs, false) || notEmpty
+	}
+	if len(p.AttributionDomains) > 0 {
+		notEmpty = JSONWriteItemCollectionProp(&b, "attributionDomains", p.AttributionDomains, false) || notEmpty
+	}
+
 	if notEmpty {
 		JSONWrite(&b, '}')
 		return b, nil
@@ -297,14 +305,16 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 
 	// Then unmarshal Person-specific fields
 	aux := &struct {
-		PreferredUsername NaturalLanguageValues `json:"preferredUsername,omitempty"`
-		Inbox             IRI                   `json:"inbox,omitempty"`
-		Outbox            IRI                   `json:"outbox,omitempty"`
-		Following         IRI                   `json:"following,omitempty"`
-		Followers         IRI                   `json:"followers,omitempty"`
-		PublicKey         PublicKey             `json:"publicKey,omitempty"`
-		Endpoints         *Endpoints            `json:"endpoints,omitempty"`
-		Icon              json.RawMessage       `json:"icon,omitempty"`
+		PreferredUsername  NaturalLanguageValues `json:"preferredUsername,omitempty"`
+		Inbox              IRI                   `json:"inbox,omitempty"`
+		Outbox             IRI                   `json:"outbox,omitempty"`
+		Following          IRI                   `json:"following,omitempty"`
+		Followers          IRI                   `json:"followers,omitempty"`
+		PublicKey          PublicKey             `json:"publicKey,omitempty"`
+		Endpoints          *Endpoints            `json:"endpoints,omitempty"`
+		Icon               json.RawMessage       `json:"icon,omitempty"`
+		AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
+		AttributionDomains ItemCollection        `json:"attributionDomains,omitempty"`
 	}{}
 
 	if err := json.Unmarshal(data, aux); err != nil {
@@ -318,6 +328,8 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	p.Followers = aux.Followers
 	p.PublicKey = aux.PublicKey
 	p.Endpoints = aux.Endpoints
+	p.AlsoKnownAs = aux.AlsoKnownAs
+	p.AttributionDomains = aux.AttributionDomains
 	if len(aux.Icon) > 0 {
 		// Try to unmarshal icon (can be various types)
 		var iconObj Object

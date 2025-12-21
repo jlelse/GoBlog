@@ -393,14 +393,16 @@ type Note = Object
 // Person represents an ActivityPub Person (actor)
 type Person struct {
 	Object
-	PreferredUsername NaturalLanguageValues `json:"preferredUsername,omitempty"`
-	Inbox             IRI                   `json:"inbox,omitempty"`
-	Outbox            IRI                   `json:"outbox,omitempty"`
-	Following         IRI                   `json:"following,omitempty"`
-	Followers         IRI                   `json:"followers,omitempty"`
-	PublicKey         PublicKey             `json:"publicKey,omitempty"`
-	Endpoints         *Endpoints            `json:"endpoints,omitempty"`
-	Icon              any                   `json:"icon,omitempty"`
+	PreferredUsername  NaturalLanguageValues `json:"preferredUsername,omitempty"`
+	Inbox              IRI                   `json:"inbox,omitempty"`
+	Outbox             IRI                   `json:"outbox,omitempty"`
+	Following          IRI                   `json:"following,omitempty"`
+	Followers          IRI                   `json:"followers,omitempty"`
+	PublicKey          PublicKey             `json:"publicKey,omitempty"`
+	Endpoints          *Endpoints            `json:"endpoints,omitempty"`
+	Icon               any                   `json:"icon,omitempty"`
+	AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
+	AttributionDomains ItemCollection        `json:"attributionDomains,omitempty"`
 }
 
 // Actor is an alias for Person

@@ -125,15 +125,12 @@ func (a *goBlog) activityPubId(p *post) activitypub.IRI {
 	return activitypub.IRI(fu)
 }
 
-func (a *goBlog) toApPerson(blog string) *goBlogPerson {
+func (a *goBlog) toApPerson(blog string) *activitypub.Person {
 	b := a.cfg.Blogs[blog]
 
 	apIri := a.apAPIri(b)
 
-	apBlog := &goBlogPerson{
-		Person:      *activitypub.PersonNew(apIri),
-		AlsoKnownAs: nil,
-	}
+	apBlog := activitypub.PersonNew(apIri)
 	apBlog.URL = apIri
 
 	apBlog.Name.Set(activitypub.DefaultLang, string(activitypub.Content(a.renderMdTitle(b.Title))))
@@ -198,81 +195,4 @@ func apUsername(person *activitypub.Person) string {
 		return person.GetLink().String()
 	}
 	return fmt.Sprintf("@%s@%s", preferredUsername, u.Host)
-}
-
-// Modified types
-
-type goBlogPerson struct {
-	activitypub.Person
-	AlsoKnownAs        activitypub.ItemCollection `json:"alsoKnownAs,omitempty"`
-	AttributionDomains activitypub.ItemCollection `json:"attributionDomains,omitempty"`
-}
-
-func (a goBlogPerson) MarshalJSON() ([]byte, error) {
-	b := make([]byte, 0)
-	activitypub.JSONWrite(&b, '{')
-
-	notEmpty := false
-
-	// Write Object fields in custom order: id, type, name, summary, icon, url
-	if a.Person.Object.ID != "" {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "id", a.Person.Object.ID) || notEmpty
-	}
-	if a.Person.Object.Type != "" {
-		val, _ := activitypub.MarshalJSONNoHTMLEscape(string(a.Person.Object.Type))
-		notEmpty = activitypub.JSONWriteProp(&b, "type", val) || notEmpty
-	}
-	if len(a.Person.Object.Name) > 0 {
-		notEmpty = activitypub.JSONWriteNaturalLanguageProp(&b, "name", a.Person.Object.Name) || notEmpty
-	}
-	if len(a.Person.Object.Summary) > 0 {
-		notEmpty = activitypub.JSONWriteNaturalLanguageProp(&b, "summary", a.Person.Object.Summary) || notEmpty
-	}
-	if a.Icon != nil {
-		val, _ := activitypub.MarshalJSONNoHTMLEscape(a.Icon)
-		notEmpty = activitypub.JSONWriteProp(&b, "icon", val) || notEmpty
-	}
-	if a.Person.Object.URL != nil {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "url", a.Person.Object.URL) || notEmpty
-	}
-
-	// Person-specific fields
-	if a.Inbox != "" {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "inbox", a.Inbox) || notEmpty
-	}
-	if a.Outbox != "" {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "outbox", a.Outbox) || notEmpty
-	}
-	if a.Following != "" {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "following", a.Following) || notEmpty
-	}
-	if a.Followers != "" {
-		notEmpty = activitypub.JSONWriteItemProp(&b, "followers", a.Followers) || notEmpty
-	}
-	if len(a.PreferredUsername) > 0 {
-		notEmpty = activitypub.JSONWriteNaturalLanguageProp(&b, "preferredUsername", a.PreferredUsername) || notEmpty
-	}
-	if len(a.PublicKey.PublicKeyPem)+len(a.PublicKey.ID) > 0 {
-		if v, err := a.PublicKey.MarshalJSON(); err == nil && len(v) > 0 {
-			notEmpty = activitypub.JSONWriteProp(&b, "publicKey", v) || notEmpty
-		}
-	}
-	if a.Endpoints != nil {
-		val, _ := activitypub.MarshalJSONNoHTMLEscape(a.Endpoints)
-		notEmpty = activitypub.JSONWriteProp(&b, "endpoints", val) || notEmpty
-	}
-
-	// Custom
-	if len(a.AlsoKnownAs) > 0 {
-		notEmpty = activitypub.JSONWriteItemCollectionProp(&b, "alsoKnownAs", a.AlsoKnownAs, false) || notEmpty
-	}
-	if len(a.AttributionDomains) > 0 {
-		notEmpty = activitypub.JSONWriteItemCollectionProp(&b, "attributionDomains", a.AttributionDomains, false) || notEmpty
-	}
-
-	if notEmpty {
-		activitypub.JSONWrite(&b, '}')
-		return b, nil
-	}
-	return nil, nil
 }

@@ -251,6 +251,28 @@ func TestPersonMarshaling(t *testing.T) {
 	assert.Equal(t, person.PublicKey.PublicKeyPem, unmarshaled.PublicKey.PublicKeyPem)
 }
 
+func TestPersonMarshalingWithExtensions(t *testing.T) {
+	// Test Person with AlsoKnownAs and AttributionDomains
+	person := PersonNew(IRI("https://example.com/users/alice"))
+	person.Name = DefaultNaturalLanguage("Alice")
+	person.PreferredUsername = DefaultNaturalLanguage("alice")
+	person.AlsoKnownAs = ItemCollection{IRI("https://other.example/@alice"), IRI("https://another.example/alice")}
+	person.AttributionDomains = ItemCollection{IRI("example.com"), IRI("other.example")}
+
+	data, err := json.Marshal(person)
+	require.NoError(t, err)
+
+	var unmarshaled Person
+	err = json.Unmarshal(data, &unmarshaled)
+	require.NoError(t, err)
+
+	assert.Equal(t, person.ID, unmarshaled.ID)
+	assert.Len(t, unmarshaled.AlsoKnownAs, 2)
+	assert.Len(t, unmarshaled.AttributionDomains, 2)
+	assert.Contains(t, string(data), "alsoKnownAs")
+	assert.Contains(t, string(data), "attributionDomains")
+}
+
 func TestActivityMarshaling(t *testing.T) {
 	note := ObjectNew(NoteType)
 	note.ID = IRI("https://example.com/notes/1")
