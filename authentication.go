@@ -18,19 +18,64 @@ const loggedInKey contextKey = "loggedIn"
 
 // Check if credentials are correct
 func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {
-	return username == a.cfg.User.Nick &&
-		password == a.cfg.User.Password &&
-		(a.cfg.User.TOTP == "" || totp.Validate(totpPasscode, a.cfg.User.TOTP))
+	// Check username
+	if username != a.cfg.User.Nick {
+		return false
+	}
+	// Check password from database first (if available), then fall back to config
+	passwordValid := false
+	if a.db != nil {
+		if pwdValid, err := a.checkPassword(password); err == nil && pwdValid {
+			passwordValid = true
+		}
+	}
+	if !passwordValid && a.cfg.User.Password != "" && password == a.cfg.User.Password {
+		// Fallback to config file password (for backwards compatibility)
+		passwordValid = true
+	}
+	if !passwordValid {
+		return false
+	}
+	// Check TOTP from database first (if available), then fall back to config
+	var totpSecret string
+	if a.db != nil {
+		totpSecret, _ = a.getTOTPSecret()
+	}
+	if totpSecret == "" {
+		totpSecret = a.cfg.User.TOTP
+	}
+	if totpSecret != "" && !totp.Validate(totpPasscode, totpSecret) {
+		return false
+	}
+	return true
 }
 
-// Check if app passwords are correct
+// Check if app passwords are correct (checks both database and config)
 func (a *goBlog) checkAppPasswords(username, password string) bool {
+	// Check database app passwords (token-based, username is ignored)
+	if a.db != nil {
+		if valid, err := a.checkAppPasswordToken(password); err == nil && valid {
+			return true
+		}
+	}
+	// Fallback to config file app passwords (for backwards compatibility)
 	for _, apw := range a.cfg.User.AppPasswords {
 		if apw.Username == username && apw.Password == password {
 			return true
 		}
 	}
 	return false
+}
+
+// totpEnabled checks if TOTP is enabled (from database or config)
+func (a *goBlog) totpEnabled() bool {
+	// Check database first (if available)
+	if a.db != nil {
+		if hasTOTP, err := a.hasTOTP(); err == nil && hasTOTP {
+			return true
+		}
+	}
+	return a.cfg.User.TOTP != ""
 }
 
 // Check if cookie is known and logged in
@@ -84,7 +129,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 				loginMethod:  r.Method,
 				loginHeaders: headerBuffer.String(),
 				loginBody:    bodyBuffer.String(),
-				totp:         a.cfg.User.TOTP != "",
+				totp:         a.totpEnabled(),
 			},
 		})
 	})

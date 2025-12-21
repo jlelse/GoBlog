@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ const (
 	webauthnCredSettingsKey   = "webauthncred"
 	webauthnIdSettingsKey     = "webauthnid"
 	settingsDeletePasskeyPath = "/deletepasskey"
+	settingsRenamePasskeyPath = "/renamepasskey"
 )
 
 func (a *goBlog) initWebAuthn() error {
@@ -93,10 +95,17 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	if err := a.saveWebAuthnCredential(credential); err != nil {
+	// Generate a unique ID for the passkey based on credential ID
+	passkeyID := base64.URLEncoding.EncodeToString(credential.ID)
+	// Save to new passkeys table
+	if err := a.savePasskey(passkeyID, "Passkey", credential); err != nil {
 		a.error("failed to save webauthn credentials", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
+	}
+	// Also save to old settings for backwards compatibility
+	if err := a.saveWebAuthnCredentialLegacy(credential); err != nil {
+		a.debug("failed to save legacy webauthn credentials", "err", err)
 	}
 	a.webauthnSessions.Delete(r, w, ses)
 	w.WriteHeader(http.StatusOK)
@@ -154,10 +163,18 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	if err := a.saveWebAuthnCredential(credential); err != nil {
-		a.debug("failed to update webauthn credentials", "err", err)
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
+	// Update the credential in the database (for counter updates)
+	passkeyID := base64.URLEncoding.EncodeToString(credential.ID)
+	if pk, _ := a.getPasskey(passkeyID); pk != nil {
+		// Update existing passkey
+		if err := a.savePasskey(passkeyID, pk.Name, credential); err != nil {
+			a.debug("failed to update webauthn credentials", "err", err)
+		}
+	} else {
+		// Update legacy credential
+		if err := a.saveWebAuthnCredentialLegacy(credential); err != nil {
+			a.debug("failed to update legacy webauthn credentials", "err", err)
+		}
 	}
 	a.webauthnSessions.Delete(r, w, ses)
 	// Also set login cookie
@@ -173,9 +190,35 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) settingsDeletePasskey(w http.ResponseWriter, r *http.Request) {
-	if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
-		a.debug("failed to delete webauthn cred", "err", err)
-		a.serveError(w, r, "failed to delete webauthn credential", http.StatusInternalServerError)
+	passkeyID := r.FormValue("passkeyid")
+	if passkeyID != "" {
+		// Delete specific passkey from new table
+		if err := a.deletePasskeyByID(passkeyID); err != nil {
+			a.debug("failed to delete passkey", "err", err)
+			a.serveError(w, r, "failed to delete passkey", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Fallback: delete legacy passkey
+		if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
+			a.debug("failed to delete webauthn cred", "err", err)
+			a.serveError(w, r, "failed to delete webauthn credential", http.StatusInternalServerError)
+			return
+		}
+	}
+	http.Redirect(w, r, ".", http.StatusFound)
+}
+
+func (a *goBlog) settingsRenamePasskey(w http.ResponseWriter, r *http.Request) {
+	passkeyID := r.FormValue("passkeyid")
+	passkeyName := r.FormValue("passkeyname")
+	if passkeyID == "" || passkeyName == "" {
+		a.serveError(w, r, "Missing passkey ID or name", http.StatusBadRequest)
+		return
+	}
+	if err := a.renamePasskey(passkeyID, passkeyName); err != nil {
+		a.debug("failed to rename passkey", "err", err)
+		a.serveError(w, r, "failed to rename passkey", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, ".", http.StatusFound)
@@ -209,23 +252,45 @@ func (u *webAuthnUser) WebAuthnDisplayName() string {
 }
 
 func (u *webAuthnUser) WebAuthnCredentials() []webauthn.Credential {
-	cred, err := u.a.getWebAuthnCredential()
+	// First try to get credentials from the new passkeys table
+	creds, err := u.a.getWebAuthnCredentials()
 	if err != nil {
 		u.a.error("failed to read webauthn credentials from db", "err", err)
+	}
+	if len(creds) > 0 {
+		return creds
+	}
+	// Fallback to legacy credential
+	cred, err := u.a.getWebAuthnCredentialLegacy()
+	if err != nil || cred == nil {
 		return nil
 	}
 	return []webauthn.Credential{*cred}
 }
 
+// hasWebAuthnCredential checks if any passkeys are registered
 func (a *goBlog) hasWebAuthnCredential() bool {
+	if a.db == nil {
+		return false
+	}
+	// Check new passkeys table first
+	if hasPasskeys, err := a.hasPasskeys(); err == nil && hasPasskeys {
+		return true
+	}
+	// Fallback to legacy
 	val, err := a.getSettingValue(webauthnCredSettingsKey)
 	return err == nil && val != ""
 }
 
-func (a *goBlog) getWebAuthnCredential() (*webauthn.Credential, error) {
+// Legacy functions for backwards compatibility
+
+func (a *goBlog) getWebAuthnCredentialLegacy() (*webauthn.Credential, error) {
 	jsonStr, err := a.getSettingValue(webauthnCredSettingsKey)
 	if err != nil {
 		return nil, err
+	}
+	if jsonStr == "" {
+		return nil, nil
 	}
 	var cred webauthn.Credential
 	if err := json.Unmarshal([]byte(jsonStr), &cred); err != nil {
@@ -234,7 +299,7 @@ func (a *goBlog) getWebAuthnCredential() (*webauthn.Credential, error) {
 	return &cred, nil
 }
 
-func (a *goBlog) saveWebAuthnCredential(cred *webauthn.Credential) error {
+func (a *goBlog) saveWebAuthnCredentialLegacy(cred *webauthn.Credential) error {
 	credBytes, err := json.Marshal(cred)
 	if err != nil {
 		return err

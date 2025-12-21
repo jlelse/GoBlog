@@ -153,6 +153,66 @@ func main() {
 	})
 	rootCmd.AddCommand(activityPubCmd)
 
+	// Init command for setting up user credentials
+	initCmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize user credentials (username, password, and optionally TOTP)",
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+
+			username, _ := cmd.Flags().GetString("username")
+			password, _ := cmd.Flags().GetString("password")
+			setupTOTP, _ := cmd.Flags().GetBool("totp")
+
+			if username == "" || password == "" {
+				fmt.Println("Error: --username and --password are required")
+				app.shutdown.ShutdownAndWait()
+				os.Exit(1)
+			}
+
+			// Update username
+			if err := app.saveSettingValue(userNickSetting, username); err != nil {
+				app.logErrAndQuit("Failed to save username", "err", err)
+				return
+			}
+			app.cfg.User.Nick = username
+			fmt.Println("Username set to:", username)
+
+			// Set password
+			if err := app.setPassword(password); err != nil {
+				app.logErrAndQuit("Failed to set password", "err", err)
+				return
+			}
+			fmt.Println("Password has been set (stored as secure hash)")
+
+			// Setup TOTP if requested
+			if setupTOTP {
+				key, err := totp.Generate(totp.GenerateOpts{
+					Issuer:      app.cfg.Server.PublicAddress,
+					AccountName: username,
+				})
+				if err != nil {
+					app.logErrAndQuit("Failed to generate TOTP secret", "err", err)
+					return
+				}
+				if err := app.setTOTPSecret(key.Secret()); err != nil {
+					app.logErrAndQuit("Failed to save TOTP secret", "err", err)
+					return
+				}
+				fmt.Println("TOTP has been enabled")
+				fmt.Println("TOTP Secret:", key.Secret())
+				fmt.Println("Use this secret with your authenticator app (e.g., Google Authenticator, Authy)")
+			}
+
+			fmt.Println("\nInitialization complete!")
+			app.shutdown.ShutdownAndWait()
+		},
+	}
+	initCmd.Flags().String("username", "", "Login username (required)")
+	initCmd.Flags().String("password", "", "Login password (required)")
+	initCmd.Flags().Bool("totp", false, "Enable TOTP two-factor authentication")
+	rootCmd.AddCommand(initCmd)
+
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

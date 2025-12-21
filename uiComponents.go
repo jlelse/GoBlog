@@ -814,26 +814,180 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteProfileImagePath),
 	)
 	hb.WriteElementClose("form")
+}
 
+func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+	hb.WriteElementOpen("h2")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "security"))
+	hb.WriteElementClose("h2")
+
+	// Password section
 	hb.WriteElementOpen("h3")
-	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkey"))
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "password"))
 	hb.WriteElementClose("h3")
 
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsUpdatePasswordPath))
+	hb.WriteElementOpen("input", "type", "password", "name", "currentpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "currentpassword"), "autocomplete", "current-password")
+	hb.WriteElementOpen("input", "type", "password", "name", "newpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "newpassword"), "required", "", "autocomplete", "new-password")
+	hb.WriteElementOpen("input", "type", "password", "name", "confirmpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmpassword"), "required", "", "autocomplete", "new-password")
+	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "updatepassword"))
+	hb.WriteElementClose("form")
+
+	// TOTP section
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totp"))
+	hb.WriteElementClose("h3")
+
+	if srd.hasTOTP {
+		hb.WriteElementOpen("p")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpenabled"))
+		hb.WriteElementClose("p")
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteTOTPPath))
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletetotp"),
+			"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdeletetotp"))
+		hb.WriteElementClose("form")
+	} else {
+		hb.WriteElementOpen("p")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpdisabled"))
+		hb.WriteElementClose("p")
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsSetupTOTPPath))
+		hb.WriteElementOpen("input", "type", "text", "name", "totpsecret", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsecret"), "required", "")
+		hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "totpcode", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpcode"), "required", "")
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+		hb.WriteElementClose("form")
+	}
+
+	// Passkeys section
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkeys"))
+	hb.WriteElementClose("h3")
+
+	// Register new passkey button
 	hb.WriteElementOpen("form", "class", "fw p")
 	hb.WriteElementOpen(
 		"input", "id", "registerwebauthn", "type", "button", "class", "hide",
-		"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerupdatepasskey"),
+		"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerpasskey"),
 	)
 	hb.WriteElementClose("form")
 
-	if a.hasWebAuthnCredential() {
-		hb.WriteElementOpen("form", "class", "fw p", "method", "post")
-		hb.WriteElementOpen(
-			"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepasskey"),
-			"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath),
-		)
+	// List existing passkeys
+	if len(srd.passkeys) > 0 {
+		for _, pk := range srd.passkeys {
+			hb.WriteElementOpen("div", "class", "p border-bottom")
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("strong")
+			hb.WriteEscaped(pk.Name)
+			hb.WriteElementClose("strong")
+			hb.WriteEscaped(" - ")
+			hb.WriteEscaped(pk.Created.Format("2006-01-02"))
+			hb.WriteElementClose("p")
+			// Rename form
+			hb.WriteElementOpen("form", "class", "fw", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
+			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
+			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkeyname"))
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
+			hb.WriteElementClose("form")
+			// Delete form
+			hb.WriteElementOpen("form", "class", "fw", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath))
+			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+				"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteElementClose("form")
+			hb.WriteElementClose("div")
+		}
+	} else if a.hasWebAuthnCredential() {
+		// Legacy passkey support
+		hb.WriteElementOpen("div", "class", "p border-bottom")
+		hb.WriteElementOpen("p")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "legacypasskey"))
+		hb.WriteElementClose("p")
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath))
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepasskey"),
+			"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 		hb.WriteElementClose("form")
+		hb.WriteElementClose("div")
 	}
+
+	// App passwords section
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswords"))
+	hb.WriteElementClose("h3")
+
+	hb.WriteElementOpen("p")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordsdesc"))
+	hb.WriteElementClose("p")
+
+	// Create new app password
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsCreateAppPasswordPath))
+	hb.WriteElementOpen("input", "type", "text", "name", "apppasswordname", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordname"), "required", "")
+	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "createapppassword"))
+	hb.WriteElementClose("form")
+
+	// List existing app passwords
+	if len(srd.appPasswords) > 0 {
+		for _, ap := range srd.appPasswords {
+			hb.WriteElementOpen("div", "class", "p border-bottom")
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("strong")
+			hb.WriteEscaped(ap.Name)
+			hb.WriteElementClose("strong")
+			hb.WriteEscaped(" - ")
+			hb.WriteEscaped(ap.Created.Format("2006-01-02"))
+			hb.WriteElementClose("p")
+			// Delete form
+			hb.WriteElementOpen("form", "class", "fw", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath))
+			hb.WriteElementOpen("input", "type", "hidden", "name", "apppasswordid", "value", ap.ID)
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+				"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteElementClose("form")
+			hb.WriteElementClose("div")
+		}
+	}
+}
+
+func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	data, ok := rd.Data.(*appPasswordCreatedRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordcreated"))
+		},
+		func(hb *htmlbuilder.HtmlBuilder) {
+			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordcreated"))
+			hb.WriteElementClose("h1")
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordcreatedfor"))
+			hb.WriteEscaped(" ")
+			hb.WriteElementOpen("strong")
+			hb.WriteEscaped(data.name)
+			hb.WriteElementClose("strong")
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordtoken"))
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p", "class", "monospace")
+			hb.WriteElementOpen("code")
+			hb.WriteEscaped(data.token)
+			hb.WriteElementClose("code")
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("strong")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordwarning"))
+			hb.WriteElementClose("strong")
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath))
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "backtosettings"))
+			hb.WriteElementClose("a")
+			hb.WriteElementClose("p")
+			hb.WriteElementClose("main")
+		},
+	)
 }
 
 func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {

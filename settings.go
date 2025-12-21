@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/pquerna/otp/totp"
 	"github.com/samber/lo"
 )
 
@@ -14,6 +15,18 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 
 	sections := lo.Values(bc.Sections)
 	sort.Slice(sections, func(i, j int) bool { return sections[i].Name < sections[j].Name })
+
+	// Get passkeys
+	passkeys, _ := a.getPasskeys()
+
+	// Get app passwords
+	appPasswords, _ := a.getAppPasswords()
+
+	// Check if TOTP is enabled
+	hasTOTP := a.totpEnabled()
+
+	// Check if password is set in database
+	hasDBPassword, _ := a.hasPassword()
 
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
@@ -30,8 +43,17 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			addLikeContext:        bc.addLikeContext,
 			userNick:              a.cfg.User.Nick,
 			userName:              a.cfg.User.Name,
+			passkeys:              passkeys,
+			appPasswords:          appPasswords,
+			hasTOTP:               hasTOTP,
+			hasDBPassword:         hasDBPassword,
 		},
 	})
+}
+
+// verifyTOTPCode verifies a TOTP code against a secret
+func (a *goBlog) verifyTOTPCode(secret, code string) bool {
+	return totp.Validate(code, secret)
 }
 
 func (a *goBlog) booleanBlogSettingHandler(settingName string, apply func(*configBlog, bool)) http.HandlerFunc {
@@ -243,5 +265,136 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	a.cfg.User.Nick = userNick
 	a.cfg.User.Name = userName
 	a.purgeCache()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+// Password settings
+
+const settingsUpdatePasswordPath = "/password"
+
+func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	currentPassword := r.FormValue("currentpassword")
+	newPassword := r.FormValue("newpassword")
+	confirmPassword := r.FormValue("confirmpassword")
+
+	// Validate new password
+	if newPassword == "" {
+		a.serveError(w, r, "New password cannot be empty", http.StatusBadRequest)
+		return
+	}
+	if newPassword != confirmPassword {
+		a.serveError(w, r, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	// Check current password (either from database or config)
+	hasPwd, _ := a.hasPassword()
+	if hasPwd {
+		if valid, err := a.checkPassword(currentPassword); err != nil || !valid {
+			a.serveError(w, r, "Current password is incorrect", http.StatusUnauthorized)
+			return
+		}
+	} else if a.cfg.User.Password != "" && currentPassword != a.cfg.User.Password {
+		a.serveError(w, r, "Current password is incorrect", http.StatusUnauthorized)
+		return
+	}
+
+	// Set new password
+	if err := a.setPassword(newPassword); err != nil {
+		a.serveError(w, r, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+// TOTP settings
+
+const (
+	settingsSetupTOTPPath  = "/setuptotp"
+	settingsDeleteTOTPPath = "/deletetotp"
+)
+
+func (a *goBlog) settingsSetupTOTP(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	totpSecret := r.FormValue("totpsecret")
+	totpCode := r.FormValue("totpcode")
+
+	if totpSecret == "" || totpCode == "" {
+		a.serveError(w, r, "Missing TOTP secret or code", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the TOTP code
+	if !a.verifyTOTPCode(totpSecret, totpCode) {
+		a.serveError(w, r, "Invalid TOTP code", http.StatusBadRequest)
+		return
+	}
+
+	// Save the TOTP secret
+	if err := a.setTOTPSecret(totpSecret); err != nil {
+		a.serveError(w, r, "Failed to save TOTP secret", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+func (a *goBlog) settingsDeleteTOTP(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+
+	if err := a.deleteTOTP(); err != nil {
+		a.serveError(w, r, "Failed to delete TOTP", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+// App password settings
+
+const (
+	settingsCreateAppPasswordPath = "/createapppassword"
+	settingsDeleteAppPasswordPath = "/deleteapppassword"
+)
+
+func (a *goBlog) settingsCreateAppPassword(w http.ResponseWriter, r *http.Request) {
+	name := r.FormValue("apppasswordname")
+
+	if name == "" {
+		a.serveError(w, r, "App password name is required", http.StatusBadRequest)
+		return
+	}
+
+	_, token, err := a.createAppPassword(name)
+	if err != nil {
+		a.serveError(w, r, "Failed to create app password", http.StatusInternalServerError)
+		return
+	}
+
+	// Show the token to the user (only shown once)
+	a.render(w, r, a.renderAppPasswordCreated, &renderData{
+		Data: &appPasswordCreatedRenderData{
+			name:  name,
+			token: token,
+		},
+	})
+}
+
+func (a *goBlog) settingsDeleteAppPassword(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+	id := r.FormValue("apppasswordid")
+
+	if id == "" {
+		a.serveError(w, r, "App password ID is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := a.deleteAppPassword(id); err != nil {
+		a.serveError(w, r, "Failed to delete app password", http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

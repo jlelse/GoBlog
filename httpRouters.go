@@ -497,5 +497,11 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.Post(settingsUpdateProfileImagePath, a.serveUpdateProfileImage)
 		r.Post(settingsDeleteProfileImagePath, a.serveDeleteProfileImage)
 		r.Post(settingsDeletePasskeyPath, a.settingsDeletePasskey)
+		r.Post(settingsRenamePasskeyPath, a.settingsRenamePasskey)
+		r.Post(settingsUpdatePasswordPath, a.settingsUpdatePassword)
+		r.Post(settingsSetupTOTPPath, a.settingsSetupTOTP)
+		r.Post(settingsDeleteTOTPPath, a.settingsDeleteTOTP)
+		r.Post(settingsCreateAppPasswordPath, a.settingsCreateAppPassword)
+		r.Post(settingsDeleteAppPasswordPath, a.settingsDeleteAppPassword)
 	}
 }
