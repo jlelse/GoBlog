@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	ap "github.com/go-ap/activitypub"
-	"github.com/go-ap/jsonld"
+	ap "go.goblog.app/app/pkgs/activitypub"
+	"go.goblog.app/app/pkgs/activitypub/jsonld"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )

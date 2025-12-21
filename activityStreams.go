@@ -10,8 +10,8 @@ import (
 
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"
-	ap "github.com/go-ap/activitypub"
-	"github.com/go-ap/jsonld"
+	ap "go.goblog.app/app/pkgs/activitypub"
+	"go.goblog.app/app/pkgs/activitypub/jsonld"
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
@@ -89,12 +89,12 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Mentions
 	for _, mention := range p.Parameters[activityPubMentionsParameter] {
 		apMention := ap.MentionNew(ap.IRI(mention))
-		apMention.Href = ap.IRI(mention)
+		apMention.URL = ap.IRI(mention)
 		note.Tag.Append(apMention)
 	}
 	if replyLinkActor := p.firstParameter(activityPubReplyActorParameter); replyLinkActor != "" {
 		apMention := ap.MentionNew(ap.IRI(replyLinkActor))
-		apMention.Href = ap.IRI(replyLinkActor)
+		apMention.URL = ap.IRI(replyLinkActor)
 		note.Tag.Append(apMention)
 	}
 	// Dates
@@ -125,20 +125,17 @@ func (a *goBlog) activityPubId(p *post) ap.IRI {
 	return ap.IRI(fu)
 }
 
-func (a *goBlog) toApPerson(blog string) *goBlogPerson {
+func (a *goBlog) toApPerson(blog string) *ap.Person {
 	b := a.cfg.Blogs[blog]
 
 	apIri := a.apAPIri(b)
 
-	apBlog := &goBlogPerson{
-		Person:      *ap.PersonNew(apIri),
-		AlsoKnownAs: nil,
-	}
+	apBlog := ap.PersonNew(apIri)
 	apBlog.URL = apIri
 
-	apBlog.Name.Set(ap.DefaultLang, ap.Content(a.renderMdTitle(b.Title)))
-	apBlog.Summary.Set(ap.DefaultLang, ap.Content(b.Description))
-	apBlog.PreferredUsername.Set(ap.DefaultLang, ap.Content(blog))
+	apBlog.Name.Set(ap.DefaultLang, string(ap.Content(a.renderMdTitle(b.Title))))
+	apBlog.Summary.Set(ap.DefaultLang, string(ap.Content(b.Description)))
+	apBlog.PreferredUsername.Set(ap.DefaultLang, string(ap.Content(blog)))
 
 	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
 	apBlog.Followers = ap.IRI(a.getFullAddress("/activitypub/followers/" + blog))
@@ -159,17 +156,13 @@ func (a *goBlog) toApPerson(blog string) *goBlogPerson {
 		apBlog.Icon = icon
 	}
 
-	var attributionDomains ap.ItemCollection
 	for _, ad := range a.cfg.ActivityPub.AttributionDomains {
-		attributionDomains = append(attributionDomains, ap.IRI(ad))
+		apBlog.AttributionDomains = append(apBlog.AttributionDomains, ap.IRI(ad))
 	}
-	apBlog.AttributionDomains = attributionDomains
 
-	var alsoKnownAs ap.ItemCollection
 	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
-		alsoKnownAs = append(alsoKnownAs, ap.IRI(aka))
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
-	apBlog.AlsoKnownAs = alsoKnownAs
 
 	return apBlog
 }
@@ -198,56 +191,4 @@ func apUsername(person *ap.Person) string {
 		return person.GetLink().String()
 	}
 	return fmt.Sprintf("@%s@%s", preferredUsername, u.Host)
-}
-
-// Modified types
-
-type goBlogPerson struct {
-	ap.Person
-	AlsoKnownAs        ap.ItemCollection `jsonld:"alsoKnownAs,omitempty"`
-	AttributionDomains ap.ItemCollection `jsonld:"attributionDomains,omitempty"`
-}
-
-func (a goBlogPerson) MarshalJSON() ([]byte, error) {
-	// Taken from AP library, Person.MarshalJSON
-
-	b := make([]byte, 0)
-	notEmpty := false
-	ap.JSONWrite(&b, '{')
-
-	ap.OnObject(a.Person, func(o *ap.Object) error {
-		notEmpty = ap.JSONWriteObjectValue(&b, *o)
-		return nil
-	})
-	if a.Inbox != nil {
-		notEmpty = ap.JSONWriteItemProp(&b, "inbox", a.Inbox) || notEmpty
-	}
-	if a.Following != nil {
-		notEmpty = ap.JSONWriteItemProp(&b, "following", a.Following) || notEmpty
-	}
-	if a.Followers != nil {
-		notEmpty = ap.JSONWriteItemProp(&b, "followers", a.Followers) || notEmpty
-	}
-	if a.PreferredUsername != nil {
-		notEmpty = ap.JSONWriteNaturalLanguageProp(&b, "preferredUsername", a.PreferredUsername) || notEmpty
-	}
-	if len(a.PublicKey.PublicKeyPem)+len(a.PublicKey.ID) > 0 {
-		if v, err := a.PublicKey.MarshalJSON(); err == nil && len(v) > 0 {
-			notEmpty = ap.JSONWriteProp(&b, "publicKey", v) || notEmpty
-		}
-	}
-
-	// Custom
-	if len(a.AlsoKnownAs) > 0 {
-		notEmpty = ap.JSONWriteItemCollectionProp(&b, "alsoKnownAs", a.AlsoKnownAs, false)
-	}
-	if len(a.AttributionDomains) > 0 {
-		notEmpty = ap.JSONWriteItemCollectionProp(&b, "attributionDomains", a.AttributionDomains, false)
-	}
-
-	if notEmpty {
-		ap.JSONWrite(&b, '}')
-		return b, nil
-	}
-	return nil, nil
 }

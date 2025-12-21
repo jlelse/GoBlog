@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	ap "github.com/go-ap/activitypub"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
+	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -551,7 +551,7 @@ func (a *goBlog) apSendToAllFollowers(blog string, activity *ap.Activity, mentio
 				return
 			}
 			actor, err := a.apGetRemoteActor(blog, ap.IRI(m))
-			if err != nil || actor == nil || actor.Inbox == nil || actor.Inbox.GetLink() == "" {
+			if err != nil || actor == nil || actor.Inbox == "" || actor.Inbox.GetLink() == "" {
 				return
 			}
 			inbox := actor.Inbox.GetLink().String()
