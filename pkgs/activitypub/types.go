@@ -3,11 +3,12 @@
 package activitypub
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"time"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 // ActivityPub namespaces
@@ -104,7 +105,7 @@ type NaturalLanguageValues []NaturalLanguageValue
 // Set sets a value for a language
 func (n *NaturalLanguageValues) Set(lang string, value string) {
 	if n == nil {
-		*n = NaturalLanguageValues{}
+		n = &NaturalLanguageValues{}
 	}
 	// Check if we need to replace an existing value
 	for i, v := range *n {
@@ -137,8 +138,9 @@ func (n NaturalLanguageValues) MarshalJSON() ([]byte, error) {
 	}
 	if len(n) == 1 && n[0].Lang == "" {
 		// Single value without language tag - use no HTML escaping
-		var buf bytes.Buffer
-		enc := json.NewEncoder(&buf)
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		enc := json.NewEncoder(buf)
 		enc.SetEscapeHTML(false)
 		if err := enc.Encode(n[0].Value); err != nil {
 			return nil, err
@@ -159,8 +161,9 @@ func (n NaturalLanguageValues) MarshalJSON() ([]byte, error) {
 		}
 		m[lang] = v.Value
 	}
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(m); err != nil {
 		return nil, err
@@ -240,13 +243,12 @@ func (i ItemCollection) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 	// Always marshal as array for consistency
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
 	arr := make([]Item, len(i))
-	for idx, item := range i {
-		arr[idx] = item
-	}
+	copy(arr, i)
 	if err := enc.Encode(arr); err != nil {
 		return nil, err
 	}
@@ -320,7 +322,7 @@ type Endpoints struct {
 
 // MarshalJSON implements json.Marshaler for Endpoints
 func (e Endpoints) MarshalJSON() ([]byte, error) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if e.SharedInbox != nil {
 		m["sharedInbox"] = e.SharedInbox
 	}
@@ -347,7 +349,7 @@ func (e *Endpoints) UnmarshalJSON(data []byte) error {
 
 // Object represents an ActivityPub Object
 type Object struct {
-	Context      interface{}           `json:"@context,omitempty"`
+	Context      any                   `json:"@context,omitempty"`
 	ID           IRI                   `json:"id,omitempty"`
 	Type         ActivityType          `json:"type,omitempty"`
 	Name         NaturalLanguageValues `json:"name,omitempty"`
@@ -360,7 +362,7 @@ type Object struct {
 	To           ItemCollection        `json:"to,omitempty"`
 	CC           ItemCollection        `json:"cc,omitempty"`
 	Tag          ItemCollection        `json:"tag,omitempty"`
-	Attachment   interface{}           `json:"attachment,omitempty"`
+	Attachment   any                   `json:"attachment,omitempty"`
 	Published    time.Time             `json:"published,omitempty"`
 	Updated      time.Time             `json:"updated,omitempty"`
 }
@@ -398,7 +400,7 @@ type Person struct {
 	Followers         IRI                   `json:"followers,omitempty"`
 	PublicKey         PublicKey             `json:"publicKey,omitempty"`
 	Endpoints         *Endpoints            `json:"endpoints,omitempty"`
-	Icon              interface{}           `json:"icon,omitempty"`
+	Icon              any                   `json:"icon,omitempty"`
 }
 
 // Actor is an alias for Person
@@ -409,7 +411,7 @@ type Image = Object
 
 // Activity represents an ActivityPub Activity
 type Activity struct {
-	Context   interface{}    `json:"@context,omitempty"`
+	Context   any            `json:"@context,omitempty"`
 	ID        IRI            `json:"id,omitempty"`
 	Type      ActivityType   `json:"type,omitempty"`
 	Actor     Item           `json:"actor,omitempty"`

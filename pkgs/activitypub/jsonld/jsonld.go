@@ -2,8 +2,9 @@
 package jsonld
 
 import (
-	"bytes"
 	"encoding/json"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 // IRI represents an IRI in JSON-LD context
@@ -11,13 +12,13 @@ type IRI string
 
 // ContextBuilder helps build JSON-LD contexts
 type ContextBuilder struct {
-	contexts []interface{}
+	contexts []any
 }
 
 // WithContext creates a new ContextBuilder with the given contexts
 func WithContext(contexts ...IRI) *ContextBuilder {
 	cb := &ContextBuilder{
-		contexts: make([]interface{}, len(contexts)),
+		contexts: make([]any, len(contexts)),
 	}
 	for i, c := range contexts {
 		cb.contexts[i] = string(c)
@@ -26,10 +27,11 @@ func WithContext(contexts ...IRI) *ContextBuilder {
 }
 
 // Marshal marshals an object with the configured contexts
-func (cb *ContextBuilder) Marshal(obj interface{}) ([]byte, error) {
+func (cb *ContextBuilder) Marshal(obj any) ([]byte, error) {
 	// Marshal the object using an encoder with HTML escaping disabled
-	var objBuf bytes.Buffer
-	objEnc := json.NewEncoder(&objBuf)
+	objBuf := bufferpool.Get()
+	defer bufferpool.Put(objBuf)
+	objEnc := json.NewEncoder(objBuf)
 	objEnc.SetEscapeHTML(false)
 	if err := objEnc.Encode(obj); err != nil {
 		return nil, err
@@ -41,8 +43,9 @@ func (cb *ContextBuilder) Marshal(obj interface{}) ([]byte, error) {
 	}
 
 	// Marshal the context using an encoder with HTML escaping disabled
-	var ctxBuf bytes.Buffer
-	ctxEnc := json.NewEncoder(&ctxBuf)
+	ctxBuf := bufferpool.Get()
+	defer bufferpool.Put(ctxBuf)
+	ctxEnc := json.NewEncoder(ctxBuf)
 	ctxEnc.SetEscapeHTML(false)
 	if err := ctxEnc.Encode(cb.contexts); err != nil {
 		return nil, err

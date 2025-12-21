@@ -1,15 +1,17 @@
 package activitypub
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 // MarshalJSONNoHTMLEscape marshals v to JSON without HTML escaping
-func MarshalJSONNoHTMLEscape(v interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
+func MarshalJSONNoHTMLEscape(v any) ([]byte, error) {
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(v); err != nil {
 		return nil, err
@@ -23,7 +25,7 @@ func MarshalJSONNoHTMLEscape(v interface{}) ([]byte, error) {
 }
 
 // marshalJSONNoHTMLEscape is the internal version
-func marshalJSONNoHTMLEscape(v interface{}) ([]byte, error) {
+func marshalJSONNoHTMLEscape(v any) ([]byte, error) {
 	return MarshalJSONNoHTMLEscape(v)
 }
 

@@ -303,7 +303,7 @@ func TestJSONLDMarshaling(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify it contains the context
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(data, &result)
 	require.NoError(t, err)
 
