@@ -57,9 +57,8 @@ func (a *goBlog) getPasswordHash() (string, error) {
 // setPasswordHash stores the password hash
 func (a *goBlog) setPasswordHash(hash string) error {
 	_, err := a.db.Exec(
-		"insert into user_auth (id, password_hash) values (1, @hash) on conflict (id) do update set password_hash = @hash2",
+		"insert into user_auth (id, password_hash) values (1, @hash) on conflict (id) do update set password_hash = @hash",
 		sql.Named("hash", hash),
-		sql.Named("hash2", hash),
 	)
 	return err
 }
@@ -110,9 +109,8 @@ func (a *goBlog) getTOTPSecret() (string, error) {
 // setTOTPSecret stores the TOTP secret
 func (a *goBlog) setTOTPSecret(secret string) error {
 	_, err := a.db.Exec(
-		"insert into user_totp (id, secret) values (1, @secret) on conflict (id) do update set secret = @secret2",
+		"insert into user_totp (id, secret) values (1, @secret) on conflict (id) do update set secret = @secret",
 		sql.Named("secret", secret),
-		sql.Named("secret2", secret),
 	)
 	return err
 }
@@ -189,13 +187,11 @@ func (a *goBlog) savePasskey(id, name string, cred *webauthn.Credential) error {
 	}
 	_, err = a.db.Exec(
 		`insert into passkeys (id, name, credential, created) values (@id, @name, @credential, @created)
-		 on conflict (id) do update set name = @name2, credential = @credential2`,
+		 on conflict (id) do update set name = @name, credential = @credential`,
 		sql.Named("id", id),
 		sql.Named("name", name),
 		sql.Named("credential", string(credBytes)),
 		sql.Named("created", time.Now().Unix()),
-		sql.Named("name2", name),
-		sql.Named("credential2", string(credBytes)),
 	)
 	return err
 }
@@ -264,10 +260,12 @@ func generateSecureToken() (string, error) {
 }
 
 // generateAppPasswordID generates a unique ID for an app password
-func generateAppPasswordID() string {
+func generateAppPasswordID() (string, error) {
 	bytes := make([]byte, 8)
-	_, _ = rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 // getAppPasswords returns all stored app passwords
@@ -301,7 +299,10 @@ func (a *goBlog) createAppPassword(name string) (id, token string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	id = generateAppPasswordID()
+	id, err = generateAppPasswordID()
+	if err != nil {
+		return "", "", err
+	}
 	_, err = a.db.Exec(
 		"insert into app_passwords (id, name, token_hash, created) values (@id, @name, @hash, @created)",
 		sql.Named("id", id),

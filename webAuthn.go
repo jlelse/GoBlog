@@ -96,7 +96,7 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	// Generate a unique ID for the passkey based on credential ID
-	passkeyID := base64.URLEncoding.EncodeToString(credential.ID)
+	passkeyID := base64.RawURLEncoding.EncodeToString(credential.ID)
 	// Save to new passkeys table
 	if err := a.savePasskey(passkeyID, "Passkey", credential); err != nil {
 		a.error("failed to save webauthn credentials", "err", err)
@@ -164,7 +164,7 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Update the credential in the database (for counter updates)
-	passkeyID := base64.URLEncoding.EncodeToString(credential.ID)
+	passkeyID := base64.RawURLEncoding.EncodeToString(credential.ID)
 	if pk, _ := a.getPasskey(passkeyID); pk != nil {
 		// Update existing passkey
 		if err := a.savePasskey(passkeyID, pk.Name, credential); err != nil {
