@@ -1067,6 +1067,27 @@ GoBlog provides several CLI commands for administration and maintenance.
 ./GoBlog --config ./config/config.yml
 ```
 
+### Initialize User Credentials
+
+```bash
+./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password"
+```
+
+Set up the initial user credentials (username, password, and optionally TOTP). The password is securely hashed using bcrypt before storage.
+
+**Options:**
+- `--username` (required) - Login username
+- `--password` (required) - Login password (stored as bcrypt hash)
+- `--totp` - Enable TOTP two-factor authentication
+
+**Example with TOTP:**
+
+```bash
+./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password" --totp
+```
+
+This will output the TOTP secret which you should add to your authenticator app.
+
 ### Health Check
 
 ```bash
@@ -1360,20 +1381,54 @@ server:
   publicHttps: true  # Let's Encrypt
 ```
 
-**Enable 2FA:**
+**Set up password via CLI (recommended for first-time setup):**
 
-```yaml
-user:
-  totp: YOUR_TOTP_SECRET
+```bash
+./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password"
 ```
 
-**Use app passwords for API access (with Basic Authentication):**
+Passwords are securely hashed using bcrypt before storage in the database.
 
-```yaml
-user:
-  appPasswords:
-    - username: app1
-      password: secure-random-password
+**Change password via Settings UI:**
+
+After initial setup, you can change your password through the `/settings` UI under the "Security" section.
+
+**Enable 2FA (TOTP):**
+
+TOTP can be configured via the Settings UI or during initialization:
+
+```bash
+# Via CLI
+./GoBlog --config ./config/config.yml init --username admin --password "secure-password" --totp
+
+# Or generate secret only
+./GoBlog --config ./config/config.yml totp-secret
+```
+
+Then add the secret to your authenticator app (Google Authenticator, Authy, etc.).
+
+**Passkeys (WebAuthn):**
+
+GoBlog supports passwordless authentication via Passkeys (WebAuthn/FIDO2). You can register multiple passkeys (e.g., for different devices) through the `/settings` UI under the "Security" section.
+
+Features:
+- Register multiple passkeys with custom names
+- Rename passkeys for easy identification
+- Delete passkeys you no longer need
+
+**App passwords for API access:**
+
+App passwords provide secure access for third-party applications and scripts. They can be managed entirely through the Settings UI:
+
+1. Go to `/settings`
+2. Under "Security" → "App Passwords", enter a name for the app password
+3. Click "Create app password"
+4. Copy the generated token (shown only once!)
+
+Use the token with Basic Authentication (any username works):
+
+```bash
+curl -u "anyuser:YOUR_APP_PASSWORD_TOKEN" https://yourblog.com/micropub
 ```
 
 **Private mode:**
