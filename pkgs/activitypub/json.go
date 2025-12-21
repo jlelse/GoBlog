@@ -1,6 +1,7 @@
 package activitypub
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -17,10 +18,7 @@ func MarshalJSONNoHTMLEscape(v any) ([]byte, error) {
 		return nil, err
 	}
 	// Remove trailing newline added by Encoder
-	result := buf.Bytes()
-	if len(result) > 0 && result[len(result)-1] == '\n' {
-		result = result[:len(result)-1]
-	}
+	result := bytes.TrimSuffix(buf.Bytes(), []byte("\n"))
 	return result, nil
 }
 
@@ -310,7 +308,7 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 		Outbox             IRI                   `json:"outbox,omitempty"`
 		Following          IRI                   `json:"following,omitempty"`
 		Followers          IRI                   `json:"followers,omitempty"`
-		PublicKey          PublicKey             `json:"publicKey,omitempty"`
+		PublicKey          PublicKey             `json:"publicKey"`
 		Endpoints          *Endpoints            `json:"endpoints,omitempty"`
 		Icon               json.RawMessage       `json:"icon,omitempty"`
 		AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
