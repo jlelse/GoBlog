@@ -516,6 +516,10 @@ func (a *goBlog) initConfig(logging bool) error {
 	} else {
 		a.cfg.User.Name = userName
 	}
+	// Migrate auth from config to database
+	if err := a.migrateAuthFromConfig(); err != nil {
+		return err
+	}
 	// Check config for each blog
 	for blog, bc := range a.cfg.Blogs {
 		// Check pagination

@@ -335,3 +335,74 @@ func (a *goBlog) deleteAppPassword(id string) error {
 	_, err := a.db.Exec("delete from app_passwords where id = @id", sql.Named("id", id))
 	return err
 }
+
+// Auth migration functions
+
+const authMigratedSettingsKey = "auth_migrated"
+
+// isAuthMigrated checks if auth has been migrated from config to database
+func (a *goBlog) isAuthMigrated() bool {
+	val, err := a.getSettingValue(authMigratedSettingsKey)
+	return err == nil && val == "1"
+}
+
+// setAuthMigrated marks that auth has been migrated from config to database
+func (a *goBlog) setAuthMigrated() error {
+	return a.saveSettingValue(authMigratedSettingsKey, "1")
+}
+
+// migrateAuthFromConfig migrates authentication data from config to database
+func (a *goBlog) migrateAuthFromConfig() error {
+	if a.isAuthMigrated() {
+		return nil // Already migrated
+	}
+
+	// Migrate password if set in config
+	if a.cfg.User.Password != "" {
+		hasPwd, _ := a.hasPassword()
+		if !hasPwd {
+			if err := a.setPassword(a.cfg.User.Password); err != nil {
+				return err
+			}
+			a.info("Migrated password from config to database")
+		}
+	}
+
+	// Migrate TOTP if set in config
+	if a.cfg.User.TOTP != "" {
+		hasTOTP, _ := a.hasTOTP()
+		if !hasTOTP {
+			if err := a.setTOTPSecret(a.cfg.User.TOTP); err != nil {
+				return err
+			}
+			a.info("Migrated TOTP from config to database")
+		}
+	}
+
+	// Migrate app passwords if set in config
+	for _, apw := range a.cfg.User.AppPasswords {
+		// Create an app password with the original password as token
+		hash, err := hashPassword(apw.Password)
+		if err != nil {
+			return err
+		}
+		id, err := generateAppPasswordID()
+		if err != nil {
+			return err
+		}
+		_, err = a.db.Exec(
+			"insert into app_passwords (id, name, token_hash, created) values (@id, @name, @hash, @created)",
+			sql.Named("id", id),
+			sql.Named("name", apw.Username),
+			sql.Named("hash", hash),
+			sql.Named("created", time.Now().Unix()),
+		)
+		if err != nil {
+			return err
+		}
+		a.info("Migrated app password from config to database", "name", apw.Username)
+	}
+
+	// Mark as migrated
+	return a.setAuthMigrated()
+}

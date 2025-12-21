@@ -22,26 +22,30 @@ func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool 
 	if username != a.cfg.User.Nick {
 		return false
 	}
-	// Check password from database first (if available), then fall back to config
+	// Check if auth has been migrated - if so, only use database
+	migrated := a.db != nil && a.isAuthMigrated()
+
+	// Check password
 	passwordValid := false
 	if a.db != nil {
 		if pwdValid, err := a.checkPassword(password); err == nil && pwdValid {
 			passwordValid = true
 		}
 	}
-	if !passwordValid && a.cfg.User.Password != "" && password == a.cfg.User.Password {
-		// Fallback to config file password (for backwards compatibility)
+	// Only fall back to config if not migrated
+	if !passwordValid && !migrated && a.cfg.User.Password != "" && password == a.cfg.User.Password {
 		passwordValid = true
 	}
 	if !passwordValid {
 		return false
 	}
-	// Check TOTP from database first (if available), then fall back to config
+	// Check TOTP
 	var totpSecret string
 	if a.db != nil {
 		totpSecret, _ = a.getTOTPSecret()
 	}
-	if totpSecret == "" {
+	// Only fall back to config if not migrated
+	if totpSecret == "" && !migrated {
 		totpSecret = a.cfg.User.TOTP
 	}
 	if totpSecret != "" && !totp.Validate(totpPasscode, totpSecret) {
@@ -58,10 +62,13 @@ func (a *goBlog) checkAppPasswords(username, password string) bool {
 			return true
 		}
 	}
-	// Fallback to config file app passwords (for backwards compatibility)
-	for _, apw := range a.cfg.User.AppPasswords {
-		if apw.Username == username && apw.Password == password {
-			return true
+	// Only fall back to config if not migrated
+	migrated := a.db != nil && a.isAuthMigrated()
+	if !migrated {
+		for _, apw := range a.cfg.User.AppPasswords {
+			if apw.Username == username && apw.Password == password {
+				return true
+			}
 		}
 	}
 	return false
@@ -74,6 +81,10 @@ func (a *goBlog) totpEnabled() bool {
 		if hasTOTP, err := a.hasTOTP(); err == nil && hasTOTP {
 			return true
 		}
+	}
+	// Only fall back to config if not migrated
+	if a.db != nil && a.isAuthMigrated() {
+		return false
 	}
 	return a.cfg.User.TOTP != ""
 }

@@ -61,18 +61,11 @@ indexNow:
 
 # User
 user:
-  name: John Doe # Full name (only for initial setup, you can change this in the settings UI)
-  nick: johndoe # Username for login (only for initial setup, you can change this in the settings UI)
-  # DEPRECATED: password and appPasswords in config file
-  # Passwords should now be managed via the Settings UI or CLI:
-  #   ./GoBlog init --username johndoe --password "your-secure-password"
-  # Passwords set via CLI or UI are stored securely hashed in the database.
-  # The config file options below are kept for backwards compatibility only.
-  password: changeThisWeakPassword # DEPRECATED: Use Settings UI or CLI instead
-  totp: HHUCH2SBOFXKKVCRJPVRS3W5MHX4FHXP # DEPRECATED: Configure TOTP via Settings UI or CLI instead
-  appPasswords: # DEPRECATED: Use Settings UI to create app passwords instead
-    - username: app1
-      password: abcdef
+  name: John Doe # Full name (can be changed in the Settings UI)
+  nick: johndoe # Username for login (can be changed in the Settings UI)
+  # Authentication (password, TOTP, app passwords, passkeys) is configured via the Settings UI
+  # For first-time setup, you can use the CLI:
+  #   ./GoBlog init --username johndoe --password "your-secure-password" --totp
   link: https://example.net # Optional user link to use instead of homepage
   email: contact@example.com # Email (only used in feeds)
   identities: # Other identities to add to the HTML header with rel=me links

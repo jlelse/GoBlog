@@ -1630,6 +1630,55 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
+func (a *goBlog) renderTOTPSetup(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	data, ok := rd.Data.(*totpSetupRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HtmlBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+		},
+		func(hb *htmlbuilder.HtmlBuilder) {
+			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+			hb.WriteElementClose("h1")
+			// Instructions
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsetupinstructions"))
+			hb.WriteElementClose("p")
+			// QR Code (using Google Charts API for QR code generation)
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("img", "src", "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl="+data.qrCode, "alt", "TOTP QR Code")
+			hb.WriteElementClose("p")
+			// Secret for manual entry
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsecretmanual"))
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p", "class", "monospace")
+			hb.WriteElementOpen("code")
+			hb.WriteEscaped(data.secret)
+			hb.WriteElementClose("code")
+			hb.WriteElementClose("p")
+			// Verification form
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsSetupTOTPPath))
+			hb.WriteElementOpen("input", "type", "hidden", "name", "totpsecret", "value", data.secret)
+			hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "totpcode", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpcode"), "required", "")
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+			hb.WriteElementClose("form")
+			// Back link
+			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath))
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "backtosettings"))
+			hb.WriteElementClose("a")
+			hb.WriteElementClose("p")
+			hb.WriteElementClose("main")
+		},
+	)
+}
+
 type activityPubFollowersRenderData struct {
 	apUser    string
 	followers []*apFollower

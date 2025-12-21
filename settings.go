@@ -270,11 +270,13 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // Password settings
 
-const settingsUpdatePasswordPath = "/password"
+const (
+	settingsUpdatePasswordPath = "/password"
+	settingsDeletePasswordPath = "/deletepassword"
+)
 
 func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
-	currentPassword := r.FormValue("currentpassword")
 	newPassword := r.FormValue("newpassword")
 	confirmPassword := r.FormValue("confirmpassword")
 
@@ -288,21 +290,28 @@ func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Check current password (either from database or config)
-	hasPwd, _ := a.hasPassword()
-	if hasPwd {
-		if valid, err := a.checkPassword(currentPassword); err != nil || !valid {
-			a.serveError(w, r, "Current password is incorrect", http.StatusUnauthorized)
-			return
-		}
-	} else if a.cfg.User.Password != "" && currentPassword != a.cfg.User.Password {
-		a.serveError(w, r, "Current password is incorrect", http.StatusUnauthorized)
+	// Set new password (no current password verification required)
+	if err := a.setPassword(newPassword); err != nil {
+		a.serveError(w, r, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
 
-	// Set new password
-	if err := a.setPassword(newPassword); err != nil {
-		a.serveError(w, r, "Failed to update password", http.StatusInternalServerError)
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+func (a *goBlog) settingsDeletePassword(w http.ResponseWriter, r *http.Request) {
+	_, bc := a.getBlog(r)
+
+	// Check if user has passkeys - required for passkeys-only login
+	hasPasskeys, err := a.hasPasskeys()
+	if err != nil || !hasPasskeys {
+		a.serveError(w, r, "Cannot remove password without registered passkeys", http.StatusBadRequest)
+		return
+	}
+
+	// Delete password from database
+	if err := a.setPasswordHash(""); err != nil {
+		a.serveError(w, r, "Failed to delete password", http.StatusInternalServerError)
 		return
 	}
 
@@ -312,9 +321,36 @@ func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) 
 // TOTP settings
 
 const (
-	settingsSetupTOTPPath  = "/setuptotp"
-	settingsDeleteTOTPPath = "/deletetotp"
+	settingsGenerateTOTPPath = "/generatetotp"
+	settingsSetupTOTPPath    = "/setuptotp"
+	settingsDeleteTOTPPath   = "/deletetotp"
 )
+
+// totpSetupRenderData contains data for the TOTP setup page
+type totpSetupRenderData struct {
+	secret string
+	qrCode string
+}
+
+func (a *goBlog) settingsGenerateTOTP(w http.ResponseWriter, r *http.Request) {
+	// Generate a new TOTP key
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      a.cfg.Server.PublicAddress,
+		AccountName: a.cfg.User.Nick,
+	})
+	if err != nil {
+		a.serveError(w, r, "Failed to generate TOTP secret", http.StatusInternalServerError)
+		return
+	}
+
+	// Render the TOTP setup page with QR code
+	a.render(w, r, a.renderTOTPSetup, &renderData{
+		Data: &totpSetupRenderData{
+			secret: key.Secret(),
+			qrCode: key.URL(),
+		},
+	})
+}
 
 func (a *goBlog) settingsSetupTOTP(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)

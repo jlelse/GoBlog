@@ -827,11 +827,18 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	hb.WriteElementClose("h3")
 
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsUpdatePasswordPath))
-	hb.WriteElementOpen("input", "type", "password", "name", "currentpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "currentpassword"), "autocomplete", "current-password")
 	hb.WriteElementOpen("input", "type", "password", "name", "newpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "newpassword"), "required", "", "autocomplete", "new-password")
 	hb.WriteElementOpen("input", "type", "password", "name", "confirmpassword", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmpassword"), "required", "", "autocomplete", "new-password")
 	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "updatepassword"))
 	hb.WriteElementClose("form")
+
+	// Show delete password option if passkeys are registered
+	if len(srd.passkeys) > 0 {
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasswordPath))
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepassword"),
+			"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+		hb.WriteElementClose("form")
+	}
 
 	// TOTP section
 	hb.WriteElementOpen("h3")
@@ -850,10 +857,9 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 		hb.WriteElementOpen("p")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpdisabled"))
 		hb.WriteElementClose("p")
-		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsSetupTOTPPath))
-		hb.WriteElementOpen("input", "type", "text", "name", "totpsecret", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsecret"), "required", "")
-		hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "totpcode", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpcode"), "required", "")
-		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+		// Button to generate TOTP secret
+		hb.WriteElementOpen("form", "class", "fw p", "method", "get", "action", rd.Blog.getRelativePath(settingsPath+settingsGenerateTOTPPath))
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "generatetotpsecret"))
 		hb.WriteElementClose("form")
 	}
 

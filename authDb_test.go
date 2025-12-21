@@ -37,6 +37,8 @@ func Test_authDb_password(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
+	// Clear the default password to test password functionality in isolation
+	app.cfg.User.Password = ""
 	err := app.initConfig(false)
 	require.NoError(t, err)
 
@@ -237,26 +239,49 @@ func Test_authDb_appPasswords(t *testing.T) {
 }
 
 func Test_totpEnabled(t *testing.T) {
-	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
-	err := app.initConfig(false)
-	require.NoError(t, err)
+	// Note: After migration is complete, config-based TOTP is ignored
+	// This test verifies that database-based TOTP works correctly
 
-	t.Run("TOTP disabled when no secret in db or config", func(t *testing.T) {
+	t.Run("TOTP disabled when no secret in db", func(t *testing.T) {
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+		// Clear password so no migration happens
+		app.cfg.User.Password = ""
+		err := app.initConfig(false)
+		require.NoError(t, err)
 		assert.False(t, app.totpEnabled())
 	})
 
-	t.Run("TOTP enabled when secret in config", func(t *testing.T) {
-		app.cfg.User.TOTP = "JBSWY3DPEHPK3PXP"
-		assert.True(t, app.totpEnabled())
-		app.cfg.User.TOTP = ""
-	})
-
 	t.Run("TOTP enabled when secret in database", func(t *testing.T) {
-		err := app.setTOTPSecret("JBSWY3DPEHPK3PXP")
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+		app.cfg.User.Password = ""
+		err := app.initConfig(false)
+		require.NoError(t, err)
+
+		err = app.setTOTPSecret("JBSWY3DPEHPK3PXP")
 		require.NoError(t, err)
 		assert.True(t, app.totpEnabled())
+	})
+
+	t.Run("Config TOTP migrates to database", func(t *testing.T) {
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+		app.cfg.User.Password = ""
+		app.cfg.User.TOTP = "TESTMIGRATION"
+		err := app.initConfig(false)
+		require.NoError(t, err)
+
+		// Should be enabled because it was migrated to database
+		assert.True(t, app.totpEnabled())
+
+		// Verify it's in the database
+		secret, err := app.getTOTPSecret()
+		require.NoError(t, err)
+		assert.Equal(t, "TESTMIGRATION", secret)
 	})
 }
 
