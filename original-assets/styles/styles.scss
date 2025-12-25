@@ -230,35 +230,29 @@ details summary {
   display: inline;
 }
 
-// Inline form for buttons/links that need to appear inline
-form.in {
-  display: inline;
-}
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
 
-// Button that looks like a link
-button.link {
-  background: transparent;
-  border: none;
-  padding: 0;
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: inherit;
+  input {
+    margin-bottom: 0;
+  }
 
-  &:focus {
-    outline: none;
+  input[name="passkeyname"],
+  input[name="apppasswordname"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  button {
+    flex: 0 0 auto;
   }
 }
 
-// Auto width for form inputs
-// Warning text
-.warning {
-  @include color(color, primary);
-  font-weight: bold;
-}
-
-// Success message
-.success {
-  @include color(color, primary);
+.warning, .success {
   font-weight: bold;
 }
 
@@ -406,6 +400,19 @@ button.share-modal-close {
 #reactions button:focus {
   outline: none;
   box-shadow: none;
+}
+
+.settings-table {
+  width: 100%;
+
+  td.fixed {
+    width: auto;
+    white-space: nowrap;
+  }
+  td.expand {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 @media print {

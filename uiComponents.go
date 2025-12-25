@@ -870,14 +870,25 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 		hb.WriteElementOpen("input", "type", "submit", "class", "confirm", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletetotp"), "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdeletetotp"))
 		hb.WriteElementClose("form")
 	} else {
+		// Instructions
 		hb.WriteElementOpen("p")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpdisabled"))
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsetupinstructions"))
 		hb.WriteElementClose("p")
+		// Secret for manual entry
 		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath+settingsGenerateTOTPPath), "class", "button")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "generatetotpsecret"))
-		hb.WriteElementClose("a")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpsecretmanual"))
 		hb.WriteElementClose("p")
+		hb.WriteElementOpen("p", "class", "monospace")
+		hb.WriteElementOpen("code")
+		hb.WriteEscaped(srd.newTotpSecret)
+		hb.WriteElementClose("code")
+		hb.WriteElementClose("p")
+		// Verification form
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsSetupTOTPPath))
+		hb.WriteElementOpen("input", "type", "hidden", "name", "totpsecret", "value", srd.newTotpSecret)
+		hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "totpcode", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpcode"), "required", "")
+		hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "setuptotp"))
+		hb.WriteElementClose("form")
 	}
 
 	// Passkeys section
@@ -895,50 +906,27 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 
 	// List existing passkeys in a table
 	if len(srd.passkeys) > 0 {
-		hb.WriteElementOpen("table")
-		hb.WriteElementOpen("thead")
-		hb.WriteElementOpen("tr")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "name"))
-		hb.WriteElementClose("th")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "created"))
-		hb.WriteElementClose("th")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "actions"))
-		hb.WriteElementClose("th")
-		hb.WriteElementClose("tr")
-		hb.WriteElementClose("thead")
-		hb.WriteElementOpen("tbody")
+		hb.WriteElementOpen("table", "class", "settings-table settings-passkeys")
 		for _, pk := range srd.passkeys {
 			hb.WriteElementOpen("tr")
-			// Name column with rename form
-			hb.WriteElementOpen("td")
-			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
+			// Name column with rename and delete form
+			hb.WriteElementOpen("td", "class", "expand")
+			hb.WriteElementOpen("form", "method", "post")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkeyname"))
-			hb.WriteElementOpen("button", "type", "submit", "class", "link")
+			hb.WriteElementOpen("input", "name", "passkeyname", "value", pk.Name, "required", "")
+			hb.WriteElementOpen("button", "type", "submit", "formaction", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
 			hb.WriteElementClose("button")
-			hb.WriteElementClose("form")
-			hb.WriteElementClose("td")
-			// Date column
-			hb.WriteElementOpen("td")
-			hb.WriteEscaped(pk.Created.Format("2006-01-02"))
-			hb.WriteElementClose("td")
-			// Actions column
-			hb.WriteElementOpen("td")
-			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath))
-			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteElementOpen("button", "type", "submit", "formaction", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
 			hb.WriteElementClose("button")
-			hb.WriteElementClose("form")
-			hb.WriteElementClose("td")
-			hb.WriteElementClose("tr")
+			hb.WriteElementsClose("form", "td")
+			// Date column
+			hb.WriteElementOpen("td", "class", "fixed")
+			hb.WriteEscaped(pk.Created.Format(time.DateTime))
+			hb.WriteElementsClose("td", "tr")
 		}
-		hb.WriteElementClose("tbody")
-		hb.WriteElementClose("table")
+		hb.WriteElementsClose("table")
 	}
 
 	// App passwords section
@@ -958,44 +946,23 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 
 	// List existing app passwords in a table
 	if len(srd.appPasswords) > 0 {
-		hb.WriteElementOpen("table")
-		hb.WriteElementOpen("thead")
-		hb.WriteElementOpen("tr")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "name"))
-		hb.WriteElementClose("th")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "created"))
-		hb.WriteElementClose("th")
-		hb.WriteElementOpen("th", "class", "tal")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "actions"))
-		hb.WriteElementClose("th")
-		hb.WriteElementClose("tr")
-		hb.WriteElementClose("thead")
-		hb.WriteElementOpen("tbody")
+		hb.WriteElementOpen("table", "class", "settings-table settings-apppasswords")
 		for _, ap := range srd.appPasswords {
 			hb.WriteElementOpen("tr")
-			// Name column
-			hb.WriteElementOpen("td")
-			hb.WriteEscaped(ap.Name)
-			hb.WriteElementClose("td")
-			// Date column
-			hb.WriteElementOpen("td")
-			hb.WriteEscaped(ap.Created.Format("2006-01-02"))
-			hb.WriteElementClose("td")
-			// Actions column
-			hb.WriteElementOpen("td")
-			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath))
+			// Name column with delete form
+			hb.WriteElementOpen("td", "class", "expand")
+			hb.WriteElementOpen("form", "class", "method", "post")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "apppasswordid", "value", ap.ID)
-			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteElementOpen("input", "name", "apppasswordname", "value", ap.Name, "disabled", "")
+			hb.WriteElementOpen("button", "type", "submit", "formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
-			hb.WriteElementClose("button")
-			hb.WriteElementClose("form")
-			hb.WriteElementClose("td")
-			hb.WriteElementClose("tr")
+			hb.WriteElementsClose("button", "form", "td")
+			// Date column
+			hb.WriteElementOpen("td", "class", "fixed")
+			hb.WriteEscaped(ap.Created.Format(time.DateTime))
+			hb.WriteElementsClose("td", "tr")
 		}
-		hb.WriteElementClose("tbody")
-		hb.WriteElementClose("table")
+		hb.WriteElementsClose("table")
 	}
 }
 

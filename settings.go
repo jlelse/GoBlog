@@ -25,6 +25,16 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if TOTP is enabled
 	hasTOTP := a.totpEnabled()
 
+	// If TOTP is not enabled, generate a new secret for display
+	var newTotpSecret string
+	if !hasTOTP {
+		key, _ := totp.Generate(totp.GenerateOpts{
+			Issuer:      a.cfg.Server.PublicAddress,
+			AccountName: a.cfg.User.Nick,
+		})
+		newTotpSecret = key.Secret()
+	}
+
 	// Check if password is set in database
 	hasDBPassword, _ := a.hasPassword()
 
@@ -51,6 +61,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hasTOTP:               hasTOTP,
 			hasDBPassword:         hasDBPassword,
 			successMsg:            successMsg,
+			newTotpSecret:         newTotpSecret,
 		},
 	})
 }
@@ -325,34 +336,9 @@ func (a *goBlog) settingsDeletePassword(w http.ResponseWriter, r *http.Request) 
 // TOTP settings
 
 const (
-	settingsGenerateTOTPPath = "/generatetotp"
-	settingsSetupTOTPPath    = "/setuptotp"
-	settingsDeleteTOTPPath   = "/deletetotp"
+	settingsSetupTOTPPath  = "/setuptotp"
+	settingsDeleteTOTPPath = "/deletetotp"
 )
-
-// totpSetupRenderData contains data for the TOTP setup page
-type totpSetupRenderData struct {
-	secret string
-}
-
-func (a *goBlog) settingsGenerateTOTP(w http.ResponseWriter, r *http.Request) {
-	// Generate a new TOTP key
-	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      a.cfg.Server.PublicAddress,
-		AccountName: a.cfg.User.Nick,
-	})
-	if err != nil {
-		a.serveError(w, r, "Failed to generate TOTP secret", http.StatusInternalServerError)
-		return
-	}
-
-	// Render the TOTP setup page
-	a.render(w, r, a.renderTOTPSetup, &renderData{
-		Data: &totpSetupRenderData{
-			secret: key.Secret(),
-		},
-	})
-}
 
 func (a *goBlog) settingsSetupTOTP(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)

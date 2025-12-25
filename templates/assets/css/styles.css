@@ -180,31 +180,31 @@ details summary > *:first-child {
   display: inline;
 }
 
-form.in {
-  display: inline;
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
+}
+.settings-passkeys form input,
+.settings-apppasswords form input {
+  margin-bottom: 0;
+}
+.settings-passkeys form input[name=passkeyname],
+.settings-passkeys form input[name=apppasswordname],
+.settings-apppasswords form input[name=passkeyname],
+.settings-apppasswords form input[name=apppasswordname] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.settings-passkeys form button, .settings-passkeys form .button,
+.settings-apppasswords form button,
+.settings-apppasswords form .button {
+  flex: 0 0 auto;
 }
 
-button.link, .link.button {
-  background: transparent;
-  border: none;
-  padding: 0;
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: inherit;
-}
-button.link:focus, .link.button:focus {
-  outline: none;
-}
-
-.warning {
-  color: #000;
-  color: var(--primary, #000);
-  font-weight: bold;
-}
-
-.success {
-  color: #000;
-  color: var(--primary, #000);
+.warning, .success {
   font-weight: bold;
 }
 
@@ -359,6 +359,18 @@ button.share-modal-close, .share-modal-close.button {
 #reactions button:focus, #reactions .button:focus {
   outline: none;
   box-shadow: none;
+}
+
+.settings-table {
+  width: 100%;
+}
+.settings-table td.fixed {
+  width: auto;
+  white-space: nowrap;
+}
+.settings-table td.expand {
+  max-width: none;
+  width: 100%;
 }
 
 @media print {
