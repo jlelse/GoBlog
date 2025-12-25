@@ -873,11 +873,11 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 		hb.WriteElementOpen("p")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpdisabled"))
 		hb.WriteElementClose("p")
-		hb.WriteElementOpen("form", "class", "fw p")
+		hb.WriteElementOpen("p")
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath+settingsGenerateTOTPPath), "class", "button")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "generatetotpsecret"))
 		hb.WriteElementClose("a")
-		hb.WriteElementClose("form")
+		hb.WriteElementClose("p")
 	}
 
 	// Passkeys section
@@ -916,7 +916,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 			hb.WriteElementOpen("td")
 			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "size", "12")
+			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name)
 			hb.WriteElementOpen("button", "type", "submit", "class", "link")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
 			hb.WriteElementClose("button")
