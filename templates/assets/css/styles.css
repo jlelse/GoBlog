@@ -196,14 +196,6 @@ button.link:focus, .link.button:focus {
   outline: none;
 }
 
-.w-auto {
-  width: auto;
-}
-
-.security-item {
-  margin: 0.5em 0;
-}
-
 .warning {
   color: #000;
   color: var(--primary, #000);

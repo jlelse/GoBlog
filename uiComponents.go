@@ -852,10 +852,8 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 
 	// Show delete password option if passkeys are registered and password is set
 	if len(srd.passkeys) > 0 && srd.hasDBPassword {
-		hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasswordPath))
-		hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepassword"))
-		hb.WriteElementClose("button")
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasswordPath))
+		hb.WriteElementOpen("input", "type", "submit", "class", "confirm", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepassword"), "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 		hb.WriteElementClose("form")
 	}
 
@@ -868,18 +866,18 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 		hb.WriteElementOpen("p")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpenabled"))
 		hb.WriteElementClose("p")
-		hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteTOTPPath))
-		hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdeletetotp"))
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletetotp"))
-		hb.WriteElementClose("button")
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteTOTPPath))
+		hb.WriteElementOpen("input", "type", "submit", "class", "confirm", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletetotp"), "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdeletetotp"))
 		hb.WriteElementClose("form")
 	} else {
 		hb.WriteElementOpen("p")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpdisabled"))
 		hb.WriteElementClose("p")
-		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath+settingsGenerateTOTPPath))
+		hb.WriteElementOpen("form", "class", "fw p")
+		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath+settingsGenerateTOTPPath), "class", "button")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "generatetotpsecret"))
 		hb.WriteElementClose("a")
+		hb.WriteElementClose("form")
 	}
 
 	// Passkeys section
@@ -887,40 +885,60 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkeys"))
 	hb.WriteElementClose("h3")
 
-	// Register new passkey button
-	hb.WriteElementOpen("form", "class", "p")
+	// Register new passkey button (full width)
+	hb.WriteElementOpen("form", "class", "fw p")
 	hb.WriteElementOpen(
-		"input", "id", "registerwebauthn", "type", "button", "class", "hide",
+		"input", "id", "registerwebauthn", "type", "button", "class", "hide fw",
 		"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerpasskey"),
 	)
 	hb.WriteElementClose("form")
 
-	// List existing passkeys (compact)
+	// List existing passkeys in a table
 	if len(srd.passkeys) > 0 {
+		hb.WriteElementOpen("table")
+		hb.WriteElementOpen("thead")
+		hb.WriteElementOpen("tr")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "name"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "created"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "actions"))
+		hb.WriteElementClose("th")
+		hb.WriteElementClose("tr")
+		hb.WriteElementClose("thead")
+		hb.WriteElementOpen("tbody")
 		for _, pk := range srd.passkeys {
-			hb.WriteElementOpen("p", "class", "security-item")
-			hb.WriteElementOpen("strong")
-			hb.WriteEscaped(pk.Name)
-			hb.WriteElementClose("strong")
-			hb.WriteEscaped(" (" + pk.Created.Format("2006-01-02") + ") — ")
-			// Rename link
+			hb.WriteElementOpen("tr")
+			// Name column with rename form
+			hb.WriteElementOpen("td")
 			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "class", "w-auto", "size", "15")
+			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "size", "12")
 			hb.WriteElementOpen("button", "type", "submit", "class", "link")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
 			hb.WriteElementClose("button")
 			hb.WriteElementClose("form")
-			hb.WriteEscaped(" · ")
-			// Delete link
+			hb.WriteElementClose("td")
+			// Date column
+			hb.WriteElementOpen("td")
+			hb.WriteEscaped(pk.Created.Format("2006-01-02"))
+			hb.WriteElementClose("td")
+			// Actions column
+			hb.WriteElementOpen("td")
 			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
 			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
 			hb.WriteElementClose("button")
 			hb.WriteElementClose("form")
-			hb.WriteElementClose("p")
+			hb.WriteElementClose("td")
+			hb.WriteElementClose("tr")
 		}
+		hb.WriteElementClose("tbody")
+		hb.WriteElementClose("table")
 	}
 
 	// App passwords section
@@ -938,23 +956,46 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "createapppassword"))
 	hb.WriteElementClose("form")
 
-	// List existing app passwords (compact)
+	// List existing app passwords in a table
 	if len(srd.appPasswords) > 0 {
+		hb.WriteElementOpen("table")
+		hb.WriteElementOpen("thead")
+		hb.WriteElementOpen("tr")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "name"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "created"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "tal")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "actions"))
+		hb.WriteElementClose("th")
+		hb.WriteElementClose("tr")
+		hb.WriteElementClose("thead")
+		hb.WriteElementOpen("tbody")
 		for _, ap := range srd.appPasswords {
-			hb.WriteElementOpen("p", "class", "security-item")
-			hb.WriteElementOpen("strong")
+			hb.WriteElementOpen("tr")
+			// Name column
+			hb.WriteElementOpen("td")
 			hb.WriteEscaped(ap.Name)
-			hb.WriteElementClose("strong")
-			hb.WriteEscaped(" (" + ap.Created.Format("2006-01-02") + ") — ")
-			// Delete link
+			hb.WriteElementClose("td")
+			// Date column
+			hb.WriteElementOpen("td")
+			hb.WriteEscaped(ap.Created.Format("2006-01-02"))
+			hb.WriteElementClose("td")
+			// Actions column
+			hb.WriteElementOpen("td")
 			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "apppasswordid", "value", ap.ID)
 			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
 			hb.WriteElementClose("button")
 			hb.WriteElementClose("form")
-			hb.WriteElementClose("p")
+			hb.WriteElementClose("td")
+			hb.WriteElementClose("tr")
 		}
+		hb.WriteElementClose("tbody")
+		hb.WriteElementClose("table")
 	}
 }
 

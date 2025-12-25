@@ -250,15 +250,6 @@ button.link {
 }
 
 // Auto width for form inputs
-.w-auto {
-  width: auto;
-}
-
-// Security list item styling
-.security-item {
-  margin: 0.5em 0;
-}
-
 // Warning text
 .warning {
   @include color(color, primary);
