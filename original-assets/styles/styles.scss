@@ -230,6 +230,47 @@ details summary {
   display: inline;
 }
 
+// Inline form for buttons/links that need to appear inline
+form.in {
+  display: inline;
+}
+
+// Button that looks like a link
+button.link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+// Auto width for form inputs
+.w-auto {
+  width: auto;
+}
+
+// Security list item styling
+.security-item {
+  margin: 0.5em 0;
+}
+
+// Warning text
+.warning {
+  @include color(color, primary);
+  font-weight: bold;
+}
+
+// Success message
+.success {
+  @include color(color, primary);
+  font-weight: bold;
+}
+
 .fw {
   width: 100%;
 }

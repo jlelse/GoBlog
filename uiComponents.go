@@ -852,7 +852,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 
 	// Show delete password option if passkeys are registered and password is set
 	if len(srd.passkeys) > 0 && srd.hasDBPassword {
-		hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasswordPath), "style", "display:inline")
+		hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasswordPath))
 		hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletepassword"))
 		hb.WriteElementClose("button")
@@ -868,7 +868,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 		hb.WriteElementOpen("p")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totpenabled"))
 		hb.WriteElementClose("p")
-		hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteTOTPPath), "style", "display:inline")
+		hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteTOTPPath))
 		hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdeletetotp"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deletetotp"))
 		hb.WriteElementClose("button")
@@ -898,22 +898,22 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	// List existing passkeys (compact)
 	if len(srd.passkeys) > 0 {
 		for _, pk := range srd.passkeys {
-			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("p", "class", "security-item")
 			hb.WriteElementOpen("strong")
 			hb.WriteEscaped(pk.Name)
 			hb.WriteElementClose("strong")
 			hb.WriteEscaped(" (" + pk.Created.Format("2006-01-02") + ") — ")
 			// Rename link
-			hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath), "style", "display:inline")
+			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "size", "15", "style", "width:auto")
+			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "class", "w-auto", "size", "15")
 			hb.WriteElementOpen("button", "type", "submit", "class", "link")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
 			hb.WriteElementClose("button")
 			hb.WriteElementClose("form")
 			hb.WriteEscaped(" · ")
 			// Delete link
-			hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath), "style", "display:inline")
+			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeletePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
 			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
@@ -941,13 +941,13 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	// List existing app passwords (compact)
 	if len(srd.appPasswords) > 0 {
 		for _, ap := range srd.appPasswords {
-			hb.WriteElementOpen("p")
+			hb.WriteElementOpen("p", "class", "security-item")
 			hb.WriteElementOpen("strong")
 			hb.WriteEscaped(ap.Name)
 			hb.WriteElementClose("strong")
 			hb.WriteEscaped(" (" + ap.Created.Format("2006-01-02") + ") — ")
 			// Delete link
-			hb.WriteElementOpen("form", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath), "style", "display:inline")
+			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "apppasswordid", "value", ap.ID)
 			hb.WriteElementOpen("button", "type", "submit", "class", "link confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))

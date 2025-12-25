@@ -180,6 +180,42 @@ details summary > *:first-child {
   display: inline;
 }
 
+form.in {
+  display: inline;
+}
+
+button.link, .link.button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
+button.link:focus, .link.button:focus {
+  outline: none;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.security-item {
+  margin: 0.5em 0;
+}
+
+.warning {
+  color: #000;
+  color: var(--primary, #000);
+  font-weight: bold;
+}
+
+.success {
+  color: #000;
+  color: var(--primary, #000);
+  font-weight: bold;
+}
+
 .fw, img,
 audio, form.fw, form.fw input:not([type]),
 form.fw input[type=submit],
