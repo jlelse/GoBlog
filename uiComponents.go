@@ -888,7 +888,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	// Register new passkey button (full width)
 	hb.WriteElementOpen("form", "class", "fw p")
 	hb.WriteElementOpen(
-		"input", "id", "registerwebauthn", "type", "button", "class", "hide fw",
+		"input", "id", "registerwebauthn", "type", "button", "class", "hide",
 		"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerpasskey"),
 	)
 	hb.WriteElementClose("form")
@@ -916,7 +916,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 			hb.WriteElementOpen("td")
 			hb.WriteElementOpen("form", "class", "in", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsRenamePasskeyPath))
 			hb.WriteElementOpen("input", "type", "hidden", "name", "passkeyid", "value", pk.ID)
-			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name)
+			hb.WriteElementOpen("input", "type", "text", "name", "passkeyname", "value", pk.Name, "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "passkeyname"))
 			hb.WriteElementOpen("button", "type", "submit", "class", "link")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "rename"))
 			hb.WriteElementClose("button")
