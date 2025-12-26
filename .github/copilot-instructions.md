@@ -61,6 +61,19 @@ go test -tags=linux,libsqlite3,sqlite_fts5
 ./GoBlog --config ./config/config.yml
 ```
 
+### Styles (SCSS/CSS)
+
+- **Source:** Styles are authored as SCSS in `./original-assets/styles/styles.scss` and are compiled to CSS (`./templates/assets/css/styles.css`) for the site.
+- **Rebuild command:** Run the build script to regenerate CSS after editing SCSS:
+
+```bash
+./original-assets/build/buildStyles.sh
+```
+
+- **Notes:** The build script lives at `./original-assets/build/buildStyles.sh` and requires Node.js and npm/npx. Inspect the script if build failures occur.
+
+Inline styles in the UI are forbidden (also enforced by security headers); all styles must be in SCSS/CSS files.
+
 ## Key Development Concepts
 
 - **Opt-in features**: Most features disabled by default

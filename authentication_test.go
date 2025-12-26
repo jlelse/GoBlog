@@ -18,18 +18,17 @@ func Test_authMiddleware(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	app.cfg.User = &configUser{
-		Nick:     "test",
-		Password: "pass",
-		AppPasswords: []*configAppPassword{
-			{
-				Username: "app1",
-				Password: "pass1",
-			},
+	app.cfg.User.Nick = "test"
+	app.cfg.User.Password = "pass"
+	app.cfg.User.AppPasswords = []*configAppPassword{
+		{
+			Username: "app1",
+			Password: "pass1",
 		},
 	}
 
-	_ = app.initConfig(false)
+	err := app.initConfig(false)
+	require.NoError(t, err)
 	_ = app.initTemplateStrings()
 
 	app.d = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

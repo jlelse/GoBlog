@@ -180,6 +180,30 @@ details summary > *:first-child {
   display: inline;
 }
 
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
+}
+.settings-passkeys form input,
+.settings-apppasswords form input {
+  margin-bottom: 0;
+}
+.settings-passkeys form input[name=passkeyname],
+.settings-passkeys form input[name=apppasswordname],
+.settings-apppasswords form input[name=passkeyname],
+.settings-apppasswords form input[name=apppasswordname] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.settings-passkeys form button, .settings-passkeys form .button,
+.settings-apppasswords form button,
+.settings-apppasswords form .button {
+  flex: 0 0 auto;
+}
+
 .fw, img,
 audio, form.fw, form.fw input:not([type]),
 form.fw input[type=submit],
@@ -331,6 +355,18 @@ button.share-modal-close, .share-modal-close.button {
 #reactions button:focus, #reactions .button:focus {
   outline: none;
   box-shadow: none;
+}
+
+.settings-table {
+  width: 100%;
+}
+.settings-table td.fixed {
+  width: auto;
+  white-space: nowrap;
+}
+.settings-table td.expand {
+  max-width: none;
+  width: 100%;
 }
 
 @media print {

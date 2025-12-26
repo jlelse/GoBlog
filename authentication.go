@@ -18,15 +18,37 @@ const loggedInKey contextKey = "loggedIn"
 
 // Check if credentials are correct
 func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {
-	return username == a.cfg.User.Nick &&
-		password == a.cfg.User.Password &&
-		(a.cfg.User.TOTP == "" || totp.Validate(totpPasscode, a.cfg.User.TOTP))
+	// Check username
+	if username != a.cfg.User.Nick {
+		return false
+	}
+	// Check password
+	if pwdValid, _ := a.checkPassword(password); !pwdValid {
+		return false
+	}
+	// Check TOTP
+	if a.totpEnabled() {
+		totpSecret, _ := a.getTOTPSecret()
+		if !totp.Validate(totpPasscode, totpSecret) {
+			return false
+		}
+	}
+	return true
 }
 
 // Check if app passwords are correct
-func (a *goBlog) checkAppPasswords(username, password string) bool {
-	for _, apw := range a.cfg.User.AppPasswords {
-		if apw.Username == username && apw.Password == password {
+func (a *goBlog) checkAppPasswords(password string) bool {
+	// Check database app passwords (username is ignored)
+	if valid, err := a.checkAppPassword(password); err == nil && valid {
+		return true
+	}
+	return false
+}
+
+// totpEnabled checks if TOTP is enabled
+func (a *goBlog) totpEnabled() bool {
+	if a.db != nil {
+		if hasTOTP, err := a.hasTOTP(); err == nil && hasTOTP {
 			return true
 		}
 	}
@@ -84,7 +106,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 				loginMethod:  r.Method,
 				loginHeaders: headerBuffer.String(),
 				loginBody:    bodyBuffer.String(),
-				totp:         a.cfg.User.TOTP != "",
+				totp:         a.totpEnabled(),
 			},
 		})
 	})
@@ -145,7 +167,7 @@ func (a *goBlog) isLoggedIn(r *http.Request) bool {
 		return loggedIn
 	}
 	// Check app passwords
-	if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
+	if _, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(password) {
 		setLoggedIn(r, true)
 		return true
 	}

@@ -230,6 +230,28 @@ details summary {
   display: inline;
 }
 
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
+
+  input {
+    margin-bottom: 0;
+  }
+
+  input[name="passkeyname"],
+  input[name="apppasswordname"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  button {
+    flex: 0 0 auto;
+  }
+}
+
 .fw {
   width: 100%;
 }
@@ -374,6 +396,19 @@ button.share-modal-close {
 #reactions button:focus {
   outline: none;
   box-shadow: none;
+}
+
+.settings-table {
+  width: 100%;
+
+  td.fixed {
+    width: auto;
+    white-space: nowrap;
+  }
+  td.expand {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 @media print {

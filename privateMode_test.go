@@ -7,7 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_privateMode(t *testing.T) {
@@ -18,28 +20,23 @@ func Test_privateMode(t *testing.T) {
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.PrivateMode = &configPrivateMode{Enabled: true}
-	app.cfg.User =
-		&configUser{
-			Name:     "Test",
-			Nick:     "test",
-			Password: "testpw",
-			AppPasswords: []*configAppPassword{
-				{
-					Username: "testapp",
-					Password: "pw",
-				},
-			},
-		}
-	app.cfg.Blogs = map[string]*configBlog{
-		"en": {
-			Lang: "en",
+	app.cfg.User.Name = "Test"
+	app.cfg.User.Nick = "test"
+	app.cfg.User.Password = "testpw"
+	app.cfg.User.AppPasswords = []*configAppPassword{
+		{
+			Username: "testapp",
+			Password: "pw",
 		},
 	}
 
-	_ = app.initConfig(false)
+	err := app.initConfig(false)
+	require.NoError(t, err)
 	_ = app.initTemplateStrings()
 
-	handler := alice.New(middleware.WithValue(blogKey, "en"), app.privateModeHandler).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {
+	defaultBlogName := lo.Keys(app.cfg.Blogs)[0]
+
+	handler := alice.New(middleware.WithValue(blogKey, defaultBlogName), app.privateModeHandler).ThenFunc(func(rw http.ResponseWriter, r *http.Request) {
 		_, _ = rw.Write([]byte("Awesome"))
 	})
 

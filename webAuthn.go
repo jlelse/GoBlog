@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ const (
 	webauthnCredSettingsKey   = "webauthncred"
 	webauthnIdSettingsKey     = "webauthnid"
 	settingsDeletePasskeyPath = "/deletepasskey"
+	settingsRenamePasskeyPath = "/renamepasskey"
 )
 
 func (a *goBlog) initWebAuthn() error {
@@ -93,7 +95,10 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	if err := a.saveWebAuthnCredential(credential); err != nil {
+	// Generate a unique ID for the passkey based on credential ID
+	passkeyID := base64.RawURLEncoding.EncodeToString(credential.ID)
+	// Save to passkeys table
+	if err := a.savePasskey(passkeyID, "Passkey", credential); err != nil {
 		a.error("failed to save webauthn credentials", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
@@ -154,10 +159,13 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	if err := a.saveWebAuthnCredential(credential); err != nil {
-		a.debug("failed to update webauthn credentials", "err", err)
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
+	// Update the credential in the database (for counter updates)
+	passkeyID := base64.RawURLEncoding.EncodeToString(credential.ID)
+	if pk, _ := a.getPasskey(passkeyID); pk != nil {
+		// Update existing passkey
+		if err := a.savePasskey(passkeyID, pk.Name, credential); err != nil {
+			a.debug("failed to update webauthn credentials", "err", err)
+		}
 	}
 	a.webauthnSessions.Delete(r, w, ses)
 	// Also set login cookie
@@ -173,9 +181,29 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) settingsDeletePasskey(w http.ResponseWriter, r *http.Request) {
-	if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
-		a.debug("failed to delete webauthn cred", "err", err)
-		a.serveError(w, r, "failed to delete webauthn credential", http.StatusInternalServerError)
+	passkeyID := r.FormValue("passkeyid")
+	if passkeyID == "" {
+		a.serveError(w, r, "Passkey ID is required", http.StatusBadRequest)
+		return
+	}
+	if err := a.deletePasskeyByID(passkeyID); err != nil {
+		a.debug("failed to delete passkey", "err", err)
+		a.serveError(w, r, "failed to delete passkey", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, ".", http.StatusFound)
+}
+
+func (a *goBlog) settingsRenamePasskey(w http.ResponseWriter, r *http.Request) {
+	passkeyID := r.FormValue("passkeyid")
+	passkeyName := r.FormValue("passkeyname")
+	if passkeyID == "" || passkeyName == "" {
+		a.serveError(w, r, "Missing passkey ID or name", http.StatusBadRequest)
+		return
+	}
+	if err := a.renamePasskey(passkeyID, passkeyName); err != nil {
+		a.debug("failed to rename passkey", "err", err)
+		a.serveError(w, r, "failed to rename passkey", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, ".", http.StatusFound)
@@ -209,35 +237,19 @@ func (u *webAuthnUser) WebAuthnDisplayName() string {
 }
 
 func (u *webAuthnUser) WebAuthnCredentials() []webauthn.Credential {
-	cred, err := u.a.getWebAuthnCredential()
+	creds, err := u.a.getWebAuthnCredentials()
 	if err != nil {
 		u.a.error("failed to read webauthn credentials from db", "err", err)
 		return nil
 	}
-	return []webauthn.Credential{*cred}
+	return creds
 }
 
+// hasWebAuthnCredential checks if any passkeys are registered
 func (a *goBlog) hasWebAuthnCredential() bool {
-	val, err := a.getSettingValue(webauthnCredSettingsKey)
-	return err == nil && val != ""
-}
-
-func (a *goBlog) getWebAuthnCredential() (*webauthn.Credential, error) {
-	jsonStr, err := a.getSettingValue(webauthnCredSettingsKey)
-	if err != nil {
-		return nil, err
+	if a.db == nil {
+		return false
 	}
-	var cred webauthn.Credential
-	if err := json.Unmarshal([]byte(jsonStr), &cred); err != nil {
-		return nil, err
-	}
-	return &cred, nil
-}
-
-func (a *goBlog) saveWebAuthnCredential(cred *webauthn.Credential) error {
-	credBytes, err := json.Marshal(cred)
-	if err != nil {
-		return err
-	}
-	return a.saveSettingValue(webauthnCredSettingsKey, string(credBytes))
+	hasPasskeys, err := a.hasPasskeys()
+	return err == nil && hasPasskeys
 }

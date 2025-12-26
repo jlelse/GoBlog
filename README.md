@@ -150,9 +150,19 @@ EOF
 
 ### 3. First Steps
 
-1. **Open your browser**: Navigate to `http://localhost:8080`
-2. **Log in**: Go to `/login` (default credentials: `admin` / `secret` - but change them in the configuration!)
-3. **Create a post**: Go to `/editor`
+1. **Check the logs**: On first startup, GoBlog generates a secure random password and logs it to the console. Look for a log line like:
+   ```
+   Generated initial password for first-time setup. Please change it via Settings or CLI. username=admin password=AbCdEfGhIjKlMnOpQrSt
+   ```
+2. **Open your browser**: Navigate to `http://localhost:8080`
+3. **Log in**: Go to `/login` and use the username (`admin` by default) and the generated password from the logs
+4. **Change your password**: Go to `/settings` and update your password to something memorable (or set up passkeys for passwordless login)
+5. **Create a post**: Go to `/editor`
+
+**Alternative**: You can also set credentials before first run using the CLI:
+```bash
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
+```
 
 ---
 
@@ -489,21 +499,6 @@ Use your blog as your identity on the web.
 2. Use your blog URL (`https://yourblog.com/`) to sign in to IndieAuth-enabled sites
 3. Approve the authorization request on your blog
 4. You're logged in!
-
-**Two-Factor Authentication:**
-
-Generate a TOTP secret:
-
-```bash
-./GoBlog --config ./config/config.yml totp-secret
-```
-
-Add to config:
-
-```yaml
-user:
-  totp: YOUR_TOTP_SECRET
-```
 
 ### Webmention
 
@@ -1067,6 +1062,27 @@ GoBlog provides several CLI commands for administration and maintenance.
 ./GoBlog --config ./config/config.yml
 ```
 
+### Set Up User Credentials
+
+```bash
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
+```
+
+Set up the user credentials (username, password, and optionally TOTP). The password is securely hashed using bcrypt before storage.
+
+**Options:**
+- `--username` (required) - Login username
+- `--password` (required) - Login password (stored as bcrypt hash)
+- `--totp` - Enable TOTP two-factor authentication
+
+**Example with TOTP (two-factor authentication):**
+
+```bash
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password" --totp
+```
+
+This will output the TOTP secret which you should add to your authenticator app.
+
 ### Health Check
 
 ```bash
@@ -1075,14 +1091,6 @@ GoBlog provides several CLI commands for administration and maintenance.
 ```
 
 Useful for container health checks and monitoring.
-
-### Generate TOTP Secret
-
-```bash
-./GoBlog --config ./config/config.yml totp-secret
-```
-
-Generates a TOTP secret for two-factor authentication.
 
 ### Check External Links
 
@@ -1360,20 +1368,61 @@ server:
   publicHttps: true  # Let's Encrypt
 ```
 
-**Enable 2FA:**
+**Initial password:**
 
-```yaml
-user:
-  totp: YOUR_TOTP_SECRET
+On first startup, GoBlog automatically generates a secure random password and logs it to the console. Look for a log line like:
+
+```
+Generated initial password for first-time setup. Please change it via Settings or CLI. username=admin password=AbCdEfGhIjKlMnOpQrSt
 ```
 
-**Use app passwords for API access (with Basic Authentication):**
+You should change this password immediately via the Settings UI or CLI.
 
-```yaml
-user:
-  appPasswords:
-    - username: app1
-      password: secure-random-password
+**Set password via CLI:**
+
+```bash
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
+```
+
+Passwords are securely hashed using bcrypt before storage in the database.
+
+**Change password via Settings UI:**
+
+After initial setup, you can change your password through the `/settings` UI under the "Security" section.
+
+**Enable 2FA (TOTP):**
+
+TOTP can be configured via the Settings UI or during initialization:
+
+```bash
+# Via CLI
+./GoBlog --config ./config/config.yml setup --username admin --password "secure-password" --totp
+```
+
+Then add the secret to your authenticator app (Google Authenticator, Authy, etc.).
+
+**Passkeys (WebAuthn):**
+
+GoBlog supports passwordless authentication via Passkeys (WebAuthn/FIDO2). You can register multiple passkeys (e.g., for different devices) through the `/settings` UI under the "Security" section.
+
+Features:
+- Register multiple passkeys with custom names
+- Rename passkeys for easy identification
+- Delete passkeys you no longer need
+
+**App passwords for API access:**
+
+App passwords provide secure access for third-party applications and scripts. They can be managed entirely through the Settings UI:
+
+1. Go to `/settings`
+2. Under "Security" → "App Passwords", enter a name for the app password
+3. Click "Create app password"
+4. Copy the generated token (shown only once!)
+
+Use the token with Basic Authentication (any username works):
+
+```bash
+curl -u "anyuser:YOUR_APP_PASSWORD_TOKEN" https://yourblog.com/micropub
 ```
 
 **Private mode:**
