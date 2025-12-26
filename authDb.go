@@ -373,11 +373,12 @@ func (a *goBlog) migrateAuthFromConfig(logging bool) error {
 			if err := a.setPassword(initialPassword); err != nil {
 				return err
 			}
-			// Always log the generated password so the user can log in
-			a.info("Generated initial password for first-time setup. Please change it via Settings or CLI.",
-				"username", a.cfg.User.Nick,
-				"password", initialPassword,
-			)
+			if logging {
+				a.info("Generated initial password for first-time setup. Please change it via Settings or CLI.",
+					"username", a.cfg.User.Nick,
+					"password", initialPassword,
+				)
+			}
 		}
 	}
 
