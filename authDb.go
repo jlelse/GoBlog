@@ -4,12 +4,12 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,8 +39,7 @@ func checkPasswordHash(password, hash string) bool {
 	if hash == "" {
 		return false
 	}
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
 // getPasswordHash returns the stored password hash from settings table
@@ -108,8 +107,8 @@ func (a *goBlog) deleteTOTP() error {
 
 // Passkey (WebAuthn) functions
 
-// Passkey represents a stored WebAuthn credential
-type Passkey struct {
+// passkey represents a stored WebAuthn credential
+type passkey struct {
 	ID         string    `json:"id"`
 	Name       string    `json:"name"`
 	Credential string    `json:"credential"`
@@ -117,15 +116,15 @@ type Passkey struct {
 }
 
 // getPasskeys returns all stored passkeys
-func (a *goBlog) getPasskeys() ([]*Passkey, error) {
+func (a *goBlog) getPasskeys() ([]*passkey, error) {
 	rows, err := a.db.Query("select id, name, credential, created from passkeys order by created desc")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var passkeys []*Passkey
+	var passkeys []*passkey
 	for rows.Next() {
-		var pk Passkey
+		var pk passkey
 		var createdUnix int64
 		err = rows.Scan(&pk.ID, &pk.Name, &pk.Credential, &createdUnix)
 		if err != nil {
@@ -138,12 +137,12 @@ func (a *goBlog) getPasskeys() ([]*Passkey, error) {
 }
 
 // getPasskey returns a specific passkey by ID
-func (a *goBlog) getPasskey(id string) (*Passkey, error) {
+func (a *goBlog) getPasskey(id string) (*passkey, error) {
 	row, err := a.db.QueryRow("select id, name, credential, created from passkeys where id = @id", sql.Named("id", id))
 	if err != nil {
 		return nil, err
 	}
-	var pk Passkey
+	var pk passkey
 	var createdUnix int64
 	err = row.Scan(&pk.ID, &pk.Name, &pk.Credential, &createdUnix)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -219,12 +218,11 @@ func (a *goBlog) getWebAuthnCredentials() ([]webauthn.Credential, error) {
 
 // App Password functions
 
-// AppPassword represents a stored app password
-type AppPassword struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	TokenHash string    `json:"-"`
-	Created   time.Time `json:"created"`
+// appPassword represents a stored app password
+type appPassword struct {
+	ID      string    `json:"id"`
+	Name    string    `json:"name"`
+	Created time.Time `json:"created"`
 }
 
 // generateSecureToken generates a cryptographically secure random token
@@ -236,27 +234,18 @@ func generateSecureToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-// generateAppPasswordID generates a unique ID for an app password
-func generateAppPasswordID() (string, error) {
-	bytes := make([]byte, 8)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
 // getAppPasswords returns all stored app passwords
-func (a *goBlog) getAppPasswords() ([]*AppPassword, error) {
-	rows, err := a.db.Query("select id, name, token_hash, created from app_passwords order by created desc")
+func (a *goBlog) getAppPasswords() ([]*appPassword, error) {
+	rows, err := a.db.Query("select id, name, created from app_passwords order by created desc")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var passwords []*AppPassword
+	var passwords []*appPassword
 	for rows.Next() {
-		var ap AppPassword
+		var ap appPassword
 		var createdUnix int64
-		err = rows.Scan(&ap.ID, &ap.Name, &ap.TokenHash, &createdUnix)
+		err = rows.Scan(&ap.ID, &ap.Name, &createdUnix)
 		if err != nil {
 			return nil, err
 		}
@@ -266,17 +255,33 @@ func (a *goBlog) getAppPasswords() ([]*AppPassword, error) {
 	return passwords, nil
 }
 
+// getAppPasswordHashes returns all stored app password hashes
+func (a *goBlog) getAppPasswordHashes() ([]string, error) {
+	rows, err := a.db.Query("select token_hash from app_passwords")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var hashes []string
+	for rows.Next() {
+		var hash string
+		err = rows.Scan(&hash)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+	return hashes, nil
+}
+
 // createAppPassword creates a new app password and returns the plaintext token (only shown once)
 func (a *goBlog) createAppPassword(name string) (id, token string, err error) {
+	id = uuid.NewString()
 	token, err = generateSecureToken()
 	if err != nil {
 		return "", "", err
 	}
 	hash, err := hashPassword(token)
-	if err != nil {
-		return "", "", err
-	}
-	id, err = generateAppPasswordID()
 	if err != nil {
 		return "", "", err
 	}
@@ -295,12 +300,12 @@ func (a *goBlog) createAppPassword(name string) (id, token string, err error) {
 
 // checkAppPassword verifies a token against stored app passwords
 func (a *goBlog) checkAppPasswordToken(token string) (bool, error) {
-	passwords, err := a.getAppPasswords()
+	passwordHashes, err := a.getAppPasswordHashes()
 	if err != nil {
 		return false, err
 	}
-	for _, ap := range passwords {
-		if checkPasswordHash(token, ap.TokenHash) {
+	for _, hash := range passwordHashes {
+		if checkPasswordHash(token, hash) {
 			return true, nil
 		}
 	}
@@ -319,13 +324,13 @@ const authMigratedSettingsKey = "auth_migrated"
 
 // isAuthMigrated checks if auth has been migrated from config to database
 func (a *goBlog) isAuthMigrated() bool {
-	val, err := a.getSettingValue(authMigratedSettingsKey)
-	return err == nil && val == "1"
+	migrated, _ := a.getBooleanSettingValue(authMigratedSettingsKey, false)
+	return migrated
 }
 
 // setAuthMigrated marks that auth has been migrated from config to database
 func (a *goBlog) setAuthMigrated() error {
-	return a.saveSettingValue(authMigratedSettingsKey, "1")
+	return a.saveBooleanSettingValue(authMigratedSettingsKey, true)
 }
 
 // hasDeprecatedConfig checks if deprecated auth config options are still present
@@ -334,7 +339,7 @@ func (a *goBlog) hasDeprecatedConfig() bool {
 }
 
 // migrateAuthFromConfig migrates authentication data from config to database
-func (a *goBlog) migrateAuthFromConfig() error {
+func (a *goBlog) migrateAuthFromConfig(logging bool) error {
 	if a.isAuthMigrated() {
 		return nil // Already migrated
 	}
@@ -346,7 +351,9 @@ func (a *goBlog) migrateAuthFromConfig() error {
 			if err := a.setPassword(a.cfg.User.Password); err != nil {
 				return err
 			}
-			a.info("Migrated password from config to database")
+			if logging {
+				a.info("Migrated password from config to database")
+			}
 		}
 	}
 
@@ -357,7 +364,9 @@ func (a *goBlog) migrateAuthFromConfig() error {
 			if err := a.setTOTPSecret(a.cfg.User.TOTP); err != nil {
 				return err
 			}
-			a.info("Migrated TOTP from config to database")
+			if logging {
+				a.info("Migrated TOTP from config to database")
+			}
 		}
 	}
 
@@ -368,13 +377,9 @@ func (a *goBlog) migrateAuthFromConfig() error {
 		if err != nil {
 			return err
 		}
-		id, err := generateAppPasswordID()
-		if err != nil {
-			return err
-		}
 		_, err = a.db.Exec(
 			"insert into app_passwords (id, name, token_hash, created) values (@id, @name, @hash, @created)",
-			sql.Named("id", id),
+			sql.Named("id", uuid.NewString()),
 			sql.Named("name", apw.Username),
 			sql.Named("hash", hash),
 			sql.Named("created", time.Now().Unix()),
@@ -382,12 +387,14 @@ func (a *goBlog) migrateAuthFromConfig() error {
 		if err != nil {
 			return err
 		}
-		a.info("Migrated app password from config to database", "name", apw.Username)
+		if logging {
+			a.info("Migrated app password from config to database", "name", apw.Username)
+		}
 	}
 
 	// Migrate legacy passkey to new passkeys table
 	if err := a.migrateLegacyPasskey(); err != nil {
-		a.debug("Failed to migrate legacy passkey", "err", err)
+		a.error("Failed to migrate legacy passkey", "err", err)
 	}
 
 	// Mark as migrated
@@ -407,7 +414,7 @@ func (a *goBlog) migrateLegacyPasskey() error {
 	if hasPasskeys {
 		// Already have passkeys, just delete the legacy one
 		if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
-			a.debug("Failed to delete legacy passkey setting", "err", err)
+			a.error("Failed to delete legacy passkey setting", "err", err)
 		}
 		return nil
 	}
@@ -426,7 +433,7 @@ func (a *goBlog) migrateLegacyPasskey() error {
 
 	// Delete the legacy setting
 	if err := a.deleteSettingValue(webauthnCredSettingsKey); err != nil {
-		a.debug("Failed to delete legacy passkey setting after migration", "err", err)
+		a.error("Failed to delete legacy passkey setting after migration", "err", err)
 	}
 	a.info("Migrated legacy passkey to new passkeys table")
 	return nil

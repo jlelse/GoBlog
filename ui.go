@@ -1555,8 +1555,8 @@ type settingsRenderData struct {
 	addLikeContext        bool
 	userNick              string
 	userName              string
-	passkeys              []*Passkey
-	appPasswords          []*AppPassword
+	passkeys              []*passkey
+	appPasswords          []*appPassword
 	hasTOTP               bool
 	hasDBPassword         bool
 	successMsg            string

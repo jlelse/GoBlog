@@ -22,71 +22,37 @@ func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool 
 	if username != a.cfg.User.Nick {
 		return false
 	}
-	// Check if auth has been migrated - if so, only use database
-	migrated := a.db != nil && a.isAuthMigrated()
-
 	// Check password
-	passwordValid := false
-	if a.db != nil {
-		if pwdValid, err := a.checkPassword(password); err == nil && pwdValid {
-			passwordValid = true
-		}
-	}
-	// Only fall back to config if not migrated
-	if !passwordValid && !migrated && a.cfg.User.Password != "" && password == a.cfg.User.Password {
-		passwordValid = true
-	}
-	if !passwordValid {
+	if pwdValid, _ := a.checkPassword(password); !pwdValid {
 		return false
 	}
 	// Check TOTP
-	var totpSecret string
-	if a.db != nil {
-		totpSecret, _ = a.getTOTPSecret()
-	}
-	// Only fall back to config if not migrated
-	if totpSecret == "" && !migrated {
-		totpSecret = a.cfg.User.TOTP
-	}
-	if totpSecret != "" && !totp.Validate(totpPasscode, totpSecret) {
-		return false
+	if a.totpEnabled() {
+		totpSecret, _ := a.getTOTPSecret()
+		if !totp.Validate(totpPasscode, totpSecret) {
+			return false
+		}
 	}
 	return true
 }
 
-// Check if app passwords are correct (checks both database and config)
-func (a *goBlog) checkAppPasswords(username, password string) bool {
+// Check if app passwords are correct
+func (a *goBlog) checkAppPasswords(password string) bool {
 	// Check database app passwords (token-based, username is ignored)
-	if a.db != nil {
-		if valid, err := a.checkAppPasswordToken(password); err == nil && valid {
-			return true
-		}
-	}
-	// Only fall back to config if not migrated
-	migrated := a.db != nil && a.isAuthMigrated()
-	if !migrated {
-		for _, apw := range a.cfg.User.AppPasswords {
-			if apw.Username == username && apw.Password == password {
-				return true
-			}
-		}
+	if valid, err := a.checkAppPasswordToken(password); err == nil && valid {
+		return true
 	}
 	return false
 }
 
-// totpEnabled checks if TOTP is enabled (from database or config)
+// totpEnabled checks if TOTP is enabled
 func (a *goBlog) totpEnabled() bool {
-	// Check database first (if available)
 	if a.db != nil {
 		if hasTOTP, err := a.hasTOTP(); err == nil && hasTOTP {
 			return true
 		}
 	}
-	// Only fall back to config if not migrated
-	if a.db != nil && a.isAuthMigrated() {
-		return false
-	}
-	return a.cfg.User.TOTP != ""
+	return false
 }
 
 // Check if cookie is known and logged in
@@ -201,7 +167,7 @@ func (a *goBlog) isLoggedIn(r *http.Request) bool {
 		return loggedIn
 	}
 	// Check app passwords
-	if username, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(username, password) {
+	if _, password, ok := r.BasicAuth(); ok && a.checkAppPasswords(password) {
 		setLoggedIn(r, true)
 		return true
 	}

@@ -517,7 +517,7 @@ func (a *goBlog) initConfig(logging bool) error {
 		a.cfg.User.Name = userName
 	}
 	// Migrate auth from config to database
-	if err := a.migrateAuthFromConfig(); err != nil {
+	if err := a.migrateAuthFromConfig(logging); err != nil {
 		return err
 	}
 	// Check config for each blog
@@ -580,7 +580,9 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	// Log success
 	a.cfg.initialized = true
-	a.info("Initialized configuration")
+	if logging {
+		a.info("Initialized configuration")
+	}
 	return nil
 }
 
