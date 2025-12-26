@@ -823,9 +823,9 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 
 	// Warning if deprecated config is still present
 	if a.hasDeprecatedConfig() {
-		hb.WriteElementOpen("p", "class", "warning")
+		hb.WriteElementsOpen("p", "b")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deprecatedconfigwarning"))
-		hb.WriteElementClose("p")
+		hb.WriteElementsClose("b", "p")
 	}
 
 	// Password section
@@ -951,7 +951,7 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 			hb.WriteElementOpen("tr")
 			// Name column with delete form
 			hb.WriteElementOpen("td", "class", "expand")
-			hb.WriteElementOpen("form", "class", "method", "post")
+			hb.WriteElementOpen("form", "method", "post")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "apppasswordid", "value", ap.ID)
 			hb.WriteElementOpen("input", "name", "apppasswordname", "value", ap.Name, "disabled", "")
 			hb.WriteElementOpen("button", "type", "submit", "formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteAppPasswordPath), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))

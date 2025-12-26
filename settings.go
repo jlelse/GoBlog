@@ -38,9 +38,6 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if password is set in database
 	hasDBPassword, _ := a.hasPassword()
 
-	// Check for success message
-	successMsg := r.URL.Query().Get("msg")
-
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
 			blog:                  blog,
@@ -60,7 +57,6 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			appPasswords:          appPasswords,
 			hasTOTP:               hasTOTP,
 			hasDBPassword:         hasDBPassword,
-			successMsg:            successMsg,
 			newTotpSecret:         newTotpSecret,
 		},
 	})
@@ -305,13 +301,13 @@ func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Set new password (no current password verification required)
+	// Set new password
 	if err := a.setPassword(newPassword); err != nil {
 		a.serveError(w, r, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, bc.getRelativePath(settingsPath)+"?msg=passwordupdated", http.StatusFound)
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }
 
 func (a *goBlog) settingsDeletePassword(w http.ResponseWriter, r *http.Request) {

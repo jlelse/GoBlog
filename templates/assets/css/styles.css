@@ -204,10 +204,6 @@ details summary > *:first-child {
   flex: 0 0 auto;
 }
 
-.warning, .success {
-  font-weight: bold;
-}
-
 .fw, img,
 audio, form.fw, form.fw input:not([type]),
 form.fw input[type=submit],
