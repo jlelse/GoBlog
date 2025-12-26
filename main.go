@@ -72,25 +72,6 @@ func main() {
 		},
 	})
 
-	// TOTP secret generation command
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "totp-secret",
-		Short: "Generate TOTP secret",
-		Run: func(cmd *cobra.Command, args []string) {
-			app := initializeApp(cmd)
-			key, err := totp.Generate(totp.GenerateOpts{
-				Issuer:      app.cfg.Server.PublicAddress,
-				AccountName: app.cfg.User.Nick,
-			})
-			if err != nil {
-				app.logErrAndQuit("Failed to generate TOTP secret", "err", err)
-				return
-			}
-			fmt.Println("TOTP-Secret:", key.Secret())
-			app.shutdown.ShutdownAndWait()
-		},
-	})
-
 	// Link check tool
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "check",

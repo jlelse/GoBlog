@@ -500,21 +500,6 @@ Use your blog as your identity on the web.
 3. Approve the authorization request on your blog
 4. You're logged in!
 
-**Two-Factor Authentication:**
-
-Generate a TOTP secret:
-
-```bash
-./GoBlog --config ./config/config.yml totp-secret
-```
-
-Add to config:
-
-```yaml
-user:
-  totp: YOUR_TOTP_SECRET
-```
-
 ### Webmention
 
 Send and receive webmentions automatically.
@@ -1090,7 +1075,7 @@ Set up the user credentials (username, password, and optionally TOTP). The passw
 - `--password` (required) - Login password (stored as bcrypt hash)
 - `--totp` - Enable TOTP two-factor authentication
 
-**Example with TOTP:**
+**Example with TOTP (two-factor authentication):**
 
 ```bash
 ./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password" --totp
@@ -1106,14 +1091,6 @@ This will output the TOTP secret which you should add to your authenticator app.
 ```
 
 Useful for container health checks and monitoring.
-
-### Generate TOTP Secret
-
-```bash
-./GoBlog --config ./config/config.yml totp-secret
-```
-
-Generates a TOTP secret for two-factor authentication.
 
 ### Check External Links
 
@@ -1420,9 +1397,6 @@ TOTP can be configured via the Settings UI or during initialization:
 ```bash
 # Via CLI
 ./GoBlog --config ./config/config.yml setup --username admin --password "secure-password" --totp
-
-# Or generate secret only
-./GoBlog --config ./config/config.yml totp-secret
 ```
 
 Then add the secret to your authenticator app (Google Authenticator, Authy, etc.).
