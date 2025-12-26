@@ -37,15 +37,16 @@ func Test_authDb_password(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
-	// Clear the default password to test password functionality in isolation
+	// Clear the default password to trigger automatic password generation
 	app.cfg.User.Password = ""
 	err := app.initConfig(false)
 	require.NoError(t, err)
 
-	t.Run("Initial state has no password", func(t *testing.T) {
+	t.Run("Initial state generates password automatically", func(t *testing.T) {
+		// A password is now generated automatically on first run
 		hasPwd, err := app.hasPassword()
 		require.NoError(t, err)
-		assert.False(t, hasPwd)
+		assert.True(t, hasPwd)
 	})
 
 	t.Run("Set and check password", func(t *testing.T) {
@@ -64,6 +65,22 @@ func Test_authDb_password(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, valid)
 	})
+}
+
+func Test_generateInitialPassword(t *testing.T) {
+	password1, err := generateInitialPassword()
+	require.NoError(t, err)
+	require.NotEmpty(t, password1)
+
+	password2, err := generateInitialPassword()
+	require.NoError(t, err)
+	require.NotEmpty(t, password2)
+
+	// Each password should be unique
+	assert.NotEqual(t, password1, password2)
+
+	// Password should be base64-encoded 16 bytes (22 chars without padding)
+	assert.Equal(t, 22, len(password1))
 }
 
 func Test_authDb_totp(t *testing.T) {

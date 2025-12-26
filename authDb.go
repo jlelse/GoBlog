@@ -338,22 +338,46 @@ func (a *goBlog) hasDeprecatedConfig() bool {
 	return a.cfg.User.Password != "" || a.cfg.User.TOTP != "" || len(a.cfg.User.AppPasswords) > 0
 }
 
+// generateInitialPassword generates a secure random password for first-time setup
+func generateInitialPassword() (string, error) {
+	bytes := make([]byte, 16) // 16 bytes = 128 bits of entropy
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
+}
+
 // migrateAuthFromConfig migrates authentication data from config to database
 func (a *goBlog) migrateAuthFromConfig(logging bool) error {
 	if a.isAuthMigrated() {
 		return nil // Already migrated
 	}
 
-	// Migrate password if set in config
-	if a.cfg.User.Password != "" {
-		hasPwd, _ := a.hasPassword()
-		if !hasPwd {
+	// Migrate password if set in config, or generate a new one on first run
+	hasPwd, _ := a.hasPassword()
+	if !hasPwd {
+		if a.cfg.User.Password != "" {
+			// Migrate password from config
 			if err := a.setPassword(a.cfg.User.Password); err != nil {
 				return err
 			}
 			if logging {
 				a.info("Migrated password from config to database")
 			}
+		} else {
+			// Generate a secure initial password on first run
+			initialPassword, err := generateInitialPassword()
+			if err != nil {
+				return err
+			}
+			if err := a.setPassword(initialPassword); err != nil {
+				return err
+			}
+			// Always log the generated password so the user can log in
+			a.info("Generated initial password for first-time setup. Please change it via Settings or CLI.",
+				"username", a.cfg.User.Nick,
+				"password", initialPassword,
+			)
 		}
 	}
 

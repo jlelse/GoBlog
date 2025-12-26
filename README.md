@@ -150,10 +150,19 @@ EOF
 
 ### 3. First Steps
 
-1. **Open your browser**: Navigate to `http://localhost:8080`
-2. **Set up credentials**: Run `./GoBlog setup --username admin --password "your-secure-password"` to set up login credentials
-3. **Log in**: Go to `/login` and use the credentials you set up
-4. **Create a post**: Go to `/editor`
+1. **Check the logs**: On first startup, GoBlog generates a secure random password and logs it to the console. Look for a log line like:
+   ```
+   Generated initial password for first-time setup. Please change it via Settings or CLI. username=admin password=AbCdEfGhIjKlMnOpQrSt
+   ```
+2. **Open your browser**: Navigate to `http://localhost:8080`
+3. **Log in**: Go to `/login` and use the username (`admin` by default) and the generated password from the logs
+4. **Change your password**: Go to `/settings` and update your password to something memorable (or set up passkeys for passwordless login)
+5. **Create a post**: Go to `/editor`
+
+**Alternative**: You can also set credentials before first run using the CLI:
+```bash
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
+```
 
 ---
 
@@ -1382,7 +1391,17 @@ server:
   publicHttps: true  # Let's Encrypt
 ```
 
-**Set up password via CLI (recommended for first-time setup):**
+**Initial password:**
+
+On first startup, GoBlog automatically generates a secure random password and logs it to the console. Look for a log line like:
+
+```
+Generated initial password for first-time setup. Please change it via Settings or CLI. username=admin password=AbCdEfGhIjKlMnOpQrSt
+```
+
+You should change this password immediately via the Settings UI or CLI.
+
+**Set password via CLI:**
 
 ```bash
 ./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
