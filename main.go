@@ -153,10 +153,10 @@ func main() {
 	})
 	rootCmd.AddCommand(activityPubCmd)
 
-	// Init command for setting up user credentials
-	initCmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize user credentials (username, password, and optionally TOTP)",
+	// Setup command for setting up user credentials
+	setupCmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Set up user credentials (username, password, and optionally TOTP)",
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 
@@ -204,14 +204,14 @@ func main() {
 				fmt.Println("Use this secret with your authenticator app (e.g., Google Authenticator, Authy)")
 			}
 
-			fmt.Println("\nInitialization complete!")
+			fmt.Println("\nSetup complete!")
 			app.shutdown.ShutdownAndWait()
 		},
 	}
-	initCmd.Flags().String("username", "", "Login username (required)")
-	initCmd.Flags().String("password", "", "Login password (required)")
-	initCmd.Flags().Bool("totp", false, "Enable TOTP two-factor authentication")
-	rootCmd.AddCommand(initCmd)
+	setupCmd.Flags().String("username", "", "Login username (required)")
+	setupCmd.Flags().String("password", "", "Login password (required)")
+	setupCmd.Flags().Bool("totp", false, "Enable TOTP two-factor authentication")
+	rootCmd.AddCommand(setupCmd)
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {

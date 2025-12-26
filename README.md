@@ -151,8 +151,9 @@ EOF
 ### 3. First Steps
 
 1. **Open your browser**: Navigate to `http://localhost:8080`
-2. **Log in**: Go to `/login` (default credentials: `admin` / `secret` - but change them in the configuration!)
-3. **Create a post**: Go to `/editor`
+2. **Set up credentials**: Run `./GoBlog setup --username admin --password "your-secure-password"` to set up login credentials
+3. **Log in**: Go to `/login` and use the credentials you set up
+4. **Create a post**: Go to `/editor`
 
 ---
 
@@ -1067,13 +1068,13 @@ GoBlog provides several CLI commands for administration and maintenance.
 ./GoBlog --config ./config/config.yml
 ```
 
-### Initialize User Credentials
+### Set Up User Credentials
 
 ```bash
-./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password"
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
 ```
 
-Set up the initial user credentials (username, password, and optionally TOTP). The password is securely hashed using bcrypt before storage.
+Set up the user credentials (username, password, and optionally TOTP). The password is securely hashed using bcrypt before storage.
 
 **Options:**
 - `--username` (required) - Login username
@@ -1083,7 +1084,7 @@ Set up the initial user credentials (username, password, and optionally TOTP). T
 **Example with TOTP:**
 
 ```bash
-./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password" --totp
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password" --totp
 ```
 
 This will output the TOTP secret which you should add to your authenticator app.
@@ -1384,7 +1385,7 @@ server:
 **Set up password via CLI (recommended for first-time setup):**
 
 ```bash
-./GoBlog --config ./config/config.yml init --username admin --password "your-secure-password"
+./GoBlog --config ./config/config.yml setup --username admin --password "your-secure-password"
 ```
 
 Passwords are securely hashed using bcrypt before storage in the database.
@@ -1399,7 +1400,7 @@ TOTP can be configured via the Settings UI or during initialization:
 
 ```bash
 # Via CLI
-./GoBlog --config ./config/config.yml init --username admin --password "secure-password" --totp
+./GoBlog --config ./config/config.yml setup --username admin --password "secure-password" --totp
 
 # Or generate secret only
 ./GoBlog --config ./config/config.yml totp-secret

@@ -601,7 +601,6 @@ func createDefaultConfig() *config {
 		},
 		User: &configUser{
 			Nick:             "admin",
-			Password:         "secret",
 			ProfileImageFile: "data/profileImage",
 		},
 		Hooks: &configHooks{
