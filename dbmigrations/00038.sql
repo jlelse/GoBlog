@@ -10,6 +10,6 @@ create table if not exists passkeys (
 create table if not exists app_passwords (
     id text primary key,
     name text not null,
-    token_hash text not null,
+    hash text not null,
     created integer not null default (strftime('%s', 'now'))
 );

@@ -79,8 +79,8 @@ func Test_generateInitialPassword(t *testing.T) {
 	// Each password should be unique
 	assert.NotEqual(t, password1, password2)
 
-	// Password should be base64-encoded 16 bytes (22 chars without padding)
-	assert.Equal(t, 22, len(password1))
+	// Password should be 20 characters long
+	assert.Equal(t, 20, len(password1))
 }
 
 func Test_authDb_totp(t *testing.T) {
@@ -225,18 +225,18 @@ func Test_authDb_appPasswords(t *testing.T) {
 		assert.Equal(t, "My App", passwords[0].Name)
 	})
 
-	t.Run("Check app password token", func(t *testing.T) {
-		id, token, err := app.createAppPassword("Another App")
+	t.Run("Check app password", func(t *testing.T) {
+		id, password, err := app.createAppPassword("Another App")
 		require.NoError(t, err)
 		require.NotEmpty(t, id)
 
-		// Correct token should verify
-		valid, err := app.checkAppPasswordToken(token)
+		// Correct password should verify
+		valid, err := app.checkAppPassword(password)
 		require.NoError(t, err)
 		assert.True(t, valid)
 
-		// Wrong token should not verify
-		valid, err = app.checkAppPasswordToken("wrong-token")
+		// Wrong password should not verify
+		valid, err = app.checkAppPassword("wrong-password")
 		require.NoError(t, err)
 		assert.False(t, valid)
 	})
@@ -302,18 +302,18 @@ func Test_totpEnabled(t *testing.T) {
 	})
 }
 
-func Test_generateSecureToken(t *testing.T) {
-	token1, err := generateSecureToken()
+func Test_generateAppPassword(t *testing.T) {
+	password1, err := generateAppPassword()
 	require.NoError(t, err)
-	require.NotEmpty(t, token1)
+	require.NotEmpty(t, password1)
 
-	token2, err := generateSecureToken()
+	password2, err := generateAppPassword()
 	require.NoError(t, err)
-	require.NotEmpty(t, token2)
+	require.NotEmpty(t, password2)
 
-	// Each token should be unique
-	assert.NotEqual(t, token1, token2)
+	// Each password should be unique
+	assert.NotEqual(t, password1, password2)
 
-	// Token should be base64-encoded 32 bytes (around 43 chars)
-	assert.Greater(t, len(token1), 40)
+	// Password should be 40 characters long
+	assert.Equal(t, 40, len(password1))
 }

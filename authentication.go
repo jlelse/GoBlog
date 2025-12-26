@@ -38,8 +38,8 @@ func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool 
 
 // Check if app passwords are correct
 func (a *goBlog) checkAppPasswords(password string) bool {
-	// Check database app passwords (token-based, username is ignored)
-	if valid, err := a.checkAppPasswordToken(password); err == nil && valid {
+	// Check database app passwords (username is ignored)
+	if valid, err := a.checkAppPassword(password); err == nil && valid {
 		return true
 	}
 	return false

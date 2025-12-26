@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -395,4 +397,23 @@ func (a *goBlog) respondWithMinifiedJson(w http.ResponseWriter, v any) {
 	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+}
+
+// generateSecurePassword creates a secure random password of the given length
+func generateSecurePassword(length int) (string, error) {
+	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()-_=+[]{}|;:,.<>?/"
+	runes := []rune(letters)
+	runesLen := len(runes)
+	sb := builderpool.Get()
+	defer builderpool.Put(sb)
+	sb.Grow(length)
+	randRead := rand.Reader
+	for i := 0; i < length; i++ {
+		r, err := rand.Int(randRead, big.NewInt(int64(runesLen)))
+		if err != nil {
+			return "", err
+		}
+		sb.WriteRune(runes[r.Int64()])
+	}
+	return sb.String(), nil
 }

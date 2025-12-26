@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -225,13 +224,9 @@ type appPassword struct {
 	Created time.Time `json:"created"`
 }
 
-// generateSecureToken generates a cryptographically secure random token
-func generateSecureToken() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(bytes), nil
+// generateAppPassword creates a secure random app password
+func generateAppPassword() (string, error) {
+	return generateSecurePassword(40)
 }
 
 // getAppPasswords returns all stored app passwords
@@ -257,7 +252,7 @@ func (a *goBlog) getAppPasswords() ([]*appPassword, error) {
 
 // getAppPasswordHashes returns all stored app password hashes
 func (a *goBlog) getAppPasswordHashes() ([]string, error) {
-	rows, err := a.db.Query("select token_hash from app_passwords")
+	rows, err := a.db.Query("select hash from app_passwords")
 	if err != nil {
 		return nil, err
 	}
@@ -274,19 +269,19 @@ func (a *goBlog) getAppPasswordHashes() ([]string, error) {
 	return hashes, nil
 }
 
-// createAppPassword creates a new app password and returns the plaintext token (only shown once)
-func (a *goBlog) createAppPassword(name string) (id, token string, err error) {
+// createAppPassword creates a new app password and returns the plaintext password (only shown once)
+func (a *goBlog) createAppPassword(name string) (id, password string, err error) {
 	id = uuid.NewString()
-	token, err = generateSecureToken()
+	password, err = generateAppPassword()
 	if err != nil {
 		return "", "", err
 	}
-	hash, err := hashPassword(token)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return "", "", err
 	}
 	_, err = a.db.Exec(
-		"insert into app_passwords (id, name, token_hash, created) values (@id, @name, @hash, @created)",
+		"insert into app_passwords (id, name, hash, created) values (@id, @name, @hash, @created)",
 		sql.Named("id", id),
 		sql.Named("name", name),
 		sql.Named("hash", hash),
@@ -295,17 +290,17 @@ func (a *goBlog) createAppPassword(name string) (id, token string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	return id, token, nil
+	return id, password, nil
 }
 
-// checkAppPassword verifies a token against stored app passwords
-func (a *goBlog) checkAppPasswordToken(token string) (bool, error) {
+// checkAppPassword verifies a password against stored app passwords
+func (a *goBlog) checkAppPassword(password string) (bool, error) {
 	passwordHashes, err := a.getAppPasswordHashes()
 	if err != nil {
 		return false, err
 	}
 	for _, hash := range passwordHashes {
-		if checkPasswordHash(token, hash) {
+		if checkPasswordHash(password, hash) {
 			return true, nil
 		}
 	}
@@ -340,11 +335,7 @@ func (a *goBlog) hasDeprecatedConfig() bool {
 
 // generateInitialPassword generates a secure random password for first-time setup
 func generateInitialPassword() (string, error) {
-	bytes := make([]byte, 16) // 16 bytes = 128 bits of entropy
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
+	return generateSecurePassword(20)
 }
 
 // migrateAuthFromConfig migrates authentication data from config to database
@@ -397,13 +388,12 @@ func (a *goBlog) migrateAuthFromConfig(logging bool) error {
 
 	// Migrate app passwords if set in config
 	for _, apw := range a.cfg.User.AppPasswords {
-		// Create an app password with the original password as token
 		hash, err := hashPassword(apw.Password)
 		if err != nil {
 			return err
 		}
 		_, err = a.db.Exec(
-			"insert into app_passwords (id, name, token_hash, created) values (@id, @name, @hash, @created)",
+			"insert into app_passwords (id, name, hash, created) values (@id, @name, @hash, @created)",
 			sql.Named("id", uuid.NewString()),
 			sql.Named("name", apw.Username),
 			sql.Named("hash", hash),
