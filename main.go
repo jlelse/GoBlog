@@ -134,7 +134,7 @@ func main() {
 		},
 	})
 	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "move-followers blog oldActor",
+		Use:   "move-followers <blog> <oldActor>",
 		Short: "Send a Move activity to migrate followers to the current domain",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {

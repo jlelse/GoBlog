@@ -569,6 +569,10 @@ func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...stri
 	}
 }
 
+func apMoveActivityID(oldActor ap.IRI, suffix string) ap.ID {
+	return ap.ID(fmt.Sprintf("%s#%s-%s", strings.TrimRight(oldActor.String(), "#"), suffix, uuid.NewString()))
+}
+
 func (a *goBlog) apMoveFollowers(blog string, oldActor ap.IRI) error {
 	return a.apMoveFollowersWithSender(blog, oldActor, a.apSendTo)
 }
@@ -603,7 +607,7 @@ func (a *goBlog) apMoveFollowersWithSender(blog string, oldActor ap.IRI, sender 
 	newActor := a.apAPIri(blogConfig)
 	followers := a.apGetFollowersCollectionId(blog, blogConfig)
 
-	update := ap.UpdateNew(ap.ID(fmt.Sprintf("%s#move-update-%s", strings.TrimRight(oldActor.String(), "#"), uuid.NewString())), &ap.Person{
+	update := ap.UpdateNew(apMoveActivityID(oldActor, "move-update"), &ap.Person{
 		Object: ap.Object{
 			Type: ap.PersonType,
 			ID:   oldActor,
@@ -614,7 +618,7 @@ func (a *goBlog) apMoveFollowersWithSender(blog string, oldActor ap.IRI, sender 
 	update.Published = time.Now()
 	update.To.Append(ap.PublicNS, followers)
 
-	move := ap.MoveNew(ap.ID(fmt.Sprintf("%s#move-%s", strings.TrimRight(oldActor.String(), "#"), uuid.NewString())), oldActor, newActor)
+	move := ap.MoveNew(apMoveActivityID(oldActor, "move"), oldActor, newActor)
 	move.Actor = oldActor
 	move.Published = time.Now()
 	move.To.Append(ap.PublicNS, followers)
