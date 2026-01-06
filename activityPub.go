@@ -573,6 +573,14 @@ func apMoveActivityID(oldActor ap.IRI, suffix string) ap.ID {
 	return ap.ID(fmt.Sprintf("%s#%s-%s", strings.TrimRight(oldActor.String(), "#"), suffix, uuid.NewString()))
 }
 
+func apFollowersCollectionFromActor(actor ap.IRI, blog string) ap.IRI {
+	if actor == "" || blog == "" {
+		return ""
+	}
+	base := strings.TrimRight(actor.String(), "/")
+	return ap.IRI(base + "/activitypub/followers/" + blog)
+}
+
 func (a *goBlog) apMoveFollowers(blog string, oldActor ap.IRI) error {
 	return a.apMoveFollowersWithSender(blog, oldActor, a.apSendTo)
 }
@@ -605,7 +613,7 @@ func (a *goBlog) apMoveFollowersWithSender(blog string, oldActor ap.IRI, sender 
 	}
 
 	newActor := a.apAPIri(blogConfig)
-	followers := a.apGetFollowersCollectionId(blog, blogConfig)
+	followers := apFollowersCollectionFromActor(oldActor, blog)
 
 	update := ap.UpdateNew(apMoveActivityID(oldActor, "move-update"), &ap.Person{
 		Object: ap.Object{

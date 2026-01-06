@@ -415,13 +415,13 @@ func Test_apMoveFollowersWithSender(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, activitypub.IRI("https://new.example.com"), updatedActor.MovedTo)
 	assert.Contains(t, update.To, activitypub.PublicNS)
-	assert.Contains(t, update.To, app.apGetFollowersCollectionId("default", app.cfg.Blogs["default"]))
+	assert.Contains(t, update.To, activitypub.IRI("https://old.example.com/activitypub/followers/default"))
 
 	assert.Equal(t, activitypub.MoveType, move.Type)
 	assert.Equal(t, activitypub.IRI("https://old.example.com"), move.Actor)
 	assert.Equal(t, activitypub.IRI("https://old.example.com"), move.Object)
 	assert.Equal(t, activitypub.IRI("https://new.example.com"), move.Target)
-	assert.Contains(t, move.To, app.apGetFollowersCollectionId("default", app.cfg.Blogs["default"]))
+	assert.Contains(t, move.To, activitypub.IRI("https://old.example.com/activitypub/followers/default"))
 }
 
 func Test_apMoveFollowersWithSenderMissingAlias(t *testing.T) {
