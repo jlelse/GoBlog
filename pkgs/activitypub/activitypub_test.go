@@ -80,6 +80,18 @@ func TestCreateNew(t *testing.T) {
 	assert.NotNil(t, create.Object)
 }
 
+func TestMoveNew(t *testing.T) {
+	oldActor := IRI("https://old.example.com/users/alice")
+	newActor := IRI("https://new.example.com/users/alice")
+
+	move := MoveNew(ID("https://example.com/activities/1"), oldActor, newActor)
+
+	assert.Equal(t, MoveType, move.Type)
+	assert.Equal(t, IRI("https://example.com/activities/1"), move.ID)
+	assert.Equal(t, oldActor, move.Object)
+	assert.Equal(t, newActor, move.Target)
+}
+
 func TestItemCollection(t *testing.T) {
 	col := ItemCollection{}
 
@@ -258,6 +270,7 @@ func TestPersonMarshalingWithExtensions(t *testing.T) {
 	person.PreferredUsername = DefaultNaturalLanguage("alice")
 	person.AlsoKnownAs = ItemCollection{IRI("https://other.example/@alice"), IRI("https://another.example/alice")}
 	person.AttributionDomains = ItemCollection{IRI("example.com"), IRI("other.example")}
+	person.MovedTo = IRI("https://example.com/users/newalice")
 
 	data, err := json.Marshal(person)
 	require.NoError(t, err)
@@ -269,8 +282,10 @@ func TestPersonMarshalingWithExtensions(t *testing.T) {
 	assert.Equal(t, person.ID, unmarshaled.ID)
 	assert.Len(t, unmarshaled.AlsoKnownAs, 2)
 	assert.Len(t, unmarshaled.AttributionDomains, 2)
+	assert.Equal(t, person.MovedTo, unmarshaled.MovedTo)
 	assert.Contains(t, string(data), "alsoKnownAs")
 	assert.Contains(t, string(data), "attributionDomains")
+	assert.Contains(t, string(data), "movedTo")
 }
 
 func TestActivityMarshaling(t *testing.T) {
@@ -293,6 +308,24 @@ func TestActivityMarshaling(t *testing.T) {
 	assert.Equal(t, create.Type, unmarshaled.Type)
 	assert.NotNil(t, unmarshaled.Actor)
 	assert.NotNil(t, unmarshaled.Object)
+}
+
+func TestActivityMarshalingWithTarget(t *testing.T) {
+	move := MoveNew(ID("https://example.com/activities/2"), IRI("https://old.example.com/users/alice"), IRI("https://new.example.com/users/alice"))
+	move.Actor = IRI("https://old.example.com/users/alice")
+	move.Published = time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)
+
+	data, err := json.Marshal(move)
+	require.NoError(t, err)
+
+	var unmarshaled Activity
+	err = json.Unmarshal(data, &unmarshaled)
+	require.NoError(t, err)
+
+	assert.Equal(t, move.Type, unmarshaled.Type)
+	assert.Equal(t, move.Object, unmarshaled.Object)
+	assert.Equal(t, move.Target, unmarshaled.Target)
+	assert.Equal(t, move.Actor, unmarshaled.Actor)
 }
 
 func TestCollectionMarshaling(t *testing.T) {

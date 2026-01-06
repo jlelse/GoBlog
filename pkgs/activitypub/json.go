@@ -167,6 +167,9 @@ func (a Activity) MarshalJSON() ([]byte, error) {
 	if a.Object != nil {
 		notEmpty = JSONWriteItemProp(&b, "object", a.Object) || notEmpty
 	}
+	if a.Target != nil {
+		notEmpty = JSONWriteItemProp(&b, "target", a.Target) || notEmpty
+	}
 	if len(a.To) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(&b, "to", a.To, false) || notEmpty
 	}
@@ -196,6 +199,7 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 	aux := &struct {
 		Actor  json.RawMessage `json:"actor,omitempty"`
 		Object json.RawMessage `json:"object,omitempty"`
+		Target json.RawMessage `json:"target,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(a),
@@ -216,6 +220,12 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 		item, err := unmarshalItem(aux.Object)
 		if err == nil {
 			a.Object = item
+		}
+	}
+	if len(aux.Target) > 0 {
+		item, err := unmarshalItem(aux.Target)
+		if err == nil {
+			a.Target = item
 		}
 	}
 
@@ -286,6 +296,9 @@ func (p Person) MarshalJSON() ([]byte, error) {
 	if len(p.AttributionDomains) > 0 {
 		notEmpty = JSONWriteItemCollectionProp(&b, "attributionDomains", p.AttributionDomains, false) || notEmpty
 	}
+	if p.MovedTo != nil {
+		notEmpty = JSONWriteItemProp(&b, "movedTo", p.MovedTo) || notEmpty
+	}
 
 	if notEmpty {
 		JSONWrite(&b, '}')
@@ -313,6 +326,7 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 		Icon               json.RawMessage       `json:"icon,omitempty"`
 		AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
 		AttributionDomains ItemCollection        `json:"attributionDomains,omitempty"`
+		MovedTo            json.RawMessage       `json:"movedTo,omitempty"`
 	}{}
 
 	if err := json.Unmarshal(data, aux); err != nil {
@@ -328,6 +342,12 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	p.Endpoints = aux.Endpoints
 	p.AlsoKnownAs = aux.AlsoKnownAs
 	p.AttributionDomains = aux.AttributionDomains
+	if len(aux.MovedTo) > 0 {
+		item, err := unmarshalItem(aux.MovedTo)
+		if err == nil {
+			p.MovedTo = item
+		}
+	}
 	if len(aux.Icon) > 0 {
 		// Try to unmarshal icon (can be various types)
 		var iconObj Object

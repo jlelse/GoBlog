@@ -367,3 +367,79 @@ func Test_webfinger(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
+
+func Test_apMoveFollowersWithSender(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://new.example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"default": {
+			Path: "/",
+		},
+	}
+	app.cfg.DefaultBlog = "default"
+	app.cfg.ActivityPub = &configActivityPub{
+		Enabled:     true,
+		AlsoKnownAs: []string{"https://old.example.com"},
+	}
+	require.NoError(t, app.initConfig(false))
+
+	require.NoError(t, app.db.apAddFollower("default", "https://remote.example/users/alice", "https://remote.example/inbox", "@alice@remote.example"))
+
+	var sent []struct {
+		blogIri  string
+		activity *activitypub.Activity
+		inboxes  []string
+	}
+
+	err := app.apMoveFollowersWithSender("default", activitypub.IRI("https://old.example.com"), func(blogIri string, activity *activitypub.Activity, inboxes ...string) {
+		sent = append(sent, struct {
+			blogIri  string
+			activity *activitypub.Activity
+			inboxes  []string
+		}{
+			blogIri:  blogIri,
+			activity: activity,
+			inboxes:  inboxes,
+		})
+	})
+	require.NoError(t, err)
+	require.Len(t, sent, 2)
+
+	update := sent[0].activity
+	move := sent[1].activity
+
+	assert.Equal(t, "https://old.example.com", sent[0].blogIri)
+	updatedActor, err := activitypub.ToActor(update.Object)
+	require.NoError(t, err)
+	assert.Equal(t, activitypub.IRI("https://new.example.com"), updatedActor.MovedTo)
+	assert.Contains(t, update.To, activitypub.PublicNS)
+	assert.Contains(t, update.To, app.apGetFollowersCollectionId("default", app.cfg.Blogs["default"]))
+
+	assert.Equal(t, activitypub.MoveType, move.Type)
+	assert.Equal(t, activitypub.IRI("https://old.example.com"), move.Actor)
+	assert.Equal(t, activitypub.IRI("https://old.example.com"), move.Object)
+	assert.Equal(t, activitypub.IRI("https://new.example.com"), move.Target)
+	assert.Contains(t, move.To, app.apGetFollowersCollectionId("default", app.cfg.Blogs["default"]))
+}
+
+func Test_apMoveFollowersWithSenderMissingAlias(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://new.example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"default": {
+			Path: "/",
+		},
+	}
+	app.cfg.DefaultBlog = "default"
+	app.cfg.ActivityPub = &configActivityPub{
+		Enabled: true,
+	}
+	require.NoError(t, app.initConfig(false))
+
+	err := app.apMoveFollowersWithSender("default", activitypub.IRI("https://old.example.com"), func(string, *activitypub.Activity, ...string) {})
+	assert.Error(t, err)
+}

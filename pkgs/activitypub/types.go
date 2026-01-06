@@ -41,6 +41,7 @@ const (
 	UndoType     ActivityType = "Undo"
 	AnnounceType ActivityType = "Announce"
 	LikeType     ActivityType = "Like"
+	MoveType     ActivityType = "Move"
 	BlockType    ActivityType = "Block"
 )
 
@@ -403,6 +404,7 @@ type Person struct {
 	Icon               any                   `json:"icon,omitempty"`
 	AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
 	AttributionDomains ItemCollection        `json:"attributionDomains,omitempty"`
+	MovedTo            Item                  `json:"movedTo,omitempty"`
 }
 
 // Actor is an alias for Person
@@ -418,6 +420,7 @@ type Activity struct {
 	Type      ActivityType   `json:"type,omitempty"`
 	Actor     Item           `json:"actor,omitempty"`
 	Object    Item           `json:"object,omitempty"`
+	Target    Item           `json:"target,omitempty"`
 	To        ItemCollection `json:"to,omitempty"`
 	CC        ItemCollection `json:"cc,omitempty"`
 	Published time.Time      `json:"published,omitzero"`

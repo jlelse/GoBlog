@@ -63,6 +63,16 @@ func AcceptNew(id ID, obj Item) *Activity {
 	}
 }
 
+// MoveNew creates a Move activity
+func MoveNew(id ID, obj Item, target Item) *Activity {
+	return &Activity{
+		Type:   MoveType,
+		ID:     IRI(id),
+		Object: obj,
+		Target: target,
+	}
+}
+
 // MentionNew creates a Mention
 func MentionNew(id IRI) *Object {
 	return &Object{

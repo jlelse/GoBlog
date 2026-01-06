@@ -9,6 +9,7 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"github.com/spf13/cobra"
+	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/utils"
 )
 
@@ -128,6 +129,29 @@ func main() {
 			blog := args[0]
 			if err := app.apRefetchFollowers(blog); err != nil {
 				app.logErrAndQuit("Failed to refetch ActivityPub followers", "blog", blog, "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "move-followers blog oldActor",
+		Short: "Send a Move activity to migrate followers to the current domain",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			blog := args[0]
+			oldActor := ap.IRI(args[1])
+			if err := app.apMoveFollowers(blog, oldActor); err != nil {
+				app.logErrAndQuit("Failed to move followers", "blog", blog, "err", err)
+				return
 			}
 			app.shutdown.ShutdownAndWait()
 		},

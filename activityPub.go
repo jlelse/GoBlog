@@ -569,6 +569,62 @@ func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...stri
 	}
 }
 
+func (a *goBlog) apMoveFollowers(blog string, oldActor ap.IRI) error {
+	return a.apMoveFollowersWithSender(blog, oldActor, a.apSendTo)
+}
+
+func (a *goBlog) apMoveFollowersWithSender(blog string, oldActor ap.IRI, sender func(string, *ap.Activity, ...string)) error {
+	if oldActor == "" {
+		return fmt.Errorf("old actor required")
+	}
+	blogConfig, ok := a.cfg.Blogs[blog]
+	if !ok || blogConfig == nil {
+		return fmt.Errorf("blog not found")
+	}
+	if a.cfg.ActivityPub == nil || !a.cfg.ActivityPub.Enabled {
+		return fmt.Errorf("activitypub not enabled")
+	}
+	akaConfigured := false
+	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
+		if aka == oldActor.String() {
+			akaConfigured = true
+			break
+		}
+	}
+	if !akaConfigured {
+		return fmt.Errorf("old actor must be listed in alsoKnownAs")
+	}
+
+	inboxes, err := a.db.apGetAllInboxes(blog)
+	if err != nil {
+		return err
+	}
+
+	newActor := a.apAPIri(blogConfig)
+	followers := a.apGetFollowersCollectionId(blog, blogConfig)
+
+	update := ap.UpdateNew(ap.ID(fmt.Sprintf("%s#move-update-%s", strings.TrimRight(oldActor.String(), "#"), uuid.NewString())), &ap.Person{
+		Object: ap.Object{
+			Type: ap.PersonType,
+			ID:   oldActor,
+		},
+		MovedTo: newActor,
+	})
+	update.Actor = oldActor
+	update.Published = time.Now()
+	update.To.Append(ap.PublicNS, followers)
+
+	move := ap.MoveNew(ap.ID(fmt.Sprintf("%s#move-%s", strings.TrimRight(oldActor.String(), "#"), uuid.NewString())), oldActor, newActor)
+	move.Actor = oldActor
+	move.Published = time.Now()
+	move.To.Append(ap.PublicNS, followers)
+
+	sender(oldActor.String(), update, inboxes...)
+	sender(oldActor.String(), move, inboxes...)
+
+	return nil
+}
+
 func (a *goBlog) apNewID(blog *configBlog) ap.ID {
 	return ap.ID(a.apIri(blog) + "#" + uuid.NewString())
 }

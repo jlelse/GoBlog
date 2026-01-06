@@ -560,6 +560,27 @@ activityPub:
     - https://mastodon.social/users/oldusername
 ```
 
+**Change the primary domain of your GoBlog instance:**
+
+1. Update your server configuration so that `server.publicAddress` points to the new domain.
+2. Add the old actor URL (old domain) to `activityPub.alsoKnownAs` so the new actor can prove ownership:
+
+   ```yaml
+   activityPub:
+     alsoKnownAs:
+       - https://old.example.com
+   ```
+3. Restart GoBlog so it serves the new domain.
+4. Send the Move and Update activities (FEP-7628 compatible, works with Mastodon) from the old actor to the new one:
+
+   ```bash
+   GoBlog activitypub move-followers <blog> https://old.example.com
+   ```
+
+   Replace `<blog>` with the blog key from your config and the URL with your old actor (old domain). The command sends:
+   - An `Update` for the old actor containing `movedTo`.
+   - A `Move` activity from the old actor to the new actor.
+
 ### Bluesky / ATProto
 
 GoBlog can post links to new posts on Bluesky:
