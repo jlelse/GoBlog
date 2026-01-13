@@ -89,6 +89,16 @@ func (a *goBlog) initActivityPubBase() error {
 	if err != nil {
 		return err
 	}
+	a.apSignerNoDigest, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host"},
+		httpsig.Signature,
+		0,
+	)
+	if err != nil {
+		return err
+	}
 	// Init http client
 	a.apHttpClients = map[string]*http.Client{}
 	for blog, bc := range a.cfg.Blogs {
@@ -646,7 +656,13 @@ func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
 	}
 	a.apSignMutex.Lock()
 	defer a.apSignMutex.Unlock()
-	return a.apSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBuf.Bytes())
+	signer := a.apSigner
+	bodyBytes := bodyBuf.Bytes()
+	if bodyBuf.Len() == 0 && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		signer = a.apSignerNoDigest
+		bodyBytes = nil
+	}
+	return signer.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBytes)
 }
 
 func (a *goBlog) apRefetchFollowers(blogName string) error {

@@ -28,6 +28,7 @@ type goBlog struct {
 	apPrivateKey       *rsa.PrivateKey
 	apPubKeyBytes      []byte
 	apSigner           httpsig.Signer
+	apSignerNoDigest   httpsig.Signer
 	apSignMutex        sync.Mutex
 	apHttpClients      map[string]*http.Client
 	webfingerResources map[string]*configBlog
