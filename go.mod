@@ -3,6 +3,7 @@ module go.goblog.app/app
 go 1.25.0
 
 require (
+	code.superseriousbusiness.org/httpsig v1.5.0
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
@@ -69,7 +70,6 @@ require (
 )
 
 require (
-	code.superseriousbusiness.org/httpsig v1.5.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
