@@ -1,3 +1,5 @@
+code.superseriousbusiness.org/httpsig v1.5.0 h1:jw/qc//yYWSoOYytTZXHvW7yh8kceCipNIBfUeXQghA=
+code.superseriousbusiness.org/httpsig v1.5.0/go.mod h1:i2AKpj/WbA/o/UTvia9TAREzt0jP1AH3T1Uxjyhdzlw=
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
 git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6 h1:d7k1NKd9fr+Eq7EtUrqUly+HDqDzpx9T9v8Gl2jJvpo=

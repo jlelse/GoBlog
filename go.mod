@@ -69,6 +69,7 @@ require (
 )
 
 require (
+	code.superseriousbusiness.org/httpsig v1.5.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
