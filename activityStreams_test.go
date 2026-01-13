@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	gtshttpsig "code.superseriousbusiness.org/httpsig"
 	"github.com/go-fed/httpsig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -690,6 +691,14 @@ func Test_apSendSigned(t *testing.T) {
 		0,
 	)
 	require.NoError(t, err)
+	app.apSignerNoDigest, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host"},
+		httpsig.Signature,
+		0,
+	)
+	require.NoError(t, err)
 
 	// Create a test activity
 	note := ap.ObjectNew(ap.NoteType)
@@ -750,24 +759,118 @@ func Test_signRequest(t *testing.T) {
 		0,
 	)
 	require.NoError(t, err)
-
-	// Create a test request
-	body := []byte(`{"type":"Note","content":"Test"}`)
-	req, err := http.NewRequest(http.MethodPost, "https://remote.example/inbox", bytes.NewReader(body))
+	app.apSignerNoDigest, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host"},
+		httpsig.Signature,
+		0,
+	)
 	require.NoError(t, err)
 
-	// Sign the request
-	err = app.signRequest(req, "https://example.com")
+	t.Run("PostWithDigest", func(t *testing.T) {
+		body := []byte(`{"type":"Note","content":"Test"}`)
+		req, err := http.NewRequest(http.MethodPost, "https://remote.example/inbox", bytes.NewReader(body))
+		require.NoError(t, err)
+
+		err = app.signRequest(req, "https://example.com")
+		require.NoError(t, err)
+
+		assert.NotEmpty(t, req.Header.Get("Date"))
+		assert.NotEmpty(t, req.Header.Get("Host"))
+		assert.NotEmpty(t, req.Header.Get("Signature"))
+		assert.NotEmpty(t, req.Header.Get("Digest"))
+
+		sig := req.Header.Get("Signature")
+		assert.Contains(t, sig, "keyId=")
+		assert.Contains(t, sig, "signature=")
+		assert.Contains(t, sig, "https://example.com#main-key")
+		assert.Contains(t, sig, "(request-target) date host digest")
+	})
+
+	t.Run("GetWithoutDigest", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "https://remote.example/inbox", nil)
+		require.NoError(t, err)
+
+		err = app.signRequest(req, "https://example.com")
+		require.NoError(t, err)
+
+		assert.NotEmpty(t, req.Header.Get("Date"))
+		assert.NotEmpty(t, req.Header.Get("Host"))
+		assert.NotEmpty(t, req.Header.Get("Signature"))
+		assert.Empty(t, req.Header.Get("Digest"))
+
+		sig := req.Header.Get("Signature")
+		assert.Contains(t, sig, "keyId=")
+		assert.Contains(t, sig, "signature=")
+		assert.Contains(t, sig, "https://example.com#main-key")
+		assert.Contains(t, sig, "(request-target) date host")
+		assert.NotContains(t, sig, "digest")
+
+		verifier, err := httpsig.NewVerifier(req)
+		require.NoError(t, err)
+		err = verifier.Verify(&app.apPrivateKey.PublicKey, httpsig.RSA_SHA256)
+		assert.NoError(t, err)
+	})
+}
+
+func Test_signRequest_GoToSocialVerifier(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.ActivityPub = &configActivityPub{
+		Enabled: true,
+	}
+	err := app.initConfig(false)
 	require.NoError(t, err)
 
-	// Verify signature components
-	assert.NotEmpty(t, req.Header.Get("Date"))
-	assert.NotEmpty(t, req.Header.Get("Host"))
-	assert.NotEmpty(t, req.Header.Get("Signature"))
+	// Initialize key and signers
+	err = app.loadActivityPubPrivateKey()
+	require.NoError(t, err)
+	app.apSigner, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host", "digest"},
+		httpsig.Signature,
+		0,
+	)
+	require.NoError(t, err)
+	app.apSignerNoDigest, _, err = httpsig.NewSigner(
+		[]httpsig.Algorithm{httpsig.RSA_SHA256},
+		httpsig.DigestSha256,
+		[]string{httpsig.RequestTarget, "date", "host"},
+		httpsig.Signature,
+		0,
+	)
+	require.NoError(t, err)
 
-	// Verify signature header format
-	sig := req.Header.Get("Signature")
-	assert.Contains(t, sig, "keyId=")
-	assert.Contains(t, sig, "signature=")
-	assert.Contains(t, sig, "https://example.com#main-key")
+	t.Run("PostWithDigest", func(t *testing.T) {
+		body := []byte(`{"type":"Note","content":"Test"}`)
+		req, err := http.NewRequest(http.MethodPost, "https://remote.example/inbox", bytes.NewReader(body))
+		require.NoError(t, err)
+
+		err = app.signRequest(req, "https://example.com")
+		require.NoError(t, err)
+
+		v, err := gtshttpsig.NewVerifier(req)
+		require.NoError(t, err)
+		err = v.Verify(&app.apPrivateKey.PublicKey, gtshttpsig.RSA_SHA256)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, req.Header.Get("Digest"))
+	})
+
+	t.Run("GetWithoutDigest", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "https://remote.example/inbox", nil)
+		require.NoError(t, err)
+
+		err = app.signRequest(req, "https://example.com")
+		require.NoError(t, err)
+
+		v, err := gtshttpsig.NewVerifier(req)
+		require.NoError(t, err)
+		err = v.Verify(&app.apPrivateKey.PublicKey, gtshttpsig.RSA_SHA256)
+		assert.NoError(t, err)
+		assert.Empty(t, req.Header.Get("Digest"))
+	})
 }
