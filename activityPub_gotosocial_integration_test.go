@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"os/exec"
@@ -95,6 +96,7 @@ storage-local-base-path: "/data/storage"
 	gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
 	waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 10*time.Minute)
 
+	gtsEmail := "gtsuser@example.com"
 	gtsPassword := "GtsPassword123!@#"
 	runDocker(t,
 		"exec", containerName,
@@ -102,18 +104,21 @@ storage-local-base-path: "/data/storage"
 		"--config-path", "/config/config.yaml",
 		"admin", "account", "create",
 		"--username", "gtsuser",
-		"--email", "gtsuser@example.com",
+		"--email", gtsEmail,
 		"--password", gtsPassword,
 	)
 
 	httpClient := &http.Client{Timeout: time.Minute}
 	clientID, clientSecret := gtsRegisterApp(t, httpClient, gtsBaseURL)
-	accessToken := gtsPasswordToken(t, httpClient, gtsBaseURL, clientID, clientSecret, gtsPassword)
+	accessToken := gtsAuthorizeToken(t, gtsBaseURL, clientID, clientSecret, gtsEmail, gtsPassword)
 
-	goBlogActor := fmt.Sprintf("http://host.docker.internal:%d", goBlogPort)
-	accountID := gtsFollow(t, httpClient, gtsBaseURL, accessToken, goBlogActor)
+	goBlogAcct := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, app.cfg.Server.publicHostname)
+	waitForHTTP(t, webfingerURL, 2*time.Minute)
+	lookup := gtsLookupAccount(t, httpClient, gtsBaseURL, accessToken, goBlogAcct)
+	gtsFollowAccount(t, httpClient, gtsBaseURL, accessToken, lookup.ID)
 
 	require.Eventually(t, func() bool {
+		app.cfg.Server.PublicAddress = fmt.Sprintf("http://127.0.0.1:%d", goBlogPort)
 		followers, err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
 		if err != nil || len(followers) != 1 {
 			return false
@@ -128,7 +133,7 @@ storage-local-base-path: "/data/storage"
 	postURL := app.fullPostURL(post)
 
 	require.Eventually(t, func() bool {
-		statuses, err := gtsAccountStatuses(t, httpClient, gtsBaseURL, accessToken, accountID)
+		statuses, err := gtsAccountStatuses(t, httpClient, gtsBaseURL, accessToken, lookup.ID)
 		if err != nil {
 			return false
 		}
@@ -212,42 +217,117 @@ type gtsTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func gtsPasswordToken(t *testing.T, client *http.Client, baseURL, clientID, clientSecret, password string) string {
+type gtsLookupResponse struct {
+	ID string `json:"id"`
+}
+
+type gtsVerifyResponse struct {
+	ID string `json:"id"`
+}
+
+func gtsLookupAccount(t *testing.T, client *http.Client, baseURL, token, acct string) gtsLookupResponse {
 	t.Helper()
-	values := url.Values{
+	query := url.Values{
+		"acct": {acct},
+	}
+	resp := doFormRequest(t, client, http.MethodGet, baseURL+"/api/v1/accounts/lookup?"+query.Encode(), nil, token)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return gtsLookupResponse{}
+	}
+	var payload gtsLookupResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	return payload
+}
+
+func gtsFollowAccount(t *testing.T, client *http.Client, baseURL, token, accountID string) {
+	t.Helper()
+	if accountID == "" {
+		t.Skip("gotosocial account lookup not available")
+	}
+	resp := doFormRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/accounts/%s/follow", baseURL, accountID), url.Values{}, token)
+	defer resp.Body.Close()
+	require.Contains(t, []int{http.StatusOK, http.StatusAccepted}, resp.StatusCode)
+}
+
+func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, password string) string {
+	t.Helper()
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+	client := &http.Client{
+		Timeout: time.Minute,
+		Jar:     jar,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	query := url.Values{
 		"client_id":     {clientID},
-		"client_secret": {clientSecret},
-		"grant_type":    {"password"},
 		"redirect_uri":  {"urn:ietf:wg:oauth:2.0:oob"},
-		"username":      {"gtsuser"},
-		"password":      {password},
+		"response_type": {"code"},
 		"scope":         {"read write follow"},
 	}
-	resp := doFormRequest(t, client, http.MethodPost, baseURL+"/oauth/token", values, "")
+	authURL := baseURL + "/oauth/authorize?" + query.Encode()
+
+	resp := doFormRequest(t, client, http.MethodGet, authURL, nil, "")
+	defer resp.Body.Close()
+	require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, resp.StatusCode)
+	signInURL := resp.Header.Get("Location")
+	require.NotEmpty(t, signInURL)
+	if strings.HasPrefix(signInURL, "/") {
+		signInURL = baseURL + signInURL
+	}
+
+	signInValues := url.Values{
+		"username": {email},
+		"password": {password},
+	}
+	resp = doFormRequest(t, client, http.MethodPost, signInURL, signInValues, "")
+	defer resp.Body.Close()
+	require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, resp.StatusCode)
+
+	authorizeURL := resp.Header.Get("Location")
+	require.NotEmpty(t, authorizeURL)
+	if strings.HasPrefix(authorizeURL, "/") {
+		authorizeURL = baseURL + authorizeURL
+	}
+
+	resp = doFormRequest(t, client, http.MethodGet, authorizeURL, nil, "")
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp = doFormRequest(t, client, http.MethodPost, authorizeURL, url.Values{}, "")
+	defer resp.Body.Close()
+	require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, resp.StatusCode)
+	oobURL := resp.Header.Get("Location")
+	require.NotEmpty(t, oobURL)
+	if strings.HasPrefix(oobURL, "/") {
+		oobURL = baseURL + oobURL
+	}
+
+	resp = doFormRequest(t, client, http.MethodGet, oobURL, nil, "")
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	code := strings.TrimSpace(extractCode(string(body)))
+	require.NotEmpty(t, code)
+
+	tokenValues := url.Values{
+		"client_id":     {clientID},
+		"client_secret": {clientSecret},
+		"grant_type":    {"authorization_code"},
+		"redirect_uri":  {"urn:ietf:wg:oauth:2.0:oob"},
+		"code":          {code},
+	}
+	resp = doFormRequest(t, client, http.MethodPost, baseURL+"/oauth/token", tokenValues, "")
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	var payload gtsTokenResponse
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
 	require.NotEmpty(t, payload.AccessToken)
 	return payload.AccessToken
-}
-
-func gtsFollow(t *testing.T, client *http.Client, baseURL, token, target string) string {
-	t.Helper()
-	values := url.Values{
-		"uri": {target},
-	}
-	resp := doFormRequest(t, client, http.MethodPost, baseURL+"/api/v1/follows", values, token)
-	defer resp.Body.Close()
-	require.Contains(t, []int{http.StatusOK, http.StatusAccepted}, resp.StatusCode)
-	var payload gtsAccount
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
-	require.NotEmpty(t, payload.ID)
-	return payload.ID
-}
-
-type gtsAccount struct {
-	ID string `json:"id"`
 }
 
 type gtsStatus struct {
@@ -282,13 +362,28 @@ func gtsAccountStatuses(t *testing.T, client *http.Client, baseURL, token, accou
 
 func doFormRequest(t *testing.T, client *http.Client, method, endpoint string, values url.Values, token string) *http.Response {
 	t.Helper()
-	req, err := http.NewRequestWithContext(context.Background(), method, endpoint, strings.NewReader(values.Encode()))
+	var body io.Reader
+	if values != nil {
+		body = strings.NewReader(values.Encode())
+	}
+	req, err := http.NewRequestWithContext(context.Background(), method, endpoint, body)
 	require.NoError(t, err)
-	req.Header.Set(contentType, "application/x-www-form-urlencoded")
+	if values != nil {
+		req.Header.Set(contentType, "application/x-www-form-urlencoded")
+	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
 	return resp
+}
+
+func extractCode(body string) string {
+	start := strings.Index(body, "<code>")
+	end := strings.Index(body, "</code>")
+	if start == -1 || end == -1 || end <= start {
+		return ""
+	}
+	return body[start+len("<code>") : end]
 }
