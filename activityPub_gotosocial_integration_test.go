@@ -20,11 +20,14 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
 	gtsTestEmail    = "gtsuser@example.com"
 	gtsTestPassword = "GtsPassword123!@#"
+	gtsContainerPort = "8080/tcp"
 )
 
 func TestActivityPubWithGoToSocial(t *testing.T) {
@@ -33,8 +36,8 @@ func TestActivityPubWithGoToSocial(t *testing.T) {
 	}
 	requireDocker(t)
 
+	ctx := context.Background()
 	goBlogPort := getFreePort(t)
-	gtsPort := getFreePort(t)
 
 	app := &goBlog{
 		cfg:        createDefaultTestConfig(t),
@@ -44,6 +47,7 @@ func TestActivityPubWithGoToSocial(t *testing.T) {
 	app.cfg.Server.Port = goBlogPort
 	app.cfg.ActivityPub.Enabled = true
 	require.NoError(t, app.initConfig(false))
+	app.cfg.Server.publicHostname = fmt.Sprintf("host.docker.internal:%d", goBlogPort)
 	require.NoError(t, app.initTemplateStrings())
 	require.NoError(t, app.initActivityPub())
 	app.reloadRouter()
@@ -76,42 +80,57 @@ func TestActivityPubWithGoToSocial(t *testing.T) {
 	gtsConfig := fmt.Sprintf(`host: "127.0.0.1"
 protocol: "http"
 bind-address: "0.0.0.0"
-port: %d
+port: 8080
 db-type: "sqlite"
 db-address: "/data/sqlite.db"
 storage-local-base-path: "/data/storage"
-`, gtsPort)
+`)
 	require.NoError(t, os.WriteFile(gtsConfigPath, []byte(gtsConfig), 0o644))
 
-	containerName := fmt.Sprintf("goblog-gts-%d", time.Now().UnixNano())
-	runDocker(t,
-		"run", "-d", "--rm",
-		"--name", containerName,
-		"--add-host", "host.docker.internal:host-gateway",
-		"-p", fmt.Sprintf("%d:%d", gtsPort, gtsPort),
-		"-v", fmt.Sprintf("%s:/config/config.yaml", gtsConfigPath),
-		"-v", fmt.Sprintf("%s:/data", gtsDataDir),
-		"docker.io/superseriousbusiness/gotosocial:latest",
-		"--config-path", "/config/config.yaml", "server", "start",
-	)
+	containerRequest := testcontainers.ContainerRequest{
+		Image:        "docker.io/superseriousbusiness/gotosocial:latest",
+		ExposedPorts: []string{gtsContainerPort},
+		Cmd:          []string{"--config-path", "/config/config.yaml", "server", "start"},
+		WaitingFor: wait.ForHTTP("/api/v1/instance").
+			WithPort(gtsContainerPort).
+			WithStartupTimeout(10 * time.Minute),
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(gtsConfigPath, "/config/config.yaml"),
+			testcontainers.BindMount(gtsDataDir, "/data"),
+		),
+		ExtraHosts: []string{"host.docker.internal:host-gateway"},
+	}
+	gtsContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: containerRequest,
+		Started:          true,
+	})
+	require.NoError(t, err)
 	t.Cleanup(func() {
-		_ = exec.Command("docker", "rm", "-f", containerName).Run()
+		_ = gtsContainer.Terminate(ctx)
 	})
 
-	gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
-	waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 10*time.Minute)
+	gtsHost, err := gtsContainer.Host(ctx)
+	require.NoError(t, err)
+	gtsMappedPort, err := gtsContainer.MappedPort(ctx, gtsContainerPort)
+	require.NoError(t, err)
+	gtsBaseURL := fmt.Sprintf("http://%s:%s", gtsHost, gtsMappedPort.Port())
+	waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 2*time.Minute)
 
 	gtsEmail := gtsTestEmail
 	gtsPassword := gtsTestPassword
-	runDocker(t,
-		"exec", containerName,
+	exitCode, output, err := gtsContainer.Exec(ctx, []string{
 		"/gotosocial/gotosocial",
 		"--config-path", "/config/config.yaml",
 		"admin", "account", "create",
 		"--username", "gtsuser",
 		"--email", gtsEmail,
 		"--password", gtsPassword,
-	)
+	})
+	require.NoError(t, err)
+	if exitCode != 0 {
+		out, _ := io.ReadAll(output)
+		t.Fatalf("gotosocial account create failed: %s", string(out))
+	}
 
 	httpClient := &http.Client{Timeout: time.Minute}
 	clientID, clientSecret := gtsRegisterApp(t, httpClient, gtsBaseURL)
@@ -123,7 +142,6 @@ storage-local-base-path: "/data/storage"
 	gtsFollowAccount(t, httpClient, gtsBaseURL, accessToken, lookup.ID)
 
 	require.Eventually(t, func() bool {
-		app.cfg.Server.PublicAddress = fmt.Sprintf("http://127.0.0.1:%d", goBlogPort)
 		followers, err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
 		if err != nil || len(followers) != 1 {
 			return false
@@ -168,14 +186,6 @@ func getFreePort(t *testing.T) int {
 	require.NoError(t, err)
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port
-}
-
-func runDocker(t *testing.T, args ...string) string {
-	t.Helper()
-	cmd := exec.Command("docker", args...)
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "docker %s: %s", strings.Join(args, " "), string(output))
-	return strings.TrimSpace(string(output))
 }
 
 func waitForHTTP(t *testing.T, endpoint string, timeout time.Duration) {
@@ -312,8 +322,8 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	code := strings.TrimSpace(extractCode(string(body)))
-	require.NotEmpty(t, code)
+	code, err := extractCode(string(body))
+	require.NoError(t, err)
 
 	tokenValues := url.Values{
 		"client_id":     {clientID},
@@ -370,7 +380,7 @@ func doFormRequest(t *testing.T, client *http.Client, method, endpoint string, v
 	req, err := http.NewRequestWithContext(context.Background(), method, endpoint, body)
 	require.NoError(t, err)
 	if values != nil {
-		req.Header.Set(contentType, "application/x-www-form-urlencoded")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -380,14 +390,14 @@ func doFormRequest(t *testing.T, client *http.Client, method, endpoint string, v
 	return resp
 }
 
-func extractCode(body string) string {
+func extractCode(body string) (string, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(body))
 	if err != nil {
-		return ""
+		return "", err
 	}
 	code := strings.TrimSpace(doc.Find("code").First().Text())
 	if code == "" {
-		return ""
+		return "", fmt.Errorf("oauth code not found in response")
 	}
-	return code
+	return code, nil
 }
