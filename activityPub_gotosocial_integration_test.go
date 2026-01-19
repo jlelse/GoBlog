@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package main
 
@@ -224,10 +223,6 @@ type gtsTokenResponse struct {
 }
 
 type gtsLookupResponse struct {
-	ID string `json:"id"`
-}
-
-type gtsVerifyResponse struct {
 	ID string `json:"id"`
 }
 
