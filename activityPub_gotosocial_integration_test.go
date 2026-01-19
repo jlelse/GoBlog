@@ -19,7 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	gtsTestEmail    = "gtsuser@example.com"
+	gtsTestPassword = "GtsPassword123!@#"
 )
 
 func TestActivityPubWithGoToSocial(t *testing.T) {
@@ -96,8 +102,8 @@ storage-local-base-path: "/data/storage"
 	gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
 	waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 10*time.Minute)
 
-	gtsEmail := "gtsuser@example.com"
-	gtsPassword := "GtsPassword123!@#"
+	gtsEmail := gtsTestEmail
+	gtsPassword := gtsTestPassword
 	runDocker(t,
 		"exec", containerName,
 		"/gotosocial/gotosocial",
@@ -380,10 +386,13 @@ func doFormRequest(t *testing.T, client *http.Client, method, endpoint string, v
 }
 
 func extractCode(body string) string {
-	start := strings.Index(body, "<code>")
-	end := strings.Index(body, "</code>")
-	if start == -1 || end == -1 || end <= start {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(body))
+	if err != nil {
 		return ""
 	}
-	return body[start+len("<code>") : end]
+	code := strings.TrimSpace(doc.Find("code").First().Text())
+	if code == "" {
+		return ""
+	}
+	return code
 }
