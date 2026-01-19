@@ -28,6 +28,15 @@
         "kind": "test",
         "isDefault": true
       }
+    },
+    {
+      "label": "Test (integration)",
+      "type": "shell",
+      "command": "go test -tags=integration,linux,libsqlite3,sqlite_fts5 -run TestActivityPubWithGoToSocial ./...",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
     }
   ]
 }

@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	gtsTestEmail    = "gtsuser@example.com"
-	gtsTestPassword = "GtsPassword123!@#"
+	gtsTestEmail     = "gtsuser@example.com"
+	gtsTestPassword  = "GtsPassword123!@#"
 	gtsContainerPort = "8080/tcp"
 )
 
@@ -95,8 +95,8 @@ storage-local-base-path: "/data/storage"
 			WithPort(gtsContainerPort).
 			WithStartupTimeout(10 * time.Minute),
 		Mounts: testcontainers.Mounts(
-			testcontainers.BindMount(gtsConfigPath, "/config/config.yaml"),
-			testcontainers.BindMount(gtsDataDir, "/data"),
+			testcontainers.BindMount(gtsConfigPath, testcontainers.ContainerMountTarget("/config/config.yaml")),
+			testcontainers.BindMount(gtsDataDir, testcontainers.ContainerMountTarget("/data")),
 		),
 		ExtraHosts: []string{"host.docker.internal:host-gateway"},
 	}
@@ -136,9 +136,9 @@ storage-local-base-path: "/data/storage"
 	clientID, clientSecret := gtsRegisterApp(t, httpClient, gtsBaseURL)
 	accessToken := gtsAuthorizeToken(t, gtsBaseURL, clientID, clientSecret, gtsEmail, gtsPassword)
 
-	goBlogAcct := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, app.cfg.Server.publicHostname)
+	goBlogActor := app.apIri(app.cfg.Blogs[app.cfg.DefaultBlog])
 	waitForHTTP(t, webfingerURL, 2*time.Minute)
-	lookup := gtsLookupAccount(t, httpClient, gtsBaseURL, accessToken, goBlogAcct)
+	lookup := gtsLookupAccount(t, httpClient, gtsBaseURL, accessToken, goBlogActor)
 	gtsFollowAccount(t, httpClient, gtsBaseURL, accessToken, lookup.ID)
 
 	require.Eventually(t, func() bool {
@@ -239,23 +239,22 @@ type gtsLookupResponse struct {
 func gtsLookupAccount(t *testing.T, client *http.Client, baseURL, token, acct string) gtsLookupResponse {
 	t.Helper()
 	query := url.Values{
-		"acct": {acct},
+		"q":       {fmt.Sprintf("@%s", acct)},
+		"resolve": {"true"},
 	}
-	resp := doFormRequest(t, client, http.MethodGet, baseURL+"/api/v1/accounts/lookup?"+query.Encode(), nil, token)
+	resp := doFormRequest(t, client, http.MethodGet, baseURL+"/api/v1/accounts/search?"+query.Encode(), nil, token)
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return gtsLookupResponse{}
-	}
-	var payload gtsLookupResponse
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var payload []gtsLookupResponse
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
-	return payload
+	require.NotEmpty(t, payload)
+	require.NotEmpty(t, payload[0].ID)
+	return payload[0]
 }
 
 func gtsFollowAccount(t *testing.T, client *http.Client, baseURL, token, accountID string) {
 	t.Helper()
-	if accountID == "" {
-		t.Skip("gotosocial account lookup not available")
-	}
+	require.NotEmpty(t, accountID)
 	resp := doFormRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/accounts/%s/follow", baseURL, accountID), url.Values{}, token)
 	defer resp.Body.Close()
 	require.Contains(t, []int{http.StatusOK, http.StatusAccepted}, resp.StatusCode)

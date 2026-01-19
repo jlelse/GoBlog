@@ -21,6 +21,18 @@ jobs:
           tags: test
           push: false
 
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+      - name: Run ActivityPub integration test
+        run: go test -tags=integration,linux,libsqlite3,sqlite_fts5 -run TestActivityPubWithGoToSocial ./...
+
   build:
     if: github.ref == 'refs/heads/master'
     needs: test
