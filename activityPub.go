@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"code.superseriousbusiness.org/httpsig"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-fed/httpsig"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	ap "go.goblog.app/app/pkgs/activitypub"
@@ -648,21 +648,20 @@ func (a *goBlog) signRequest(r *http.Request, blogIri string) error {
 	if host := r.Header.Get("Host"); host == "" {
 		r.Header.Set("Host", r.URL.Host)
 	}
-	bodyBuf := bytes.NewBufferString("")
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		a.apSignMutex.Lock()
+		defer a.apSignMutex.Unlock()
+		return a.apSignerNoDigest.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, nil)
+	}
+	bodyBuf := bufferpool.Get()
+	defer bufferpool.Put(bodyBuf)
 	if r.Body != nil {
-		if _, err := io.Copy(bodyBuf, r.Body); err == nil {
-			r.Body = io.NopCloser(bodyBuf)
-		}
+		_, _ = io.Copy(bodyBuf, r.Body)
+		r.Body = io.NopCloser(bytes.NewReader(bodyBuf.Bytes()))
 	}
 	a.apSignMutex.Lock()
 	defer a.apSignMutex.Unlock()
-	signer := a.apSigner
-	bodyBytes := bodyBuf.Bytes()
-	if bodyBuf.Len() == 0 && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		signer = a.apSignerNoDigest
-		bodyBytes = nil
-	}
-	return signer.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBytes)
+	return a.apSigner.SignRequest(a.apPrivateKey, blogIri+"#main-key", r, bodyBuf.Bytes())
 }
 
 func (a *goBlog) apRefetchFollowers(blogName string) error {
