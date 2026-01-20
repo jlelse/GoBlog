@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -33,26 +32,55 @@ const (
 func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	requireDocker(t)
 
-	gb := startApIntegrationServer(t)
-	gts := startGoToSocialInstance(t, gb.cfg.Server.Port)
+	// Speed up the AP send queue for testing
+	apSendInterval = time.Second
 
-	httpClient := &http.Client{Timeout: time.Minute}
-	clientID, clientSecret := gtsRegisterApp(t, gts.baseURL)
-	accessToken := gtsAuthorizeToken(t, gts.baseURL, clientID, clientSecret, gtsTestEmail, gtsTestPassword)
+	// Start GoBlog ActivityPub server and GoToSocial instance
+	gb := startApIntegrationServer(t)
+	_, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
 
 	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
 
 	// Search for GoBlog account on GoToSocial and follow it
-	lookup := gtsLookupAccount(t, httpClient, gts.baseURL, accessToken, goBlogAcct)
-	require.NotNil(t, lookup, "gotosocial account lookup failed for %s", goBlogAcct)
-	gtsFollowAccount(t, httpClient, gts.baseURL, accessToken, lookup.ID)
+	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
+	require.NoError(t, err)
+	require.NotNil(t, searchResults)
+	require.Greater(t, len(searchResults.Accounts), 0)
+	lookup := searchResults.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), lookup.ID)
+	require.NoError(t, err)
 
+	// Verify that GoBlog has the GoToSocial user as a follower
 	require.Eventually(t, func() bool {
 		followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
 		if err != nil {
 			return false
 		}
 		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
+	}, time.Minute, time.Second)
+
+	// Verify that GoToSocial received the follow accept activity
+	require.Eventually(t, func() bool {
+		rs, err := mc.GetAccountRelationships(t.Context(), []string{string(lookup.ID)})
+		if err != nil {
+			return false
+		}
+		if len(rs) == 0 {
+			return false
+		}
+		return rs[0].Following
+	}, time.Minute, time.Second)
+
+	// Update blog title and check that GoToSocial received the update
+	gb.cfg.Blogs[gb.cfg.DefaultBlog].Title = "GoBlog ActivityPub Test Blog Updated"
+	gb.apSendProfileUpdates()
+
+	require.Eventually(t, func() bool {
+		account, err := mc.GetAccount(t.Context(), lookup.ID)
+		if err != nil {
+			return false
+		}
+		return strings.Contains(account.DisplayName, "GoBlog ActivityPub Test Blog Updated")
 	}, time.Minute, time.Second)
 
 	// Create a post on GoBlog and check that it appears on GoToSocial
@@ -63,7 +91,7 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	postURL := gb.fullPostURL(post)
 
 	require.Eventually(t, func() bool {
-		statuses, err := gtsAccountStatuses(t, httpClient, gts.baseURL, accessToken, lookup.ID)
+		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
 		if err != nil {
 			return false
 		}
@@ -73,6 +101,74 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 			}
 		}
 		return false
+	}, time.Minute, time.Second)
+
+	// Update the post on GoBlog and verify the update appears on GoToSocial
+	post.Content = "Updated content from GoBlog to GoToSocial!"
+	require.NoError(t, gb.replacePost(post, post.Path, statusPublished, visibilityPublic, false))
+
+	var statusId mastodon.ID
+	require.Eventually(t, func() bool {
+		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+		if err != nil {
+			return false
+		}
+		for _, status := range statuses {
+			if strings.Contains(status.Content, "Updated content from GoBlog to GoToSocial!") {
+				statusId = status.ID
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
+	// Favorite the post on GoToSocial and verify GoBlog creates a notification
+	_, err = mc.Favourite(t.Context(), statusId)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+		if err != nil {
+			return false
+		}
+		for _, n := range notifications {
+			if strings.Contains(n.Text, "liked") && strings.Contains(n.Text, post.Path) {
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
+	// Announce the post on GoToSocial and verify GoBlog creates a notification
+	_, err = mc.Reblog(t.Context(), statusId)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+		if err != nil {
+			return false
+		}
+		for _, n := range notifications {
+			if strings.Contains(n.Text, "announced") && strings.Contains(n.Text, post.Path) {
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
+	// Delete the post on GoBlog and verify it is removed from GoToSocial
+	require.NoError(t, gb.deletePost(post.Path))
+	require.Eventually(t, func() bool {
+		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+		if err != nil {
+			return false
+		}
+		for _, status := range statuses {
+			if status.URI == postURL || status.URL == postURL || strings.Contains(status.Content, "Updated content from GoBlog to GoToSocial!") {
+				return false
+			}
+		}
+		return true
 	}, time.Minute, time.Second)
 }
 
@@ -143,7 +239,7 @@ type goToSocialInstance struct {
 	networkName   string
 }
 
-func startGoToSocialInstance(t *testing.T, goblogPort int) *goToSocialInstance {
+func startGoToSocialInstance(t *testing.T, goblogPort int) (*goToSocialInstance, *mastodon.Client) {
 	t.Helper()
 
 	// Create Docker network for container DNS resolution
@@ -181,11 +277,6 @@ func startGoToSocialInstance(t *testing.T, goblogPort int) *goToSocialInstance {
 	containerName := fmt.Sprintf("goblog-gts-%d", time.Now().UnixNano())
 	port := getFreePort(t)
 	gtsDir := t.TempDir()
-	gtsDataDir := filepath.Join(gtsDir, "data")
-	gtsStorageDir := filepath.Join(gtsDataDir, "storage")
-	require.NoError(t, os.MkdirAll(gtsStorageDir, 0o777))
-	require.NoError(t, os.Chmod(gtsDataDir, 0o777))
-	require.NoError(t, os.Chmod(gtsStorageDir, 0o777))
 	gtsConfigPath := filepath.Join(gtsDir, "config.yaml")
 	gtsConfig := fmt.Sprintf(`host: "127.0.0.1:%d"
 protocol: "http"
@@ -200,6 +291,8 @@ http-client:
     - 0.0.0.0/0
 trusted-proxies:
   - "0.0.0.0/0"
+cache:
+  memory-target: "50MiB"
 `, port, port)
 	require.NoError(t, os.WriteFile(gtsConfigPath, []byte(gtsConfig), 0o644))
 
@@ -210,7 +303,9 @@ trusted-proxies:
 		"--network", netName,
 		"-p", fmt.Sprintf("%d:%d", port, port),
 		"-v", fmt.Sprintf("%s:/config/config.yaml", gtsConfigPath),
-		"-v", fmt.Sprintf("%s:/data", gtsDataDir),
+		"--tmpfs", "/data",
+		"--tmpfs", "/gotosocial/storage",
+		"--tmpfs", "/gotosocial/.cache",
 		"docker.io/superseriousbusiness/gotosocial:0.20.2",
 		"--config-path", "/config/config.yaml", "server", "start",
 	)
@@ -238,14 +333,19 @@ trusted-proxies:
 		"--password", gtsTestPassword,
 	)
 
-	return gts
+	clientID, clientSecret := gtsRegisterApp(t, gts.baseURL)
+	accessToken := gtsAuthorizeToken(t, gts.baseURL, clientID, clientSecret, gtsTestEmail, gtsTestPassword)
+	mc := mastodon.NewClient(&mastodon.Config{Server: gts.baseURL, AccessToken: accessToken})
+	mc.Client = http.Client{Timeout: time.Minute}
+
+	return gts, mc
 }
 
 func waitForHTTP(t *testing.T, endpoint string, timeout time.Duration) {
 	t.Helper()
 	client := &http.Client{Timeout: 5 * time.Second}
 	require.Eventually(t, func() bool {
-		req, err := requests.URL(endpoint).Method(http.MethodGet).Request(context.Background())
+		req, err := requests.URL(endpoint).Method(http.MethodGet).Request(t.Context())
 		if err != nil {
 			return false
 		}
@@ -267,44 +367,11 @@ func gtsRegisterApp(t *testing.T, baseURL string) (string, string) {
 		Scopes:       "read write follow",
 		Website:      "https://goblog.app",
 	}
-	app, err := mastodon.RegisterApp(context.Background(), appCfg)
+	app, err := mastodon.RegisterApp(t.Context(), appCfg)
 	require.NoError(t, err)
 	require.NotEmpty(t, app.ClientID)
 	require.NotEmpty(t, app.ClientSecret)
 	return app.ClientID, app.ClientSecret
-}
-
-func gtsLookupAccount(t *testing.T, client *http.Client, baseURL, token, acct string) *mastodon.Account {
-	t.Helper()
-	mc := mastodon.NewClient(&mastodon.Config{Server: baseURL, AccessToken: token})
-	mc.Client = *client
-	results, err := mc.Search(context.Background(), acct, true)
-	if err != nil || results == nil || len(results.Accounts) == 0 {
-		return nil
-	}
-	return results.Accounts[0]
-}
-
-func gtsFollowAccount(t *testing.T, client *http.Client, baseURL, token string, accountID mastodon.ID) {
-	t.Helper()
-	if accountID == "" {
-		t.Skip("gotosocial account lookup not available")
-	}
-	mc := mastodon.NewClient(&mastodon.Config{Server: baseURL, AccessToken: token})
-	mc.Client = *client
-	_, err := mc.AccountFollow(context.Background(), accountID)
-	require.NoError(t, err)
-}
-
-func gtsAccountStatuses(t *testing.T, client *http.Client, baseURL, token string, accountID mastodon.ID) ([]*mastodon.Status, error) {
-	t.Helper()
-	mc := mastodon.NewClient(&mastodon.Config{Server: baseURL, AccessToken: token})
-	mc.Client = *client
-	mStatuses, err := mc.GetAccountStatuses(context.Background(), accountID, nil)
-	if err != nil {
-		return nil, err
-	}
-	return mStatuses, nil
 }
 
 // gtsAuthorizeToken performs the OAuth2 authorization code flow to get an access token.
@@ -341,7 +408,7 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 				signInURL = baseURL + signInURL
 			}
 			return nil
-		}).Fetch(context.Background())
+		}).Fetch(t.Context())
 	require.NoError(t, err)
 
 	// Step 2: Submit login credentials
@@ -360,11 +427,11 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 				authorizeURL = baseURL + authorizeURL
 			}
 			return nil
-		}).Fetch(context.Background())
+		}).Fetch(t.Context())
 	require.NoError(t, err)
 
 	// Step 3: Get authorization page
-	err = requests.URL(authorizeURL).Client(client).Fetch(context.Background())
+	err = requests.URL(authorizeURL).Client(client).Fetch(t.Context())
 	require.NoError(t, err)
 
 	// Step 4: Approve authorization request
@@ -379,7 +446,7 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 				oobURL = baseURL + oobURL
 			}
 			return nil
-		}).Fetch(context.Background())
+		}).Fetch(t.Context())
 	require.NoError(t, err)
 
 	// Step 5: Retrieve authorization code from out-of-band page
@@ -388,7 +455,7 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 	defer bufferpool.Put(buf)
 	err = requests.URL(oobURL).Client(client).
 		ToBytesBuffer(buf).
-		Fetch(context.Background())
+		Fetch(t.Context())
 	code = extractCode(buf)
 	require.NotEmpty(t, code)
 	require.NoError(t, err)
@@ -404,7 +471,7 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 	var tokenResult struct {
 		AccessToken string `json:"access_token"`
 	}
-	err = requests.URL(baseURL + "/oauth/token").BodyForm(tokenData).ToJSON(&tokenResult).Fetch(context.Background())
+	err = requests.URL(baseURL + "/oauth/token").BodyForm(tokenData).ToJSON(&tokenResult).Fetch(t.Context())
 	require.NoError(t, err)
 	require.NotEmpty(t, tokenResult.AccessToken)
 
