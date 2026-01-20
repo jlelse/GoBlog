@@ -1,0 +1,30 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+      
+      - name: Install SQLite development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+      
+      - name: Run integration tests
+        env:
+          GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5"
+        run: |
+          go test -timeout 600s -v ./... -run "TestIntegration.*"
