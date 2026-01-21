@@ -37,7 +37,7 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 
 	// Start GoBlog ActivityPub server and GoToSocial instance
 	gb := startApIntegrationServer(t)
-	_, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
 
 	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
 
@@ -59,6 +59,20 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
 	}, time.Minute, time.Second)
 
+	// Verify that GoBlog created the follow notification
+	require.Eventually(t, func() bool {
+		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+		if err != nil {
+			return false
+		}
+		for _, n := range notifications {
+			if strings.Contains(n.Text, "started following") && strings.Contains(n.Text, "/@"+gtsTestUsername) {
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
 	// Verify that GoToSocial received the follow accept activity
 	require.Eventually(t, func() bool {
 		rs, err := mc.GetAccountRelationships(t.Context(), []string{string(lookup.ID)})
@@ -71,105 +85,185 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		return rs[0].Following
 	}, time.Minute, time.Second)
 
-	// Update blog title and check that GoToSocial received the update
-	gb.cfg.Blogs[gb.cfg.DefaultBlog].Title = "GoBlog ActivityPub Test Blog Updated"
-	gb.apSendProfileUpdates()
+	t.Run("Update profile", func(t *testing.T) {
+		// Update blog title and check that GoToSocial received the update
+		gb.cfg.Blogs[gb.cfg.DefaultBlog].Title = "GoBlog ActivityPub Test Blog Updated"
+		gb.apSendProfileUpdates()
 
-	require.Eventually(t, func() bool {
-		account, err := mc.GetAccount(t.Context(), lookup.ID)
-		if err != nil {
-			return false
-		}
-		return strings.Contains(account.DisplayName, "GoBlog ActivityPub Test Blog Updated")
-	}, time.Minute, time.Second)
-
-	// Create a post on GoBlog and check that it appears on GoToSocial
-	post := &post{
-		Content: "Hello from GoBlog to GoToSocial!",
-	}
-	require.NoError(t, gb.createPost(post))
-	postURL := gb.fullPostURL(post)
-
-	require.Eventually(t, func() bool {
-		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
-		if err != nil {
-			return false
-		}
-		for _, status := range statuses {
-			if status.URI == postURL || status.URL == postURL || strings.Contains(status.Content, "Hello from GoBlog to GoToSocial!") {
-				return true
-			}
-		}
-		return false
-	}, time.Minute, time.Second)
-
-	// Update the post on GoBlog and verify the update appears on GoToSocial
-	post.Content = "Updated content from GoBlog to GoToSocial!"
-	require.NoError(t, gb.replacePost(post, post.Path, statusPublished, visibilityPublic, false))
-
-	var statusId mastodon.ID
-	require.Eventually(t, func() bool {
-		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
-		if err != nil {
-			return false
-		}
-		for _, status := range statuses {
-			if strings.Contains(status.Content, "Updated content from GoBlog to GoToSocial!") {
-				statusId = status.ID
-				return true
-			}
-		}
-		return false
-	}, time.Minute, time.Second)
-
-	// Favorite the post on GoToSocial and verify GoBlog creates a notification
-	_, err = mc.Favourite(t.Context(), statusId)
-	require.NoError(t, err)
-
-	require.Eventually(t, func() bool {
-		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
-		if err != nil {
-			return false
-		}
-		for _, n := range notifications {
-			if strings.Contains(n.Text, "liked") && strings.Contains(n.Text, post.Path) {
-				return true
-			}
-		}
-		return false
-	}, time.Minute, time.Second)
-
-	// Announce the post on GoToSocial and verify GoBlog creates a notification
-	_, err = mc.Reblog(t.Context(), statusId)
-	require.NoError(t, err)
-
-	require.Eventually(t, func() bool {
-		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
-		if err != nil {
-			return false
-		}
-		for _, n := range notifications {
-			if strings.Contains(n.Text, "announced") && strings.Contains(n.Text, post.Path) {
-				return true
-			}
-		}
-		return false
-	}, time.Minute, time.Second)
-
-	// Delete the post on GoBlog and verify it is removed from GoToSocial
-	require.NoError(t, gb.deletePost(post.Path))
-	require.Eventually(t, func() bool {
-		statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
-		if err != nil {
-			return false
-		}
-		for _, status := range statuses {
-			if status.URI == postURL || status.URL == postURL || strings.Contains(status.Content, "Updated content from GoBlog to GoToSocial!") {
+		require.Eventually(t, func() bool {
+			account, err := mc.GetAccount(t.Context(), lookup.ID)
+			if err != nil {
 				return false
 			}
+			return strings.Contains(account.DisplayName, "GoBlog ActivityPub Test Blog Updated")
+		}, time.Minute, time.Second)
+	})
+
+	t.Run("Post flow", func(t *testing.T) {
+		// Create a post on GoBlog and check that it appears on GoToSocial
+		p := &post{
+			Content: "Hello from GoBlog to GoToSocial!",
 		}
-		return true
-	}, time.Minute, time.Second)
+		require.NoError(t, gb.createPost(p))
+		postURL := gb.fullPostURL(p)
+
+		require.Eventually(t, func() bool {
+			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+			if err != nil {
+				return false
+			}
+			for _, status := range statuses {
+				if status.URL == postURL && strings.Contains(status.Content, "Hello from GoBlog to GoToSocial!") {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Update the post on GoBlog and verify the update appears on GoToSocial
+		p.Content = "Updated content from GoBlog to GoToSocial!"
+		require.NoError(t, gb.replacePost(p, p.Path, statusPublished, visibilityPublic, false))
+
+		var statusId mastodon.ID
+		require.Eventually(t, func() bool {
+			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+			if err != nil {
+				return false
+			}
+			for _, status := range statuses {
+				if strings.Contains(status.Content, "Updated content from GoBlog to GoToSocial!") {
+					statusId = status.ID
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Favorite the post on GoToSocial and verify GoBlog creates a notification
+		_, err = mc.Favourite(t.Context(), statusId)
+		require.NoError(t, err)
+
+		require.Eventually(t, func() bool {
+			notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+			if err != nil {
+				return false
+			}
+			for _, n := range notifications {
+				if strings.Contains(n.Text, "liked") && strings.Contains(n.Text, p.Path) {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Announce the post on GoToSocial and verify GoBlog creates a notification
+		_, err = mc.Reblog(t.Context(), statusId)
+		require.NoError(t, err)
+
+		require.Eventually(t, func() bool {
+			notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+			if err != nil {
+				return false
+			}
+			for _, n := range notifications {
+				if strings.Contains(n.Text, "announced") && strings.Contains(n.Text, p.Path) {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Delete the post on GoBlog and verify it is removed from GoToSocial
+		require.NoError(t, gb.deletePost(p.Path))
+		require.Eventually(t, func() bool {
+			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+			if err != nil {
+				return false
+			}
+			for _, status := range statuses {
+				if status.URL == postURL {
+					return false
+				}
+			}
+			return true
+		}, time.Minute, time.Second)
+	})
+
+	t.Run("Mention", func(t *testing.T) {
+		// Send a new post with a mention from GoBlog to GoToSocial and verify it appears
+		p := &post{
+			Content: fmt.Sprintf("Hello [@%s@%s](%s/@%s) from GoBlog!", gtsTestUsername, strings.ReplaceAll(gts.baseURL, "http://", ""), gts.baseURL, gtsTestUsername),
+		}
+		require.NoError(t, gb.createPost(p))
+		post2URL := gb.fullPostURL(p)
+
+		// Check that GoToSocial received the post with mention
+		require.Eventually(t, func() bool {
+			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+			if err != nil {
+				return false
+			}
+			for _, status := range statuses {
+				if status.URL == post2URL {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+		// Check that GoToSocial created a notification for the mention
+		require.Eventually(t, func() bool {
+			notifications, err := mc.GetNotifications(t.Context(), nil)
+			if err != nil {
+				return false
+			}
+			for _, n := range notifications {
+				if n.Status != nil && n.Status.URL == post2URL {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+	})
+
+	t.Run("Replies", func(t *testing.T) {
+		// Create a post on GoToSocial side and verify that replies are working
+		testStatus, err := mc.PostStatus(t.Context(), &mastodon.Toot{Status: "Test", Visibility: mastodon.VisibilityPublic})
+		require.NoError(t, err)
+		p := &post{
+			Parameters: map[string][]string{
+				"replylink": {testStatus.URL}, // Using URL to check if the mapping to URI works
+			},
+			Content: "Replying to GoToSocial post",
+		}
+		require.NoError(t, gb.createPost(p))
+		pUrl := gb.fullPostURL(p)
+
+		// Verify that the reply appears on GoToSocial
+		require.Eventually(t, func() bool {
+			refreshedStatus, err := mc.GetStatus(t.Context(), testStatus.ID)
+			if err != nil {
+				return false
+			}
+			if refreshedStatus.RepliesCount == 1 {
+				return true
+			}
+			return false
+		}, time.Minute, time.Second)
+		// Check that GoToSocial created a notification for the reply
+		require.Eventually(t, func() bool {
+			notifications, err := mc.GetNotifications(t.Context(), nil)
+			if err != nil {
+				return false
+			}
+			for _, n := range notifications {
+				if n.Status != nil && n.Status.URL == pUrl {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+	})
+
 }
 
 func requireDocker(t *testing.T) {

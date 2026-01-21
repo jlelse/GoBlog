@@ -15,13 +15,6 @@ func newHttpClient() *http.Client {
 	}
 }
 
-func cloneHttpClient(original *http.Client) *http.Client {
-	return &http.Client{
-		Timeout:   original.Timeout,
-		Transport: original.Transport,
-	}
-}
-
 func newHttpTransport() http.RoundTripper {
 	return newAddUserAgentTransport(
 		gzhttp.Transport(
@@ -55,21 +48,4 @@ func (t *addUserAgentTransport) RoundTrip(r *http.Request) (*http.Response, erro
 
 func newAddUserAgentTransport(parent http.RoundTripper) *addUserAgentTransport {
 	return &addUserAgentTransport{parent}
-}
-
-type apSignRequestTransport struct {
-	parent  http.RoundTripper
-	blogIri string
-	app     *goBlog
-}
-
-func (t *apSignRequestTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	if err := t.app.signRequest(r, t.blogIri); err != nil {
-		return nil, err
-	}
-	return t.parent.RoundTrip(r)
-}
-
-func (a *goBlog) newactivityPubSignRequestTransport(parent http.RoundTripper, blogIri string) *apSignRequestTransport {
-	return &apSignRequestTransport{parent: parent, blogIri: blogIri, app: a}
 }

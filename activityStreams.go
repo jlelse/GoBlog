@@ -110,7 +110,12 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	}
 	// Reply
 	if replyLink := p.firstParameter(a.cfg.Micropub.ReplyParam); replyLink != "" {
-		note.InReplyTo = ap.IRI(replyLink)
+		if replyObject := p.firstParameter(activityPubReplyObjectParameter); replyObject != "" {
+			note.InReplyTo = ap.IRI(replyObject)
+		} else {
+			// Fallback to reply link if reply object is not available
+			note.InReplyTo = ap.IRI(replyLink)
+		}
 	}
 	return note
 }

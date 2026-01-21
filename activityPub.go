@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -96,17 +98,7 @@ func (a *goBlog) initActivityPubBase() error {
 		httpsig.Signature,
 		0,
 	)
-	if err != nil {
-		return err
-	}
-	// Init http client
-	a.apHttpClients = map[string]*http.Client{}
-	for blog, bc := range a.cfg.Blogs {
-		httpClient := cloneHttpClient(a.httpClient)
-		httpClient.Transport = a.newactivityPubSignRequestTransport(httpClient.Transport, string(a.apAPIri(bc)))
-		a.apHttpClients[blog] = httpClient
-	}
-	return nil
+	return err
 }
 
 func (a *goBlog) apEnabled() bool {
@@ -182,7 +174,7 @@ func (a *goBlog) apCheckMentions(p *post) {
 		if err != nil || act == nil || act.Type != ap.PersonType {
 			continue
 		}
-		mentions = append(mentions, link)
+		mentions = append(mentions, cmp.Or(string(act.GetLink()), link))
 	}
 	if p.Parameters == nil {
 		p.Parameters = map[string][]string{}
@@ -191,7 +183,10 @@ func (a *goBlog) apCheckMentions(p *post) {
 	_ = a.db.replacePostParam(p.Path, activityPubMentionsParameter, mentions)
 }
 
-const activityPubReplyActorParameter = "activitypubreplyactor"
+const (
+	activityPubReplyActorParameter  = "activitypubreplyactor"
+	activityPubReplyObjectParameter = "activitypubreplyobject"
+)
 
 func (a *goBlog) apCheckActivityPubReply(p *post) {
 	replyLink := a.replyLink(p)
@@ -203,15 +198,20 @@ func (a *goBlog) apCheckActivityPubReply(p *post) {
 		return
 	}
 	obj, err := ap.ToObject(item)
-	if err != nil || obj == nil || obj.GetLink() == "" || obj.AttributedTo == nil || obj.AttributedTo.GetLink() == "" {
+	if err != nil || obj == nil || obj.GetLink() == "" {
 		return
 	}
-	replyLinkActor := []string{obj.AttributedTo.GetLink().String()}
 	if p.Parameters == nil {
 		p.Parameters = map[string][]string{}
 	}
-	p.Parameters[activityPubReplyActorParameter] = replyLinkActor
-	_ = a.db.replacePostParam(p.Path, activityPubReplyActorParameter, replyLinkActor)
+	replyLinkObject := []string{obj.GetLink().String()}
+	p.Parameters[activityPubReplyObjectParameter] = replyLinkObject
+	_ = a.db.replacePostParam(p.Path, activityPubReplyObjectParameter, replyLinkObject)
+	if obj.AttributedTo != nil && obj.AttributedTo.GetLink() != "" {
+		replyLinkActor := []string{obj.AttributedTo.GetLink().String()}
+		p.Parameters[activityPubReplyActorParameter] = replyLinkActor
+		_ = a.db.replacePostParam(p.Path, activityPubReplyActorParameter, replyLinkActor)
+	}
 }
 
 func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
@@ -365,12 +365,29 @@ func (a *goBlog) apVerifySignature(r *http.Request, blog string) (*ap.Actor, err
 	if block == nil {
 		return nil, errors.New("public key invalid")
 	}
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	var pubKey any
+	switch block.Type {
+	case "RSA PUBLIC KEY":
+		pubKey, err = x509.ParsePKCS1PublicKey(block.Bytes)
+	default:
+		pubKey, err = x509.ParsePKIXPublicKey(block.Bytes)
+	}
 	if err != nil {
 		// Unable to parse public key
 		return nil, err
 	}
-	return actor, verifier.Verify(pubKey, httpsig.RSA_SHA256)
+	var algo httpsig.Algorithm
+	switch pubKey.(type) {
+	case *rsa.PublicKey:
+		algo = httpsig.RSA_SHA256
+	case *ecdsa.PublicKey:
+		algo = httpsig.ECDSA_SHA256
+	case ed25519.PublicKey:
+		algo = httpsig.ED25519
+	default:
+		return nil, errors.New("unsupported public key type")
+	}
+	return actor, verifier.Verify(pubKey, algo)
 }
 
 func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
@@ -535,7 +552,11 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
 	// Notification
-	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, follower.GetLink().String(), a.apIri(blog)))
+	followerLink := follower.GetLink().String()
+	if follower.URL != nil && follower.URL.GetLink() != "" {
+		followerLink = follower.URL.GetLink().String()
+	}
+	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, followerLink, a.apIri(blog)))
 }
 
 func (a *goBlog) apSendProfileUpdates() {
@@ -716,14 +737,14 @@ func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
 	if _, err := id.URL(); err != nil {
 		return nil, fmt.Errorf("trying to load an invalid IRI: %s, Error: %v", id, err)
 	}
+	bc, ok := a.cfg.Blogs[blog]
+	if !ok {
+		return nil, fmt.Errorf("blog not found: %s", blog)
+	}
 
 	var req *http.Request
 	var resp *http.Response
 	var err error
-
-	if a.apHttpClients[blog] == nil {
-		return nil, fmt.Errorf("no ActivityPub HTTP client for blog: %s", blog)
-	}
 
 	if req, err = http.NewRequestWithContext(
 		context.Background(),
@@ -740,7 +761,10 @@ func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
 	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	req.Header.Set("Host", req.URL.Host)
 
-	if resp, err = a.apHttpClients[blog].Do(req); err != nil {
+	if err = a.signRequest(req, a.apIri(bc)); err != nil {
+		return nil, err
+	}
+	if resp, err = a.httpClient.Do(req); err != nil {
 		return nil, err
 	}
 	if resp == nil {

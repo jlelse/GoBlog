@@ -30,7 +30,6 @@ type goBlog struct {
 	apSigner           httpsig.Signer
 	apSignerNoDigest   httpsig.Signer
 	apSignMutex        sync.Mutex
-	apHttpClients      map[string]*http.Client
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
 	apUserHandle       map[string]string
