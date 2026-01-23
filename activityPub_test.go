@@ -433,3 +433,42 @@ func Test_activityWithTarget(t *testing.T) {
 	assert.Equal(t, activitypub.IRI("https://old.example/users/alice"), activity.Object.GetLink())
 	assert.Equal(t, activitypub.IRI("https://new.example/users/alice"), activity.Target.GetLink())
 }
+
+func Test_apMovedToSetting(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	err := app.initConfig(false)
+	require.NoError(t, err)
+
+	t.Run("SetAndGetMovedTo", func(t *testing.T) {
+		// Initially, movedTo should be empty
+		movedTo, err := app.getApMovedTo("default")
+		require.NoError(t, err)
+		assert.Empty(t, movedTo)
+
+		// Set movedTo
+		err = app.setApMovedTo("default", "https://newserver.example/users/newaccount")
+		require.NoError(t, err)
+
+		// Get movedTo
+		movedTo, err = app.getApMovedTo("default")
+		require.NoError(t, err)
+		assert.Equal(t, "https://newserver.example/users/newaccount", movedTo)
+	})
+
+	t.Run("DeleteMovedTo", func(t *testing.T) {
+		// Set movedTo
+		err := app.setApMovedTo("default", "https://newserver.example/users/newaccount")
+		require.NoError(t, err)
+
+		// Delete movedTo
+		err = app.deleteApMovedTo("default")
+		require.NoError(t, err)
+
+		// Verify it's deleted
+		movedTo, err := app.getApMovedTo("default")
+		require.NoError(t, err)
+		assert.Empty(t, movedTo)
+	})
+}

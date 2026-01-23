@@ -1141,13 +1141,21 @@ Updates follower information from remote ActivityPub servers.
 ./GoBlog --config ./config/config.yml activitypub move-followers blogname https://newserver.social/users/newaccount
 ```
 
-Sends Move activities to all followers, instructing them that your account has moved to a new Fediverse server.
+Sends Move activities to all followers, instructing them that your account has moved to a new Fediverse server. The blog's ActivityPub profile will also be updated with a `movedTo` field pointing to the new account.
 
 **Requirements before running:**
 1. Create your new account on the target Fediverse server
 2. Add your GoBlog account URL (e.g., `https://yourblog.com`) to the new account's "Also Known As" aliases
 
-**Note:** Followers will need to re-follow your new account manually, as GoBlog doesn't automatically transfer follows.
+**Note:** Most ActivityPub implementations will automatically trigger a follow for the new account when they receive the Move activity.
+
+### Clear Moved Status
+
+```bash
+./GoBlog --config ./config/config.yml activitypub clear-moved blogname
+```
+
+Clears the `movedTo` setting from a blog's ActivityPub profile. Use this if you need to undo a migration or if you accidentally set the wrong target.
 
 ### Profiling
 

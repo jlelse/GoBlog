@@ -19,6 +19,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
 	"github.com/mattn/go-mastodon"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -411,15 +412,18 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 	}, time.Minute, time.Second)
 
 	t.Run("Send Move activity to followers", func(t *testing.T) {
-		// Get the second user's account to use as move target
-		account2, err := mc2.GetAccountCurrentUser(t.Context())
+		// Get the second user's account info
+		_, err := mc2.GetAccountCurrentUser(t.Context())
 		require.NoError(t, err)
 
+		// Construct the ActivityPub actor URI for user2
+		account2ActorURI := fmt.Sprintf("%s/users/%s", gts.baseURL, gtsTestUsername2)
+
 		// Set alsoKnownAs on the target account to include the GoBlog account
-		// This is required for the Move to be valid
 		err = requests.URL(gts.baseURL+"/api/v1/accounts/alias").
 			Client(&http.Client{Timeout: time.Minute}).
 			Header("Authorization", "Bearer "+accessToken2).
+			Method(http.MethodPost).
 			BodyJSON(map[string]any{
 				"also_known_as_uris": []string{gb.cfg.Server.PublicAddress},
 			}).
@@ -427,30 +431,152 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 		require.NoError(t, err)
 
 		// Now have GoBlog send a Move activity to all followers
-		err = gb.apMoveFollowers(gb.cfg.DefaultBlog, account2.URL)
+		err = gb.apMoveFollowers(gb.cfg.DefaultBlog, account2ActorURI)
 		require.NoError(t, err)
 
-		// Wait a bit for the activity to be processed
-		time.Sleep(3 * time.Second)
+		// Verify that the movedTo setting was saved in the database
+		movedTo, err := gb.getApMovedTo(gb.cfg.DefaultBlog)
+		require.NoError(t, err)
+		assert.Equal(t, account2ActorURI, movedTo)
 
-		// Verify that the first user received a notification about the move
-		// (GoToSocial should process the Move and notify the user)
+		// Verify that GTS user1 now follows user2 (the move target)
+		// GoToSocial processes the Move and automatically creates a follow to the target account
+		followVerified := false
 		require.Eventually(t, func() bool {
-			notifications, err := mc.GetNotifications(t.Context(), nil)
+			// Search for user2 from user1's perspective (local search)
+			searchResults2, err := mc.Search(t.Context(), gtsTestUsername2, true)
+			if err != nil || len(searchResults2.Accounts) == 0 {
+				return false
+			}
+			user2Account := searchResults2.Accounts[0]
+
+			// Check if user1 is now following user2
+			relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(user2Account.ID)})
+			if err != nil || len(relationships) == 0 {
+				return false
+			}
+			if relationships[0].Following {
+				followVerified = true
+			}
+			return followVerified
+		}, 60*time.Second, 2*time.Second)
+
+		// Assert that the follow was verified
+		assert.True(t, followVerified, "GTS user should now follow the move target")
+	})
+
+	_ = gts // used for cleanup
+}
+
+func TestIntegrationActivityPubMoveBetweenGoBlogBlogs(t *testing.T) {
+	requireDocker(t)
+
+	// Speed up the AP send queue for testing
+	apSendInterval = time.Second
+
+	// Start GoBlog ActivityPub server with two blogs
+	port := getFreePort(t)
+	app := &goBlog{
+		cfg:        createDefaultTestConfig(t),
+		httpClient: newHttpClient(),
+	}
+	// Externally expose GoBlog as goblog.example (proxied to the test port)
+	app.cfg.Server.PublicAddress = "http://goblog.example"
+	app.cfg.Server.Port = port
+	app.cfg.ActivityPub.Enabled = true
+
+	// Initialize the app first (this sets up default blog and other config)
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	require.NoError(t, app.initActivityPub())
+
+	// Add a second blog called "newdefault" after initConfig
+	app.cfg.Blogs["newdefault"] = &configBlog{
+		Path:  "/newdefault",
+		Lang:  "en",
+		Title: "New Default Blog",
+	}
+
+	// Set alsoKnownAs on the new blog to include the default blog (required for valid Move)
+	// Note: In GoBlog, alsoKnownAs is configured at the ActivityPub level, not per-blog
+	app.cfg.ActivityPub.AlsoKnownAs = []string{app.apIri(app.cfg.Blogs[app.cfg.DefaultBlog])}
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           app.buildRouter(),
+		ReadHeaderTimeout: time.Minute,
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+	require.NoError(t, err)
+	app.shutdown.Add(app.shutdownServer(server, "integration server"))
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	t.Cleanup(func() {
+		app.shutdown.ShutdownAndWait()
+	})
+
+	gts, mc := startGoToSocialInstance(t, port)
+
+	// GTS user follows the default GoBlog blog
+	goBlogDefaultAcct := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, app.cfg.Server.publicHostname)
+	searchResults, err := mc.Search(t.Context(), goBlogDefaultAcct, true)
+	require.NoError(t, err)
+	require.NotNil(t, searchResults)
+	require.Greater(t, len(searchResults.Accounts), 0)
+	defaultBlogAccount := searchResults.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), defaultBlogAccount.ID)
+	require.NoError(t, err)
+
+	// Verify that the default blog has the GTS user as a follower
+	require.Eventually(t, func() bool {
+		followers, err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
+		if err != nil {
+			return false
+		}
+		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
+	}, time.Minute, time.Second)
+
+	t.Run("Move followers from default blog to newdefault blog", func(t *testing.T) {
+		// Search for the new blog on GTS to get its account
+		goBlogNewAcct := fmt.Sprintf("%s@%s", "newdefault", app.cfg.Server.publicHostname)
+		newSearchResults, err := mc.Search(t.Context(), goBlogNewAcct, true)
+		require.NoError(t, err)
+		require.NotNil(t, newSearchResults)
+		require.Greater(t, len(newSearchResults.Accounts), 0)
+		newBlogAccount := newSearchResults.Accounts[0]
+
+		// Have GoBlog send a Move activity from default to newdefault
+		newBlogIri := app.apIri(app.cfg.Blogs["newdefault"])
+		err = app.apMoveFollowers(app.cfg.DefaultBlog, newBlogIri)
+		require.NoError(t, err)
+
+		// Verify that GTS user now follows the new blog (newdefault)
+		// GoToSocial processes the Move and automatically creates a follow to the target
+		require.Eventually(t, func() bool {
+			relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(newBlogAccount.ID)})
+			if err != nil || len(relationships) == 0 {
+				return false
+			}
+			return relationships[0].Following
+		}, 30*time.Second, 2*time.Second)
+
+		// Verify that the new blog has the GTS user as a follower in GoBlog's database
+		require.Eventually(t, func() bool {
+			followers, err := app.db.apGetAllFollowers("newdefault")
 			if err != nil {
 				return false
 			}
-			for _, n := range notifications {
-				// Check for move-related notification
-				if n.Type == "move" {
+			for _, f := range followers {
+				if strings.Contains(f.follower, fmt.Sprintf("/users/%s", gtsTestUsername)) {
 					return true
 				}
 			}
-			// Even if no explicit move notification, just verify the activity was sent
-			// The key thing is that apMoveFollowers completed without error
-			return true
-		}, 30*time.Second, time.Second)
+			return false
+		}, 30*time.Second, 2*time.Second)
 	})
+
+	_ = gts // used for cleanup
 }
 
 func requireDocker(t *testing.T) {

@@ -208,6 +208,41 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "clear-moved blog",
+		Short: "Clear the movedTo setting for a blog after an account migration",
+		Long: `Clear the movedTo setting for a blog's ActivityPub account.
+
+After using move-followers to migrate followers to a new account, the blog's
+ActivityPub profile will show "movedTo" pointing to the new account. Use this
+command to clear that setting if you want to undo the migration or if you
+accidentally set the wrong target.
+
+Note: Clearing movedTo does not undo the Move activity that was already sent.
+Followers who have already moved to follow the new account will not be
+automatically moved back.
+
+Example:
+  ./GoBlog activitypub clear-moved default`,
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			blog := args[0]
+			if _, ok := app.cfg.Blogs[blog]; !ok {
+				app.logErrAndQuit("Blog not found", "blog", blog)
+				return
+			}
+			if err := app.deleteApMovedTo(blog); err != nil {
+				app.logErrAndQuit("Failed to clear movedTo setting", "blog", blog, "err", err)
+			}
+			fmt.Printf("Cleared movedTo setting for blog %s\n", blog)
+			app.shutdown.ShutdownAndWait()
+		},
+	})
 	rootCmd.AddCommand(activityPubCmd)
 
 	// Setup command for setting up user credentials

@@ -290,8 +290,6 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && strings.HasPrefix(likeTarget, a.cfg.Server.PublicAddress) {
 			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
 		}
-	// Note: Move activities are not handled because GoBlog doesn't follow anyone.
-	// Move activities are sent to followers, not to accounts being followed.
 	}
 	// Return 200
 	w.WriteHeader(http.StatusOK)
@@ -759,6 +757,14 @@ func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
 	}
 
 	a.info("Moving followers to new account", "count", len(followers), "target", targetAccount)
+
+	// Save the movedTo setting in the database so that the actor profile reflects the move
+	if err := a.setApMovedTo(blogName, targetAccount); err != nil {
+		return fmt.Errorf("failed to save movedTo setting: %w", err)
+	}
+
+	// Purge cache to ensure the actor profile with movedTo is served immediately
+	a.purgeCache()
 
 	// Create Move activity per ActivityPub spec:
 	// - actor: the account performing the move (this blog)
