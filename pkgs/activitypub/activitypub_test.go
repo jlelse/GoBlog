@@ -26,17 +26,11 @@ func TestIRI(t *testing.T) {
 
 func TestNaturalLanguageValues(t *testing.T) {
 	// Test single value
-	nlv := DefaultNaturalLanguage("Hello")
+	nlv := NaturalLanguageValues{{Lang: "en", Value: "Hello"}}
 	assert.Equal(t, "Hello", nlv.First().String())
 
-	// Test Set
-	nlv2 := NaturalLanguageValues{}
-	nlv2.Set("en", "Hello")
-	nlv2.Set("fr", "Bonjour")
-	assert.Len(t, nlv2, 2)
-
 	// Test JSON marshaling - single value
-	single := DefaultNaturalLanguage("Test")
+	single := NaturalLanguageValues{{Lang: "en", Value: "Test"}}
 	data, err := json.Marshal(single)
 	require.NoError(t, err)
 	assert.Equal(t, `"Test"`, string(data))
@@ -66,18 +60,6 @@ func TestPersonNew(t *testing.T) {
 	assert.NotNil(t, person)
 	assert.Equal(t, PersonType, person.Type)
 	assert.Equal(t, IRI("https://example.com/users/alice"), person.ID)
-}
-
-func TestCreateNew(t *testing.T) {
-	note := ObjectNew(NoteType)
-	note.ID = IRI("https://example.com/notes/1")
-	note.Content = DefaultNaturalLanguage("Hello, world!")
-
-	create := CreateNew(ID("https://example.com/activities/1"), note)
-	assert.NotNil(t, create)
-	assert.Equal(t, CreateType, create.Type)
-	assert.Equal(t, IRI("https://example.com/activities/1"), create.ID)
-	assert.NotNil(t, create.Object)
 }
 
 func TestItemCollection(t *testing.T) {
@@ -177,42 +159,10 @@ func TestToObject(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestIsObject(t *testing.T) {
-	obj := ObjectNew(NoteType)
-	assert.True(t, IsObject(obj))
-
-	iri := IRI("https://example.com/test")
-	assert.False(t, IsObject(iri))
-
-	assert.False(t, IsObject(nil))
-}
-
-func TestOnActor(t *testing.T) {
-	person := PersonNew(IRI("https://example.com/users/alice"))
-	person.Name = DefaultNaturalLanguage("Alice")
-
-	called := false
-	err := OnActor(person, func(actor *Actor) error {
-		called = true
-		assert.Equal(t, "Alice", actor.Name.First().String())
-		return nil
-	})
-
-	require.NoError(t, err)
-	assert.True(t, called)
-
-	// Test with non-actor
-	obj := ObjectNew(NoteType)
-	err = OnActor(obj, func(actor *Actor) error {
-		return nil
-	})
-	assert.Error(t, err)
-}
-
 func TestNoteMarshaling(t *testing.T) {
 	note := ObjectNew(NoteType)
 	note.ID = IRI("https://example.com/notes/1")
-	note.Content = DefaultNaturalLanguage("Hello, world!")
+	note.Content = NaturalLanguageValues{{Lang: "en", Value: "Hello, world!"}}
 	note.AttributedTo = IRI("https://example.com/users/alice")
 	note.Published = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -230,8 +180,8 @@ func TestNoteMarshaling(t *testing.T) {
 
 func TestPersonMarshaling(t *testing.T) {
 	person := PersonNew(IRI("https://example.com/users/alice"))
-	person.Name = DefaultNaturalLanguage("Alice")
-	person.PreferredUsername = DefaultNaturalLanguage("alice")
+	person.Name = NaturalLanguageValues{{Lang: "en", Value: "Alice"}}
+	person.PreferredUsername = NaturalLanguageValues{{Lang: "en", Value: "alice"}}
 	person.Inbox = IRI("https://example.com/users/alice/inbox")
 	person.PublicKey.ID = IRI("https://example.com/users/alice#main-key")
 	person.PublicKey.Owner = IRI("https://example.com/users/alice")
@@ -254,8 +204,8 @@ func TestPersonMarshaling(t *testing.T) {
 func TestPersonMarshalingWithExtensions(t *testing.T) {
 	// Test Person with AlsoKnownAs and AttributionDomains
 	person := PersonNew(IRI("https://example.com/users/alice"))
-	person.Name = DefaultNaturalLanguage("Alice")
-	person.PreferredUsername = DefaultNaturalLanguage("alice")
+	person.Name = NaturalLanguageValues{{Lang: "en", Value: "Alice"}}
+	person.PreferredUsername = NaturalLanguageValues{{Lang: "en", Value: "alice"}}
 	person.AlsoKnownAs = ItemCollection{IRI("https://other.example/@alice"), IRI("https://another.example/alice")}
 	person.AttributionDomains = ItemCollection{IRI("example.com"), IRI("other.example")}
 
@@ -276,9 +226,9 @@ func TestPersonMarshalingWithExtensions(t *testing.T) {
 func TestActivityMarshaling(t *testing.T) {
 	note := ObjectNew(NoteType)
 	note.ID = IRI("https://example.com/notes/1")
-	note.Content = DefaultNaturalLanguage("Hello")
+	note.Content = NaturalLanguageValues{{Lang: "en", Value: "Hello"}}
 
-	create := CreateNew(ID("https://example.com/activities/1"), note)
+	create := ActivityNew(CreateType, IRI("https://example.com/activities/1"), note)
 	create.Actor = IRI("https://example.com/users/alice")
 	create.Published = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -316,7 +266,7 @@ func TestCollectionMarshaling(t *testing.T) {
 func TestJSONLDMarshaling(t *testing.T) {
 	note := ObjectNew(NoteType)
 	note.ID = IRI("https://example.com/notes/1")
-	note.Content = DefaultNaturalLanguage("Hello")
+	note.Content = NaturalLanguageValues{{Lang: "en", Value: "Hello"}}
 
 	data, err := jsonld.WithContext(
 		jsonld.IRI(ActivityBaseURI),
@@ -332,13 +282,6 @@ func TestJSONLDMarshaling(t *testing.T) {
 	assert.NotNil(t, result["@context"])
 	assert.Equal(t, "https://example.com/notes/1", result["id"])
 	assert.Equal(t, "Note", result["type"])
-}
-
-func TestMentionNew(t *testing.T) {
-	mention := MentionNew(IRI("https://example.com/users/alice"))
-	assert.NotNil(t, mention)
-	assert.Equal(t, MentionType, mention.Type)
-	assert.Equal(t, IRI("https://example.com/users/alice"), mention.ID)
 }
 
 func TestEndpoints(t *testing.T) {
@@ -374,4 +317,25 @@ func TestPublicKey(t *testing.T) {
 	assert.Equal(t, pk.ID, unmarshaled.ID)
 	assert.Equal(t, pk.Owner, unmarshaled.Owner)
 	assert.Equal(t, pk.PublicKeyPem, unmarshaled.PublicKeyPem)
+}
+
+func TestContentMapInsteadOfContent(t *testing.T) {
+	// Test unmarshaling a Note with contentMap instead of content
+	noteJSON := `{
+		"@context": "https://www.w3.org/ns/activitystreams",
+		"type": "Note",
+		"id": "https://example.com/notes/1",
+		"contentMap": {
+			"en": "Hello",
+			"fr": "Bonjour"
+		}
+	}`
+
+	item, err := UnmarshalJSON([]byte(noteJSON))
+	require.NoError(t, err)
+
+	note, err := ToObject(item)
+	require.NoError(t, err)
+	assert.Equal(t, NoteType, note.Type)
+	assert.Len(t, note.Content, 2)
 }

@@ -59,33 +59,39 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
 	}, time.Minute, time.Second)
 
-	// Verify that GoBlog created the follow notification
-	require.Eventually(t, func() bool {
-		notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
-		if err != nil {
-			return false
-		}
-		for _, n := range notifications {
-			if strings.Contains(n.Text, "started following") && strings.Contains(n.Text, "/@"+gtsTestUsername) {
-				return true
-			}
-		}
-		return false
-	}, time.Minute, time.Second)
+	t.Run("Verify follow", func(t *testing.T) {
+		t.Parallel()
 
-	// Verify that GoToSocial received the follow accept activity
-	require.Eventually(t, func() bool {
-		rs, err := mc.GetAccountRelationships(t.Context(), []string{string(lookup.ID)})
-		if err != nil {
+		// Verify that GoBlog created the follow notification
+		require.Eventually(t, func() bool {
+			notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
+			if err != nil {
+				return false
+			}
+			for _, n := range notifications {
+				if strings.Contains(n.Text, "started following") && strings.Contains(n.Text, "/@"+gtsTestUsername) {
+					return true
+				}
+			}
 			return false
-		}
-		if len(rs) == 0 {
-			return false
-		}
-		return rs[0].Following
-	}, time.Minute, time.Second)
+		}, time.Minute, time.Second)
+
+		// Verify that GoToSocial received the follow accept activity
+		require.Eventually(t, func() bool {
+			rs, err := mc.GetAccountRelationships(t.Context(), []string{string(lookup.ID)})
+			if err != nil {
+				return false
+			}
+			if len(rs) == 0 {
+				return false
+			}
+			return rs[0].Following
+		}, time.Minute, time.Second)
+	})
 
 	t.Run("Update profile", func(t *testing.T) {
+		t.Parallel()
+
 		// Update blog title and check that GoToSocial received the update
 		gb.cfg.Blogs[gb.cfg.DefaultBlog].Title = "GoBlog ActivityPub Test Blog Updated"
 		gb.apSendProfileUpdates()
@@ -100,6 +106,8 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	})
 
 	t.Run("Post flow", func(t *testing.T) {
+		t.Parallel()
+
 		// Create a post on GoBlog and check that it appears on GoToSocial
 		p := &post{
 			Content: "Hello from GoBlog to GoToSocial!",
@@ -189,7 +197,9 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		}, time.Minute, time.Second)
 	})
 
-	t.Run("Mention", func(t *testing.T) {
+	t.Run("Mention to GoToSocial", func(t *testing.T) {
+		t.Parallel()
+
 		// Send a new post with a mention from GoBlog to GoToSocial and verify it appears
 		p := &post{
 			Content: fmt.Sprintf("Hello [@%s@%s](%s/@%s) from GoBlog!", gtsTestUsername, strings.ReplaceAll(gts.baseURL, "http://", ""), gts.baseURL, gtsTestUsername),
@@ -225,7 +235,9 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		}, time.Minute, time.Second)
 	})
 
-	t.Run("Replies", func(t *testing.T) {
+	t.Run("Replies to GoToSocial", func(t *testing.T) {
+		t.Parallel()
+
 		// Create a post on GoToSocial side and verify that replies are working
 		testStatus, err := mc.PostStatus(t.Context(), &mastodon.Toot{Status: "Test", Visibility: mastodon.VisibilityPublic})
 		require.NoError(t, err)
@@ -262,6 +274,85 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 			}
 			return false
 		}, time.Minute, time.Second)
+	})
+
+	t.Run("Reply to GoBlog", func(t *testing.T) {
+		t.Parallel()
+
+		// Create a post on GoBlog side
+		p := &post{
+			Content: "Post to be replied to",
+		}
+		require.NoError(t, gb.createPost(p))
+		postURL := gb.fullPostURL(p)
+
+		// Create a reply on GoToSocial side
+		sr, err := mc.Search(t.Context(), postURL, true)
+		require.NoError(t, err)
+		require.NotNil(t, sr)
+		require.Greater(t, len(sr.Statuses), 0)
+		replyToStatus := sr.Statuses[0]
+		replyStatus, err := mc.PostStatus(t.Context(), &mastodon.Toot{
+			Status:      "@" + goBlogAcct + " This is a reply from GoToSocial",
+			InReplyToID: replyToStatus.ID,
+			Visibility:  mastodon.VisibilityPublic,
+		})
+		require.NoError(t, err)
+
+		// Verify that GoBlog created a comment for the reply
+		require.Eventually(t, func() bool {
+			comments, err := gb.db.getComments(&commentsRequestConfig{})
+			if err != nil {
+				return false
+			}
+			for _, c := range comments {
+				if strings.Contains(c.Comment, "reply") {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Update the reply on GoToSocial
+		_, err = mc.UpdateStatus(t.Context(), &mastodon.Toot{
+			Status:      "@" + goBlogAcct + " This is an updated reply from GoToSocial",
+			InReplyToID: replyToStatus.ID,
+			Visibility:  mastodon.VisibilityPublic,
+		}, replyStatus.ID)
+		require.NoError(t, err)
+
+		// Verify that GoBlog updated the comment
+		require.Eventually(t, func() bool {
+			comments, err := gb.db.getComments(&commentsRequestConfig{})
+			if err != nil {
+				return false
+			}
+			for _, c := range comments {
+				if strings.Contains(c.Comment, "updated reply") {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		// Delete the reply on GoToSocial
+		err = mc.DeleteStatus(t.Context(), replyStatus.ID)
+		require.NoError(t, err)
+
+		// Verify that GoBlog deleted the comment
+		require.Eventually(t, func() bool {
+			comments, err := gb.db.getComments(&commentsRequestConfig{})
+			if err != nil {
+				return false
+			}
+			for _, c := range comments {
+				if strings.Contains(c.Comment, "updated reply") {
+					return false
+				}
+			}
+			return true
+		}, time.Minute, time.Second)
+
 	})
 
 }
@@ -304,9 +395,12 @@ func startApIntegrationServer(t *testing.T) *goBlog {
 	app.cfg.Server.PublicAddress = "http://goblog.example"
 	app.cfg.Server.Port = port
 	app.cfg.ActivityPub.Enabled = true
+	// Initialize the app
 	require.NoError(t, app.initConfig(false))
 	require.NoError(t, app.initTemplateStrings())
 	require.NoError(t, app.initActivityPub())
+	// Enable comments for testing reply flows
+	app.cfg.Blogs[app.cfg.DefaultBlog].Comments = &configComments{Enabled: true}
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),

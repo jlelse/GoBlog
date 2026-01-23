@@ -2,6 +2,7 @@
 package jsonld
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -38,9 +39,9 @@ func (cb *ContextBuilder) Marshal(obj any) ([]byte, error) {
 	}
 	objData := objBuf.Bytes()
 	// Remove trailing newline added by Encoder
-	if len(objData) > 0 && objData[len(objData)-1] == '\n' {
-		objData = objData[:len(objData)-1]
-	}
+	objData = bytes.TrimSuffix(objData, []byte("\n"))
+	// Remove the opening brace if present
+	objData = bytes.TrimPrefix(objData, []byte("{"))
 
 	// Marshal the context using an encoder with HTML escaping disabled
 	ctxBuf := bufferpool.Get()
@@ -52,26 +53,20 @@ func (cb *ContextBuilder) Marshal(obj any) ([]byte, error) {
 	}
 	ctxData := ctxBuf.Bytes()
 	// Remove trailing newline
-	if len(ctxData) > 0 && ctxData[len(ctxData)-1] == '\n' {
-		ctxData = ctxData[:len(ctxData)-1]
-	}
+	ctxData = bytes.TrimSuffix(ctxData, []byte("\n"))
 
 	// Build the output manually to preserve field order
 	// Start with {"@context": and the marshaled context
-	result := []byte(`{"@context":`)
+	base := []byte(`{"@context":`)
+	result := make([]byte, 0, len(base)+len(ctxData)+len(objData)+1) // +1 for possible comma
+	result = append(result, base...)
 	result = append(result, ctxData...)
 
-	// Remove the opening brace from objData if present
-	objDataStr := string(objData)
-	if len(objDataStr) > 0 && objDataStr[0] == '{' {
-		objDataStr = objDataStr[1:]
-	}
-
 	// Append a comma and the rest of the object
-	if len(objDataStr) > 0 && objDataStr[0] != '}' {
+	if len(objData) > 0 && objData[0] != '}' {
 		result = append(result, ',')
 	}
-	result = append(result, []byte(objDataStr)...)
+	result = append(result, objData...)
 
 	return result, nil
 }

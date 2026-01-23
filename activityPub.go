@@ -194,7 +194,7 @@ func (a *goBlog) apCheckActivityPubReply(p *post) {
 		return
 	}
 	item, err := a.apLoadRemoteIRI(p.Blog, ap.IRI(replyLink))
-	if err != nil || item == nil || !ap.IsObject(item) {
+	if err != nil || item == nil || !item.IsObject() {
 		return
 	}
 	obj, err := ap.ToObject(item)
@@ -488,7 +488,7 @@ func (db *database) apRemoveInbox(inbox string) error {
 
 func (a *goBlog) apPost(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	c := ap.CreateNew(a.apNewID(blogConfig), a.toAPNote(p))
+	c := ap.ActivityNew(ap.CreateType, a.apNewID(blogConfig), a.toAPNote(p))
 	c.Actor = a.apAPIri(blogConfig)
 	c.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, c, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -496,7 +496,7 @@ func (a *goBlog) apPost(p *post) {
 
 func (a *goBlog) apUpdate(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	u := ap.UpdateNew(a.apNewID(blogConfig), a.toAPNote(p))
+	u := ap.ActivityNew(ap.UpdateType, a.apNewID(blogConfig), a.toAPNote(p))
 	u.Actor = a.apAPIri(blogConfig)
 	u.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, u, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -504,7 +504,7 @@ func (a *goBlog) apUpdate(p *post) {
 
 func (a *goBlog) apDelete(p *post) {
 	blogConfig := a.getBlogFromPost(p)
-	d := ap.DeleteNew(a.apNewID(blogConfig), a.activityPubId(p))
+	d := ap.ActivityNew(ap.DeleteType, a.apNewID(blogConfig), a.activityPubId(p))
 	d.Actor = a.apAPIri(blogConfig)
 	d.Published = time.Now()
 	a.apSendToAllFollowers(p.Blog, d, append(p.Parameters[activityPubMentionsParameter], p.firstParameter(activityPubReplyActorParameter))...)
@@ -526,7 +526,7 @@ func (a *goBlog) apUndelete(p *post) {
 
 func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity) {
 	newFollower := follow.Actor.GetLink()
-	a.info("AcitivyPub: New follow request from follower", "id", newFollower.String())
+	a.info("ActivityPub: New follow request from follower", "id", newFollower.String())
 	// Get remote actor
 	follower, err := a.apGetRemoteActor(blogName, newFollower)
 	if err != nil || follower == nil {
@@ -547,7 +547,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 		return
 	}
 	// Send accept response to the new follower
-	accept := ap.AcceptNew(a.apNewID(blog), follow)
+	accept := ap.ActivityNew(ap.AcceptType, a.apNewID(blog), follow)
 	accept.To.Append(newFollower)
 	accept.Actor = a.apAPIri(blog)
 	_ = a.apQueueSendSigned(a.apIri(blog), inbox.String(), accept)
@@ -562,7 +562,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 func (a *goBlog) apSendProfileUpdates() {
 	for blog, config := range a.cfg.Blogs {
 		person := a.toApPerson(blog)
-		update := ap.UpdateNew(a.apNewID(config), person)
+		update := ap.ActivityNew(ap.UpdateType, a.apNewID(config), person)
 		update.Actor = a.apAPIri(config)
 		update.Published = time.Now()
 		update.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(blog, config))
@@ -600,8 +600,8 @@ func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...stri
 	}
 }
 
-func (a *goBlog) apNewID(blog *configBlog) ap.ID {
-	return ap.ID(a.apIri(blog) + "#" + uuid.NewString())
+func (a *goBlog) apNewID(blog *configBlog) ap.IRI {
+	return ap.IRI(a.apIri(blog) + "#" + uuid.NewString())
 }
 
 func (a *goBlog) apIri(b *configBlog) string {
@@ -721,12 +721,7 @@ func (a *goBlog) apGetRemoteActor(blog string, iri ap.IRI) (*ap.Actor, error) {
 	if item == nil {
 		return nil, fmt.Errorf("failed to load remote actor, item is nil: %s", iri)
 	}
-	var actor *ap.Actor
-	err = ap.OnActor(item, func(act *ap.Actor) error {
-		actor = act
-		return nil
-	})
-	return actor, err
+	return ap.ToActor(item)
 }
 
 // Inspired by go-ap/client's LoadIRI

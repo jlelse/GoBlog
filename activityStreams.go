@@ -43,17 +43,18 @@ func (a *goBlog) serveActivityStreamsPost(w http.ResponseWriter, r *http.Request
 }
 
 func (a *goBlog) toAPNote(p *post) *ap.Note {
+	bc := a.getBlogFromPost(p)
 	// Create a Note object
 	note := ap.ObjectNew(ap.NoteType)
 	note.ID = a.activityPubId(p)
 	note.URL = ap.IRI(a.fullPostURL(p))
-	note.AttributedTo = a.apAPIri(a.getBlogFromPost(p))
+	note.AttributedTo = a.apAPIri(bc)
 	// Audience
 	switch p.Visibility {
 	case visibilityPublic:
-		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog, a.getBlogFromPost(p)))
+		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog, bc))
 	case visibilityUnlisted:
-		note.To.Append(a.apGetFollowersCollectionId(p.Blog, a.getBlogFromPost(p)))
+		note.To.Append(a.apGetFollowersCollectionId(p.Blog, bc))
 		note.CC.Append(ap.PublicNS)
 	}
 	for _, m := range p.Parameters[activityPubMentionsParameter] {
@@ -62,11 +63,11 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Name and Type
 	if title := p.RenderedTitle; title != "" {
 		note.Type = ap.ArticleType
-		note.Name = ap.DefaultNaturalLanguage(title)
+		note.Name = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: title}}
 	}
 	// Content
 	note.MediaType = ap.MimeType(contenttype.HTML)
-	note.Content = ap.DefaultNaturalLanguage(a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true}))
+	note.Content = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true})}}
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		var attachments ap.ItemCollection
@@ -81,20 +82,22 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	for _, tagTax := range a.cfg.ActivityPub.TagsTaxonomies {
 		for _, tag := range p.Parameters[tagTax] {
 			apTag := &ap.Object{Type: "Hashtag"}
-			apTag.Name = ap.DefaultNaturalLanguage(tag)
+			apTag.Name = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: tag}}
 			apTag.URL = ap.IRI(a.getFullAddress(a.getRelativePath(p.Blog, fmt.Sprintf("/%s/%s", tagTax, urlize(tag)))))
 			note.Tag.Append(apTag)
 		}
 	}
 	// Mentions
 	for _, mention := range p.Parameters[activityPubMentionsParameter] {
-		apMention := ap.MentionNew(ap.IRI(mention))
-		apMention.URL = ap.IRI(mention)
+		apMention := ap.ObjectNew(ap.MentionType)
+		apMention.ID = ap.IRI(mention)
+		apMention.Href = ap.IRI(mention)
 		note.Tag.Append(apMention)
 	}
 	if replyLinkActor := p.firstParameter(activityPubReplyActorParameter); replyLinkActor != "" {
-		apMention := ap.MentionNew(ap.IRI(replyLinkActor))
-		apMention.URL = ap.IRI(replyLinkActor)
+		apMention := ap.ObjectNew(ap.MentionType)
+		apMention.ID = ap.IRI(replyLinkActor)
+		apMention.Href = ap.IRI(replyLinkActor)
 		note.Tag.Append(apMention)
 	}
 	// Dates
@@ -138,9 +141,9 @@ func (a *goBlog) toApPerson(blog string) *ap.Person {
 	apBlog := ap.PersonNew(apIri)
 	apBlog.URL = apIri
 
-	apBlog.Name.Set(ap.DefaultLang, string(ap.Content(a.renderMdTitle(b.Title))))
-	apBlog.Summary.Set(ap.DefaultLang, string(ap.Content(b.Description)))
-	apBlog.PreferredUsername.Set(ap.DefaultLang, string(ap.Content(blog)))
+	apBlog.Name = ap.NaturalLanguageValues{{Lang: b.Lang, Value: a.renderMdTitle(b.Title)}}
+	apBlog.Summary = ap.NaturalLanguageValues{{Lang: b.Lang, Value: b.Description}}
+	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
 
 	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
 	apBlog.Followers = ap.IRI(a.getFullAddress("/activitypub/followers/" + blog))
