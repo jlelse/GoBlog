@@ -290,6 +290,8 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && strings.HasPrefix(likeTarget, a.cfg.Server.PublicAddress) {
 			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
 		}
+	// Note: Move activities are not handled because GoBlog doesn't follow anyone.
+	// Move activities are sent to followers, not to accounts being followed.
 	}
 	// Return 200
 	w.WriteHeader(http.StatusOK)
@@ -710,6 +712,73 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
+	// Check if blog exists
+	blog, ok := a.cfg.Blogs[blogName]
+	if !ok || blog == nil {
+		return fmt.Errorf("blog not found: %s", blogName)
+	}
+
+	// Fetch and validate the target account
+	targetActor, err := a.apGetRemoteActor(blogName, ap.IRI(targetAccount))
+	if err != nil || targetActor == nil {
+		return fmt.Errorf("failed to fetch target account %s: %w", targetAccount, err)
+	}
+
+	// Verify that the target account has the GoBlog account in alsoKnownAs
+	blogIri := a.apIri(blog)
+	hasAlias := false
+	for _, aka := range targetActor.AlsoKnownAs {
+		if aka.GetLink().String() == blogIri {
+			hasAlias = true
+			break
+		}
+	}
+	if !hasAlias {
+		return fmt.Errorf("target account %s does not have %s in alsoKnownAs - add it before moving followers", targetAccount, blogIri)
+	}
+
+	// Get all followers
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get followers: %w", err)
+	}
+
+	if len(followers) == 0 {
+		a.info("No followers to move")
+		return nil
+	}
+
+	a.info("Moving followers to new account", "count", len(followers), "target", targetAccount)
+
+	// Create Move activity
+	// The Move activity has:
+	// - actor: the blog (old account)
+	// - object: the blog (old account being moved)
+	// - target: the new account
+	blogApiIri := a.apAPIri(blog)
+	move := ap.ActivityNew(ap.MoveType, a.apNewID(blog), blogApiIri)
+	move.Actor = blogApiIri
+	move.Target = ap.IRI(targetAccount)
+	move.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(blogName, blog))
+
+	// Send Move activity to all follower inboxes
+	inboxes, err := a.db.apGetAllInboxes(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get follower inboxes: %w", err)
+	}
+
+	for _, inbox := range lo.Uniq(inboxes) {
+		if err := a.apQueueSendSigned(blogIri, inbox, move); err != nil {
+			a.error("ActivityPub Move: Failed to send move to inbox", "inbox", inbox, "err", err)
+			// Continue with other inboxes
+		}
+	}
+
+	a.info("Move activities queued for all followers", "count", len(inboxes), "target", targetAccount)
 	return nil
 }
 

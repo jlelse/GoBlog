@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -366,4 +367,69 @@ func Test_webfinger(t *testing.T) {
 	app.apHandleWebfinger(rec, req)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func Test_apMoveFollowers(t *testing.T) {
+	app := &goBlog{
+		cfg:        createDefaultTestConfig(t),
+		httpClient: newHttpClient(),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.Blogs = map[string]*configBlog{
+		"testblog": {
+			Path: "/",
+		},
+	}
+	app.cfg.DefaultBlog = "testblog"
+	app.cfg.ActivityPub = &configActivityPub{
+		Enabled: true,
+	}
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	err = app.initActivityPubBase()
+	require.NoError(t, err)
+
+	t.Run("BlogNotFound", func(t *testing.T) {
+		err := app.apMoveFollowers("nonexistent", "https://target.example/users/new")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "blog not found")
+	})
+
+	t.Run("NoFollowers", func(t *testing.T) {
+		// Create a mock server for the target account
+		targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Return a valid actor with alsoKnownAs containing the blog
+			actor := map[string]any{
+				"@context":    "https://www.w3.org/ns/activitystreams",
+				"type":        "Person",
+				"id":          "https://target.example/users/new",
+				"inbox":       "https://target.example/inbox",
+				"alsoKnownAs": []string{"https://example.com"},
+			}
+			w.Header().Set("Content-Type", "application/activity+json")
+			_ = json.NewEncoder(w).Encode(actor)
+		}))
+		defer targetServer.Close()
+
+		// With no followers added, it should succeed but do nothing
+		err := app.apMoveFollowers("testblog", targetServer.URL+"/users/new")
+		// This should return nil since there are no followers (nothing to move)
+		assert.NoError(t, err)
+	})
+}
+
+func Test_apMoveType(t *testing.T) {
+	// Test that MoveType is properly defined
+	assert.Equal(t, activitypub.ActivityType("Move"), activitypub.MoveType)
+}
+
+func Test_activityWithTarget(t *testing.T) {
+	// Test that Activity properly marshals/unmarshals Target field
+	activity := activitypub.ActivityNew(activitypub.MoveType, activitypub.IRI("https://example.com/move/1"), activitypub.IRI("https://old.example/users/alice"))
+	activity.Target = activitypub.IRI("https://new.example/users/alice")
+
+	assert.Equal(t, activitypub.MoveType, activity.Type)
+	assert.Equal(t, activitypub.IRI("https://old.example/users/alice"), activity.Object.GetLink())
+	assert.Equal(t, activitypub.IRI("https://new.example/users/alice"), activity.Target.GetLink())
 }

@@ -64,6 +64,17 @@ func main() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "healthcheck",
 		Short: "Perform health check",
+		Long: `Perform a health check on the GoBlog server.
+
+This command checks if the server is running and healthy by making an HTTP
+request to the health endpoint. It returns exit code 0 if healthy, or 1 if
+unhealthy.
+
+Useful for container health checks (Docker, Kubernetes) and monitoring systems.
+
+Example:
+  ./GoBlog healthcheck
+  echo $?  # 0 = healthy, 1 = unhealthy`,
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 			health := app.healthcheckExitCode()
@@ -76,6 +87,14 @@ func main() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "check",
 		Short: "Check all external links",
+		Long: `Check all external links in published posts for broken links.
+
+This command scans all published posts and verifies that external links are
+still accessible. It reports any broken links (404s, connection errors, etc.)
+to help you maintain link quality on your blog.
+
+Example:
+  ./GoBlog check`,
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 			if err := app.initTemplateStrings(); err != nil {
@@ -92,7 +111,18 @@ func main() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "export [directory]",
 		Short: "Export markdown files",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Export all posts as Markdown files with front matter.
+
+This command exports all posts from the database to individual Markdown files,
+preserving the front matter metadata (title, date, tags, etc.). This is useful
+for backups, migration to other platforms, or version control.
+
+If no directory is specified, files are exported to the current directory.
+
+Example:
+  ./GoBlog export ./backup
+  ./GoBlog export  # exports to current directory`,
+		Args: cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 			var dir string
@@ -110,11 +140,23 @@ func main() {
 	activityPubCmd := &cobra.Command{
 		Use:   "activitypub",
 		Short: "ActivityPub related tasks",
+		Long: `ActivityPub related tasks for managing your Fediverse presence.
+
+These commands help you manage your ActivityPub/Fediverse account, including
+follower management and account migration.`,
 	}
 	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "refetch-followers blog",
 		Short: "Refetch ActivityPub followers",
-		Args:  cobra.ExactArgs(1),
+		Long: `Refetch and update ActivityPub follower information from remote servers.
+
+This command contacts each follower's home server to refresh their profile
+information (username, inbox URL, etc.). This is useful if follower data
+has become stale or if there were federation issues.
+
+Example:
+  ./GoBlog activitypub refetch-followers default`,
+		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 			if !app.apEnabled() {
@@ -132,12 +174,63 @@ func main() {
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "move-followers blog target",
+		Short: "Move all followers to a new Fediverse account by sending Move activities",
+		Long: `Move all followers from the GoBlog ActivityPub account to a new Fediverse account.
+
+This command sends a Move activity to all followers, instructing them to follow
+the new account instead. Before running this command:
+
+1. Set up the new account on the target Fediverse server
+2. Add the GoBlog account URL to the new account's "alsoKnownAs" aliases
+3. Run this command to initiate the move
+
+Example:
+  ./GoBlog activitypub move-followers default https://mastodon.social/users/newaccount`,
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			app.initAPSendQueue()
+			blog := args[0]
+			target := args[1]
+			if err := app.apMoveFollowers(blog, target); err != nil {
+				app.logErrAndQuit("Failed to move ActivityPub followers", "blog", blog, "target", target, "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
 	rootCmd.AddCommand(activityPubCmd)
 
 	// Setup command for setting up user credentials
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Set up user credentials (username, password, and optionally TOTP)",
+		Long: `Set up user credentials for GoBlog authentication.
+
+This command allows you to configure the login credentials for your GoBlog
+instance, including username, password, and optional TOTP two-factor
+authentication. The password is securely hashed using bcrypt before storage.
+
+This is useful for initial setup or when you need to reset credentials
+without accessing the web interface.
+
+Examples:
+  ./GoBlog setup --username admin --password "secure-password"
+  ./GoBlog setup --username admin --password "secure-password" --totp
+
+Options:
+  --username  Login username (required)
+  --password  Login password, stored as bcrypt hash (required)
+  --totp      Enable TOTP two-factor authentication`,
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 

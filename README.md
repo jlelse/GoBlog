@@ -542,16 +542,19 @@ activityPub:
 - ✅ Receive likes and boosts (notifications)
 - ✅ Followers collection
 - ✅ Webfinger discovery
-- ❌ Following others (not supported yet)
+- ✅ Account migration (Move activity support)
+- ❌ Following others (not supported - publish only)
 
 **Endpoints:**
 - `/.well-known/webfinger` - Webfinger
 - `/activitypub/inbox/{blog}` - Inbox
 - `/activitypub/followers/{blog}` - Followers
 
-**Migration from another Fediverse server:**
+**Migration from another Fediverse server to GoBlog:**
 
-If you're moving from another Fediverse server and want to migrate your followers:
+If you're moving from another Fediverse server and want to migrate your followers to GoBlog:
+
+1. Add your old account URL to the `alsoKnownAs` config:
 
 ```yaml
 activityPub:
@@ -559,6 +562,22 @@ activityPub:
   alsoKnownAs:
     - https://mastodon.social/users/oldusername
 ```
+
+2. On your old Fediverse account, initiate the move to your GoBlog account using your old server's migration feature.
+
+**Migration from GoBlog to another Fediverse server:**
+
+If you're moving away from GoBlog to another Fediverse server:
+
+1. Set up your new account on the target Fediverse server
+2. Add your GoBlog account URL to the new account's "Also Known As" aliases (e.g., `https://yourblog.com`)
+3. Run the CLI command to send Move activities to all followers:
+
+```bash
+./GoBlog activitypub move-followers blogname https://newserver.social/users/newusername
+```
+
+This sends a Move activity to all your followers, notifying them that your account has moved. Fediverse servers that support account migration will automatically update the follow to your new account.
 
 ### Bluesky / ATProto
 
@@ -1115,6 +1134,20 @@ Exports all posts as Markdown files with front matter to the specified directory
 ```
 
 Updates follower information from remote ActivityPub servers.
+
+### Move ActivityPub Followers
+
+```bash
+./GoBlog --config ./config/config.yml activitypub move-followers blogname https://newserver.social/users/newaccount
+```
+
+Sends Move activities to all followers, instructing them that your account has moved to a new Fediverse server.
+
+**Requirements before running:**
+1. Create your new account on the target Fediverse server
+2. Add your GoBlog account URL (e.g., `https://yourblog.com`) to the new account's "Also Known As" aliases
+
+**Note:** Followers will need to re-follow your new account manually, as GoBlog doesn't automatically transfer follows.
 
 ### Profiling
 
