@@ -760,11 +760,11 @@ func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
 
 	a.info("Moving followers to new account", "count", len(followers), "target", targetAccount)
 
-	// Create Move activity
-	// The Move activity has:
-	// - actor: the blog (old account)
-	// - object: the blog (old account being moved)
-	// - target: the new account
+	// Create Move activity per ActivityPub spec:
+	// - actor: the account performing the move (this blog)
+	// - object: the account being moved (also this blog - it's moving itself)
+	// - target: the new account to move to
+	// Actor and Object are the same because the blog is announcing it's moving itself.
 	blogApiIri := a.apAPIri(blog)
 	move := ap.ActivityNew(ap.MoveType, a.apNewID(blog), blogApiIri)
 	move.Actor = blogApiIri
