@@ -264,6 +264,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		if activity.Object.IsObject() {
 			objectActivity, err := ap.ToActivity(activity.Object)
 			if err == nil && objectActivity.GetType() == ap.FollowType && objectActivity.Actor.GetLink() == activityActor {
+				a.info("Follower unfollowed", "blog", blogName, "actor", activityActor.String())
 				_ = a.db.apRemoveFollower(blogName, activityActor.String())
 			}
 		}
@@ -273,6 +274,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	case ap.DeleteType, ap.BlockType:
 		if activity.Object.GetLink() == activityActor {
+			a.info("Follower got deleted or blocked", "blog", blogName, "actor", activityActor.String(), "activity_type", activity.GetType())
 			_ = a.db.apRemoveFollower(blogName, activityActor.String())
 		} else {
 			// Check if comment exists
