@@ -19,13 +19,17 @@ type ActivityType string
 
 const (
 	// Common ActivityPub types
-	ArticleType    ActivityType = "Article"
-	CollectionType ActivityType = "Collection"
-	ImageType      ActivityType = "Image"
-	MentionType    ActivityType = "Mention"
-	NoteType       ActivityType = "Note"
-	ObjectType     ActivityType = "Object"
-	PersonType     ActivityType = "Person"
+	ArticleType      ActivityType = "Article"
+	CollectionType   ActivityType = "Collection"
+	ImageType        ActivityType = "Image"
+	MentionType      ActivityType = "Mention"
+	NoteType         ActivityType = "Note"
+	ObjectType       ActivityType = "Object"
+	PersonType       ActivityType = "Person"
+	ServiceType      ActivityType = "Service"
+	GroupType        ActivityType = "Group"
+	OrganizationType ActivityType = "Organization"
+	ApplicationType  ActivityType = "Application"
 
 	// Activity types
 	AcceptType   ActivityType = "Accept"
@@ -123,6 +127,16 @@ func (i ItemCollection) Contains(item Item) bool {
 	return false
 }
 
+// IsActorType returns true if the type represents an ActivityPub actor.
+func IsActorType(typ ActivityType) bool {
+	switch typ {
+	case PersonType, ServiceType, GroupType, OrganizationType, ApplicationType:
+		return true
+	default:
+		return false
+	}
+}
+
 // PublicKey represents a public key
 type PublicKey struct {
 	ID           IRI    `json:"id,omitempty"`
@@ -179,8 +193,8 @@ func (o *Object) IsObject() bool {
 // Note represents an ActivityPub Note (short-form content)
 type Note = Object
 
-// Person represents an ActivityPub Person (actor)
-type Person struct {
+// Actor represents an ActivityPub actor
+type Actor struct {
 	Object
 	PreferredUsername  NaturalLanguageValues `json:"preferredUsername,omitempty"`
 	Inbox              IRI                   `json:"inbox,omitempty"`
@@ -193,9 +207,6 @@ type Person struct {
 	AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`
 	AttributionDomains ItemCollection        `json:"attributionDomains,omitempty"`
 }
-
-// Actor is an alias for Person
-type Actor = Person
 
 // Image represents an ActivityPub Image
 type Image = Object

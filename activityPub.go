@@ -171,7 +171,7 @@ func (a *goBlog) apCheckMentions(p *post) {
 	mentions := []string{}
 	for _, link := range links {
 		act, err := a.apGetRemoteActor(p.Blog, ap.IRI(link))
-		if err != nil || act == nil || act.Type != ap.PersonType {
+		if err != nil || act == nil || !ap.IsActorType(act.Type) {
 			continue
 		}
 		mentions = append(mentions, cmp.Or(string(act.GetLink()), link))

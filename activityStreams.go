@@ -133,7 +133,7 @@ func (a *goBlog) activityPubId(p *post) ap.IRI {
 	return ap.IRI(fu)
 }
 
-func (a *goBlog) toApPerson(blog string) *ap.Person {
+func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	b := a.cfg.Blogs[blog]
 
 	apIri := a.apAPIri(b)
@@ -192,11 +192,11 @@ func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int,
 	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
 }
 
-func apUsername(person *ap.Person) string {
-	preferredUsername := person.PreferredUsername.First().String()
-	u, err := url.Parse(person.GetLink().String())
+func apUsername(actor *ap.Actor) string {
+	preferredUsername := actor.PreferredUsername.First().String()
+	u, err := url.Parse(actor.GetLink().String())
 	if err != nil || u == nil || u.Host == "" || preferredUsername == "" {
-		return person.GetLink().String()
+		return actor.GetLink().String()
 	}
 	return fmt.Sprintf("@%s@%s", preferredUsername, u.Host)
 }
