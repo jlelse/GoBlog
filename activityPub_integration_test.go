@@ -471,65 +471,61 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
 	}, time.Minute, time.Second)
 
-	t.Run("Send Move activity to followers", func(t *testing.T) {
-		// Get the second user's account info
-		_, err := mc2.GetAccountCurrentUser(t.Context())
-		require.NoError(t, err)
+	// Get the second user's account info
+	_, err = mc2.GetAccountCurrentUser(t.Context())
+	require.NoError(t, err)
 
-		// Unlock gtsuser2 so follows are auto-accepted during Move
-		err = requests.URL(gts.baseURL+"/api/v1/accounts/update_credentials").
-			Client(&http.Client{Timeout: time.Minute}).
-			Header("Authorization", "Bearer "+accessToken2).
-			Method(http.MethodPatch).
-			BodyJSON(map[string]any{
-				"locked": false,
-			}).
-			Fetch(t.Context())
-		require.NoError(t, err)
+	// Unlock gtsuser2 so follows are auto-accepted during Move
+	err = requests.URL(gts.baseURL+"/api/v1/accounts/update_credentials").
+		Client(&http.Client{Timeout: time.Minute}).
+		Header("Authorization", "Bearer "+accessToken2).
+		Method(http.MethodPatch).
+		BodyJSON(map[string]any{
+			"locked": false,
+		}).
+		Fetch(t.Context())
+	require.NoError(t, err)
 
-		// Construct the ActivityPub actor URI for user2
-		account2ActorURI := fmt.Sprintf("%s/users/%s", gts.baseURL, gtsTestUsername2)
+	// Construct the ActivityPub actor URI for user2
+	account2ActorURI := fmt.Sprintf("%s/users/%s", gts.baseURL, gtsTestUsername2)
 
-		// Set alsoKnownAs on the target account to include the GoBlog account
-		err = requests.URL(gts.baseURL+"/api/v1/accounts/alias").
-			Client(&http.Client{Timeout: time.Minute}).
-			Header("Authorization", "Bearer "+accessToken2).
-			Method(http.MethodPost).
-			BodyJSON(map[string]any{
-				"also_known_as_uris": []string{gb.cfg.Server.PublicAddress},
-			}).
-			Fetch(t.Context())
-		require.NoError(t, err)
+	// Set alsoKnownAs on the target account to include the GoBlog account
+	err = requests.URL(gts.baseURL+"/api/v1/accounts/alias").
+		Client(&http.Client{Timeout: time.Minute}).
+		Header("Authorization", "Bearer "+accessToken2).
+		Method(http.MethodPost).
+		BodyJSON(map[string]any{
+			"also_known_as_uris": []string{gb.cfg.Server.PublicAddress},
+		}).
+		Fetch(t.Context())
+	require.NoError(t, err)
 
-		// Now have GoBlog send a Move activity to all followers
-		err = gb.apMoveFollowers(gb.cfg.DefaultBlog, account2ActorURI)
-		require.NoError(t, err)
+	// Now have GoBlog send a Move activity to all followers
+	err = gb.apMoveFollowers(gb.cfg.DefaultBlog, account2ActorURI)
+	require.NoError(t, err)
 
-		// Verify that the movedTo setting was saved in the database
-		movedTo, err := gb.getApMovedTo(gb.cfg.DefaultBlog)
-		require.NoError(t, err)
-		assert.Equal(t, account2ActorURI, movedTo)
+	// Verify that the movedTo setting was saved in the database
+	movedTo, err := gb.getApMovedTo(gb.cfg.DefaultBlog)
+	require.NoError(t, err)
+	assert.Equal(t, account2ActorURI, movedTo)
 
-		// Verify that GTS user1 now follows user2 (the move target)
-		// GoToSocial processes the Move and automatically creates a follow to the target account
-		require.Eventually(t, func() bool {
-			// Search for user2 from user1's perspective (local search)
-			searchResults2, err := mc.Search(t.Context(), gtsTestUsername2, true)
-			if err != nil || len(searchResults2.Accounts) == 0 {
-				return false
-			}
-			user2Account := searchResults2.Accounts[0]
+	// Verify that GTS user1 now follows user2 (the move target)
+	// GoToSocial processes the Move and automatically creates a follow to the target account
+	require.Eventually(t, func() bool {
+		// Search for user2 from user1's perspective (local search)
+		searchResults2, err := mc.Search(t.Context(), gtsTestUsername2, true)
+		if err != nil || len(searchResults2.Accounts) == 0 {
+			return false
+		}
+		user2Account := searchResults2.Accounts[0]
 
-			// Check if user1 is now following user2
-			relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(user2Account.ID)})
-			if err != nil || len(relationships) == 0 {
-				return false
-			}
-			return relationships[0].Following
-		}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
-	})
-
-	_ = gts // used for cleanup
+		// Check if user1 is now following user2
+		relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(user2Account.ID)})
+		if err != nil || len(relationships) == 0 {
+			return false
+		}
+		return relationships[0].Following
+	}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
 }
 
 func requireDocker(t *testing.T) {

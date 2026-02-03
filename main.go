@@ -146,7 +146,7 @@ These commands help you manage your ActivityPub/Fediverse account, including
 follower management and account migration.`,
 	}
 	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "refetch-followers blog",
+		Use:   "refetch-followers <blog>",
 		Short: "Refetch ActivityPub followers",
 		Long: `Refetch and update ActivityPub follower information from remote servers.
 
@@ -175,7 +175,7 @@ Example:
 		},
 	})
 	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "move-followers blog target",
+		Use:   "move-followers <blog> <target>",
 		Short: "Move all followers to a new Fediverse account by sending Move activities",
 		Long: `Move all followers from the GoBlog ActivityPub account to a new Fediverse account.
 
@@ -209,7 +209,7 @@ Example:
 		},
 	})
 	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "clear-moved blog",
+		Use:   "clear-moved <blog>",
 		Short: "Clear the movedTo setting for a blog after an account migration",
 		Long: `Clear the movedTo setting for a blog's ActivityPub account.
 
