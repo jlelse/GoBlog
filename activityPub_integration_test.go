@@ -21,13 +21,17 @@ import (
 	"github.com/mattn/go-mastodon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
 const (
-	gtsTestEmail    = "gtsuser@example.com"
-	gtsTestUsername = "gtsuser"
-	gtsTestPassword = "GtsPassword123!@#"
+	gtsTestEmail       = "gtsuser@example.com"
+	gtsTestUsername    = "gtsuser"
+	gtsTestPassword    = "GtsPassword123!@#"
+	gtsServiceEmail    = "gtsservice@example.com"
+	gtsServiceUsername = "gtsservice"
+	gtsServicePassword = "GtsService123!@#"
 )
 
 func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
@@ -57,8 +61,64 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
+		for _, f := range followers {
+			if strings.Contains(f.follower, fmt.Sprintf("/users/%s", gtsTestUsername)) {
+				return true
+			}
+		}
+		return false
 	}, time.Minute, time.Second)
+
+	t.Run("Follow from service actor", func(t *testing.T) {
+		t.Parallel()
+
+		clientID, clientSecret := gtsRegisterApp(t, gts.baseURL)
+		serviceToken := gtsAuthorizeToken(t, gts.baseURL, clientID, clientSecret, gtsServiceEmail, gtsServicePassword)
+		mcService := mastodon.NewClient(&mastodon.Config{Server: gts.baseURL, AccessToken: serviceToken})
+		mcService.Client = http.Client{Timeout: time.Minute}
+
+		// Convert service actor to bot account
+		err := requests.
+			URL(gts.baseURL+"/api/v1/accounts/update_credentials").
+			Method(http.MethodPatch).
+			Client(&mcService.Client).
+			Header("Authorization", "Bearer "+serviceToken).
+			BodyForm(url.Values{"bot": {"true"}}).
+			Fetch(t.Context())
+		require.NoError(t, err)
+
+		// Verify that the account is now a bot
+		accountService, err := mcService.GetAccountCurrentUser(t.Context())
+		require.NoError(t, err)
+		require.True(t, accountService.Bot)
+		actor, err := gb.apGetRemoteActor(gb.cfg.DefaultBlog, activitypub.IRI(fmt.Sprintf("%s/users/%s", gts.baseURL, gtsServiceUsername)))
+		require.NoError(t, err)
+		require.NotNil(t, actor)
+		require.Equal(t, activitypub.ApplicationType, actor.GetType())
+
+		// Follow GoBlog from the service actor
+		searchResultsService, err := mcService.Search(t.Context(), goBlogAcct, true)
+		require.NoError(t, err)
+		require.NotNil(t, searchResultsService)
+		require.Greater(t, len(searchResultsService.Accounts), 0)
+		serviceLookup := searchResultsService.Accounts[0]
+		_, err = mcService.AccountFollow(t.Context(), serviceLookup.ID)
+		require.NoError(t, err)
+
+		// Verify that GoBlog has the service actor as a follower
+		require.Eventually(t, func() bool {
+			followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+			if err != nil {
+				return false
+			}
+			for _, f := range followers {
+				if strings.Contains(f.follower, fmt.Sprintf("/users/%s", gtsServiceUsername)) {
+					return true
+				}
+			}
+			return false
+		}, time.Minute, time.Second)
+	})
 
 	t.Run("Verify follow", func(t *testing.T) {
 		t.Parallel()
@@ -623,6 +683,16 @@ cache:
 		"--username", gtsTestUsername,
 		"--email", gtsTestEmail,
 		"--password", gtsTestPassword,
+	)
+	// Create service actor account (will be converted to a bot via API)
+	runDocker(t,
+		"exec", gts.containerName,
+		"/gotosocial/gotosocial",
+		"--config-path", "/config/config.yaml",
+		"admin", "account", "create",
+		"--username", gtsServiceUsername,
+		"--email", gtsServiceEmail,
+		"--password", gtsServicePassword,
 	)
 
 	clientID, clientSecret := gtsRegisterApp(t, gts.baseURL)

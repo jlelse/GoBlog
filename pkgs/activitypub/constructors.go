@@ -8,8 +8,8 @@ func ObjectNew(typ ActivityType) *Object {
 }
 
 // PersonNew creates a new Person with the given ID
-func PersonNew(id IRI) *Person {
-	return &Person{
+func PersonNew(id IRI) *Actor {
+	return &Actor{
 		Object: Object{
 			Type: PersonType,
 			ID:   id,

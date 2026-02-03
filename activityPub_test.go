@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"crypto/x509"
+	"encoding/gob"
 	"encoding/json"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -319,7 +323,6 @@ func Test_apVerifySignature(t *testing.T) {
 }
 
 func Test_loadActivityPubPrivateKey(t *testing.T) {
-
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
@@ -471,4 +474,56 @@ func Test_apMovedToSetting(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, movedTo)
 	})
+}
+
+func Test_apSendProfileUpdates_ObjectSet(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.DefaultBlog = "default"
+	app.cfg.Blogs = map[string]*configBlog{
+		"default": {
+			Path:        "/",
+			Title:       "Test Blog",
+			Description: "A test blog",
+		},
+	}
+	app.cfg.ActivityPub = &configActivityPub{Enabled: true}
+	app.apPubKeyBytes = []byte("test-key")
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	_ = app.initTemplateStrings()
+
+	err = app.db.apAddFollower("default", "https://remote.example/users/alice", "https://remote.example/inbox", "@alice@remote.example")
+	require.NoError(t, err)
+
+	app.apSendProfileUpdates()
+
+	var qi *queueItem
+	require.Eventually(t, func() bool {
+		var err error
+		qi, err = app.peekQueue(context.Background(), "ap")
+		return err == nil && qi != nil
+	}, time.Second, 50*time.Millisecond)
+
+	var req apRequest
+	err = gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&req)
+	require.NoError(t, err)
+
+	item, err := activitypub.UnmarshalJSON(req.Activity)
+	require.NoError(t, err)
+
+	activity, err := activitypub.ToActivity(item)
+	require.NoError(t, err)
+	require.NotNil(t, activity.Object)
+	assert.True(t, activity.Object.IsObject())
+
+	obj, err := activitypub.ToObject(activity.Object)
+	require.NoError(t, err)
+	assert.Equal(t, activitypub.PersonType, obj.GetType())
+	assert.Equal(t, activitypub.IRI("https://example.com"), obj.GetLink())
+	assert.Equal(t, "Test Blog", obj.Name.First().String())
+	assert.Equal(t, "A test blog", obj.Summary.First().String())
 }

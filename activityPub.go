@@ -171,7 +171,7 @@ func (a *goBlog) apCheckMentions(p *post) {
 	mentions := []string{}
 	for _, link := range links {
 		act, err := a.apGetRemoteActor(p.Blog, ap.IRI(link))
-		if err != nil || act == nil || act.Type != ap.PersonType {
+		if err != nil || act == nil || !ap.IsActorType(act.Type) {
 			continue
 		}
 		mentions = append(mentions, cmp.Or(string(act.GetLink()), link))
@@ -264,6 +264,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		if activity.Object.IsObject() {
 			objectActivity, err := ap.ToActivity(activity.Object)
 			if err == nil && objectActivity.GetType() == ap.FollowType && objectActivity.Actor.GetLink() == activityActor {
+				a.info("Follower unfollowed", "blog", blogName, "actor", activityActor.String())
 				_ = a.db.apRemoveFollower(blogName, activityActor.String())
 			}
 		}
@@ -273,6 +274,7 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	case ap.DeleteType, ap.BlockType:
 		if activity.Object.GetLink() == activityActor {
+			a.info("Follower got deleted or blocked", "blog", blogName, "actor", activityActor.String(), "activity_type", activity.GetType())
 			_ = a.db.apRemoveFollower(blogName, activityActor.String())
 		} else {
 			// Check if comment exists
@@ -771,11 +773,12 @@ func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
 	// - object: the account being moved (also this blog - it's moving itself)
 	// - target: the new account to move to
 	// Actor and Object are the same because the blog is announcing it's moving itself.
+	// The Move is addressed only to followers (not public) per ActivityPub conventions.
 	blogApiIri := a.apAPIri(blog)
 	move := ap.ActivityNew(ap.MoveType, a.apNewID(blog), blogApiIri)
 	move.Actor = blogApiIri
 	move.Target = ap.IRI(targetAccount)
-	move.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(blogName, blog))
+	move.To.Append(a.apGetFollowersCollectionId(blogName, blog))
 
 	// Send Move activity to all follower inboxes using the same pattern as other activities
 	uniqueInboxes := lo.Uniq(inboxes)

@@ -23,12 +23,12 @@ func UnmarshalJSON(data []byte) (Item, error) {
 
 	// Based on type, unmarshal into the appropriate struct
 	switch peek.Type {
-	case PersonType:
-		var person Person
-		if err := json.Unmarshal(data, &person); err != nil {
+	case PersonType, ServiceType, GroupType, OrganizationType, ApplicationType:
+		var actor Actor
+		if err := json.Unmarshal(data, &actor); err != nil {
 			return nil, err
 		}
-		return &person, nil
+		return &actor, nil
 	case CreateType, UpdateType, DeleteType, FollowType, AcceptType, UndoType, AnnounceType, LikeType, BlockType, MoveType:
 		var activity Activity
 		if err := json.Unmarshal(data, &activity); err != nil {
@@ -187,8 +187,8 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// UnmarshalJSON populates Person, converting interface fields and embedded Object.
-func (p *Person) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON populates Actor, converting interface fields and embedded Object.
+func (p *Actor) UnmarshalJSON(data []byte) error {
 	if err := p.Object.UnmarshalJSON(data); err != nil {
 		return err
 	}

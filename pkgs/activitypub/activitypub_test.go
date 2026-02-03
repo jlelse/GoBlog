@@ -138,6 +138,33 @@ func TestUnmarshalJSON(t *testing.T) {
 	assert.NotNil(t, activity.Object)
 }
 
+func TestUnmarshalJSONServiceActor(t *testing.T) {
+	serviceJSON := `{
+		"@context": "https://www.w3.org/ns/activitystreams",
+		"type": "Service",
+		"id": "https://example.com/services/bot",
+		"name": "Bot",
+		"preferredUsername": "bot"
+	}`
+
+	item, err := UnmarshalJSON([]byte(serviceJSON))
+	require.NoError(t, err)
+
+	actor, err := ToActor(item)
+	require.NoError(t, err)
+	assert.Equal(t, ServiceType, actor.Type)
+	assert.Equal(t, "Bot", actor.Name.First().String())
+}
+
+func TestIsActorType(t *testing.T) {
+	assert.True(t, IsActorType(PersonType))
+	assert.True(t, IsActorType(ServiceType))
+	assert.True(t, IsActorType(GroupType))
+	assert.True(t, IsActorType(OrganizationType))
+	assert.True(t, IsActorType(ApplicationType))
+	assert.False(t, IsActorType(NoteType))
+}
+
 func TestToObject(t *testing.T) {
 	// Test with Object
 	obj := ObjectNew(NoteType)
@@ -190,7 +217,7 @@ func TestPersonMarshaling(t *testing.T) {
 	data, err := json.Marshal(person)
 	require.NoError(t, err)
 
-	var unmarshaled Person
+	var unmarshaled Actor
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
 
@@ -212,7 +239,7 @@ func TestPersonMarshalingWithExtensions(t *testing.T) {
 	data, err := json.Marshal(person)
 	require.NoError(t, err)
 
-	var unmarshaled Person
+	var unmarshaled Actor
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
 

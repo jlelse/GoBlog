@@ -13,8 +13,8 @@ func ToObject(item Item) (*Object, error) {
 	if obj, ok := item.(*Object); ok {
 		return obj, nil
 	}
-	if person, ok := item.(*Person); ok {
-		return &person.Object, nil
+	if actor, ok := item.(*Actor); ok {
+		return &actor.Object, nil
 	}
 	if collection, ok := item.(*Collection); ok {
 		return &collection.Object, nil
