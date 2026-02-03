@@ -598,7 +598,7 @@ cache:
 		"--tmpfs", "/data",
 		"--tmpfs", "/gotosocial/storage",
 		"--tmpfs", "/gotosocial/.cache",
-		"docker.io/superseriousbusiness/gotosocial:0.20.2",
+		"docker.io/superseriousbusiness/gotosocial:0.20.3",
 		"--config-path", "/config/config.yaml", "server", "start",
 	)
 	t.Cleanup(func() {
