@@ -3,113 +3,77 @@
 package main
 
 import (
-	"fmt"
-	"net"
-	"net/http"
-	"os"
-	"os/exec"
-	"strings"
-	"testing"
-	"time"
+"context"
+"fmt"
+"net"
+"net/http"
+"os"
+"os/exec"
+"strings"
+"testing"
+"time"
 
-	"github.com/mattn/go-mastodon"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+"github.com/mattn/go-mastodon"
+"github.com/stretchr/testify/assert"
+"github.com/stretchr/testify/require"
 )
 
 func TestIntegrationActivityPubDomainMove(t *testing.T) {
-	requireDocker(t)
+requireDocker(t)
 
-	// Speed up the AP send queue for testing
-	apSendInterval = time.Second
+// Speed up the AP send queue for testing
+apSendInterval = time.Second
 
-	// Start GoBlog ActivityPub server
-	port := getFreePort(t)
-	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: newHttpClient(),
-	}
+// Domains for testing
+newDomain := "newgoblog.example"
+oldDomain := "goblog.example"
+port := getFreePort(t)
 
-	// Configure to use new domain and add old domain as alternate
-	newDomain := "newgoblog.example"
-	oldDomain := "goblog.example"
-	app.cfg.Server.PublicAddress = "http://" + newDomain
-	app.cfg.Server.AlternateDomains = []string{oldDomain}
-	app.cfg.Server.Port = port
-	app.cfg.ActivityPub.Enabled = true
+// Create Docker network
+netName := fmt.Sprintf("goblog-net-%d", time.Now().UnixNano())
+runDocker(t, "network", "create", netName)
+t.Cleanup(func() {
+= exec.Command("docker", "network", "rm", netName).Run()
+})
 
-	// Initialize the app
-	require.NoError(t, app.initConfig(false))
-	require.NoError(t, app.initTemplateStrings())
-	require.NoError(t, app.initActivityPub())
+// Create Caddy reverse proxy for old domain
+oldProxyName := fmt.Sprintf("goblog-proxy-old-%d", time.Now().UnixNano())
+runDocker(t,
+", "-d", "--rm",
+ame", oldProxyName,
+ame", oldDomain,
+etwork", netName,
+etwork-alias", oldDomain,
+"host.docker.internal:host-gateway",
+/caddy:2",
+", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
+)
+t.Cleanup(func() {
+= exec.Command("docker", "rm", "-f", oldProxyName).Run()
+})
 
-	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           app.buildRouter(),
-		ReadHeaderTimeout: time.Minute,
-	}
-	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
-	require.NoError(t, err)
-	app.shutdown.Add(app.shutdownServer(server, "integration server"))
-	go func() {
-		_ = server.Serve(listener)
-	}()
-	t.Cleanup(func() {
-		app.shutdown.ShutdownAndWait()
-	})
+// Create Caddy reverse proxy for new domain
+newProxyName := fmt.Sprintf("goblog-proxy-new-%d", time.Now().UnixNano())
+runDocker(t,
+", "-d", "--rm",
+ame", newProxyName,
+ame", newDomain,
+etwork", netName,
+etwork-alias", newDomain,
+"host.docker.internal:host-gateway",
+/caddy:2",
+", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
+)
+t.Cleanup(func() {
+= exec.Command("docker", "rm", "-f", newProxyName).Run()
+})
 
-	// Create Docker network
-	netName := fmt.Sprintf("goblog-net-%d", time.Now().UnixNano())
-	runDocker(t, "network", "create", netName)
-	t.Cleanup(func() {
-		_ = exec.Command("docker", "network", "rm", netName).Run()
-	})
-
-	// Create Caddy reverse proxies for both domains
-	oldProxyName := fmt.Sprintf("goblog-proxy-old-%d", time.Now().UnixNano())
-	runDocker(t,
-		"run", "-d", "--rm",
-		"--name", oldProxyName,
-		"--hostname", oldDomain,
-		"--network", netName,
-		"--network-alias", oldDomain,
-		"--add-host", "host.docker.internal:host-gateway",
-		"docker.io/library/caddy:2",
-		"caddy", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
-	)
-	t.Cleanup(func() {
-		_ = exec.Command("docker", "rm", "-f", oldProxyName).Run()
-	})
-
-	newProxyName := fmt.Sprintf("goblog-proxy-new-%d", time.Now().UnixNano())
-	runDocker(t,
-		"run", "-d", "--rm",
-		"--name", newProxyName,
-		"--hostname", newDomain,
-		"--network", netName,
-		"--network-alias", newDomain,
-		"--add-host", "host.docker.internal:host-gateway",
-		"docker.io/library/caddy:2",
-		"caddy", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
-	)
-	t.Cleanup(func() {
-		_ = exec.Command("docker", "rm", "-f", newProxyName).Run()
-	})
-
-	// Wait for proxies to be ready
-	require.Eventually(t, func() bool {
-		acct := "acct:default@" + newDomain
-		cmd := exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+newDomain+"/.well-known/webfinger")
-		out, err := cmd.CombinedOutput()
-		return err == nil && strings.Contains(string(out), acct)
-	}, time.Minute, time.Second)
-
-	// Start GoToSocial instance
-	containerName := fmt.Sprintf("goblog-gts-%d", time.Now().UnixNano())
-	gtsPort := getFreePort(t)
-	gtsDir := t.TempDir()
-	gtsConfigPath := gtsDir + "/config.yaml"
-	gtsConfig := fmt.Sprintf(`host: "127.0.0.1:%d"
+// Start GoToSocial instance
+containerName := fmt.Sprintf("goblog-gts-%d", time.Now().UnixNano())
+gtsPort := getFreePort(t)
+gtsDir := t.TempDir()
+gtsConfigPath := gtsDir + "/config.yaml"
+gtsConfig := fmt.Sprintf(`host: "127.0.0.1:%d"
 protocol: "http"
 bind-address: "0.0.0.0"
 port: %d
@@ -125,147 +89,249 @@ trusted-proxies:
 cache:
   memory-target: "50MiB"
 `, gtsPort, gtsPort)
-	require.NoError(t, os.WriteFile(gtsConfigPath, []byte(gtsConfig), 0o644))
+require.NoError(t, os.WriteFile(gtsConfigPath, []byte(gtsConfig), 0o644))
 
-	runDocker(t,
-		"run", "-d", "--rm",
-		"--name", containerName,
-		"--network", netName,
-		"-p", fmt.Sprintf("%d:%d", gtsPort, gtsPort),
-		"-v", fmt.Sprintf("%s:/config/config.yaml", gtsConfigPath),
-		"--tmpfs", "/data",
-		"--tmpfs", "/gotosocial/storage",
-		"--tmpfs", "/gotosocial/.cache",
-		"docker.io/superseriousbusiness/gotosocial:0.20.3",
-		"--config-path", "/config/config.yaml", "server", "start",
-	)
-	t.Cleanup(func() {
-		_ = exec.Command("docker", "rm", "-f", containerName).Run()
-	})
+runDocker(t,
+", "-d", "--rm",
+ame", containerName,
+etwork", netName,
+fmt.Sprintf("%d:%d", gtsPort, gtsPort),
+fmt.Sprintf("%s:/config/config.yaml", gtsConfigPath),
+"/data",
+"/gotosocial/storage",
+"/gotosocial/.cache",
+ess/gotosocial:0.20.3",
+fig-path", "/config/config.yaml", "server", "start",
+)
+t.Cleanup(func() {
+= exec.Command("docker", "rm", "-f", containerName).Run()
+})
 
-	gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
-	waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 2*time.Minute)
+gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
+waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 2*time.Minute)
 
-	// Create test user
-	runDocker(t,
-		"exec", containerName,
-		"/gotosocial/gotosocial",
-		"--config-path", "/config/config.yaml",
-		"admin", "account", "create",
-		"--username", gtsTestUsername,
-		"--email", gtsTestEmail,
-		"--password", gtsTestPassword,
-	)
+// Create test user
+runDocker(t,
+containerName,
+fig-path", "/config/config.yaml",
+", "account", "create",
+ame", gtsTestUsername,
+gtsTestEmail,
+gtsTestPassword,
+)
 
-	clientID, clientSecret := gtsRegisterApp(t, gtsBaseURL)
-	accessToken := gtsAuthorizeToken(t, gtsBaseURL, clientID, clientSecret, gtsTestEmail, gtsTestPassword)
-	mc := mastodon.NewClient(&mastodon.Config{Server: gtsBaseURL, AccessToken: accessToken})
-	mc.Client = http.Client{Timeout: time.Minute}
+clientID, clientSecret := gtsRegisterApp(t, gtsBaseURL)
+accessToken := gtsAuthorizeToken(t, gtsBaseURL, clientID, clientSecret, gtsTestEmail, gtsTestPassword)
+mc := mastodon.NewClient(&mastodon.Config{Server: gtsBaseURL, AccessToken: accessToken})
+mc.Client = http.Client{Timeout: time.Minute}
 
-	// Test 1: Follow GoBlog on OLD domain first (this is the key change per requirement)
-	goBlogAcctOld := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, oldDomain)
-	t.Logf("Following GoBlog account on old domain: %s", goBlogAcctOld)
-	searchResultsOld, err := mc.Search(t.Context(), goBlogAcctOld, true)
-	require.NoError(t, err)
-	require.NotNil(t, searchResultsOld)
-	require.Greater(t, len(searchResultsOld.Accounts), 0)
-	lookupOld := searchResultsOld.Accounts[0]
-	_, err = mc.AccountFollow(t.Context(), lookupOld.ID)
-	require.NoError(t, err)
+// === PHASE 1: Start GoBlog without alternate domain (using OLD domain) ===
+t.Log("=== PHASE 1: Starting GoBlog with OLD domain only ===")
+app := &goBlog{
+       createDefaultTestConfig(t),
+t: newHttpClient(),
+}
 
-	// Verify that GoBlog has the GoToSocial user as a follower
-	require.Eventually(t, func() bool {
-		followers, err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
-		if err != nil {
-			return false
-		}
-		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
-	}, time.Minute, time.Second)
+// Configure to use OLD domain initially (no alternate domains)
+app.cfg.Server.PublicAddress = "http://" + oldDomain
+app.cfg.Server.AlternateDomains = []string{} // No alternate domains yet
+app.cfg.Server.Port = port
+app.cfg.ActivityPub.Enabled = true
 
-	t.Log("Successfully following old domain account")
+// Initialize the app
+require.NoError(t, app.initConfig(false))
+require.NoError(t, app.initTemplateStrings())
+require.NoError(t, app.initActivityPub())
 
-	// Test 2: Perform domain move
-	t.Log("Performing domain move...")
-	err = app.apDomainMove(oldDomain, newDomain)
-	require.NoError(t, err)
+server := &http.Server{
+             fmt.Sprintf(":%d", port),
+dler:           app.buildRouter(),
+time.Minute,
+}
+listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+require.NoError(t, err)
+app.shutdown.Add(app.shutdownServer(server, "integration server"))
+go func() {
+= server.Serve(listener)
+}()
 
-	// Wait a bit for Move activities to be processed
-	time.Sleep(5 * time.Second)
+// Wait for GoBlog to be ready on old domain
+require.Eventually(t, func() bool {
+:= "acct:default@" + oldDomain
+:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
+err := cmd.CombinedOutput()
+ err == nil && strings.Contains(string(out), acct)
+}, time.Minute, time.Second)
 
-	// Test 3: Verify that GTS user now follows the NEW domain (automatic migration)
-	// GoToSocial should have processed the Move activity and auto-followed the new domain
-	t.Log("Checking if follower migrated to new domain...")
+t.Log("GoBlog is running on old domain")
 
-	goBlogAcctNew := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, newDomain)
+// Follow GoBlog on OLD domain
+goBlogAcctOld := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, oldDomain)
+t.Logf("Following GoBlog account on old domain: %s", goBlogAcctOld)
+searchResultsOld, err := mc.Search(context.Background(), goBlogAcctOld, true)
+require.NoError(t, err)
+require.NotNil(t, searchResultsOld)
+require.Greater(t, len(searchResultsOld.Accounts), 0)
+lookupOld := searchResultsOld.Accounts[0]
+_, err = mc.AccountFollow(context.Background(), lookupOld.ID)
+require.NoError(t, err)
 
-	// Search for the new domain account from GTS user's perspective
-	require.Eventually(t, func() bool {
-		searchResultsNew, searchErr := mc.Search(t.Context(), goBlogAcctNew, true)
-		if searchErr != nil || len(searchResultsNew.Accounts) == 0 {
-			t.Logf("Search for new domain failed or no results: %v", searchErr)
-			return false
-		}
+// Verify that GoBlog has the GoToSocial user as a follower
+require.Eventually(t, func() bool {
+err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
+err != nil {
+ false
+ len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
+}, time.Minute, time.Second)
 
-		newDomainAccount := searchResultsNew.Accounts[0]
-		t.Logf("Found new domain account: %s", newDomainAccount.Acct)
+t.Log("Successfully following old domain account")
 
-		// Check if user is now following the new domain account
-		relationships, relErr := mc.GetAccountRelationships(t.Context(), []string{string(newDomainAccount.ID)})
-		if relErr != nil || len(relationships) == 0 {
-			t.Logf("Failed to get relationships: %v", relErr)
-			return false
-		}
+// === PHASE 2: Stop server, update config, restart ===
+t.Log("=== PHASE 2: Stopping server to update config ===")
 
-		following := relationships[0].Following
-		t.Logf("Following new domain: %v", following)
-		return following
-	}, 30*time.Second, 2*time.Second, "GTS user should now follow new domain after Move")
+// Gracefully shutdown the server
+shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+require.NoError(t, server.Shutdown(shutdownCtx))
+app.shutdown.ShutdownAndWait()
 
-	// Test 4: Verify webfinger works for BOTH domains from GoToSocial perspective
-	// Check old domain webfinger
-	goBlogAcctOldWebfinger := "acct:default@" + oldDomain
-	cmdOld := exec.Command("docker", "run", "--rm", "--network", netName,
-		"docker.io/alpine/curl", "-sS", "-m", "5", "-G",
-		"--data-urlencode", fmt.Sprintf("resource=%s", goBlogAcctOldWebfinger),
-		"http://"+oldDomain+"/.well-known/webfinger")
-	outOld, err := cmdOld.CombinedOutput()
-	require.NoError(t, err, "Old domain webfinger failed: %s", string(outOld))
-	assert.Contains(t, string(outOld), oldDomain, "Old domain webfinger should contain old domain")
+t.Log("Server stopped")
 
-	// Check new domain webfinger
-	goBlogAcctNewQuery := "acct:default@" + newDomain
-	cmdNew := exec.Command("docker", "run", "--rm", "--network", netName,
-		"docker.io/alpine/curl", "-sS", "-m", "5", "-G",
-		"--data-urlencode", fmt.Sprintf("resource=%s", goBlogAcctNewQuery),
-		"http://"+newDomain+"/.well-known/webfinger")
-	outNew, err := cmdNew.CombinedOutput()
-	require.NoError(t, err, "New domain webfinger failed: %s", string(outNew))
-	assert.Contains(t, string(outNew), newDomain, "New domain webfinger should contain new domain")
+// Update config: Change to new domain and add old domain as alternate
+t.Log("=== PHASE 3: Updating config and restarting with new domain ===")
+app.cfg.Server.PublicAddress = "http://" + newDomain
+app.cfg.Server.AlternateDomains = []string{oldDomain}
 
-	// Test 4: Verify actor endpoint returns correct domain-specific IRIs
-	// Check old domain actor (should include alsoKnownAs with new domain)
-	cmdActorOld := exec.Command("docker", "run", "--rm", "--network", netName,
-		"docker.io/alpine/curl", "-sS", "-m", "5",
-		"-H", "Accept: application/activity+json",
-		"http://"+oldDomain)
-	outActorOld, err := cmdActorOld.CombinedOutput()
-	require.NoError(t, err, "Old domain actor fetch failed: %s", string(outActorOld))
-	assert.Contains(t, string(outActorOld), oldDomain, "Old domain actor should have old domain in ID")
-	assert.Contains(t, string(outActorOld), newDomain, "Old domain actor should have new domain in alsoKnownAs")
+// Re-initialize with new config
+require.NoError(t, app.initConfig(false))
+require.NoError(t, app.initTemplateStrings())
+require.NoError(t, app.initActivityPub())
 
-	// Check new domain actor (should include alsoKnownAs with old domain)
-	cmdActorNew := exec.Command("docker", "run", "--rm", "--network", netName,
-		"docker.io/alpine/curl", "-sS", "-m", "5",
-		"-H", "Accept: application/activity+json",
-		"http://"+newDomain)
-	outActorNew, err := cmdActorNew.CombinedOutput()
-	require.NoError(t, err, "New domain actor fetch failed: %s", string(outActorNew))
-	assert.Contains(t, string(outActorNew), newDomain, "New domain actor should have new domain in ID")
-	assert.Contains(t, string(outActorNew), oldDomain, "New domain actor should have old domain in alsoKnownAs")
+// Start server again
+server = &http.Server{
+             fmt.Sprintf(":%d", port),
+dler:           app.buildRouter(),
+time.Minute,
+}
+listener, err = net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
+require.NoError(t, err)
+app.shutdown.Add(app.shutdownServer(server, "integration server"))
+go func() {
+= server.Serve(listener)
+}()
+t.Cleanup(func() {
+.ShutdownAndWait()
+})
 
-	t.Log("Domain move integration test completed successfully")
-	t.Log("- Both domains are accessible")
-	t.Log("- Webfinger works for both domains")
-	t.Log("- Actor endpoints return domain-specific IRIs")
-	t.Log("- alsoKnownAs includes alternate domains")
+// Wait for GoBlog to be ready on new domain
+require.Eventually(t, func() bool {
+:= "acct:default@" + newDomain
+:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+newDomain+"/.well-known/webfinger")
+err := cmd.CombinedOutput()
+ err == nil && strings.Contains(string(out), acct)
+}, time.Minute, time.Second)
+
+t.Log("GoBlog restarted on new domain")
+
+// Verify old domain still works (as alternate)
+require.Eventually(t, func() bool {
+:= "acct:default@" + oldDomain
+:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
+err := cmd.CombinedOutput()
+ err == nil && strings.Contains(string(out), acct)
+}, time.Minute, time.Second)
+
+t.Log("Old domain still works as alternate")
+
+// === PHASE 4: Perform domain move ===
+t.Log("=== PHASE 4: Performing domain move ===")
+err = app.apDomainMove(oldDomain, newDomain)
+require.NoError(t, err)
+
+// Verify movedTo was set for the blog
+movedTo, err := app.getApMovedTo(app.cfg.DefaultBlog)
+require.NoError(t, err)
+expectedMovedTo := fmt.Sprintf("http://%s", newDomain)
+assert.Equal(t, expectedMovedTo, movedTo, "movedTo should be set to new domain actor")
+
+t.Log("Domain move completed, movedTo is set")
+
+// Wait for Move activities to be processed
+time.Sleep(10 * time.Second)
+
+// === PHASE 5: Verify the move worked ===
+t.Log("=== PHASE 5: Verifying move worked ===")
+
+// Check that GTS user now follows the NEW domain (automatic migration)
+goBlogAcctNew := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, newDomain)
+
+// Search for the new domain account from GTS user's perspective
+require.Eventually(t, func() bool {
+ew, searchErr := mc.Search(context.Background(), goBlogAcctNew, true)
+searchErr != nil || len(searchResultsNew.Accounts) == 0 {
+for new domain failed or no results: %v", searchErr)
+ false
+ewDomainAccount := searchResultsNew.Accounts[0]
+d new domain account: %s", newDomainAccount.Acct)
+
+Check if user is now following the new domain account
+ships, relErr := mc.GetAccountRelationships(context.Background(), []string{string(newDomainAccount.ID)})
+relErr != nil || len(relationships) == 0 {
+to get relationships: %v", relErr)
+ false
+g := relationships[0].Following
+g new domain: %v", following)
+ following
+}, 60*time.Second, 3*time.Second, "GTS user should now follow new domain after Move")
+
+t.Log("Follower successfully migrated to new domain")
+
+// Verify webfinger works for both domains
+goBlogAcctOldWebfinger := "acct:default@" + oldDomain
+cmdOld := exec.Command("docker", "run", "--rm", "--network", netName,
+e/curl", "-sS", "-m", "5", "-G",
+code", fmt.Sprintf("resource=%s", goBlogAcctOldWebfinger),
++"/.well-known/webfinger")
+outOld, err := cmdOld.CombinedOutput()
+require.NoError(t, err, "Old domain webfinger failed: %s", string(outOld))
+assert.Contains(t, string(outOld), oldDomain, "Old domain webfinger should contain old domain")
+
+goBlogAcctNewWebfinger := "acct:default@" + newDomain
+cmdNew := exec.Command("docker", "run", "--rm", "--network", netName,
+e/curl", "-sS", "-m", "5", "-G",
+code", fmt.Sprintf("resource=%s", goBlogAcctNewWebfinger),
+ewDomain+"/.well-known/webfinger")
+outNew, err := cmdNew.CombinedOutput()
+require.NoError(t, err, "New domain webfinger failed: %s", string(outNew))
+assert.Contains(t, string(outNew), newDomain, "New domain webfinger should contain new domain")
+
+// Verify actor endpoints return correct IRIs and movedTo
+cmdActorOld := exec.Command("docker", "run", "--rm", "--network", netName,
+e/curl", "-sS", "-m", "5",
+"Accept: application/activity+json",
+)
+outActorOld, err := cmdActorOld.CombinedOutput()
+require.NoError(t, err, "Old domain actor fetch failed: %s", string(outActorOld))
+assert.Contains(t, string(outActorOld), oldDomain, "Old domain actor should have old domain in ID")
+assert.Contains(t, string(outActorOld), newDomain, "Old domain actor should have new domain in alsoKnownAs or movedTo")
+assert.Contains(t, string(outActorOld), "movedTo", "Old domain actor should have movedTo field")
+
+cmdActorNew := exec.Command("docker", "run", "--rm", "--network", netName,
+e/curl", "-sS", "-m", "5",
+"Accept: application/activity+json",
+ewDomain)
+outActorNew, err := cmdActorNew.CombinedOutput()
+require.NoError(t, err, "New domain actor fetch failed: %s", string(outActorNew))
+assert.Contains(t, string(outActorNew), newDomain, "New domain actor should have new domain in ID")
+assert.Contains(t, string(outActorNew), oldDomain, "New domain actor should have old domain in alsoKnownAs")
+
+t.Log("✓ Domain move integration test completed successfully")
+t.Log("✓ Started with old domain only")
+t.Log("✓ Followed old domain")
+t.Log("✓ Restarted with new domain and old as alternate")
+t.Log("✓ Domain move executed successfully")
+t.Log("✓ movedTo field is set")
+t.Log("✓ Follower migrated to new domain")
+t.Log("✓ Both domains are accessible")
+t.Log("✓ Webfinger works for both domains")
 }

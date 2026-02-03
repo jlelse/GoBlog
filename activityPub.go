@@ -963,6 +963,12 @@ func (a *goBlog) apDomainMove(oldDomain, newDomain string) error {
 		oldDomainActor := a.apIriForDomain(blog, oldDomain)
 		newDomainActor := a.apIriForDomain(blog, newDomain)
 
+		// Set movedTo for this blog to point to the new domain actor
+		if err := a.setApMovedTo(blogName, newDomainActor); err != nil {
+			a.error("Failed to set movedTo", "blog", blogName, "err", err)
+			continue
+		}
+
 		move := ap.ActivityNew(ap.MoveType, ap.IRI(oldDomainActor+"#move-"+fmt.Sprintf("%d", utcNowNanos())), ap.IRI(oldDomainActor))
 		move.Actor = ap.IRI(oldDomainActor)
 		move.Target = ap.IRI(newDomainActor)
