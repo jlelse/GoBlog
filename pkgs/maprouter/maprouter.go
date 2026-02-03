@@ -2,6 +2,7 @@ package maprouter
 
 import (
 	"net/http"
+	"strings"
 )
 
 // Make sure interface is satisfied
@@ -34,7 +35,15 @@ func (ar *MapRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	ar.DefaultHandler.ServeHTTP(rw, r)
 }
 
-// Gets the default key for the router
+// Gets the default key for the router (hostname without port)
 func defaultKey(r *http.Request) string {
-	return r.Host
+	host := r.Host
+	// Strip port if present
+	if idx := strings.LastIndex(host, ":"); idx != -1 {
+		// Check if this is an IPv6 address (contains brackets)
+		if !strings.Contains(host, "]") || idx > strings.LastIndex(host, "]") {
+			host = host[:idx]
+		}
+	}
+	return host
 }

@@ -583,8 +583,16 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 	// Create a caddy proxy for the new domain
 	startDomainProxy(t, gts.networkName, "newgoblog.example", gb.cfg.Server.Port)
 
-	// Rebuild router to include alt domain handler
+	// Rebuild router to include alt domain handler BEFORE waiting for proxies
 	gb.reloadRouter()
+
+	// Wait for the new domain proxy to be ready
+	require.Eventually(t, func() bool {
+		acct := "acct:" + gb.cfg.DefaultBlog + "@newgoblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://newgoblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		return err == nil && strings.Contains(string(out), "newgoblog.example")
+	}, time.Minute, time.Second, "New domain proxy should be ready")
 
 	// Verify the new domain actor has the old domain in alsoKnownAs
 	person := gb.toApPerson(gb.cfg.DefaultBlog)
@@ -635,7 +643,7 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 
 	// Verify the old domain actor has movedTo set (via HTTP request to get the actual actor)
 	t.Run("Old domain actor shows movedTo", func(t *testing.T) {
-		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-H", "Accept: application/activity+json", "http://goblog.example/")
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "5", "-H", "Accept: application/activity+json", "http://goblog.example/")
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err)
 		assert.Contains(t, string(out), "movedTo", "old domain actor should have movedTo field")
@@ -644,7 +652,7 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 
 	// Verify the new domain actor can be discovered and has alsoKnownAs
 	t.Run("New domain actor has alsoKnownAs", func(t *testing.T) {
-		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-H", "Accept: application/activity+json", "http://newgoblog.example/")
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "5", "-H", "Accept: application/activity+json", "http://newgoblog.example/")
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err)
 		assert.Contains(t, string(out), "alsoKnownAs", "new domain actor should have alsoKnownAs field")
