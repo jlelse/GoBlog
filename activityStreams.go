@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/araddon/dateparse"
 	ct "github.com/elnormous/contenttype"

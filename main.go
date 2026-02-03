@@ -297,6 +297,38 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "remove-alternate-domain <blog> <domain>",
+		Short: "Remove an alternate domain from a blog",
+		Long: `Remove an alternate domain from a blog's ActivityPub configuration.
+
+After a domain migration has been completed and all followers have migrated
+to the new domain, you can remove the old domain as an alternate. This will
+stop serving the old domain actor endpoint.
+
+Example:
+  ./GoBlog activitypub remove-alternate-domain default goblog.example`,
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			blog := args[0]
+			domain := args[1]
+			if _, ok := app.cfg.Blogs[blog]; !ok {
+				app.logErrAndQuit("Blog not found", "blog", blog)
+				return
+			}
+			if err := app.db.apRemoveAlternateDomain(blog, domain); err != nil {
+				app.logErrAndQuit("Failed to remove alternate domain", "blog", blog, "domain", domain, "err", err)
+			}
+			fmt.Printf("Removed alternate domain %s from blog %s\n", domain, blog)
+			fmt.Println("Restart GoBlog for changes to take effect")
+			app.shutdown.ShutdownAndWait()
+		},
+	})
 	rootCmd.AddCommand(activityPubCmd)
 
 	// Setup command for setting up user credentials

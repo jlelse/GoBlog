@@ -565,6 +565,31 @@ activityPub:
 
 2. On your old Fediverse account, initiate the move to your GoBlog account using your old server's migration feature.
 
+**Moving Between GoBlog Domains:**
+
+If you're changing your GoBlog's domain (e.g., from `goblog.example` to `newgoblog.example`) while keeping the same GoBlog instance:
+
+1. Update your reverse proxy configuration to serve both old and new domains
+2. Update `publicAddress` in your GoBlog config to the new domain
+3. Restart GoBlog to apply the config changes
+4. Run the domain move command:
+
+```bash
+./GoBlog activitypub domainmove blogname goblog.example newgoblog.example
+```
+
+This command:
+- Stores the old domain as an alternate domain
+- Sends Move activities from the old-domain actor to the new-domain actor
+- Notifies all followers to migrate to the new domain
+- Keeps both domains accessible during the transition period
+
+After the migration, both domains will continue to work. You can later remove the old domain with:
+
+```bash
+./GoBlog activitypub remove-alternate-domain blogname goblog.example
+```
+
 **Migration from GoBlog to another Fediverse server:**
 
 If you're moving away from GoBlog to another Fediverse server:
@@ -1156,6 +1181,32 @@ Sends Move activities to all followers, instructing them that your account has m
 ```
 
 Clears the `movedTo` setting from a blog's ActivityPub profile. Use this if you need to undo a migration or if you accidentally set the wrong target.
+
+### Domain Move
+
+```bash
+./GoBlog --config ./config/config.yml activitypub domainmove blogname old.example.com new.example.com
+```
+
+Moves a blog's ActivityPub presence from one domain to another within the same GoBlog instance. This is used when changing your blog's domain while keeping the same GoBlog installation.
+
+**Before running:**
+1. Configure your reverse proxy to serve both old and new domains
+2. Update `publicAddress` in config to the new domain
+3. Restart GoBlog
+
+**After running:**
+- The old domain is stored as an alternate domain
+- Move activities are sent to all followers
+- Both domains remain accessible during the transition
+
+### Remove Alternate Domain
+
+```bash
+./GoBlog --config ./config/config.yml activitypub remove-alternate-domain blogname old.example.com
+```
+
+Removes an alternate domain after migration is complete. Requires a restart to take effect.
 
 ### Profiling
 
