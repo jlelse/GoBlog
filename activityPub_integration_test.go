@@ -476,6 +476,17 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 		_, err := mc2.GetAccountCurrentUser(t.Context())
 		require.NoError(t, err)
 
+		// Unlock gtsuser2 so follows are auto-accepted during Move
+		err = requests.URL(gts.baseURL+"/api/v1/accounts/update_credentials").
+			Client(&http.Client{Timeout: time.Minute}).
+			Header("Authorization", "Bearer "+accessToken2).
+			Method(http.MethodPatch).
+			BodyJSON(map[string]any{
+				"locked": false,
+			}).
+			Fetch(t.Context())
+		require.NoError(t, err)
+
 		// Construct the ActivityPub actor URI for user2
 		account2ActorURI := fmt.Sprintf("%s/users/%s", gts.baseURL, gtsTestUsername2)
 
@@ -515,7 +526,7 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 				return false
 			}
 			return relationships[0].Following
-		}, 30*time.Second, 2*time.Second)
+		}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
 	})
 
 	_ = gts // used for cleanup
