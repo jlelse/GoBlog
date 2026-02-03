@@ -172,7 +172,7 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
-	
+
 	// Add alternate domains to alsoKnownAs
 	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
 		for _, altDomain := range alternateDomains {
@@ -233,14 +233,14 @@ func (a *goBlog) toApPersonForDomain(blog, domain string) *ap.Actor {
 	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
-	
+
 	// Add alternate domains and configured domain to alsoKnownAs
 	// Include the main configured domain as an alias
 	mainIri := a.apIri(b)
 	if mainIri != apIri.String() {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(mainIri))
 	}
-	
+
 	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
 		for _, altDomain := range alternateDomains {
 			if altDomain != domain {

@@ -123,7 +123,7 @@ func (a *goBlog) prepareWebfinger() {
 		a.webfingerResources[acct] = blog
 		a.webfingerResources[a.apIri(blog)] = blog
 		a.webfingerAccts[a.apIri(blog)] = acct
-		
+
 		// Also add alternate domains for webfinger resolution
 		if alternateDomains, err := a.db.apGetAlternateDomains(name); err == nil {
 			for _, altDomain := range alternateDomains {
@@ -144,13 +144,13 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Resource not found", http.StatusNotFound)
 		return
 	}
-	
+
 	// Determine which domain to use in the response based on the Host header
 	requestedDomain := r.Host
 	if requestedDomain == "" {
 		requestedDomain = a.cfg.Server.publicHostname
 	}
-	
+
 	// Use the requested domain for generating the IRI
 	apIri := a.apIriForDomain(blog, requestedDomain)
 	acct, ok := a.webfingerAccts[apIri]
@@ -159,7 +159,7 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		apIri = a.apIri(blog)
 		acct = a.webfingerAccts[apIri]
 	}
-	
+
 	// Encode
 	pr, pw := io.Pipe()
 	go func() {

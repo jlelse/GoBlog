@@ -248,13 +248,13 @@ Example:
 			blog := args[0]
 			oldDomain := args[1]
 			newDomain := args[2]
-			
+
 			// Verify blog exists
 			if _, ok := app.cfg.Blogs[blog]; !ok {
 				app.logErrAndQuit("Blog not found", "blog", blog)
 				return
 			}
-			
+
 			// Perform the domain move
 			if err := app.apDomainMove(blog, oldDomain, newDomain); err != nil {
 				app.logErrAndQuit("Failed to perform domain move", "blog", blog, "old", oldDomain, "new", newDomain, "err", err)

@@ -421,12 +421,6 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 
 }
 
-const (
-	gtsTestEmail2    = "gtsuser2@example.com"
-	gtsTestUsername2 = "gtsuser2"
-	gtsTestPassword2 = "GtsPassword456!@#"
-)
-
 func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 	requireDocker(t)
 
