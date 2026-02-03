@@ -693,7 +693,11 @@ func (a *goBlog) isAltDomainHostname(hostname string) bool {
 // getAltDomainAddress returns the full address for an alternative domain hostname
 func (a *goBlog) getAltDomainAddress(hostname string) string {
 	for _, altDomain := range a.cfg.Server.AltDomains {
-		if strings.Contains(altDomain, hostname) {
+		altURL, err := url.Parse(altDomain)
+		if err != nil {
+			continue
+		}
+		if altURL.Hostname() == hostname {
 			return altDomain
 		}
 	}

@@ -927,10 +927,11 @@ func (a *goBlog) apSendDomainMoveForBlog(blogName string, blog *configBlog, oldD
 	// actor: the old domain actor (the one moving)
 	// object: also the old domain actor (it's moving itself)
 	// target: the new domain actor (where it's moving to)
-	move := ap.ActivityNew(ap.MoveType, ap.IRI(oldActorIri+"#move-"+time.Now().Format("20060102150405")), ap.IRI(oldActorIri))
+	move := ap.ActivityNew(ap.MoveType, ap.IRI(oldActorIri+"#move-"+blogName+"-"+time.Now().Format("20060102150405")), ap.IRI(oldActorIri))
 	move.Actor = ap.IRI(oldActorIri)
 	move.Target = ap.IRI(newActorIri)
-	move.To.Append(ap.IRI(oldActorIri + "/activitypub/followers/" + blogName))
+	// Followers collection on the old domain
+	move.To.Append(ap.IRI(oldDomain + "/activitypub/followers/" + blogName))
 	move.Published = time.Now()
 
 	// Send Move activity to all follower inboxes
