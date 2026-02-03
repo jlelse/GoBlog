@@ -171,6 +171,83 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
+	
+	// Add alternate domains to alsoKnownAs
+	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
+		for _, altDomain := range alternateDomains {
+			altIri := a.apIriForDomain(b, altDomain)
+			apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
+		}
+	}
+
+	// Check if this blog has a movedTo target set (account migration)
+	if movedTo, err := a.getApMovedTo(blog); err == nil && movedTo != "" {
+		apBlog.MovedTo = ap.IRI(movedTo)
+	}
+
+	return apBlog
+}
+
+func (a *goBlog) toApPersonForDomain(blog, domain string) *ap.Actor {
+	b := a.cfg.Blogs[blog]
+
+	// Use the specified domain for the IRI
+	apIri := ap.IRI(a.apIriForDomain(b, domain))
+
+	apBlog := ap.PersonNew(apIri)
+	apBlog.URL = apIri
+
+	apBlog.Name = ap.NaturalLanguageValues{{Lang: b.Lang, Value: a.renderMdTitle(b.Title)}}
+	apBlog.Summary = ap.NaturalLanguageValues{{Lang: b.Lang, Value: b.Description}}
+	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
+
+	// Inbox and Followers use the same domain
+	scheme := "http"
+	if a.cfg.Server.PublicHTTPS || strings.HasPrefix(a.cfg.Server.PublicAddress, "https") {
+		scheme = "https"
+	}
+	apBlog.Inbox = ap.IRI(scheme + "://" + domain + "/activitypub/inbox/" + blog)
+	apBlog.Followers = ap.IRI(scheme + "://" + domain + "/activitypub/followers/" + blog)
+
+	apBlog.PublicKey.Owner = apIri
+	apBlog.PublicKey.ID = ap.IRI(a.apIriForDomain(b, domain) + "#main-key")
+	apBlog.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   a.apPubKeyBytes,
+	}))
+
+	if a.hasProfileImage() {
+		icon := &ap.Image{}
+		icon.Type = ap.ImageType
+		icon.MediaType = ap.MimeType(contenttype.JPEG)
+		icon.URL = ap.IRI(scheme + "://" + domain + a.profileImagePath(profileImageFormatJPEG, 0, 0))
+		apBlog.Icon = icon
+	}
+
+	for _, ad := range a.cfg.ActivityPub.AttributionDomains {
+		apBlog.AttributionDomains = append(apBlog.AttributionDomains, ap.IRI(ad))
+	}
+
+	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
+	}
+	
+	// Add alternate domains and configured domain to alsoKnownAs
+	// Include the main configured domain as an alias
+	mainIri := a.apIri(b)
+	if mainIri != apIri.String() {
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(mainIri))
+	}
+	
+	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
+		for _, altDomain := range alternateDomains {
+			if altDomain != domain {
+				altIri := a.apIriForDomain(b, altDomain)
+				apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
+			}
+		}
+	}
 
 	// Check if this blog has a movedTo target set (account migration)
 	if movedTo, err := a.getApMovedTo(blog); err == nil && movedTo != "" {
@@ -181,6 +258,22 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 }
 
 func (a *goBlog) serveActivityStreams(w http.ResponseWriter, r *http.Request, status int, blog string) {
+	// Check if the request is for an alternate domain
+	requestedDomain := r.Host
+	if requestedDomain != "" && requestedDomain != a.cfg.Server.publicHostname {
+		// Check if this is an alternate domain
+		alternateDomains, err := a.db.apGetAlternateDomains(blog)
+		if err == nil {
+			for _, altDomain := range alternateDomains {
+				if altDomain == requestedDomain {
+					// Serve actor with the alternate domain
+					a.serveAPItem(w, r, status, a.toApPersonForDomain(blog, requestedDomain))
+					return
+				}
+			}
+		}
+	}
+	// Serve the default actor
 	a.serveAPItem(w, r, status, a.toApPerson(blog))
 }
 

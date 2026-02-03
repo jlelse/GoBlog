@@ -209,6 +209,60 @@ Example:
 		},
 	})
 	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "domainmove <blog> <old-domain> <new-domain>",
+		Short: "Move a blog from one domain to another within the same GoBlog instance",
+		Long: `Move a blog's ActivityPub presence from an old domain to a new domain.
+
+This command is used when you're changing the domain of your GoBlog instance
+(e.g., from goblog.example to newgoblog.example) but keeping the same GoBlog
+installation. It performs the following actions:
+
+1. Stores the old domain as an alternate domain for the blog
+2. Sends Move activities from the old-domain actor to the new-domain actor
+3. Updates followers to follow the new-domain actor
+
+Before running this command:
+1. Update your reverse proxy to serve both old and new domains
+2. Update the publicAddress in your config to the new domain
+3. Restart GoBlog
+
+After running this command:
+- The blog will be accessible via both old and new domains during the transition
+- Move activities will be sent to all followers
+- ActivityPub servers should automatically update follows to the new domain
+
+Example:
+  ./GoBlog activitypub domainmove default goblog.example newgoblog.example`,
+		Args: cobra.ExactArgs(3),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			app.initAPSendQueue()
+			blog := args[0]
+			oldDomain := args[1]
+			newDomain := args[2]
+			
+			// Verify blog exists
+			if _, ok := app.cfg.Blogs[blog]; !ok {
+				app.logErrAndQuit("Blog not found", "blog", blog)
+				return
+			}
+			
+			// Perform the domain move
+			if err := app.apDomainMove(blog, oldDomain, newDomain); err != nil {
+				app.logErrAndQuit("Failed to perform domain move", "blog", blog, "old", oldDomain, "new", newDomain, "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "clear-moved <blog>",
 		Short: "Clear the movedTo setting for a blog after an account migration",
 		Long: `Clear the movedTo setting for a blog's ActivityPub account.
