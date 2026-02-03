@@ -58,13 +58,14 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-	hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Target, a.cfg.Server.ShortPublicAddress)
-	hasLongPrefix := strings.HasPrefix(m.Target, a.cfg.Server.PublicAddress)
-	if !hasShortPrefix && !hasLongPrefix {
+	// Check if target is from this GoBlog instance (including alt domains)
+	if !a.isLocalURL(m.Target) {
 		a.debug("Webmention target not allowed", "target", m.Target)
 		a.serveError(w, r, "target not allowed", http.StatusBadRequest)
 		return
 	}
+	// Normalize alt domain URLs to main public address
+	m.Target = a.normalizeLocalURL(m.Target)
 	if m.Target == m.Source {
 		a.debug("Webmention target and source are the same", "target", m.Target)
 		a.serveError(w, r, "target and source are the same", http.StatusBadRequest)

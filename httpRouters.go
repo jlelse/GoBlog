@@ -48,7 +48,7 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 		return
 	}
 	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
-		r.Route("/activitypub", func(r chi.Router) {
+		r.Route(activityPubBasePath, func(r chi.Router) {
 			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/inbox/{blog}", a.apHandleInbox)
 			r.With(a.checkActivityStreamsRequest).Get("/followers/{blog}", a.apShowFollowers)
 			r.With(a.cacheMiddleware).Get("/remote_follow/{blog}", a.apRemoteFollow)

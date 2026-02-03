@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"go.goblog.app/app/pkgs/builderpool"
@@ -124,10 +123,12 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
 	if target == "" {
 		return "", http.StatusBadRequest, errors.New("no target specified")
-	} else if !strings.HasPrefix(target, a.cfg.Server.PublicAddress) {
+	} else if !a.isLocalURL(target) {
 		return "", http.StatusBadRequest, errors.New("bad target")
 	}
-	targetURL, err := url.Parse(target)
+	// Normalize alt domain URLs to main public address
+	normalizedTarget := a.normalizeLocalURL(target)
+	targetURL, err := url.Parse(normalizedTarget)
 	if err != nil {
 		return "", http.StatusBadRequest, errors.New("failed to parse URL")
 	}

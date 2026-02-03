@@ -375,7 +375,7 @@ func (a *goBlog) buildAltDomainRouter(altHostname string) http.Handler {
 			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/webfinger", a.apHandleWebfingerAltDomain)
 			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
 			// ActivityPub inbox
-			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/activitypub/inbox/{blog}", a.apHandleInbox)
+			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post(activityPubBasePath+"/inbox/{blog}", a.apHandleInbox)
 			// Blog actor endpoints need to serve the old actor with movedTo
 			for blog, blogConfig := range a.cfg.Blogs {
 				r.With(a.checkActivityStreamsRequest, middleware.WithValue(blogKey, blog)).
@@ -383,6 +383,9 @@ func (a *goBlog) buildAltDomainRouter(altHostname string) http.Handler {
 			}
 		})
 	}
+
+	// Handle webmentions on alternative domain (they will be normalized to main domain)
+	r.Route(webmentionPath, a.webmentionsRouter)
 
 	// Redirect everything else to main domain
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

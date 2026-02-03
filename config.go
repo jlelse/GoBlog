@@ -703,3 +703,35 @@ func (a *goBlog) getAltDomainAddress(hostname string) string {
 	}
 	return ""
 }
+
+// isLocalURL checks if a URL belongs to this GoBlog instance
+// (including main address, short address, and alt domains)
+func (a *goBlog) isLocalURL(urlStr string) bool {
+	// Check main public address
+	if strings.HasPrefix(urlStr, a.cfg.Server.PublicAddress) {
+		return true
+	}
+	// Check short public address
+	if a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(urlStr, a.cfg.Server.ShortPublicAddress) {
+		return true
+	}
+	// Check alt domains
+	for _, altDomain := range a.cfg.Server.AltDomains {
+		if strings.HasPrefix(urlStr, altDomain) {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeLocalURL converts an alt domain URL to the main public address URL
+// Returns the original URL if it's not from an alt domain
+func (a *goBlog) normalizeLocalURL(urlStr string) string {
+	for _, altDomain := range a.cfg.Server.AltDomains {
+		if strings.HasPrefix(urlStr, altDomain) {
+			// Replace alt domain with main public address
+			return a.cfg.Server.PublicAddress + strings.TrimPrefix(urlStr, altDomain)
+		}
+	}
+	return urlStr
+}

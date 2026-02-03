@@ -145,8 +145,8 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	apBlog.Summary = ap.NaturalLanguageValues{{Lang: b.Lang, Value: b.Description}}
 	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
 
-	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
-	apBlog.Followers = ap.IRI(a.getFullAddress("/activitypub/followers/" + blog))
+	apBlog.Inbox = ap.IRI(a.getFullAddress(apInboxPathTemplate + blog))
+	apBlog.Followers = ap.IRI(a.getFullAddress(apFollowersPathTemplate + blog))
 
 	apBlog.PublicKey.Owner = apIri
 	apBlog.PublicKey.ID = ap.IRI(a.apIri(b) + "#main-key")
@@ -236,8 +236,8 @@ func (a *goBlog) toApPersonForAltDomain(blog string, altHostname string) *ap.Act
 	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
 
 	// Inbox and followers still on the alternative domain
-	apBlog.Inbox = ap.IRI(altAddress + "/activitypub/inbox/" + blog)
-	apBlog.Followers = ap.IRI(altAddress + "/activitypub/followers/" + blog)
+	apBlog.Inbox = ap.IRI(altAddress + apInboxPathTemplate + blog)
+	apBlog.Followers = ap.IRI(altAddress + apFollowersPathTemplate + blog)
 
 	// Public key uses same key for both domains
 	apBlog.PublicKey.Owner = apIri

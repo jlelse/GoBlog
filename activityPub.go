@@ -29,6 +29,13 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+// ActivityPub path constants
+const (
+	activityPubBasePath    = "/activitypub"
+	apInboxPathTemplate    = activityPubBasePath + "/inbox/"    // + blog name
+	apFollowersPathTemplate = activityPubBasePath + "/followers/" // + blog name
+)
+
 func (a *goBlog) initActivityPub() error {
 	if !a.apEnabled() {
 		// ActivityPub disabled
@@ -294,12 +301,12 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case ap.AnnounceType:
-		if announceTarget := activity.Object.GetLink().String(); announceTarget != "" && strings.HasPrefix(announceTarget, a.cfg.Server.PublicAddress) {
-			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceTarget))
+		if announceTarget := activity.Object.GetLink().String(); announceTarget != "" && a.isLocalURL(announceTarget) {
+			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, a.normalizeLocalURL(announceTarget)))
 		}
 	case ap.LikeType:
-		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && strings.HasPrefix(likeTarget, a.cfg.Server.PublicAddress) {
-			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
+		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && a.isLocalURL(likeTarget) {
+			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, a.normalizeLocalURL(likeTarget)))
 		}
 	}
 	// Return 200
@@ -325,16 +332,18 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 	content := object.Content.First().String()
 	// Handle reply
 	if inReplyTo := object.InReplyTo; inReplyTo != nil {
-		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && strings.HasPrefix(replyTarget, a.cfg.Server.PublicAddress) {
+		if replyTarget := inReplyTo.GetLink().String(); replyTarget != "" && a.isLocalURL(replyTarget) {
+			// Normalize alt domain URLs to main public address
+			normalizedTarget := a.normalizeLocalURL(replyTarget)
 			if object.To.Contains(ap.PublicNS) || object.CC.Contains(ap.PublicNS) {
 				// Public reply - comment
-				_, _, _ = a.createComment(blog, replyTarget, content, actorName, actorLink, noteUri)
+				_, _, _ = a.createComment(blog, normalizedTarget, content, actorName, actorLink, noteUri)
 				return
 			} else {
 				// Private reply - notification
 				buf := bufferpool.Get()
 				defer bufferpool.Put(buf)
-				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(noteUri))
+				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(normalizedTarget), cleanHTMLText(noteUri))
 				fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(actorName), cleanHTMLText(actorLink))
 				buf.WriteString("\n\n")
 				buf.WriteString(cleanHTMLText(content))
@@ -408,7 +417,7 @@ func handleWellKnownHostMeta(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) apGetFollowersCollectionId(blogName string, blog *configBlog) ap.IRI {
-	return ap.IRI(a.apIri(blog) + "/activitypub/followers/" + blogName)
+	return ap.IRI(a.apIri(blog) + apFollowersPathTemplate + blogName)
 }
 
 func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
@@ -931,7 +940,7 @@ func (a *goBlog) apSendDomainMoveForBlog(blogName string, blog *configBlog, oldD
 	move.Actor = ap.IRI(oldActorIri)
 	move.Target = ap.IRI(newActorIri)
 	// Followers collection on the old domain
-	move.To.Append(ap.IRI(oldDomain + "/activitypub/followers/" + blogName))
+	move.To.Append(ap.IRI(oldDomain + apFollowersPathTemplate + blogName))
 	move.Published = time.Now()
 
 	// Send Move activity to all follower inboxes

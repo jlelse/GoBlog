@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/samber/lo"
@@ -78,8 +77,8 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	sourceReq.Header.Set("Accept", contenttype.HTMLUTF8)
 	var sourceResp *http.Response
-	if strings.HasPrefix(m.Source, a.cfg.Server.PublicAddress) ||
-		(a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Source, a.cfg.Server.ShortPublicAddress)) {
+	// Check if source is from this GoBlog instance (including alt domains)
+	if a.isLocalURL(m.Source) {
 		setLoggedIn(sourceReq, true)
 		sourceResp, err = doHandlerRequest(sourceReq, a.getAppRouter())
 		if err != nil {
@@ -149,16 +148,18 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		return err
 	}
 	if _, hasLink := lo.Find(links, func(s string) bool {
-		// Check if link belongs to installation
-		hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(s, a.cfg.Server.ShortPublicAddress)
-		hasLongPrefix := strings.HasPrefix(s, a.cfg.Server.PublicAddress)
-		if !hasShortPrefix && !hasLongPrefix {
+		// Check if link belongs to this GoBlog installation (including alt domains)
+		if !a.isLocalURL(s) {
 			return false
 		}
+		// Normalize alt domain URLs to main public address for comparison
+		normalizedLink := a.normalizeLocalURL(s)
 		// Check if link is or redirects to target
 		timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer timeoutCancel()
-		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, m.Target, nil)
+		// Use normalized target for comparison
+		normalizedTarget := a.normalizeLocalURL(cmp.Or(m.NewTarget, m.Target))
+		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, normalizedTarget, nil)
 		if err != nil {
 			return false
 		}
@@ -169,8 +170,11 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 			return false
 		}
 		_ = resp.Body.Close()
-		if resp.StatusCode == http.StatusOK && lowerUnescapedPath(resp.Request.URL.String()) == lowerUnescapedPath(cmp.Or(m.NewTarget, m.Target)) {
-			return true
+		if resp.StatusCode == http.StatusOK && lowerUnescapedPath(a.normalizeLocalURL(resp.Request.URL.String())) == lowerUnescapedPath(normalizedTarget) {
+			// Also check if the link in source matches the normalized target
+			if lowerUnescapedPath(normalizedLink) == lowerUnescapedPath(normalizedTarget) {
+				return true
+			}
 		}
 		return false
 	}); !hasLink {
