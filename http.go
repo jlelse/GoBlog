@@ -161,6 +161,10 @@ func (a *goBlog) buildRouter() http.Handler {
 
 		mapRouter.Handlers[mhn] = mr
 	}
+	// Add handlers for alternate domains (for domain migration)
+	for _, altDomain := range a.cfg.Server.AlternateDomains {
+		mapRouter.Handlers[altDomain] = http.HandlerFunc(a.redirectAlternateDomain)
+	}
 
 	// Default router
 	r := chi.NewMux()

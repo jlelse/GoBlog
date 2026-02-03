@@ -29,14 +29,15 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 		cfg:        createDefaultTestConfig(t),
 		httpClient: newHttpClient(),
 	}
-	
-	// Configure to use new domain but will be accessible via both
+
+	// Configure to use new domain and add old domain as alternate
 	newDomain := "newgoblog.example"
 	oldDomain := "goblog.example"
 	app.cfg.Server.PublicAddress = "http://" + newDomain
+	app.cfg.Server.AlternateDomains = []string{oldDomain}
 	app.cfg.Server.Port = port
 	app.cfg.ActivityPub.Enabled = true
-	
+
 	// Initialize the app
 	require.NoError(t, app.initConfig(false))
 	require.NoError(t, app.initTemplateStrings())
@@ -161,14 +162,15 @@ cache:
 	mc := mastodon.NewClient(&mastodon.Config{Server: gtsBaseURL, AccessToken: accessToken})
 	mc.Client = http.Client{Timeout: time.Minute}
 
-	// Test 1: Follow GoBlog on NEW domain first
-	goBlogAcctNew := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, newDomain)
-	searchResultsNew, err := mc.Search(t.Context(), goBlogAcctNew, true)
+	// Test 1: Follow GoBlog on OLD domain first (this is the key change per requirement)
+	goBlogAcctOld := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, oldDomain)
+	t.Logf("Following GoBlog account on old domain: %s", goBlogAcctOld)
+	searchResultsOld, err := mc.Search(t.Context(), goBlogAcctOld, true)
 	require.NoError(t, err)
-	require.NotNil(t, searchResultsNew)
-	require.Greater(t, len(searchResultsNew.Accounts), 0)
-	lookupNew := searchResultsNew.Accounts[0]
-	_, err = mc.AccountFollow(t.Context(), lookupNew.ID)
+	require.NotNil(t, searchResultsOld)
+	require.Greater(t, len(searchResultsOld.Accounts), 0)
+	lookupOld := searchResultsOld.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), lookupOld.ID)
 	require.NoError(t, err)
 
 	// Verify that GoBlog has the GoToSocial user as a follower
@@ -180,18 +182,48 @@ cache:
 		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
 	}, time.Minute, time.Second)
 
+	t.Log("Successfully following old domain account")
+
 	// Test 2: Perform domain move
-	err = app.apDomainMove(app.cfg.DefaultBlog, oldDomain, newDomain)
+	t.Log("Performing domain move...")
+	err = app.apDomainMove(oldDomain, newDomain)
 	require.NoError(t, err)
 
-	// Verify old domain was stored as alternate
-	alternateDomains, err := app.db.apGetAlternateDomains(app.cfg.DefaultBlog)
-	require.NoError(t, err)
-	assert.Contains(t, alternateDomains, oldDomain)
+	// Wait a bit for Move activities to be processed
+	time.Sleep(5 * time.Second)
 
-	// Test 3: Verify webfinger works for BOTH domains from GoToSocial perspective
+	// Test 3: Verify that GTS user now follows the NEW domain (automatic migration)
+	// GoToSocial should have processed the Move activity and auto-followed the new domain
+	t.Log("Checking if follower migrated to new domain...")
+
+	goBlogAcctNew := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, newDomain)
+
+	// Search for the new domain account from GTS user's perspective
+	require.Eventually(t, func() bool {
+		searchResultsNew, searchErr := mc.Search(t.Context(), goBlogAcctNew, true)
+		if searchErr != nil || len(searchResultsNew.Accounts) == 0 {
+			t.Logf("Search for new domain failed or no results: %v", searchErr)
+			return false
+		}
+
+		newDomainAccount := searchResultsNew.Accounts[0]
+		t.Logf("Found new domain account: %s", newDomainAccount.Acct)
+
+		// Check if user is now following the new domain account
+		relationships, relErr := mc.GetAccountRelationships(t.Context(), []string{string(newDomainAccount.ID)})
+		if relErr != nil || len(relationships) == 0 {
+			t.Logf("Failed to get relationships: %v", relErr)
+			return false
+		}
+
+		following := relationships[0].Following
+		t.Logf("Following new domain: %v", following)
+		return following
+	}, 30*time.Second, 2*time.Second, "GTS user should now follow new domain after Move")
+
+	// Test 4: Verify webfinger works for BOTH domains from GoToSocial perspective
 	// Check old domain webfinger
-	goBlogAcctOld := "acct:default@" + oldDomain
+	goBlogAcctOldWebfinger := "acct:default@" + oldDomain
 	cmdOld := exec.Command("docker", "run", "--rm", "--network", netName,
 		"docker.io/alpine/curl", "-sS", "-m", "5", "-G",
 		"--data-urlencode", fmt.Sprintf("resource=%s", goBlogAcctOld),

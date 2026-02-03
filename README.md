@@ -569,26 +569,38 @@ activityPub:
 
 If you're changing your GoBlog's domain (e.g., from `goblog.example` to `newgoblog.example`) while keeping the same GoBlog instance:
 
-1. Update your reverse proxy configuration to serve both old and new domains
-2. Update `publicAddress` in your GoBlog config to the new domain
+1. Add the old domain to your config file under `server.alternateDomains`:
+
+```yaml
+server:
+  publicAddress: https://newgoblog.example
+  alternateDomains:
+    - goblog.example
+```
+
+2. Configure your reverse proxy to serve both old and new domains (see reverse proxy configuration section)
 3. Restart GoBlog to apply the config changes
 4. Run the domain move command:
 
 ```bash
-./GoBlog activitypub domainmove blogname goblog.example newgoblog.example
+./GoBlog activitypub domainmove goblog.example newgoblog.example
 ```
 
 This command:
-- Stores the old domain as an alternate domain
-- Sends Move activities from the old-domain actor to the new-domain actor
+- Sends Move activities from the old-domain actors to the new-domain actors for ALL blogs
 - Notifies all followers to migrate to the new domain
-- Keeps both domains accessible during the transition period
+- Keeps both domains accessible: old domain serves ActivityPub/Webfinger normally but redirects other requests
 
-After the migration, both domains will continue to work. You can later remove the old domain with:
+After the migration is complete and followers have migrated:
+- Remove the old domain from `server.alternateDomains` in your config
+- Restart GoBlog
 
-```bash
-./GoBlog activitypub remove-alternate-domain blogname goblog.example
-```
+**Important Notes:**
+- All blogs share the same domain in GoBlog, so the move affects all blogs
+- When using a reverse proxy, ensure both domains are configured correctly (both old and new)
+- The `publicHttps` option will work correctly for both domains
+- Old domain continues to serve ActivityPub/Webfinger requests to maintain federation
+- Non-ActivityPub requests to old domain are redirected to new domain with HTTP 301
 
 **Migration from GoBlog to another Fediverse server:**
 
@@ -1185,28 +1197,24 @@ Clears the `movedTo` setting from a blog's ActivityPub profile. Use this if you 
 ### Domain Move
 
 ```bash
-./GoBlog --config ./config/config.yml activitypub domainmove blogname old.example.com new.example.com
+./GoBlog --config ./config/config.yml activitypub domainmove old.example.com new.example.com
 ```
 
-Moves a blog's ActivityPub presence from one domain to another within the same GoBlog instance. This is used when changing your blog's domain while keeping the same GoBlog installation.
+Moves all blogs' ActivityPub presence from one domain to another within the same GoBlog instance. This is used when changing your blog's domain while keeping the same GoBlog installation.
 
 **Before running:**
-1. Configure your reverse proxy to serve both old and new domains
-2. Update `publicAddress` in config to the new domain
-3. Restart GoBlog
+1. Add old domain to `server.alternateDomains` in config
+2. Configure your reverse proxy to serve both old and new domains
+3. Update `server.publicAddress` to the new domain
+4. Restart GoBlog
 
-**After running:**
-- The old domain is stored as an alternate domain
-- Move activities are sent to all followers
-- Both domains remain accessible during the transition
+**What it does:**
+- Sends Move activities to all followers of all blogs
+- Old domain continues serving ActivityPub/Webfinger requests
+- Non-ActivityPub requests to old domain redirect to new domain
 
-### Remove Alternate Domain
-
-```bash
-./GoBlog --config ./config/config.yml activitypub remove-alternate-domain blogname old.example.com
-```
-
-Removes an alternate domain after migration is complete. Requires a restart to take effect.
+**After migration:**
+Remove the old domain from `server.alternateDomains` in config and restart.
 
 ### Profiling
 

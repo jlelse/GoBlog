@@ -47,6 +47,7 @@ type configServer struct {
 	PublicAddress       string   `mapstructure:"publicAddress"`
 	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
 	MediaAddress        string   `mapstructure:"mediaAddress"`
+	AlternateDomains    []string `mapstructure:"alternateDomains"`
 	PublicHTTPS         bool     `mapstructure:"publicHttps"`
 	AcmeDir             string   `mapstructure:"acmeDir"`
 	AcmeEabKid          string   `mapstructure:"acmeEabKid"`

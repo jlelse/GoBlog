@@ -125,14 +125,12 @@ func (a *goBlog) prepareWebfinger() {
 		a.webfingerAccts[a.apIri(blog)] = acct
 
 		// Also add alternate domains for webfinger resolution
-		if alternateDomains, err := a.db.apGetAlternateDomains(name); err == nil {
-			for _, altDomain := range alternateDomains {
-				altAcct := "acct:" + name + "@" + altDomain
-				altIri := a.apIriForDomain(blog, altDomain)
-				a.webfingerResources[altAcct] = blog
-				a.webfingerResources[altIri] = blog
-				a.webfingerAccts[altIri] = altAcct
-			}
+		for _, altDomain := range a.cfg.Server.AlternateDomains {
+			altAcct := "acct:" + name + "@" + altDomain
+			altIri := a.apIriForDomain(blog, altDomain)
+			a.webfingerResources[altAcct] = blog
+			a.webfingerResources[altIri] = blog
+			a.webfingerAccts[altIri] = altAcct
 		}
 	}
 }
@@ -512,39 +510,6 @@ func (db *database) apRemoveFollower(blog, follower string) error {
 
 func (db *database) apRemoveInbox(inbox string) error {
 	_, err := db.Exec("delete from activitypub_followers where inbox = @inbox", sql.Named("inbox", inbox))
-	return err
-}
-
-func (db *database) apGetAlternateDomains(blog string) ([]string, error) {
-	rows, err := db.Query("select domain from activitypub_alternate_domains where blog = @blog order by added", sql.Named("blog", blog))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var domains []string
-	for rows.Next() {
-		var domain string
-		if err := rows.Scan(&domain); err != nil {
-			return nil, err
-		}
-		domains = append(domains, domain)
-	}
-	return domains, nil
-}
-
-func (db *database) apAddAlternateDomain(blog, domain string) error {
-	_, err := db.Exec(
-		"insert or ignore into activitypub_alternate_domains (blog, domain) values (@blog, @domain)",
-		sql.Named("blog", blog), sql.Named("domain", domain),
-	)
-	return err
-}
-
-func (db *database) apRemoveAlternateDomain(blog, domain string) error {
-	_, err := db.Exec(
-		"delete from activitypub_alternate_domains where blog = @blog and domain = @domain",
-		sql.Named("blog", blog), sql.Named("domain", domain),
-	)
 	return err
 }
 
@@ -932,13 +897,7 @@ func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
 	return it, nil
 }
 
-func (a *goBlog) apDomainMove(blogName, oldDomain, newDomain string) error {
-	// Check if blog exists
-	blog, ok := a.cfg.Blogs[blogName]
-	if !ok || blog == nil {
-		return fmt.Errorf("blog not found: %s", blogName)
-	}
-
+func (a *goBlog) apDomainMove(oldDomain, newDomain string) error {
 	// Validate domains
 	if oldDomain == "" || newDomain == "" {
 		return fmt.Errorf("both old and new domains must be specified")
@@ -952,13 +911,22 @@ func (a *goBlog) apDomainMove(blogName, oldDomain, newDomain string) error {
 		a.info("Warning: new domain does not match configured publicHostname", "new", newDomain, "configured", a.cfg.Server.publicHostname)
 	}
 
-	a.info("Starting domain move", "blog", blogName, "from", oldDomain, "to", newDomain)
+	a.info("Starting domain move for all blogs", "from", oldDomain, "to", newDomain)
 
-	// Store the old domain as an alternate domain
-	if err := a.db.apAddAlternateDomain(blogName, oldDomain); err != nil {
-		return fmt.Errorf("failed to store old domain as alternate: %w", err)
+	// Note: The old domain should be added to the config file manually
+	// This function assumes it has already been added to server.alternateDomains
+
+	// Verify old domain is in alternate domains
+	found := false
+	for _, ad := range a.cfg.Server.AlternateDomains {
+		if ad == oldDomain {
+			found = true
+			break
+		}
 	}
-	a.info("Stored old domain as alternate", "domain", oldDomain)
+	if !found {
+		return fmt.Errorf("old domain %s must be added to server.alternateDomains in config before running domain move", oldDomain)
+	}
 
 	// Refresh webfinger resources to include the alternate domain
 	a.prepareWebfinger()
@@ -966,43 +934,50 @@ func (a *goBlog) apDomainMove(blogName, oldDomain, newDomain string) error {
 	// Purge cache to ensure updated actor profiles are served
 	a.purgeCache()
 
-	// Get all followers
-	followers, err := a.db.apGetAllFollowers(blogName)
-	if err != nil {
-		return fmt.Errorf("failed to get followers: %w", err)
+	// Move all blogs
+	for blogName, blog := range a.cfg.Blogs {
+		a.info("Processing blog", "blog", blogName)
+
+		// Get all followers for this blog
+		followers, err := a.db.apGetAllFollowers(blogName)
+		if err != nil {
+			a.error("Failed to get followers for blog", "blog", blogName, "err", err)
+			continue
+		}
+
+		if len(followers) == 0 {
+			a.info("No followers to notify", "blog", blogName)
+			continue
+		}
+
+		a.info("Sending Move activities to followers", "blog", blogName, "count", len(followers))
+
+		// Get all follower inboxes
+		inboxes, err := a.db.apGetAllInboxes(blogName)
+		if err != nil {
+			a.error("Failed to get follower inboxes", "blog", blogName, "err", err)
+			continue
+		}
+
+		// Create Move activity from old domain actor to new domain actor
+		oldDomainActor := a.apIriForDomain(blog, oldDomain)
+		newDomainActor := a.apIriForDomain(blog, newDomain)
+
+		move := ap.ActivityNew(ap.MoveType, ap.IRI(oldDomainActor+"#move-"+fmt.Sprintf("%d", utcNowNanos())), ap.IRI(oldDomainActor))
+		move.Actor = ap.IRI(oldDomainActor)
+		move.Target = ap.IRI(newDomainActor)
+		move.To.Append(a.apGetFollowersCollectionId(blogName, blog))
+
+		// Send Move activity to all follower inboxes
+		uniqueInboxes := lo.Uniq(inboxes)
+		a.apSendTo(oldDomainActor, move, uniqueInboxes...)
+
+		a.info("Domain move activities queued", "blog", blogName, "count", len(uniqueInboxes))
 	}
 
-	if len(followers) == 0 {
-		a.info("No followers to notify of domain move")
-		return nil
-	}
-
-	a.info("Sending Move activities to followers", "count", len(followers))
-
-	// Get all follower inboxes
-	inboxes, err := a.db.apGetAllInboxes(blogName)
-	if err != nil {
-		return fmt.Errorf("failed to get follower inboxes: %w", err)
-	}
-
-	// Create Move activity from old domain actor to new domain actor
-	// The Move activity indicates that the account at oldDomain is moving to newDomain
-	oldDomainActor := a.apIriForDomain(blog, oldDomain)
-	newDomainActor := a.apIriForDomain(blog, newDomain)
-
-	move := ap.ActivityNew(ap.MoveType, ap.IRI(oldDomainActor+"#move-"+fmt.Sprintf("%d", utcNowNanos())), ap.IRI(oldDomainActor))
-	move.Actor = ap.IRI(oldDomainActor)
-	move.Target = ap.IRI(newDomainActor)
-	move.To.Append(a.apGetFollowersCollectionId(blogName, blog))
-
-	// Send Move activity to all follower inboxes
-	// Use the old domain IRI for signing since we're acting as the old domain actor
-	uniqueInboxes := lo.Uniq(inboxes)
-	a.apSendTo(oldDomainActor, move, uniqueInboxes...)
-
-	a.info("Domain move activities queued", "count", len(uniqueInboxes), "from", oldDomain, "to", newDomain)
-	a.info("The blog is now accessible via both domains during the transition period")
-	a.info("To remove the old domain later, use: activitypub remove-alternate-domain")
+	a.info("Domain move completed for all blogs", "from", oldDomain, "to", newDomain)
+	a.info("The old domain will continue to serve ActivityPub requests but redirect other traffic")
+	a.info("To stop serving the old domain, remove it from server.alternateDomains in config and restart")
 
 	return nil
 }

@@ -174,11 +174,9 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	}
 
 	// Add alternate domains to alsoKnownAs
-	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
-		for _, altDomain := range alternateDomains {
-			altIri := a.apIriForDomain(b, altDomain)
-			apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
-		}
+	for _, altDomain := range a.cfg.Server.AlternateDomains {
+		altIri := a.apIriForDomain(b, altDomain)
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
 	}
 
 	// Check if this blog has a movedTo target set (account migration)
@@ -241,12 +239,10 @@ func (a *goBlog) toApPersonForDomain(blog, domain string) *ap.Actor {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(mainIri))
 	}
 
-	if alternateDomains, err := a.db.apGetAlternateDomains(blog); err == nil {
-		for _, altDomain := range alternateDomains {
-			if altDomain != domain {
-				altIri := a.apIriForDomain(b, altDomain)
-				apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
-			}
+	for _, altDomain := range a.cfg.Server.AlternateDomains {
+		if altDomain != domain {
+			altIri := a.apIriForDomain(b, altDomain)
+			apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
 		}
 	}
 
@@ -263,14 +259,11 @@ func (a *goBlog) serveActivityStreams(w http.ResponseWriter, r *http.Request, st
 	requestedDomain := r.Host
 	if requestedDomain != "" && requestedDomain != a.cfg.Server.publicHostname {
 		// Check if this is an alternate domain
-		alternateDomains, err := a.db.apGetAlternateDomains(blog)
-		if err == nil {
-			for _, altDomain := range alternateDomains {
-				if altDomain == requestedDomain {
-					// Serve actor with the alternate domain
-					a.serveAPItem(w, r, status, a.toApPersonForDomain(blog, requestedDomain))
-					return
-				}
+		for _, altDomain := range a.cfg.Server.AlternateDomains {
+			if altDomain == requestedDomain {
+				// Serve actor with the alternate domain
+				a.serveAPItem(w, r, status, a.toApPersonForDomain(blog, requestedDomain))
+				return
 			}
 		}
 	}

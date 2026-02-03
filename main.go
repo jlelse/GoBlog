@@ -209,31 +209,38 @@ Example:
 		},
 	})
 	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "domainmove <blog> <old-domain> <new-domain>",
-		Short: "Move a blog from one domain to another within the same GoBlog instance",
-		Long: `Move a blog's ActivityPub presence from an old domain to a new domain.
+		Use:   "domainmove <old-domain> <new-domain>",
+		Short: "Move all blogs from one domain to another within the same GoBlog instance",
+		Long: `Move all blogs' ActivityPub presence from an old domain to a new domain.
 
 This command is used when you're changing the domain of your GoBlog instance
 (e.g., from goblog.example to newgoblog.example) but keeping the same GoBlog
-installation. It performs the following actions:
+installation. It performs the following actions for ALL blogs:
 
-1. Stores the old domain as an alternate domain for the blog
-2. Sends Move activities from the old-domain actor to the new-domain actor
-3. Updates followers to follow the new-domain actor
+1. Sends Move activities from the old-domain actor to the new-domain actor
+2. Notifies all followers to update their follows
 
 Before running this command:
-1. Update your reverse proxy to serve both old and new domains
-2. Update the publicAddress in your config to the new domain
-3. Restart GoBlog
+1. Add the old domain to server.alternateDomains in your config
+2. Update your reverse proxy to serve both old and new domains
+3. Update server.publicAddress in your config to the new domain
+4. Restart GoBlog
 
 After running this command:
-- The blog will be accessible via both old and new domains during the transition
-- Move activities will be sent to all followers
+- The old domain will serve ActivityPub/Webfinger requests normally
+- Non-ActivityPub requests to the old domain will redirect to the new domain
+- Move activities will be sent to all followers of all blogs
 - ActivityPub servers should automatically update follows to the new domain
 
-Example:
-  ./GoBlog activitypub domainmove default goblog.example newgoblog.example`,
-		Args: cobra.ExactArgs(3),
+Example config before running:
+  server:
+    publicAddress: https://newgoblog.example
+    alternateDomains:
+      - goblog.example
+
+Example command:
+  ./GoBlog activitypub domainmove goblog.example newgoblog.example`,
+		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)
 			if !app.apEnabled() {
@@ -245,19 +252,12 @@ Example:
 				return
 			}
 			app.initAPSendQueue()
-			blog := args[0]
-			oldDomain := args[1]
-			newDomain := args[2]
+			oldDomain := args[0]
+			newDomain := args[1]
 
-			// Verify blog exists
-			if _, ok := app.cfg.Blogs[blog]; !ok {
-				app.logErrAndQuit("Blog not found", "blog", blog)
-				return
-			}
-
-			// Perform the domain move
-			if err := app.apDomainMove(blog, oldDomain, newDomain); err != nil {
-				app.logErrAndQuit("Failed to perform domain move", "blog", blog, "old", oldDomain, "new", newDomain, "err", err)
+			// Perform the domain move for all blogs
+			if err := app.apDomainMove(oldDomain, newDomain); err != nil {
+				app.logErrAndQuit("Failed to perform domain move", "old", oldDomain, "new", newDomain, "err", err)
 			}
 			app.shutdown.ShutdownAndWait()
 		},
@@ -294,38 +294,6 @@ Example:
 				app.logErrAndQuit("Failed to clear movedTo setting", "blog", blog, "err", err)
 			}
 			fmt.Printf("Cleared movedTo setting for blog %s\n", blog)
-			app.shutdown.ShutdownAndWait()
-		},
-	})
-	activityPubCmd.AddCommand(&cobra.Command{
-		Use:   "remove-alternate-domain <blog> <domain>",
-		Short: "Remove an alternate domain from a blog",
-		Long: `Remove an alternate domain from a blog's ActivityPub configuration.
-
-After a domain migration has been completed and all followers have migrated
-to the new domain, you can remove the old domain as an alternate. This will
-stop serving the old domain actor endpoint.
-
-Example:
-  ./GoBlog activitypub remove-alternate-domain default goblog.example`,
-		Args: cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			app := initializeApp(cmd)
-			if !app.apEnabled() {
-				app.logErrAndQuit("ActivityPub not enabled")
-				return
-			}
-			blog := args[0]
-			domain := args[1]
-			if _, ok := app.cfg.Blogs[blog]; !ok {
-				app.logErrAndQuit("Blog not found", "blog", blog)
-				return
-			}
-			if err := app.db.apRemoveAlternateDomain(blog, domain); err != nil {
-				app.logErrAndQuit("Failed to remove alternate domain", "blog", blog, "domain", domain, "err", err)
-			}
-			fmt.Printf("Removed alternate domain %s from blog %s\n", domain, blog)
-			fmt.Println("Restart GoBlog for changes to take effect")
 			app.shutdown.ShutdownAndWait()
 		},
 	})
