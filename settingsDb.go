@@ -24,6 +24,7 @@ const (
 	addReplyContextSetting       = "addreplycontext"
 	addLikeTitleSetting          = "addliketitle"
 	addLikeContextSetting        = "addlikecontext"
+	apMovedToSetting             = "apmovedto" // ActivityPub movedTo target for account migration
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
@@ -73,6 +74,21 @@ func (a *goBlog) deleteSettingValue(name string) error {
 
 func (a *goBlog) saveBooleanSettingValue(name string, value bool) error {
 	return a.saveSettingValue(name, lo.If(value, "1").Else("0"))
+}
+
+// getApMovedTo returns the movedTo target for a blog's ActivityPub account migration
+func (a *goBlog) getApMovedTo(blog string) (string, error) {
+	return a.getSettingValue(settingNameWithBlog(blog, apMovedToSetting))
+}
+
+// setApMovedTo saves the movedTo target for a blog's ActivityPub account migration
+func (a *goBlog) setApMovedTo(blog, target string) error {
+	return a.saveSettingValue(settingNameWithBlog(blog, apMovedToSetting), target)
+}
+
+// deleteApMovedTo removes the movedTo setting for a blog's ActivityPub account
+func (a *goBlog) deleteApMovedTo(blog string) error {
+	return a.deleteSettingValue(settingNameWithBlog(blog, apMovedToSetting))
 }
 
 func (a *goBlog) loadSections() error {

@@ -19,6 +19,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
 	"github.com/mattn/go-mastodon"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -417,6 +418,116 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 
 }
 
+const (
+	gtsTestEmail2    = "gtsuser2@example.com"
+	gtsTestUsername2 = "gtsuser2"
+	gtsTestPassword2 = "GtsPassword456!@#"
+)
+
+func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
+	requireDocker(t)
+
+	// Speed up the AP send queue for testing
+	apSendInterval = time.Second
+
+	// Start GoBlog ActivityPub server and GoToSocial instance
+	gb := startApIntegrationServer(t)
+	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+
+	// Create a second GTS user account to be the move target
+	runDocker(t,
+		"exec", gts.containerName,
+		"/gotosocial/gotosocial",
+		"--config-path", "/config/config.yaml",
+		"admin", "account", "create",
+		"--username", gtsTestUsername2,
+		"--email", gtsTestEmail2,
+		"--password", gtsTestPassword2,
+	)
+
+	// Get access token for second user
+	clientID, clientSecret := gtsRegisterApp(t, gts.baseURL)
+	accessToken2 := gtsAuthorizeToken(t, gts.baseURL, clientID, clientSecret, gtsTestEmail2, gtsTestPassword2)
+	mc2 := mastodon.NewClient(&mastodon.Config{Server: gts.baseURL, AccessToken: accessToken2})
+	mc2.Client = http.Client{Timeout: time.Minute}
+
+	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
+
+	// First user follows GoBlog
+	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
+	require.NoError(t, err)
+	require.NotNil(t, searchResults)
+	require.Greater(t, len(searchResults.Accounts), 0)
+	lookup := searchResults.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), lookup.ID)
+	require.NoError(t, err)
+
+	// Verify that GoBlog has the first GTS user as a follower
+	require.Eventually(t, func() bool {
+		followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+		if err != nil {
+			return false
+		}
+		return len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
+	}, time.Minute, time.Second)
+
+	// Get the second user's account info
+	_, err = mc2.GetAccountCurrentUser(t.Context())
+	require.NoError(t, err)
+
+	// Unlock gtsuser2 so follows are auto-accepted during Move
+	err = requests.URL(gts.baseURL+"/api/v1/accounts/update_credentials").
+		Client(&http.Client{Timeout: time.Minute}).
+		Header("Authorization", "Bearer "+accessToken2).
+		Method(http.MethodPatch).
+		BodyJSON(map[string]any{
+			"locked": false,
+		}).
+		Fetch(t.Context())
+	require.NoError(t, err)
+
+	// Construct the ActivityPub actor URI for user2
+	account2ActorURI := fmt.Sprintf("%s/users/%s", gts.baseURL, gtsTestUsername2)
+
+	// Set alsoKnownAs on the target account to include the GoBlog account
+	err = requests.URL(gts.baseURL+"/api/v1/accounts/alias").
+		Client(&http.Client{Timeout: time.Minute}).
+		Header("Authorization", "Bearer "+accessToken2).
+		Method(http.MethodPost).
+		BodyJSON(map[string]any{
+			"also_known_as_uris": []string{gb.cfg.Server.PublicAddress},
+		}).
+		Fetch(t.Context())
+	require.NoError(t, err)
+
+	// Now have GoBlog send a Move activity to all followers
+	err = gb.apMoveFollowers(gb.cfg.DefaultBlog, account2ActorURI)
+	require.NoError(t, err)
+
+	// Verify that the movedTo setting was saved in the database
+	movedTo, err := gb.getApMovedTo(gb.cfg.DefaultBlog)
+	require.NoError(t, err)
+	assert.Equal(t, account2ActorURI, movedTo)
+
+	// Verify that GTS user1 now follows user2 (the move target)
+	// GoToSocial processes the Move and automatically creates a follow to the target account
+	require.Eventually(t, func() bool {
+		// Search for user2 from user1's perspective (local search)
+		searchResults2, err := mc.Search(t.Context(), gtsTestUsername2, true)
+		if err != nil || len(searchResults2.Accounts) == 0 {
+			return false
+		}
+		user2Account := searchResults2.Accounts[0]
+
+		// Check if user1 is now following user2
+		relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(user2Account.ID)})
+		if err != nil || len(relationships) == 0 {
+			return false
+		}
+		return relationships[0].Following
+	}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
+}
+
 func requireDocker(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("docker"); err != nil {
@@ -554,7 +665,7 @@ cache:
 		"--tmpfs", "/data",
 		"--tmpfs", "/gotosocial/storage",
 		"--tmpfs", "/gotosocial/.cache",
-		"docker.io/superseriousbusiness/gotosocial:0.20.2",
+		"docker.io/superseriousbusiness/gotosocial:0.20.3",
 		"--config-path", "/config/config.yaml", "server", "start",
 	)
 	t.Cleanup(func() {

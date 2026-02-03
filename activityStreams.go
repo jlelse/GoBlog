@@ -172,6 +172,11 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
 
+	// Check if this blog has a movedTo target set (account migration)
+	if movedTo, err := a.getApMovedTo(blog); err == nil && movedTo != "" {
+		apBlog.MovedTo = ap.IRI(movedTo)
+	}
+
 	return apBlog
 }
 

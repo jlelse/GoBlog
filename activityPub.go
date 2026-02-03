@@ -715,6 +715,79 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 	return nil
 }
 
+func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
+	// Check if blog exists
+	blog, ok := a.cfg.Blogs[blogName]
+	if !ok || blog == nil {
+		return fmt.Errorf("blog not found: %s", blogName)
+	}
+
+	// Fetch and validate the target account
+	targetActor, err := a.apGetRemoteActor(blogName, ap.IRI(targetAccount))
+	if err != nil || targetActor == nil {
+		return fmt.Errorf("failed to fetch target account %s: %w", targetAccount, err)
+	}
+
+	// Verify that the target account has the GoBlog account in alsoKnownAs
+	blogIri := a.apIri(blog)
+	hasAlias := false
+	for _, aka := range targetActor.AlsoKnownAs {
+		if aka.GetLink().String() == blogIri {
+			hasAlias = true
+			break
+		}
+	}
+	if !hasAlias {
+		return fmt.Errorf("target account %s does not have %s in alsoKnownAs - add it before moving followers", targetAccount, blogIri)
+	}
+
+	// Get all followers
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get followers: %w", err)
+	}
+
+	if len(followers) == 0 {
+		a.info("No followers to move")
+		return nil
+	}
+
+	// Get all follower inboxes
+	inboxes, err := a.db.apGetAllInboxes(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get follower inboxes: %w", err)
+	}
+
+	a.info("Moving followers to new account", "count", len(followers), "target", targetAccount)
+
+	// Save the movedTo setting in the database so that the actor profile reflects the move
+	if err := a.setApMovedTo(blogName, targetAccount); err != nil {
+		return fmt.Errorf("failed to save movedTo setting: %w", err)
+	}
+
+	// Purge cache to ensure the actor profile with movedTo is served immediately
+	a.purgeCache()
+
+	// Create Move activity per ActivityPub spec:
+	// - actor: the account performing the move (this blog)
+	// - object: the account being moved (also this blog - it's moving itself)
+	// - target: the new account to move to
+	// Actor and Object are the same because the blog is announcing it's moving itself.
+	// The Move is addressed only to followers (not public) per ActivityPub conventions.
+	blogApiIri := a.apAPIri(blog)
+	move := ap.ActivityNew(ap.MoveType, a.apNewID(blog), blogApiIri)
+	move.Actor = blogApiIri
+	move.Target = ap.IRI(targetAccount)
+	move.To.Append(a.apGetFollowersCollectionId(blogName, blog))
+
+	// Send Move activity to all follower inboxes using the same pattern as other activities
+	uniqueInboxes := lo.Uniq(inboxes)
+	a.apSendTo(blogIri, move, uniqueInboxes...)
+
+	a.info("Move activities queued for all followers", "count", len(uniqueInboxes), "target", targetAccount)
+	return nil
+}
+
 func (a *goBlog) apGetRemoteActor(blog string, iri ap.IRI) (*ap.Actor, error) {
 	item, err := a.apLoadRemoteIRI(blog, iri)
 	if err != nil {

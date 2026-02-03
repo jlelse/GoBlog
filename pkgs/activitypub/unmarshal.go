@@ -29,7 +29,7 @@ func UnmarshalJSON(data []byte) (Item, error) {
 			return nil, err
 		}
 		return &actor, nil
-	case CreateType, UpdateType, DeleteType, FollowType, AcceptType, UndoType, AnnounceType, LikeType, BlockType:
+	case CreateType, UpdateType, DeleteType, FollowType, AcceptType, UndoType, AnnounceType, LikeType, BlockType, MoveType:
 		var activity Activity
 		if err := json.Unmarshal(data, &activity); err != nil {
 			return nil, err
@@ -145,6 +145,7 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 		Type      ActivityType    `json:"type,omitempty"`
 		Actor     json.RawMessage `json:"actor,omitempty"`
 		Object    json.RawMessage `json:"object,omitempty"`
+		Target    json.RawMessage `json:"target,omitempty"`
 		To        ItemCollection  `json:"to,omitempty"`
 		CC        ItemCollection  `json:"cc,omitempty"`
 		Published time.Time       `json:"published,omitzero"`
@@ -176,6 +177,13 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 		}
 		a.Object = item
 	}
+	if len(r.Target) > 0 {
+		item, err := unmarshalItem(r.Target)
+		if err != nil {
+			return err
+		}
+		a.Target = item
+	}
 	return nil
 }
 
@@ -195,6 +203,7 @@ func (p *Actor) UnmarshalJSON(data []byte) error {
 		PublicKey            PublicKey             `json:"publicKey,omitempty"`
 		Endpoints            *Endpoints            `json:"endpoints,omitempty"`
 		Icon                 json.RawMessage       `json:"icon,omitempty"`
+		MovedTo              json.RawMessage       `json:"movedTo,omitempty"`
 		AlsoKnownAs          ItemCollection        `json:"alsoKnownAs,omitempty"`
 		AttributionDomains   ItemCollection        `json:"attributionDomains,omitempty"`
 	}
@@ -222,6 +231,14 @@ func (p *Actor) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.Icon = item
+	}
+
+	if len(ex.MovedTo) > 0 {
+		item, err := unmarshalItem(ex.MovedTo)
+		if err != nil {
+			return err
+		}
+		p.MovedTo = item
 	}
 
 	return nil
