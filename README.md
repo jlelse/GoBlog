@@ -579,6 +579,29 @@ If you're moving away from GoBlog to another Fediverse server:
 
 This sends a Move activity to all your followers, notifying them that your account has moved. Fediverse servers that support account migration will automatically update the follow to your new account.
 
+**Domain change (moving GoBlog to a new domain):**
+
+If you're changing your GoBlog domain (e.g., from `old.example.com` to `new.example.com`):
+
+1. Configure your reverse proxy to serve both domains pointing to your GoBlog instance
+2. Add the old domain to the `altDomains` config:
+
+```yaml
+server:
+  publicAddress: https://new.example.com
+  altDomains:
+    - https://old.example.com
+```
+
+3. Restart GoBlog to apply the configuration
+4. Run the CLI command to send Move activities to all followers:
+
+```bash
+./GoBlog activitypub domainmove https://old.example.com https://new.example.com
+```
+
+This sends a Move activity from the old domain's actor to all followers, notifying them that the account has moved to the new domain. The old domain will continue to serve ActivityPub/Webfinger requests with the actor showing `movedTo` pointing to the new domain, while all other requests will be redirected to the new domain.
+
 ### Bluesky / ATProto
 
 GoBlog can post links to new posts on Bluesky:
@@ -1156,6 +1179,26 @@ Sends Move activities to all followers, instructing them that your account has m
 ```
 
 Clears the `movedTo` setting from a blog's ActivityPub profile. Use this if you need to undo a migration or if you accidentally set the wrong target.
+
+### Domain Move
+
+```bash
+./GoBlog --config ./config/config.yml activitypub domainmove https://old.example.com https://new.example.com
+```
+
+Sends Move activities to all followers when changing your GoBlog domain. This is used when you're moving GoBlog from one domain to another (e.g., `old.example.com` to `new.example.com`).
+
+**Requirements before running:**
+1. Configure both domains to point to your GoBlog instance
+2. Add the old domain to `altDomains` in your server config
+3. Update `publicAddress` to the new domain
+4. Restart GoBlog
+
+**How it works:**
+- The old domain's actor will serve with `movedTo` pointing to the new domain
+- The new domain's actor will have `alsoKnownAs` including the old domain
+- Move activities are sent from the old domain's actor to all followers
+- Non-ActivityPub requests to the old domain will be redirected to the new domain
 
 ### Profiling
 

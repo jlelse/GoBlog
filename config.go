@@ -47,6 +47,7 @@ type configServer struct {
 	PublicAddress       string   `mapstructure:"publicAddress"`
 	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
 	MediaAddress        string   `mapstructure:"mediaAddress"`
+	AltDomains          []string `mapstructure:"altDomains"` // Alternative domains for domain move, requests will be redirected to main domain except for ActivityPub/Webfinger
 	PublicHTTPS         bool     `mapstructure:"publicHttps"`
 	AcmeDir             string   `mapstructure:"acmeDir"`
 	AcmeEabKid          string   `mapstructure:"acmeEabKid"`
@@ -60,6 +61,7 @@ type configServer struct {
 	publicHostname      string
 	shortPublicHostname string
 	mediaHostname       string
+	altHostnames        []string // Parsed alternative domain hostnames
 	manualHttps         bool
 }
 
@@ -424,6 +426,14 @@ func (a *goBlog) initConfig(logging bool) error {
 		}
 		a.cfg.Server.mediaHostname = mediaUrl.Hostname()
 	}
+	// Parse alternative domains
+	for _, altDomain := range a.cfg.Server.AltDomains {
+		altURL, err := url.Parse(altDomain)
+		if err != nil {
+			return errors.New("Invalid alternative domain: " + err.Error())
+		}
+		a.cfg.Server.altHostnames = append(a.cfg.Server.altHostnames, altURL.Hostname())
+	}
 	// Check port or set default
 	if a.cfg.Server.Port == 0 {
 		finalPort := 8080
@@ -668,4 +678,24 @@ func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
 
 func (a *goBlog) getBlogFromPost(p *post) *configBlog {
 	return a.cfg.Blogs[cmp.Or(p.Blog, a.cfg.DefaultBlog)]
+}
+
+// isAltDomainHostname checks if the given hostname is an alternative domain
+func (a *goBlog) isAltDomainHostname(hostname string) bool {
+	for _, alt := range a.cfg.Server.altHostnames {
+		if alt == hostname {
+			return true
+		}
+	}
+	return false
+}
+
+// getAltDomainAddress returns the full address for an alternative domain hostname
+func (a *goBlog) getAltDomainAddress(hostname string) string {
+	for _, altDomain := range a.cfg.Server.AltDomains {
+		if strings.Contains(altDomain, hostname) {
+			return altDomain
+		}
+	}
+	return ""
 }

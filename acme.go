@@ -24,6 +24,8 @@ func (a *goBlog) getAutocertManager() *autocert.Manager {
 		if mhn := a.cfg.Server.mediaHostname; mhn != "" {
 			hosts = append(hosts, mhn)
 		}
+		// Add alternative domain hostnames
+		hosts = append(hosts, a.cfg.Server.altHostnames...)
 		// Create autocert manager
 		acmeDir := acme.LetsEncryptURL
 		if a.cfg.Server.AcmeDir != "" {

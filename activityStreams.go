@@ -168,6 +168,12 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 		apBlog.AttributionDomains = append(apBlog.AttributionDomains, ap.IRI(ad))
 	}
 
+	// Add alternative domains as alsoKnownAs
+	for _, altHostname := range a.cfg.Server.altHostnames {
+		altIri := a.apIriForHostname(b, altHostname)
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(altIri))
+	}
+
 	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
@@ -182,6 +188,85 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 
 func (a *goBlog) serveActivityStreams(w http.ResponseWriter, r *http.Request, status int, blog string) {
 	a.serveAPItem(w, r, status, a.toApPerson(blog))
+}
+
+// serveActivityStreamsAltDomain serves the ActivityPub actor for an alternative domain
+// The actor has movedTo pointing to the main domain
+func (a *goBlog) serveActivityStreamsAltDomain(w http.ResponseWriter, r *http.Request) {
+	// Check if this is an ActivityStreams request
+	asRequest, ok := r.Context().Value(asRequestKey).(bool)
+	if !ok || !asRequest {
+		// Not an AS request, redirect to main domain
+		http.Redirect(w, r, a.cfg.Server.PublicAddress+r.URL.RequestURI(), http.StatusMovedPermanently)
+		return
+	}
+
+	// Get blog from context
+	blogName, ok := r.Context().Value(blogKey).(string)
+	if !ok || blogName == "" {
+		a.serveError(w, r, "Blog not found", http.StatusNotFound)
+		return
+	}
+
+	// Get the alternative domain hostname
+	altHostname, _ := r.Context().Value(altDomainKey).(string)
+	if altHostname == "" {
+		a.serveError(w, r, "Alternative domain not set", http.StatusInternalServerError)
+		return
+	}
+
+	// Create the actor for this alternative domain
+	person := a.toApPersonForAltDomain(blogName, altHostname)
+	a.serveAPItem(w, r, http.StatusOK, person)
+}
+
+// toApPersonForAltDomain creates an ActivityPub person for an alternative domain
+// It has movedTo pointing to the main domain
+func (a *goBlog) toApPersonForAltDomain(blog string, altHostname string) *ap.Actor {
+	b := a.cfg.Blogs[blog]
+
+	altAddress := a.getAltDomainAddress(altHostname)
+	apIri := ap.IRI(altAddress + b.getRelativePath(""))
+
+	apBlog := ap.PersonNew(apIri)
+	apBlog.URL = apIri
+
+	apBlog.Name = ap.NaturalLanguageValues{{Lang: b.Lang, Value: a.renderMdTitle(b.Title)}}
+	apBlog.Summary = ap.NaturalLanguageValues{{Lang: b.Lang, Value: b.Description}}
+	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
+
+	// Inbox and followers still on the alternative domain
+	apBlog.Inbox = ap.IRI(altAddress + "/activitypub/inbox/" + blog)
+	apBlog.Followers = ap.IRI(altAddress + "/activitypub/followers/" + blog)
+
+	// Public key uses same key for both domains
+	apBlog.PublicKey.Owner = apIri
+	apBlog.PublicKey.ID = ap.IRI(altAddress + b.getRelativePath("") + "#main-key")
+	apBlog.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   a.apPubKeyBytes,
+	}))
+
+	if a.hasProfileImage() {
+		icon := &ap.Image{}
+		icon.Type = ap.ImageType
+		icon.MediaType = ap.MimeType(contenttype.JPEG)
+		icon.URL = ap.IRI(altAddress + a.profileImagePath(profileImageFormatJPEG, 0, 0))
+		apBlog.Icon = icon
+	}
+
+	// Add main domain as alsoKnownAs
+	apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, a.apAPIri(b))
+	// Also add any configured alsoKnownAs
+	for _, aka := range a.cfg.ActivityPub.AlsoKnownAs {
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
+	}
+
+	// Set movedTo to point to the main domain
+	apBlog.MovedTo = a.apAPIri(b)
+
+	return apBlog
 }
 
 func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int, item any) {

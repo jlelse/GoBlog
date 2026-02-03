@@ -528,6 +528,132 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 	}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
 }
 
+func TestIntegrationActivityPubDomainMove(t *testing.T) {
+	requireDocker(t)
+
+	// Speed up the AP send queue for testing
+	apSendInterval = time.Second
+
+	// Start GoBlog with old domain (goblog.example) and follow it
+	gb := startApIntegrationServer(t)
+	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+
+	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
+
+	// Search for GoBlog account on GoToSocial and follow it
+	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
+	require.NoError(t, err)
+	require.NotNil(t, searchResults)
+	require.Greater(t, len(searchResults.Accounts), 0)
+	lookup := searchResults.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), lookup.ID)
+	require.NoError(t, err)
+
+	// Verify that GoBlog has the GoToSocial user as a follower
+	require.Eventually(t, func() bool {
+		followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+		if err != nil {
+			return false
+		}
+		for _, f := range followers {
+			if strings.Contains(f.follower, fmt.Sprintf("/users/%s", gtsTestUsername)) {
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
+	// Now simulate a domain change:
+	// 1. Add old domain as an alternative domain
+	// 2. Change public address to new domain
+	// 3. Rebuild router
+	oldDomain := gb.cfg.Server.PublicAddress // "http://goblog.example"
+	newDomain := "http://newgoblog.example"
+
+	// Add old domain to alt domains
+	gb.cfg.Server.AltDomains = []string{oldDomain}
+	gb.cfg.Server.altHostnames = []string{"goblog.example"}
+	// Change public address to new domain
+	gb.cfg.Server.PublicAddress = newDomain
+	gb.cfg.Server.publicHostname = "newgoblog.example"
+
+	// Re-prepare webfinger for the new configuration
+	gb.prepareWebfinger()
+
+	// Create a caddy proxy for the new domain
+	startNewDomainProxy(t, gts.networkName, gb.cfg.Server.Port)
+
+	// Rebuild router to include alt domain handler
+	gb.reloadRouter()
+
+	// Verify the new domain actor has the old domain in alsoKnownAs
+	person := gb.toApPerson(gb.cfg.DefaultBlog)
+	// Check that alsoKnownAs contains the old domain (with trailing slash from path)
+	foundOldDomain := false
+	for _, aka := range person.AlsoKnownAs {
+		if strings.HasPrefix(aka.GetLink().String(), oldDomain) {
+			foundOldDomain = true
+			break
+		}
+	}
+	assert.True(t, foundOldDomain, "new domain actor should have old domain in alsoKnownAs")
+
+	// Verify the old domain actor (served via alt domain) has movedTo pointing to new domain
+	oldPerson := gb.toApPersonForAltDomain(gb.cfg.DefaultBlog, "goblog.example")
+	assert.True(t, strings.HasPrefix(oldPerson.MovedTo.GetLink().String(), newDomain), "old domain actor should have movedTo pointing to new domain")
+	foundNewDomain := false
+	for _, aka := range oldPerson.AlsoKnownAs {
+		if strings.HasPrefix(aka.GetLink().String(), newDomain) {
+			foundNewDomain = true
+			break
+		}
+	}
+	assert.True(t, foundNewDomain, "old domain actor should have new domain in alsoKnownAs")
+
+	// Now send domain move activities
+	err = gb.apDomainMove(oldDomain, newDomain)
+	require.NoError(t, err)
+
+	// Verify that GTS received the Move and updates the follow to the new domain
+	// Note: GoToSocial may or may not process domain moves the same way as account moves
+	// The key thing is that the Move activity was sent successfully
+	// and the old actor correctly shows movedTo
+
+	// Check if webfinger for old domain still works via alt domain
+	require.Eventually(t, func() bool {
+		acct := "acct:" + gb.cfg.DefaultBlog + "@goblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://goblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		return err == nil && strings.Contains(string(out), "goblog.example")
+	}, 30*time.Second, 2*time.Second, "Old domain webfinger should work via alt domain handler")
+
+	// Check if webfinger for new domain works
+	require.Eventually(t, func() bool {
+		acct := "acct:" + gb.cfg.DefaultBlog + "@newgoblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://newgoblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		return err == nil && strings.Contains(string(out), "newgoblog.example")
+	}, 30*time.Second, 2*time.Second, "New domain webfinger should work")
+}
+
+func startNewDomainProxy(t *testing.T, netName string, goblogPort int) {
+	t.Helper()
+	proxyName := fmt.Sprintf("goblog-proxy-new-%d", time.Now().UnixNano())
+	runDocker(t,
+		"run", "-d", "--rm",
+		"--name", proxyName,
+		"--hostname", "newgoblog.example",
+		"--network", netName,
+		"--network-alias", "newgoblog.example",
+		"--add-host", "host.docker.internal:host-gateway",
+		"docker.io/library/caddy:2",
+		"caddy", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", goblogPort),
+	)
+	t.Cleanup(func() {
+		_ = exec.Command("docker", "rm", "-f", proxyName).Run()
+	})
+}
+
 func requireDocker(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("docker"); err != nil {

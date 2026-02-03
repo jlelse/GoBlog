@@ -124,6 +124,15 @@ func (a *goBlog) prepareWebfinger() {
 		a.webfingerResources[a.apIri(blog)] = blog
 		a.webfingerAccts[a.apIri(blog)] = acct
 	}
+	// Also prepare webfinger for alternative domains
+	for _, altHostname := range a.cfg.Server.altHostnames {
+		for name, blog := range a.cfg.Blogs {
+			acct := "acct:" + name + "@" + altHostname
+			a.webfingerResources[acct] = blog
+			altIri := a.apIriForHostname(blog, altHostname)
+			a.webfingerResources[altIri] = blog
+		}
+	}
 }
 
 func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
@@ -614,6 +623,69 @@ func (a *goBlog) apAPIri(b *configBlog) ap.IRI {
 	return ap.IRI(a.apIri(b))
 }
 
+// apIriForHostname returns the ActivityPub IRI for a blog using a specific hostname
+func (a *goBlog) apIriForHostname(b *configBlog, hostname string) string {
+	altAddress := a.getAltDomainAddress(hostname)
+	if altAddress == "" {
+		return a.apIri(b)
+	}
+	return altAddress + b.getRelativePath("")
+}
+
+// apHandleWebfingerAltDomain handles webfinger requests for alternative domains
+// It returns the actor on the alternative domain with movedTo pointing to the main domain
+func (a *goBlog) apHandleWebfingerAltDomain(w http.ResponseWriter, r *http.Request) {
+	altHostname, _ := r.Context().Value(altDomainKey).(string)
+	if altHostname == "" {
+		a.serveError(w, r, "Alternative domain not set", http.StatusInternalServerError)
+		return
+	}
+
+	resource := r.URL.Query().Get("resource")
+	blog, ok := a.webfingerResources[resource]
+	if !ok {
+		a.serveError(w, r, "Resource not found", http.StatusNotFound)
+		return
+	}
+
+	// Find the blog name from the config
+	var blogName string
+	for name, b := range a.cfg.Blogs {
+		if b == blog {
+			blogName = name
+			break
+		}
+	}
+	if blogName == "" {
+		a.serveError(w, r, "Blog not found", http.StatusNotFound)
+		return
+	}
+
+	// Return the actor IRI for the alternative domain
+	altIri := a.apIriForHostname(blog, altHostname)
+	acct := "acct:" + blogName + "@" + altHostname
+
+	// Encode
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(map[string]any{
+			"subject": acct,
+			"aliases": []string{acct, altIri},
+			"links": []map[string]string{
+				{
+					"rel": "self", "type": contenttype.AS, "href": altIri,
+				},
+				{
+					"rel":  "http://webfinger.net/rel/profile-page",
+					"type": "text/html", "href": altIri,
+				},
+			},
+		}))
+	}()
+	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
+	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+}
+
 func apRequestIsSuccess(code int) bool {
 	return code == http.StatusOK || code == http.StatusCreated || code == http.StatusAccepted || code == http.StatusNoContent
 }
@@ -785,6 +857,92 @@ func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
 	a.apSendTo(blogIri, move, uniqueInboxes...)
 
 	a.info("Move activities queued for all followers", "count", len(uniqueInboxes), "target", targetAccount)
+	return nil
+}
+
+// apDomainMove sends Move activities for a domain change.
+// This is used when moving the GoBlog from one domain to another.
+func (a *goBlog) apDomainMove(oldDomain string, newDomain string) error {
+	// Validate old domain is in altDomains
+	oldHostname := ""
+	for _, altDomain := range a.cfg.Server.AltDomains {
+		if altDomain == oldDomain {
+			for _, h := range a.cfg.Server.altHostnames {
+				if strings.Contains(altDomain, h) {
+					oldHostname = h
+					break
+				}
+			}
+			break
+		}
+	}
+	if oldHostname == "" {
+		return fmt.Errorf("old domain %s is not in altDomains configuration - add it first and restart GoBlog", oldDomain)
+	}
+
+	// Validate new domain is the public address
+	if newDomain != a.cfg.Server.PublicAddress {
+		return fmt.Errorf("new domain %s does not match public address %s", newDomain, a.cfg.Server.PublicAddress)
+	}
+
+	a.info("Starting domain move", "oldDomain", oldDomain, "newDomain", newDomain)
+
+	// For each blog, send Move activity from old domain actor to followers
+	for blogName, blog := range a.cfg.Blogs {
+		if err := a.apSendDomainMoveForBlog(blogName, blog, oldDomain, newDomain); err != nil {
+			return fmt.Errorf("failed to send domain move for blog %s: %w", blogName, err)
+		}
+	}
+
+	return nil
+}
+
+// apSendDomainMoveForBlog sends Move activities for a single blog during a domain move
+func (a *goBlog) apSendDomainMoveForBlog(blogName string, blog *configBlog, oldDomain string, newDomain string) error {
+	// Get all followers
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get followers: %w", err)
+	}
+
+	if len(followers) == 0 {
+		a.info("No followers for blog", "blog", blogName)
+		return nil
+	}
+
+	// Get all follower inboxes
+	inboxes, err := a.db.apGetAllInboxes(blogName)
+	if err != nil {
+		return fmt.Errorf("failed to get follower inboxes: %w", err)
+	}
+
+	a.info("Sending domain move for blog", "blog", blogName, "followers", len(followers))
+
+	// Old actor IRI (on the old domain)
+	oldActorIri := oldDomain + blog.getRelativePath("")
+	// New actor IRI (on the new domain, which is now the public address)
+	newActorIri := a.apIri(blog)
+
+	// Create Move activity
+	// actor: the old domain actor (the one moving)
+	// object: also the old domain actor (it's moving itself)
+	// target: the new domain actor (where it's moving to)
+	move := ap.ActivityNew(ap.MoveType, ap.IRI(oldActorIri+"#move-"+time.Now().Format("20060102150405")), ap.IRI(oldActorIri))
+	move.Actor = ap.IRI(oldActorIri)
+	move.Target = ap.IRI(newActorIri)
+	move.To.Append(ap.IRI(oldActorIri + "/activitypub/followers/" + blogName))
+	move.Published = time.Now()
+
+	// Send Move activity to all follower inboxes
+	// We sign with the main key since it's the same instance
+	uniqueInboxes := lo.Uniq(inboxes)
+	for _, inbox := range uniqueInboxes {
+		if err := a.apQueueSendSigned(oldActorIri, inbox, move); err != nil {
+			a.error("Failed to queue Move activity", "inbox", inbox, "err", err)
+		}
+	}
+
+	a.info("Domain move activities queued for blog", "blog", blogName, "count", len(uniqueInboxes))
 	return nil
 }
 

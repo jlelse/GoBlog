@@ -27,8 +27,9 @@ const (
 	userAgent    = "User-Agent"
 	appUserAgent = "GoBlog/1.0"
 
-	blogKey contextKey = "blog"
-	pathKey contextKey = "httpPath"
+	blogKey      contextKey = "blog"
+	pathKey      contextKey = "httpPath"
+	altDomainKey contextKey = "altDomain" // For alternative domain requests
 )
 
 func (a *goBlog) startServer() (err error) {
@@ -160,6 +161,10 @@ func (a *goBlog) buildRouter() http.Handler {
 		mr.Group(a.mediaFilesRouter)
 
 		mapRouter.Handlers[mhn] = mr
+	}
+	// Handle alternative domains for domain move
+	for _, altHostname := range a.cfg.Server.altHostnames {
+		mapRouter.Handlers[altHostname] = a.buildAltDomainRouter(altHostname)
 	}
 
 	// Default router
@@ -349,4 +354,40 @@ func (a *goBlog) getAppRouter() http.Handler {
 		time.Sleep(time.Millisecond * 100)
 	}
 	return a.d
+}
+
+// buildAltDomainRouter builds a router for alternative domains.
+// It handles ActivityPub and Webfinger requests using the alternative domain,
+// and redirects all other requests to the main domain.
+func (a *goBlog) buildAltDomainRouter(altHostname string) http.Handler {
+	r := chi.NewMux()
+
+	// Basic middleware
+	r.Use(fixHTTPHandler)
+	r.Use(middleware.RedirectSlashes)
+	r.Use(middleware.CleanPath)
+
+	// Handle ActivityPub and Webfinger on alternative domain
+	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled && !a.isPrivate() {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.WithValue(altDomainKey, altHostname))
+			// Webfinger
+			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/webfinger", a.apHandleWebfingerAltDomain)
+			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/host-meta", handleWellKnownHostMeta)
+			// ActivityPub inbox
+			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/activitypub/inbox/{blog}", a.apHandleInbox)
+			// Blog actor endpoints need to serve the old actor with movedTo
+			for blog, blogConfig := range a.cfg.Blogs {
+				r.With(a.checkActivityStreamsRequest, middleware.WithValue(blogKey, blog)).
+					Get(blogConfig.getRelativePath(""), a.serveActivityStreamsAltDomain)
+			}
+		})
+	}
+
+	// Redirect everything else to main domain
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, a.cfg.Server.PublicAddress+r.URL.RequestURI(), http.StatusMovedPermanently)
+	})
+
+	return r
 }
