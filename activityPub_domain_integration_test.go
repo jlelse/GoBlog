@@ -33,7 +33,7 @@ port := getFreePort(t)
 netName := fmt.Sprintf("goblog-net-%d", time.Now().UnixNano())
 runDocker(t, "network", "create", netName)
 t.Cleanup(func() {
-= exec.Command("docker", "network", "rm", netName).Run()
+exec.Command("docker", "network", "rm", netName).Run()
 })
 
 // Create Caddy reverse proxy for old domain
@@ -44,12 +44,12 @@ ame", oldProxyName,
 ame", oldDomain,
 etwork", netName,
 etwork-alias", oldDomain,
-"host.docker.internal:host-gateway",
-/caddy:2",
-", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
+ternal:host-gateway",
+:2",
+"reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
 )
 t.Cleanup(func() {
-= exec.Command("docker", "rm", "-f", oldProxyName).Run()
+exec.Command("docker", "rm", "-f", oldProxyName).Run()
 })
 
 // Create Caddy reverse proxy for new domain
@@ -60,12 +60,12 @@ ame", newProxyName,
 ame", newDomain,
 etwork", netName,
 etwork-alias", newDomain,
-"host.docker.internal:host-gateway",
-/caddy:2",
-", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
+ternal:host-gateway",
+:2",
+"reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", port),
 )
 t.Cleanup(func() {
-= exec.Command("docker", "rm", "-f", newProxyName).Run()
+exec.Command("docker", "rm", "-f", newProxyName).Run()
 })
 
 // Start GoToSocial instance
@@ -95,16 +95,14 @@ runDocker(t,
 ", "-d", "--rm",
 ame", containerName,
 etwork", netName,
-fmt.Sprintf("%d:%d", gtsPort, gtsPort),
-fmt.Sprintf("%s:/config/config.yaml", gtsConfigPath),
-"/data",
+tf("%d:%d", gtsPort, gtsPort),
+tf("%s:/config/config.yaml", gtsConfigPath),
 "/gotosocial/storage",
-"/gotosocial/.cache",
 ess/gotosocial:0.20.3",
 fig-path", "/config/config.yaml", "server", "start",
 )
 t.Cleanup(func() {
-= exec.Command("docker", "rm", "-f", containerName).Run()
+exec.Command("docker", "rm", "-f", containerName).Run()
 })
 
 gtsBaseURL := fmt.Sprintf("http://127.0.0.1:%d", gtsPort)
@@ -112,11 +110,10 @@ waitForHTTP(t, gtsBaseURL+"/api/v1/instance", 2*time.Minute)
 
 // Create test user
 runDocker(t,
-containerName,
+tainerName,
 fig-path", "/config/config.yaml",
 ", "account", "create",
 ame", gtsTestUsername,
-gtsTestEmail,
 gtsTestPassword,
 )
 
@@ -128,7 +125,7 @@ mc.Client = http.Client{Timeout: time.Minute}
 // === PHASE 1: Start GoBlog without alternate domain (using OLD domain) ===
 t.Log("=== PHASE 1: Starting GoBlog with OLD domain only ===")
 app := &goBlog{
-       createDefaultTestConfig(t),
+      createDefaultTestConfig(t),
 t: newHttpClient(),
 }
 
@@ -144,22 +141,22 @@ require.NoError(t, app.initTemplateStrings())
 require.NoError(t, app.initActivityPub())
 
 server := &http.Server{
-             fmt.Sprintf(":%d", port),
+            fmt.Sprintf(":%d", port),
 dler:           app.buildRouter(),
-time.Minute,
+ute,
 }
 listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 require.NoError(t, err)
 app.shutdown.Add(app.shutdownServer(server, "integration server"))
 go func() {
-= server.Serve(listener)
+server.Serve(listener)
 }()
 
 // Wait for GoBlog to be ready on old domain
 require.Eventually(t, func() bool {
-:= "acct:default@" + oldDomain
-:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
-err := cmd.CombinedOutput()
+"acct:default@" + oldDomain
+exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
+:= cmd.CombinedOutput()
  err == nil && strings.Contains(string(out), acct)
 }, time.Minute, time.Second)
 
@@ -178,8 +175,8 @@ require.NoError(t, err)
 
 // Verify that GoBlog has the GoToSocial user as a follower
 require.Eventually(t, func() bool {
-err := app.db.apGetAllFollowers(app.cfg.DefaultBlog)
-err != nil {
+:= app.db.apGetAllFollowers(app.cfg.DefaultBlog)
+!= nil {
  false
  len(followers) >= 1 && strings.Contains(followers[0].follower, fmt.Sprintf("/users/%s", gtsTestUsername))
 }, time.Minute, time.Second)
@@ -209,15 +206,15 @@ require.NoError(t, app.initActivityPub())
 
 // Start server again
 server = &http.Server{
-             fmt.Sprintf(":%d", port),
+            fmt.Sprintf(":%d", port),
 dler:           app.buildRouter(),
-time.Minute,
+ute,
 }
 listener, err = net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 require.NoError(t, err)
 app.shutdown.Add(app.shutdownServer(server, "integration server"))
 go func() {
-= server.Serve(listener)
+server.Serve(listener)
 }()
 t.Cleanup(func() {
 .ShutdownAndWait()
@@ -225,9 +222,9 @@ t.Cleanup(func() {
 
 // Wait for GoBlog to be ready on new domain
 require.Eventually(t, func() bool {
-:= "acct:default@" + newDomain
-:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+newDomain+"/.well-known/webfinger")
-err := cmd.CombinedOutput()
+"acct:default@" + newDomain
+exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+newDomain+"/.well-known/webfinger")
+:= cmd.CombinedOutput()
  err == nil && strings.Contains(string(out), acct)
 }, time.Minute, time.Second)
 
@@ -235,9 +232,9 @@ t.Log("GoBlog restarted on new domain")
 
 // Verify old domain still works (as alternate)
 require.Eventually(t, func() bool {
-:= "acct:default@" + oldDomain
-:= exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
-err := cmd.CombinedOutput()
+"acct:default@" + oldDomain
+exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://"+oldDomain+"/.well-known/webfinger")
+:= cmd.CombinedOutput()
  err == nil && strings.Contains(string(out), acct)
 }, time.Minute, time.Second)
 
@@ -268,16 +265,16 @@ goBlogAcctNew := fmt.Sprintf("%s@%s", app.cfg.DefaultBlog, newDomain)
 // Search for the new domain account from GTS user's perspective
 require.Eventually(t, func() bool {
 ew, searchErr := mc.Search(context.Background(), goBlogAcctNew, true)
-searchErr != nil || len(searchResultsNew.Accounts) == 0 {
-for new domain failed or no results: %v", searchErr)
+!= nil || len(searchResultsNew.Accounts) == 0 {
+new domain failed or no results: %v", searchErr)
  false
 ewDomainAccount := searchResultsNew.Accounts[0]
 d new domain account: %s", newDomainAccount.Acct)
 
-Check if user is now following the new domain account
+if user is now following the new domain account
 ships, relErr := mc.GetAccountRelationships(context.Background(), []string{string(newDomainAccount.ID)})
-relErr != nil || len(relationships) == 0 {
-to get relationships: %v", relErr)
+!= nil || len(relationships) == 0 {
+get relationships: %v", relErr)
  false
 g := relationships[0].Following
 g new domain: %v", following)
@@ -308,7 +305,7 @@ assert.Contains(t, string(outNew), newDomain, "New domain webfinger should conta
 // Verify actor endpoints return correct IRIs and movedTo
 cmdActorOld := exec.Command("docker", "run", "--rm", "--network", netName,
 e/curl", "-sS", "-m", "5",
-"Accept: application/activity+json",
+application/activity+json",
 )
 outActorOld, err := cmdActorOld.CombinedOutput()
 require.NoError(t, err, "Old domain actor fetch failed: %s", string(outActorOld))
@@ -318,7 +315,7 @@ assert.Contains(t, string(outActorOld), "movedTo", "Old domain actor should have
 
 cmdActorNew := exec.Command("docker", "run", "--rm", "--network", netName,
 e/curl", "-sS", "-m", "5",
-"Accept: application/activity+json",
+application/activity+json",
 ewDomain)
 outActorNew, err := cmdActorNew.CombinedOutput()
 require.NoError(t, err, "New domain actor fetch failed: %s", string(outActorNew))
