@@ -226,7 +226,7 @@ cache:
 	goBlogAcctOldWebfinger := "acct:default@" + oldDomain
 	cmdOld := exec.Command("docker", "run", "--rm", "--network", netName,
 		"docker.io/alpine/curl", "-sS", "-m", "5", "-G",
-		"--data-urlencode", fmt.Sprintf("resource=%s", goBlogAcctOld),
+		"--data-urlencode", fmt.Sprintf("resource=%s", goBlogAcctOldWebfinger),
 		"http://"+oldDomain+"/.well-known/webfinger")
 	outOld, err := cmdOld.CombinedOutput()
 	require.NoError(t, err, "Old domain webfinger failed: %s", string(outOld))
