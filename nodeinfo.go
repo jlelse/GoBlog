@@ -7,7 +7,7 @@ import (
 func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 	href := a.getFullAddress("/nodeinfo")
 	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
-		href = getFullAddressStatic("/nodeinfo", altAddress)
+		href = getFullAddressStatic(altAddress, "/nodeinfo")
 	}
 	result := map[string]any{
 		"links": []map[string]any{

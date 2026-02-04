@@ -527,3 +527,20 @@ func Test_apSendProfileUpdates_ObjectSet(t *testing.T) {
 	assert.Equal(t, "Test Blog", obj.Name.First().String())
 	assert.Equal(t, "A test blog", obj.Summary.First().String())
 }
+
+func Test_apGetFollowersCollectionIdForAddress(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.Server.AltAddresses = []string{"https://alt.example"}
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+
+	id := app.apGetFollowersCollectionIdForAddress("default", "https://alt.example")
+	assert.Equal(t, activitypub.IRI("https://alt.example/activitypub/followers/default"), id)
+
+	id = app.apGetFollowersCollectionIdForAddress("default", "")
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/default"), id)
+}

@@ -38,7 +38,7 @@ func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
 	baseEndpoint := a.getFullAddress(indieAuthPath)
 	if altAddr, ok := r.Context().Value(altAddressKey).(string); ok && altAddr != "" {
 		issuerURL = getFullAddressStatic(altAddr, "") + "/"
-		baseEndpoint = getFullAddressStatic(indieAuthPath, altAddr)
+		baseEndpoint = getFullAddressStatic(altAddr, indieAuthPath)
 	}
 	resp := map[string]any{
 		"issuer":                 issuerURL,

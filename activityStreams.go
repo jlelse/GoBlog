@@ -163,7 +163,7 @@ func (a *goBlog) toApPerson(blog string, altAddress string) *ap.Actor {
 	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
 
 	if altAddress != "" {
-		apBlog.Inbox = ap.IRI(getFullAddressStatic(apInboxPathTemplate+blog, altAddress))
+		apBlog.Inbox = ap.IRI(getFullAddressStatic(altAddress, apInboxPathTemplate+blog))
 	} else {
 		apBlog.Inbox = ap.IRI(a.getFullAddress(apInboxPathTemplate + blog))
 	}

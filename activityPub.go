@@ -435,7 +435,7 @@ func (a *goBlog) apGetFollowersCollectionIdForAddress(blogName string, address s
 	if address == "" {
 		return ap.IRI(a.getFullAddress(path))
 	} else {
-		return ap.IRI(getFullAddressStatic(path, address))
+		return ap.IRI(getFullAddressStatic(address, path))
 	}
 }
 
