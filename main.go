@@ -243,6 +243,48 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "domainmove <old-domain> <new-domain>",
+		Short: "Send Move activities for a domain change",
+		Long: `Send Move activities to all followers for a domain change.
+
+This command is used when you're changing your GoBlog domain (e.g., from
+old.example.com to new.example.com). It sends Move activities from the
+old domain's actor to notify followers that the account has moved to
+the new domain.
+
+Before running this command:
+
+1. Configure both domains in your server config (add old domain to altAddresses)
+2. Ensure both domains point to this GoBlog instance
+3. Restart GoBlog to apply the configuration
+4. Run this command to send Move activities
+
+The old domain's actor will have movedTo pointing to the new domain, and the
+new domain's actor will have alsoKnownAs including the old domain.
+
+Example:
+  ./GoBlog activitypub domainmove http://old.example.com http://new.example.com`,
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			app.initAPSendQueue()
+			oldDomain := args[0]
+			newDomain := args[1]
+			if err := app.apDomainMove(oldDomain, newDomain); err != nil {
+				app.logErrAndQuit("Failed to send domain move activities", "oldDomain", oldDomain, "newDomain", newDomain, "err", err)
+			}
+			app.shutdown.ShutdownAndWait()
+		},
+	})
 	rootCmd.AddCommand(activityPubCmd)
 
 	// Setup command for setting up user credentials

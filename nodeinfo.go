@@ -4,11 +4,15 @@ import (
 	"net/http"
 )
 
-func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, _ *http.Request) {
+func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
+	href := a.getFullAddress("/nodeinfo")
+	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
+		href = getFullAddressStatic("/nodeinfo", altAddress)
+	}
 	result := map[string]any{
 		"links": []map[string]any{
 			{
-				"href": a.getFullAddress("/nodeinfo"),
+				"href": href,
 				"rel":  "http://nodeinfo.diaspora.software/ns/schema/2.1",
 			},
 		},

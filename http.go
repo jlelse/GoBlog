@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dchest/captcha"
@@ -27,8 +28,9 @@ const (
 	userAgent    = "User-Agent"
 	appUserAgent = "GoBlog/1.0"
 
-	blogKey contextKey = "blog"
-	pathKey contextKey = "httpPath"
+	blogKey       contextKey = "blog"
+	pathKey       contextKey = "httpPath"
+	altAddressKey contextKey = "altAddress"
 )
 
 func (a *goBlog) startServer() (err error) {
@@ -148,10 +150,10 @@ func (a *goBlog) buildRouter() http.Handler {
 	mapRouter := &maprouter.MapRouter{
 		Handlers: map[string]http.Handler{},
 	}
-	if shn := a.cfg.Server.shortPublicHostname; shn != "" {
+	if shn := a.cfg.Server.shortPublicHost; shn != "" {
 		mapRouter.Handlers[shn] = http.HandlerFunc(a.redirectShortDomain)
 	}
-	if mhn := a.cfg.Server.mediaHostname; mhn != "" && !a.isPrivate() {
+	if mhn := a.cfg.Server.mediaHost; mhn != "" && !a.isPrivate() {
 		mr := chi.NewMux()
 
 		mr.Use(middleware.RedirectSlashes)
@@ -165,8 +167,10 @@ func (a *goBlog) buildRouter() http.Handler {
 	// Default router
 	r := chi.NewMux()
 
+	// Check alt addresses
+	r.Use(a.checkAltAddress)
+
 	// Basic middleware
-	r.Use(fixHTTPHandler)
 	r.Use(middleware.RedirectSlashes)
 	r.Use(middleware.CleanPath)
 
@@ -253,7 +257,7 @@ func (a *goBlog) buildRouter() http.Handler {
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	mapRouter.DefaultHandler = r
-	return alice.New(headAsGetHandler).Then(mapRouter)
+	return alice.New(headAsGetHandler, fixHTTPHandler).Then(mapRouter)
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
@@ -349,4 +353,53 @@ func (a *goBlog) getAppRouter() http.Handler {
 		time.Sleep(time.Millisecond * 100)
 	}
 	return a.d
+}
+
+// Middleware that checks if the request is to an alt address.
+func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		altAddress := ""
+		if r.Host != "" {
+			for _, aa := range a.cfg.Server.AltAddresses {
+				if r.Host == getHost(aa) {
+					altAddress = aa
+					break
+				}
+			}
+		}
+		if altAddress != "" {
+			// Allow ActivityStreams requests
+			if a.apEnabled() && (a.isActivityStreamsRequest(r) ||
+				strings.HasPrefix(r.URL.Path, activityPubBasePath) ||
+				r.URL.Path == "/.well-known/webfinger" ||
+				r.URL.Path == "/.well-known/host-meta" ||
+				r.URL.Path == "/.well-known/nodeinfo" ||
+				r.URL.Path == "/nodeinfo") {
+				// Set request context values
+				rc := context.WithValue(
+					context.WithValue(r.Context(), asRequestKey, true),
+					altAddressKey, altAddress,
+				)
+				// Serve ActivityStreams request normally
+				next.ServeHTTP(w, r.WithContext(rc))
+				return
+			}
+			// Allow IndieAuth and login requests
+			if strings.HasPrefix(r.URL.Path, indieAuthPath) ||
+				r.URL.Path == loginPath ||
+				r.URL.Path == logoutPath ||
+				r.URL.Path == indieAuthMetadataPath ||
+				strings.HasPrefix(r.URL.Path, webAuthnBasePath) {
+				// Set altAddress in context for handlers
+				rc := context.WithValue(r.Context(), altAddressKey, altAddress)
+				next.ServeHTTP(w, r.WithContext(rc))
+				return
+			}
+			// Redirect other requests to main public address
+			http.Redirect(w, r, a.getFullAddress(r.URL.RequestURI()), http.StatusPermanentRedirect)
+			return
+		}
+		// Not an alt address, continue normally
+		next.ServeHTTP(w, r)
+	})
 }

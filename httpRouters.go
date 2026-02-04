@@ -12,13 +12,13 @@ import (
 func (a *goBlog) loginRouter(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(a.authMiddleware)
-		r.Get("/login", serveLogin)
-		r.Get("/logout", a.serveLogout)
-		r.Post("/webauthn/registration/begin", a.beginWebAuthnRegistration)
-		r.Post("/webauthn/registration/finish", a.finishWebAuthnRegistration)
+		r.Get(loginPath, serveLogin)
+		r.Get(logoutPath, a.serveLogout)
+		r.Post(webAuthnBasePath+"registration/begin", a.beginWebAuthnRegistration)
+		r.Post(webAuthnBasePath+"registration/finish", a.finishWebAuthnRegistration)
 	})
-	r.Post("/webauthn/login/begin", a.beginWebAuthnLogin)
-	r.Post("/webauthn/login/finish", a.finishWebAuthnLogin)
+	r.Post(webAuthnBasePath+"login/begin", a.beginWebAuthnLogin)
+	r.Post(webAuthnBasePath+"login/finish", a.finishWebAuthnLogin)
 }
 
 // Micropub
@@ -38,7 +38,7 @@ func (a *goBlog) indieAuthRouter(r chi.Router) {
 		r.Get(indieAuthTokenSubpath, a.indieAuthTokenVerification)
 		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(indieAuthTokenRevocationSubpath, a.indieAuthTokenRevokation)
 	})
-	r.With(cacheLoggedIn, a.cacheMiddleware).Get("/.well-known/oauth-authorization-server", a.indieAuthMetadata)
+	r.With(cacheLoggedIn, a.cacheMiddleware).Get(indieAuthMetadataPath, a.indieAuthMetadata)
 }
 
 // ActivityPub
@@ -48,7 +48,7 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 		return
 	}
 	if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled {
-		r.Route("/activitypub", func(r chi.Router) {
+		r.Route(activityPubBasePath, func(r chi.Router) {
 			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/inbox/{blog}", a.apHandleInbox)
 			r.With(a.checkActivityStreamsRequest).Get("/followers/{blog}", a.apShowFollowers)
 			r.With(a.cacheMiddleware).Get("/remote_follow/{blog}", a.apRemoteFollow)

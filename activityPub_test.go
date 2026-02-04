@@ -174,8 +174,8 @@ func Test_apGetFollowersCollectionId(t *testing.T) {
 	err := app.initConfig(false)
 	require.NoError(t, err)
 
-	id := app.apGetFollowersCollectionId("testblog", app.cfg.Blogs["testblog"])
-	assert.Equal(t, activitypub.IRI("https://example.com/blog/activitypub/followers/testblog"), id)
+	id := app.apGetFollowersCollectionId("testblog")
+	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/testblog"), id)
 }
 
 func Test_apIri_and_apAPIri(t *testing.T) {

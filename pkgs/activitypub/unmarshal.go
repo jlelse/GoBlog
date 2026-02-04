@@ -104,28 +104,28 @@ func (o *Object) UnmarshalJSON(data []byte) error {
 	o.Updated = r.Updated
 
 	if len(r.AttributedTo) > 0 {
-		item, err := unmarshalItem(r.AttributedTo)
+		item, err := UnmarshalJSON(r.AttributedTo)
 		if err != nil {
 			return err
 		}
 		o.AttributedTo = item
 	}
 	if len(r.InReplyTo) > 0 {
-		item, err := unmarshalItem(r.InReplyTo)
+		item, err := UnmarshalJSON(r.InReplyTo)
 		if err != nil {
 			return err
 		}
 		o.InReplyTo = item
 	}
 	if len(r.URL) > 0 {
-		item, err := unmarshalItem(r.URL)
+		item, err := UnmarshalJSON(r.URL)
 		if err != nil {
 			return err
 		}
 		o.URL = item
 	}
 	if len(r.Href) > 0 {
-		item, err := unmarshalItem(r.Href)
+		item, err := UnmarshalJSON(r.Href)
 		if err != nil {
 			return err
 		}
@@ -164,21 +164,21 @@ func (a *Activity) UnmarshalJSON(data []byte) error {
 		Updated:   r.Updated,
 	}
 	if len(r.Actor) > 0 {
-		item, err := unmarshalItem(r.Actor)
+		item, err := UnmarshalJSON(r.Actor)
 		if err != nil {
 			return err
 		}
 		a.Actor = item
 	}
 	if len(r.Object) > 0 {
-		item, err := unmarshalItem(r.Object)
+		item, err := UnmarshalJSON(r.Object)
 		if err != nil {
 			return err
 		}
 		a.Object = item
 	}
 	if len(r.Target) > 0 {
-		item, err := unmarshalItem(r.Target)
+		item, err := UnmarshalJSON(r.Target)
 		if err != nil {
 			return err
 		}
@@ -226,7 +226,7 @@ func (p *Actor) UnmarshalJSON(data []byte) error {
 	p.AttributionDomains = ex.AttributionDomains
 
 	if len(ex.Icon) > 0 {
-		item, err := unmarshalItem(ex.Icon)
+		item, err := UnmarshalJSON(ex.Icon)
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func (p *Actor) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(ex.MovedTo) > 0 {
-		item, err := unmarshalItem(ex.MovedTo)
+		item, err := UnmarshalJSON(ex.MovedTo)
 		if err != nil {
 			return err
 		}
@@ -272,7 +272,7 @@ func (e *Endpoints) UnmarshalJSON(data []byte) error {
 	}
 
 	if raw, ok := m["sharedInbox"]; ok {
-		item, err := unmarshalItem(raw)
+		item, err := UnmarshalJSON(raw)
 		if err != nil {
 			return err
 		}
@@ -314,7 +314,7 @@ func (i *ItemCollection) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &arr); err == nil {
 		*i = make(ItemCollection, 0, len(arr))
 		for _, raw := range arr {
-			item, err := unmarshalItem(raw)
+			item, err := UnmarshalJSON(raw)
 			if err != nil {
 				return err
 			}
@@ -324,27 +324,10 @@ func (i *ItemCollection) UnmarshalJSON(data []byte) error {
 	}
 
 	// Try as single item
-	item, err := unmarshalItem(data)
+	item, err := UnmarshalJSON(data)
 	if err != nil {
 		return err
 	}
 	*i = ItemCollection{item}
 	return nil
-}
-
-// unmarshalItem unmarshals an item as either IRI or Object
-func unmarshalItem(data []byte) (Item, error) {
-	// Try as string (IRI) first
-	var iri string
-	if err := json.Unmarshal(data, &iri); err == nil {
-		return IRI(iri), nil
-	}
-
-	// Try as object
-	var obj Object
-	if err := json.Unmarshal(data, &obj); err == nil {
-		return &obj, nil
-	}
-
-	return nil, fmt.Errorf("invalid item")
 }

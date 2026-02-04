@@ -14,12 +14,14 @@ const (
 	webauthnIdSettingsKey     = "webauthnid"
 	settingsDeletePasskeyPath = "/deletepasskey"
 	settingsRenamePasskeyPath = "/renamepasskey"
+
+	webAuthnBasePath = "/webauthn/"
 )
 
 func (a *goBlog) initWebAuthn() error {
 	wconfig := &webauthn.Config{
 		RPDisplayName:        "GoBlog",
-		RPID:                 a.cfg.Server.publicHostname,
+		RPID:                 a.cfg.Server.publicHost,
 		RPOrigins:            []string{a.getFullAddress("/")},
 		EncodeUserIDAsString: true,
 		Timeouts: webauthn.TimeoutsConfig{

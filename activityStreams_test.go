@@ -368,7 +368,7 @@ func Test_toApPerson(t *testing.T) {
 	require.NoError(t, err)
 	_ = app.initTemplateStrings()
 
-	person := app.toApPerson("testblog")
+	person := app.toApPerson("testblog", "")
 
 	assert.Equal(t, "Test Blog", person.Name.First().String())
 	assert.Equal(t, "A test blog", person.Summary.First().String())
@@ -414,7 +414,7 @@ func Test_toApPerson_WithProfileImage(t *testing.T) {
 	app.cfg.User.ProfileImageFile = tempFile
 	app.profileImageHashGroup = nil // Reset to recompute hash
 
-	person := app.toApPerson("testblog")
+	person := app.toApPerson("testblog", "")
 
 	assert.Equal(t, "Test Blog", person.Name.First().String())
 	assert.Equal(t, "A test blog", person.Summary.First().String())
@@ -591,7 +591,7 @@ func Test_toApPerson_WithMultipleAlsoKnownAs(t *testing.T) {
 	require.NoError(t, err)
 	_ = app.initTemplateStrings()
 
-	person := app.toApPerson("testblog")
+	person := app.toApPerson("testblog", "")
 
 	// Verify AlsoKnownAs
 	assert.Len(t, person.AlsoKnownAs, 3)
@@ -635,7 +635,7 @@ func Test_toApPerson_WithoutExtensions(t *testing.T) {
 	require.NoError(t, err)
 	_ = app.initTemplateStrings()
 
-	person := app.toApPerson("testblog")
+	person := app.toApPerson("testblog", "")
 
 	// Verify fields are empty
 	assert.Len(t, person.AlsoKnownAs, 0)

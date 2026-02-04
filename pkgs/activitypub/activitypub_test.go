@@ -100,42 +100,79 @@ func TestItemCollection(t *testing.T) {
 }
 
 func TestUnmarshalJSON(t *testing.T) {
-	// Test unmarshaling a Person
-	personJSON := `{
-		"@context": "https://www.w3.org/ns/activitystreams",
-		"type": "Person",
-		"id": "https://example.com/users/alice",
-		"name": "Alice",
-		"preferredUsername": "alice"
-	}`
+	t.Parallel()
 
-	item, err := UnmarshalJSON([]byte(personJSON))
-	require.NoError(t, err)
+	t.Run("Person", func(t *testing.T) {
+		t.Parallel()
 
-	person, err := ToActor(item)
-	require.NoError(t, err)
-	assert.Equal(t, PersonType, person.Type)
-	assert.Equal(t, "Alice", person.Name.First().String())
+		personJSON := `{
+			"@context": "https://www.w3.org/ns/activitystreams",
+			"type": "Person",
+			"id": "https://example.com/users/alice",
+			"name": "Alice",
+			"preferredUsername": "alice"
+		}`
 
-	// Test unmarshaling an Activity
-	activityJSON := `{
-		"type": "Create",
-		"id": "https://example.com/activities/1",
-		"actor": "https://example.com/users/alice",
-		"object": {
-			"type": "Note",
-			"content": "Hello"
-		}
-	}`
+		item, err := UnmarshalJSON([]byte(personJSON))
+		require.NoError(t, err)
 
-	item, err = UnmarshalJSON([]byte(activityJSON))
-	require.NoError(t, err)
+		person, err := ToActor(item)
+		require.NoError(t, err)
+		assert.Equal(t, PersonType, person.Type)
+		assert.Equal(t, "Alice", person.Name.First().String())
+	})
 
-	activity, err := ToActivity(item)
-	require.NoError(t, err)
-	assert.Equal(t, CreateType, activity.Type)
-	assert.NotNil(t, activity.Actor)
-	assert.NotNil(t, activity.Object)
+	t.Run("Activity", func(t *testing.T) {
+		t.Parallel()
+
+		activityJSON := `{
+			"type": "Create",
+			"id": "https://example.com/activities/1",
+			"actor": "https://example.com/users/alice",
+			"object": {
+				"type": "Note",
+				"content": "Hello"
+			}
+		}`
+
+		item, err := UnmarshalJSON([]byte(activityJSON))
+		require.NoError(t, err)
+
+		activity, err := ToActivity(item)
+		require.NoError(t, err)
+		assert.Equal(t, CreateType, activity.Type)
+		assert.NotNil(t, activity.Actor)
+		assert.NotNil(t, activity.Object)
+	})
+
+	t.Run("Undo Follow", func(t *testing.T) {
+		t.Parallel()
+
+		undoJSON := `{
+			"type": "Undo",
+			"id": "https://example.com/activities/2",
+			"actor": "https://example.com/users/alice",
+			"object": {
+				"type": "Follow",
+				"actor": "https://example.com/users/alice",
+				"object": "https://example.org/users/bob"
+			}
+		}`
+
+		item, err := UnmarshalJSON([]byte(undoJSON))
+		require.NoError(t, err)
+
+		activity, err := ToActivity(item)
+		require.NoError(t, err)
+		assert.Equal(t, UndoType, activity.Type)
+		assert.NotNil(t, activity.Actor)
+		assert.NotNil(t, activity.Object)
+
+		objectActivity, err := ToActivity(activity.Object)
+		require.NoError(t, err)
+		assert.Equal(t, FollowType, objectActivity.Type)
+	})
+
 }
 
 func TestUnmarshalJSONServiceActor(t *testing.T) {
@@ -213,6 +250,8 @@ func TestPersonMarshaling(t *testing.T) {
 	person.PublicKey.ID = IRI("https://example.com/users/alice#main-key")
 	person.PublicKey.Owner = IRI("https://example.com/users/alice")
 	person.PublicKey.PublicKeyPem = "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----"
+	person.MovedTo = IRI("https://newexample.com/users/alice")
+	person.AlsoKnownAs = ItemCollection{IRI("https://other.example/@alice")}
 
 	data, err := json.Marshal(person)
 	require.NoError(t, err)
@@ -226,6 +265,8 @@ func TestPersonMarshaling(t *testing.T) {
 	assert.Equal(t, "Alice", unmarshaled.Name.First().String())
 	assert.Equal(t, "alice", unmarshaled.PreferredUsername.First().String())
 	assert.Equal(t, person.PublicKey.PublicKeyPem, unmarshaled.PublicKey.PublicKeyPem)
+	assert.Equal(t, person.MovedTo, unmarshaled.MovedTo)
+	assert.Len(t, unmarshaled.AlsoKnownAs, 1)
 }
 
 func TestPersonMarshalingWithExtensions(t *testing.T) {

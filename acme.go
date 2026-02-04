@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 
+	"github.com/samber/lo"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -17,13 +18,9 @@ func (a *goBlog) getAutocertManager() *autocert.Manager {
 	// Not initialized yet
 	a.autocertInit.Do(func() {
 		// Create hosts whitelist
-		hosts := []string{a.cfg.Server.publicHostname}
-		if shn := a.cfg.Server.shortPublicHostname; shn != "" {
-			hosts = append(hosts, shn)
-		}
-		if mhn := a.cfg.Server.mediaHostname; mhn != "" {
-			hosts = append(hosts, mhn)
-		}
+		hosts := []string{a.cfg.Server.publicHost, a.cfg.Server.shortPublicHost, a.cfg.Server.mediaHost}
+		hosts = append(hosts, a.cfg.Server.altHosts...)
+		hosts = lo.Filter(hosts, func(v string, _ int) bool { return v != "" })
 		// Create autocert manager
 		acmeDir := acme.LetsEncryptURL
 		if a.cfg.Server.AcmeDir != "" {

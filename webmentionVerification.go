@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/samber/lo"
@@ -78,8 +77,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 	}
 	sourceReq.Header.Set("Accept", contenttype.HTMLUTF8)
 	var sourceResp *http.Response
-	if strings.HasPrefix(m.Source, a.cfg.Server.PublicAddress) ||
-		(a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(m.Source, a.cfg.Server.ShortPublicAddress)) {
+	if a.isLocalURL(m.Source) {
 		setLoggedIn(sourceReq, true)
 		sourceResp, err = doHandlerRequest(sourceReq, a.getAppRouter())
 		if err != nil {
@@ -149,10 +147,8 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 		return err
 	}
 	if _, hasLink := lo.Find(links, func(s string) bool {
-		// Check if link belongs to installation
-		hasShortPrefix := a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(s, a.cfg.Server.ShortPublicAddress)
-		hasLongPrefix := strings.HasPrefix(s, a.cfg.Server.PublicAddress)
-		if !hasShortPrefix && !hasLongPrefix {
+		// Check if link belongs to this GoBlog installation
+		if !a.isLocalURL(s) {
 			return false
 		}
 		// Check if link is or redirects to target

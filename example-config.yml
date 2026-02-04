@@ -31,6 +31,9 @@ server:
   publicAddress: https://example.com # Public address to use for the blog
   shortPublicAddress: https://short.example.com # Optional short address, will redirect to main address
   mediaAddress: https://media.example.com # Optional domain to use for serving media files
+  # Alternative addresses (Used for ActivityPub Move support, when migrating to a new domain)
+  # altAddresses: # Optional, add old addresses here when migrating to a new address
+  #   - https://old.example.com
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
   # To use another ACME server like ZeroSSL, set the following

@@ -16,9 +16,12 @@ import (
 // - Expire tokens after a while
 // - Userinfo endpoint
 
-const indieAuthPath = "/indieauth"
-const indieAuthTokenSubpath = "/token"
-const indieAuthTokenRevocationSubpath = "/revoke"
+const (
+	indieAuthPath                   = "/indieauth"
+	indieAuthTokenSubpath           = "/token"
+	indieAuthTokenRevocationSubpath = "/revoke"
+	indieAuthMetadataPath           = "/.well-known/oauth-authorization-server"
+)
 
 // https://www.w3.org/TR/indieauth/
 // https://indieauth.spec.indieweb.org/
@@ -30,13 +33,19 @@ var (
 
 // Server Metadata
 // https://indieauth.spec.indieweb.org/#x4-1-1-indieauth-server-metadata
-func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, _ *http.Request) {
+func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
+	issuerURL := a.getInstanceRootURL()
+	baseEndpoint := a.getFullAddress(indieAuthPath)
+	if altAddr, ok := r.Context().Value(altAddressKey).(string); ok && altAddr != "" {
+		issuerURL = getFullAddressStatic(altAddr, "") + "/"
+		baseEndpoint = getFullAddressStatic(indieAuthPath, altAddr)
+	}
 	resp := map[string]any{
-		"issuer":                 a.getInstanceRootURL(),
-		"authorization_endpoint": a.getFullAddress(indieAuthPath),
-		"token_endpoint":         a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
-		"introspection_endpoint": a.getFullAddress(indieAuthPath + indieAuthTokenSubpath),
-		"revocation_endpoint":    a.getFullAddress(indieAuthPath + indieAuthTokenRevocationSubpath),
+		"issuer":                 issuerURL,
+		"authorization_endpoint": baseEndpoint,
+		"token_endpoint":         baseEndpoint + indieAuthTokenSubpath,
+		"introspection_endpoint": baseEndpoint + indieAuthTokenSubpath,
+		"revocation_endpoint":    baseEndpoint + indieAuthTokenRevocationSubpath,
 		"revocation_endpoint_auth_methods_supported": []string{"none"},
 		"scopes_supported":                           []string{"create", "update", "delete", "undelete", "media"},
 		"code_challenge_methods_supported":           indieauth.CodeChallengeMethods,
@@ -75,12 +84,17 @@ func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// Determine the 'me' value based on current request address
+	meURL := a.getInstanceRootURL()
+	if altAddr, ok := r.Context().Value(altAddressKey).(string); ok && altAddr != "" {
+		meURL = getFullAddressStatic(altAddr, "") + "/"
+	}
 	// Build a redirect
 	query := url.Values{}
 	query.Set("code", code)
 	query.Set("state", iareq.State)
-	query.Set("iss", a.getInstanceRootURL())
-	query.Set("me", a.getInstanceRootURL())
+	query.Set("iss", meURL)
+	query.Set("me", meURL)
 	http.Redirect(w, r, iareq.RedirectURI+"?"+query.Encode(), http.StatusFound)
 }
 
@@ -145,9 +159,14 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// Determine the 'me' value based on current request address
+	meURL := a.getInstanceRootURL()
+	if altAddr, ok := r.Context().Value(altAddressKey).(string); ok && altAddr != "" {
+		meURL = getFullAddressStatic(altAddr, "") + "/"
+	}
 	// Generate response
 	resp := map[string]any{
-		"me": a.getInstanceRootURL(),
+		"me": meURL,
 	}
 	if withToken {
 		// Generate and save token
@@ -215,9 +234,13 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
+		meURL := a.getInstanceRootURL()
+		if altAddr, ok := r.Context().Value(altAddressKey).(string); ok && altAddr != "" {
+			meURL = getFullAddressStatic(altAddr, "") + "/"
+		}
 		res = map[string]any{
 			"active":    true,
-			"me":        a.getInstanceRootURL(),
+			"me":        meURL,
 			"client_id": data.ClientID,
 			"scope":     strings.Join(data.Scopes, " "),
 		}

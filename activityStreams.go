@@ -17,25 +17,35 @@ import (
 
 const asRequestKey contextKey = "asRequest"
 
-func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
-	if len(a.asCheckMediaTypes) == 0 {
-		a.asCheckMediaTypes = []ct.MediaType{
-			ct.NewMediaType(contenttype.HTML),
-			ct.NewMediaType(contenttype.AS),
-			ct.NewMediaType(contenttype.LDJSON),
-			ct.NewMediaType(contenttype.LDJSON + "; profile=\"https://www.w3.org/ns/activitystreams\""),
-		}
+var asCheckMediaTypes []ct.MediaType
+
+func init() {
+	asCheckMediaTypes = []ct.MediaType{
+		ct.NewMediaType(contenttype.HTML),
+		ct.NewMediaType(contenttype.AS),
+		ct.NewMediaType(contenttype.LDJSON),
+		ct.NewMediaType(contenttype.LDJSON + "; profile=\"https://www.w3.org/ns/activitystreams\""),
 	}
+}
+
+func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if ap := a.cfg.ActivityPub; ap != nil && ap.Enabled && !a.isPrivate() {
-			// Check if accepted media type is not HTML
-			if mt, _, err := ct.GetAcceptableMediaType(r, a.asCheckMediaTypes); err == nil && mt.String() != a.asCheckMediaTypes[0].String() {
+		if a.apEnabled() {
+			alreadyAsRequest, ok := r.Context().Value(asRequestKey).(bool)
+			if (ok && alreadyAsRequest) || a.isActivityStreamsRequest(r) {
 				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), asRequestKey, true)))
 				return
 			}
 		}
 		next.ServeHTTP(rw, r)
 	})
+}
+
+func (_ *goBlog) isActivityStreamsRequest(r *http.Request) bool {
+	if mt, _, err := ct.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
+		return true
+	}
+	return false
 }
 
 func (a *goBlog) serveActivityStreamsPost(w http.ResponseWriter, r *http.Request, status int, p *post) {
@@ -52,9 +62,9 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	// Audience
 	switch p.Visibility {
 	case visibilityPublic:
-		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog, bc))
+		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog))
 	case visibilityUnlisted:
-		note.To.Append(a.apGetFollowersCollectionId(p.Blog, bc))
+		note.To.Append(a.apGetFollowersCollectionId(p.Blog))
 		note.CC.Append(ap.PublicNS)
 	}
 	for _, m := range p.Parameters[activityPubMentionsParameter] {
@@ -133,10 +143,17 @@ func (a *goBlog) activityPubId(p *post) ap.IRI {
 	return ap.IRI(fu)
 }
 
-func (a *goBlog) toApPerson(blog string) *ap.Actor {
+func (a *goBlog) toApPerson(blog string, altAddress string) *ap.Actor {
 	b := a.cfg.Blogs[blog]
 
-	apIri := a.apAPIri(b)
+	var iri string
+	if altAddress != "" {
+		iri = a.apIriForAddress(b, altAddress)
+	} else {
+		iri = a.apIri(b)
+	}
+
+	apIri := ap.IRI(iri)
 
 	apBlog := ap.PersonNew(apIri)
 	apBlog.URL = apIri
@@ -145,11 +162,15 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 	apBlog.Summary = ap.NaturalLanguageValues{{Lang: b.Lang, Value: b.Description}}
 	apBlog.PreferredUsername = ap.NaturalLanguageValues{{Lang: b.Lang, Value: blog}}
 
-	apBlog.Inbox = ap.IRI(a.getFullAddress("/activitypub/inbox/" + blog))
-	apBlog.Followers = ap.IRI(a.getFullAddress("/activitypub/followers/" + blog))
+	if altAddress != "" {
+		apBlog.Inbox = ap.IRI(getFullAddressStatic(apInboxPathTemplate+blog, altAddress))
+	} else {
+		apBlog.Inbox = ap.IRI(a.getFullAddress(apInboxPathTemplate + blog))
+	}
+	apBlog.Followers = a.apGetFollowersCollectionIdForAddress(blog, altAddress)
 
 	apBlog.PublicKey.Owner = apIri
-	apBlog.PublicKey.ID = ap.IRI(a.apIri(b) + "#main-key")
+	apBlog.PublicKey.ID = ap.IRI(iri + "#main-key")
 	apBlog.PublicKey.PublicKeyPem = string(pem.EncodeToMemory(&pem.Block{
 		Type:    "PUBLIC KEY",
 		Headers: nil,
@@ -172,16 +193,30 @@ func (a *goBlog) toApPerson(blog string) *ap.Actor {
 		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(aka))
 	}
 
+	if altAddress == "" {
+		// Add alternative addresses as alsoKnownAs
+		for _, altAddress := range a.cfg.Server.AltAddresses {
+			apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, ap.IRI(a.apIriForAddress(b, altAddress)))
+		}
+	} else {
+		// Add main address as alsoKnownAs
+		apBlog.AlsoKnownAs = append(apBlog.AlsoKnownAs, a.apAPIri(b))
+	}
+
 	// Check if this blog has a movedTo target set (account migration)
 	if movedTo, err := a.getApMovedTo(blog); err == nil && movedTo != "" {
 		apBlog.MovedTo = ap.IRI(movedTo)
+	} else if altAddress != "" {
+		// If this is an alternative domain, set movedTo to point to the main domain
+		apBlog.MovedTo = a.apAPIri(b)
 	}
 
 	return apBlog
 }
 
 func (a *goBlog) serveActivityStreams(w http.ResponseWriter, r *http.Request, status int, blog string) {
-	a.serveAPItem(w, r, status, a.toApPerson(blog))
+	altAddress, _ := r.Context().Value(altAddressKey).(string)
+	a.serveAPItem(w, r, status, a.toApPerson(blog, altAddress))
 }
 
 func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int, item any) {

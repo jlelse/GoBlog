@@ -159,3 +159,86 @@ func Test_verifyMentionColin(t *testing.T) {
 	require.True(t, strings.HasPrefix(m.Content, "Congratulations"))
 	require.Equal(t, "Colin Walker", m.Author)
 }
+
+func Test_verifyMentionShortURL(t *testing.T) {
+	mockClient := newFakeHttpClient()
+
+	app := &goBlog{
+		httpClient: mockClient.Client,
+		cfg:        createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.org"
+	app.cfg.Server.ShortPublicAddress = "https://short.example"
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	err = app.initTemplateStrings()
+	require.NoError(t, err)
+	app.reloadRouter()
+
+	p := &post{
+		Path: "/test-post",
+	}
+	err = app.createPost(p)
+	require.NoError(t, err)
+	shortPostUrl := app.shortPostURL(p)
+	require.NotEmpty(t, shortPostUrl)
+	require.Contains(t, shortPostUrl, "https://short.example")
+
+	testHtml := `<html><head><body><a href="` + shortPostUrl + `">Link</a></body></html>`
+	mockClient.setFakeResponse(http.StatusOK, testHtml)
+
+	m := &mention{
+		Source: "https://example.net/some-post",
+		Target: shortPostUrl,
+	}
+
+	err = app.verifyMention(m)
+	require.NoError(t, err)
+
+	require.Equal(t, app.fullPostURL(p), m.Target)
+	require.Equal(t, "https://example.net/some-post", m.Source)
+}
+
+func Test_verifyMentionAltAddress(t *testing.T) {
+	mockClient := newFakeHttpClient()
+
+	app := &goBlog{
+		httpClient: mockClient.Client,
+		cfg:        createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.org"
+	app.cfg.Server.AltAddresses = []string{"https://alt.example"}
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	err = app.initTemplateStrings()
+	require.NoError(t, err)
+	app.reloadRouter()
+
+	p := &post{
+		Path: "/test-post",
+	}
+	err = app.createPost(p)
+	require.NoError(t, err)
+	postUrl := app.fullPostURL(p)
+	require.NotEmpty(t, postUrl)
+	require.Contains(t, postUrl, "https://example.org")
+	altPostUrl := strings.ReplaceAll(postUrl, "https://example.org", "https://alt.example")
+	require.NotEmpty(t, altPostUrl)
+	require.Contains(t, altPostUrl, "https://alt.example")
+
+	testHtml := `<html><head><body><a href="` + altPostUrl + `">Link</a></body></html>`
+	mockClient.setFakeResponse(http.StatusOK, testHtml)
+
+	m := &mention{
+		Source: "https://example.net/some-post",
+		Target: altPostUrl,
+	}
+
+	err = app.verifyMention(m)
+	require.NoError(t, err)
+
+	require.Equal(t, postUrl, m.Target)
+	require.Equal(t, "https://example.net/some-post", m.Source)
+}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
+	"github.com/google/uuid"
 	"github.com/mattn/go-mastodon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +36,8 @@ const (
 )
 
 func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
+	t.Parallel()
+
 	requireDocker(t)
 
 	// Speed up the AP send queue for testing
@@ -44,7 +47,7 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	gb := startApIntegrationServer(t)
 	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
 
-	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
+	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHost)
 
 	// Search for GoBlog account on GoToSocial and follow it
 	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
@@ -121,8 +124,6 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	})
 
 	t.Run("Verify follow", func(t *testing.T) {
-		t.Parallel()
-
 		// Verify that GoBlog created the follow notification
 		require.Eventually(t, func() bool {
 			notifications, err := gb.db.getNotifications(&notificationsRequestConfig{limit: 10})
@@ -151,8 +152,6 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	})
 
 	t.Run("Update profile", func(t *testing.T) {
-		t.Parallel()
-
 		// Update blog title and check that GoToSocial received the update
 		gb.cfg.Blogs[gb.cfg.DefaultBlog].Title = "GoBlog ActivityPub Test Blog Updated"
 		gb.apSendProfileUpdates()
@@ -167,8 +166,6 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 	})
 
 	t.Run("Post flow", func(t *testing.T) {
-		t.Parallel()
-
 		// Create a post on GoBlog and check that it appears on GoToSocial
 		p := &post{
 			Content: "Hello from GoBlog to GoToSocial!",
@@ -416,6 +413,25 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 
 	})
 
+	t.Run("Unfollow", func(t *testing.T) {
+		_, err := mc.AccountUnfollow(t.Context(), lookup.ID)
+		require.NoError(t, err)
+
+		// Verify that GoBlog removed the follower
+		require.Eventually(t, func() bool {
+			followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+			if err != nil {
+				return false
+			}
+			for _, f := range followers {
+				if strings.Contains(f.follower, gtsTestUsername) {
+					return false
+				}
+			}
+			return true
+		}, 30*time.Second, time.Second)
+	})
+
 }
 
 const (
@@ -425,6 +441,8 @@ const (
 )
 
 func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
+	t.Parallel()
+
 	requireDocker(t)
 
 	// Speed up the AP send queue for testing
@@ -451,7 +469,7 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 	mc2 := mastodon.NewClient(&mastodon.Config{Server: gts.baseURL, AccessToken: accessToken2})
 	mc2.Client = http.Client{Timeout: time.Minute}
 
-	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHostname)
+	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHost)
 
 	// First user follows GoBlog
 	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
@@ -525,7 +543,170 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 			return false
 		}
 		return relationships[0].Following
-	}, 30*time.Second, 2*time.Second, "GTS user1 should now follow user2 after Move")
+	}, time.Minute, time.Second, "GTS user1 should now follow user2 after Move")
+}
+
+func TestIntegrationActivityPubDomainMove(t *testing.T) {
+	t.Parallel()
+
+	requireDocker(t)
+
+	// Speed up the AP send queue for testing
+	apSendInterval = time.Second
+
+	// Start GoBlog with old domain (goblog.example) and follow it
+	gb := startApIntegrationServer(t)
+	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+
+	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHost)
+
+	// Search for GoBlog account on GoToSocial and follow it
+	searchResults, err := mc.Search(t.Context(), goBlogAcct, true)
+	require.NoError(t, err)
+	require.NotNil(t, searchResults)
+	require.Greater(t, len(searchResults.Accounts), 0)
+	lookup := searchResults.Accounts[0]
+	_, err = mc.AccountFollow(t.Context(), lookup.ID)
+	require.NoError(t, err)
+
+	// Verify that GoBlog has the GoToSocial user as a follower
+	require.Eventually(t, func() bool {
+		followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+		if err != nil {
+			return false
+		}
+		for _, f := range followers {
+			if strings.Contains(f.follower, fmt.Sprintf("/users/%s", gtsTestUsername)) {
+				return true
+			}
+		}
+		return false
+	}, time.Minute, time.Second)
+
+	// Now simulate a domain change:
+	// 1. Add old domain as an alternative domain
+	// 2. Change public address to new domain
+	// 3. Rebuild router
+	oldDomain := gb.cfg.Server.PublicAddress // "http://goblog.example"
+	newDomain := "http://newgoblog.example"
+
+	// Add old domain to alt domains
+	gb.cfg.Server.AltAddresses = []string{oldDomain}
+	// Change public address to new domain
+	gb.cfg.Server.PublicAddress = newDomain
+
+	// Reload config, simulating a restart with the new domain
+	gb.cfg.initialized = false
+	require.NoError(t, gb.initConfig(false))
+	gb.prepareWebfinger()
+	gb.reloadRouter()
+	gb.purgeCache()
+
+	// Create a caddy proxy for the new domain
+	startDomainProxy(t, gts.networkName, "newgoblog.example", gb.cfg.Server.Port)
+
+	// Wait for the new domain proxy to be ready
+	require.Eventually(t, func() bool {
+		acct := "acct:" + gb.cfg.DefaultBlog + "@newgoblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://newgoblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		return err == nil && strings.Contains(string(out), "newgoblog.example")
+	}, time.Minute, time.Second, "New domain proxy should be ready")
+
+	t.Run("Old domain webfinger should work via alt domain handler", func(t *testing.T) {
+		t.Parallel()
+
+		acct := "acct:" + gb.cfg.DefaultBlog + "@goblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://goblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "goblog.example", "old domain webfinger should work via alt domain handler")
+	})
+
+	t.Run("New domain webfinger should work", func(t *testing.T) {
+		t.Parallel()
+
+		acct := "acct:" + gb.cfg.DefaultBlog + "@newgoblog.example"
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://newgoblog.example/.well-known/webfinger")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "newgoblog.example", "new domain webfinger should work")
+	})
+
+	t.Run("Old domain actor shows movedTo", func(t *testing.T) {
+		t.Parallel()
+
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "5", "-H", "Accept: application/activity+json", "http://goblog.example/")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "movedTo", "old domain actor should have movedTo field")
+		assert.Contains(t, string(out), "://newgoblog.example", "old domain actor movedTo should point to new domain")
+	})
+
+	t.Run("New domain actor has alsoKnownAs", func(t *testing.T) {
+		t.Parallel()
+
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "5", "-H", "Accept: application/activity+json", "http://newgoblog.example/")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "alsoKnownAs", "new domain actor should have alsoKnownAs field")
+		assert.Contains(t, string(out), "://goblog.example", "new domain actor alsoKnownAs should include old domain")
+	})
+
+	t.Run("Alt domain redirects to new domain", func(t *testing.T) {
+		// Make a request to old domain for a non-AP path
+		cmd := exec.Command("docker", "run", "--rm", "--network", gts.networkName, "docker.io/alpine/curl", "-sS", "-m", "2", "-L", "-o", "/dev/null", "-w", "%{url_effective}", "http://goblog.example/test-path")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		// Should be redirected to the new domain
+		assert.Contains(t, string(out), "newgoblog.example", "non-AP request should redirect to new domain")
+	})
+
+	// Send profile update (like on startup)
+	gb.apSendProfileUpdates()
+	// Now send domain move activities
+	err = gb.apDomainMove(oldDomain, newDomain)
+	require.NoError(t, err)
+
+	// Test that GTS automatically follows the new domain actor
+	newAcct := fmt.Sprintf("%s@newgoblog.example", gb.cfg.DefaultBlog)
+	require.Eventually(t, func() bool {
+		searchResults, err := mc.Search(t.Context(), newAcct, true)
+		if err != nil || searchResults == nil || len(searchResults.Accounts) == 0 {
+			return false
+		}
+		newLookup := searchResults.Accounts[0]
+		relationships, err := mc.GetAccountRelationships(t.Context(), []string{string(newLookup.ID)})
+		if err != nil || len(relationships) == 0 {
+			return false
+		}
+		return relationships[0].Following
+	}, time.Minute, time.Second)
+
+	// Test that GTS is still registered as a follower on the GoBlog side
+	followers, err := gb.db.apGetAllFollowers(gb.cfg.DefaultBlog)
+	require.NoError(t, err)
+	assert.Len(t, followers, 1)
+}
+
+// startDomainProxy creates a caddy reverse proxy for the given domain hostname
+// that forwards requests to the GoBlog instance running on goblogPort
+func startDomainProxy(t *testing.T, netName string, hostname string, goblogPort int) {
+	t.Helper()
+	proxyName := fmt.Sprintf("goblog-proxy-%s", uuid.New().String())
+	runDocker(t,
+		"run", "-d", "--rm",
+		"--name", proxyName,
+		"--hostname", hostname,
+		"--network", netName,
+		"--network-alias", hostname,
+		"--add-host", "host.docker.internal:host-gateway",
+		"docker.io/library/caddy:2",
+		"caddy", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", goblogPort),
+	)
+	t.Cleanup(func() {
+		_ = exec.Command("docker", "rm", "-f", proxyName).Run()
+	})
 }
 
 func requireDocker(t *testing.T) {
@@ -602,27 +783,14 @@ func startGoToSocialInstance(t *testing.T, goblogPort int) (*goToSocialInstance,
 	t.Helper()
 
 	// Create Docker network for container DNS resolution
-	netName := fmt.Sprintf("goblog-net-%d", time.Now().UnixNano())
+	netName := fmt.Sprintf("goblog-net-%s", uuid.New().String())
 	runDocker(t, "network", "create", netName)
 	t.Cleanup(func() {
 		_ = exec.Command("docker", "network", "rm", netName).Run()
 	})
 
 	// Create caddy reverse proxy to forward goblog.example to GoBlog test port
-	proxyName := fmt.Sprintf("goblog-proxy-%d", time.Now().UnixNano())
-	runDocker(t,
-		"run", "-d", "--rm",
-		"--name", proxyName,
-		"--hostname", "goblog.example",
-		"--network", netName,
-		"--network-alias", "goblog.example",
-		"--add-host", "host.docker.internal:host-gateway",
-		"docker.io/library/caddy:2",
-		"caddy", "reverse-proxy", "--from", ":80", "--to", fmt.Sprintf("host.docker.internal:%d", goblogPort),
-	)
-	t.Cleanup(func() {
-		_ = exec.Command("docker", "rm", "-f", proxyName).Run()
-	})
+	startDomainProxy(t, netName, "goblog.example", goblogPort)
 
 	// Wait for proxy to be ready
 	require.Eventually(t, func() bool {
@@ -633,7 +801,7 @@ func startGoToSocialInstance(t *testing.T, goblogPort int) (*goToSocialInstance,
 	}, time.Minute, time.Second)
 
 	// Create config and data directories
-	containerName := fmt.Sprintf("goblog-gts-%d", time.Now().UnixNano())
+	containerName := fmt.Sprintf("goblog-gts-%s", uuid.New().String())
 	port := getFreePort(t)
 	gtsDir := t.TempDir()
 	gtsConfigPath := filepath.Join(gtsDir, "config.yaml")

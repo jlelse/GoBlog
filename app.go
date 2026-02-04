@@ -33,8 +33,6 @@ type goBlog struct {
 	webfingerResources map[string]*configBlog
 	webfingerAccts     map[string]string
 	apUserHandle       map[string]string
-	// ActivityStreams
-	asCheckMediaTypes []ct.MediaType
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile

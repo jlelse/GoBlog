@@ -30,17 +30,20 @@ func (blog *configBlog) getRelativePath(path string) string {
 }
 
 func (a *goBlog) getFullAddress(path string) string {
-	// Call method with just the relevant config
 	return a.cfg.Server.getFullAddress(path)
 }
 
 func (cfg *configServer) getFullAddress(path string) string {
+	return getFullAddressStatic(cfg.PublicAddress, path)
+}
+
+func getFullAddressStatic(publicAddress, path string) string {
 	// Check if it is already an absolute URL
 	if isAbsoluteURL(path) {
 		return path
 	}
 	// Remove trailing slash
-	pa := strings.TrimSuffix(cfg.PublicAddress, "/")
+	pa := strings.TrimSuffix(publicAddress, "/")
 	// Check if path is root => blank path
 	if path == "/" {
 		path = ""

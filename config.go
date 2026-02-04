@@ -41,26 +41,28 @@ type config struct {
 }
 
 type configServer struct {
-	Logging             bool     `mapstructure:"logging"`
-	LogFile             string   `mapstructure:"logFile"`
-	Port                int      `mapstructure:"port"`
-	PublicAddress       string   `mapstructure:"publicAddress"`
-	ShortPublicAddress  string   `mapstructure:"shortPublicAddress"`
-	MediaAddress        string   `mapstructure:"mediaAddress"`
-	PublicHTTPS         bool     `mapstructure:"publicHttps"`
-	AcmeDir             string   `mapstructure:"acmeDir"`
-	AcmeEabKid          string   `mapstructure:"acmeEabKid"`
-	AcmeEabKey          string   `mapstructure:"acmeEabKey"`
-	HttpsCert           string   `mapstructure:"httpsCert"`
-	HttpsKey            string   `mapstructure:"httpsKey"`
-	HttpsRedirect       bool     `mapstructure:"httpsRedirect"`
-	Tor                 bool     `mapstructure:"tor"`
-	SecurityHeaders     bool     `mapstructure:"securityHeaders"`
-	CSPDomains          []string `mapstructure:"cspDomains"`
-	publicHostname      string
-	shortPublicHostname string
-	mediaHostname       string
-	manualHttps         bool
+	Logging            bool     `mapstructure:"logging"`
+	LogFile            string   `mapstructure:"logFile"`
+	Port               int      `mapstructure:"port"`
+	PublicAddress      string   `mapstructure:"publicAddress"`
+	ShortPublicAddress string   `mapstructure:"shortPublicAddress"`
+	MediaAddress       string   `mapstructure:"mediaAddress"`
+	AltAddresses       []string `mapstructure:"altAddresses"`
+	PublicHTTPS        bool     `mapstructure:"publicHttps"`
+	AcmeDir            string   `mapstructure:"acmeDir"`
+	AcmeEabKid         string   `mapstructure:"acmeEabKid"`
+	AcmeEabKey         string   `mapstructure:"acmeEabKey"`
+	HttpsCert          string   `mapstructure:"httpsCert"`
+	HttpsKey           string   `mapstructure:"httpsKey"`
+	HttpsRedirect      bool     `mapstructure:"httpsRedirect"`
+	Tor                bool     `mapstructure:"tor"`
+	SecurityHeaders    bool     `mapstructure:"securityHeaders"`
+	CSPDomains         []string `mapstructure:"cspDomains"`
+	publicHost         string
+	shortPublicHost    string
+	mediaHost          string
+	altHosts           []string
+	manualHttps        bool
 }
 
 type configDb struct {
@@ -409,20 +411,28 @@ func (a *goBlog) initConfig(logging bool) error {
 	if err != nil {
 		return errors.New("Invalid public address: " + err.Error())
 	}
-	a.cfg.Server.publicHostname = publicURL.Hostname()
+	a.cfg.Server.publicHost = publicURL.Hostname()
 	if sa := a.cfg.Server.ShortPublicAddress; sa != "" {
 		shortPublicURL, err := url.Parse(sa)
 		if err != nil {
 			return errors.New("Invalid short public address: " + err.Error())
 		}
-		a.cfg.Server.shortPublicHostname = shortPublicURL.Hostname()
+		a.cfg.Server.shortPublicHost = shortPublicURL.Hostname()
 	}
 	if ma := a.cfg.Server.MediaAddress; ma != "" {
 		mediaUrl, err := url.Parse(ma)
 		if err != nil {
 			return errors.New("Invalid media address: " + err.Error())
 		}
-		a.cfg.Server.mediaHostname = mediaUrl.Hostname()
+		a.cfg.Server.mediaHost = mediaUrl.Hostname()
+	}
+	a.cfg.Server.altHosts = []string{}
+	for _, aa := range a.cfg.Server.AltAddresses {
+		altURL, err := url.Parse(aa)
+		if err != nil {
+			return errors.New("Invalid alternative address: " + err.Error())
+		}
+		a.cfg.Server.altHosts = append(a.cfg.Server.altHosts, altURL.Hostname())
 	}
 	// Check port or set default
 	if a.cfg.Server.Port == 0 {
@@ -668,4 +678,19 @@ func (a *goBlog) getBlog(r *http.Request) (string, *configBlog) {
 
 func (a *goBlog) getBlogFromPost(p *post) *configBlog {
 	return a.cfg.Blogs[cmp.Or(p.Blog, a.cfg.DefaultBlog)]
+}
+
+func (a *goBlog) isLocalURL(urlStr string) bool {
+	if strings.HasPrefix(urlStr, a.cfg.Server.PublicAddress) {
+		return true
+	}
+	if a.cfg.Server.ShortPublicAddress != "" && strings.HasPrefix(urlStr, a.cfg.Server.ShortPublicAddress) {
+		return true
+	}
+	for _, altDomain := range a.cfg.Server.AltAddresses {
+		if strings.HasPrefix(urlStr, altDomain) {
+			return true
+		}
+	}
+	return false
 }

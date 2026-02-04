@@ -14,7 +14,12 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-const loggedInKey contextKey = "loggedIn"
+const (
+	loggedInKey contextKey = "loggedIn"
+
+	loginPath  = "/login"
+	logoutPath = "/logout"
+)
 
 // Check if credentials are correct
 func (a *goBlog) checkCredentials(username, password, totpPasscode string) bool {

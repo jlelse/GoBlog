@@ -1,4 +1,4 @@
-name: Integration Tests
+name: Tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["**"]
 
 jobs:
-  integration-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,4 +27,4 @@ jobs:
         env:
           GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5"
         run: |
-          go test -timeout 600s -v ./... -run "TestIntegration.*"
+          go test -timeout 600s -v ./...
