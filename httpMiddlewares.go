@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"slices"
 
 	"github.com/samber/lo"
@@ -44,6 +45,11 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	allowedDomains := []string{a.cfg.Server.publicHost, a.cfg.Server.shortPublicHost, a.cfg.Server.mediaHost}
 	allowedDomains = append(allowedDomains, a.cfg.Server.altHosts...)
 	allowedDomains = append(allowedDomains, a.cfg.Server.CSPDomains...)
+	if mp := a.cfg.Micropub.MediaStorage; mp != nil && mp.MediaURL != "" {
+		if u, err := url.Parse(mp.MediaURL); err == nil {
+			allowedDomains = append(allowedDomains, u.Hostname())
+		}
+	}
 	allowedDomains = lo.Uniq(lo.Filter(allowedDomains, func(v string, _ int) bool { return v != "" }))
 	defaultSrcList := []src.SourceVal{src.Self(), src.Scheme("blob:")}
 	for _, d := range allowedDomains {
