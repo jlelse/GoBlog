@@ -110,6 +110,9 @@ type configBlog struct {
 	addReplyContext       bool
 	addLikeTitle          bool
 	addLikeContext        bool
+	// Original config values (for deprecation detection)
+	configTitle       string
+	configDescription string
 	// Editor state WebSockets
 	esws sync.Map
 	esm  sync.Mutex
@@ -576,6 +579,37 @@ func (a *goBlog) initConfig(logging bool) error {
 		// Blogroll
 		if br := bc.Blogroll; br != nil && br.Enabled && br.Opml == "" {
 			br.Enabled = false
+		}
+		// Save original config values for deprecation detection, then load/migrate blog title and description
+		bc.configTitle = bc.Title
+		bc.configDescription = bc.Description
+		// Blog title
+		if blogTitle, err := a.getBlogTitle(blog); err != nil {
+			return err
+		} else if blogTitle == "" {
+			// Migrate to database if configured in config
+			if bc.Title != "" {
+				if err = a.setBlogTitle(blog, bc.Title); err != nil {
+					return err
+				}
+			}
+		} else {
+			// Set value from database
+			bc.Title = blogTitle
+		}
+		// Blog description
+		if blogDescription, err := a.getBlogDescription(blog); err != nil {
+			return err
+		} else if blogDescription == "" {
+			// Migrate to database if configured in config
+			if bc.Description != "" {
+				if err = a.setBlogDescription(blog, bc.Description); err != nil {
+					return err
+				}
+			}
+		} else {
+			// Set value from database
+			bc.Description = blogDescription
 		}
 		// Load other settings from database
 		configs := []*bool{

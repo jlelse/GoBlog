@@ -200,8 +200,8 @@ blogs:
   en: # Blog code
     path: / # Path of blog
     lang: en # Language of blog
-    title: My awesome blog # Blog title
-    description: My awesome blog description # Blog description
+    # title: My awesome blog # Blog title (DEPRECATED: Use settings UI instead, will be migrated to database)
+    # description: My awesome blog description # Blog description (DEPRECATED: Use settings UI instead, will be migrated to database)
     pagination: 10 # Number of posts per page
     # Taxonomies
     taxonomies:

@@ -25,6 +25,8 @@ const (
 	addLikeTitleSetting          = "addliketitle"
 	addLikeContextSetting        = "addlikecontext"
 	apMovedToSetting             = "apmovedto" // ActivityPub movedTo target for account migration
+	blogTitleSetting             = "blogtitle"
+	blogDescriptionSetting       = "blogdescription"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
@@ -157,4 +159,34 @@ func (a *goBlog) saveSection(blog string, section *configSection) error {
 func (a *goBlog) deleteSection(blog string, name string) error {
 	_, err := a.db.Exec("delete from sections where blog = @blog and name = @name", sql.Named("blog", blog), sql.Named("name", name))
 	return err
+}
+
+// getBlogTitle returns the title for a blog from the database
+func (a *goBlog) getBlogTitle(blog string) (string, error) {
+	return a.getSettingValue(settingNameWithBlog(blog, blogTitleSetting))
+}
+
+// setBlogTitle saves the title for a blog to the database
+func (a *goBlog) setBlogTitle(blog, title string) error {
+	return a.saveSettingValue(settingNameWithBlog(blog, blogTitleSetting), title)
+}
+
+// getBlogDescription returns the description for a blog from the database
+func (a *goBlog) getBlogDescription(blog string) (string, error) {
+	return a.getSettingValue(settingNameWithBlog(blog, blogDescriptionSetting))
+}
+
+// setBlogDescription saves the description for a blog to the database
+func (a *goBlog) setBlogDescription(blog, description string) error {
+	return a.saveSettingValue(settingNameWithBlog(blog, blogDescriptionSetting), description)
+}
+
+// hasDeprecatedBlogTitleDescriptionConfig checks if deprecated blog title/description config options are still present
+func (a *goBlog) hasDeprecatedBlogTitleDescriptionConfig() bool {
+	for _, bc := range a.cfg.Blogs {
+		if bc.configTitle != "" || bc.configDescription != "" {
+			return true
+		}
+	}
+	return false
 }

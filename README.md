@@ -300,6 +300,7 @@ For all available configuration options with detailed explanations, see [`exampl
 
 ### Important Notes
 
+- **Blog title and description**: These are now configured via the `/settings` UI. Any title/description in the YAML config will be migrated to the database on first run.
 - **Sections**: Sections are now configured via the `/settings` UI. Any sections in the YAML config will be migrated to the database on first run.
 - **Default values**: Most settings have sensible defaults. Only configure what you need to change.
 - **Reload**: After changing the config file, restart GoBlog or use `/reload` (only rebuilds router, doesn't re-read YAML).
@@ -1060,6 +1061,7 @@ For more examples, see the [embedded plugins](/plugins/) in the repository.
 Access `/settings` to configure:
 
 - **User profile** - Name, username, profile image
+- **Blog settings** - Blog title and description (subtitle)
 - **Blog sections** - Add, edit, delete sections; configure path templates
 - **Default section** - Set default section per blog
 - **UI preferences** - Hide buttons, add reply context, etc.
@@ -1408,20 +1410,19 @@ blogs:
   en:
     path: /
     lang: en
-    title: My English Blog
+    # title and description are configured via the settings UI
   
   de:
     path: /de
     lang: de
-    title: Mein deutscher Blog
   
   fr:
     path: /fr
     lang: fr
-    title: Mon blog français
 ```
 
 Each blog has its own:
+- Title and description (configurable via settings UI)
 - Sections and taxonomies
 - Menus and navigation
 - Settings and preferences

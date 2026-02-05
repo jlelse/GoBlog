@@ -41,6 +41,8 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
 			blog:                  blog,
+			blogTitle:             bc.Title,
+			blogDescription:       bc.Description,
 			sections:              sections,
 			defaultSection:        bc.DefaultSection,
 			hideOldContentWarning: bc.hideOldContentWarning,
@@ -275,6 +277,38 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	a.cfg.User.Nick = userNick
 	a.cfg.User.Name = userName
+	a.purgeCache()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+// Blog settings
+
+const settingsUpdateBlogPath = "/blog"
+
+func (a *goBlog) settingsUpdateBlog(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	blogTitle := r.FormValue(blogTitleSetting)
+	blogDescription := r.FormValue(blogDescriptionSetting)
+	// Title is required
+	if blogTitle == "" {
+		a.serveError(w, r, "Blog title must not be empty", http.StatusBadRequest)
+		return
+	}
+	// Update title
+	err := a.setBlogTitle(blog, blogTitle)
+	if err != nil {
+		a.serveError(w, r, "Failed to update blog title in database", http.StatusInternalServerError)
+		return
+	}
+	// Update description
+	err = a.setBlogDescription(blog, blogDescription)
+	if err != nil {
+		a.serveError(w, r, "Failed to update blog description in database", http.StatusInternalServerError)
+		return
+	}
+	bc.Title = blogTitle
+	bc.Description = blogDescription
 	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

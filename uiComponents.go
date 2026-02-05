@@ -782,6 +782,28 @@ func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderDat
 	hb.WriteElementClose("form")
 }
 
+func (a *goBlog) renderBlogSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+	hb.WriteElementOpen("h2")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blogsettings"))
+	hb.WriteElementClose("h2")
+
+	// Deprecation warning if title/description still in config
+	if a.hasDeprecatedBlogTitleDescriptionConfig() {
+		hb.WriteElementsOpen("p", "b")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "deprecatedblogconfigwarning"))
+		hb.WriteElementsClose("b", "p")
+	}
+
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+	hb.WriteElementOpen("input", "type", "text", "name", "blogtitle", "required", "", "value", srd.blogTitle, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsblogtitle"))
+	hb.WriteElementOpen("input", "type", "text", "name", "blogdescription", "value", srd.blogDescription, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsblogdescription"))
+	hb.WriteElementOpen(
+		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
+		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateBlogPath),
+	)
+	hb.WriteElementClose("form")
+}
+
 func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
 	hb.WriteElementOpen("h2")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "user"))

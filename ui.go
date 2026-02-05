@@ -1541,6 +1541,8 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 
 type settingsRenderData struct {
 	blog                  string
+	blogTitle             string
+	blogDescription       string
 	sections              []*configSection
 	defaultSection        string
 	hideOldContentWarning bool
@@ -1606,6 +1608,9 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			for _, bs := range booleanSettings {
 				a.renderBooleanSetting(hb, rd, bs.path, a.ts.GetTemplateStringVariant(rd.Blog.Lang, bs.descriptionKey), bs.name, bs.value)
 			}
+
+			// Blog settings (title, description)
+			a.renderBlogSettings(hb, rd, srd)
 
 			// User settings
 			a.renderUserSettings(hb, rd, srd)
