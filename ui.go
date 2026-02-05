@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"strings"
 	"time"
@@ -55,9 +56,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 	// Micropub
 	hb.WriteElementOpen("link", "rel", "micropub", "href", a.getFullAddress("/micropub"))
 	// IndieAuth
-	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", a.getFullAddress("/indieauth"))
-	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", a.getFullAddress("/indieauth/token"))
-	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", a.getFullAddress("/.well-known/oauth-authorization-server"))
+	indieAuthAddress := cmp.Or(a.cfg.Server.IndieAuthAddress, a.cfg.Server.PublicAddress)
+	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", getFullAddressStatic(indieAuthAddress, indieAuthPath))
+	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", getFullAddressStatic(indieAuthAddress, indieAuthPath+indieAuthTokenSubpath))
+	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", getFullAddressStatic(indieAuthAddress, indieAuthMetadataPath))
 	// Rel-Me
 	user := a.cfg.User
 	if user != nil {
@@ -1057,7 +1059,7 @@ func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("h1")
 			hb.WriteElementClose("main")
 			// Form
-			hb.WriteElementOpen("form", "method", "post", "action", "/indieauth/accept", "class", "p")
+			hb.WriteElementOpen("form", "method", "post", "action", indieAuthPath+"/accept", "class", "p")
 			// Scopes
 			if scopes := indieAuthRequest.Scopes; len(scopes) > 0 {
 				hb.WriteElementOpen("h3")

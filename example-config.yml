@@ -34,6 +34,10 @@ server:
   # Alternative addresses (Used for ActivityPub Move support, when migrating to a new domain)
   # altAddresses: # Optional, add old addresses here when migrating to a new address
   #   - https://old.example.com
+  # IndieAuth address (optional, must be one of the altAddresses)
+  # Use this if you want IndieAuth to use an alternative address instead of publicAddress.
+  # This is useful when migrating domains and you want to keep using the old domain for IndieAuth.
+  # indieAuthAddress: https://old.example.com
   # Security
   publicHttps: true # Use Let's Encrypt and serve site with HTTPS
   # To use another ACME server like ZeroSSL, set the following

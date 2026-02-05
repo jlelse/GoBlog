@@ -500,6 +500,20 @@ Use your blog as your identity on the web.
 3. Approve the authorization request on your blog
 4. You're logged in!
 
+**Custom IndieAuth Address:**
+
+If you're migrating domains and want to keep using your old domain for IndieAuth (to preserve existing app authorizations), you can configure an alternative IndieAuth address:
+
+```yaml
+server:
+  publicAddress: https://new.example.com
+  altAddresses:
+    - https://old.example.com
+  indieAuthAddress: https://old.example.com  # Must be one of altAddresses
+```
+
+This will advertise the IndieAuth endpoints on the old domain while serving all other content from the new domain.
+
 ### Webmention
 
 Send and receive webmentions automatically.

@@ -370,7 +370,6 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 		if altAddress != "" {
 			// Allow ActivityStreams requests
 			if a.apEnabled() && (a.isActivityStreamsRequest(r) ||
-				strings.HasPrefix(r.URL.Path, activityPubBasePath) ||
 				r.URL.Path == "/.well-known/webfinger" ||
 				r.URL.Path == "/.well-known/host-meta" ||
 				r.URL.Path == "/.well-known/nodeinfo" ||
@@ -386,8 +385,6 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 			}
 			// Allow IndieAuth and login requests
 			if strings.HasPrefix(r.URL.Path, indieAuthPath) ||
-				r.URL.Path == loginPath ||
-				r.URL.Path == logoutPath ||
 				r.URL.Path == indieAuthMetadataPath ||
 				strings.HasPrefix(r.URL.Path, webAuthnBasePath) {
 				// Set altAddress in context for handlers

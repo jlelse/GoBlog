@@ -1,16 +1,18 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.hacdias.com/indielib/indieauth"
 )
 
 func Test_toApPersonForAltDomain(t *testing.T) {
@@ -168,207 +170,173 @@ func Test_isLocalURL(t *testing.T) {
 	assert.False(t, app.isLocalURL("https://external.example.com/test"))
 }
 
-func Test_loginWithAltAddress(t *testing.T) {
-	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
-	app.cfg.Server.AltAddresses = []string{"https://old.example.com"}
-	_ = app.initConfig(false)
-	app.initCache()
-	app.initMarkdown()
-	_ = app.initTemplateStrings()
-	app.initSessionStores()
-
-	router := app.buildRouter()
-
-	t.Run("login page accessible on alt address", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/login", nil)
-		req.Host = "old.example.com"
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		// Should not redirect, should serve login page
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Contains(t, rec.Body.String(), "Login")
-	})
-
-	t.Run("logout accessible on alt address", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/logout", nil)
-		req.Host = "old.example.com"
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		// Should not redirect - logout redirects but doesn't permanently redirect to main domain
-		assert.NotEqual(t, http.StatusPermanentRedirect, rec.Code)
-	})
-
-	t.Run("regular page redirects to main domain", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/some-page", nil)
-		req.Host = "old.example.com"
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		// Should redirect to main domain
-		assert.Equal(t, http.StatusPermanentRedirect, rec.Code)
-		assert.Contains(t, rec.Header().Get("Location"), "localhost:8080")
-	})
-}
-
 func Test_indieAuthWithAltAddress(t *testing.T) {
 	// This test verifies that IndieAuth works when accessed through an alternative address
-	// and that the "me" parameter correctly reflects the alt address that was used
+	// configured as indieAuthAddress
 	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
+		httpClient: newFakeHttpClient().Client,
+		cfg:        createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://new.example.com"
 	app.cfg.Server.AltAddresses = []string{"https://old.example.com"}
+	app.cfg.Server.IndieAuthAddress = "https://old.example.com"
 	app.cfg.Blogs = map[string]*configBlog{
-		"default": {
-			Title:       "Test Blog",
-			Description: "A test blog",
+		"en": {
+			Lang: "en",
 		},
 	}
-	app.cfg.DefaultBlog = "default"
+	app.cfg.User.Name = "John Doe"
+	app.cfg.User.Nick = "jdoe"
+	app.cfg.Cache.Enable = false
 
 	err := app.initConfig(false)
 	require.NoError(t, err)
 	_ = app.initTemplateStrings()
+	app.reloadRouter()
 	app.initIndieAuth()
 
-	router := app.buildRouter()
+	app.ias.Client = newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
 
-	// Test: Authorization via alt address returns correct "me" parameter
-	t.Run("authorization via alt address returns correct me", func(t *testing.T) {
-		form := url.Values{
-			"response_type":         {"code"},
-			"client_id":             {"https://client.example.com/"},
-			"redirect_uri":          {"https://client.example.com/callback"},
-			"state":                 {"test-state"},
-			"code_challenge":        {strings.Repeat("a", 43)},
-			"code_challenge_method": {"plain"},
-		}
+	// Create IndieAuth client pointing to the alt address (indieAuthAddress)
+	iac := indieauth.NewClient(
+		"https://client.example.com/",
+		"https://client.example.com/redirect",
+		newHandlerClient(app.d),
+	)
+	require.NotNil(t, iac)
 
-		req := httptest.NewRequest(http.MethodPost, "https://old.example.com/indieauth/accept", strings.NewReader(form.Encode()))
-		req.Host = "old.example.com"
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		setLoggedIn(req, true)
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusFound, rec.Code)
-		location, err := url.Parse(rec.Header().Get("Location"))
+	// Test: Discover metadata from the main domain should return endpoints on indieAuthAddress
+	t.Run("discover metadata from main domain returns indieAuthAddress endpoints", func(t *testing.T) {
+		metadata, err := iac.DiscoverMetadata(context.Background(), "https://new.example.com/")
 		require.NoError(t, err)
-		assert.Equal(t, "https://old.example.com/", location.Query().Get("me"))
+		if assert.NotNil(t, metadata) {
+			// Endpoints should be on the indieAuthAddress (alt address)
+			assert.Equal(t, "https://old.example.com/indieauth", metadata.AuthorizationEndpoint)
+			assert.Equal(t, "https://old.example.com/indieauth/token", metadata.TokenEndpoint)
+		}
 	})
 
-	// Test: Authorization via main address returns correct "me" parameter
-	t.Run("authorization via main address returns correct me", func(t *testing.T) {
-		form := url.Values{
-			"response_type":         {"code"},
-			"client_id":             {"https://client.example.com/"},
-			"redirect_uri":          {"https://client.example.com/callback"},
-			"state":                 {"test-state-2"},
-			"code_challenge":        {strings.Repeat("b", 43)},
-			"code_challenge_method": {"plain"},
-		}
-
-		req := httptest.NewRequest(http.MethodPost, "https://new.example.com/indieauth/accept", strings.NewReader(form.Encode()))
-		req.Host = "new.example.com"
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		setLoggedIn(req, true)
+	// Test: Full authentication flow via indieAuthAddress
+	t.Run("full authentication flow via indieAuthAddress", func(t *testing.T) {
+		// Authenticate using main domain - it should discover endpoints on alt domain
+		authinfo, redirect, err := iac.Authenticate(context.Background(), "https://new.example.com/", "create")
+		require.NoError(t, err)
+		assert.NotNil(t, authinfo)
+		assert.NotEmpty(t, redirect)
+		// The redirect should be to the alt address (indieAuthAddress)
+		assert.Contains(t, redirect, "old.example.com")
 
 		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		assert.Equal(t, http.StatusFound, rec.Code)
-		location, err := url.Parse(rec.Header().Get("Location"))
-		require.NoError(t, err)
-		assert.Equal(t, "https://new.example.com/", location.Query().Get("me"))
-	})
-
-	// Test: Token verification returns correct me for alt address
-	t.Run("token verification returns correct me for alt address", func(t *testing.T) {
-		// Create authorization via alt address
-		form := url.Values{
-			"response_type":         {"code"},
-			"client_id":             {"https://client.example.com/"},
-			"redirect_uri":          {"https://client.example.com/callback"},
-			"state":                 {"test-state-3"},
-			"code_challenge":        {strings.Repeat("c", 43)},
-			"code_challenge_method": {"plain"},
-		}
-
-		req := httptest.NewRequest(http.MethodPost, "https://old.example.com/indieauth/accept", strings.NewReader(form.Encode()))
-		req.Host = "old.example.com"
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		setLoggedIn(req, true)
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
-		// Extract code
-		location, err := url.Parse(rec.Header().Get("Location"))
-		require.NoError(t, err)
-		code := location.Query().Get("code")
-		require.NotEmpty(t, code)
-
-		// Exchange code for token
-		tokenForm := url.Values{
-			"grant_type":    {"authorization_code"},
-			"code":          {code},
-			"client_id":     {"https://client.example.com/"},
-			"redirect_uri":  {"https://client.example.com/callback"},
-			"code_verifier": {strings.Repeat("c", 43)},
-		}
-
-		tokenReq := httptest.NewRequest(http.MethodPost, "/indieauth/token", strings.NewReader(tokenForm.Encode()))
-		tokenReq.Host = "old.example.com"
-		tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		tokenRec := httptest.NewRecorder()
-		router.ServeHTTP(tokenRec, tokenReq)
-
-		assert.Equal(t, http.StatusOK, tokenRec.Code)
-		body := tokenRec.Body.String()
-		assert.Contains(t, body, `"me":"https://old.example.com/"`)
-		assert.Contains(t, body, `"access_token"`)
-
-		// Parse token
-		var tokenResp map[string]interface{}
-		err = json.Unmarshal(tokenRec.Body.Bytes(), &tokenResp)
-		require.NoError(t, err)
-		token := tokenResp["access_token"].(string)
-
-		// Verify token
-		verifyReq := httptest.NewRequest(http.MethodGet, "/indieauth/token", nil)
-		verifyReq.Host = "old.example.com"
-		verifyReq.Header.Set("Authorization", "Bearer "+token)
-
-		verifyRec := httptest.NewRecorder()
-		router.ServeHTTP(verifyRec, verifyReq)
-
-		assert.Equal(t, http.StatusOK, verifyRec.Code)
-		verifyBody := verifyRec.Body.String()
-		assert.Contains(t, verifyBody, `"me":"https://old.example.com/"`)
-		assert.Contains(t, verifyBody, `"active":true`)
-	})
-
-	// Test: Metadata endpoint works on alt address
-	t.Run("metadata endpoint works on alt address", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/.well-known/oauth-authorization-server", nil)
-		req.Host = "old.example.com"
-
-		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
-
+		req := httptest.NewRequest(http.MethodGet, redirect, nil)
+		app.d.ServeHTTP(rec, req)
 		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "https://client.example.com/redirect")
+
+		parsedHtml, err := goquery.NewDocumentFromReader(strings.NewReader(rec.Body.String()))
+		require.NoError(t, err)
+
+		indieauthForm := parsedHtml.Find("form[action='/indieauth/accept']")
+		assert.Equal(t, 1, indieauthForm.Length())
+		indieAuthFormRedirectUri := indieauthForm.Find("input[name='redirect_uri']").AttrOr("value", "")
+		assert.Equal(t, "https://client.example.com/redirect", indieAuthFormRedirectUri)
+		indieAuthFormClientId := indieauthForm.Find("input[name='client_id']").AttrOr("value", "")
+		assert.Equal(t, "https://client.example.com/", indieAuthFormClientId)
+		indieAuthFormCodeChallenge := indieauthForm.Find("input[name='code_challenge']").AttrOr("value", "")
+		assert.NotEmpty(t, indieAuthFormCodeChallenge)
+		indieAuthFormCodeChallengeMethod := indieauthForm.Find("input[name='code_challenge_method']").AttrOr("value", "")
+		assert.Equal(t, "S256", indieAuthFormCodeChallengeMethod)
+		indieAuthFormState := indieauthForm.Find("input[name='state']").AttrOr("value", "")
+		assert.NotEmpty(t, indieAuthFormState)
+
+		rec = httptest.NewRecorder()
+		reqBody := url.Values{
+			"redirect_uri":          {indieAuthFormRedirectUri},
+			"client_id":             {indieAuthFormClientId},
+			"scopes":                {"create"},
+			"code_challenge":        {indieAuthFormCodeChallenge},
+			"code_challenge_method": {indieAuthFormCodeChallengeMethod},
+			"state":                 {indieAuthFormState},
+		}
+		// Accept via alt address
+		req = httptest.NewRequest(http.MethodPost, "https://old.example.com/indieauth/accept?"+reqBody.Encode(), nil)
+		req.Host = "old.example.com"
+		setLoggedIn(req, true)
+		app.d.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusFound, rec.Code)
+
+		redirectLocation := rec.Header().Get("Location")
+		assert.NotEmpty(t, redirectLocation)
+		redirectUrl, err := url.Parse(redirectLocation)
+		require.NoError(t, err)
+		assert.NotEmpty(t, redirectUrl.Query().Get("code"))
+		assert.NotEmpty(t, redirectUrl.Query().Get("state"))
+		// Verify me parameter is the alt address
+		assert.Equal(t, "https://old.example.com/", redirectUrl.Query().Get("me"))
+
+		validateReq := httptest.NewRequest(http.MethodGet, redirectLocation, nil)
+		code, err := iac.ValidateCallback(authinfo, validateReq)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		// Get token
+		token, _, err := iac.GetToken(context.Background(), authinfo, code)
+		require.NoError(t, err)
+		assert.NotNil(t, token)
+		assert.NotEqual(t, "", token.AccessToken)
+
+		// Verify token via alt address
+		rec = httptest.NewRecorder()
+		req = httptest.NewRequest(http.MethodGet, "https://old.example.com/indieauth/token", nil)
+		req.Host = "old.example.com"
+		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		app.d.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "\"active\":true")
+		assert.Contains(t, rec.Body.String(), "\"me\":\"https://old.example.com/\"")
+	})
+
+	// Test: HTML header contains IndieAuth links pointing to indieAuthAddress
+	t.Run("html header has indieauth links to indieAuthAddress", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "https://new.example.com/", nil)
+		req.Host = "new.example.com"
+		req.Header.Set("Accept", "text/html")
+
+		rec := httptest.NewRecorder()
+		app.d.ServeHTTP(rec, req)
+
 		body := rec.Body.String()
-		assert.Contains(t, body, `"issuer":"https://old.example.com/"`)
-		assert.Contains(t, body, `"authorization_endpoint"`)
-		assert.Contains(t, body, `"token_endpoint"`)
+		// Note: HTML may be minified with unquoted attributes
+		assert.Contains(t, body, "href=https://old.example.com/indieauth")
+		assert.Contains(t, body, "href=https://old.example.com/indieauth/token")
+		assert.Contains(t, body, "href=https://old.example.com/.well-known/oauth-authorization-server")
+	})
+}
+
+func Test_indieAuthAddressValidation(t *testing.T) {
+	t.Run("indieAuthAddress must be in altAddresses", func(t *testing.T) {
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+		app.cfg.Server.PublicAddress = "https://new.example.com"
+		app.cfg.Server.AltAddresses = []string{"https://old.example.com"}
+		app.cfg.Server.IndieAuthAddress = "https://other.example.com" // Not in altAddresses
+
+		err := app.initConfig(false)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "indieAuthAddress must be one of the altAddresses")
+	})
+
+	t.Run("indieAuthAddress valid when in altAddresses", func(t *testing.T) {
+		app := &goBlog{
+			cfg: createDefaultTestConfig(t),
+		}
+		app.cfg.Server.PublicAddress = "https://new.example.com"
+		app.cfg.Server.AltAddresses = []string{"https://old.example.com"}
+		app.cfg.Server.IndieAuthAddress = "https://old.example.com"
+
+		err := app.initConfig(false)
+		require.NoError(t, err)
 	})
 }

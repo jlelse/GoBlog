@@ -62,8 +62,9 @@ func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, er
 	m := &microformatsResult{
 		source: u,
 	}
-	mfd := microformats.Parse(io.TeeReader(r, buf), parsedUrl)
-	m.fillFromData(mfd)
+	if mfd := microformats.Parse(io.TeeReader(r, buf), parsedUrl); mfd != nil {
+		m.fillFromData(mfd)
+	}
 	// Set URL if not parsed from microformats
 	if m.Url == "" {
 		m.Url = u

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,6 +49,7 @@ type configServer struct {
 	ShortPublicAddress string   `mapstructure:"shortPublicAddress"`
 	MediaAddress       string   `mapstructure:"mediaAddress"`
 	AltAddresses       []string `mapstructure:"altAddresses"`
+	IndieAuthAddress   string   `mapstructure:"indieAuthAddress"`
 	PublicHTTPS        bool     `mapstructure:"publicHttps"`
 	AcmeDir            string   `mapstructure:"acmeDir"`
 	AcmeEabKid         string   `mapstructure:"acmeEabKid"`
@@ -433,6 +435,13 @@ func (a *goBlog) initConfig(logging bool) error {
 			return errors.New("Invalid alternative address: " + err.Error())
 		}
 		a.cfg.Server.altHosts = append(a.cfg.Server.altHosts, altURL.Hostname())
+	}
+	// Check IndieAuth address
+	if ia := a.cfg.Server.IndieAuthAddress; ia != "" {
+		// Validate that IndieAuthAddress is one of the AltAddresses
+		if !slices.Contains(a.cfg.Server.AltAddresses, ia) {
+			return errors.New("indieAuthAddress must be one of the altAddresses")
+		}
 	}
 	// Check port or set default
 	if a.cfg.Server.Port == 0 {

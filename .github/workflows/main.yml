@@ -12,14 +12,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Run tests in Docker (test stage)
-        uses: docker/build-push-action@v6
+      
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          target: test
-          tags: test
-          push: false
+          go-version: 'stable'
+      
+      - name: Install SQLite development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+      
+      - name: Run tests
+        env:
+          GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5"
+        run: |
+          go test -timeout 600s -cover ./...
 
   build:
     if: github.ref == 'refs/heads/master'
