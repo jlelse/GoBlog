@@ -759,6 +759,46 @@ func (a *goBlog) apRefetchFollowers(blogName string) error {
 	return nil
 }
 
+type apFollowerCheckResult struct {
+	follower *apFollower
+	status   string // "ok", "gone", "moved", "error"
+	movedTo  string // if moved, the new account
+	err      error
+}
+
+func (a *goBlog) apCheckFollowers(blogName string) ([]*apFollowerCheckResult, error) {
+	if _, ok := a.cfg.Blogs[blogName]; !ok {
+		return nil, fmt.Errorf("blog not found: %s", blogName)
+	}
+	followers, err := a.db.apGetAllFollowers(blogName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get followers: %w", err)
+	}
+	if len(followers) == 0 {
+		return nil, nil
+	}
+	var results []*apFollowerCheckResult
+	for _, fol := range followers {
+		result := &apFollowerCheckResult{follower: fol}
+		actor, err := a.apGetRemoteActor(blogName, ap.IRI(fol.follower))
+		if err != nil || actor == nil {
+			result.status = "gone"
+			result.err = err
+			results = append(results, result)
+			continue
+		}
+		if actor.MovedTo != nil && actor.MovedTo.GetLink() != "" {
+			result.status = "moved"
+			result.movedTo = actor.MovedTo.GetLink().String()
+			results = append(results, result)
+			continue
+		}
+		result.status = "ok"
+		results = append(results, result)
+	}
+	return results, nil
+}
+
 func (a *goBlog) apMoveFollowers(blogName string, targetAccount string) error {
 	// Check if blog exists
 	blog, ok := a.cfg.Blogs[blogName]

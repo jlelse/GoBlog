@@ -41,8 +41,7 @@ func (a *goBlog) initAPSendQueue() {
 				bufferpool.Put(buf)
 				return
 			}
-			a.info("AP request failed for the 20th time", "to", r.To)
-			_ = a.db.apRemoveInbox(r.To)
+			a.info("AP request failed for the 20th time, giving up on activity", "to", r.To)
 		}
 		dequeue()
 	})

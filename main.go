@@ -136,7 +136,6 @@ Example:
 		},
 	})
 
-	// ActivityPub refetch followers
 	activityPubCmd := &cobra.Command{
 		Use:   "activitypub",
 		Short: "ActivityPub related tasks",
@@ -145,6 +144,7 @@ Example:
 These commands help you manage your ActivityPub/Fediverse account, including
 follower management and account migration.`,
 	}
+
 	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "refetch-followers <blog>",
 		Short: "Refetch ActivityPub followers",
@@ -174,6 +174,99 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+
+	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "check-followers <blog>",
+		Short: "Check all ActivityPub followers and optionally clean up stale ones",
+		Long: `Check all ActivityPub followers to see if they still exist or have moved.
+
+This command contacts each follower's home server and reports:
+- Followers that are still active (ok)
+- Followers whose accounts no longer exist (gone)
+- Followers who have moved to a new account (moved)
+
+After the check, you will be prompted to confirm removal of gone and moved
+followers from the database.
+
+Example:
+  ./GoBlog activitypub check-followers default`,
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			blog := args[0]
+			results, err := app.apCheckFollowers(blog)
+			if err != nil {
+				app.logErrAndQuit("Failed to check ActivityPub followers", "blog", blog, "err", err)
+				return
+			}
+			if len(results) == 0 {
+				fmt.Println("No followers found.")
+				app.shutdown.ShutdownAndWait()
+				return
+			}
+			var okCount, goneCount, movedCount, errorCount int
+			for _, r := range results {
+				switch r.status {
+				case "ok":
+					okCount++
+				case "gone":
+					goneCount++
+					fmt.Printf("GONE:  %s (%s)\n", r.follower.follower, r.follower.username)
+					if r.err != nil {
+						fmt.Printf("       Error: %v\n", r.err)
+					}
+				case "moved":
+					movedCount++
+					fmt.Printf("MOVED: %s (%s) -> %s\n", r.follower.follower, r.follower.username, r.movedTo)
+				case "error":
+					errorCount++
+					fmt.Printf("ERROR: %s (%s): %v\n", r.follower.follower, r.follower.username, r.err)
+				}
+			}
+			fmt.Printf("\nSummary: %d ok, %d gone, %d moved, %d errors (total: %d)\n", okCount, goneCount, movedCount, errorCount, len(results))
+			toRemove := goneCount + movedCount
+			if toRemove == 0 {
+				fmt.Println("Nothing to clean up.")
+				app.shutdown.ShutdownAndWait()
+				return
+			}
+			fmt.Printf("\n%d followers can be removed (gone + moved).\n", toRemove)
+			var removed int
+			for _, r := range results {
+				if r.status != "gone" && r.status != "moved" {
+					continue
+				}
+				label := "GONE"
+				detail := ""
+				if r.status == "moved" {
+					label = "MOVED"
+					detail = " -> " + r.movedTo
+				}
+				fmt.Printf("Remove %s %s (%s)%s? (y/N): ", label, r.follower.follower, r.follower.username, detail)
+				var confirm string
+				fmt.Scanln(&confirm)
+				if confirm != "y" && confirm != "Y" {
+					continue
+				}
+				if err := app.db.apRemoveFollower(blog, r.follower.follower); err != nil {
+					fmt.Printf("  Error removing: %v\n", err)
+					continue
+				}
+				removed++
+			}
+			fmt.Printf("Removed %d followers.\n", removed)
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+
 	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "move-followers <blog> <target>",
 		Short: "Move all followers to a new Fediverse account by sending Move activities",
@@ -208,6 +301,7 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+
 	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "clear-moved <blog>",
 		Short: "Clear the movedTo setting for a blog after an account migration",
@@ -243,6 +337,7 @@ Example:
 			app.shutdown.ShutdownAndWait()
 		},
 	})
+
 	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "domainmove <old-domain> <new-domain>",
 		Short: "Send Move activities for a domain change",
@@ -287,7 +382,6 @@ Example:
 	})
 	rootCmd.AddCommand(activityPubCmd)
 
-	// Setup command for setting up user credentials
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Set up user credentials (username, password, and optionally TOTP)",

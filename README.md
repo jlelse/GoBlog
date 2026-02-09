@@ -1174,6 +1174,14 @@ Exports all posts as Markdown files with front matter to the specified directory
 
 Updates follower information from remote ActivityPub servers.
 
+### Check and Clean ActivityPub Followers
+
+```bash
+./GoBlog --config ./config/config.yml activitypub check-followers blogname
+```
+
+Checks all ActivityPub followers by contacting each follower's home server. Reports which followers are still active, which accounts no longer exist (gone), and which have moved to a new account. After the check, displays a summary and prompts for confirmation before removing gone and moved followers from the database.
+
 ### Move ActivityPub Followers
 
 ```bash
