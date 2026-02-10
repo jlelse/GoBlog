@@ -268,6 +268,40 @@ Example:
 	})
 
 	activityPubCmd.AddCommand(&cobra.Command{
+		Use:   "add-follower <blog> <actor>",
+		Short: "Manually add an ActivityPub follower",
+		Long: `Manually add an ActivityPub follower by actor IRI or @user@instance handle.
+
+This command resolves the given account (via WebFinger if a handle is provided),
+fetches the remote actor profile, and adds it to the follower database. This is
+useful for re-adding followers that were accidentally removed.
+
+Examples:
+  ./GoBlog activitypub add-follower default https://mastodon.example.com/users/alice
+  ./GoBlog activitypub add-follower default @alice@mastodon.example.com`,
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			if !app.apEnabled() {
+				app.logErrAndQuit("ActivityPub not enabled")
+				return
+			}
+			if err := app.initActivityPubBase(); err != nil {
+				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+				return
+			}
+			blog := args[0]
+			actor := args[1]
+			if err := app.apAddFollowerManually(blog, actor); err != nil {
+				app.logErrAndQuit("Failed to add follower", "blog", blog, "actor", actor, "err", err)
+				return
+			}
+			fmt.Printf("Successfully added follower %s to blog %s\n", actor, blog)
+			app.shutdown.ShutdownAndWait()
+		},
+	})
+
+	activityPubCmd.AddCommand(&cobra.Command{
 		Use:   "move-followers <blog> <target>",
 		Short: "Move all followers to a new Fediverse account by sending Move activities",
 		Long: `Move all followers from the GoBlog ActivityPub account to a new Fediverse account.
@@ -280,7 +314,7 @@ the new account instead. Before running this command:
 3. Run this command to initiate the move
 
 Example:
-  ./GoBlog activitypub move-followers default https://mastodon.social/users/newaccount`,
+  ./GoBlog activitypub move-followers default https://mastodon.example.com/users/newaccount`,
 		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initializeApp(cmd)

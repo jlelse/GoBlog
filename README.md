@@ -575,7 +575,7 @@ If you're moving from another Fediverse server and want to migrate your follower
 activityPub:
   enabled: true
   alsoKnownAs:
-    - https://mastodon.social/users/oldusername
+    - https://mastodon.example.com/users/oldusername
 ```
 
 2. On your old Fediverse account, initiate the move to your GoBlog account using your old server's migration feature.
@@ -589,7 +589,7 @@ If you're moving away from GoBlog to another Fediverse server:
 3. Run the CLI command to send Move activities to all followers:
 
 ```bash
-./GoBlog activitypub move-followers blogname https://newserver.social/users/newusername
+./GoBlog activitypub move-followers blogname https://newserver.example.com/users/newusername
 ```
 
 This sends a Move activity to all your followers, notifying them that your account has moved. Fediverse servers that support account migration will automatically update the follow to your new account.
@@ -1182,10 +1182,19 @@ Updates follower information from remote ActivityPub servers.
 
 Checks all ActivityPub followers by contacting each follower's home server. Reports which followers are still active, which accounts no longer exist (gone), and which have moved to a new account. After the check, displays a summary and prompts for confirmation before removing gone and moved followers from the database.
 
+### Add ActivityPub Follower
+
+```bash
+./GoBlog --config ./config/config.yml activitypub add-follower blogname https://mastodon.example.com/users/alice
+./GoBlog --config ./config/config.yml activitypub add-follower blogname @alice@mastodon.example.com
+```
+
+Manually adds an ActivityPub follower by actor IRI or `@user@instance` handle. When a handle is provided, it is resolved via WebFinger to find the actor's IRI. The remote actor profile is then fetched and stored in the follower database. Useful for re-adding accidentally removed followers.
+
 ### Move ActivityPub Followers
 
 ```bash
-./GoBlog --config ./config/config.yml activitypub move-followers blogname https://newserver.social/users/newaccount
+./GoBlog --config ./config/config.yml activitypub move-followers blogname https://newserver.example.com/users/newaccount
 ```
 
 Sends Move activities to all followers, instructing them that your account has moved to a new Fediverse server. The blog's ActivityPub profile will also be updated with a `movedTo` field pointing to the new account.
