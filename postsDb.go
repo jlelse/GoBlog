@@ -499,7 +499,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 			named := "anyparam" + strconv.Itoa(i)
 			queryBuilder.WriteString("@")
 			queryBuilder.WriteString(named)
-			args = append(args, param)
+			args = append(args, sql.Named(named, param))
 		}
 		queryBuilder.WriteString(") and length(coalesce(value, '')) > 0)")
 	}

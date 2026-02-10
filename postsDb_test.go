@@ -505,3 +505,82 @@ func Test_checkPost(t *testing.T) {
 	})
 
 }
+
+func Test_postsDb_anyParams(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Sections: map[string]*configSection{
+				"test": {},
+			},
+		},
+	}
+	_ = app.initConfig(false)
+
+	err := app.db.savePost(&post{
+		Path:    "/test/post1",
+		Content: "Post with tags and title",
+		Blog:    "en",
+		Section: "test",
+		Status:  statusPublished,
+		Parameters: map[string][]string{
+			"tags":  {"go", "web"},
+			"title": {"First Post"},
+		},
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.savePost(&post{
+		Path:    "/test/post2",
+		Content: "Post with only tags",
+		Blog:    "en",
+		Section: "test",
+		Status:  statusPublished,
+		Parameters: map[string][]string{
+			"tags": {"go"},
+		},
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	err = app.db.savePost(&post{
+		Path:    "/test/post3",
+		Content: "Post with no params",
+		Blog:    "en",
+		Section: "test",
+		Status:  statusPublished,
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	t.Run("getPosts with single anyParam", func(t *testing.T) {
+		posts, err := app.getPosts(&postsRequestConfig{anyParams: []string{"title"}})
+		require.NoError(t, err)
+		assert.Len(t, posts, 1)
+		assert.Equal(t, "/test/post1", posts[0].Path)
+	})
+
+	t.Run("getPosts with anyParam matching multiple posts", func(t *testing.T) {
+		posts, err := app.getPosts(&postsRequestConfig{anyParams: []string{"tags"}})
+		require.NoError(t, err)
+		assert.Len(t, posts, 2)
+	})
+
+	t.Run("getPosts with multiple anyParams", func(t *testing.T) {
+		posts, err := app.getPosts(&postsRequestConfig{anyParams: []string{"tags", "title"}})
+		require.NoError(t, err)
+		assert.Len(t, posts, 2)
+	})
+
+	t.Run("getPosts with nonexistent anyParam", func(t *testing.T) {
+		posts, err := app.getPosts(&postsRequestConfig{anyParams: []string{"nonexistent"}})
+		require.NoError(t, err)
+		assert.Empty(t, posts)
+	})
+
+	t.Run("countPosts with anyParams", func(t *testing.T) {
+		count, err := app.db.countPosts(&postsRequestConfig{anyParams: []string{"tags", "title"}})
+		require.NoError(t, err)
+		assert.Equal(t, 2, count)
+	})
+}
