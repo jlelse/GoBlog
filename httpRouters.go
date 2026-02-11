@@ -419,7 +419,6 @@ func (a *goBlog) blogStatsRouter(conf *configBlog) func(r chi.Router) {
 			statsPath := conf.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))
 			r.Use(a.privateModeHandler)
 			r.With(a.cacheMiddleware).Get(statsPath, a.serveBlogStats)
-			r.With(cacheLoggedIn, a.cacheMiddleware).Get(statsPath+blogStatsTablePath, a.serveBlogStatsTable)
 		}
 	}
 }

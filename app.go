@@ -41,8 +41,7 @@ type goBlog struct {
 	autocertInit    sync.Once
 	// Blogroll
 	blogrollCacheGroup singleflightx.Group[string, []*opml.Outline]
-	// Blogstats
-	blogStatsCacheGroup singleflightx.Group[string, *blogStatsData]
+
 	// Cache
 	cache *cache
 	// Config

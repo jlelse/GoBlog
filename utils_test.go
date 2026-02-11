@@ -54,6 +54,43 @@ func Benchmark_wordCount(b *testing.B) {
 	}
 }
 
+func Test_toLocal(t *testing.T) {
+	result, err := toLocal("2023-06-15T10:30:00Z")
+	require.NoError(t, err)
+	assert.NotEmpty(t, result)
+	assert.Contains(t, result, "2023")
+
+	result, err = toLocal("2023-06-15")
+	require.NoError(t, err)
+	assert.NotEmpty(t, result)
+
+	result, err = toLocal("")
+	require.NoError(t, err)
+	assert.Empty(t, result)
+
+	_, err = toLocal("not-a-date")
+	assert.Error(t, err)
+}
+
+func Test_toUTC(t *testing.T) {
+	result, err := toUTC("2023-06-15T10:30:00+02:00")
+	require.NoError(t, err)
+	assert.Equal(t, "2023-06-15T08:30:00Z", result)
+
+	result, err = toUTC("")
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+
+func Test_toLocalTime(t *testing.T) {
+	result := toLocalTime("2023-06-15T10:30:00Z")
+	assert.False(t, result.IsZero())
+	assert.Equal(t, 2023, result.Year())
+
+	assert.True(t, toLocalTime("").IsZero())
+	assert.True(t, toLocalTime("invalid").IsZero())
+}
+
 func Test_charCount(t *testing.T) {
 	assert.Equal(t, 4, charCount("  t  e\n  s  t €.☺️"))
 }

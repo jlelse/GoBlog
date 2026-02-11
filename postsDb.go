@@ -212,6 +212,10 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	if !o.new && o.oldPath == "" {
 		return errors.New("old path required")
 	}
+	// Compute word and char counts before acquiring the lock
+	contentText := db.a.renderTextSafe(p.Content)
+	wc := wordCount(contentText)
+	cc := charCount(contentText)
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
@@ -224,15 +228,15 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Update or create post
 	if o.new {
 		// New post, create it
-		sqlBuilder.WriteString("insert or rollback into posts (path, content, published, updated, blog, section, status, visibility, priority) values (?, ?, ?, ?, ?, ?, ?, ?, ?);")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority)
+		sqlBuilder.WriteString("insert or rollback into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc)
 	} else {
 		// Delete post parameters
 		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
 		sqlArgs = append(sqlArgs, o.oldPath)
 		// Update old post
-		sqlBuilder.WriteString("update or rollback posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ? where path = ?;")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, o.oldPath)
+		sqlBuilder.WriteString("update or rollback posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ?, wordcount = ?, charcount = ? where path = ?;")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc, o.oldPath)
 	}
 	// Insert post parameters
 	for param, value := range p.Parameters {

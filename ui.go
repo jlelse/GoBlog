@@ -427,12 +427,8 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-type blogStatsRenderData struct {
-	tableUrl string
-}
-
 func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
-	bsd, ok := rd.Data.(*blogStatsRenderData)
+	bsd, ok := rd.Data.(*blogStatsData)
 	if !ok {
 		return
 	}
@@ -456,9 +452,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				_ = a.renderMarkdownToWriter(hb, bs.Description, false)
 			}
 			// Table
-			hb.WriteElementOpen("p", "id", "loading", "data-table", bsd.tableUrl)
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "loading"))
-			hb.WriteElementClose("p")
+			a.renderBlogStatsTable(hb, rd, bsd)
 			hb.WriteElementOpen("script", "src", a.assetFileName("js/blogstats.js"), "defer", "")
 			hb.WriteElementClose("script")
 			hb.WriteElementClose("main")
@@ -470,11 +464,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
-	bsd, ok := rd.Data.(*blogStatsData)
-	if !ok {
-		return
-	}
+func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HtmlBuilder, rd *renderData, bsd *blogStatsData) {
 	hb.WriteElementOpen("table")
 	// Table header
 	hb.WriteElementOpen("thead")
