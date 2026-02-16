@@ -88,7 +88,7 @@ GoBlog is a blogging engine built for people who want:
 
 ### Prerequisites
 
-- **Docker** (recommended) or Go 1.25+
+- **Docker** (recommended) or Go 1.26+
 - Basic knowledge of **Markdown**
 - Basic knowledge of **YAML** for configuration
 
@@ -232,7 +232,7 @@ For other reverse proxies (nginx, Traefik, etc.), configure them to proxy reques
 ### Building from Source
 
 **Requirements:**
-- Go 1.25 or later
+- Go 1.26 or later
 - SQLite 3.38+ with FTS5 and JSON support (or use embedded SQLite)
 - Linux (primary target, others may work)
 

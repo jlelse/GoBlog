@@ -5,7 +5,7 @@
 GoBlog is a single-user, multi-blog platform written in Go. Single binary, SQLite database, minimal dependencies. Supports IndieWeb protocols (IndieAuth, Micropub, Webmention, Microformats2) and ActivityPub for Fediverse integration.
 
 - **Module**: `go.goblog.app/app`
-- **Go version**: 1.25+
+- **Go version**: 1.26+
 - **Primary target OS**: Linux
 - **Router**: `chi` (`github.com/go-chi/chi/v5`)
 - **Database**: SQLite with FTS5 (full-text search)
