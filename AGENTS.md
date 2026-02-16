@@ -44,6 +44,15 @@ golangci-lint run
 
 Linter config is in `.golangci.yml`. Key enabled linters: `errcheck`, `gosimple`, `govet`, `staticcheck`, `gosec`, `bodyclose`, `sqlclosecheck`.
 
+### Fix (Modernize Go Code)
+
+```bash
+# Apply modern Go features and automatic code rewrites
+go fix ./...
+```
+
+Automatically applies code modernizations, removes deprecated patterns, and updates code to use modern Go features. Run this regularly to keep code up-to-date with Go language evolution. **Always review changes before committing.**
+
 ### Styles (SCSS → CSS)
 
 ```bash
@@ -190,6 +199,7 @@ Add keys to `strings/default.yaml` (English), then add translations to other loc
 ## Code Style
 
 - Standard Go formatting (`gofmt`)
+- Use `go fix ./...` to keep code modernized with latest Go features
 - No code comments unless the code is genuinely complex
 - Use existing utility functions from `utils.go` and `pkgs/utils/`
 - Use `pkgs/htmlbuilder` for all HTML generation
