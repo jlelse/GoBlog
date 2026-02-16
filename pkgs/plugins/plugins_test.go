@@ -20,7 +20,7 @@ var sampleSourceFS embed.FS
 func TestLoadPluginEmbeddedSuccess(t *testing.T) {
 	host := NewPluginHost(
 		map[string]reflect.Type{
-			"stringer": reflect.TypeOf((*fmt.Stringer)(nil)).Elem(),
+			"stringer": reflect.TypeFor[fmt.Stringer](),
 		},
 		interp.Exports{},
 		sampleSourceFS,
@@ -67,8 +67,8 @@ func (plugin) PostUpdated(_ plugintypes.Post) {}
 
 	host := NewPluginHost(
 		map[string]reflect.Type{
-			"postcreated": reflect.TypeOf((*plugintypes.PostCreatedHook)(nil)).Elem(),
-			"postupdated": reflect.TypeOf((*plugintypes.PostUpdatedHook)(nil)).Elem(),
+			"postcreated": reflect.TypeFor[plugintypes.PostCreatedHook](),
+			"postupdated": reflect.TypeFor[plugintypes.PostUpdatedHook](),
 		},
 		yaegiwrappers.Symbols,
 		source,

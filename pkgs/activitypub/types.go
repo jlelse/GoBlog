@@ -202,7 +202,7 @@ type Actor struct {
 	Outbox             IRI                   `json:"outbox,omitempty"`
 	Following          IRI                   `json:"following,omitempty"`
 	Followers          IRI                   `json:"followers,omitempty"`
-	PublicKey          PublicKey             `json:"publicKey,omitempty"`
+	PublicKey          PublicKey             `json:"publicKey"`
 	Endpoints          *Endpoints            `json:"endpoints,omitempty"`
 	Icon               Item                  `json:"icon,omitempty"`
 	AlsoKnownAs        ItemCollection        `json:"alsoKnownAs,omitempty"`

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/ed25519"
+	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/base32"
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	"strings"
 
 	"go.goblog.app/app/pkgs/utils"
-	"golang.org/x/crypto/sha3"
 )
 
 // https://github.com/torproject/torspec/blob/8961bb4d83fccb2b987f9899ca83aa430f84ab0c/rend-spec-v3.txt#L2259-L2281

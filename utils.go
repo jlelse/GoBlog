@@ -421,7 +421,7 @@ func generateSecurePassword(length int) (string, error) {
 	defer builderpool.Put(sb)
 	sb.Grow(length)
 	randRead := rand.Reader
-	for i := 0; i < length; i++ {
+	for range length {
 		r, err := rand.Int(randRead, big.NewInt(int64(runesLen)))
 		if err != nil {
 			return "", err

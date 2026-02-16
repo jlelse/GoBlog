@@ -200,7 +200,7 @@ func (p *Actor) UnmarshalJSON(data []byte) error {
 		Outbox               IRI                   `json:"outbox,omitempty"`
 		Following            IRI                   `json:"following,omitempty"`
 		Followers            IRI                   `json:"followers,omitempty"`
-		PublicKey            PublicKey             `json:"publicKey,omitempty"`
+		PublicKey            PublicKey             `json:"publicKey"`
 		Endpoints            *Endpoints            `json:"endpoints,omitempty"`
 		Icon                 json.RawMessage       `json:"icon,omitempty"`
 		MovedTo              json.RawMessage       `json:"movedTo,omitempty"`

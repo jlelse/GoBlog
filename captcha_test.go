@@ -161,9 +161,9 @@ func Test_captchaMiddleware(t *testing.T) {
 
 		// Solve captcha
 		digits := captchaStore.Get(captchaId, false)
-		digitsString := ""
+		var digitsString strings.Builder
 		for _, digit := range digits {
-			digitsString += strconv.Itoa(int(digit))
+			digitsString.WriteString(strconv.Itoa(int(digit)))
 		}
 
 		// Do third request with solved captcha
@@ -174,7 +174,7 @@ func Test_captchaMiddleware(t *testing.T) {
 		formValues.Add("captchamethod", cm.AttrOr("value", ""))
 		formValues.Add("captchaheaders", ch.AttrOr("value", ""))
 		formValues.Add("captchabody", cb.AttrOr("value", ""))
-		formValues.Add("digits", digitsString) // Correct captcha
+		formValues.Add("digits", digitsString.String()) // Correct captcha
 
 		req = httptest.NewRequest(http.MethodPost, "/abc", strings.NewReader(formValues.Encode()))
 		req.Header.Set(contentType, contenttype.WWWForm)

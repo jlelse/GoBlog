@@ -91,11 +91,7 @@ func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, er
 
 func (m *microformatsResult) fillFromData(mf *microformats.Data) {
 	// Fill data
-	for _, i := range mf.Items {
-		if m.fill(i) {
-			break
-		}
-	}
+	_ = slices.ContainsFunc(mf.Items, m.fill)
 }
 
 func (m *microformatsResult) fill(mf *microformats.Microformat) bool {
@@ -131,12 +127,7 @@ func (m *microformatsResult) fill(mf *microformats.Microformat) bool {
 		m.fillAuthor(mf)
 		return m.hasUrl
 	}
-	for _, mfc := range mf.Children {
-		if m.fill(mfc) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(mf.Children, m.fill)
 }
 
 func (m *microformatsResult) fillTitle(mf *microformats.Microformat) {
