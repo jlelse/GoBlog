@@ -506,6 +506,204 @@ func Test_checkPost(t *testing.T) {
 
 }
 
+func Test_updatePostParameters(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+
+	// Create initial post with parameters
+	err := app.db.savePost(&post{
+		Path:    "/test/params",
+		Content: "Test",
+		Blog:    "en",
+		Section: "test",
+		Status:  statusPublished,
+		Parameters: map[string][]string{
+			"tags":  {"A", "B", "C"},
+			"title": {"Original Title"},
+		},
+	}, &postCreationOptions{new: true})
+	require.NoError(t, err)
+
+	t.Run("Unchanged parameters are preserved", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Updated content",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":  {"A", "B", "C"},
+				"title": {"Original Title"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, "Updated content", p.Content)
+		assert.Equal(t, []string{"A", "B", "C"}, p.Parameters["tags"])
+		assert.Equal(t, []string{"Original Title"}, p.Parameters["title"])
+	})
+
+	t.Run("Add new parameter", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":     {"A", "B", "C"},
+				"title":    {"Original Title"},
+				"subtitle": {"New Subtitle"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"A", "B", "C"}, p.Parameters["tags"])
+		assert.Equal(t, []string{"Original Title"}, p.Parameters["title"])
+		assert.Equal(t, []string{"New Subtitle"}, p.Parameters["subtitle"])
+	})
+
+	t.Run("Remove a parameter", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":  {"A", "B", "C"},
+				"title": {"Original Title"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"A", "B", "C"}, p.Parameters["tags"])
+		assert.Equal(t, []string{"Original Title"}, p.Parameters["title"])
+		assert.Empty(t, p.Parameters["subtitle"])
+	})
+
+	t.Run("Change value order", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":  {"C", "A", "B"},
+				"title": {"Original Title"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"C", "A", "B"}, p.Parameters["tags"])
+	})
+
+	t.Run("Add and remove values", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":  {"C", "D", "E"},
+				"title": {"New Title"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"C", "D", "E"}, p.Parameters["tags"])
+		assert.Equal(t, []string{"New Title"}, p.Parameters["title"])
+	})
+
+	t.Run("Remove all parameters", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Empty(t, p.Parameters)
+	})
+
+	t.Run("Add parameters from empty", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags": {"X", "Y"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"X", "Y"}, p.Parameters["tags"])
+	})
+
+	t.Run("Update with path change", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params-new",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags":  {"X", "Z"},
+				"title": {"Moved Post"},
+			},
+		}, &postCreationOptions{oldPath: "/test/params"})
+		require.NoError(t, err)
+
+		_, err = app.getPost("/test/params")
+		assert.Error(t, err)
+
+		p, err := app.getPost("/test/params-new")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"X", "Z"}, p.Parameters["tags"])
+		assert.Equal(t, []string{"Moved Post"}, p.Parameters["title"])
+	})
+
+	t.Run("Empty values are filtered out", func(t *testing.T) {
+		err := app.db.savePost(&post{
+			Path:    "/test/params-new",
+			Content: "Test",
+			Blog:    "en",
+			Section: "test",
+			Status:  statusPublished,
+			Parameters: map[string][]string{
+				"tags": {"A", "", "B", ""},
+			},
+		}, &postCreationOptions{oldPath: "/test/params-new"})
+		require.NoError(t, err)
+
+		p, err := app.getPost("/test/params-new")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"A", "B"}, p.Parameters["tags"])
+	})
+}
+
 func Test_postsDb_anyParams(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),

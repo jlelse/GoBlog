@@ -123,13 +123,17 @@ func (a *goBlog) shutdownServer(s *http.Server, name string) func() {
 	}
 }
 
-func (*goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	requestHost, _, err := net.SplitHostPort(r.Host)
 	if err != nil {
 		requestHost = r.Host
 	}
 	w.Header().Set("Connection", "close")
-	http.Redirect(w, r, fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI()), http.StatusMovedPermanently)
+	target := fmt.Sprintf("https://%s%s", requestHost, r.URL.RequestURI())
+	if !a.isLocalURL(target) {
+		target = a.getFullAddress(r.URL.RequestURI())
+	}
+	http.Redirect(w, r, target, http.StatusMovedPermanently)
 }
 
 const (
@@ -288,7 +292,8 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		limit 1
 		`, sql.Named("path", path))
 		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.error("Failed to query posts/aliases/redirects", "err", err)
+			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}
 		var pathType, value1, value2 string
@@ -297,7 +302,8 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				// Error
-				a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+				a.error("Failed to scan posts/aliases/redirects", "err", err)
+				a.serveError(w, r, "", http.StatusInternalServerError)
 				return
 			}
 			// No result, continue...
@@ -347,10 +353,11 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 func (a *goBlog) getAppRouter() http.Handler {
 	for {
 		// Wait until router is ready
-		if a.d != nil {
+		if a.d == nil {
+			time.Sleep(time.Millisecond * 100)
+		} else {
 			break
 		}
-		time.Sleep(time.Millisecond * 100)
 	}
 	return a.d
 }

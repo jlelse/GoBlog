@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -219,43 +220,110 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
-	// Build SQL
-	sqlBuilder := builderpool.Get()
-	defer builderpool.Put(sqlBuilder)
-	var sqlArgs = []any{}
-	// Start transaction
-	sqlBuilder.WriteString("begin;")
+	// Begin transaction
+	if _, err := db.Exec("begin"); err != nil {
+		return err
+	}
 	// Update or create post
 	if o.new {
-		// New post, create it
-		sqlBuilder.WriteString("insert or rollback into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc)
+		if _, err := db.Exec(
+			"insert into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc,
+		); err != nil {
+			db.Exec("rollback")
+			if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
+				return errors.New("post already exists at given path")
+			}
+			return err
+		}
 	} else {
-		// Delete post parameters
-		sqlBuilder.WriteString("delete from post_parameters where path = ?;")
-		sqlArgs = append(sqlArgs, o.oldPath)
-		// Update old post
-		sqlBuilder.WriteString("update or rollback posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ?, wordcount = ?, charcount = ? where path = ?;")
-		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc, o.oldPath)
+		// Update post (path update cascades to post_parameters via foreign key)
+		if _, err := db.Exec(
+			"update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ?, wordcount = ?, charcount = ? where path = ?",
+			p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc, o.oldPath,
+		); err != nil {
+			db.Exec("rollback")
+			return err
+		}
+		// Update post parameters
+		if err := db.updatePostParameters(p); err != nil {
+			db.Exec("rollback")
+			return err
+		}
 	}
-	// Insert post parameters
-	for param, value := range p.Parameters {
-		for _, value := range lo.Filter(value, loStringNotEmpty) {
-			sqlBuilder.WriteString("insert or rollback into post_parameters (path, parameter, value) values (?, ?, ?);")
-			sqlArgs = append(sqlArgs, p.Path, param, value)
+	if o.new {
+		// Insert all parameters for new posts
+		for param, values := range p.Parameters {
+			for _, value := range lo.Filter(values, loStringNotEmpty) {
+				if _, err := db.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", p.Path, param, value); err != nil {
+					db.Exec("rollback")
+					return err
+				}
+			}
 		}
 	}
 	// Commit transaction
-	sqlBuilder.WriteString("commit;")
-	// Execute
-	if _, err := db.Exec(sqlBuilder.String(), sqlArgs...); err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
-			return errors.New("post already exists at given path")
-		}
+	if _, err := db.Exec("commit"); err != nil {
+		db.Exec("rollback")
 		return err
 	}
 	// Update FTS index
 	db.rebuildFTSIndex()
+	return nil
+}
+
+// updatePostParameters diffs old and new parameters per parameter name.
+// Unchanged parameters are left untouched; changed ones are deleted and re-inserted to preserve value order.
+// Must be called within a transaction and while holding pcm lock.
+func (db *database) updatePostParameters(p *post) error {
+	// Query from writeDb to see in-flight transaction changes (e.g. cascaded path updates)
+	rows, err := db.WriteQuery("select parameter, value from post_parameters where path = ? order by id", p.Path)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	oldParams := map[string][]string{}
+	for rows.Next() {
+		var name, value string
+		if err := rows.Scan(&name, &value); err != nil {
+			return err
+		}
+		oldParams[name] = append(oldParams[name], value)
+	}
+	// Build new parameters map (filtered)
+	newParams := map[string][]string{}
+	for param, values := range p.Parameters {
+		filtered := lo.Filter(values, loStringNotEmpty)
+		if len(filtered) > 0 {
+			newParams[param] = filtered
+		}
+	}
+	// Delete parameters that no longer exist
+	for name := range oldParams {
+		if _, exists := newParams[name]; !exists {
+			if _, err := db.Exec("delete from post_parameters where path = ? and parameter = ?", p.Path, name); err != nil {
+				return err
+			}
+		}
+	}
+	// Insert or update parameters
+	for name, newValues := range newParams {
+		oldValues, exists := oldParams[name]
+		if exists && slices.Equal(oldValues, newValues) {
+			continue
+		}
+		// Values changed or parameter is new: delete old and insert new
+		if exists {
+			if _, err := db.Exec("delete from post_parameters where path = ? and parameter = ?", p.Path, name); err != nil {
+				return err
+			}
+		}
+		for _, value := range newValues {
+			if _, err := db.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", p.Path, name, value); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

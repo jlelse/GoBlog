@@ -212,6 +212,19 @@ func (db *database) QueryRowContext(ctx context.Context, query string, args ...a
 	return db.readDb.QueryRowContext(ctx, query, args...), nil
 }
 
+func (db *database) WriteQuery(query string, args ...any) (*sql.Rows, error) {
+	return db.WriteQueryContext(context.Background(), query, args...)
+}
+
+func (db *database) WriteQueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	if db == nil || db.writeDb == nil {
+		return nil, errors.New("database not initialized")
+	}
+	ctx = db.dbBefore(ctx, query, args...)
+	defer db.dbAfter(ctx, query, args...)
+	return db.writeDb.QueryContext(ctx, query, args...)
+}
+
 func (db *database) dump(file string) error {
 	if db == nil || db.dumpDb == nil {
 		return errors.New("database not initialised")
