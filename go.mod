@@ -63,7 +63,7 @@ require (
 	golang.org/x/crypto v0.47.0
 	golang.org/x/net v0.49.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/text v0.33.0
+	golang.org/x/text v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.26.2
 	willnorris.com/go/microformats v1.2.1-0.20250531040321-0a7043b9acea
