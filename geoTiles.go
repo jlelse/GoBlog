@@ -36,7 +36,8 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 		// Do the request
 		res, err := a.httpClient.Do(proxyRequest)
 		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.error("Failed to proxy geo tile request", "err", err)
+			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}
 		// Copy result headers

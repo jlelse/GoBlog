@@ -2,11 +2,20 @@ package main
 
 import (
 	"cmp"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.goblog.app/app/pkgs/bodylimit"
 )
+
+// registerIndexRoutes registers the standard triplet of routes for index pages:
+// base path, feed path, and pagination path.
+func registerIndexRoutes(r chi.Router, path string, handler http.HandlerFunc) {
+	r.Get(path, handler)
+	r.Get(path+feedPath, handler)
+	r.Get(path+paginationPath, handler)
+}
 
 // Login
 func (a *goBlog) loginRouter(r chi.Router) {
@@ -222,9 +231,7 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 					path:    secPath,
 					section: section,
 				}))
-				r.Get(secPath, a.serveIndex)
-				r.Get(secPath+feedPath, a.serveIndex)
-				r.Get(secPath+paginationPath, a.serveIndex)
+				registerIndexRoutes(r, secPath, a.serveIndex)
 				r.Group(a.dateRoutes(conf, section.Name))
 			})
 		}
@@ -245,9 +252,7 @@ func (a *goBlog) blogTaxonomiesRouter(conf *configBlog) func(r chi.Router) {
 					taxBasePath := conf.getRelativePath(taxonomy.Name)
 					r.Get(taxBasePath, a.serveTaxonomy)
 					taxValPath := taxBasePath + "/{taxValue}"
-					r.Get(taxValPath, a.serveTaxonomyValue)
-					r.Get(taxValPath+feedPath, a.serveTaxonomyValue)
-					r.Get(taxValPath+paginationPath, a.serveTaxonomyValue)
+					registerIndexRoutes(r, taxValPath, a.serveTaxonomyValue)
 				})
 			}
 		}
@@ -269,19 +274,13 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) dateRoutes(conf *configBlog, pathPrefix string) func(r chi.Router) {
 	return func(r chi.Router) {
 		yearPath := conf.getRelativePath(pathPrefix + `/{year:(x|\d{4})}`)
-		r.Get(yearPath, a.serveDate)
-		r.Get(yearPath+feedPath, a.serveDate)
-		r.Get(yearPath+paginationPath, a.serveDate)
+		registerIndexRoutes(r, yearPath, a.serveDate)
 
 		monthPath := yearPath + `/{month:(x|\d{2})}`
-		r.Get(monthPath, a.serveDate)
-		r.Get(monthPath+feedPath, a.serveDate)
-		r.Get(monthPath+paginationPath, a.serveDate)
+		registerIndexRoutes(r, monthPath, a.serveDate)
 
 		dayPath := monthPath + `/{day:(\d{2})}`
-		r.Get(dayPath, a.serveDate)
-		r.Get(dayPath+feedPath, a.serveDate)
-		r.Get(dayPath+paginationPath, a.serveDate)
+		registerIndexRoutes(r, dayPath, a.serveDate)
 	}
 }
 
@@ -301,9 +300,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 					summaryTemplate: photoSummary,
 				}),
 			)
-			r.Get(photoPath, a.serveIndex)
-			r.Get(photoPath+feedPath, a.serveIndex)
-			r.Get(photoPath+paginationPath, a.serveIndex)
+			registerIndexRoutes(r, photoPath, a.serveIndex)
 		}
 	}
 }
@@ -323,9 +320,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 					r.Get("/", a.serveSearch)
 					r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/", a.serveSearch)
 					searchResultPath := "/" + searchPlaceholder
-					r.Get(searchResultPath, a.serveSearchResult)
-					r.Get(searchResultPath+feedPath, a.serveSearchResult)
-					r.Get(searchResultPath+paginationPath, a.serveSearchResult)
+					registerIndexRoutes(r, searchResultPath, a.serveSearchResult)
 				})
 				r.With(
 					// No private mode, to allow using OpenSearch in browser
@@ -367,21 +362,11 @@ func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 		r.Get(editorFileUsesPath+editorFileUsesPathPlaceholder, a.serveEditorFilesUsesResults)
 		r.Get(editorFileUsesPath+editorFileUsesPathPlaceholder+paginationPath, a.serveEditorFilesUsesResults)
 		r.Post(editorFileDeletePath, a.serveEditorFilesDelete)
-		r.Get("/drafts", a.serveDrafts)
-		r.Get("/drafts"+feedPath, a.serveDrafts)
-		r.Get("/drafts"+paginationPath, a.serveDrafts)
-		r.Get("/private", a.servePrivate)
-		r.Get("/private"+feedPath, a.servePrivate)
-		r.Get("/private"+paginationPath, a.servePrivate)
-		r.Get("/unlisted", a.serveUnlisted)
-		r.Get("/unlisted"+feedPath, a.serveUnlisted)
-		r.Get("/unlisted"+paginationPath, a.serveUnlisted)
-		r.Get("/scheduled", a.serveScheduled)
-		r.Get("/scheduled"+feedPath, a.serveScheduled)
-		r.Get("/scheduled"+paginationPath, a.serveScheduled)
-		r.Get("/deleted", a.serveDeleted)
-		r.Get("/deleted"+feedPath, a.serveDeleted)
-		r.Get("/deleted"+paginationPath, a.serveDeleted)
+		registerIndexRoutes(r, "/drafts", a.serveDrafts)
+		registerIndexRoutes(r, "/private", a.servePrivate)
+		registerIndexRoutes(r, "/unlisted", a.serveUnlisted)
+		registerIndexRoutes(r, "/scheduled", a.serveScheduled)
+		registerIndexRoutes(r, "/deleted", a.serveDeleted)
 		r.HandleFunc("/ws", a.serveEditorWebsocket)
 	}
 }

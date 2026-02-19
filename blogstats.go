@@ -13,7 +13,8 @@ func (a *goBlog) serveBlogStats(w http.ResponseWriter, r *http.Request) {
 	canonical := bc.getRelativePath(cmp.Or(bc.BlogStats.Path, defaultBlogStatsPath))
 	data, err := a.db.getBlogStats(blog)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get blog statistics", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	a.render(w, r, a.renderBlogStats, &renderData{

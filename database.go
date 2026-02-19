@@ -129,6 +129,7 @@ func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error
 	if err != nil {
 		return nil, err
 	}
+	readDb.SetMaxOpenConns(4)
 	if err := readDb.Ping(); err != nil {
 		return nil, err
 	}

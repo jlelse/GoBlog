@@ -151,13 +151,15 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	a.initSessionStores()
 	ses, err := a.loginSessions.Get(r, "l")
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get login session", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return true
 	}
 	ses.Values["login"] = true
 	err = a.loginSessions.Save(r, w, ses)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to save login session", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return true
 	}
 	// Serve original request

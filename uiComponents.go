@@ -157,7 +157,9 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 		// Section
 		if p.Section != "" {
 			if section := b.Sections[p.Section]; section != nil {
-				hb.WriteUnescaped(" in ") // TODO: Replace with a proper translation
+				hb.WriteUnescaped(" ")
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "in"))
+				hb.WriteUnescaped(" ")
 				hb.WriteElementOpen("a", "href", b.getRelativePath(section.Name))
 				hb.WriteEscaped(a.renderMdTitle(section.Title))
 				hb.WriteElementClose("a")
@@ -516,14 +518,14 @@ func (a *goBlog) renderPagination(hb *htmlbuilder.HtmlBuilder, blog *configBlog,
 	// Navigation
 	if hasPrev {
 		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", prev) // TODO: rel=prev?
+		hb.WriteElementOpen("a", "href", prev, "rel", "prev")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "prev"))
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("p")
 	}
 	if hasNext {
 		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", next) // TODO: rel=next?
+		hb.WriteElementOpen("a", "href", next, "rel", "next")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "next"))
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("p")

@@ -161,6 +161,23 @@ func (a *goBlog) deleteSection(blog string, name string) error {
 	return err
 }
 
+// migrateStringSetting loads a setting from the database. If empty, it migrates the config value to the database.
+// If found in the database, it applies the database value to the target.
+func (a *goBlog) migrateStringSetting(name string, target *string) error {
+	value, err := a.getSettingValue(name)
+	if err != nil {
+		return err
+	}
+	if value == "" {
+		if *target != "" {
+			return a.saveSettingValue(name, *target)
+		}
+	} else {
+		*target = value
+	}
+	return nil
+}
+
 // getBlogTitle returns the title for a blog from the database
 func (a *goBlog) getBlogTitle(blog string) (string, error) {
 	return a.getSettingValue(settingNameWithBlog(blog, blogTitleSetting))

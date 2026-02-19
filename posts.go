@@ -71,7 +71,8 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	} else if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get post", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	status := http.StatusOK
@@ -111,7 +112,8 @@ func (a *goBlog) redirectToRandomPost(rw http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 	randomPath, err := a.getRandomPostPath(blog)
 	if err != nil {
-		a.serveError(rw, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get random post path", "err", err)
+		a.serveError(rw, r, "", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(rw, r, randomPath, http.StatusFound)
@@ -355,7 +357,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	var posts []*post
 	err := p.Results(&posts)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get index posts", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 	// Title

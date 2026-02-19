@@ -34,7 +34,8 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		a.initSessionStores()
 		ses, err := a.captchaSessions.Get(r, "c")
 		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.error("Failed to get captcha session", "err", err)
+			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}
 		if captchaVal, ok := ses.Values["captcha"]; ok && captchaVal == true {
@@ -118,7 +119,8 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	a.initSessionStores()
 	ses, err := a.captchaSessions.Get(r, "c")
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get captcha session", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return true
 	}
 	// Check if session contains a captchaId and if captcha is solved
@@ -126,7 +128,8 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 		ses.Values["captcha"] = true
 		err = a.captchaSessions.Save(r, w, ses)
 		if err != nil {
-			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+			a.error("Failed to save captcha session", "err", err)
+			a.serveError(w, r, "", http.StatusInternalServerError)
 			return true
 		}
 		origReq = origReq.WithContext(context.WithValue(origReq.Context(), captchaSolvedKey, true))

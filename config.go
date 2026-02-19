@@ -517,26 +517,12 @@ func (a *goBlog) initConfig(logging bool) error {
 	}
 	// Load other settings from database
 	// User nick
-	if userNick, err := a.getSettingValue(userNickSetting); err != nil {
+	if err = a.migrateStringSetting(userNickSetting, &a.cfg.User.Nick); err != nil {
 		return err
-	} else if userNick == "" {
-		// Migrate to database
-		if err = a.saveSettingValue(userNickSetting, a.cfg.User.Nick); err != nil {
-			return err
-		}
-	} else {
-		a.cfg.User.Nick = userNick
 	}
 	// User name
-	if userName, err := a.getSettingValue(userNameSetting); err != nil {
+	if err = a.migrateStringSetting(userNameSetting, &a.cfg.User.Name); err != nil {
 		return err
-	} else if userName == "" {
-		// Migrate to database
-		if err = a.saveSettingValue(userNameSetting, a.cfg.User.Name); err != nil {
-			return err
-		}
-	} else {
-		a.cfg.User.Name = userName
 	}
 	// Migrate auth from config to database
 	if err := a.migrateAuthFromConfig(logging); err != nil {
@@ -584,32 +570,12 @@ func (a *goBlog) initConfig(logging bool) error {
 		bc.configTitle = bc.Title
 		bc.configDescription = bc.Description
 		// Blog title
-		if blogTitle, err := a.getBlogTitle(blog); err != nil {
+		if err = a.migrateStringSetting(settingNameWithBlog(blog, blogTitleSetting), &bc.Title); err != nil {
 			return err
-		} else if blogTitle == "" {
-			// Migrate to database if configured in config
-			if bc.Title != "" {
-				if err = a.setBlogTitle(blog, bc.Title); err != nil {
-					return err
-				}
-			}
-		} else {
-			// Set value from database
-			bc.Title = blogTitle
 		}
 		// Blog description
-		if blogDescription, err := a.getBlogDescription(blog); err != nil {
+		if err = a.migrateStringSetting(settingNameWithBlog(blog, blogDescriptionSetting), &bc.Description); err != nil {
 			return err
-		} else if blogDescription == "" {
-			// Migrate to database if configured in config
-			if bc.Description != "" {
-				if err = a.setBlogDescription(blog, bc.Description); err != nil {
-					return err
-				}
-			}
-		} else {
-			// Set value from database
-			bc.Description = blogDescription
 		}
 		// Load other settings from database
 		configs := []*bool{

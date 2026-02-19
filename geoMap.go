@@ -33,7 +33,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithLocation, err := a.db.countPosts(allPostsWithLocationRequestConfig)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to count posts with location", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -75,7 +76,8 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithTracks, err := a.getPosts(allPostsWithTracksRequestConfig)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get posts with tracks", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -113,7 +115,8 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 
 	allPostsWithLocations, err := a.getPosts(allPostsWithLocationRequestConfig)
 	if err != nil {
-		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
+		a.error("Failed to get posts with locations", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
 
