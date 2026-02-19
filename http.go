@@ -74,11 +74,12 @@ func (a *goBlog) startServer() (err error) {
 		go func() {
 			// Start HTTP server for redirects
 			h := http.Handler(http.HandlerFunc(a.redirectToHttps))
-			if m := a.getAutocertManager(); m != nil {
-				h = m.HTTPHandler(h)
+			redirectPort := a.cfg.Server.HttpsRedirectPort
+			if redirectPort == 0 {
+				redirectPort = 80
 			}
 			httpServer := &http.Server{
-				Addr:              ":80",
+				Addr:              ":" + strconv.Itoa(redirectPort),
 				Handler:           h,
 				ReadHeaderTimeout: 1 * time.Minute,
 				ReadTimeout:       5 * time.Minute,
@@ -99,7 +100,7 @@ func (a *goBlog) startServer() (err error) {
 	a.shutdown.Add(a.shutdownServer(s, "main server"))
 	s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)
 	if a.cfg.Server.PublicHTTPS {
-		s.TLSConfig = a.getAutocertManager().TLSConfig()
+		s.TLSConfig = a.getCertManager().TLSConfig()
 		err = s.ListenAndServeTLS("", "")
 	} else if a.cfg.Server.manualHttps {
 		err = s.ListenAndServeTLS(a.cfg.Server.HttpsCert, a.cfg.Server.HttpsKey)

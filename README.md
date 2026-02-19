@@ -214,8 +214,10 @@ Config for built-in HTTPS:
 ```yaml
 server:
   publicAddress: https://yourdomain.com
-  publicHttps: true  # Enable Let's Encrypt
+  publicHttps: true  # Enable automatic HTTPS with Let's Encrypt by default
 ```
+
+For advanced ACME settings (custom CA directory, EAB), see [HTTPS and ACME Certificates](#https-and-acme-certificates).
 
 ### Reverse Proxy Setup
 
@@ -271,6 +273,25 @@ server:
 ```
 
 That's it! GoBlog uses sensible defaults for everything else.
+
+### HTTPS and ACME Certificates
+
+When `publicHttps` is enabled, GoBlog automatically:
+- Obtains and renews TLS certificates via ACME TLS-ALPN-01 challenges (no port 80 required)
+- Optionally starts an HTTP server (configurable via `httpsRedirectPort`, default port 80) to redirect HTTP to HTTPS
+
+You can configure any ACME-compatible CA:
+
+```yaml
+server:
+  publicAddress: https://yourdomain.com
+  publicHttps: true
+  acmeDir: https://acme.zerossl.com/v2/DV90  # Use ZeroSSL instead of Let's Encrypt
+  acmeEabKid: "your-key-id"                   # External Account Binding key ID
+  acmeEabKey: "your-key"                       # External Account Binding key (base64url)
+```
+
+For manual TLS (with your own certificate files), use `httpsCert` and `httpsKey` instead of `publicHttps`.
 
 ### Configuration Reference
 

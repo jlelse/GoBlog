@@ -20,7 +20,6 @@ import (
 	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
 	"go.hacdias.com/indielib/indieauth"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 type goBlog struct {
@@ -36,9 +35,9 @@ type goBlog struct {
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile
-	// Autocert
-	autocertManager *autocert.Manager
-	autocertInit    sync.Once
+	// ACME certificate manager
+	certMgr     *certManager
+	certMgrInit sync.Once
 	// Blogroll
 	blogrollCacheGroup singleflightx.Group[string, []*opml.Outline]
 

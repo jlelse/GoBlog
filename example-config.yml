@@ -39,14 +39,15 @@ server:
   # This is useful when migrating domains and you want to keep using the old domain for IndieAuth.
   # indieAuthAddress: https://old.example.com
   # Security
-  publicHttps: true # Use Let's Encrypt and serve site with HTTPS
+  publicHttps: true # Use Let's Encrypt and serve site with HTTPS (automatic ACME certificate management)
   # To use another ACME server like ZeroSSL, set the following
   # acmeDir: https://acme.zerossl.com/v2/DV90
   # acmeEabKid: "kid" # Key ID for the EAB key
   # acmeEabKey: "key" # Key for the EAB key
-  httpsCert: /path/to/cert.crt # Path to TLS certificate
-  httpsKey: /path/to/key.key # Path to TLS key
+  httpsCert: /path/to/cert.crt # Path to TLS certificate (for manual HTTPS without ACME)
+  httpsKey: /path/to/key.key # Path to TLS key (for manual HTTPS without ACME)
   httpsRedirect: true # Listen on port 80 and redirect to HTTPS on port 443, when HTTPS is configured and no custom port set, automatically enabled with publicHttps
+  httpsRedirectPort: 80 # (Optional) Port for the HTTP-to-HTTPS redirect server, default is 80
   securityHeaders: true # Set security HTTP headers, automatically enabled with publicHttps or httpsCert and httpsKey
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com
