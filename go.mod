@@ -59,7 +59,7 @@ require (
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yuin/goldmark v1.7.16
 	github.com/yuin/goldmark-emoji v1.0.6
-	go.hacdias.com/indielib v0.4.4
+	go.hacdias.com/indielib v0.5.0
 	goftp.io/server/v2 v2.0.2
 	golang.org/x/crypto v0.48.0
 	golang.org/x/net v0.50.0
@@ -67,7 +67,7 @@ require (
 	golang.org/x/text v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.26.3
-	willnorris.com/go/microformats v1.2.1-0.20250531040321-0a7043b9acea
+	willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b
 )
 
 require (
