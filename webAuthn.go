@@ -22,7 +22,7 @@ func (a *goBlog) initWebAuthn() error {
 	wconfig := &webauthn.Config{
 		RPDisplayName:        "GoBlog",
 		RPID:                 a.cfg.Server.publicHost,
-		RPOrigins:            []string{a.getFullAddress("/")},
+		RPOrigins:            append([]string{a.cfg.Server.PublicAddress}, a.cfg.Server.AltAddresses...),
 		EncodeUserIDAsString: true,
 		Timeouts: webauthn.TimeoutsConfig{
 			Login: webauthn.TimeoutConfig{
