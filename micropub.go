@@ -50,6 +50,7 @@ func (s *micropubImplementation) getHandler() http.Handler {
 			micropub.WithGetCategories(s.getCategories),
 			micropub.WithGetChannels(s.getChannels),
 			micropub.WithGetVisibility(s.getVisibility),
+			micropub.WithGetPostStatuses(s.getPostStatuses),
 		)
 	}
 	return s.h
@@ -83,6 +84,10 @@ func (s *micropubImplementation) getChannels() []micropub.Channel {
 
 func (s *micropubImplementation) getVisibility() []string {
 	return []string{string(visibilityPrivate), string(visibilityUnlisted), string(visibilityPublic)}
+}
+
+func (s *micropubImplementation) getPostStatuses() []string {
+	return []string{string(statusDraft), string(statusPublished), string(statusScheduled)}
 }
 
 func (s *micropubImplementation) getMediaHandler() http.Handler {

@@ -45,7 +45,7 @@ func Test_micropubQuery(t *testing.T) {
 	testCases := []testCase{
 		{
 			query:      "config",
-			want:       "{\"categories\":[\"test\",\"test2\"],\"channels\":[{\"uid\":\"default\",\"name\":\"default: My Blog\"},{\"uid\":\"default/posts\",\"name\":\"default/posts: posts\"}],\"media-endpoint\":\"http://localhost:8080/micropub/media\",\"visibility\":[\"private\",\"unlisted\",\"public\"]}\n",
+			want:       "{\"categories\":[\"test\",\"test2\"],\"channels\":[{\"uid\":\"default\",\"name\":\"default: My Blog\"},{\"uid\":\"default/posts\",\"name\":\"default/posts: posts\"}],\"media-endpoint\":\"http://localhost:8080/micropub/media\",\"post-status\":[\"draft\",\"published\",\"scheduled\"],\"visibility\":[\"private\",\"unlisted\",\"public\"]}\n",
 			wantStatus: http.StatusOK,
 		},
 		{
