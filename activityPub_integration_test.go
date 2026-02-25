@@ -97,7 +97,7 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 		actor, err := gb.apGetRemoteActor(gb.cfg.DefaultBlog, activitypub.IRI(fmt.Sprintf("%s/users/%s", gts.baseURL, gtsServiceUsername)))
 		require.NoError(t, err)
 		require.NotNil(t, actor)
-		require.Equal(t, activitypub.ApplicationType, actor.GetType())
+		require.Equal(t, activitypub.ServiceType, actor.GetType())
 
 		// Follow GoBlog from the service actor
 		searchResultsService, err := mcService.Search(t.Context(), goBlogAcct, true)
