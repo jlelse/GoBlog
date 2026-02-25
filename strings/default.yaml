@@ -105,6 +105,7 @@ privatepostsdesc: "Published posts with visibility `private` that are visible on
 profileimage: "Profile image"
 publishedon: "Published on"
 registerpasskey: "Register new Passkey"
+registerpasskeyalt: "Register passkey for"
 rename: "Rename"
 replyto: "Reply to"
 reverify: "Reverify"

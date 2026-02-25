@@ -1550,6 +1550,7 @@ type settingsRenderData struct {
 	hasTOTP               bool
 	hasDBPassword         bool
 	newTotpSecret         string
+	altAddresses          []string
 }
 
 type appPasswordCreatedRenderData struct {

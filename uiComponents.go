@@ -928,6 +928,16 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	)
 	hb.WriteElementClose("form")
 
+	// Links to register passkeys for alt addresses
+	for _, altAddress := range srd.altAddresses {
+		altSettingsURL := getFullAddressStatic(altAddress, settingsPath)
+		hb.WriteElementOpen("p")
+		hb.WriteElementOpen("a", "href", altSettingsURL)
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "registerpasskeyalt") + " " + altAddress)
+		hb.WriteElementClose("a")
+		hb.WriteElementClose("p")
+	}
+
 	// List existing passkeys in a table
 	if len(srd.passkeys) > 0 {
 		hb.WriteElementOpen("table", "class", "settings-table settings-passkeys")

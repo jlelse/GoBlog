@@ -60,6 +60,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			hasTOTP:               hasTOTP,
 			hasDBPassword:         hasDBPassword,
 			newTotpSecret:         newTotpSecret,
+			altAddresses:          a.cfg.Server.AltAddresses,
 		},
 	})
 }

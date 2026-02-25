@@ -391,10 +391,13 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r.WithContext(rc))
 				return
 			}
-			// Allow IndieAuth and login requests
+			// Allow IndieAuth, login, settings requests
 			if strings.HasPrefix(r.URL.Path, indieAuthPath) ||
 				r.URL.Path == indieAuthMetadataPath ||
-				strings.HasPrefix(r.URL.Path, webAuthnBasePath) {
+				strings.HasPrefix(r.URL.Path, webAuthnBasePath) ||
+				r.URL.Path == loginPath ||
+				r.URL.Path == logoutPath ||
+				strings.HasPrefix(r.URL.Path, settingsPath) {
 				// Set altAddress in context for handlers
 				rc := context.WithValue(r.Context(), altAddressKey, altAddress)
 				next.ServeHTTP(w, r.WithContext(rc))
