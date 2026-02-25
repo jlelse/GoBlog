@@ -19,34 +19,49 @@ const (
 )
 
 func (a *goBlog) initWebAuthn() error {
-	wconfig := &webauthn.Config{
-		RPDisplayName:        "GoBlog",
-		RPID:                 a.cfg.Server.publicHost,
-		RPOrigins:            append([]string{a.cfg.Server.PublicAddress}, a.cfg.Server.AltAddresses...),
-		EncodeUserIDAsString: true,
-		Timeouts: webauthn.TimeoutsConfig{
-			Login: webauthn.TimeoutConfig{
-				Enforce:    true,
-				Timeout:    5 * time.Minute,
-				TimeoutUVD: 5 * time.Minute,
+	a.webAuthn = map[string]*webauthn.WebAuthn{}
+	addresses := append([]string{a.cfg.Server.PublicAddress}, a.cfg.Server.AltAddresses...)
+	hosts := append([]string{a.cfg.Server.publicHost}, a.cfg.Server.altHosts...)
+	for i, host := range hosts {
+		address := addresses[i]
+		wconfig := &webauthn.Config{
+			RPDisplayName:        "GoBlog",
+			RPID:                 host,
+			RPOrigins:            []string{address},
+			EncodeUserIDAsString: true,
+			Timeouts: webauthn.TimeoutsConfig{
+				Login: webauthn.TimeoutConfig{
+					Enforce:    true,
+					Timeout:    5 * time.Minute,
+					TimeoutUVD: 5 * time.Minute,
+				},
+				Registration: webauthn.TimeoutConfig{
+					Enforce:    true,
+					Timeout:    5 * time.Minute,
+					TimeoutUVD: 5 * time.Minute,
+				},
 			},
-			Registration: webauthn.TimeoutConfig{
-				Enforce:    true,
-				Timeout:    5 * time.Minute,
-				TimeoutUVD: 5 * time.Minute,
-			},
-		},
+		}
+		wa, err := webauthn.New(wconfig)
+		if err != nil {
+			return err
+		}
+		a.webAuthn[address] = wa
 	}
-	webAuthn, err := webauthn.New(wconfig)
-	if err != nil {
-		return err
-	}
-	a.webAuthn = webAuthn
 	return nil
 }
 
+func (a *goBlog) getWebAuthnForRequest(r *http.Request) *webauthn.WebAuthn {
+	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
+		if wa, ok := a.webAuthn[altAddress]; ok && wa != nil {
+			return wa
+		}
+	}
+	return a.webAuthn[a.cfg.Server.PublicAddress]
+}
+
 func (a *goBlog) beginWebAuthnRegistration(w http.ResponseWriter, r *http.Request) {
-	options, session, err := a.webAuthn.BeginRegistration(a.getWebAuthnUser())
+	options, session, err := a.getWebAuthnForRequest(r).BeginRegistration(a.getWebAuthnUser())
 	if err != nil {
 		a.debug("failed to begin webauthn registration", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
@@ -91,7 +106,7 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	user := a.getWebAuthnUser()
-	credential, err := a.webAuthn.FinishRegistration(user, session, r)
+	credential, err := a.getWebAuthnForRequest(r).FinishRegistration(user, session, r)
 	if err != nil {
 		a.debug("failed to finish webauthn registration", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
@@ -110,7 +125,7 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 }
 
 func (a *goBlog) beginWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
-	options, session, err := a.webAuthn.BeginLogin(a.getWebAuthnUser())
+	options, session, err := a.getWebAuthnForRequest(r).BeginLogin(a.getWebAuthnUser())
 	if err != nil {
 		a.debug("failed to begin webauthn login", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
@@ -155,7 +170,7 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := a.getWebAuthnUser()
-	credential, err := a.webAuthn.FinishLogin(user, session, r)
+	credential, err := a.getWebAuthnForRequest(r).FinishLogin(user, session, r)
 	if err != nil {
 		a.debug("failed to finish webauthn login", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)

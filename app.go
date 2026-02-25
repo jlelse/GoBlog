@@ -108,5 +108,5 @@ type goBlog struct {
 	torAddress  string
 	torHostname string
 	// WebAuthn
-	webAuthn *webauthn.WebAuthn
+	webAuthn map[string]*webauthn.WebAuthn
 }
