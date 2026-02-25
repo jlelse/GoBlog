@@ -86,6 +86,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	go func() {
 		_ = pipeWriter.CloseWithError(feedWriteFunc(pipeWriter))
 	}()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
 	_ = pipeReader.CloseWithError(a.min.Get().Minify(feedMediaType, w, pipeReader))
 }
