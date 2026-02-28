@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -220,51 +219,57 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
+	// Build SQL
+	sqlBuilder := builderpool.Get()
+	defer builderpool.Put(sqlBuilder)
+	var sqlArgs []any
 	// Begin transaction
-	if _, err := db.Exec("begin"); err != nil {
-		return err
-	}
-	// Update or create post
+	sqlBuilder.WriteString("begin;")
 	if o.new {
-		if _, err := db.Exec(
-			"insert into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc,
-		); err != nil {
-			db.Exec("rollback")
-			if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
-				return errors.New("post already exists at given path")
-			}
-			return err
-		}
-	} else {
-		// Update post (path update cascades to post_parameters via foreign key)
-		if _, err := db.Exec(
-			"update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ?, wordcount = ?, charcount = ? where path = ?",
-			p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc, o.oldPath,
-		); err != nil {
-			db.Exec("rollback")
-			return err
-		}
-		// Update post parameters
-		if err := db.updatePostParameters(p); err != nil {
-			db.Exec("rollback")
-			return err
-		}
-	}
-	if o.new {
-		// Insert all parameters for new posts
+		// Insert post
+		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc)
+		// Insert all parameters
 		for param, values := range p.Parameters {
 			for _, value := range lo.Filter(values, loStringNotEmpty) {
-				if _, err := db.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", p.Path, param, value); err != nil {
-					db.Exec("rollback")
-					return err
-				}
+				sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+				sqlArgs = append(sqlArgs, p.Path, param, value)
+			}
+		}
+	} else {
+		// Read old parameters before building the query (we hold the lock, so data won't change)
+		oldParamRows, err := db.readPostParamRows(o.oldPath)
+		if err != nil {
+			return err
+		}
+		// Update post (path update cascades to post_parameters via foreign key)
+		sqlBuilder.WriteString("update posts set path = ?, content = ?, published = ?, updated = ?, blog = ?, section = ?, status = ?, visibility = ?, priority = ?, wordcount = ?, charcount = ? where path = ?;")
+		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc, o.oldPath)
+		// Build new parameters map (filtered)
+		newParams := map[string][]string{}
+		for param, values := range p.Parameters {
+			filtered := lo.Filter(values, loStringNotEmpty)
+			if len(filtered) > 0 {
+				newParams[param] = filtered
+			}
+		}
+		// Diff parameters: update/delete/insert using shared helper
+		for name, oldRows := range oldParamRows {
+			diffParamSQL(sqlBuilder, &sqlArgs, p.Path, name, oldRows, newParams[name])
+		}
+		for name, newValues := range newParams {
+			if _, exists := oldParamRows[name]; !exists {
+				diffParamSQL(sqlBuilder, &sqlArgs, p.Path, name, nil, newValues)
 			}
 		}
 	}
 	// Commit transaction
-	if _, err := db.Exec("commit"); err != nil {
-		db.Exec("rollback")
+	sqlBuilder.WriteString("commit;")
+	// Execute
+	if _, err := db.Exec(sqlBuilder.String(), sqlArgs...); err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: posts.path") {
+			return errors.New("post already exists at given path")
+		}
 		return err
 	}
 	// Update FTS index
@@ -272,59 +277,49 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	return nil
 }
 
-// updatePostParameters diffs old and new parameters per parameter name.
-// Unchanged parameters are left untouched; changed ones are deleted and re-inserted to preserve value order.
-// Must be called within a transaction and while holding pcm lock.
-func (db *database) updatePostParameters(p *post) error {
-	// Query from writeDb to see in-flight transaction changes (e.g. cascaded path updates)
-	rows, err := db.WriteQuery("select parameter, value from post_parameters where path = ? order by id", p.Path)
+// paramRow is a post_parameters row with its database id.
+type paramRow struct {
+	id    int
+	value string
+}
+
+// readPostParamRows reads all parameters for a post path with their IDs, grouped by parameter name.
+func (db *database) readPostParamRows(path string) (map[string][]paramRow, error) {
+	rows, err := db.Query("select id, parameter, value from post_parameters where path = ? order by id", path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
-	oldParams := map[string][]string{}
+	params := map[string][]paramRow{}
 	for rows.Next() {
+		var id int
 		var name, value string
-		if err := rows.Scan(&name, &value); err != nil {
-			return err
+		if err := rows.Scan(&id, &name, &value); err != nil {
+			return nil, err
 		}
-		oldParams[name] = append(oldParams[name], value)
+		params[name] = append(params[name], paramRow{id: id, value: value})
 	}
-	// Build new parameters map (filtered)
-	newParams := map[string][]string{}
-	for param, values := range p.Parameters {
-		filtered := lo.Filter(values, loStringNotEmpty)
-		if len(filtered) > 0 {
-			newParams[param] = filtered
-		}
-	}
-	// Delete parameters that no longer exist
-	for name := range oldParams {
-		if _, exists := newParams[name]; !exists {
-			if _, err := db.Exec("delete from post_parameters where path = ? and parameter = ?", p.Path, name); err != nil {
-				return err
-			}
+	return params, nil
+}
+
+// diffParamSQL appends UPDATE/DELETE/INSERT statements for a single parameter to the builder.
+// Existing rows are updated in place; excess old rows are deleted; new values beyond old rows are inserted.
+func diffParamSQL(sqlBuilder *strings.Builder, sqlArgs *[]any, path, param string, oldRows []paramRow, newValues []string) {
+	minLen := min(len(oldRows), len(newValues))
+	for i := range minLen {
+		if oldRows[i].value != newValues[i] {
+			sqlBuilder.WriteString("update post_parameters set value = ? where id = ?;")
+			*sqlArgs = append(*sqlArgs, newValues[i], oldRows[i].id)
 		}
 	}
-	// Insert or update parameters
-	for name, newValues := range newParams {
-		oldValues, exists := oldParams[name]
-		if exists && slices.Equal(oldValues, newValues) {
-			continue
-		}
-		// Values changed or parameter is new: delete old and insert new
-		if exists {
-			if _, err := db.Exec("delete from post_parameters where path = ? and parameter = ?", p.Path, name); err != nil {
-				return err
-			}
-		}
-		for _, value := range newValues {
-			if _, err := db.Exec("insert into post_parameters (path, parameter, value) values (?, ?, ?)", p.Path, name, value); err != nil {
-				return err
-			}
-		}
+	for i := minLen; i < len(oldRows); i++ {
+		sqlBuilder.WriteString("delete from post_parameters where id = ?;")
+		*sqlArgs = append(*sqlArgs, oldRows[i].id)
 	}
-	return nil
+	for i := minLen; i < len(newValues); i++ {
+		sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
+		*sqlArgs = append(*sqlArgs, path, param, newValues[i])
+	}
 }
 
 func (a *goBlog) deletePost(path string) error {
@@ -417,25 +412,20 @@ func (db *database) replacePostParam(path, param string, values []string) error 
 	// Lock post creation
 	db.pcm.Lock()
 	defer db.pcm.Unlock()
+	// Read existing rows
+	allRows, err := db.readPostParamRows(path)
+	if err != nil {
+		return err
+	}
 	// Build SQL
 	sqlBuilder := builderpool.Get()
 	defer builderpool.Put(sqlBuilder)
-	var sqlArgs = []any{}
-	// Start transaction
+	var sqlArgs []any
 	sqlBuilder.WriteString("begin;")
-	// Delete old post
-	sqlBuilder.WriteString("delete from post_parameters where path = ? and parameter = ?;")
-	sqlArgs = append(sqlArgs, path, param)
-	// Insert new post parameters
-	for _, value := range values {
-		sqlBuilder.WriteString("insert into post_parameters (path, parameter, value) values (?, ?, ?);")
-		sqlArgs = append(sqlArgs, path, param, value)
-	}
-	// Commit transaction
+	diffParamSQL(sqlBuilder, &sqlArgs, path, param, allRows[param], values)
 	sqlBuilder.WriteString("commit;")
 	// Execute
-	_, err := db.Exec(sqlBuilder.String(), sqlArgs...)
-	if err != nil {
+	if _, err := db.Exec(sqlBuilder.String(), sqlArgs...); err != nil {
 		return err
 	}
 	// Update FTS index
