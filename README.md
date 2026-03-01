@@ -972,6 +972,34 @@ plugins:
       allowed: YOUR_TELEGRAM_USERNAME   # Required
 ```
 
+#### MCP Server
+
+**Path:** `embedded:mcp` | **Import:** `mcp`
+
+Exposes your blog as an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server, allowing AI assistants and LLM applications to query your blog posts. Implements the MCP 2025-11-25 specification with Streamable HTTP transport. Read-only access — no editing or creating posts.
+
+**Available tools:**
+- `list_blogs` — List configured blogs with metadata (name, title, description, language)
+- `list_posts` — List posts with optional filtering by blog, section, status, visibility, with pagination
+- `get_post` — Get a single post by path with full content and parameters
+- `search_posts` — Full-text search across all posts
+- `count_posts` — Count posts matching filters
+
+**Config:**
+```yaml
+plugins:
+  - path: embedded:mcp
+    import: mcp
+    config:
+      path: /mcp  # Optional: endpoint path, default is /mcp
+```
+
+**Authentication:** The MCP server uses GoBlog's app passwords for authentication. Create an app password in the GoBlog settings UI, then use it as a Bearer token (`Authorization: Bearer <app-password>`) or via HTTP Basic Auth. Session cookies are also accepted.
+
+**Usage:** Point your MCP client (e.g. VS Code, Claude Desktop) at `https://yourblog.example.com/mcp` with HTTP transport type and set the app password as the Bearer token for authentication.
+
+**Testing with MCP Inspector:** Install and run the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) with `npx @modelcontextprotocol/inspector`. Select "Streamable HTTP" as transport type, enter `https://yourblog.example.com/mcp` as the URL, add a header `Authorization: Bearer <app-password>`, and click "Connect". You can then browse the available tools and invoke them interactively.
+
 #### Demo Plugin
 
 **Path:** `embedded:demo` | **Import:** `demo`

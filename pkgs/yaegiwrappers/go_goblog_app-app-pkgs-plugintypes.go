@@ -46,6 +46,7 @@ func init() {
 		"PostCreatedHook": reflect.ValueOf((*plugintypes.PostCreatedHook)(nil)),
 		"PostDeletedHook": reflect.ValueOf((*plugintypes.PostDeletedHook)(nil)),
 		"PostUpdatedHook": reflect.ValueOf((*plugintypes.PostUpdatedHook)(nil)),
+		"PostsQuery":      reflect.ValueOf((*plugintypes.PostsQuery)(nil)),
 		"RenderContext":   reflect.ValueOf((*plugintypes.RenderContext)(nil)),
 		"SetApp":          reflect.ValueOf((*plugintypes.SetApp)(nil)),
 		"SetConfig":       reflect.ValueOf((*plugintypes.SetConfig)(nil)),
@@ -82,13 +83,17 @@ func init() {
 type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	IValue                interface{}
 	WAssetPath            func(filename string) string
+	WCheckAppPassword     func(password string) bool
 	WCompileAsset         func(filename string, reader io.Reader) error
+	WCountPosts           func(query *plugintypes.PostsQuery) (int, error)
 	WCreatePost           func(content string) (plugintypes.Post, error)
 	WGetBlog              func(name string) (plugintypes.Blog, bool)
+	WGetBlogNames         func() []string
 	WGetDatabase          func() plugintypes.Database
 	WGetFullAddress       func(path string) string
 	WGetHTTPClient        func() *http.Client
 	WGetPost              func(path string) (plugintypes.Post, error)
+	WGetPosts             func(query *plugintypes.PostsQuery) ([]plugintypes.Post, error)
 	WIsLoggedIn           func(req *http.Request) bool
 	WPurgeCache           func()
 	WRenderMarkdownAsText func(markdown string) (text string, err error)
@@ -99,14 +104,23 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) string {
 	return W.WAssetPath(filename)
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CheckAppPassword(password string) bool {
+	return W.WCheckAppPassword(password)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CompileAsset(filename string, reader io.Reader) error {
 	return W.WCompileAsset(filename, reader)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CountPosts(query *plugintypes.PostsQuery) (int, error) {
+	return W.WCountPosts(query)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CreatePost(content string) (plugintypes.Post, error) {
 	return W.WCreatePost(content)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlog(name string) (plugintypes.Blog, bool) {
 	return W.WGetBlog(name)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogNames() []string {
+	return W.WGetBlogNames()
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
@@ -119,6 +133,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetHTTPClient() *http.Client {
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintypes.Post, error) {
 	return W.WGetPost(path)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPosts(query *plugintypes.PostsQuery) ([]plugintypes.Post, error) {
+	return W.WGetPosts(query)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) IsLoggedIn(req *http.Request) bool {
 	return W.WIsLoggedIn(req)
@@ -138,12 +155,20 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) UploadMedia(file io.Reader, fil
 
 // _go_goblog_app_app_pkgs_plugintypes_Blog is an interface wrapper for Blog type
 type _go_goblog_app_app_pkgs_plugintypes_Blog struct {
-	IValue       interface{}
-	WGetLanguage func() string
+	IValue          interface{}
+	WGetDescription func() string
+	WGetLanguage    func() string
+	WGetTitle       func() string
 }
 
+func (W _go_goblog_app_app_pkgs_plugintypes_Blog) GetDescription() string {
+	return W.WGetDescription()
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_Blog) GetLanguage() string {
 	return W.WGetLanguage()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Blog) GetTitle() string {
+	return W.WGetTitle()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Database is an interface wrapper for Database type
@@ -211,8 +236,10 @@ type _go_goblog_app_app_pkgs_plugintypes_Post struct {
 	WGetPath                func() string
 	WGetPublished           func() string
 	WGetSection             func() string
+	WGetStatus              func() string
 	WGetTitle               func() string
 	WGetUpdated             func() string
+	WGetVisibility          func() string
 }
 
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetBlog() string {
@@ -239,11 +266,17 @@ func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetPublished() string {
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetSection() string {
 	return W.WGetSection()
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetStatus() string {
+	return W.WGetStatus()
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetTitle() string {
 	return W.WGetTitle()
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetUpdated() string {
 	return W.WGetUpdated()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_Post) GetVisibility() string {
+	return W.WGetVisibility()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_PostCreatedHook is an interface wrapper for PostCreatedHook type

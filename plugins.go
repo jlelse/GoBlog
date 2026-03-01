@@ -100,9 +100,69 @@ func (a *goBlog) GetPost(path string) (plugintypes.Post, error) {
 	return a.getPost(path)
 }
 
+func (a *goBlog) GetPosts(query *plugintypes.PostsQuery) ([]plugintypes.Post, error) {
+	cfg := &postsRequestConfig{
+		withoutRenderedTitle: true,
+	}
+	if query != nil {
+		cfg.search = query.Search
+		if query.Blog != "" {
+			cfg.blogs = []string{query.Blog}
+		}
+		if query.Section != "" {
+			cfg.sections = []string{query.Section}
+		}
+		if query.Status != "" {
+			cfg.status = []postStatus{postStatus(query.Status)}
+		}
+		if query.Visibility != "" {
+			cfg.visibility = []postVisibility{postVisibility(query.Visibility)}
+		}
+		cfg.limit = query.Limit
+		cfg.offset = query.Offset
+	}
+	posts, err := a.getPosts(cfg)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]plugintypes.Post, len(posts))
+	for i, p := range posts {
+		result[i] = p
+	}
+	return result, nil
+}
+
+func (a *goBlog) CountPosts(query *plugintypes.PostsQuery) (int, error) {
+	cfg := &postsRequestConfig{}
+	if query != nil {
+		cfg.search = query.Search
+		if query.Blog != "" {
+			cfg.blogs = []string{query.Blog}
+		}
+		if query.Section != "" {
+			cfg.sections = []string{query.Section}
+		}
+		if query.Status != "" {
+			cfg.status = []postStatus{postStatus(query.Status)}
+		}
+		if query.Visibility != "" {
+			cfg.visibility = []postVisibility{postVisibility(query.Visibility)}
+		}
+	}
+	return a.db.countPosts(cfg)
+}
+
 func (a *goBlog) GetBlog(name string) (plugintypes.Blog, bool) {
 	blog, ok := a.cfg.Blogs[name]
 	return blog, ok
+}
+
+func (a *goBlog) GetBlogNames() []string {
+	names := make([]string, 0, len(a.cfg.Blogs))
+	for name := range a.cfg.Blogs {
+		names = append(names, name)
+	}
+	return names
 }
 
 func (a *goBlog) PurgeCache() {
@@ -179,6 +239,11 @@ func (a *goBlog) IsLoggedIn(req *http.Request) bool {
 	return a.isLoggedIn(req)
 }
 
+func (a *goBlog) CheckAppPassword(password string) bool {
+	valid, err := a.checkAppPassword(password)
+	return err == nil && valid
+}
+
 func (a *goBlog) GetFullAddress(path string) string {
 	return a.getFullAddress(path)
 }
@@ -223,6 +288,22 @@ func (p *post) GetBlog() string {
 	return p.Blog
 }
 
+func (p *post) GetStatus() string {
+	return string(p.Status)
+}
+
+func (p *post) GetVisibility() string {
+	return string(p.Visibility)
+}
+
 func (b *configBlog) GetLanguage() string {
 	return b.Lang
+}
+
+func (b *configBlog) GetTitle() string {
+	return b.Title
+}
+
+func (b *configBlog) GetDescription() string {
+	return b.Description
 }

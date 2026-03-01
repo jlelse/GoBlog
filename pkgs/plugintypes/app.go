@@ -13,8 +13,14 @@ type App interface {
 	GetDatabase() Database
 	// Get a post from the database or an error when there is no post for the given path
 	GetPost(path string) (Post, error)
+	// Get posts matching the query
+	GetPosts(query *PostsQuery) ([]Post, error)
+	// Count posts matching the query
+	CountPosts(query *PostsQuery) (int, error)
 	// Get a blog and a bool whether it exists
 	GetBlog(name string) (Blog, bool)
+	// Get all blog names
+	GetBlogNames() []string
 	// Purge the rendering cache
 	PurgeCache()
 	// Get the HTTP client used by GoBlog
@@ -33,8 +39,28 @@ type App interface {
 	RenderMarkdownAsText(markdown string) (text string, err error)
 	// Check if user is logged in
 	IsLoggedIn(req *http.Request) bool
+	// Check if the given password matches a stored app password
+	CheckAppPassword(password string) bool
 	// Get the full address of a path (including the domain)
 	GetFullAddress(path string) string
+}
+
+// PostsQuery defines the parameters for querying posts.
+type PostsQuery struct {
+	// Full-text search query
+	Search string
+	// Filter by blog name
+	Blog string
+	// Filter by section name
+	Section string
+	// Filter by post status: "published", "draft", "scheduled"
+	Status string
+	// Filter by post visibility: "public", "unlisted", "private"
+	Visibility string
+	// Maximum number of posts to return
+	Limit int
+	// Number of posts to skip for pagination
+	Offset int
 }
 
 // Database is used to provide access to GoBlog's database.
@@ -69,12 +95,20 @@ type Post interface {
 	GetContent() string
 	// Get the post title
 	GetTitle() string
+	// Get the post status (e.g. "published", "draft", "scheduled")
+	GetStatus() string
+	// Get the post visibility (e.g. "public", "unlisted", "private")
+	GetVisibility() string
 }
 
 // Blog contains methods to access the blog's configuration.
 type Blog interface {
 	// Get the language
 	GetLanguage() string
+	// Get the blog title
+	GetTitle() string
+	// Get the blog description
+	GetDescription() string
 }
 
 // RenderContext gives some context of the current rendering.
