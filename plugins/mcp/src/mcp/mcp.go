@@ -257,7 +257,7 @@ func (p *plugin) handleToolsList() *toolsListResult {
 			},
 			{
 				Name:        "list_posts",
-				Description: "List blog posts with optional filtering by blog, section, status, and visibility. Returns post metadata. Results are ordered by publication date descending.",
+				Description: "List blog posts with optional filtering by blog, section, status, and visibility. Returns post metadata by default, or full content when includeContent is true. Results are ordered by publication date descending.",
 				InputSchema: map[string]any{
 					"type": "object",
 					"properties": map[string]any{
@@ -289,6 +289,10 @@ func (p *plugin) handleToolsList() *toolsListResult {
 							"type":        "integer",
 							"description": "Number of posts to skip for pagination. Default: 0",
 							"minimum":     0,
+						},
+						"includeContent": map[string]any{
+							"type":        "boolean",
+							"description": "Include full post content in results. Default: false",
 						},
 					},
 					"additionalProperties": false,
@@ -463,12 +467,13 @@ func (p *plugin) postToResult(post plugintypes.Post, includeContent bool) postRe
 
 func (p *plugin) toolListPosts(args json.RawMessage) *toolCallResult {
 	var params struct {
-		Blog       string `json:"blog"`
-		Section    string `json:"section"`
-		Status     string `json:"status"`
-		Visibility string `json:"visibility"`
-		Limit      int    `json:"limit"`
-		Offset     int    `json:"offset"`
+		Blog           string `json:"blog"`
+		Section        string `json:"section"`
+		Status         string `json:"status"`
+		Visibility     string `json:"visibility"`
+		Limit          int    `json:"limit"`
+		Offset         int    `json:"offset"`
+		IncludeContent bool   `json:"includeContent"`
 	}
 	if args != nil {
 		if err := json.Unmarshal(args, &params); err != nil {
@@ -498,7 +503,7 @@ func (p *plugin) toolListPosts(args json.RawMessage) *toolCallResult {
 
 	results := make([]postResult, len(posts))
 	for i, post := range posts {
-		results[i] = p.postToResult(post, false)
+		results[i] = p.postToResult(post, params.IncludeContent)
 	}
 
 	resultJSON, _ := json.Marshal(results)
