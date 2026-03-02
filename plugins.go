@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/plugins"
@@ -118,6 +119,8 @@ func (a *goBlog) GetPosts(query *plugintypes.PostsQuery) ([]plugintypes.Post, er
 		if query.Visibility != "" {
 			cfg.visibility = []postVisibility{postVisibility(query.Visibility)}
 		}
+		cfg.parameter = query.Parameter
+		cfg.parameterValue = query.ParameterValue
 		cfg.limit = query.Limit
 		cfg.offset = query.Offset
 	}
@@ -148,6 +151,8 @@ func (a *goBlog) CountPosts(query *plugintypes.PostsQuery) (int, error) {
 		if query.Visibility != "" {
 			cfg.visibility = []postVisibility{postVisibility(query.Visibility)}
 		}
+		cfg.parameter = query.Parameter
+		cfg.parameterValue = query.ParameterValue
 	}
 	return a.db.countPosts(cfg)
 }
@@ -246,6 +251,140 @@ func (a *goBlog) CheckAppPassword(password string) bool {
 
 func (a *goBlog) GetFullAddress(path string) string {
 	return a.getFullAddress(path)
+}
+
+func (a *goBlog) GetSections(blog string) ([]plugintypes.Section, error) {
+	sections, err := a.getSections(blog)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]plugintypes.Section, 0, len(sections))
+	for name, s := range sections {
+		result = append(result, plugintypes.Section{
+			Name:        name,
+			Title:       s.Title,
+			Description: s.Description,
+		})
+	}
+	return result, nil
+}
+
+func (a *goBlog) GetTaxonomyValues(blog string, taxonomy string) ([]string, error) {
+	return a.db.allTaxonomyValues(blog, taxonomy)
+}
+
+func (a *goBlog) GetComments(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error) {
+	cfg := &commentsRequestConfig{}
+	if query != nil {
+		cfg.target = query.Target
+		cfg.limit = query.Limit
+		cfg.offset = query.Offset
+	}
+	comments, err := a.db.getComments(cfg)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]plugintypes.Comment, 0, len(comments))
+	for _, c := range comments {
+		result = append(result, plugintypes.Comment{
+			ID:      c.ID,
+			Target:  c.Target,
+			Name:    c.Name,
+			Website: c.Website,
+			Comment: c.Comment,
+		})
+	}
+	return result, nil
+}
+
+func (a *goBlog) CountComments(query *plugintypes.CommentsQuery) (int, error) {
+	cfg := &commentsRequestConfig{}
+	if query != nil {
+		cfg.target = query.Target
+	}
+	return a.db.countComments(cfg)
+}
+
+func (a *goBlog) GetWebmentions(query *plugintypes.WebmentionsQuery) ([]plugintypes.Webmention, error) {
+	cfg := &webmentionsRequestConfig{}
+	if query != nil {
+		cfg.target = query.Target
+		if query.Status != "" {
+			cfg.status = webmentionStatus(query.Status)
+		}
+		cfg.limit = query.Limit
+		cfg.offset = query.Offset
+	}
+	mentions, err := a.getWebmentions(cfg)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]plugintypes.Webmention, 0, len(mentions))
+	for _, m := range mentions {
+		result = append(result, plugintypes.Webmention{
+			Source:  m.Source,
+			Target:  m.Target,
+			Url:     m.Url,
+			Created: time.Unix(m.Created, 0).Format(time.RFC3339),
+			Title:   m.Title,
+			Content: m.Content,
+			Author:  m.Author,
+			Status:  string(m.Status),
+		})
+	}
+	return result, nil
+}
+
+func (a *goBlog) CountWebmentions(query *plugintypes.WebmentionsQuery) (int, error) {
+	cfg := &webmentionsRequestConfig{}
+	if query != nil {
+		cfg.target = query.Target
+		if query.Status != "" {
+			cfg.status = webmentionStatus(query.Status)
+		}
+	}
+	return a.db.countWebmentions(cfg)
+}
+
+func (a *goBlog) GetBlogStats(blog string) (*plugintypes.BlogStats, error) {
+	if blog == "" {
+		return nil, fmt.Errorf("blog name is required")
+	}
+
+	data, err := a.db.getBlogStats(blog)
+	if err != nil {
+		return nil, err
+	}
+
+	mapRow := func(r blogStatsRow) plugintypes.BlogStatsRow {
+		return plugintypes.BlogStatsRow{
+			Name:         r.Name,
+			Posts:        r.Posts,
+			Chars:        r.Chars,
+			Words:        r.Words,
+			WordsPerPost: r.WordsPerPost,
+		}
+	}
+
+	res := &plugintypes.BlogStats{
+		Total:  mapRow(data.Total),
+		NoDate: mapRow(data.NoDate),
+		Years:  make([]plugintypes.BlogStatsRow, len(data.Years)),
+		Months: make(map[string][]plugintypes.BlogStatsRow, len(data.Months)),
+	}
+
+	for i, y := range data.Years {
+		res.Years[i] = mapRow(y)
+	}
+
+	for k, m := range data.Months {
+		res.Months[k] = make([]plugintypes.BlogStatsRow, len(m))
+		for i, v := range m {
+			res.Months[k][i] = mapRow(v)
+		}
+	}
+
+	return res, nil
 }
 
 func (p *post) GetPath() string {

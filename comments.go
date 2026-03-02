@@ -135,15 +135,20 @@ func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
 
 type commentsRequestConfig struct {
 	id, offset, limit int
+	target            string
 }
 
 func buildCommentsQuery(config *commentsRequestConfig) (query string, args []any) {
 	queryBuilder := builderpool.Get()
 	defer builderpool.Put(queryBuilder)
-	queryBuilder.WriteString("select id, target, name, website, comment, original from comments")
+	queryBuilder.WriteString("select id, target, name, website, comment, original from comments where 1")
 	if config.id != 0 {
-		queryBuilder.WriteString(" where id = @id")
+		queryBuilder.WriteString(" and id = @id")
 		args = append(args, sql.Named("id", config.id))
+	}
+	if config.target != "" {
+		queryBuilder.WriteString(" and target = @target")
+		args = append(args, sql.Named("target", config.target))
 	}
 	queryBuilder.WriteString(" order by id desc")
 	if config.limit != 0 || config.offset != 0 {

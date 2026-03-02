@@ -37,25 +37,32 @@ import (
 func init() {
 	Symbols["go.goblog.app/app/pkgs/plugintypes/plugintypes"] = map[string]reflect.Value{
 		// type definitions
-		"App":             reflect.ValueOf((*plugintypes.App)(nil)),
-		"Blog":            reflect.ValueOf((*plugintypes.Blog)(nil)),
-		"Database":        reflect.ValueOf((*plugintypes.Database)(nil)),
-		"Exec":            reflect.ValueOf((*plugintypes.Exec)(nil)),
-		"Middleware":      reflect.ValueOf((*plugintypes.Middleware)(nil)),
-		"Post":            reflect.ValueOf((*plugintypes.Post)(nil)),
-		"PostCreatedHook": reflect.ValueOf((*plugintypes.PostCreatedHook)(nil)),
-		"PostDeletedHook": reflect.ValueOf((*plugintypes.PostDeletedHook)(nil)),
-		"PostUpdatedHook": reflect.ValueOf((*plugintypes.PostUpdatedHook)(nil)),
-		"PostsQuery":      reflect.ValueOf((*plugintypes.PostsQuery)(nil)),
-		"RenderContext":   reflect.ValueOf((*plugintypes.RenderContext)(nil)),
-		"SetApp":          reflect.ValueOf((*plugintypes.SetApp)(nil)),
-		"SetConfig":       reflect.ValueOf((*plugintypes.SetConfig)(nil)),
-		"UI":              reflect.ValueOf((*plugintypes.UI)(nil)),
-		"UI2":             reflect.ValueOf((*plugintypes.UI2)(nil)),
-		"UIFooter":        reflect.ValueOf((*plugintypes.UIFooter)(nil)),
-		"UIPost":          reflect.ValueOf((*plugintypes.UIPost)(nil)),
-		"UIPostContent":   reflect.ValueOf((*plugintypes.UIPostContent)(nil)),
-		"UISummary":       reflect.ValueOf((*plugintypes.UISummary)(nil)),
+		"App":              reflect.ValueOf((*plugintypes.App)(nil)),
+		"Blog":             reflect.ValueOf((*plugintypes.Blog)(nil)),
+		"BlogStats":        reflect.ValueOf((*plugintypes.BlogStats)(nil)),
+		"BlogStatsRow":     reflect.ValueOf((*plugintypes.BlogStatsRow)(nil)),
+		"Comment":          reflect.ValueOf((*plugintypes.Comment)(nil)),
+		"CommentsQuery":    reflect.ValueOf((*plugintypes.CommentsQuery)(nil)),
+		"Database":         reflect.ValueOf((*plugintypes.Database)(nil)),
+		"Exec":             reflect.ValueOf((*plugintypes.Exec)(nil)),
+		"Middleware":       reflect.ValueOf((*plugintypes.Middleware)(nil)),
+		"Post":             reflect.ValueOf((*plugintypes.Post)(nil)),
+		"PostCreatedHook":  reflect.ValueOf((*plugintypes.PostCreatedHook)(nil)),
+		"PostDeletedHook":  reflect.ValueOf((*plugintypes.PostDeletedHook)(nil)),
+		"PostUpdatedHook":  reflect.ValueOf((*plugintypes.PostUpdatedHook)(nil)),
+		"PostsQuery":       reflect.ValueOf((*plugintypes.PostsQuery)(nil)),
+		"RenderContext":    reflect.ValueOf((*plugintypes.RenderContext)(nil)),
+		"Section":          reflect.ValueOf((*plugintypes.Section)(nil)),
+		"SetApp":           reflect.ValueOf((*plugintypes.SetApp)(nil)),
+		"SetConfig":        reflect.ValueOf((*plugintypes.SetConfig)(nil)),
+		"UI":               reflect.ValueOf((*plugintypes.UI)(nil)),
+		"UI2":              reflect.ValueOf((*plugintypes.UI2)(nil)),
+		"UIFooter":         reflect.ValueOf((*plugintypes.UIFooter)(nil)),
+		"UIPost":           reflect.ValueOf((*plugintypes.UIPost)(nil)),
+		"UIPostContent":    reflect.ValueOf((*plugintypes.UIPostContent)(nil)),
+		"UISummary":        reflect.ValueOf((*plugintypes.UISummary)(nil)),
+		"Webmention":       reflect.ValueOf((*plugintypes.Webmention)(nil)),
+		"WebmentionsQuery": reflect.ValueOf((*plugintypes.WebmentionsQuery)(nil)),
 
 		// interface wrapper definitions
 		"_App":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
@@ -85,15 +92,22 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	WAssetPath            func(filename string) string
 	WCheckAppPassword     func(password string) bool
 	WCompileAsset         func(filename string, reader io.Reader) error
+	WCountComments        func(query *plugintypes.CommentsQuery) (int, error)
 	WCountPosts           func(query *plugintypes.PostsQuery) (int, error)
+	WCountWebmentions     func(query *plugintypes.WebmentionsQuery) (int, error)
 	WCreatePost           func(content string) (plugintypes.Post, error)
 	WGetBlog              func(name string) (plugintypes.Blog, bool)
 	WGetBlogNames         func() []string
+	WGetBlogStats         func(blog string) (*plugintypes.BlogStats, error)
+	WGetComments          func(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error)
 	WGetDatabase          func() plugintypes.Database
 	WGetFullAddress       func(path string) string
 	WGetHTTPClient        func() *http.Client
 	WGetPost              func(path string) (plugintypes.Post, error)
 	WGetPosts             func(query *plugintypes.PostsQuery) ([]plugintypes.Post, error)
+	WGetSections          func(blog string) ([]plugintypes.Section, error)
+	WGetTaxonomyValues    func(blog string, taxonomy string) ([]string, error)
+	WGetWebmentions       func(query *plugintypes.WebmentionsQuery) ([]plugintypes.Webmention, error)
 	WIsLoggedIn           func(req *http.Request) bool
 	WPurgeCache           func()
 	WRenderMarkdownAsText func(markdown string) (text string, err error)
@@ -110,8 +124,14 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) CheckAppPassword(password strin
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CompileAsset(filename string, reader io.Reader) error {
 	return W.WCompileAsset(filename, reader)
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CountComments(query *plugintypes.CommentsQuery) (int, error) {
+	return W.WCountComments(query)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CountPosts(query *plugintypes.PostsQuery) (int, error) {
 	return W.WCountPosts(query)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CountWebmentions(query *plugintypes.WebmentionsQuery) (int, error) {
+	return W.WCountWebmentions(query)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CreatePost(content string) (plugintypes.Post, error) {
 	return W.WCreatePost(content)
@@ -121,6 +141,12 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlog(name string) (plugintyp
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogNames() []string {
 	return W.WGetBlogNames()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogStats(blog string) (*plugintypes.BlogStats, error) {
+	return W.WGetBlogStats(blog)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetComments(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error) {
+	return W.WGetComments(query)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetDatabase() plugintypes.Database {
 	return W.WGetDatabase()
@@ -136,6 +162,15 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintyp
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPosts(query *plugintypes.PostsQuery) ([]plugintypes.Post, error) {
 	return W.WGetPosts(query)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetSections(blog string) ([]plugintypes.Section, error) {
+	return W.WGetSections(blog)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetTaxonomyValues(blog string, taxonomy string) ([]string, error) {
+	return W.WGetTaxonomyValues(blog, taxonomy)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetWebmentions(query *plugintypes.WebmentionsQuery) ([]plugintypes.Webmention, error) {
+	return W.WGetWebmentions(query)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) IsLoggedIn(req *http.Request) bool {
 	return W.WIsLoggedIn(req)

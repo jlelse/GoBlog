@@ -240,7 +240,7 @@ func (p *plugin) handleInitialize() *initializeResult {
 			Name:    serverName,
 			Version: serverVersion,
 		},
-		Instructions: "GoBlog MCP Server. Read-only access to blog posts. Use list_blogs to discover blogs, list_posts to browse posts, get_post to fetch a single post, search_posts for full-text search, and count_posts to count matching posts.",
+		Instructions: "GoBlog MCP Server. Read-only access to blog posts, stats, webmentions and comments. Core: list_blogs, list_posts (supports parameter/tag filtering), get_post, search_posts, count_posts. Discovery: list_sections, list_tags. Stats: get_blog_stats. Engagement: list_webmentions, list_comments.",
 	}
 }
 
@@ -293,6 +293,14 @@ func (p *plugin) handleToolsList() *toolsListResult {
 						"includeContent": map[string]any{
 							"type":        "boolean",
 							"description": "Include full post content in results. Default: false",
+						},
+						"parameter": map[string]any{
+							"type":        "string",
+							"description": "Filter for posts having this parameter (e.g. 'tags' to get tagged posts)",
+						},
+						"parameterValue": map[string]any{
+							"type":        "string",
+							"description": "Filter for posts where the parameter has exactly this value (e.g. a specific tag name). Requires parameter to be set.",
 						},
 					},
 					"additionalProperties": false,
@@ -366,6 +374,110 @@ func (p *plugin) handleToolsList() *toolsListResult {
 					"additionalProperties": false,
 				},
 			},
+			{
+				Name:        "list_sections",
+				Description: "List all blog sections with their title and description. Requires a blog name.",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"blog": map[string]any{
+							"type":        "string",
+							"description": "The blog name to list sections for",
+						},
+					},
+					"required":             []string{"blog"},
+					"additionalProperties": false,
+				},
+			},
+			{
+				Name:        "list_tags",
+				Description: "List all tags (taxonomy values) for a blog. Optionally specify a taxonomy name (defaults to 'tags').",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"blog": map[string]any{
+							"type":        "string",
+							"description": "The blog name to list tags for",
+						},
+						"taxonomy": map[string]any{
+							"type":        "string",
+							"description": "Taxonomy name (e.g. 'tags', 'categories'). Default: 'tags'",
+						},
+					},
+					"required":             []string{"blog"},
+					"additionalProperties": false,
+				},
+			},
+			{
+				Name:        "get_blog_stats",
+				Description: "Get statistics about the blog including post counts, characters, words, and words per post, grouped by year and month.",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"blog": map[string]any{
+							"type":        "string",
+							"description": "The blog name to get statistics for",
+						},
+					},
+					"required":             []string{"blog"},
+					"additionalProperties": false,
+				},
+			},
+			{
+				Name:        "list_webmentions",
+				Description: "List webmentions (IndieWeb mentions, likes, reposts). Includes source URL, author, and content. Comments are included as well and can be requested separately with list_comments.",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"target": map[string]any{
+							"type":        "string",
+							"description": "Filter by target URL or path",
+						},
+						"status": map[string]any{
+							"type":        "string",
+							"description": "Filter by status (new, verified, approved). Default: all",
+							"enum":        []string{"new", "verified", "approved"},
+						},
+						"limit": map[string]any{
+							"type":        "integer",
+							"description": "Maximum number of webmentions (1-100). Default: 20",
+							"minimum":     1,
+							"maximum":     100,
+						},
+						"offset": map[string]any{
+							"type":        "integer",
+							"description": "Number of results to skip. Default: 0",
+							"minimum":     0,
+						},
+					},
+					"additionalProperties": false,
+				},
+			},
+			{
+				Name:        "list_comments",
+				Description: "List comments on posts. Optionally filter by target path (post path or another comments path).",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"target": map[string]any{
+							"type":        "string",
+							"description": "Filter by target post path",
+						},
+						"limit": map[string]any{
+							"type":        "integer",
+							"description": "Maximum number of comments (1-100). Default: 20",
+							"minimum":     1,
+							"maximum":     100,
+						},
+						"offset": map[string]any{
+							"type":        "integer",
+							"description": "Number of comments to skip. Default: 0",
+							"minimum":     0,
+						},
+					},
+					"additionalProperties": false,
+				},
+			},
 		},
 	}
 }
@@ -390,6 +502,16 @@ func (p *plugin) handleToolsCall(params json.RawMessage) (any, *rpcError) {
 		return p.toolSearchPosts(call.Arguments), nil
 	case "count_posts":
 		return p.toolCountPosts(call.Arguments), nil
+	case "list_sections":
+		return p.toolListSections(call.Arguments), nil
+	case "list_tags":
+		return p.toolListTags(call.Arguments), nil
+	case "get_blog_stats":
+		return p.toolGetBlogStats(call.Arguments), nil
+	case "list_webmentions":
+		return p.toolListWebmentions(call.Arguments), nil
+	case "list_comments":
+		return p.toolListComments(call.Arguments), nil
 	default:
 		return nil, &rpcError{Code: errCodeInvalidParams, Message: "Unknown tool: " + call.Name}
 	}
@@ -474,6 +596,8 @@ func (p *plugin) toolListPosts(args json.RawMessage) *toolCallResult {
 		Limit          int    `json:"limit"`
 		Offset         int    `json:"offset"`
 		IncludeContent bool   `json:"includeContent"`
+		Parameter      string `json:"parameter"`
+		ParameterValue string `json:"parameterValue"`
 	}
 	if args != nil {
 		if err := json.Unmarshal(args, &params); err != nil {
@@ -489,12 +613,14 @@ func (p *plugin) toolListPosts(args json.RawMessage) *toolCallResult {
 	}
 
 	posts, err := p.app.GetPosts(&plugintypes.PostsQuery{
-		Blog:       params.Blog,
-		Section:    params.Section,
-		Status:     params.Status,
-		Visibility: params.Visibility,
-		Limit:      params.Limit,
-		Offset:     params.Offset,
+		Blog:           params.Blog,
+		Section:        params.Section,
+		Status:         params.Status,
+		Visibility:     params.Visibility,
+		Parameter:      params.Parameter,
+		ParameterValue: params.ParameterValue,
+		Limit:          params.Limit,
+		Offset:         params.Offset,
 	})
 	if err != nil {
 		log.Println("mcp: list_posts error:", err)
@@ -605,6 +731,206 @@ func (p *plugin) toolCountPosts(args json.RawMessage) *toolCallResult {
 	}
 
 	resultJSON, _ := json.Marshal(map[string]int{"count": count})
+	return &toolCallResult{
+		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
+	}
+}
+
+func (p *plugin) toolListSections(args json.RawMessage) *toolCallResult {
+	var params struct {
+		Blog string `json:"blog"`
+	}
+	if args != nil {
+		if err := json.Unmarshal(args, &params); err != nil {
+			return errorResult("Invalid arguments: " + err.Error())
+		}
+	}
+	if params.Blog == "" {
+		return errorResult("blog is required")
+	}
+
+	sections, err := p.app.GetSections(params.Blog)
+	if err != nil {
+		log.Println("mcp: list_sections error:", err)
+		return errorResult("Failed to list sections")
+	}
+
+	type sectionResult struct {
+		Name        string `json:"name"`
+		Title       string `json:"title,omitempty"`
+		Description string `json:"description,omitempty"`
+	}
+
+	results := make([]sectionResult, 0, len(sections))
+	for _, s := range sections {
+		results = append(results, sectionResult{
+			Name:        s.Name,
+			Title:       s.Title,
+			Description: s.Description,
+		})
+	}
+
+	resultJSON, _ := json.Marshal(results)
+	return &toolCallResult{
+		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
+	}
+}
+
+func (p *plugin) toolListTags(args json.RawMessage) *toolCallResult {
+	var params struct {
+		Blog     string `json:"blog"`
+		Taxonomy string `json:"taxonomy"`
+	}
+	if args != nil {
+		if err := json.Unmarshal(args, &params); err != nil {
+			return errorResult("Invalid arguments: " + err.Error())
+		}
+	}
+	if params.Blog == "" {
+		return errorResult("blog is required")
+	}
+	if params.Taxonomy == "" {
+		params.Taxonomy = "tags"
+	}
+
+	values, err := p.app.GetTaxonomyValues(params.Blog, params.Taxonomy)
+	if err != nil {
+		log.Println("mcp: list_tags error:", err)
+		return errorResult("Failed to list tags")
+	}
+
+	resultJSON, _ := json.Marshal(values)
+	return &toolCallResult{
+		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
+	}
+}
+
+func (p *plugin) toolGetBlogStats(args json.RawMessage) *toolCallResult {
+	var params struct {
+		Blog string `json:"blog"`
+	}
+	if args != nil {
+		if err := json.Unmarshal(args, &params); err != nil {
+			return errorResult("Invalid arguments: " + err.Error())
+		}
+	}
+	if params.Blog == "" {
+		return errorResult("blog is required")
+	}
+
+	stats, err := p.app.GetBlogStats(params.Blog)
+	if err != nil {
+		log.Println("mcp: get_blog_stats error:", err)
+		return errorResult("Failed to get blog stats")
+	}
+
+	resultJSON, _ := json.Marshal(stats)
+	return &toolCallResult{
+		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
+	}
+}
+
+func (p *plugin) toolListWebmentions(args json.RawMessage) *toolCallResult {
+	var params struct {
+		Target string `json:"target"`
+		Status string `json:"status"`
+		Limit  int    `json:"limit"`
+		Offset int    `json:"offset"`
+	}
+	if args != nil {
+		if err := json.Unmarshal(args, &params); err != nil {
+			return errorResult("Invalid arguments: " + err.Error())
+		}
+	}
+	if params.Limit <= 0 || params.Limit > 100 {
+		params.Limit = 20
+	}
+
+	mentions, err := p.app.GetWebmentions(&plugintypes.WebmentionsQuery{
+		Target: params.Target,
+		Status: params.Status,
+		Limit:  params.Limit,
+		Offset: params.Offset,
+	})
+	if err != nil {
+		log.Println("mcp: list_webmentions error:", err)
+		return errorResult("Failed to list webmentions")
+	}
+
+	type webmentionResult struct {
+		Source  string `json:"source"`
+		Target  string `json:"target"`
+		Url     string `json:"url,omitempty"`
+		Author  string `json:"author,omitempty"`
+		Title   string `json:"title,omitempty"`
+		Status  string `json:"status"`
+		Created string `json:"created"`
+	}
+
+	results := make([]webmentionResult, 0, len(mentions))
+	for _, m := range mentions {
+		results = append(results, webmentionResult{
+			Source:  m.Source,
+			Target:  m.Target,
+			Url:     m.Url,
+			Author:  m.Author,
+			Title:   m.Title,
+			Status:  m.Status,
+			Created: m.Created,
+		})
+	}
+
+	resultJSON, _ := json.Marshal(results)
+	return &toolCallResult{
+		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
+	}
+}
+
+func (p *plugin) toolListComments(args json.RawMessage) *toolCallResult {
+	var params struct {
+		Target string `json:"target"`
+		Limit  int    `json:"limit"`
+		Offset int    `json:"offset"`
+	}
+	if args != nil {
+		if err := json.Unmarshal(args, &params); err != nil {
+			return errorResult("Invalid arguments: " + err.Error())
+		}
+	}
+	if params.Limit <= 0 || params.Limit > 100 {
+		params.Limit = 20
+	}
+
+	comments, err := p.app.GetComments(&plugintypes.CommentsQuery{
+		Target: params.Target,
+		Limit:  params.Limit,
+		Offset: params.Offset,
+	})
+	if err != nil {
+		log.Println("mcp: list_comments error:", err)
+		return errorResult("Failed to list comments")
+	}
+
+	type commentResult struct {
+		ID      int    `json:"id"`
+		Target  string `json:"target"`
+		Name    string `json:"name"`
+		Website string `json:"website,omitempty"`
+		Comment string `json:"comment"`
+	}
+
+	results := make([]commentResult, 0, len(comments))
+	for _, c := range comments {
+		results = append(results, commentResult{
+			ID:      c.ID,
+			Target:  c.Target,
+			Name:    c.Name,
+			Website: c.Website,
+			Comment: c.Comment,
+		})
+	}
+
+	resultJSON, _ := json.Marshal(results)
 	return &toolCallResult{
 		Content: []textContent{{Type: "text", Text: string(resultJSON)}},
 	}

@@ -43,6 +43,20 @@ type App interface {
 	CheckAppPassword(password string) bool
 	// Get the full address of a path (including the domain)
 	GetFullAddress(path string) string
+	// Get sections for a blog
+	GetSections(blog string) ([]Section, error)
+	// Get all taxonomy values for a blog (e.g. tag names for a taxonomy)
+	GetTaxonomyValues(blog string, taxonomy string) ([]string, error)
+	// Get comments matching the query
+	GetComments(query *CommentsQuery) ([]Comment, error)
+	// Count comments matching the query
+	CountComments(query *CommentsQuery) (int, error)
+	// Get webmentions matching the query
+	GetWebmentions(query *WebmentionsQuery) ([]Webmention, error)
+	// Count webmentions matching the query
+	CountWebmentions(query *WebmentionsQuery) (int, error)
+	// Get blog statistics
+	GetBlogStats(blog string) (*BlogStats, error)
 }
 
 // PostsQuery defines the parameters for querying posts.
@@ -57,6 +71,10 @@ type PostsQuery struct {
 	Status string
 	// Filter by post visibility: "public", "unlisted", "private"
 	Visibility string
+	// Filter for posts that have this parameter with a non-empty value
+	Parameter string
+	// Filter for posts where the parameter has exactly this value
+	ParameterValue string
 	// Maximum number of posts to return
 	Limit int
 	// Number of posts to skip for pagination
@@ -109,6 +127,69 @@ type Blog interface {
 	GetTitle() string
 	// Get the blog description
 	GetDescription() string
+}
+
+// Section contains information about a blog section.
+type Section struct {
+	Name        string
+	Title       string
+	Description string
+}
+
+// CommentsQuery defines the parameters for querying comments.
+type CommentsQuery struct {
+	// Filter by target post path
+	Target string
+	// Maximum number of comments to return
+	Limit int
+	// Number of comments to skip for pagination
+	Offset int
+}
+
+// Comment contains data about a single comment.
+type Comment struct {
+	ID      int
+	Target  string
+	Name    string
+	Website string
+	Comment string
+}
+
+// WebmentionsQuery defines the parameters for querying webmentions.
+type WebmentionsQuery struct {
+	// Filter by target URL or path
+	Target string
+	// Filter by webmention status: "new", "verified", "approved"
+	Status string
+	// Maximum number of webmentions to return
+	Limit int
+	// Number of webmentions to skip for pagination
+	Offset int
+}
+
+// Webmention contains data about a single webmention.
+type Webmention struct {
+	Source  string
+	Target  string
+	Url     string
+	Created string
+	Title   string
+	Content string
+	Author  string
+	Status  string
+}
+
+// BlogStatsRow contains statistics for a specific period
+type BlogStatsRow struct {
+	Name, Posts, Chars, Words, WordsPerPost string
+}
+
+// BlogStats contains the complete blog statistics
+type BlogStats struct {
+	Total  BlogStatsRow
+	NoDate BlogStatsRow
+	Years  []BlogStatsRow
+	Months map[string][]BlogStatsRow
 }
 
 // RenderContext gives some context of the current rendering.
