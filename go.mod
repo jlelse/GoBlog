@@ -21,7 +21,7 @@ require (
 	github.com/emersion/go-smtp v0.24.0
 	github.com/go-acme/lego/v4 v4.32.0
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/go-webauthn/webauthn v0.15.0
+	github.com/go-webauthn/webauthn v0.16.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
