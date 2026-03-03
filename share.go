@@ -30,7 +30,7 @@ type shareServiceDefinition struct {
 
 var shareServiceDefinitions = []shareServiceDefinition{
 	{id: "email", label: "Email", builder: shareEmailURL},
-	{id: "mastodon", label: "Mastodon.social", limit: 500, builder: shareMastodonURL},
+	{id: "mastodon", label: "Mastodon", limit: 500, builder: shareMastodonURL},
 	{id: "bluesky", label: "Bluesky", limit: 300, builder: shareBlueskyURL},
 	{id: "linkedin", label: "LinkedIn", limit: 700, builder: shareLinkedInURL},
 	{id: "microblog", label: "Micro.blog", limit: 300, builder: shareMicroblogURL},
@@ -80,7 +80,7 @@ func shareEmailURL(title, url, text string, _ int) string {
 
 func shareMastodonURL(title, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
-	return "https://mastodon.social/share?text=" + queryEscape(payload)
+	return "https://share.joinmastodon.org/?text=" + queryEscape(payload)
 }
 
 func shareBlueskyURL(title, url, text string, limit int) string {

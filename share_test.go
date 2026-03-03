@@ -53,7 +53,7 @@ func TestBuildShareServices(t *testing.T) {
 
 	expect := map[string]string{
 		"email":      "mailto:?subject=Test+Title&body=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"mastodon":   "https://mastodon.social/share?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
+		"mastodon":   "https://share.joinmastodon.org/?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
 		"bluesky":    "https://bsky.app/intent/compose?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
 		"linkedin":   "https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fexample.com&title=Test+Title&summary=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
 		"microblog":  "https://micro.blog/post?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
