@@ -21,7 +21,7 @@ require (
 	github.com/emersion/go-smtp v0.24.0
 	github.com/go-acme/lego/v4 v4.32.0
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/go-webauthn/webauthn v0.15.0
+	github.com/go-webauthn/webauthn v0.16.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
@@ -34,7 +34,7 @@ require (
 	github.com/kovidgoyal/imaging v1.8.20
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
-	github.com/mattn/go-mastodon v0.0.10
+	github.com/mattn/go-mastodon v0.0.11
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
@@ -43,14 +43,14 @@ require (
 	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.5.0
 	github.com/samber/go-singleflightx v0.3.2
-	github.com/samber/lo v1.52.0
+	github.com/samber/lo v1.53.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.4
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tdewolff/minify/v2 v2.24.9
+	github.com/tdewolff/minify/v2 v2.24.10
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
@@ -62,7 +62,7 @@ require (
 	go.hacdias.com/indielib v0.5.0
 	goftp.io/server/v2 v2.0.2
 	golang.org/x/crypto v0.48.0
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/text v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -112,7 +112,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.8 // indirect
+	github.com/tdewolff/parse/v2 v2.8.10 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
