@@ -9,8 +9,8 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 )
 
-// Inspired by https://github.com/dmulholl/mp3cat/blob/2ec1e4fe4d995ebd41bf1887b3cab8e2a569b3d4/mp3cat.go
 // MergeMP3 merges multiple mp3s into one mp3.
+// Inspired by https://github.com/dmulholl/mp3cat/blob/2ec1e4fe4d995ebd41bf1887b3cab8e2a569b3d4/mp3cat.go
 func MergeMP3(out io.Writer, in ...io.Reader) error {
 	if len(in) == 0 {
 		return errors.New("no inputs specified")
