@@ -1,3 +1,4 @@
+// Package syndication provides a syndication plugin for GoBlog.
 package syndication
 
 import (
@@ -12,6 +13,7 @@ type plugin struct {
 	parameterName string
 }
 
+// GetPlugin returns the syndication plugin instance.
 func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p, p

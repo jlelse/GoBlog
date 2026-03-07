@@ -1,3 +1,4 @@
+// Package main is the entry point for GoBlog.
 package main
 
 import (
@@ -16,7 +17,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "GoBlog",
 		Short: "Main application, without any command, the app gets started.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			if err := app.initPlugins(); err != nil {
 				app.logErrAndQuit("Failed to init plugins", "err", err)
@@ -31,7 +32,7 @@ func main() {
 			}
 			app.shutdown.Wait()
 		},
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			if cpuprofile, _ := cmd.Flags().GetString("cpuprofile"); cpuprofile != "" {
 				r, w := io.Pipe()
 				go func() {
@@ -42,7 +43,7 @@ func main() {
 				}()
 			}
 		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		PersistentPostRun: func(cmd *cobra.Command, _ []string) {
 			pprof.StopCPUProfile()
 			if memprofile, _ := cmd.Flags().GetString("memprofile"); memprofile != "" {
 				runtime.GC()
@@ -75,7 +76,7 @@ Useful for container health checks (Docker, Kubernetes) and monitoring systems.
 Example:
   ./GoBlog healthcheck
   echo $?  # 0 = healthy, 1 = unhealthy`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			health := app.healthcheckExitCode()
 			app.shutdown.ShutdownAndWait()
@@ -95,7 +96,7 @@ to help you maintain link quality on your blog.
 
 Example:
   ./GoBlog check`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			if err := app.initTemplateStrings(); err != nil {
 				app.logErrAndQuit("Failed to start check", "err", err)
@@ -436,7 +437,7 @@ Options:
   --username  Login username (required)
   --password  Login password, stored as bcrypt hash (required)
   --totp      Enable TOTP two-factor authentication`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 
 			username, _ := cmd.Flags().GetString("username")

@@ -1,3 +1,4 @@
+// Package httpcachetransport provides a caching HTTP transport.
 package httpcachetransport
 
 import (
@@ -51,13 +52,13 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 	return resp, err
 }
 
-// Creates a new http.RoundTripper that caches all
+// NewHttpCacheTransport creates a new http.RoundTripper that caches all
 // request responses (by the request URL) in ristretto.
 func NewHttpCacheTransport(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
 	return &httpCacheTransport{parent, c, ttl, true, maxSize}
 }
 
-// Like NewHttpCacheTransport but doesn't cache body
+// NewHttpCacheTransportNoBody is like NewHttpCacheTransport but doesn't cache body.
 func NewHttpCacheTransportNoBody(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
 	return &httpCacheTransport{parent, c, ttl, false, maxSize}
 }

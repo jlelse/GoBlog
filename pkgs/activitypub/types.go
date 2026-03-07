@@ -18,8 +18,9 @@ const (
 type ActivityType string
 
 const (
-	// Common ActivityPub types
+	// ArticleType and related constants define common ActivityPub types.
 	ArticleType      ActivityType = "Article"
+	// CollectionType is the ActivityPub Collection type.
 	CollectionType   ActivityType = "Collection"
 	ImageType        ActivityType = "Image"
 	MentionType      ActivityType = "Mention"
@@ -31,7 +32,7 @@ const (
 	OrganizationType ActivityType = "Organization"
 	ApplicationType  ActivityType = "Application"
 
-	// Activity types
+	// AcceptType and related constants define ActivityPub activity types.
 	AcceptType   ActivityType = "Accept"
 	AnnounceType ActivityType = "Announce"
 	BlockType    ActivityType = "Block"

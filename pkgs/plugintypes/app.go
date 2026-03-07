@@ -1,3 +1,4 @@
+// Package plugintypes defines the plugin interface types for GoBlog.
 package plugintypes
 
 import (

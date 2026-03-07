@@ -1,3 +1,4 @@
+// Package httpcompress provides HTTP response compression middleware.
 package httpcompress
 
 import (
@@ -45,6 +46,7 @@ var (
 	}
 )
 
+// CompressMiddleware returns HTTP middleware that compresses responses.
 func CompressMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		acceptEncoding := r.Header.Get("Accept-Encoding")

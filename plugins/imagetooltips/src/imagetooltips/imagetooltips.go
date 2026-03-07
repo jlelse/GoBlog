@@ -1,3 +1,4 @@
+// Package imagetooltips provides an image tooltips plugin for GoBlog.
 package imagetooltips
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	init sync.Once
 }
 
+// GetPlugin returns the imagetooltips plugin instance.
 func GetPlugin() (plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p

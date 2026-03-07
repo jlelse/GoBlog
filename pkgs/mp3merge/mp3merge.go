@@ -1,3 +1,4 @@
+// Package mp3merge provides MP3 file merging functionality.
 package mp3merge
 
 import (
@@ -9,7 +10,7 @@ import (
 )
 
 // Inspired by https://github.com/dmulholl/mp3cat/blob/2ec1e4fe4d995ebd41bf1887b3cab8e2a569b3d4/mp3cat.go
-// Merge multiple mp3s into one mp3.
+// MergeMP3 merges multiple mp3s into one mp3.
 func MergeMP3(out io.Writer, in ...io.Reader) error {
 	if len(in) == 0 {
 		return errors.New("no inputs specified")
@@ -59,7 +60,7 @@ func MergeMP3(out io.Writer, in ...io.Reader) error {
 			}
 
 			// Increment the total number of frames and bytes
-			totalFrames += 1
+			totalFrames++
 			totalBytes += uint32(len(frame.RawBytes))
 		}
 	}

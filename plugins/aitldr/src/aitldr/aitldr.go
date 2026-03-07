@@ -1,3 +1,4 @@
+// Package aitldr provides an AI TLDR plugin for GoBlog.
 package aitldr
 
 import (
@@ -23,6 +24,7 @@ type plugin struct {
 	apikey, model, endpoint string
 }
 
+// GetPlugin returns the aitldr plugin instance.
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
 	plugintypes.PostCreatedHook,

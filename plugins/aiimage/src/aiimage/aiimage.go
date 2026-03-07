@@ -1,3 +1,4 @@
+// Package aiimage provides an AI image generation plugin for GoBlog.
 package aiimage
 
 import (
@@ -22,6 +23,7 @@ type plugin struct {
 	apikey, model, endpoint string
 }
 
+// GetPlugin returns the aiimage plugin instance.
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
 	plugintypes.UIPostContent, plugintypes.UIPost,

@@ -1,3 +1,4 @@
+// Package maprouter provides a map-based HTTP request router.
 package maprouter
 
 import (
@@ -7,7 +8,7 @@ import (
 // Make sure interface is satisfied
 var _ http.Handler = (*MapRouter)(nil)
 
-// Routes requests based on a map with routers
+// MapRouter routes requests based on a map with routers.
 type MapRouter struct {
 	// Default http.Handler
 	DefaultHandler http.Handler

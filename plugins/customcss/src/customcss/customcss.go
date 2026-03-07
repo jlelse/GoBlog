@@ -1,3 +1,4 @@
+// Package customcss provides a custom CSS plugin for GoBlog.
 package customcss
 
 import (
@@ -18,6 +19,7 @@ type plugin struct {
 	init      sync.Once
 }
 
+// GetPlugin returns the customcss plugin instance.
 func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p, p

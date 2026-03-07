@@ -1,3 +1,4 @@
+// Package demo provides a demo plugin for GoBlog.
 package demo
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	config map[string]any
 }
 
+// GetPlugin returns the demo plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp, plugintypes.SetConfig,
 	plugintypes.UI,
