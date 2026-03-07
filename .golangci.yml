@@ -29,6 +29,7 @@ linters:
     - makezero
     - noctx
     - prealloc
+    - revive
     - unparam
     - sqlclosecheck
     - rowserrcheck

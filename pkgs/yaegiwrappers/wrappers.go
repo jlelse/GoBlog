@@ -1,3 +1,4 @@
+// Package yaegiwrappers contains yaegi interpreter wrapper symbols.
 package yaegiwrappers
 
 import (
@@ -5,6 +6,7 @@ import (
 )
 
 var (
+	// Symbols contains the yaegi wrapper symbols.
 	Symbols = make(map[string]map[string]reflect.Value)
 )
 

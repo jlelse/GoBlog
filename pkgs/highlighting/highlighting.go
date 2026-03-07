@@ -1,3 +1,4 @@
+// Package highlighting provides syntax highlighting support.
 package highlighting
 
 import (
@@ -95,6 +96,7 @@ type highlighting struct{}
 // Highlighting is a goldmark.Extender implementation.
 var Highlighting = &highlighting{}
 
+// Style is the chroma style used for syntax highlighting.
 var Style = styles.Get("monokai")
 
 // Extend implements goldmark.Extender.

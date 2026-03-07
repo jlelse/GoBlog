@@ -49,7 +49,7 @@ func (a *goBlog) startServer() (err error) {
 		h = h.Append(a.securityHeaders)
 	}
 	// Add plugin middlewares
-	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, index int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
+	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, _ int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
 	sort.Slice(middlewarePlugins, func(i, j int) bool {
 		// Sort with descending prio
 		return middlewarePlugins[i].Prio() > middlewarePlugins[j].Prio()

@@ -60,9 +60,8 @@ func (a *goBlog) indexNow(url string) {
 	if err != nil {
 		a.error("Sending IndexNow request failed", "err", err)
 		return
-	} else {
-		a.info("IndexNow request sent", "url", url)
 	}
+	a.info("IndexNow request sent", "url", url)
 }
 
 func (a *goBlog) indexNowKey() []byte {

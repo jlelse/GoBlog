@@ -1,3 +1,4 @@
+// Package snow provides a snow effect plugin for GoBlog.
 package snow
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	init sync.Once
 }
 
+// GetPlugin returns the snow plugin instance.
 func GetPlugin() (plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p

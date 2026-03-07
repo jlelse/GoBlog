@@ -1,3 +1,4 @@
+// Package utils provides common utility functions.
 package utils
 
 import (
@@ -8,10 +9,12 @@ import (
 	"path/filepath"
 )
 
+// SaveToFile saves data from a reader to a file.
 func SaveToFile(reader io.Reader, fileName string) error {
 	return SaveToFileWithMode(reader, fileName, os.ModePerm, 0666)
 }
 
+// SaveToFileWithMode saves data from a reader to a file with the specified permissions.
 func SaveToFileWithMode(reader io.Reader, fileName string, dirMode, fileMode fs.FileMode) (err error) {
 	// Create folder path if not exists
 	if err := os.MkdirAll(filepath.Dir(fileName), dirMode); err != nil {

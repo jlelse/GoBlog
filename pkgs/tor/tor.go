@@ -1,3 +1,4 @@
+// Package tor provides Tor hidden service support.
 package tor
 
 import (

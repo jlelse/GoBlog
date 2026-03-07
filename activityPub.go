@@ -348,17 +348,16 @@ func (a *goBlog) apOnCreateUpdate(blog *configBlog, requestActor *ap.Actor, acti
 				// Public reply - comment
 				_, _, _ = a.createComment(blog, replyTarget, content, actorName, actorLink, noteUri)
 				return
-			} else {
-				// Private reply - notification
-				buf := bufferpool.Get()
-				defer bufferpool.Put(buf)
-				fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(noteUri))
-				fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(actorName), cleanHTMLText(actorLink))
-				buf.WriteString("\n\n")
-				buf.WriteString(cleanHTMLText(content))
-				a.sendNotification(buf.String())
-				return
 			}
+			// Private reply - notification
+			buf := bufferpool.Get()
+			defer bufferpool.Put(buf)
+			fmt.Fprintf(buf, "New private ActivityPub reply to %s from %s\n", cleanHTMLText(replyTarget), cleanHTMLText(noteUri))
+			fmt.Fprintf(buf, "Author: %s (%s)", cleanHTMLText(actorName), cleanHTMLText(actorLink))
+			buf.WriteString("\n\n")
+			buf.WriteString(cleanHTMLText(content))
+			a.sendNotification(buf.String())
+			return
 		}
 	}
 	// Handle mention
@@ -433,9 +432,8 @@ func (a *goBlog) apGetFollowersCollectionIdForAddress(blogName string, address s
 	path := apFollowersPathTemplate + blogName
 	if address == "" {
 		return ap.IRI(a.getFullAddress(path))
-	} else {
-		return ap.IRI(getFullAddressStatic(address, path))
 	}
+	return ap.IRI(getFullAddressStatic(address, path))
 }
 
 func (a *goBlog) apShowFollowers(w http.ResponseWriter, r *http.Request) {
@@ -826,7 +824,7 @@ func (a *goBlog) apDomainMove(oldAddress, newAddress string) error {
 	return nil
 }
 
-func (a *goBlog) apSendDomainMoveForBlog(blogName string, blog *configBlog, oldAddress, newAddress string) error {
+func (a *goBlog) apSendDomainMoveForBlog(blogName string, blog *configBlog, oldAddress, _ string) error {
 	// Get all followers
 	followers, err := a.db.apGetAllFollowers(blogName)
 	if err != nil {

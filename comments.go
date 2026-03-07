@@ -99,25 +99,24 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		if err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
 		}
-		if commentID, err := result.LastInsertId(); err != nil {
+		commentID, err := result.LastInsertId()
+		if err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
-		} else {
-			commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, commentID))
-			// Send webmention
-			_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
-			// Return comment path
-			return commentAddress, 0, nil
 		}
-	} else {
-		if err := a.db.updateComment(updateId, comment, name, website); err != nil {
-			return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
-		}
-		commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, updateId))
+		commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, commentID))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 		// Return comment path
 		return commentAddress, 0, nil
 	}
+	if err := a.db.updateComment(updateId, comment, name, website); err != nil {
+		return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
+	}
+	commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, updateId))
+	// Send webmention
+	_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
+	// Return comment path
+	return commentAddress, 0, nil
 }
 
 func (a *goBlog) checkCommentTarget(target string) (string, int, error) {

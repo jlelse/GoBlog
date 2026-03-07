@@ -1,3 +1,4 @@
+// Package telegrambot provides a Telegram bot plugin for GoBlog.
 package telegrambot
 
 import (
@@ -28,6 +29,7 @@ type plugin struct {
 	authorizationToken string
 }
 
+// GetPlugin returns the telegrambot plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.SetConfig,
@@ -112,6 +114,7 @@ func (p *plugin) Prio() int {
 	return 1000
 }
 
+// TelegramMessage represents a Telegram message.
 type TelegramMessage struct {
 	MessageID int           `json:"message_id,omitempty"`
 	From      *TelegramUser `json:"from,omitempty"`
@@ -122,27 +125,32 @@ type TelegramMessage struct {
 	Document *TelegramDocument `json:"document,omitempty"`
 }
 
+// TelegramDocument represents a Telegram document.
 type TelegramDocument struct {
 	FileID   string `json:"file_id,omitempty"`
 	FileName string `json:"file_name,omitempty"`
 	MimeType string `json:"mime_type,omitempty"`
 }
 
+// TelegramUser represents a Telegram user.
 type TelegramUser struct {
 	ID       int    `json:"id,omitempty"`
 	Username string `json:"username,omitempty"`
 }
 
+// TelegramChat represents a Telegram chat.
 type TelegramChat struct {
 	ID int `json:"id,omitempty"`
 }
 
+// TelegramSendMessage represents a Telegram send message request.
 type TelegramSendMessage struct {
 	ChatID          int                      `json:"chat_id,omitempty"`
 	Text            string                   `json:"text,omitempty"`
 	ReplyParameters *TelegramReplyParameters `json:"reply_parameters,omitempty"`
 }
 
+// TelegramReplyParameters represents Telegram reply parameters.
 type TelegramReplyParameters struct {
 	MessageID int `json:"message_id,omitempty"`
 }

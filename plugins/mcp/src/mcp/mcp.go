@@ -1,3 +1,4 @@
+// Package mcp provides an MCP server plugin for GoBlog.
 package mcp
 
 import (
@@ -28,6 +29,7 @@ type plugin struct {
 	path string
 }
 
+// GetPlugin returns the mcp plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.SetConfig,

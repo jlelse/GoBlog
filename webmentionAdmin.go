@@ -39,7 +39,7 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data any) error 
 }
 
 func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
-	var status webmentionStatus = ""
+	var status webmentionStatus
 	switch webmentionStatus(r.URL.Query().Get("status")) {
 	case webmentionStatusVerified:
 		status = webmentionStatusVerified

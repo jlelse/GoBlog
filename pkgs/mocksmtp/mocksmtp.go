@@ -10,7 +10,7 @@ import (
 	"github.com/emersion/go-smtp"
 )
 
-// Start a mock SMTP server on a random port
+// StartMockSMTPServer starts a mock SMTP server on a random port.
 //
 // Returns:
 // port: the port the server is listening on,
