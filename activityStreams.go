@@ -41,7 +41,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	})
 }
 
-func (_ *goBlog) isActivityStreamsRequest(r *http.Request) bool {
+func (*goBlog) isActivityStreamsRequest(r *http.Request) bool {
 	if mt, _, err := ct.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
 		return true
 	}

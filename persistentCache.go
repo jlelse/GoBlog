@@ -27,15 +27,15 @@ func (db *database) retrievePersistentCacheContext(c context.Context, key string
 		return nil, errors.New("database is nil")
 	}
 	d, err, _ := db.pc.Do(key, func() ([]byte, error) {
-		if row, err := db.QueryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key)); err != nil {
+		row, err := db.QueryRowContext(c, "select data from persistent_cache where key = @key", sql.Named("key", key))
+		if err != nil {
 			return nil, err
-		} else {
-			err = row.Scan(&data)
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, nil
-			}
-			return data, err
 		}
+		err = row.Scan(&data)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return data, err
 	})
 	if err != nil {
 		return nil, err

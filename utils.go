@@ -43,10 +43,9 @@ func urlize(str string) string {
 		} else if c == ' ' {
 			// Space, replace with '-'
 			return '-'
-		} else {
-			// Drop character
-			return -1
 		}
+		// Drop character
+		return -1
 	}, str)
 }
 

@@ -400,7 +400,7 @@ type tlsALPN01Provider struct {
 	certs sync.Map
 }
 
-func (p *tlsALPN01Provider) Present(domain, token, keyAuth string) error {
+func (p *tlsALPN01Provider) Present(domain, _, keyAuth string) error {
 	cert, err := tlsalpn01.ChallengeCert(domain, keyAuth)
 	if err != nil {
 		return err
@@ -409,7 +409,7 @@ func (p *tlsALPN01Provider) Present(domain, token, keyAuth string) error {
 	return nil
 }
 
-func (p *tlsALPN01Provider) CleanUp(domain, token, keyAuth string) error {
+func (p *tlsALPN01Provider) CleanUp(domain, _, _ string) error {
 	p.certs.Delete(domain)
 	return nil
 }

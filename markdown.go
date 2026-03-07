@@ -194,19 +194,19 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 	return ast.WalkSkipChildren, nil
 }
 
-func (r *customRenderer) extractTextFromChildren(node ast.Node, source []byte) string {
+func (c *customRenderer) extractTextFromChildren(node ast.Node, source []byte) string {
 	if node == nil {
 		return ""
 	}
 	b := builderpool.Get()
 	defer builderpool.Put(b)
-	for c := node.FirstChild(); c != nil; c = c.NextSibling() {
-		if s, ok := c.(*ast.String); ok {
+	for ch := node.FirstChild(); ch != nil; ch = ch.NextSibling() {
+		if s, ok := ch.(*ast.String); ok {
 			b.Write(s.Value)
-		} else if t, ok := c.(*ast.Text); ok {
+		} else if t, ok := ch.(*ast.Text); ok {
 			b.Write(t.Segment.Value(source))
 		} else {
-			b.WriteString(r.extractTextFromChildren(c, source))
+			b.WriteString(c.extractTextFromChildren(ch, source))
 		}
 	}
 	return b.String()

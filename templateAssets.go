@@ -26,7 +26,7 @@ type assetFile struct {
 func (a *goBlog) initTemplateAssets() error {
 	a.assetFileNames = map[string]string{}
 	a.assetFiles = map[string]*assetFile{}
-	if err := filepath.Walk(assetsFolder, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(assetsFolder, func(path string, info os.FileInfo, _ error) error {
 		if info.Mode().IsRegular() {
 			// Open file
 			file, err := os.Open(path)
