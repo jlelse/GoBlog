@@ -54,14 +54,14 @@ jobs:
         username: nologin
         password: ${{ secrets.GITEA_TOKEN }}
     - name: Build base image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         push: true
         target: base
         tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
         provenance: false
     - name: Build tools image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         push: true
         target: tools
