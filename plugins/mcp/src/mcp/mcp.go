@@ -1,3 +1,4 @@
+// Package mcp provides an MCP server plugin for GoBlog.
 package mcp
 
 import (
@@ -28,6 +29,7 @@ type plugin struct {
 	path string
 }
 
+// GetPlugin returns the mcp plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.SetConfig,
@@ -860,7 +862,7 @@ func (p *plugin) toolListWebmentions(args json.RawMessage) *toolCallResult {
 	type webmentionResult struct {
 		Source  string `json:"source"`
 		Target  string `json:"target"`
-		Url     string `json:"url,omitempty"`
+		URL     string `json:"url,omitempty"`
 		Author  string `json:"author,omitempty"`
 		Title   string `json:"title,omitempty"`
 		Status  string `json:"status"`
@@ -872,7 +874,7 @@ func (p *plugin) toolListWebmentions(args json.RawMessage) *toolCallResult {
 		results = append(results, webmentionResult{
 			Source:  m.Source,
 			Target:  m.Target,
-			Url:     m.Url,
+			URL:     m.Url,
 			Author:  m.Author,
 			Title:   m.Title,
 			Status:  m.Status,

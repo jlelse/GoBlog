@@ -13,7 +13,7 @@ import (
 func Test_apAddFollowerManually(t *testing.T) {
 	app := &goBlog{
 		cfg:        createDefaultTestConfig(t),
-		httpClient: newHttpClient(),
+		httpClient: newHTTPClient(),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 	app.cfg.Blogs = map[string]*configBlog{
@@ -181,7 +181,7 @@ func Test_apAddFollowerManually(t *testing.T) {
 func Test_apCheckFollowers(t *testing.T) {
 	app := &goBlog{
 		cfg:        createDefaultTestConfig(t),
-		httpClient: newHttpClient(),
+		httpClient: newHTTPClient(),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 	app.cfg.Blogs = map[string]*configBlog{

@@ -41,15 +41,15 @@ func Test_openSearchUrl(t *testing.T) {
 	// Nil search -> empty
 	bc := app.cfg.Blogs[app.cfg.DefaultBlog]
 	bc.Search = nil
-	assert.Equal(t, "", openSearchUrl(bc))
+	assert.Equal(t, "", openSearchURL(bc))
 
 	// Disabled search -> empty
 	bc.Search = &configSearch{Enabled: false, Path: "/search"}
-	assert.Equal(t, "", openSearchUrl(bc))
+	assert.Equal(t, "", openSearchURL(bc))
 
 	// Enabled search -> path should include opensearch.xml
 	bc.Search = &configSearch{Enabled: true, Path: "/search"}
-	u := openSearchUrl(bc)
+	u := openSearchURL(bc)
 	require.NotEmpty(t, u)
 	assert.Contains(t, u, "opensearch.xml")
 }

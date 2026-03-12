@@ -43,10 +43,9 @@ func urlize(str string) string {
 		} else if c == ' ' {
 			// Space, replace with '-'
 			return '-'
-		} else {
-			// Drop character
-			return -1
 		}
+		// Drop character
+		return -1
 	}, str)
 }
 
@@ -223,8 +222,8 @@ func charCount(s string) (count int) {
 }
 
 // Check if url has allowed file extension
-func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
-	u, err := url.Parse(rawUrl)
+func urlHasExt(rawURL string, allowed ...string) (ext string, has bool) {
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		return "", false
 	}
@@ -238,7 +237,7 @@ func urlHasExt(rawUrl string, allowed ...string) (ext string, has bool) {
 }
 
 func mBytesString(size int64) string {
-	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes())
+	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes()) //nolint:gosec
 }
 
 // Build policy to only allow a subset of HTML tags
@@ -362,7 +361,7 @@ func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, 
 	if req.URL.Path == "" {
 		req.URL.Path = "/"
 	}
-	return newHandlerClient(handler).Do(req)
+	return newHandlerClient(handler).Do(req) //nolint:gosec
 }
 
 var timeDiffLocaleMap = map[string]tdl.Locale{}
@@ -403,7 +402,7 @@ func truncateStringWithEllipsis(s string, l int) string {
 	return s
 }
 
-func (a *goBlog) respondWithMinifiedJson(w http.ResponseWriter, v any) {
+func (a *goBlog) respondWithMinifiedJSON(w http.ResponseWriter, v any) {
 	pr, pw := io.Pipe()
 	go func() {
 		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(v))

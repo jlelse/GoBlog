@@ -194,7 +194,7 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any)
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
 }
 
-const sitemapDatePathsSql = `
+const sitemapDatePathsSQL = `
 with filteredposts as ( %s ),
 alldates as (
     select distinct 
@@ -230,7 +230,7 @@ func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []strin
 	if err != nil {
 		return
 	}
-	rows, err := a.db.Query(fmt.Sprintf(sitemapDatePathsSql, query), args...)
+	rows, err := a.db.Query(fmt.Sprintf(sitemapDatePathsSQL, query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +242,9 @@ func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []strin
 			return nil, err
 		}
 		paths = append(paths, path)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return
 }

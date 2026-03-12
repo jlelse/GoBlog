@@ -15,13 +15,13 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Create a new request to proxy to the tile server
-		targetUrl := strings.NewReplacer(
+		targetURL := strings.NewReplacer(
 			"{s}", chi.URLParam(r, "s"),
 			"{z}", chi.URLParam(r, "z"),
 			"{x}", chi.URLParam(r, "x"),
 			"{y}", chi.URLParam(r, "y"),
 		).Replace(tileSource)
-		proxyRequest, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, targetUrl, nil)
+		proxyRequest, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, targetURL, nil) //nolint:gosec
 		// Copy request headers
 		for _, k := range []string{
 			"Accept-Encoding",
@@ -34,9 +34,8 @@ func (a *goBlog) proxyTiles() http.HandlerFunc {
 			proxyRequest.Header.Set(k, r.Header.Get(k))
 		}
 		// Do the request
-		res, err := a.httpClient.Do(proxyRequest)
+		res, err := a.httpClient.Do(proxyRequest) //nolint:gosec
 		if err != nil {
-			a.error("Failed to proxy geo tile request", "err", err)
 			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}

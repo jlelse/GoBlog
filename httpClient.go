@@ -8,14 +8,14 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 )
 
-func newHttpClient() *http.Client {
+func newHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout:   time.Minute,
-		Transport: newHttpTransport(),
+		Transport: newHTTPTransport(),
 	}
 }
 
-func newHttpTransport() http.RoundTripper {
+func newHTTPTransport() http.RoundTripper {
 	return newAddUserAgentTransport(
 		gzhttp.Transport(
 			&http.Transport{

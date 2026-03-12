@@ -1,3 +1,4 @@
+// Package cache provides a generic cache implementation.
 package cache
 
 import (

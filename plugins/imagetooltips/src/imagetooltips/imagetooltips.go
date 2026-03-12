@@ -1,3 +1,4 @@
+// Package imagetooltips provides an image tooltips plugin for GoBlog.
 package imagetooltips
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	init sync.Once
 }
 
+// GetPlugin returns the imagetooltips plugin instance.
 func GetPlugin() (plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p
@@ -40,7 +42,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 
 	bufJs := bufferpool.Get()
 	defer bufferpool.Put(bufJs)
-	hbJs := htmlbuilder.NewHtmlBuilder(bufJs)
+	hbJs := htmlbuilder.NewHTMLBuilder(bufJs)
 
 	doc.Find(".e-content a > img").Each(func(_ int, element *goquery.Selection) {
 		element.Parent().ReplaceWithSelection(element)

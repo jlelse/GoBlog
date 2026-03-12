@@ -40,7 +40,7 @@ func Test_postsScheduler(t *testing.T) {
 		Section:    "test",
 		Status:     statusScheduled,
 		Visibility: visibilityPublic,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	count, err := app.db.countPosts(&postsRequestConfig{status: []postStatus{statusScheduled}})

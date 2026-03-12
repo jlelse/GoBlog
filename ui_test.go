@@ -31,7 +31,7 @@ func Test_renderPostTax(t *testing.T) {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	app.renderPostTax(hb, p, app.cfg.Blogs["default"])
 
@@ -54,7 +54,7 @@ func Test_renderOldContentWarning(t *testing.T) {
 	}
 
 	buf := &bytes.Buffer{}
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	app.renderOldContentWarning(hb, p, app.cfg.Blogs["default"])
 	res := buf.String()
@@ -97,7 +97,7 @@ func Test_renderInteractions(t *testing.T) {
 		Target: "https://example.com/testpost1",
 	})
 	require.NoError(t, err)
-	err = app.db.approveWebmentionId(1)
+	err = app.db.approveWebmentionID(1)
 	require.NoError(t, err)
 
 	err = app.createPost(&post{
@@ -114,11 +114,11 @@ func Test_renderInteractions(t *testing.T) {
 		Target: "https://example.com/testpost2",
 	})
 	require.NoError(t, err)
-	err = app.db.approveWebmentionId(2)
+	err = app.db.approveWebmentionID(2)
 	require.NoError(t, err)
 
 	buf := &bytes.Buffer{}
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	app.renderInteractions(hb, &renderData{
 		Blog:      app.cfg.Blogs["default"],
@@ -144,7 +144,7 @@ func Test_renderAuthorWithoutProfileImage(t *testing.T) {
 	_ = app.initConfig(false)
 
 	buf := &bytes.Buffer{}
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	app.renderAuthor(hb)
 	res := buf.String()
@@ -182,7 +182,7 @@ func Test_renderAuthorWithProfileImage(t *testing.T) {
 
 	// Check rendering
 	buf := &bytes.Buffer{}
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	app.renderAuthor(hb)
 	res := buf.String()
@@ -204,7 +204,7 @@ func Test_renderSettings(t *testing.T) {
 	req := httptest.NewRequest("GET", "/settings", nil)
 	rr := httptest.NewRecorder()
 
-	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		app.renderSettings(hb, rd)
 	}, &renderData{
 		Data: &settingsRenderData{

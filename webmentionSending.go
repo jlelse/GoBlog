@@ -32,7 +32,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 	}
 	pr, pw := io.Pipe()
 	go func() {
-		a.postHtmlToWriter(pw, &postHtmlOptions{p: p})
+		a.postHTMLToWriter(pw, &postHTMLOptions{p: p})
 		_ = pw.Close()
 	}()
 	links, err := allLinksFromHTML(pr, a.fullPostURL(p))

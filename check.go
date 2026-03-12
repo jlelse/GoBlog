@@ -49,8 +49,8 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 	cache := cpkg.New[string, []byte](time.Minute, 5000)
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: httpcachetransport.NewHttpCacheTransportNoBody(
-			newHttpTransport(),
+		Transport: httpcachetransport.NewHTTPCacheTransportNoBody(
+			newHTTPTransport(),
 			cache, 60*time.Minute, 5*bodylimit.MB,
 		),
 	}
@@ -133,7 +133,7 @@ func (a *goBlog) allLinksToCheck(posts ...*post) ([]*stringPair, error) {
 			defer wg.Done()
 			pr, pw := io.Pipe()
 			go func() {
-				a.postHtmlToWriter(pw, &postHtmlOptions{p: pst, absolute: true})
+				a.postHTMLToWriter(pw, &postHTMLOptions{p: pst, absolute: true})
 				_ = pw.Close()
 			}()
 			links, err := allLinksFromHTML(pr, a.fullPostURL(pst))

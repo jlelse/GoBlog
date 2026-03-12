@@ -1,3 +1,4 @@
+// Package plugins provides plugin loading functionality for GoBlog.
 package plugins
 
 import (
@@ -71,7 +72,7 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 
 	plugins = map[string]any{}
 
-	var filesystem fs.FS = nil
+	var filesystem fs.FS
 	if strings.HasPrefix(p.Config.Path, embeddedPrefix) {
 		filesystem = host.embeddedPlugins
 	}

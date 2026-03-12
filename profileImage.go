@@ -62,7 +62,7 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get requested size
 		width, height := 0, 0
-		sizeFormValue := r.FormValue("s")
+		sizeFormValue := r.FormValue("s") //nolint:gosec
 		re := regexp.MustCompile(profileImageSizeRegexPattern)
 		if re.MatchString(sizeFormValue) {
 			matches := re.FindStringSubmatch(sizeFormValue)
@@ -83,7 +83,7 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		}
 		// Get requested quality
 		quality := 0
-		qualityFormValue := r.FormValue("q")
+		qualityFormValue := r.FormValue("q") //nolint:gosec
 		if qualityFormValue != "" {
 			quality, _ = strconv.Atoi(qualityFormValue)
 		}
@@ -171,7 +171,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// Parse multipart form
-	if err := r.ParseMultipartForm(10 * bodylimit.MB); err != nil {
+	if err := r.ParseMultipartForm(10 * bodylimit.MB); err != nil { //nolint:gosec
 		a.serveError(w, r, "Failed to parse multipart form", http.StatusBadRequest)
 		return
 	}

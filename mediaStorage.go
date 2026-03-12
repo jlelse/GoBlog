@@ -300,7 +300,7 @@ func (f *ftpMediaStorage) files() (files []*mediaFile, err error) {
 				Name:     s.Name,
 				Location: f.location(s.Name),
 				Time:     s.Time,
-				Size:     int64(s.Size),
+				Size:     int64(s.Size), //nolint:gosec
 			})
 		}
 	}

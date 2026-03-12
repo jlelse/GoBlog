@@ -17,13 +17,13 @@ func (*goBlog) wrapForPlugins(
 	plugins []any,
 	pluginRender func(plugin any, doc *goquery.Document),
 	selector string,
-) (wrappedHb *htmlbuilder.HtmlBuilder, finish func()) {
+) (wrappedHb *htmlbuilder.HTMLBuilder, finish func()) {
 	if len(plugins) == 0 {
 		// No plugins, nothing to wrap
-		if hb, ok := (originalWriter).(*htmlbuilder.HtmlBuilder); ok {
+		if hb, ok := (originalWriter).(*htmlbuilder.HTMLBuilder); ok {
 			return hb, func() {}
 		}
-		return htmlbuilder.NewHtmlBuilder(originalWriter), func() {}
+		return htmlbuilder.NewHTMLBuilder(originalWriter), func() {}
 	}
 	var wg sync.WaitGroup
 	pr, pw := io.Pipe()
@@ -45,5 +45,5 @@ func (*goBlog) wrapForPlugins(
 			_ = goquery.Render(originalWriter, s)
 		})
 	})
-	return htmlbuilder.NewHtmlBuilder(pw), finish
+	return htmlbuilder.NewHTMLBuilder(pw), finish
 }

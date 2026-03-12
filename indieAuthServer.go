@@ -50,7 +50,7 @@ func (a *goBlog) indieAuthMetadata(w http.ResponseWriter, r *http.Request) {
 		"scopes_supported":                           []string{"create", "update", "delete", "undelete", "media"},
 		"code_challenge_methods_supported":           indieauth.CodeChallengeMethods,
 	}
-	a.respondWithMinifiedJson(w, resp)
+	a.respondWithMinifiedJSON(w, resp)
 }
 
 // Parse Authorization Request
@@ -102,7 +102,7 @@ func (a *goBlog) indieAuthAccept(w http.ResponseWriter, r *http.Request) {
 // https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code
 // The client only exchanges the authorization code for the user's profile URL
 func (a *goBlog) indieAuthVerificationAuth(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	if err := r.ParseForm(); err != nil { //nolint:gosec
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -113,7 +113,7 @@ func (a *goBlog) indieAuthVerificationAuth(w http.ResponseWriter, r *http.Reques
 // https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code
 // The client exchanges the authorization code for an access token and the user's profile URL
 func (a *goBlog) indieAuthVerificationToken(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	if err := r.ParseForm(); err != nil { //nolint:gosec
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -180,7 +180,7 @@ func (a *goBlog) indieAuthVerification(w http.ResponseWriter, r *http.Request, w
 		resp["access_token"] = token
 		resp["scope"] = strings.Join(data.Scopes, " ")
 	}
-	a.respondWithMinifiedJson(w, resp)
+	a.respondWithMinifiedJSON(w, resp)
 }
 
 // Save the authorization request and return the code
@@ -245,7 +245,7 @@ func (a *goBlog) indieAuthTokenVerification(w http.ResponseWriter, r *http.Reque
 			"scope":     strings.Join(data.Scopes, " "),
 		}
 	}
-	a.respondWithMinifiedJson(w, res)
+	a.respondWithMinifiedJSON(w, res)
 }
 
 // Checks the database for the token and returns the indieAuthData with client and scope.

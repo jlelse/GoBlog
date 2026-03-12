@@ -1,3 +1,4 @@
+// Package aitldr provides an AI TLDR plugin for GoBlog.
 package aitldr
 
 import (
@@ -23,6 +24,7 @@ type plugin struct {
 	apikey, model, endpoint string
 }
 
+// GetPlugin returns the aitldr plugin instance.
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
 	plugintypes.PostCreatedHook,
@@ -64,14 +66,14 @@ func (p *plugin) PostCreated(post plugintypes.Post) {
 func (p *plugin) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/x/aitldr" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil {
+			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
 				p.summarize(post)
 				http.Redirect(w, r, post.GetPath(), http.StatusFound)
 			} else {
 				next.ServeHTTP(w, r)
 			}
 		} else if r.Method == http.MethodPost && r.URL.Path == "/x/aitldr/delete" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil {
+			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
 				p.deleteSummary(post)
 				http.Redirect(w, r, post.GetPath(), http.StatusFound)
 			} else {
@@ -96,7 +98,7 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	if renderContext.IsLoggedIn() {
 		buttonBuf := bufferpool.Get()
 		defer bufferpool.Put(buttonBuf)
-		buttonHw := htmlbuilder.NewHtmlBuilder(buttonBuf)
+		buttonHw := htmlbuilder.NewHTMLBuilder(buttonBuf)
 		buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aitldr")
 		buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
 		buttonHw.WriteElementOpen("input", "type", "submit", "value", "(Re-)Generate AI summary")
@@ -129,7 +131,7 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	hw := htmlbuilder.NewHtmlBuilder(buf)
+	hw := htmlbuilder.NewHTMLBuilder(buf)
 	hw.WriteElementOpen("div", "class", "p aitldr")
 	hw.WriteElementOpen("b")
 	hw.WriteEscaped(title)
@@ -158,7 +160,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	doc.Find(".aitldr").First().Each(func(_ int, _ *goquery.Selection) {
 		buf := bufferpool.Get()
 		defer bufferpool.Put(buf)
-		hb := htmlbuilder.NewHtmlBuilder(buf)
+		hb := htmlbuilder.NewHTMLBuilder(buf)
 		hb.WriteElementOpen("link", "rel", "stylesheet", "href", p.app.AssetPath("aitldr.css"))
 		doc.Find("head").AppendHtml(buf.String())
 	})
@@ -177,7 +179,7 @@ type apiResponse struct {
 
 func (p *plugin) summarize(post plugintypes.Post) {
 	if post.GetFirstParameterValue("noaitldr") == "true" {
-		log.Println("aitldr: Skip summarizing", post.GetPath())
+		log.Println("aitldr: Skip summarizing", post.GetPath()) //nolint:gosec
 		return
 	}
 
@@ -188,7 +190,7 @@ func (p *plugin) summarize(post plugintypes.Post) {
 
 	prompt := p.createPrompt(post)
 	if len(prompt) < 250 {
-		log.Println("aitldr: Skip summarizing as post is too short", post.GetPath())
+		log.Println("aitldr: Skip summarizing as post is too short", post.GetPath()) //nolint:gosec
 		return
 	}
 
@@ -239,7 +241,7 @@ func (p *plugin) summarize(post plugintypes.Post) {
 
 	err = p.app.SetPostParameter(post.GetPath(), postParam, []string{summary})
 	if err != nil {
-		log.Println("aitldr plugin:", err.Error())
+		log.Println("aitldr plugin:", err.Error()) //nolint:gosec
 		return
 	}
 
@@ -268,12 +270,12 @@ func (p *plugin) createPrompt(post plugintypes.Post) string {
 	if title, err := p.app.RenderMarkdownAsText(post.GetTitle()); err == nil && title != "" {
 		prompt += title + "\n\n"
 	} else if err != nil {
-		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error())
+		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error()) //nolint:gosec
 	}
 	if text, err := p.app.RenderMarkdownAsText(post.GetContent()); err == nil && text != "" {
 		prompt += text
 	} else if err != nil {
-		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error())
+		log.Println("aitldr plugin: Rendering markdown as text failed:", err.Error()) //nolint:gosec
 	}
 	return prompt
 }
@@ -281,7 +283,7 @@ func (p *plugin) createPrompt(post plugintypes.Post) string {
 func (p *plugin) deleteSummary(post plugintypes.Post) {
 	err := p.app.SetPostParameter(post.GetPath(), postParam, []string{})
 	if err != nil {
-		log.Println("aitldr plugin:", err.Error())
+		log.Println("aitldr plugin:", err.Error()) //nolint:gosec
 		return
 	}
 

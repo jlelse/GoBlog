@@ -45,7 +45,7 @@ func Test_postsDb(t *testing.T) {
 			"tags":  {"C", "A", "B"},
 			"empty": {},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	must.NoError(err)
 
 	// Check post
@@ -125,7 +125,7 @@ func Test_postsDb(t *testing.T) {
 		Parameters: map[string][]string{
 			"tags": {"Test", "Blog", "A"},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	must.NoError(err)
 
 	// Check that there is a new post
@@ -220,7 +220,7 @@ func Test_postsDb(t *testing.T) {
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusPublished,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	must.Error(err)
 }
 
@@ -240,7 +240,7 @@ func Test_ftsWithoutTitle(t *testing.T) {
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusDraft,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	ps, err := app.getPosts(&postsRequestConfig{
@@ -265,7 +265,7 @@ func Test_postsPriority(t *testing.T) {
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusPublished,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.savePost(&post{
@@ -276,7 +276,7 @@ func Test_postsPriority(t *testing.T) {
 		Section:   "test",
 		Status:    statusPublished,
 		Priority:  1,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	ps, err := app.getPosts(&postsRequestConfig{
@@ -310,7 +310,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusDraft,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.savePost(&post{
@@ -325,7 +325,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 				"https://example.com/test.jpg",
 			},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.savePost(&post{
@@ -335,7 +335,7 @@ func Test_usesOfMediaFile(t *testing.T) {
 		Blog:      "en",
 		Section:   "test",
 		Status:    statusDraft,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	results, err := app.getPosts(&postsRequestConfig{
@@ -362,7 +362,7 @@ func Test_replaceParams(t *testing.T) {
 				"ABC", "DEF", "GHI",
 			},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.replacePostParam("/test/abc", "test", []string{"DEF", "123", "456"})
@@ -523,7 +523,7 @@ func Test_updatePostParameters(t *testing.T) {
 			"tags":  {"A", "B", "C"},
 			"title": {"Original Title"},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	t.Run("Unchanged parameters are preserved", func(t *testing.T) {
@@ -727,7 +727,7 @@ func Test_postsDb_anyParams(t *testing.T) {
 			"tags":  {"go", "web"},
 			"title": {"First Post"},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.savePost(&post{
@@ -739,7 +739,7 @@ func Test_postsDb_anyParams(t *testing.T) {
 		Parameters: map[string][]string{
 			"tags": {"go"},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	err = app.db.savePost(&post{
@@ -748,7 +748,7 @@ func Test_postsDb_anyParams(t *testing.T) {
 		Blog:    "en",
 		Section: "test",
 		Status:  statusPublished,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	t.Run("getPosts with single anyParam", func(t *testing.T) {

@@ -21,7 +21,7 @@ const (
 	jsonFeed    feedType = "json"
 	minRssFeed  feedType = "min.rss"
 	minAtomFeed feedType = "min.atom"
-	minJsonFeed feedType = "min.json"
+	minJSONFeed feedType = "min.json"
 )
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description, path, query string) {
@@ -45,10 +45,10 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	for _, p := range posts {
 		buf := bufferpool.Get()
 		switch f {
-		case minRssFeed, minAtomFeed, minJsonFeed:
-			a.minFeedHtml(buf, p)
+		case minRssFeed, minAtomFeed, minJSONFeed:
+			a.minFeedHTML(buf, p)
 		default:
-			a.feedHtml(buf, p)
+			a.feedHTML(buf, p)
 		}
 		itemTitle := p.RenderedTitle
 		if fallbackTitle && itemTitle == "" {
@@ -75,7 +75,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	case atomFeed, minAtomFeed:
 		feedMediaType = contenttype.ATOM
 		feedWriteFunc = feed.WriteAtom
-	case jsonFeed, minJsonFeed:
+	case jsonFeed, minJSONFeed:
 		feedMediaType = contenttype.JSONFeed
 		feedWriteFunc = feed.WriteJSON
 	default:

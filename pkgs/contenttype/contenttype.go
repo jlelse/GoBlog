@@ -1,10 +1,11 @@
+// Package contenttype defines common content type constants.
 package contenttype
 
-// This package contains constants for a few content types used in GoBlog
+// CharsetUtf8Suffix is the UTF-8 charset suffix for content types.
+const CharsetUtf8Suffix = "; charset=utf-8"
 
+// Common MIME content type constants.
 const (
-	CharsetUtf8Suffix = "; charset=utf-8"
-
 	AS            = "application/activity+json"
 	ATOM          = "application/atom+xml"
 	CSS           = "text/css"
@@ -20,7 +21,10 @@ const (
 	Text          = "text/plain"
 	WWWForm       = "application/x-www-form-urlencoded"
 	XML           = "text/xml"
+)
 
+// Content types with UTF-8 charset suffix.
+const (
 	ASUTF8   = AS + CharsetUtf8Suffix
 	CSSUTF8  = CSS + CharsetUtf8Suffix
 	HTMLUTF8 = HTML + CharsetUtf8Suffix

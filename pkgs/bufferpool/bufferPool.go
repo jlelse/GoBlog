@@ -1,3 +1,4 @@
+// Package bufferpool provides a sync.Pool for bytes.Buffer instances.
 package bufferpool
 
 import (
@@ -11,10 +12,12 @@ var bufferPool = sync.Pool{
 	},
 }
 
+// Get returns a bytes.Buffer from the pool.
 func Get() *bytes.Buffer {
 	return bufferPool.Get().(*bytes.Buffer)
 }
 
+// Put returns a bytes.Buffer to the pool.
 func Put(bufs ...*bytes.Buffer) {
 	for _, buf := range bufs {
 		buf.Reset()

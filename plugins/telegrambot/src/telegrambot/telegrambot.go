@@ -1,3 +1,4 @@
+// Package telegrambot provides a Telegram bot plugin for GoBlog.
 package telegrambot
 
 import (
@@ -28,6 +29,7 @@ type plugin struct {
 	authorizationToken string
 }
 
+// GetPlugin returns the telegrambot plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.SetConfig,
@@ -69,7 +71,7 @@ func (p *plugin) Exec() {
 				log.Println("telegrambot: Error generating authorization token:", err)
 				return
 			}
-			b[i] = charset[randomByte[0]%byte(len(charset))]
+			b[i] = charset[randomByte[0]%byte(len(charset))] //nolint:gosec
 		}
 		p.authorizationToken = string(b)
 		// Register the bot with the Telegram API
@@ -112,6 +114,7 @@ func (p *plugin) Prio() int {
 	return 1000
 }
 
+// TelegramMessage represents a Telegram message.
 type TelegramMessage struct {
 	MessageID int           `json:"message_id,omitempty"`
 	From      *TelegramUser `json:"from,omitempty"`
@@ -122,27 +125,32 @@ type TelegramMessage struct {
 	Document *TelegramDocument `json:"document,omitempty"`
 }
 
+// TelegramDocument represents a Telegram document.
 type TelegramDocument struct {
 	FileID   string `json:"file_id,omitempty"`
 	FileName string `json:"file_name,omitempty"`
 	MimeType string `json:"mime_type,omitempty"`
 }
 
+// TelegramUser represents a Telegram user.
 type TelegramUser struct {
 	ID       int    `json:"id,omitempty"`
 	Username string `json:"username,omitempty"`
 }
 
+// TelegramChat represents a Telegram chat.
 type TelegramChat struct {
 	ID int `json:"id,omitempty"`
 }
 
+// TelegramSendMessage represents a Telegram send message request.
 type TelegramSendMessage struct {
 	ChatID          int                      `json:"chat_id,omitempty"`
 	Text            string                   `json:"text,omitempty"`
 	ReplyParameters *TelegramReplyParameters `json:"reply_parameters,omitempty"`
 }
 
+// TelegramReplyParameters represents Telegram reply parameters.
 type TelegramReplyParameters struct {
 	MessageID int `json:"message_id,omitempty"`
 }
@@ -160,7 +168,7 @@ func (p *plugin) handleTelegramBotRequest(_ http.ResponseWriter, r *http.Request
 		return
 	}
 	// Check allowed users
-	if !(slices.Contains(p.allowedUsers, update.Message.From.Username) || slices.Contains(p.allowedUsers, strconv.Itoa(update.Message.From.ID))) {
+	if !slices.Contains(p.allowedUsers, update.Message.From.Username) && !slices.Contains(p.allowedUsers, strconv.Itoa(update.Message.From.ID)) {
 		p.sendMessage(update.Message.Chat.ID, "Sorry, you are not allowed to use this bot!", update.Message.MessageID)
 		return
 	}
@@ -168,11 +176,12 @@ func (p *plugin) handleTelegramBotRequest(_ http.ResponseWriter, r *http.Request
 	if strings.HasPrefix(update.Message.Text, "/") {
 		parts := strings.SplitN(update.Message.Text, " ", 2)
 		command := parts[0][1:]
-		if command == "start" {
+		switch command {
+		case "start":
 			p.sendMessage(update.Message.Chat.ID, "Welcome to the GoBlog Telegram Bot!", update.Message.MessageID)
-		} else if command == "help" {
+		case "help":
 			p.sendMessage(update.Message.Chat.ID, "Available commands: /start, /help", update.Message.MessageID)
-		} else {
+		default:
 			p.sendMessage(update.Message.Chat.ID, "Unknown command: "+command, update.Message.MessageID)
 		}
 		return

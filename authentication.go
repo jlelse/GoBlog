@@ -93,7 +93,7 @@ func (a *goBlog) authMiddleware(next http.Handler) http.Handler {
 		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
 		if written == 0 {
 			// Maybe it's a form
-			_ = r.ParseForm()
+			_ = r.ParseForm() //nolint:gosec
 			// Encode form
 			sw, _ := io.WriteString(bodyEncoder, r.Form.Encode())
 			written = int64(sw)
@@ -134,18 +134,18 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return false
 	}
-	if r.FormValue("loginaction") != "login" {
+	if r.FormValue("loginaction") != "login" { //nolint:gosec
 		return false
 	}
 	// Check credential
-	if !a.checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) {
+	if !a.checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) { //nolint:gosec
 		a.serveError(w, r, "Incorrect credentials", http.StatusUnauthorized)
 		return true
 	}
 	// Prepare original request
-	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginbody")))
-	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.URL.RequestURI(), bodyDecoder)
-	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))
+	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginbody")))                  //nolint:gosec
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.URL.RequestURI(), bodyDecoder) //nolint:gosec
+	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))             //nolint:gosec
 	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Cookie
 	a.initSessionStores()

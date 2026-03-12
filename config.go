@@ -54,10 +54,10 @@ type configServer struct {
 	AcmeDir            string   `mapstructure:"acmeDir"`
 	AcmeEabKid         string   `mapstructure:"acmeEabKid"`
 	AcmeEabKey         string   `mapstructure:"acmeEabKey"`
-	HttpsCert          string   `mapstructure:"httpsCert"`
-	HttpsKey           string   `mapstructure:"httpsKey"`
-	HttpsRedirect      bool     `mapstructure:"httpsRedirect"`
-	HttpsRedirectPort  int      `mapstructure:"httpsRedirectPort"`
+	HTTPSCert          string   `mapstructure:"httpsCert"`
+	HTTPSKey           string   `mapstructure:"httpsKey"`
+	HTTPSRedirect      bool     `mapstructure:"httpsRedirect"`
+	HTTPSRedirectPort  int      `mapstructure:"httpsRedirectPort"`
 	Tor                bool     `mapstructure:"tor"`
 	SecurityHeaders    bool     `mapstructure:"securityHeaders"`
 	CSPDomains         []string `mapstructure:"cspDomains"`
@@ -65,7 +65,7 @@ type configServer struct {
 	shortPublicHost    string
 	mediaHost          string
 	altHosts           []string
-	manualHttps        bool
+	manualHTTPS        bool
 }
 
 type configDb struct {
@@ -261,7 +261,7 @@ type configMicropub struct {
 }
 
 type configMicropubMedia struct {
-	MediaURL string `mapstructure:"mediaUrl"`
+	MediaURL string `mapstructure:"mediaURL"`
 	// BunnyCDN
 	BunnyStorageKey    string `mapstructure:"bunnyStorageKey"`
 	BunnyStorageName   string `mapstructure:"bunnyStorageName"`
@@ -314,7 +314,7 @@ type configMatrix struct {
 	Username   string `mapstructure:"username"`
 	Password   string `mapstructure:"password"`
 	Room       string `mapstructure:"room"`
-	DeviceId   string `mapstructure:"deviceid"`
+	DeviceID   string `mapstructure:"deviceid"`
 	client     *mautrix.Client
 	err        error
 	clientInit sync.Once
@@ -426,11 +426,11 @@ func (a *goBlog) initConfig(logging bool) error {
 		a.cfg.Server.shortPublicHost = shortPublicURL.Hostname()
 	}
 	if ma := a.cfg.Server.MediaAddress; ma != "" {
-		mediaUrl, err := url.Parse(ma)
+		mediaURL, err := url.Parse(ma)
 		if err != nil {
 			return errors.New("Invalid media address: " + err.Error())
 		}
-		a.cfg.Server.mediaHost = mediaUrl.Hostname()
+		a.cfg.Server.mediaHost = mediaURL.Hostname()
 	}
 	a.cfg.Server.altHosts = []string{}
 	for _, aa := range a.cfg.Server.AltAddresses {
@@ -461,14 +461,14 @@ func (a *goBlog) initConfig(logging bool) error {
 		a.cfg.Server.Port = finalPort
 	}
 	// Check HTTPS
-	if a.cfg.Server.HttpsCert != "" && a.cfg.Server.HttpsKey != "" {
-		a.cfg.Server.manualHttps = true
+	if a.cfg.Server.HTTPSCert != "" && a.cfg.Server.HTTPSKey != "" {
+		a.cfg.Server.manualHTTPS = true
 	}
-	if a.cfg.Server.PublicHTTPS || a.cfg.Server.manualHttps {
+	if a.cfg.Server.PublicHTTPS || a.cfg.Server.manualHTTPS {
 		a.cfg.Server.SecurityHeaders = true
 	}
 	if a.cfg.Server.PublicHTTPS {
-		a.cfg.Server.HttpsRedirect = true
+		a.cfg.Server.HTTPSRedirect = true
 	}
 	// Check if any blog is configured
 	if len(a.cfg.Blogs) == 0 {

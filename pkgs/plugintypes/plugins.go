@@ -87,7 +87,7 @@ type PostUpdatedHook interface {
 	PostUpdated(post Post)
 }
 
-// PostUpdatedHook plugins get called after a post is deleted.
+// PostDeletedHook plugins get called after a post is deleted.
 type PostDeletedHook interface {
 	// Handle the post.
 	PostDeleted(post Post)

@@ -39,7 +39,7 @@ func (p *webmentionPaginationAdapter) Slice(offset, length int, data any) error 
 }
 
 func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
-	var status webmentionStatus = ""
+	var status webmentionStatus
 	switch webmentionStatus(r.URL.Query().Get("status")) {
 	case webmentionStatusVerified:
 		status = webmentionStatusVerified
@@ -113,18 +113,18 @@ func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Invalid action", http.StatusBadRequest)
 		return
 	}
-	id, err := strconv.Atoi(r.FormValue("mentionid"))
+	id, err := strconv.Atoi(r.FormValue("mentionid")) //nolint:gosec
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	switch action {
 	case "delete":
-		err = a.db.deleteWebmentionId(id)
+		err = a.db.deleteWebmentionID(id)
 	case "approve":
-		err = a.db.approveWebmentionId(id)
+		err = a.db.approveWebmentionID(id)
 	case "reverify":
-		err = a.reverifyWebmentionId(id)
+		err = a.reverifyWebmentionID(id)
 	}
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
@@ -133,7 +133,7 @@ func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {
 	if action == "delete" || action == "approve" {
 		a.purgeCache()
 	}
-	redirectTo := r.FormValue("redir")
+	redirectTo := r.FormValue("redir") //nolint:gosec
 	if redirectTo == "" {
 		redirectTo = "."
 	}

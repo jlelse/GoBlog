@@ -50,10 +50,10 @@ func (a *goBlog) serveComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) createCommentFromRequest(w http.ResponseWriter, r *http.Request) {
-	target := r.FormValue("target")
-	comment := r.FormValue("comment")
-	name := r.FormValue("name")
-	website := r.FormValue("website")
+	target := r.FormValue("target")   //nolint:gosec
+	comment := r.FormValue("comment") //nolint:gosec
+	name := r.FormValue("name")       //nolint:gosec
+	website := r.FormValue("website") //nolint:gosec
 	_, bc := a.getBlog(r)
 	// Create comment
 	result, errStatus, err := a.createComment(bc, target, comment, name, website, "")
@@ -66,7 +66,7 @@ func (a *goBlog) createCommentFromRequest(w http.ResponseWriter, r *http.Request
 }
 
 func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, original string) (string, int, error) {
-	updateId := -1
+	updateID := -1
 	// Check target
 	target, status, err := a.checkCommentTarget(target)
 	if err != nil {
@@ -82,16 +82,16 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 	original = cleanHTMLText(original)
 	if original != "" {
 		// Check if comment already exists
-		exists, id, err := a.db.commentIdByOriginal(original)
+		exists, id, err := a.db.commentIDByOriginal(original)
 		if err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to check the database")
 		}
 		if exists {
-			updateId = id
+			updateID = id
 		}
 	}
 	// Insert
-	if updateId == -1 {
+	if updateID == -1 {
 		result, err := a.db.Exec(
 			"insert into comments (target, comment, name, website, original) values (@target, @comment, @name, @website, @original)",
 			sql.Named("target", target), sql.Named("comment", comment), sql.Named("name", name), sql.Named("website", website), sql.Named("original", original),
@@ -99,25 +99,24 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		if err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
 		}
-		if commentID, err := result.LastInsertId(); err != nil {
+		commentID, err := result.LastInsertId()
+		if err != nil {
 			return "", http.StatusInternalServerError, errors.New("failed to save comment to database")
-		} else {
-			commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, commentID))
-			// Send webmention
-			_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
-			// Return comment path
-			return commentAddress, 0, nil
 		}
-	} else {
-		if err := a.db.updateComment(updateId, comment, name, website); err != nil {
-			return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
-		}
-		commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, updateId))
+		commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, commentID))
 		// Send webmention
 		_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 		// Return comment path
 		return commentAddress, 0, nil
 	}
+	if err := a.db.updateComment(updateID, comment, name, website); err != nil {
+		return "", http.StatusInternalServerError, errors.New("failed to update comment in database")
+	}
+	commentAddress := bc.getRelativePath(fmt.Sprintf("%s/%d", commentPath, updateID))
+	// Send webmention
+	_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
+	// Return comment path
+	return commentAddress, 0, nil
 }
 
 func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
@@ -174,6 +173,9 @@ func (db *database) getComments(config *commentsRequestConfig) ([]*comment, erro
 		}
 		comments = append(comments, c)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return comments, nil
 }
 
@@ -201,7 +203,7 @@ func (db *database) deleteComment(id int) error {
 	return err
 }
 
-func (db *database) commentIdByOriginal(original string) (bool, int, error) {
+func (db *database) commentIDByOriginal(original string) (bool, int, error) {
 	var id int
 	row, err := db.QueryRow("select id from comments where original = @original", sql.Named("original", original))
 	if err != nil {

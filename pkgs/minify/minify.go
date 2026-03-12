@@ -1,3 +1,4 @@
+// Package minify provides HTML, CSS, and JS minification.
 package minify
 
 import (
@@ -12,6 +13,7 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+// Minifier provides HTML, CSS, and JS minification.
 type Minifier struct {
 	i sync.Once
 	m *minify.M
@@ -39,6 +41,7 @@ func (m *Minifier) init() {
 	})
 }
 
+// Get returns the minifier instance, initializing it if needed.
 func (m *Minifier) Get() *minify.M {
 	m.init()
 	return m.m

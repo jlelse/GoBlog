@@ -33,7 +33,7 @@ func (a *goBlog) getMatrixClient(mtx *configMatrix) (*mautrix.Client, error) {
 			InitialDeviceDisplayName: "GoBlog",
 			StoreCredentials:         true,
 			StoreHomeserverURL:       true,
-			DeviceID:                 id.DeviceID(mtx.DeviceId),
+			DeviceID:                 id.DeviceID(mtx.DeviceID),
 		})
 		if err != nil {
 			mtx.err = err

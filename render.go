@@ -31,11 +31,11 @@ func (d *renderData) LoggedIn() bool {
 	return d.app.isLoggedIn(d.req)
 }
 
-func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlbuilder.HtmlBuilder, *renderData), data *renderData) {
+func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlbuilder.HTMLBuilder, *renderData), data *renderData) {
 	a.renderWithStatusCode(w, r, http.StatusOK, f, data)
 }
 
-func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlbuilder.HtmlBuilder, *renderData), data *renderData) {
+func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, statusCode int, f func(*htmlbuilder.HTMLBuilder, *renderData), data *renderData) {
 	// Check render data
 	a.checkRenderData(r, data)
 	// Set content type
@@ -47,7 +47,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	go func() {
 		hb, finish := a.wrapForPlugins(
 			renderPipeWriter,
-			a.getPlugins(pluginUi2Type),
+			a.getPlugins(pluginUI2Type),
 			func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UI2).RenderWithDocument(data.prc, doc)
 			},
@@ -60,14 +60,14 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Run io based UI plugins
 	pluginPipeReader, pluginPipeWriter := io.Pipe()
 	go func() {
-		a.chainUiPlugins(a.getPlugins(pluginUiType), data.prc, renderPipeReader, pluginPipeWriter)
+		a.chainUIPlugins(a.getPlugins(pluginUIType), data.prc, renderPipeReader, pluginPipeWriter)
 		_ = pluginPipeWriter.Close()
 	}()
 	// Return minified HTML
 	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }
 
-func (a *goBlog) chainUiPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
+func (a *goBlog) chainUIPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
 	if len(plugins) == 0 {
 		_, _ = io.Copy(modified, rendered)
 		return
@@ -77,7 +77,7 @@ func (a *goBlog) chainUiPlugins(plugins []any, rc *pluginRenderContext, rendered
 		plugins[0].(plugintypes.UI).Render(rc, rendered, writer)
 		_ = writer.Close()
 	}()
-	a.chainUiPlugins(plugins[1:], rc, reader, modified)
+	a.chainUIPlugins(plugins[1:], rc, reader, modified)
 	_ = reader.Close()
 }
 

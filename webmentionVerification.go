@@ -18,7 +18,7 @@ import (
 )
 
 func (a *goBlog) initWebmentionQueue() {
-	a.listenOnQueue("wm", 30*time.Second, func(qi *queueItem, dequeue func(), reschedule func(time.Duration)) {
+	a.listenOnQueue("wm", 30*time.Second, func(qi *queueItem, dequeue func(), _ func(time.Duration)) {
 		var m mention
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
 			a.error("webmention queue error", "err", err)
@@ -177,6 +177,6 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	m.Title, m.Content, m.Author, m.Url = mf.Title, mf.Content, mf.Author, cmp.Or(mf.Url, m.Source)
+	m.Title, m.Content, m.Author, m.URL = mf.Title, mf.Content, mf.Author, cmp.Or(mf.URL, m.Source)
 	return nil
 }

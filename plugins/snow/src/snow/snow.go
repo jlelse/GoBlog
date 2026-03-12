@@ -1,3 +1,4 @@
+// Package snow provides a snow effect plugin for GoBlog.
 package snow
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	init sync.Once
 }
 
+// GetPlugin returns the snow plugin instance.
 func GetPlugin() (plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p
@@ -31,7 +33,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	}
 
 	p.init.Do(func() {
-		err := p.app.CompileAsset("snow.css", strings.NewReader(snowCss))
+		err := p.app.CompileAsset("snow.css", strings.NewReader(snowCSS))
 		if err != nil {
 			fmt.Println("Failed compile snow css: ", err.Error())
 			return
@@ -43,12 +45,12 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 		}
 	})
 
-	bufCss, bufJs := bufferpool.Get(), bufferpool.Get()
-	defer bufferpool.Put(bufCss, bufJs)
-	hbCss, hbJs := htmlbuilder.NewHtmlBuilder(bufCss), htmlbuilder.NewHtmlBuilder(bufJs)
+	bufCSS, bufJs := bufferpool.Get(), bufferpool.Get()
+	defer bufferpool.Put(bufCSS, bufJs)
+	hbCSS, hbJs := htmlbuilder.NewHTMLBuilder(bufCSS), htmlbuilder.NewHTMLBuilder(bufJs)
 
-	hbCss.WriteElementOpen("link", "rel", "stylesheet", "href", p.app.AssetPath("snow.css"))
-	doc.Find("head").AppendHtml(bufCss.String())
+	hbCSS.WriteElementOpen("link", "rel", "stylesheet", "href", p.app.AssetPath("snow.css"))
+	doc.Find("head").AppendHtml(bufCSS.String())
 
 	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("snow.js"), "defer", "")
 	hbJs.WriteElementClose("script")
@@ -57,7 +59,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 
 // Copy as strings, as embedding is not supported by Yaegi
 
-const snowCss = `
+const snowCSS = `
 .snowflake {
     position: fixed;
     top: -10vh;

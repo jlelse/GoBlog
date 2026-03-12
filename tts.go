@@ -71,15 +71,15 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	// Add body split into paragraphs because of 5000 character limit
 	phr, phw := io.Pipe()
 	go func() {
-		a.postHtmlToWriter(phw, &postHtmlOptions{p: p})
+		a.postHTMLToWriter(phw, &postHTMLOptions{p: p})
 		_ = phw.Close()
 	}()
-	postHtmlText, err := htmlTextFromReader(phr)
+	postHTMLText, err := htmlTextFromReader(phr)
 	_ = phr.CloseWithError(err)
 	if err != nil {
 		return err
 	}
-	parts = append(parts, strings.Split(postHtmlText, "\n\n")...)
+	parts = append(parts, strings.Split(postHTMLText, "\n\n")...)
 
 	// Create TTS audio for each part
 	partReaders := []io.Reader{}
@@ -154,13 +154,13 @@ func (a *goBlog) deletePostTTSAudio(p *post) bool {
 		return false
 	}
 	// Get filename and check if file is from the configured media storage
-	fileUrl, err := url.Parse(audio)
+	fileURL, err := url.Parse(audio)
 	if err != nil {
 		// Failed to parse audio url
 		a.error("failed to parse audio url", "err", err, "audio", audio)
 		return false
 	}
-	fileName := path.Base(fileUrl.Path)
+	fileName := path.Base(fileURL.Path)
 	if a.getFullAddress(a.mediaFileLocation(fileName)) != audio {
 		// File is not from the configured media storage
 		return false

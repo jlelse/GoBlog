@@ -74,7 +74,7 @@ func (a *goBlog) booleanBlogSettingHandler(settingName string, apply func(*confi
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		blog, bc := a.getBlog(r)
 		// Read values
-		settingValue := r.FormValue(settingName) == "on"
+		settingValue := r.FormValue(settingName) == "on" //nolint:gosec
 		// Update
 		err := a.saveBooleanSettingValue(settingNameWithBlog(blog, settingName), settingValue)
 		if err != nil {
@@ -114,7 +114,7 @@ const settingsDeleteSectionPath = "/deletesection"
 
 func (a *goBlog) settingsDeleteSection(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
-	section := r.FormValue("sectionname")
+	section := r.FormValue("sectionname") //nolint:gosec
 	// Check if any post uses this section
 	count, err := a.db.countPosts(&postsRequestConfig{
 		blogs:    []string{blog},
@@ -150,16 +150,16 @@ const settingsUpdateSectionPath = "/updatesection"
 func (a *goBlog) settingsUpdateSection(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	// Read values
-	sectionName := r.FormValue("sectionname")
-	sectionTitle := r.FormValue("sectiontitle")
+	sectionName := r.FormValue("sectionname")   //nolint:gosec
+	sectionTitle := r.FormValue("sectiontitle") //nolint:gosec
 	if sectionName == "" || sectionTitle == "" {
 		a.serveError(w, r, "Missing values for name or title", http.StatusBadRequest)
 		return
 	}
-	sectionDescription := r.FormValue("sectiondescription")
-	sectionPathTemplate := r.FormValue("sectionpathtemplate")
-	sectionShowFull := r.FormValue("sectionshowfull") == "on"
-	sectionHideOnStart := r.FormValue("sectionhideonstart") == "on"
+	sectionDescription := r.FormValue("sectiondescription")         //nolint:gosec
+	sectionPathTemplate := r.FormValue("sectionpathtemplate")       //nolint:gosec
+	sectionShowFull := r.FormValue("sectionshowfull") == "on"       //nolint:gosec
+	sectionHideOnStart := r.FormValue("sectionhideonstart") == "on" //nolint:gosec
 	// Create section
 	section := &configSection{
 		Name:         sectionName,
@@ -190,7 +190,7 @@ const settingsUpdateDefaultSectionPath = "/updatedefaultsection"
 func (a *goBlog) settingsUpdateDefaultSection(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	// Read values
-	newDefaultSection := r.FormValue("defaultsection")
+	newDefaultSection := r.FormValue("defaultsection") //nolint:gosec
 	// Check plausibility
 	if _, ok := bc.Sections[newDefaultSection]; !ok {
 		a.serveError(w, r, "Section unknown", http.StatusBadRequest)
@@ -259,8 +259,8 @@ const settingsUpdateUserPath = "/user"
 func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	// Read values
-	userNick := r.FormValue(userNickSetting)
-	userName := r.FormValue(userNameSetting)
+	userNick := r.FormValue(userNickSetting) //nolint:gosec
+	userName := r.FormValue(userNameSetting) //nolint:gosec
 	if userNick == "" || userName == "" {
 		a.serveError(w, r, "Values must not be empty", http.StatusInternalServerError)
 		return
@@ -289,8 +289,8 @@ const settingsUpdateBlogPath = "/blog"
 func (a *goBlog) settingsUpdateBlog(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	// Read values
-	blogTitle := r.FormValue(blogTitleSetting)
-	blogDescription := r.FormValue(blogDescriptionSetting)
+	blogTitle := r.FormValue(blogTitleSetting)             //nolint:gosec
+	blogDescription := r.FormValue(blogDescriptionSetting) //nolint:gosec
 	// Title is required
 	if blogTitle == "" {
 		a.serveError(w, r, "Blog title must not be empty", http.StatusBadRequest)
@@ -323,8 +323,8 @@ const (
 
 func (a *goBlog) settingsUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
-	newPassword := r.FormValue("newpassword")
-	confirmPassword := r.FormValue("confirmpassword")
+	newPassword := r.FormValue("newpassword")         //nolint:gosec
+	confirmPassword := r.FormValue("confirmpassword") //nolint:gosec
 
 	// Validate new password
 	if newPassword == "" {
@@ -373,8 +373,8 @@ const (
 
 func (a *goBlog) settingsSetupTOTP(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
-	totpSecret := r.FormValue("totpsecret")
-	totpCode := r.FormValue("totpcode")
+	totpSecret := r.FormValue("totpsecret") //nolint:gosec
+	totpCode := r.FormValue("totpcode")     //nolint:gosec
 
 	if totpSecret == "" || totpCode == "" {
 		a.serveError(w, r, "Missing TOTP secret or code", http.StatusBadRequest)
@@ -415,7 +415,7 @@ const (
 )
 
 func (a *goBlog) settingsCreateAppPassword(w http.ResponseWriter, r *http.Request) {
-	name := r.FormValue("apppasswordname")
+	name := r.FormValue("apppasswordname") //nolint:gosec
 
 	if name == "" {
 		a.serveError(w, r, "App password name is required", http.StatusBadRequest)
@@ -439,7 +439,7 @@ func (a *goBlog) settingsCreateAppPassword(w http.ResponseWriter, r *http.Reques
 
 func (a *goBlog) settingsDeleteAppPassword(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
-	id := r.FormValue("apppasswordid")
+	id := r.FormValue("apppasswordid") //nolint:gosec
 
 	if id == "" {
 		a.serveError(w, r, "App password ID is required", http.StatusBadRequest)

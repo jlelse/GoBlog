@@ -119,6 +119,9 @@ func (a *goBlog) getSections(blog string) (map[string]*configSection, error) {
 		}
 		sections[section.Name] = section
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return sections, nil
 }
 
@@ -178,7 +181,7 @@ func (a *goBlog) migrateStringSetting(name string, target *string) error {
 	return nil
 }
 
-// getBlogTitle returns the title for a blog from the database
+//nolint:unused
 func (a *goBlog) getBlogTitle(blog string) (string, error) {
 	return a.getSettingValue(settingNameWithBlog(blog, blogTitleSetting))
 }
@@ -188,7 +191,7 @@ func (a *goBlog) setBlogTitle(blog, title string) error {
 	return a.saveSettingValue(settingNameWithBlog(blog, blogTitleSetting), title)
 }
 
-// getBlogDescription returns the description for a blog from the database
+//nolint:unused
 func (a *goBlog) getBlogDescription(blog string) (string, error) {
 	return a.getSettingValue(settingNameWithBlog(blog, blogDescriptionSetting))
 }

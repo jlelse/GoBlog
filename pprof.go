@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"context"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -23,7 +24,7 @@ func (app *goBlog) startPprofServer() {
 				Handler:           pprofHandler,
 				ReadHeaderTimeout: 1 * time.Minute,
 			}
-			listener, err := net.Listen("tcp", pprofServer.Addr)
+			listener, err := new(net.ListenConfig).Listen(context.Background(), "tcp", pprofServer.Addr)
 			if err != nil {
 				app.fatal("Failed to start pprof server", "err", err)
 				return

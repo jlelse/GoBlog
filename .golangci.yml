@@ -18,11 +18,11 @@ linters:
     - makezero
     - noctx
     - prealloc
-    - unparam
-    - sqlclosecheck
     - revive
     - rowserrcheck
     - sqlclosecheck
+    - sqlclosecheck
+    - unparam
     - unparam
   settings:
     dupl:

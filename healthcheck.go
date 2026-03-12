@@ -27,7 +27,6 @@ func (a *goBlog) healthcheck() bool {
 func (a *goBlog) healthcheckExitCode() int {
 	if a.healthcheck() {
 		return 0
-	} else {
-		return 1
 	}
+	return 1
 }

@@ -49,7 +49,7 @@ func (a *goBlog) startServer() (err error) {
 		h = h.Append(a.securityHeaders)
 	}
 	// Add plugin middlewares
-	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, index int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
+	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, _ int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
 	sort.Slice(middlewarePlugins, func(i, j int) bool {
 		// Sort with descending prio
 		return middlewarePlugins[i].Prio() > middlewarePlugins[j].Prio()
@@ -70,11 +70,11 @@ func (a *goBlog) startServer() (err error) {
 		}()
 	}
 	// Start server
-	if a.cfg.Server.HttpsRedirect {
+	if a.cfg.Server.HTTPSRedirect {
 		go func() {
 			// Start HTTP server for redirects
-			h := http.Handler(http.HandlerFunc(a.redirectToHttps))
-			redirectPort := a.cfg.Server.HttpsRedirectPort
+			h := http.Handler(http.HandlerFunc(a.redirectToHTTPS))
+			redirectPort := a.cfg.Server.HTTPSRedirectPort
 			if redirectPort == 0 {
 				redirectPort = 80
 			}
@@ -102,8 +102,8 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.PublicHTTPS {
 		s.TLSConfig = a.getCertManager().TLSConfig()
 		err = s.ListenAndServeTLS("", "")
-	} else if a.cfg.Server.manualHttps {
-		err = s.ListenAndServeTLS(a.cfg.Server.HttpsCert, a.cfg.Server.HttpsKey)
+	} else if a.cfg.Server.manualHTTPS {
+		err = s.ListenAndServeTLS(a.cfg.Server.HTTPSCert, a.cfg.Server.HTTPSKey)
 	} else {
 		err = s.ListenAndServe()
 	}
@@ -124,7 +124,7 @@ func (a *goBlog) shutdownServer(s *http.Server, name string) func() {
 	}
 }
 
-func (a *goBlog) redirectToHttps(w http.ResponseWriter, r *http.Request) {
+func (a *goBlog) redirectToHTTPS(w http.ResponseWriter, r *http.Request) {
 	requestHost, _, err := net.SplitHostPort(r.Host)
 	if err != nil {
 		requestHost = r.Host

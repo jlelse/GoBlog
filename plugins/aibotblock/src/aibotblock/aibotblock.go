@@ -1,3 +1,4 @@
+// Package aibotblock provides an AI bot blocking plugin for GoBlog.
 package aibotblock
 
 import (
@@ -24,6 +25,7 @@ type plugin struct {
 	mutex          sync.RWMutex
 }
 
+// GetPlugin returns the aibotblock plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.Middleware,
@@ -88,7 +90,7 @@ func (p *plugin) updateCache() {
 			Client(p.app.GetHTTPClient()).
 			Fetch(timeoutCtx)
 		if err == nil {
-			newCache := []string{}
+			newCache := make([]string, 0, len(resp))
 			newRobotsTxt := builderpool.Get()
 			defer builderpool.Put(newRobotsTxt)
 			for key := range resp {

@@ -31,11 +31,11 @@ func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
 	c.SetReadLimit(10 * bodylimit.MB)
 	defer c.Close(ws.StatusNormalClosure, "")
 	// Store connection to be able to send updates
-	var connectionId string
+	var connectionID string
 	if enableSync {
-		connectionId = uuid.NewString()
-		bc.esws.Store(connectionId, c)
-		defer bc.esws.Delete(connectionId)
+		connectionID = uuid.NewString()
+		bc.esws.Store(connectionID, c)
+		defer bc.esws.Delete(connectionID)
 	}
 	// Set cancel context
 	ctx, cancel := context.WithTimeout(r.Context(), time.Hour*6)
@@ -92,7 +92,7 @@ func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
 			bc.esm.Lock()
 			a.updateEditorStateInDatabase(ctx, blog, messageBytes)
 			bc.esm.Unlock()
-			a.sendNewEditorStateToAllConnections(ctx, bc, connectionId, messageBytes)
+			a.sendNewEditorStateToAllConnections(ctx, bc, connectionID, messageBytes)
 		}
 		// Create preview
 		if enablePreview {
@@ -176,7 +176,7 @@ func (a *goBlog) sendEditorPreview(ctx context.Context, c *ws.Conn, blog string,
 	// Render post (using post's blog config)
 	pr, pw := io.Pipe()
 	go func() {
-		a.renderEditorPreview(htmlbuilder.NewHtmlBuilder(pw), a.getBlogFromPost(p), p)
+		a.renderEditorPreview(htmlbuilder.NewHTMLBuilder(pw), a.getBlogFromPost(p), p)
 		_ = pw.Close()
 	}()
 	_ = a.min.Get().Minify(contenttype.HTMLUTF8, w, pr)

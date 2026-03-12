@@ -1,3 +1,4 @@
+// Package httpcachetransport provides a caching HTTP transport.
 package httpcachetransport
 
 import (
@@ -20,9 +21,9 @@ type httpCacheTransport struct {
 }
 
 func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	requestUrl := r.URL.String()
+	requestURL := r.URL.String()
 	if t.cache != nil {
-		if cached, hasCached := t.cache.Get(requestUrl); hasCached {
+		if cached, hasCached := t.cache.Get(requestURL); hasCached {
 			return http.ReadResponse(bufio.NewReader(bytes.NewReader(cached)), r)
 		}
 	}
@@ -45,19 +46,19 @@ func (t *httpCacheTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 		if err != nil {
 			return resp, err
 		}
-		t.cache.Set(requestUrl, respBytes, t.ttl, 1)
+		t.cache.Set(requestURL, respBytes, t.ttl, 1)
 		return http.ReadResponse(bufio.NewReader(bytes.NewReader(respBytes)), r)
 	}
 	return resp, err
 }
 
-// Creates a new http.RoundTripper that caches all
+// NewHTTPCacheTransport creates a new http.RoundTripper that caches all
 // request responses (by the request URL) in ristretto.
-func NewHttpCacheTransport(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
+func NewHTTPCacheTransport(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
 	return &httpCacheTransport{parent, c, ttl, true, maxSize}
 }
 
-// Like NewHttpCacheTransport but doesn't cache body
-func NewHttpCacheTransportNoBody(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
+// NewHTTPCacheTransportNoBody is like NewHTTPCacheTransport but doesn't cache body.
+func NewHTTPCacheTransportNoBody(parent http.RoundTripper, c *cpkg.Cache[string, []byte], ttl time.Duration, maxSize int64) http.RoundTripper {
 	return &httpCacheTransport{parent, c, ttl, false, maxSize}
 }

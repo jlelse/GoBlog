@@ -1,3 +1,4 @@
+// Package tor provides Tor hidden service support.
 package tor
 
 import (
@@ -66,7 +67,7 @@ func StartTor(privateKey ed25519.PrivateKey, remotePort int) (net.Listener, stri
 	}
 
 	// Create listener
-	listener, err := net.Listen("tcp4", "127.0.0.1:")
+	listener, err := new(net.ListenConfig).Listen(context.Background(), "tcp4", "127.0.0.1:")
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("failed to create listener: %v", err)
 	}
@@ -95,7 +96,7 @@ func StartTor(privateKey ed25519.PrivateKey, remotePort int) (net.Listener, stri
 	}
 
 	// Wait
-	go cmd.Wait()
+	go func() { _ = cmd.Wait() }()
 
 	return listener, onion, func() error {
 		if err := os.RemoveAll(dir); err != nil {

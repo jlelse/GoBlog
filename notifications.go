@@ -109,6 +109,9 @@ func (db *database) getNotifications(config *notificationsRequestConfig) ([]*not
 		}
 		notifications = append(notifications, n)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return notifications, nil
 }
 
@@ -191,7 +194,7 @@ func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) notificationsAdminDelete(w http.ResponseWriter, r *http.Request) {
-	if idString := r.FormValue("notificationid"); idString != "" {
+	if idString := r.FormValue("notificationid"); idString != "" { //nolint:gosec
 		// Delete single notification with id
 		id, err := strconv.Atoi(idString)
 		if err != nil {

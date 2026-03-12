@@ -41,7 +41,7 @@ func (a *goBlog) checkActivityStreamsRequest(next http.Handler) http.Handler {
 	})
 }
 
-func (_ *goBlog) isActivityStreamsRequest(r *http.Request) bool {
+func (*goBlog) isActivityStreamsRequest(r *http.Request) bool {
 	if mt, _, err := ct.GetAcceptableMediaType(r, asCheckMediaTypes); err == nil && mt.String() != asCheckMediaTypes[0].String() {
 		return true
 	}
@@ -56,15 +56,15 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	bc := a.getBlogFromPost(p)
 	// Create a Note object
 	note := ap.ObjectNew(ap.NoteType)
-	note.ID = a.activityPubId(p)
+	note.ID = a.activityPubID(p)
 	note.URL = ap.IRI(a.fullPostURL(p))
 	note.AttributedTo = a.apAPIri(bc)
 	// Audience
 	switch p.Visibility {
 	case visibilityPublic:
-		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionId(p.Blog))
+		note.To.Append(ap.PublicNS, a.apGetFollowersCollectionID(p.Blog))
 	case visibilityUnlisted:
-		note.To.Append(a.apGetFollowersCollectionId(p.Blog))
+		note.To.Append(a.apGetFollowersCollectionID(p.Blog))
 		note.CC.Append(ap.PublicNS)
 	}
 	for _, m := range p.Parameters[activityPubMentionsParameter] {
@@ -77,7 +77,7 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	}
 	// Content
 	note.MediaType = ap.MimeType(contenttype.HTML)
-	note.Content = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: a.postHtml(&postHtmlOptions{p: p, absolute: true, activityPub: true})}}
+	note.Content = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: a.postHTML(&postHTMLOptions{p: p, absolute: true, activityPub: true})}}
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		var attachments ap.ItemCollection
@@ -135,7 +135,7 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 
 const activityPubVersionParam = "activitypubversion"
 
-func (a *goBlog) activityPubId(p *post) ap.IRI {
+func (a *goBlog) activityPubID(p *post) ap.IRI {
 	fu := a.fullPostURL(p)
 	if version := p.firstParameter(activityPubVersionParam); version != "" {
 		return ap.IRI(fu + "?activitypubversion=" + version)
@@ -167,7 +167,7 @@ func (a *goBlog) toApPerson(blog string, altAddress string) *ap.Actor {
 	} else {
 		apBlog.Inbox = ap.IRI(a.getFullAddress(apInboxPathTemplate + blog))
 	}
-	apBlog.Followers = a.apGetFollowersCollectionIdForAddress(blog, altAddress)
+	apBlog.Followers = a.apGetFollowersCollectionIDForAddress(blog, altAddress)
 
 	apBlog.PublicKey.Owner = apIri
 	apBlog.PublicKey.ID = ap.IRI(iri + "#main-key")

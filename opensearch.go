@@ -15,22 +15,22 @@ type openSearchDescription struct {
 	Text        string                      `xml:",chardata"`
 	ShortName   string                      `xml:"ShortName"`
 	Description string                      `xml:"Description"`
-	URL         []*openSearchDescriptionUrl `xml:"Url"`
+	URL         []*openSearchDescriptionURL `xml:"Url"`
 	InputEnc    string                      `xml:"InputEncoding,omitempty"`
 	OutputEnc   string                      `xml:"OutputEncoding,omitempty"`
 	SearchForm  string                      `xml:"SearchForm"`
 }
 
-type openSearchDescriptionUrl struct {
+type openSearchDescriptionURL struct {
 	Text     string                         `xml:",chardata"`
 	Type     string                         `xml:"type,attr"`
 	Method   string                         `xml:"method,attr"`
 	Rel      string                         `xml:"rel,attr,omitempty"`
 	Template string                         `xml:"template,attr"`
-	Param    *openSearchDescriptionUrlParam `xml:"Param,omitempty"`
+	Param    *openSearchDescriptionURLParam `xml:"Param,omitempty"`
 }
 
-type openSearchDescriptionUrlParam struct {
+type openSearchDescriptionURLParam struct {
 	Text  string `xml:",chardata"`
 	Name  string `xml:"name,attr"`
 	Value string `xml:"value,attr"`
@@ -45,19 +45,19 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 	openSearch := &openSearchDescription{
 		ShortName:   lo.Ellipsis(blogTitle, 16),   // ShortName must be <= 16 chars per spec
 		Description: lo.Ellipsis(blogTitle, 1024), // Description must be <= 1024 chars per spec
-		URL: []*openSearchDescriptionUrl{
+		URL: []*openSearchDescriptionURL{
 			{
 				Type: "text/html", Template: sURL + "?q={searchTerms}",
 			},
 			{
 				Type: "text/html", Method: "post", Template: sURL,
-				Param: &openSearchDescriptionUrlParam{
+				Param: &openSearchDescriptionURLParam{
 					Name: "q", Value: "{searchTerms}",
 				},
 			},
 			{
 				Type: "application/opensearchdescription+xml", Rel: "self",
-				Template: a.getFullAddress(openSearchUrl(b)),
+				Template: a.getFullAddress(openSearchURL(b)),
 			},
 		},
 		InputEnc: "UTF-8", OutputEnc: "UTF-8",
@@ -72,7 +72,7 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
 }
 
-func openSearchUrl(b *configBlog) string {
+func openSearchURL(b *configBlog) string {
 	if b.Search != nil && b.Search.Enabled {
 		return b.getRelativePath(cmp.Or(b.Search.Path, defaultSearchPath) + "/opensearch.xml")
 	}

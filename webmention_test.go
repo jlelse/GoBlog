@@ -56,7 +56,7 @@ func Test_webmentions(t *testing.T) {
 	})
 	require.NoError(t, err)
 	if assert.Len(t, mentions, 1) {
-		_ = app.db.approveWebmentionId(mentions[0].ID)
+		_ = app.db.approveWebmentionID(mentions[0].ID)
 	}
 
 	mentions = app.getWebmentionsByAddress("https://example.com/täst")

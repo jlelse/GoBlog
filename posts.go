@@ -322,18 +322,18 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	// Parameter filter
 	params, paramValues := []string{}, [][]string{}
-	paramUrlValues := url.Values{}
+	paramURLValues := url.Values{}
 	for param, values := range r.URL.Query() {
 		if paramKey, ok := strings.CutPrefix(param, "p:"); ok {
 			for _, value := range values {
 				params, paramValues = append(params, paramKey), append(paramValues, []string{value})
-				paramUrlValues.Add(param, value)
+				paramURLValues.Add(param, value)
 			}
 		}
 	}
-	paramUrlQuery := ""
-	if len(paramUrlValues) > 0 {
-		paramUrlQuery += "?" + paramUrlValues.Encode()
+	paramURLQuery := ""
+	if len(paramURLValues) > 0 {
+		paramURLQuery += "?" + paramURLValues.Encode()
 	}
 	// Create paginator
 	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
@@ -382,7 +382,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	// Check if feed
 	if ft := feedType(chi.URLParam(r, "feed")); ft != noFeed {
-		a.generateFeed(blog, ft, w, r, posts, title, description, ic.path, paramUrlQuery)
+		a.generateFeed(blog, ft, w, r, posts, title, description, ic.path, paramURLQuery)
 		return
 	}
 	// Navigation
@@ -412,7 +412,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		summaryTemplate = defaultSummary
 	}
 	a.render(w, r, a.renderIndex, &renderData{
-		Canonical: a.getFullAddress(ic.path) + paramUrlQuery,
+		Canonical: a.getFullAddress(ic.path) + paramURLQuery,
 		Data: &indexRenderData{
 			title:           title,
 			description:     description,
@@ -423,7 +423,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			prev:            prevPath,
 			next:            nextPath,
 			summaryTemplate: summaryTemplate,
-			paramUrlQuery:   paramUrlQuery,
+			paramURLQuery:   paramURLQuery,
 			withoutFeeds:    ic.withoutFeeds,
 		},
 	})
