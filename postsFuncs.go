@@ -41,23 +41,23 @@ func (p *post) addParameter(parameter, value string) {
 	p.Parameters[parameter] = append(p.Parameters[parameter], value)
 }
 
-type postHtmlOptions struct {
+type postHTMLOptions struct {
 	p           *post
 	absolute    bool
 	activityPub bool
 }
 
-func (a *goBlog) postHtml(o *postHtmlOptions) (res string) {
+func (a *goBlog) postHTML(o *postHTMLOptions) (res string) {
 	buf := bufferpool.Get()
-	a.postHtmlToWriter(buf, o)
+	a.postHTMLToWriter(buf, o)
 	res = buf.String()
 	bufferpool.Put(buf)
 	return
 }
 
-func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
+func (a *goBlog) postHTMLToWriter(w io.Writer, o *postHTMLOptions) {
 	// Build HTML
-	hb, finish := a.wrapForPlugins(w, a.getPlugins(pluginUiPostContentType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(w, a.getPlugins(pluginUIPostContentType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIPostContent).RenderPostContent(o.p, doc)
 	}, selectorBodyInner)
 	defer finish()
@@ -87,8 +87,8 @@ func (a *goBlog) postHtmlToWriter(w io.Writer, o *postHtmlOptions) {
 	}
 }
 
-func (a *goBlog) feedHtml(w io.Writer, p *post) {
-	hb := htmlbuilder.NewHtmlBuilder(w)
+func (a *goBlog) feedHTML(w io.Writer, p *post) {
+	hb := htmlbuilder.NewHTMLBuilder(w)
 	// Add TTS audio to the top
 	for _, a := range p.Parameters[ttsParameter] {
 		hb.WriteElementOpen("audio", "controls", "preload", "none")
@@ -97,7 +97,7 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 		hb.WriteElementClose("audio")
 	}
 	// Add post HTML
-	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
+	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
 	// Add link to interactions and comments
 	blogConfig := a.getBlogFromPost(p)
 	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
@@ -109,10 +109,10 @@ func (a *goBlog) feedHtml(w io.Writer, p *post) {
 	}
 }
 
-func (a *goBlog) minFeedHtml(w io.Writer, p *post) {
-	hb := htmlbuilder.NewHtmlBuilder(w)
+func (a *goBlog) minFeedHTML(w io.Writer, p *post) {
+	hb := htmlbuilder.NewHTMLBuilder(w)
 	// Add post HTML
-	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
+	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
 }
 
 const summaryDivider = "<!--more-->"

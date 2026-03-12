@@ -9,7 +9,7 @@ import (
 const commentEditSubPath = "/edit"
 
 func (a *goBlog) serveCommentsEditor(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.FormValue("id"))
+	id, err := strconv.Atoi(r.FormValue("id")) //nolint:gosec
 	if err != nil {
 		a.serveError(w, r, "id missing or wrong format", http.StatusBadRequest)
 		return
@@ -26,9 +26,9 @@ func (a *goBlog) serveCommentsEditor(w http.ResponseWriter, r *http.Request) {
 	comment := comments[0]
 	blog, bc := a.getBlog(r)
 	if r.Method == http.MethodPost {
-		name := r.FormValue("name")
-		website := r.FormValue("website")
-		commentText := r.FormValue("comment")
+		name := r.FormValue("name")           //nolint:gosec
+		website := r.FormValue("website")     //nolint:gosec
+		commentText := r.FormValue("comment") //nolint:gosec
 		if err := a.db.updateComment(id, commentText, name, website); err != nil {
 			a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 			return

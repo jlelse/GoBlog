@@ -33,7 +33,7 @@ func TestHttpCacheTransport(t *testing.T) {
 	})
 
 	client := &http.Client{
-		Transport: NewHttpCacheTransport(orig, cache, time.Minute, bodylimit.KB),
+		Transport: NewHTTPCacheTransport(orig, cache, time.Minute, bodylimit.KB),
 	}
 
 	err := requests.URL("https://example.com/").Client(client).Fetch(context.Background())

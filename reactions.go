@@ -47,8 +47,8 @@ func (a *goBlog) deleteReactionsCache(path string) {
 }
 
 func (a *goBlog) postReaction(w http.ResponseWriter, r *http.Request) {
-	path := r.FormValue("path")
-	reaction := r.FormValue("reaction")
+	path := r.FormValue("path")         //nolint:gosec
+	reaction := r.FormValue("reaction") //nolint:gosec
 	if path == "" || reaction == "" {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
@@ -79,7 +79,7 @@ func (a *goBlog) saveReaction(reaction, path string) error {
 }
 
 func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
-	path := r.FormValue("path")
+	path := r.FormValue("path") //nolint:gosec
 	reactions, err := a.getReactionsFromDatabase(path)
 	if err != nil {
 		a.serveError(w, r, "", http.StatusInternalServerError)
@@ -87,7 +87,7 @@ func (a *goBlog) getReactions(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set(cacheControl, "no-store")
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	io.WriteString(w, reactions)
+	_, _ = io.WriteString(w, reactions) //nolint:gosec
 }
 
 const reactionsQuery = "select json_group_object(reaction, count) as json_result from (" +

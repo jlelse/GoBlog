@@ -1,3 +1,4 @@
+// Package mocksmtp provides a mock SMTP server for testing.
 package mocksmtp
 
 import (
@@ -39,8 +40,8 @@ func (s *session) AuthMechanisms() []string {
 	return []string{sasl.Plain}
 }
 
-func (s *session) Auth(mech string) (sasl.Server, error) {
-	return sasl.NewPlainServer(func(identity, username, password string) error {
+func (s *session) Auth(_ string) (sasl.Server, error) {
+	return sasl.NewPlainServer(func(_, username, password string) error {
 		s.values.Usernames = append(s.values.Usernames, username)
 		s.values.Passwords = append(s.values.Passwords, password)
 		return nil
@@ -58,11 +59,11 @@ func (s *session) Rcpt(to string, _ *smtp.RcptOptions) error {
 }
 
 func (s *session) Data(r io.Reader) error {
-	if b, err := io.ReadAll(r); err != nil {
+	b, err := io.ReadAll(r)
+	if err != nil {
 		return err
-	} else {
-		s.values.Datas = append(s.values.Datas, b)
 	}
+	s.values.Datas = append(s.values.Datas, b)
 	return nil
 }
 

@@ -96,9 +96,9 @@ func Test_configHttps(t *testing.T) {
 		}
 		_ = app.initConfig(false)
 		assert.False(t, app.cfg.Server.PublicHTTPS)
-		assert.False(t, app.cfg.Server.manualHttps)
+		assert.False(t, app.cfg.Server.manualHTTPS)
 		assert.False(t, app.cfg.Server.SecurityHeaders)
-		assert.False(t, app.cfg.Server.HttpsRedirect)
+		assert.False(t, app.cfg.Server.HTTPSRedirect)
 		assert.False(t, app.useSecureCookies())
 	})
 
@@ -110,24 +110,24 @@ func Test_configHttps(t *testing.T) {
 		}
 		_ = app.initConfig(false)
 		assert.True(t, app.cfg.Server.PublicHTTPS)
-		assert.False(t, app.cfg.Server.manualHttps)
+		assert.False(t, app.cfg.Server.manualHTTPS)
 		assert.True(t, app.cfg.Server.SecurityHeaders)
-		assert.True(t, app.cfg.Server.HttpsRedirect)
+		assert.True(t, app.cfg.Server.HTTPSRedirect)
 		assert.True(t, app.useSecureCookies())
 	})
 
 	t.Run("Manual HTTPS", func(t *testing.T) {
 		c := createDefaultTestConfig(t)
-		c.Server.HttpsCert = "/tmp/https.cert"
-		c.Server.HttpsKey = "/tmp/https.key"
+		c.Server.HTTPSCert = "/tmp/https.cert"
+		c.Server.HTTPSKey = "/tmp/https.key"
 		app := &goBlog{
 			cfg: c,
 		}
 		_ = app.initConfig(false)
 		assert.False(t, app.cfg.Server.PublicHTTPS)
-		assert.True(t, app.cfg.Server.manualHttps)
+		assert.True(t, app.cfg.Server.manualHTTPS)
 		assert.True(t, app.cfg.Server.SecurityHeaders)
-		assert.False(t, app.cfg.Server.HttpsRedirect)
+		assert.False(t, app.cfg.Server.HTTPSRedirect)
 		assert.True(t, app.useSecureCookies())
 	})
 
@@ -139,9 +139,9 @@ func Test_configHttps(t *testing.T) {
 		}
 		_ = app.initConfig(false)
 		assert.False(t, app.cfg.Server.PublicHTTPS)
-		assert.False(t, app.cfg.Server.manualHttps)
+		assert.False(t, app.cfg.Server.manualHTTPS)
 		assert.False(t, app.cfg.Server.SecurityHeaders)
-		assert.False(t, app.cfg.Server.HttpsRedirect)
+		assert.False(t, app.cfg.Server.HTTPSRedirect)
 		assert.True(t, app.useSecureCookies())
 	})
 

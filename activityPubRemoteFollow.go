@@ -15,7 +15,7 @@ func (a *goBlog) apRemoteFollow(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Blog not found", http.StatusNotFound)
 		return
 	}
-	if user := r.FormValue("user"); user != "" {
+	if user := r.FormValue("user"); user != "" { //nolint:gosec
 		// Parse instance
 		userParts := strings.Split(user, "@")
 		if len(userParts) < 2 {

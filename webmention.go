@@ -28,7 +28,7 @@ type mention struct {
 	NewSource   string
 	Target      string
 	NewTarget   string
-	Url         string
+	URL         string
 	Created     int64
 	Title       string
 	Content     string
@@ -141,7 +141,7 @@ func (db *database) insertWebmention(m *mention, status webmentionStatus) error 
 		`,
 		sql.Named("source", m.Source),
 		sql.Named("target", m.Target),
-		sql.Named("url", m.Url),
+		sql.Named("url", m.URL),
 		sql.Named("created", m.Created),
 		sql.Named("status", status),
 		sql.Named("title", m.Title),
@@ -168,7 +168,7 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 			`,
 		sql.Named("newsource", cmp.Or(m.NewSource, m.Source)),
 		sql.Named("newtarget", cmp.Or(m.NewTarget, m.Target)),
-		sql.Named("url", m.Url),
+		sql.Named("url", m.URL),
 		sql.Named("status", newStatus),
 		sql.Named("title", m.Title),
 		sql.Named("content", m.Content),
@@ -181,13 +181,13 @@ func (db *database) updateWebmention(m *mention, newStatus webmentionStatus) err
 	return err
 }
 
-func (db *database) deleteWebmentionId(id int) error {
+func (db *database) deleteWebmentionID(id int) error {
 	_, err := db.Exec("delete from webmentions where id = @id", sql.Named("id", id))
 	return err
 }
 
-func (db *database) deleteWebmentionUUrl(uUrl string) error {
-	_, err := db.Exec("delete from webmentions where url = @url", sql.Named("url", uUrl))
+func (db *database) deleteWebmentionUUrl(uURL string) error {
+	_, err := db.Exec("delete from webmentions where url = @url", sql.Named("url", uURL))
 	return err
 }
 
@@ -202,12 +202,12 @@ func (db *database) deleteWebmention(m *mention) error {
 	return err
 }
 
-func (db *database) approveWebmentionId(id int) error {
+func (db *database) approveWebmentionID(id int) error {
 	_, err := db.Exec("update webmentions set status = ? where id = ?", webmentionStatusApproved, id)
 	return err
 }
 
-func (a *goBlog) reverifyWebmentionId(id int) error {
+func (a *goBlog) reverifyWebmentionID(id int) error {
 	m, err := a.getWebmentions(&webmentionsRequestConfig{
 		id:    id,
 		limit: 1,
@@ -278,12 +278,12 @@ func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, e
 	defer rows.Close()
 	for rows.Next() {
 		m := &mention{}
-		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.Url, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)
+		err = rows.Scan(&m.ID, &m.Source, &m.Target, &m.URL, &m.Created, &m.Title, &m.Content, &m.Author, &m.Status)
 		if err != nil {
 			return nil, err
 		}
-		if m.Url == "" {
-			m.Url = m.Source
+		if m.URL == "" {
+			m.URL = m.Source
 		}
 		if config.submentions {
 			m.Submentions, err = a.getWebmentions(&webmentionsRequestConfig{
@@ -299,7 +299,7 @@ func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, e
 		if config.replies {
 			m.Replies, err = a.getPosts(&postsRequestConfig{
 				allParams:      []string{a.cfg.Micropub.ReplyParam},
-				allParamValues: [][]string{{m.Source, m.Url}},
+				allParamValues: [][]string{{m.Source, m.URL}},
 				visibility:     []postVisibility{visibilityPublic, visibilityUnlisted},
 				fetchParams:    []string{"title", "summary"},
 				ascendingOrder: true,
@@ -309,6 +309,9 @@ func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, e
 			}
 		}
 		mentions = append(mentions, m)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return mentions, nil
 }

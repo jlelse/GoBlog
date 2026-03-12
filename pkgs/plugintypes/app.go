@@ -1,3 +1,4 @@
+// Package plugintypes defines the plugin interface types for GoBlog.
 package plugintypes
 
 import (
@@ -171,7 +172,7 @@ type WebmentionsQuery struct {
 type Webmention struct {
 	Source  string
 	Target  string
-	Url     string
+	Url     string //revive:disable-line:var-naming
 	Created string
 	Title   string
 	Content string

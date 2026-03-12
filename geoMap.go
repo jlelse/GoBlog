@@ -98,7 +98,7 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	a.respondWithMinifiedJson(w, &tracks)
+	a.respondWithMinifiedJSON(w, &tracks)
 }
 
 const geoMapLocationsSubpath = "/locations.json"
@@ -139,5 +139,5 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	a.respondWithMinifiedJson(w, &locations)
+	a.respondWithMinifiedJSON(w, &locations)
 }

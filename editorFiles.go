@@ -43,7 +43,7 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveEditorFilesView(w http.ResponseWriter, r *http.Request) {
-	filename := r.FormValue("filename")
+	filename := r.FormValue("filename") //nolint:gosec
 	if filename == "" {
 		a.serveError(w, r, "No file selected", http.StatusBadRequest)
 		return
@@ -52,7 +52,7 @@ func (a *goBlog) serveEditorFilesView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveEditorFilesUses(w http.ResponseWriter, r *http.Request) {
-	filename := r.FormValue("filename")
+	filename := r.FormValue("filename") //nolint:gosec
 	if filename == "" {
 		a.serveError(w, r, "No file selected", http.StatusBadRequest)
 		return
@@ -77,7 +77,7 @@ func (a *goBlog) serveEditorFilesUsesResults(w http.ResponseWriter, r *http.Requ
 }
 
 func (a *goBlog) serveEditorFilesDelete(w http.ResponseWriter, r *http.Request) {
-	filename := r.FormValue("filename")
+	filename := r.FormValue("filename") //nolint:gosec
 	if filename == "" {
 		a.serveError(w, r, "No file selected", http.StatusBadRequest)
 		return

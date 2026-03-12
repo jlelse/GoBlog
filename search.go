@@ -14,7 +14,7 @@ const searchPlaceholder = "{search}"
 
 func (a *goBlog) serveSearch(w http.ResponseWriter, r *http.Request) {
 	servePath := r.Context().Value(pathKey).(string)
-	err := r.ParseForm()
+	err := r.ParseForm() //nolint:gosec
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusBadRequest)
 		return

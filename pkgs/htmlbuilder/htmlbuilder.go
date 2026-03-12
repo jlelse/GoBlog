@@ -1,3 +1,4 @@
+// Package htmlbuilder provides an HTML builder for constructing HTML content.
 package htmlbuilder
 
 import (
@@ -6,37 +7,43 @@ import (
 	textTemplate "text/template"
 )
 
-type HtmlBuilder struct {
+// HTMLBuilder builds HTML content.
+type HTMLBuilder struct {
 	w io.Writer
 }
 
-func NewHtmlBuilder(w io.Writer) *HtmlBuilder {
-	return &HtmlBuilder{
+// NewHTMLBuilder creates a new HTMLBuilder that writes to the given writer.
+func NewHTMLBuilder(w io.Writer) *HTMLBuilder {
+	return &HTMLBuilder{
 		w: w,
 	}
 }
 
-func (h *HtmlBuilder) getWriter() io.Writer {
+func (h *HTMLBuilder) getWriter() io.Writer {
 	return h.w
 }
 
-func (h *HtmlBuilder) Write(p []byte) (int, error) {
+func (h *HTMLBuilder) Write(p []byte) (int, error) {
 	return h.getWriter().Write(p)
 }
 
-func (h *HtmlBuilder) WriteString(s string) (int, error) {
+// WriteString writes a raw string.
+func (h *HTMLBuilder) WriteString(s string) (int, error) {
 	return io.WriteString(h.getWriter(), s)
 }
 
-func (h *HtmlBuilder) WriteUnescaped(s string) {
+// WriteUnescaped writes an unescaped string.
+func (h *HTMLBuilder) WriteUnescaped(s string) {
 	_, _ = h.WriteString(s)
 }
 
-func (h *HtmlBuilder) WriteEscaped(s string) {
+// WriteEscaped writes an HTML-escaped string.
+func (h *HTMLBuilder) WriteEscaped(s string) {
 	textTemplate.HTMLEscape(h, []byte(s))
 }
 
-func (h *HtmlBuilder) WriteAttribute(attr string, val any) {
+// WriteAttribute writes an HTML attribute key-value pair.
+func (h *HTMLBuilder) WriteAttribute(attr string, val any) {
 	h.WriteUnescaped(` `)
 	h.WriteUnescaped(attr)
 	h.WriteUnescaped(`=`)
@@ -49,7 +56,8 @@ func (h *HtmlBuilder) WriteAttribute(attr string, val any) {
 	}
 }
 
-func (h *HtmlBuilder) WriteElementOpen(tag string, attrs ...any) {
+// WriteElementOpen writes an opening HTML element tag with optional attributes.
+func (h *HTMLBuilder) WriteElementOpen(tag string, attrs ...any) {
 	h.WriteUnescaped(`<`)
 	h.WriteUnescaped(tag)
 	for i := 0; i < len(attrs); i += 2 {
@@ -65,25 +73,41 @@ func (h *HtmlBuilder) WriteElementOpen(tag string, attrs ...any) {
 	h.WriteUnescaped(`>`)
 }
 
-func (h *HtmlBuilder) WriteElementsOpen(tags ...string) {
+// WriteElementsOpen writes multiple opening HTML element tags.
+func (h *HTMLBuilder) WriteElementsOpen(tags ...string) {
 	for _, tag := range tags {
 		h.WriteElementOpen(tag)
 	}
 }
 
-func (h *HtmlBuilder) WriteElementClose(tag string) {
+// WriteElementClose writes a closing HTML element tag.
+func (h *HTMLBuilder) WriteElementClose(tag string) {
 	h.WriteUnescaped(`</`)
 	h.WriteUnescaped(tag)
 	h.WriteUnescaped(`>`)
 }
 
-func (h *HtmlBuilder) WriteElementsClose(tags ...string) {
+// WriteElementsClose writes multiple closing HTML element tags.
+func (h *HTMLBuilder) WriteElementsClose(tags ...string) {
 	for _, tag := range tags {
 		h.WriteElementClose(tag)
 	}
 }
 
-func (h *HtmlBuilder) WriteElement(tag string, attrs ...any) {
+// WriteElement writes a complete HTML element with content.
+func (h *HTMLBuilder) WriteElement(tag string, attrs ...any) {
 	h.WriteElementOpen(tag, attrs...)
 	h.WriteElementClose(tag)
 }
+
+// Deprecated: HtmlBuilder is an alias for HTMLBuilder for backward compatibility.
+//
+//revive:disable:var-naming
+//revive:disable:exported
+type HtmlBuilder = HTMLBuilder
+
+// Deprecated: NewHtmlBuilder is an alias for NewHTMLBuilder for backward compatibility.
+var NewHtmlBuilder = NewHTMLBuilder
+
+//revive:enable:var-naming
+//revive:enable:exported

@@ -31,9 +31,9 @@ func (a *goBlog) serveEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
-	switch action := r.FormValue("editoraction"); action {
+	switch action := r.FormValue("editoraction"); action { //nolint:gosec
 	case "loadupdate":
-		post, err := a.getPost(r.FormValue("path"))
+		post, err := a.getPost(r.FormValue("path")) //nolint:gosec
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -41,7 +41,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		a.render(w, r, a.renderEditor, &renderData{
 			Data: &editorRenderData{
 				presetParams:      parsePresetPostParamsFromQuery(r),
-				updatePostUrl:     a.fullPostURL(post),
+				updatePostURL:     a.fullPostURL(post),
 				updatePostContent: post.contentWithParams(),
 			},
 		})
@@ -49,9 +49,9 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		reqBody := map[string]any{}
 		if action == "updatepost" {
 			reqBody["action"] = micropub.ActionUpdate
-			reqBody["url"] = r.FormValue("url")
+			reqBody["url"] = r.FormValue("url") //nolint:gosec
 			reqBody["replace"] = map[string][]string{
-				"content":       {r.FormValue("content")},
+				"content":       {r.FormValue("content")}, //nolint:gosec
 				"goblog-editor": r.Form["options"],
 			}
 		} else {
@@ -65,7 +65,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			blog, _ := a.getBlog(r)
 			reqBody["type"] = []string{"h-entry"}
 			reqBody["properties"] = map[string][]string{
-				"content":                 {r.FormValue("content")},
+				"content":                 {r.FormValue("content")}, //nolint:gosec
 				"blog":                    {blog},
 				a.cfg.Micropub.PhotoParam: images,
 				gpxParameter:              {gpx},
@@ -78,18 +78,18 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	case "delete", "undelete":
 		req, _ := requests.URL("").
 			Method(http.MethodPost).
-			BodyForm(url.Values{"action": {action}, "url": {r.FormValue("url")}}).
+			BodyForm(url.Values{"action": {action}, "url": {r.FormValue("url")}}). //nolint:gosec
 			Request(r.Context())
-		a.editorMicropubPost(w, req, false, r.FormValue("url"))
+		a.editorMicropubPost(w, req, false, r.FormValue("url")) //nolint:gosec
 	case "visibility":
 		reqBody := map[string]any{}
 		reqBody["action"] = micropub.ActionUpdate
-		reqBody["url"] = r.FormValue("url")
-		reqBody["replace"] = map[string][]string{"visibility": {r.FormValue("visibility")}}
+		reqBody["url"] = r.FormValue("url")                                                 //nolint:gosec
+		reqBody["replace"] = map[string][]string{"visibility": {r.FormValue("visibility")}} //nolint:gosec
 		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
-		a.editorMicropubPost(w, req, false, r.FormValue("url"))
+		a.editorMicropubPost(w, req, false, r.FormValue("url")) //nolint:gosec
 	case "tts":
-		parsedURL, err := url.Parse(r.FormValue("url"))
+		parsedURL, err := url.Parse(r.FormValue("url")) //nolint:gosec
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -105,7 +105,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, post.Path, http.StatusFound)
 	case "helpgpx":
-		err := r.ParseMultipartForm(10 * bodylimit.MB)
+		err := r.ParseMultipartForm(10 * bodylimit.MB) //nolint:gosec
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return

@@ -63,7 +63,7 @@ func TestDemoPluginUIRendering(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/demo-path", nil)
 	rr := httptest.NewRecorder()
 
-	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, _ *renderData) {
+	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, _ *renderData) {
 		hb.WriteElementOpen("main", "class", "h-entry")
 		hb.WriteElementOpen("article")
 		hb.WriteElementOpen("div", "class", "e-content")
@@ -96,7 +96,7 @@ func TestDemoPluginUISummaryAndExec(t *testing.T) {
 	require.NoError(t, app.initPlugins())
 
 	// Verify UISummary modifies document
-	summaryPlugins := app.getPlugins(pluginUiSummaryType)
+	summaryPlugins := app.getPlugins(pluginUISummaryType)
 	require.Len(t, summaryPlugins, 1)
 	sp := summaryPlugins[0].(plugintypes.UISummary)
 
@@ -168,7 +168,7 @@ func TestEmbeddedPluginImageTooltipsAndCustomCSS(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/p/img", nil)
 	rr := httptest.NewRecorder()
 
-	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, _ *renderData) {
+	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, _ *renderData) {
 		hb.WriteElementOpen("head")
 		hb.WriteElementClose("head")
 		hb.WriteElementOpen("main")
@@ -218,7 +218,7 @@ content`)
 	req := httptest.NewRequest(http.MethodGet, p.Path, nil)
 	rr := httptest.NewRecorder()
 
-	app.render(rr, req, func(hb *htmlbuilder.HtmlBuilder, _ *renderData) {
+	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, _ *renderData) {
 		hb.WriteElementOpen("main", "class", "h-entry")
 		hb.WriteElementOpen("article")
 		hb.WriteElementOpen("div", "class", "e-content")
@@ -259,7 +259,7 @@ func TestEmbeddedPluginWebringsFooter(t *testing.T) {
 	require.NoError(t, app.initConfig(false))
 	require.NoError(t, app.initPlugins())
 
-	footerPlugins := app.getPlugins(pluginUiFooterType)
+	footerPlugins := app.getPlugins(pluginUIFooterType)
 	require.Len(t, footerPlugins, 1)
 	fp := footerPlugins[0].(plugintypes.UIFooter)
 

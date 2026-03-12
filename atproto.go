@@ -27,8 +27,8 @@ func (at *configAtproto) enabled() bool {
 }
 
 const (
-	atprotoUriParam   = "atprotouri"
-	atprotoUriPattern = `^at://([^/]+)/([^/]+)/([^/]+)$`
+	atprotoURIParam   = "atprotouri"
+	atprotoURIPattern = `^at://([^/]+)/([^/]+)/([^/]+)$`
 )
 
 func (a *goBlog) atprotoPost(p *post) {
@@ -49,7 +49,7 @@ func (a *goBlog) atprotoPost(p *post) {
 			return
 		}
 		// Save URI to post
-		if err := a.db.replacePostParam(p.Path, atprotoUriParam, []string{resp.URI}); err != nil {
+		if err := a.db.replacePostParam(p.Path, atprotoURIParam, []string{resp.URI}); err != nil {
 			a.error("Failed to save ATProto URI", "err", err)
 		}
 		return
@@ -58,7 +58,7 @@ func (a *goBlog) atprotoPost(p *post) {
 
 func (a *goBlog) atprotoDelete(p *post) {
 	if atproto := a.getBlogFromPost(p).Atproto; atproto.enabled() {
-		atprotouri := p.firstParameter(atprotoUriParam)
+		atprotouri := p.firstParameter(atprotoURIParam)
 		if atprotouri == "" {
 			return
 		}
@@ -72,7 +72,7 @@ func (a *goBlog) atprotoDelete(p *post) {
 			a.error("Failed to delete ATProto record", "err", err)
 		}
 		// Delete URI from post
-		if err := a.db.replacePostParam(p.Path, atprotoUriParam, []string{}); err != nil {
+		if err := a.db.replacePostParam(p.Path, atprotoURIParam, []string{}); err != nil {
 			a.error("Failed to remove ATProto URI", "err", err)
 		}
 		return
@@ -131,7 +131,7 @@ func (a *goBlog) publishPost(atproto *configAtproto, session *atprotoSessionResp
 }
 
 func (a *goBlog) deleteAtprotoRecord(atproto *configAtproto, session *atprotoSessionResponse, uri string) error {
-	re := regexp.MustCompile(atprotoUriPattern)
+	re := regexp.MustCompile(atprotoURIPattern)
 	matches := re.FindStringSubmatch(uri)
 	if matches == nil || len(matches) != 4 {
 		return fmt.Errorf("invalid URI format")

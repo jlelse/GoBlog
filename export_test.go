@@ -24,7 +24,7 @@ func Test_export(t *testing.T) {
 		Parameters: map[string][]string{
 			"title": {"Title"},
 		},
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	exportPath := filepath.Join(t.TempDir(), "export")

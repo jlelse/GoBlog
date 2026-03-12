@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io"
@@ -23,14 +24,14 @@ var pluginsFS embed.FS
 const (
 	pluginSetAppType          = "setapp"
 	pluginSetConfigType       = "setconfig"
-	pluginUiType              = "ui"
-	pluginUi2Type             = "ui2"
+	pluginUIType              = "ui"
+	pluginUI2Type             = "ui2"
 	pluginExecType            = "exec"
 	pluginMiddlewareType      = "middleware"
-	pluginUiSummaryType       = "uisummary"
-	pluginUiPostType          = "uiPost"
-	pluginUiPostContentType   = "uiPostContent"
-	pluginUiFooterType        = "uifooter"
+	pluginUISummaryType       = "uisummary"
+	pluginUIPostType          = "uiPost"
+	pluginUIPostContentType   = "uiPostContent"
+	pluginUIFooterType        = "uifooter"
 	pluginPostCreatedHookType = "postcreatedhook"
 	pluginPostUpdatedHookType = "postupdatedhook"
 	pluginPostDeletedHookType = "postdeletedhook"
@@ -45,14 +46,14 @@ func (a *goBlog) initPlugins() error {
 		map[string]reflect.Type{
 			pluginSetAppType:          reflect.TypeFor[plugintypes.SetApp](),
 			pluginSetConfigType:       reflect.TypeFor[plugintypes.SetConfig](),
-			pluginUiType:              reflect.TypeFor[plugintypes.UI](),
-			pluginUi2Type:             reflect.TypeFor[plugintypes.UI2](),
+			pluginUIType:              reflect.TypeFor[plugintypes.UI](),
+			pluginUI2Type:             reflect.TypeFor[plugintypes.UI2](),
 			pluginExecType:            reflect.TypeFor[plugintypes.Exec](),
 			pluginMiddlewareType:      reflect.TypeFor[plugintypes.Middleware](),
-			pluginUiSummaryType:       reflect.TypeFor[plugintypes.UISummary](),
-			pluginUiPostType:          reflect.TypeFor[plugintypes.UIPost](),
-			pluginUiPostContentType:   reflect.TypeFor[plugintypes.UIPostContent](),
-			pluginUiFooterType:        reflect.TypeFor[plugintypes.UIFooter](),
+			pluginUISummaryType:       reflect.TypeFor[plugintypes.UISummary](),
+			pluginUIPostType:          reflect.TypeFor[plugintypes.UIPost](),
+			pluginUIPostContentType:   reflect.TypeFor[plugintypes.UIPostContent](),
+			pluginUIFooterType:        reflect.TypeFor[plugintypes.UIFooter](),
 			pluginPostCreatedHookType: reflect.TypeFor[plugintypes.PostCreatedHook](),
 			pluginPostUpdatedHookType: reflect.TypeFor[plugintypes.PostUpdatedHook](),
 			pluginPostDeletedHookType: reflect.TypeFor[plugintypes.PostDeletedHook](),
@@ -223,7 +224,7 @@ func (a *goBlog) UploadMedia(file io.Reader, filename string, _ string) (string,
 	if err != nil {
 		return "", err
 	}
-	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	// Execute the request
 	addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
@@ -324,7 +325,7 @@ func (a *goBlog) GetWebmentions(query *plugintypes.WebmentionsQuery) ([]pluginty
 		result = append(result, plugintypes.Webmention{
 			Source:  m.Source,
 			Target:  m.Target,
-			Url:     m.Url,
+			Url:     m.URL,
 			Created: time.Unix(m.Created, 0).Format(time.RFC3339),
 			Title:   m.Title,
 			Content: m.Content,

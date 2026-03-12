@@ -166,7 +166,7 @@ func Test_blogStatsNoDate(t *testing.T) {
 		Section:    "test",
 		Status:     statusPublished,
 		Visibility: visibilityPublic,
-	}, &postCreationOptions{new: true})
+	}, &postCreationOptions{isNew: true})
 	require.NoError(t, err)
 
 	sd, err := app.db.getBlogStats("en")

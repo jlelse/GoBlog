@@ -16,7 +16,7 @@ import (
 	"go.goblog.app/app/pkgs/builderpool"
 )
 
-func (a *goBlog) checkPost(p *post, new, noUpdated bool) (err error) {
+func (a *goBlog) checkPost(p *post, isNew, noUpdated bool) (err error) {
 	if p == nil {
 		return errors.New("no post")
 	}
@@ -59,22 +59,22 @@ func (a *goBlog) checkPost(p *post, new, noUpdated bool) (err error) {
 		}
 	}
 	// Maybe set published date
-	if new && p.Published == "" && p.Section != "" {
+	if isNew && p.Published == "" && p.Section != "" {
 		// Has no published date, but section -> published now
 		p.Published = nowString
 	}
 	// Maybe set updated date
-	if new || noUpdated {
-		// Do nothing
-	} else if p.Published != "" {
-		if published, err := dateparse.ParseLocal(p.Published); err == nil && now.After(published) {
-			// Has published date in the past, so add updated date
-			p.Updated = nowString
-		}
-	} else if p.Updated != "" {
-		if updated, err := dateparse.ParseLocal(p.Updated); err == nil && now.After(updated) {
-			// Has updated date in the past, so add new updated date
-			p.Updated = nowString
+	if !isNew && !noUpdated {
+		if p.Published != "" {
+			if published, err := dateparse.ParseLocal(p.Published); err == nil && now.After(published) {
+				// Has published date in the past, so add updated date
+				p.Updated = nowString
+			}
+		} else if p.Updated != "" {
+			if updated, err := dateparse.ParseLocal(p.Updated); err == nil && now.After(updated) {
+				// Has updated date in the past, so add new updated date
+				p.Updated = nowString
+			}
 		}
 	}
 	// Fix content
@@ -111,7 +111,7 @@ func (a *goBlog) checkPost(p *post, new, noUpdated bool) (err error) {
 		p.Parameters[pk] = pvs
 	}
 	// Add context for replies and likes
-	if new {
+	if isNew {
 		a.addReplyTitleAndContext(p)
 		a.addLikeTitleAndContext(p)
 	}
@@ -157,12 +157,12 @@ func (a *goBlog) checkPost(p *post, new, noUpdated bool) (err error) {
 }
 
 func (a *goBlog) createPost(p *post) error {
-	return a.createOrReplacePost(p, &postCreationOptions{new: true})
+	return a.createOrReplacePost(p, &postCreationOptions{isNew: true})
 }
 
 func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus, oldVisibility postVisibility, noUpdated bool) error {
 	return a.createOrReplacePost(p, &postCreationOptions{
-		new:           false,
+		isNew:         false,
 		oldPath:       oldPath,
 		oldStatus:     oldStatus,
 		oldVisibility: oldVisibility,
@@ -171,15 +171,15 @@ func (a *goBlog) replacePost(p *post, oldPath string, oldStatus postStatus, oldV
 }
 
 type postCreationOptions struct {
-	new, noUpdated bool
-	oldPath        string
-	oldStatus      postStatus
-	oldVisibility  postVisibility
+	isNew, noUpdated bool
+	oldPath          string
+	oldStatus        postStatus
+	oldVisibility    postVisibility
 }
 
 func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	// Check post
-	if err := a.checkPost(p, o.new, o.noUpdated); err != nil {
+	if err := a.checkPost(p, o.isNew, o.noUpdated); err != nil {
 		return err
 	}
 	// Save to db
@@ -194,7 +194,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 	}
 	// Trigger hooks
 	if p.Status == statusPublished && (p.Visibility == visibilityPublic || p.Visibility == visibilityUnlisted) {
-		if o.new || o.oldStatus == statusScheduled || (o.oldStatus != statusPublished && o.oldVisibility != visibilityPublic && o.oldVisibility != visibilityUnlisted) {
+		if o.isNew || o.oldStatus == statusScheduled || (o.oldStatus != statusPublished && o.oldVisibility != visibilityPublic && o.oldVisibility != visibilityUnlisted) {
 			defer a.postPostHooks(p)
 		} else {
 			defer a.postUpdateHooks(p)
@@ -209,7 +209,7 @@ func (a *goBlog) createOrReplacePost(p *post, o *postCreationOptions) error {
 // Save check post to database
 func (db *database) savePost(p *post, o *postCreationOptions) error {
 	// Check
-	if !o.new && o.oldPath == "" {
+	if !o.isNew && o.oldPath == "" {
 		return errors.New("old path required")
 	}
 	// Compute word and char counts before acquiring the lock
@@ -225,7 +225,7 @@ func (db *database) savePost(p *post, o *postCreationOptions) error {
 	var sqlArgs []any
 	// Begin transaction
 	sqlBuilder.WriteString("begin;")
-	if o.new {
+	if o.isNew {
 		// Insert post
 		sqlBuilder.WriteString("insert into posts (path, content, published, updated, blog, section, status, visibility, priority, wordcount, charcount) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
 		sqlArgs = append(sqlArgs, p.Path, p.Content, toUTCSafe(p.Published), toUTCSafe(p.Updated), p.Blog, p.Section, p.Status, p.Visibility, p.Priority, wc, cc)
@@ -298,6 +298,9 @@ func (db *database) readPostParamRows(path string) (map[string][]paramRow, error
 			return nil, err
 		}
 		params[name] = append(params[name], paramRow{id: id, value: value})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return params, nil
 }
@@ -635,7 +638,7 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 	return queryBuilder.String(), args, nil
 }
 
-func (d *database) loadPostParameters(posts []*post, parameters ...string) (err error) {
+func (db *database) loadPostParameters(posts []*post, parameters ...string) (err error) {
 	if len(posts) == 0 {
 		return nil
 	}
@@ -673,7 +676,7 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 	// Order
 	queryBuilder.WriteString(" order by id")
 	// Query
-	rows, err := d.Query(queryBuilder.String(), sqlArgs...)
+	rows, err := db.Query(queryBuilder.String(), sqlArgs...)
 	if err != nil {
 		return err
 	}
@@ -691,6 +694,9 @@ func (d *database) loadPostParameters(posts []*post, parameters ...string) (err 
 		}
 		m[name] = append(m[name], value)
 		params[path] = m
+	}
+	if err = rows.Err(); err != nil {
+		return err
 	}
 	// Add to posts
 	for _, p := range posts {
@@ -731,6 +737,9 @@ func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error)
 		}
 		posts = append(posts, p)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	if !config.fetchWithoutParams {
 		err = a.db.loadPostParameters(posts, config.fetchParams...)
 		if err != nil {
@@ -758,12 +767,12 @@ func (a *goBlog) getPost(path string) (*post, error) {
 	return posts[0], nil
 }
 
-func (d *database) countPosts(config *postsRequestConfig) (count int, err error) {
+func (db *database) countPosts(config *postsRequestConfig) (count int, err error) {
 	query, params, err := buildPostsQuery(config, "path")
 	if err != nil {
 		return
 	}
-	row, err := d.QueryRow("select count(distinct path) from ("+query+")", params...)
+	row, err := db.QueryRow("select count(distinct path) from ("+query+")", params...)
 	if err != nil {
 		return
 	}
@@ -797,8 +806,8 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	return path, nil
 }
 
-func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
-	rows, err := d.Query(
+func (db *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
+	rows, err := db.Query(
 		"select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status and visibility = @visibility) order by value",
 		sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished), sql.Named("visibility", visibilityPublic),
 	)
@@ -813,6 +822,9 @@ func (d *database) allTaxonomyValues(blog string, taxonomy string) ([]string, er
 			return nil, err
 		}
 		values = append(values, value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return values, nil
 }

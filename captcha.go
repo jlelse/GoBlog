@@ -44,17 +44,17 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		// Get captcha ID
-		captchaId := ""
-		if sesCaptchaId, ok := ses.Values["captchaid"]; ok {
+		captchaID := ""
+		if sesCaptchaID, ok := ses.Values["captchaid"]; ok {
 			// Already has a captcha ID
-			ci := sesCaptchaId.(string)
+			ci := sesCaptchaID.(string)
 			if captcha.Reload(ci) {
-				captchaId = ci
+				captchaID = ci
 			}
 		}
-		if captchaId == "" {
-			captchaId = captcha.New()
-			ses.Values["captchaid"] = captchaId
+		if captchaID == "" {
+			captchaID = captcha.New()
+			ses.Values["captchaid"] = captchaID
 		}
 		// Encode original request
 		headerBuffer, bodyBuffer := bufferpool.Get(), bufferpool.Get()
@@ -69,7 +69,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 		written, _ := io.Copy(bodyEncoder, io.LimitReader(r.Body, limit))
 		if written == 0 {
 			// Maybe it's a form
-			_ = r.ParseForm()
+			_ = r.ParseForm() //nolint:gosec
 			// Encode form
 			written = int64(noError(io.WriteString(bodyEncoder, r.Form.Encode())))
 		}
@@ -86,7 +86,7 @@ func (a *goBlog) captchaMiddleware(next http.Handler) http.Handler {
 				captchaMethod:  r.Method,
 				captchaHeaders: headerBuffer.String(),
 				captchaBody:    bodyBuffer.String(),
-				captchaId:      captchaId,
+				captchaID:      captchaID,
 			},
 		})
 	})
@@ -107,13 +107,13 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return false
 	}
-	if r.FormValue("captchaaction") != "captcha" {
+	if r.FormValue("captchaaction") != "captcha" { //nolint:gosec
 		return false
 	}
 	// Prepare original request
-	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchabody")))
-	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("captchamethod"), r.URL.RequestURI(), bodyDecoder)
-	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchaheaders")))
+	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchabody")))                  //nolint:gosec
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("captchamethod"), r.URL.RequestURI(), bodyDecoder) //nolint:gosec
+	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("captchaheaders")))             //nolint:gosec
 	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Get session
 	a.initSessionStores()
@@ -123,8 +123,8 @@ func (a *goBlog) checkCaptcha(w http.ResponseWriter, r *http.Request) bool {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return true
 	}
-	// Check if session contains a captchaId and if captcha is solved
-	if sesCaptchaId, ok := ses.Values["captchaid"]; ok && captcha.VerifyString(sesCaptchaId.(string), r.FormValue("digits")) {
+	// Check if session contains a captchaID and if captcha is solved
+	if sesCaptchaID, ok := ses.Values["captchaid"]; ok && captcha.VerifyString(sesCaptchaID.(string), r.FormValue("digits")) { //nolint:gosec
 		ses.Values["captcha"] = true
 		err = a.captchaSessions.Save(r, w, ses)
 		if err != nil {

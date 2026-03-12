@@ -16,15 +16,15 @@ import (
 	"go.hacdias.com/indielib/indieauth"
 )
 
-func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HtmlBuilder, bc *configBlog, p *post) {
+func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HTMLBuilder, bc *configBlog, p *post) {
 	a.renderPostTitle(hb, p)
 	a.renderPostMeta(hb, p, bc, "preview")
-	a.postHtmlToWriter(hb, &postHtmlOptions{p: p, absolute: true})
+	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
 	a.renderPostTrack(hb, p, bc, true)
 	a.renderPostTax(hb, p, bc)
 }
 
-func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, main func(hb *htmlbuilder.HtmlBuilder)) {
+func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, main func(hb *htmlbuilder.HTMLBuilder)) {
 	// Basic HTML things
 	hb.WriteUnescaped("<!doctype html>")
 	hb.WriteElementOpen("html", "lang", rd.Blog.Lang)
@@ -68,7 +68,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HtmlBuilder, rd *renderData, title, 
 		}
 	}
 	// Opensearch
-	if os := openSearchUrl(rd.Blog); os != "" {
+	if os := openSearchURL(rd.Blog); os != "" {
 		hb.WriteElementOpen("link", "rel", "search", "type", "application/opensearchdescription+xml", "href", os, "title", renderedBlogTitle)
 	}
 	// Favicons
@@ -163,17 +163,17 @@ type errorRenderData struct {
 	Message string
 }
 
-func (a *goBlog) renderError(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderError(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	ed, ok := rd.Data.(*errorRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, ed.Title)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			if ed.Title != "" {
 				hb.WriteElementOpen("h1")
 				hb.WriteEscaped(ed.Title)
@@ -193,17 +193,17 @@ type loginRenderData struct {
 	totp                                 bool
 }
 
-func (a *goBlog) renderLogin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	data, ok := rd.Data.(*loginRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -249,15 +249,15 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderSearch(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderSearch(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	sc := rd.Blog.Search
 	renderedSearchTitle := a.renderMdTitle(sc.Title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, renderedSearchTitle)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			titleOrDesc := false
 			// Title
@@ -291,21 +291,21 @@ func (a *goBlog) renderSearch(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderComment(h *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 	c, ok := rd.Data.(*comment)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		h, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("title")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "acommentby"))
 			hb.WriteUnescaped(" ")
 			hb.WriteEscaped(c.Name)
 			hb.WriteElementClose("title")
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")
 			// Target
 			hb.WriteElementOpen("p")
@@ -362,12 +362,12 @@ type indexRenderData struct {
 	posts              []*post
 	hasPrev, hasNext   bool
 	first, prev, next  string
-	paramUrlQuery      string
+	paramURLQuery      string
 	summaryTemplate    summaryTyp
 	withoutFeeds       bool
 }
 
-func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	id, ok := rd.Data.(*indexRenderData)
 	if !ok {
 		return
@@ -375,7 +375,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	renderedIndexTitle := a.renderMdTitle(id.title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			// Title
 			a.renderTitleTag(hb, rd.Blog, renderedIndexTitle)
 			// Feeds
@@ -384,12 +384,12 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
 			if !id.withoutFeeds {
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramUrlQuery)
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramUrlQuery)
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramUrlQuery)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramURLQuery)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramURLQuery)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramURLQuery)
 			}
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-feed")
 			titleOrDesc := false
 			// Title
@@ -419,7 +419,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementClose("p")
 			}
 			// Navigation
-			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev+id.paramUrlQuery, id.next+id.paramUrlQuery)
+			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev+id.paramURLQuery, id.next+id.paramURLQuery)
 			// Author
 			a.renderAuthor(hb)
 			hb.WriteElementClose("main")
@@ -427,7 +427,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	bsd, ok := rd.Data.(*blogStatsData)
 	if !ok {
 		return
@@ -436,10 +436,10 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	renderedBSTitle := a.renderMdTitle(bs.Title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, renderedBSTitle)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			if renderedBSTitle != "" {
@@ -464,7 +464,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HtmlBuilder, rd *renderData, bsd *blogStatsData) {
+func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HTMLBuilder, rd *renderData, bsd *blogStatsData) {
 	hb.WriteElementOpen("table")
 	// Table header
 	hb.WriteElementOpen("thead")
@@ -581,17 +581,17 @@ type geoMapRenderData struct {
 	maxZoom     int
 }
 
-func (a *goBlog) renderGeoMap(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	gmd, ok := rd.Data.(*geoMapRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			if gmd.noLocations {
 				hb.WriteElementOpen("p")
@@ -626,7 +626,7 @@ type blogrollRenderData struct {
 	refresh     string
 }
 
-func (a *goBlog) renderBlogroll(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	bd, ok := rd.Data.(*blogrollRenderData)
 	if !ok {
 		return
@@ -634,10 +634,10 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	renderedTitle := a.renderMdTitle(bd.title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, renderedTitle)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			if renderedTitle != "" {
@@ -714,7 +714,7 @@ type contactRenderData struct {
 	privacy     string
 }
 
-func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	cd, ok := rd.Data.(*contactRenderData)
 	if !ok {
 		return
@@ -722,10 +722,10 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	renderedTitle := a.renderMdTitle(cd.title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, renderedTitle)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			if renderedTitle != "" {
@@ -760,10 +760,10 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderContactSent(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderContactSent(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	a.renderBase(
 		hb, rd, nil,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementsOpen("main", "p")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "messagesent"))
 			hb.WriteElementsClose("p", "main")
@@ -775,24 +775,24 @@ type captchaRenderData struct {
 	captchaMethod  string
 	captchaHeaders string
 	captchaBody    string
-	captchaId      string
+	captchaID      string
 }
 
-func (a *goBlog) renderCaptcha(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderCaptcha(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	crd, ok := rd.Data.(*captchaRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Captcha image
 			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("img", "src", "/captcha/"+crd.captchaId+".png", "class", "captchaimg")
+			hb.WriteElementOpen("img", "src", "/captcha/"+crd.captchaID+".png", "class", "captchaimg")
 			hb.WriteElementClose("p")
 			// Form
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
@@ -816,7 +816,7 @@ type taxonomyRenderData struct {
 	valueGroups []stringGroup
 }
 
-func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	trd, ok := rd.Data.(*taxonomyRenderData)
 	if !ok {
 		return
@@ -824,10 +824,10 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	renderedTitle := a.renderMdTitle(trd.taxonomy.Title)
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, renderedTitle)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			if renderedTitle != "" {
@@ -861,14 +861,14 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	p, ok := rd.Data.(*post)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			if p.RenderedTitle != "" {
 				a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
 			} else {
@@ -880,9 +880,9 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 				hb.WriteElementOpen("link", "rel", "shortlink", "href", su)
 			}
 		},
-		func(origHb *htmlbuilder.HtmlBuilder) {
+		func(origHb *htmlbuilder.HTMLBuilder) {
 			// Wrap plugins
-			hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiPostType), func(plugin any, doc *goquery.Document) {
+			hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUIPostType), func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UIPost).RenderPost(rd.prc, p, doc)
 			}, selectorBodyInner)
 			defer finish()
@@ -924,7 +924,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Old content warning
 			a.renderOldContentWarning(hb, p, rd.Blog)
 			// Content
-			a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
+			a.postHTMLToWriter(hb, &postHTMLOptions{p: p})
 			// External Videp
 			a.renderPostVideo(hb, p)
 			// GPS Track
@@ -991,18 +991,18 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderStaticHome(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	p, ok := rd.Data.(*post)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
 			a.renderPostHeadMeta(hb, p)
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")
 			hb.WriteElementOpen("article")
 			// URL (hidden just for microformats)
@@ -1011,7 +1011,7 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			// Content
 			if p.Content != "" {
 				// Content
-				a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
+				a.postHTMLToWriter(hb, &postHTMLOptions{p: p})
 			}
 			// Author
 			a.renderAuthor(hb)
@@ -1031,17 +1031,17 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	indieAuthRequest, ok := rd.Data.(*indieauth.AuthenticationRequest)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "indieauth"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1099,17 +1099,17 @@ type editorFilesRenderData struct {
 	files []*mediaFile
 }
 
-func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	ef, ok := rd.Data.(*editorFilesRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mediafiles"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1162,17 +1162,17 @@ type notificationsRenderData struct {
 	prev, next       string
 }
 
-func (a *goBlog) renderNotificationsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderNotificationsAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	nrd, ok := rd.Data.(*notificationsRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1216,17 +1216,17 @@ type commentsRenderData struct {
 	prev, next       string
 }
 
-func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	crd, ok := rd.Data.(*commentsRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1285,17 +1285,17 @@ type webmentionRenderData struct {
 	prev, current, next string
 }
 
-func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	wrd, ok := rd.Data.(*webmentionRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1313,10 +1313,10 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderDa
 				hb.WriteElementClose("a")
 				hb.WriteElementOpen("br")
 				// u-url
-				if m.Source != m.Url {
+				if m.Source != m.URL {
 					hb.WriteEscaped("u-url: ")
-					hb.WriteElementOpen("a", "href", m.Url, "target", "_blank", "rel", "noopener noreferrer")
-					hb.WriteEscaped(m.Url)
+					hb.WriteElementOpen("a", "href", m.URL, "target", "_blank", "rel", "noopener noreferrer")
+					hb.WriteEscaped(m.URL)
 					hb.WriteElementClose("a")
 					hb.WriteElementOpen("br")
 				}
@@ -1373,24 +1373,24 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HtmlBuilder, rd *renderDa
 }
 
 type editorRenderData struct {
-	updatePostUrl     string
+	updatePostURL     string
 	updatePostContent string
 	presetParams      map[string][]string
 }
 
-func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	edrd, ok := rd.Data.(*editorRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
 			// Chroma CSS
 			hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
 			hb.WriteElementOpen("h1")
@@ -1428,13 +1428,13 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 			hb.WriteElementClose("form")
 
 			// Update
-			if edrd.updatePostUrl != "" {
+			if edrd.updatePostURL != "" {
 				hb.WriteElementOpen("h2", "id", "update")
 				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
 				hb.WriteElementClose("h2")
 				hb.WriteElementOpen("form", "method", "post", "class", "fw p", "action", "#update")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "updatepost")
-				hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", edrd.updatePostUrl)
+				hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", edrd.updatePostURL)
 				hb.WriteElementOpen(
 					"textarea",
 					"id", "editor-update",
@@ -1558,17 +1558,17 @@ type appPasswordCreatedRenderData struct {
 	token string
 }
 
-func (a *goBlog) renderSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	srd, ok := rd.Data.(*settingsRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 
 			// Title
@@ -1630,17 +1630,17 @@ type activityPubFollowersRenderData struct {
 	followers []*apFollower
 }
 
-func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	aprd, ok := rd.Data.(*activityPubFollowersRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apfollowers"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 
 			// Title
@@ -1666,13 +1666,13 @@ func (a *goBlog) renderActivityPubFollowers(hb *htmlbuilder.HtmlBuilder, rd *ren
 	)
 }
 
-func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "followusingactivitypub"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 
 			// Title
@@ -1691,17 +1691,17 @@ func (a *goBlog) renderActivityPubRemoteFollow(hb *htmlbuilder.HtmlBuilder, rd *
 	)
 }
 
-func (a *goBlog) renderCommentEditor(h *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderCommentEditor(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 	c, ok := rd.Data.(*comment)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		h, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editcommenttitle"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			// Form
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "id", "value", c.ID)

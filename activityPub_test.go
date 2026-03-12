@@ -174,7 +174,7 @@ func Test_apGetFollowersCollectionId(t *testing.T) {
 	err := app.initConfig(false)
 	require.NoError(t, err)
 
-	id := app.apGetFollowersCollectionId("testblog")
+	id := app.apGetFollowersCollectionID("testblog")
 	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/testblog"), id)
 }
 
@@ -375,7 +375,7 @@ func Test_webfinger(t *testing.T) {
 func Test_apMoveFollowers(t *testing.T) {
 	app := &goBlog{
 		cfg:        createDefaultTestConfig(t),
-		httpClient: newHttpClient(),
+		httpClient: newHTTPClient(),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 	app.cfg.Blogs = map[string]*configBlog{
@@ -538,9 +538,9 @@ func Test_apGetFollowersCollectionIdForAddress(t *testing.T) {
 	err := app.initConfig(false)
 	require.NoError(t, err)
 
-	id := app.apGetFollowersCollectionIdForAddress("default", "https://alt.example")
+	id := app.apGetFollowersCollectionIDForAddress("default", "https://alt.example")
 	assert.Equal(t, activitypub.IRI("https://alt.example/activitypub/followers/default"), id)
 
-	id = app.apGetFollowersCollectionIdForAddress("default", "")
+	id = app.apGetFollowersCollectionIDForAddress("default", "")
 	assert.Equal(t, activitypub.IRI("https://example.com/activitypub/followers/default"), id)
 }

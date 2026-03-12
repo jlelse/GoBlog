@@ -51,11 +51,13 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 		}
 	}
 	allowedDomains = lo.Uniq(lo.Filter(allowedDomains, func(v string, _ int) bool { return v != "" }))
-	defaultSrcList := []src.SourceVal{src.Self(), src.Scheme("blob:")}
+	defaultSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
+	defaultSrcList = append(defaultSrcList, src.Self(), src.Scheme("blob:"))
 	for _, d := range allowedDomains {
 		defaultSrcList = append(defaultSrcList, src.Host(d))
 	}
-	imgSrcList := []src.SourceVal{src.Self(), src.Scheme("data:")}
+	imgSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
+	imgSrcList = append(imgSrcList, src.Self(), src.Scheme("data:"))
 	for _, d := range allowedDomains {
 		imgSrcList = append(imgSrcList, src.Host(d))
 	}

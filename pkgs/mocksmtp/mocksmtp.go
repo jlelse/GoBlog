@@ -3,6 +3,7 @@
 package mocksmtp
 
 import (
+	"context"
 	"log"
 	"net"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 	"github.com/emersion/go-smtp"
 )
 
-// Start a mock SMTP server on a random port
+// StartMockSMTPServer starts a mock SMTP server on a random port.
 //
 // Returns:
 // port: the port the server is listening on,
@@ -20,13 +21,13 @@ import (
 func StartMockSMTPServer() (port int, receivedValues *ReceivedValues, cancelFunc func(), err error) {
 
 	// Start server on random port
-	mockSmtpServer, err := net.Listen("tcp", "127.0.0.1:0")
+	mockSMTPServer, err := new(net.ListenConfig).Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		return 0, nil, nil, err
 	}
 
 	// Get port from listener
-	_, portStr, err := net.SplitHostPort(mockSmtpServer.Addr().String())
+	_, portStr, err := net.SplitHostPort(mockSMTPServer.Addr().String())
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -42,13 +43,13 @@ func StartMockSMTPServer() (port int, receivedValues *ReceivedValues, cancelFunc
 	s := smtp.NewServer(&backend{
 		values: receivedValues,
 	})
-	s.Addr = mockSmtpServer.Addr().String()
+	s.Addr = mockSMTPServer.Addr().String()
 	s.Domain = "127.0.0.1"
 	s.AllowInsecureAuth = true
 
 	// Start SMTP server
 	go func() {
-		if err := s.Serve(mockSmtpServer); err != nil {
+		if err := s.Serve(mockSMTPServer); err != nil {
 			log.Fatal(err)
 		}
 	}()

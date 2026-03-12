@@ -24,7 +24,7 @@ const (
 )
 
 // post summary on index pages
-func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, bc *configBlog, p *post, typ summaryTyp) {
+func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, bc *configBlog, p *post, typ summaryTyp) {
 	if bc == nil || p == nil {
 		return
 	}
@@ -32,7 +32,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, 
 		typ = defaultSummary
 	}
 	// Plugin handling
-	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiSummaryType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUISummaryType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UISummary).RenderSummaryForPost(rd.prc, p, doc)
 	}, selectorBodyInner)
 	defer finish()
@@ -67,7 +67,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, 
 	a.renderPostMeta(hb, p, bc, "summary")
 	if typ != photoSummary && a.showFull(p) {
 		// Show full content
-		a.postHtmlToWriter(hb, &postHtmlOptions{p: p})
+		a.postHTMLToWriter(hb, &postHTMLOptions{p: p})
 	} else {
 		// Show IndieWeb context
 		a.renderPostReplyContext(hb, p)
@@ -102,7 +102,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HtmlBuilder, rd *renderData, 
 }
 
 // list of post taxonomy values (tags, series, etc.)
-func (a *goBlog) renderPostTax(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+func (a *goBlog) renderPostTax(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
 	if b == nil || p == nil {
 		return
 	}
@@ -139,7 +139,7 @@ func (a *goBlog) renderPostTax(hb *htmlbuilder.HtmlBuilder, p *post, b *configBl
 
 // post meta information.
 // typ can be "summary", "post" or "preview".
-func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog, typ string) {
+func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, typ string) {
 	if b == nil || p == nil || typ != "summary" && typ != "post" && typ != "preview" {
 		return
 	}
@@ -247,16 +247,16 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HtmlBuilder, p *post, b *configB
 }
 
 // Reply ("u-in-reply-to")
-func (a *goBlog) renderPostReplyContext(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (a *goBlog) renderPostReplyContext(hb *htmlbuilder.HTMLBuilder, p *post) {
 	a.renderPostLikeReplyContext(hb, "u-in-reply-to", a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "replyto"), a.replyLink(p), a.replyTitle(p), a.replyContext(p))
 }
 
 // Like ("u-like-of")
-func (a *goBlog) renderPostLikeContext(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (a *goBlog) renderPostLikeContext(hb *htmlbuilder.HTMLBuilder, p *post) {
 	a.renderPostLikeReplyContext(hb, "u-like-of", a.ts.GetTemplateStringVariant(a.getBlogFromPost(p).Lang, "likeof"), a.likeLink(p), a.likeTitle(p), a.likeContext(p))
 }
 
-func (a *goBlog) renderPostLikeReplyContext(hb *htmlbuilder.HtmlBuilder, class, pretext, link, title, content string) {
+func (a *goBlog) renderPostLikeReplyContext(hb *htmlbuilder.HTMLBuilder, class, pretext, link, title, content string) {
 	if link == "" {
 		return
 	}
@@ -285,7 +285,7 @@ func (a *goBlog) renderPostLikeReplyContext(hb *htmlbuilder.HtmlBuilder, class, 
 }
 
 // warning for old posts
-func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
 	if b == nil || b.hideOldContentWarning || p == nil || !p.Old() {
 		return
 	}
@@ -294,7 +294,7 @@ func (a *goBlog) renderOldContentWarning(hb *htmlbuilder.HtmlBuilder, p *post, b
 	hb.WriteElementClose("strong")
 }
 
-func (a *goBlog) renderShareButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
 	if b == nil || b.hideShareButton || p == nil {
 		return
 	}
@@ -334,7 +334,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HtmlBuilder, p *post, b *conf
 	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"))
 }
 
-func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog) {
+func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
 	if b == nil || b.hideTranslateButton {
 		return
 	}
@@ -352,7 +352,7 @@ func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HtmlBuilder, p *post, b *
 	hb.WriteElementClose("script")
 }
 
-func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderInteractions(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	// Start accordion
 	hb.WriteElementOpen("details", "class", "p", "id", "interactions")
 	hb.WriteElementOpen("summary")
@@ -369,8 +369,8 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 		hb.WriteElementOpen("ul")
 		for _, mention := range m {
 			hb.WriteElementOpen("li")
-			hb.WriteElementOpen("a", "href", mention.Url, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
-			hb.WriteEscaped(cmp.Or(mention.Author, mention.Url))
+			hb.WriteElementOpen("a", "href", mention.URL, "target", "_blank", "rel", "nofollow noopener noreferrer ugc")
+			hb.WriteEscaped(cmp.Or(mention.Author, mention.URL))
 			hb.WriteElementClose("a")
 			if mention.Title != "" {
 				hb.WriteUnescaped(" ")
@@ -438,7 +438,7 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HtmlBuilder, rd *renderData)
 }
 
 // author h-card
-func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
+func (a *goBlog) renderAuthor(hb *htmlbuilder.HTMLBuilder) {
 	user := a.cfg.User
 	if user == nil {
 		return
@@ -457,7 +457,7 @@ func (a *goBlog) renderAuthor(hb *htmlbuilder.HtmlBuilder) {
 }
 
 // head meta tags for a post
-func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if p == nil {
 		return
 	}
@@ -481,7 +481,7 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HtmlBuilder, p *post) {
 }
 
 // TOR notice in the footer
-func (a *goBlog) renderTorNotice(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderTorNotice(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !a.cfg.Server.Tor || (!rd.TorUsed && rd.TorAddress == "") {
 		return
 	}
@@ -504,7 +504,7 @@ func (a *goBlog) renderTorNotice(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
 	}
 }
 
-func (a *goBlog) renderTitleTag(hb *htmlbuilder.HtmlBuilder, blog *configBlog, optionalTitle string) {
+func (a *goBlog) renderTitleTag(hb *htmlbuilder.HTMLBuilder, blog *configBlog, optionalTitle string) {
 	hb.WriteElementOpen("title")
 	if optionalTitle != "" {
 		hb.WriteEscaped(optionalTitle)
@@ -514,7 +514,7 @@ func (a *goBlog) renderTitleTag(hb *htmlbuilder.HtmlBuilder, blog *configBlog, o
 	hb.WriteElementClose("title")
 }
 
-func (a *goBlog) renderPagination(hb *htmlbuilder.HtmlBuilder, blog *configBlog, hasPrev, hasNext bool, prev, next string) {
+func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog, hasPrev, hasNext bool, prev, next string) {
 	// Navigation
 	if hasPrev {
 		hb.WriteElementOpen("p")
@@ -532,7 +532,7 @@ func (a *goBlog) renderPagination(hb *htmlbuilder.HtmlBuilder, blog *configBlog,
 	}
 }
 
-func (*goBlog) renderPostTitle(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (*goBlog) renderPostTitle(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if p == nil || p.RenderedTitle == "" {
 		return
 	}
@@ -541,7 +541,7 @@ func (*goBlog) renderPostTitle(hb *htmlbuilder.HtmlBuilder, p *post) {
 	hb.WriteElementClose("h1")
 }
 
-func (a *goBlog) renderPostTrack(hb *htmlbuilder.HtmlBuilder, p *post, b *configBlog, disableInteractiveMap bool) {
+func (a *goBlog) renderPostTrack(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, disableInteractiveMap bool) {
 	if p == nil || !p.hasTrack() {
 		return
 	}
@@ -557,7 +557,7 @@ func (a *goBlog) renderPostTrack(hb *htmlbuilder.HtmlBuilder, p *post, b *config
 	}
 }
 
-func (a *goBlog) renderPostTrackStatistics(hb *htmlbuilder.HtmlBuilder, track *trackResult, b *configBlog) {
+func (a *goBlog) renderPostTrackStatistics(hb *htmlbuilder.HTMLBuilder, track *trackResult, b *configBlog) {
 	hb.WriteElementOpen("p")
 	if track.Name != "" {
 		hb.WriteElementOpen("strong")
@@ -593,7 +593,7 @@ func (a *goBlog) renderPostTrackStatistics(hb *htmlbuilder.HtmlBuilder, track *t
 	hb.WriteElementClose("p")
 }
 
-func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HtmlBuilder, track *trackResult) {
+func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HTMLBuilder, track *trackResult) {
 	pathsJSON, _ := json.Marshal(track.Paths)
 	pointsJSON, _ := json.Marshal(track.Points)
 	hb.WriteElementOpen(
@@ -609,7 +609,7 @@ func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HtmlBuilder, track *trackRes
 	hb.WriteElementClose("script")
 }
 
-func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackResult) {
+func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HTMLBuilder, track *trackResult) {
 	const width, height = 700.0, 400.0
 	// Calculate min/max values in Web Mercator projection
 	minX, minY := math.Inf(1), math.Inf(1)
@@ -637,18 +637,18 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HtmlBuilder, track *trackRes
 	// Generate SVG
 	hb.WriteElementOpen("svg", "width", "100%", "viewbox", fmt.Sprintf("0 0 %.0f %.0f", width, height))
 	for _, path := range track.Paths {
-		hb.WriteString(`<polyline points="`)
+		_, _ = hb.WriteString(`<polyline points="`)
 		for _, pt := range path {
 			x := xOffset + (gpxhelper.WebMercatorX(pt.Lon())-minX)*scale
 			y := height - (yOffset + (gpxhelper.WebMercatorY(pt.Lat())-minY)*scale)
-			hb.WriteString(fmt.Sprintf("%.2f,%.2f ", x, y))
+			fmt.Fprintf(hb, "%.2f,%.2f ", x, y)
 		}
-		hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)
+		_, _ = hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)
 	}
 	hb.WriteElementClose("svg")
 }
 
-func (a *goBlog) renderPostReactions(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (a *goBlog) renderPostReactions(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if !a.reactionsEnabledForPost(p) {
 		return
 	}
@@ -658,7 +658,7 @@ func (a *goBlog) renderPostReactions(hb *htmlbuilder.HtmlBuilder, p *post) {
 	hb.WriteElementClose("script")
 }
 
-func (a *goBlog) renderPostVideo(hb *htmlbuilder.HtmlBuilder, p *post) {
+func (a *goBlog) renderPostVideo(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if !p.hasVideoPlaylist() {
 		return
 	}
@@ -668,7 +668,7 @@ func (a *goBlog) renderPostVideo(hb *htmlbuilder.HtmlBuilder, p *post) {
 	hb.WriteElementClose("script")
 }
 
-func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
 	hb.WriteElementOpen("h2")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "postsections"))
 	hb.WriteElementClose("h2")
@@ -765,7 +765,7 @@ func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HtmlBuilder, rd *rend
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderData, path, description, name string, value bool) {
+func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HTMLBuilder, rd *renderData, path, description, name string, value bool) {
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", path)
 
 	hb.WriteElementOpen("input", "type", "checkbox", "class", "autosubmit", "name", name, "id", "cb-"+name, lo.If(value, "checked").Else(""), "")
@@ -784,7 +784,7 @@ func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HtmlBuilder, rd *renderDat
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderBlogSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+func (a *goBlog) renderBlogSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
 	hb.WriteElementOpen("h2")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blogsettings"))
 	hb.WriteElementClose("h2")
@@ -806,7 +806,7 @@ func (a *goBlog) renderBlogSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+func (a *goBlog) renderUserSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
 	hb.WriteElementOpen("h2")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "user"))
 	hb.WriteElementClose("h2")
@@ -840,7 +840,7 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HtmlBuilder, rd *renderData,
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderData, srd *settingsRenderData) {
+func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
 	hb.WriteElementOpen("h2")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "security"))
 	hb.WriteElementClose("h2")
@@ -1000,17 +1000,17 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HtmlBuilder, rd *renderD
 	}
 }
 
-func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	data, ok := rd.Data.(*appPasswordCreatedRenderData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordcreated"))
 		},
-		func(hb *htmlbuilder.HtmlBuilder) {
+		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswordcreated"))
@@ -1045,9 +1045,9 @@ func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HtmlBuilder, rd *rende
 	)
 }
 
-func (a *goBlog) renderFooter(origHb *htmlbuilder.HtmlBuilder, rd *renderData) {
+func (a *goBlog) renderFooter(origHb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	// Wrap plugins
-	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUiFooterType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUIFooterType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIFooter).RenderFooter(rd.prc, doc)
 	}, selectorBodyInner)
 	defer finish()

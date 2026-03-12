@@ -132,6 +132,9 @@ func (a *goBlog) getPasskeys() ([]*passkey, error) {
 		pk.Created = time.Unix(createdUnix, 0)
 		passkeys = append(passkeys, &pk)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return passkeys, nil
 }
 
@@ -247,6 +250,9 @@ func (a *goBlog) getAppPasswords() ([]*appPassword, error) {
 		ap.Created = time.Unix(createdUnix, 0)
 		passwords = append(passwords, &ap)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return passwords, nil
 }
 
@@ -265,6 +271,9 @@ func (a *goBlog) getAppPasswordHashes() ([]string, error) {
 			return nil, err
 		}
 		hashes = append(hashes, hash)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return hashes, nil
 }

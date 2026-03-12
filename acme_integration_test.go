@@ -48,7 +48,7 @@ func TestIntegrationAcmeWithPebble(t *testing.T) {
 
 	require.NoError(t, app.initConfig(false))
 	// Disable HTTP redirect server — TLS-ALPN-01 doesn't need port 80
-	app.cfg.Server.HttpsRedirect = false
+	app.cfg.Server.HTTPSRedirect = false
 	require.NoError(t, app.initTemplateStrings())
 
 	// Pre-initialize the cert manager with the Pebble-configured HTTP client

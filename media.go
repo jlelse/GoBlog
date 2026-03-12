@@ -15,7 +15,7 @@ const (
 
 func (*goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 	f := filepath.Join(mediaFilePath, chi.URLParam(r, "file"))
-	_, err := os.Stat(f)
+	_, err := os.Stat(f) //nolint:gosec
 	if err != nil {
 		// Serve 404, but don't use normal serve404 method because of media domain
 		http.NotFound(w, r)

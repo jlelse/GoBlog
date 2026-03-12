@@ -43,20 +43,20 @@ func (a *goBlog) tgPost(p *post, silent bool) {
 			return
 		}
 		// Send message
-		chatId, msgId, err := a.sendTelegram(tg, html, "HTML", silent)
+		chatID, msgID, err := a.sendTelegram(tg, html, "HTML", silent)
 		if err != nil {
 			a.error("Failed to send post to Telegram", "err", err)
 			return
 		}
-		if chatId == 0 || msgId == 0 {
+		if chatID == 0 || msgID == 0 {
 			// Not sent
 			return
 		}
 		// Save chat and message id to post
-		if err := a.db.replacePostParam(p.Path, telegramChatParam, []string{strconv.FormatInt(chatId, 10)}); err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramChatParam, []string{strconv.FormatInt(chatID, 10)}); err != nil {
 			a.error("Failed to save Telegram chat id", "err", err)
 		}
-		if err := a.db.replacePostParam(p.Path, telegramMsgParam, []string{strconv.Itoa(msgId)}); err != nil {
+		if err := a.db.replacePostParam(p.Path, telegramMsgParam, []string{strconv.Itoa(msgID)}); err != nil {
 			a.error("Failed to save Telegram message id", "err", err)
 		}
 	}
@@ -112,11 +112,11 @@ func (tg *configTelegram) generateHTML(title, shortURL string) string {
 	defer builderpool.Put(message)
 	tgReplacer := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
 	if title != "" {
-		tgReplacer.WriteString(message, title)
+		_, _ = tgReplacer.WriteString(message, title)
 		message.WriteString("\n\n")
 	}
 	message.WriteString("<a href=\"" + shortURL + "\">")
-	tgReplacer.WriteString(message, shortURL)
+	_, _ = tgReplacer.WriteString(message, shortURL)
 	message.WriteString("</a>")
 	return message.String()
 }

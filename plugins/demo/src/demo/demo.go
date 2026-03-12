@@ -1,3 +1,4 @@
+// Package demo provides a demo plugin for GoBlog.
 package demo
 
 import (
@@ -16,6 +17,7 @@ type plugin struct {
 	config map[string]any
 }
 
+// GetPlugin returns the demo plugin instance.
 func GetPlugin() (
 	plugintypes.SetApp, plugintypes.SetConfig,
 	plugintypes.UI,
@@ -47,7 +49,7 @@ func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified 
 	}
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 	hb.WriteElementOpen("p")
 	hb.WriteEscaped("End of post content")
 	hb.WriteElementClose("p")
@@ -59,7 +61,7 @@ func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified 
 func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Document) {
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 	hb.WriteElementOpen("p")
 	hb.WriteEscaped("Second end of post content")
 	hb.WriteElementClose("p")

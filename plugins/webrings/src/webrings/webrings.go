@@ -1,3 +1,4 @@
+// Package webrings provides a webrings plugin for GoBlog.
 package webrings
 
 import (
@@ -9,6 +10,7 @@ import (
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
+// GetPlugin returns the webrings plugin instance.
 func GetPlugin() (plugintypes.SetConfig, plugintypes.UIFooter) {
 	p := &plugin{}
 	return p, p
@@ -32,7 +34,7 @@ func (p *plugin) RenderFooter(rc plugintypes.RenderContext, doc *goquery.Documen
 		if blogWebrings, ok := blogWebringsAny.([]any); ok {
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
-			hb := htmlbuilder.NewHtmlBuilder(buf)
+			hb := htmlbuilder.NewHTMLBuilder(buf)
 			for _, webringAny := range blogWebrings {
 				if webring, ok := webringAny.(map[string]any); ok {
 					title, titleOk := unwrapToString(webring["title"])

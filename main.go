@@ -1,3 +1,4 @@
+// Package main is the entry point for GoBlog.
 package main
 
 import (
@@ -16,7 +17,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "GoBlog",
 		Short: "Main application, without any command, the app gets started.",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			if err := app.initPlugins(); err != nil {
 				app.logErrAndQuit("Failed to init plugins", "err", err)
@@ -31,7 +32,7 @@ func main() {
 			}
 			app.shutdown.Wait()
 		},
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			if cpuprofile, _ := cmd.Flags().GetString("cpuprofile"); cpuprofile != "" {
 				r, w := io.Pipe()
 				go func() {
@@ -42,7 +43,7 @@ func main() {
 				}()
 			}
 		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		PersistentPostRun: func(cmd *cobra.Command, _ []string) {
 			pprof.StopCPUProfile()
 			if memprofile, _ := cmd.Flags().GetString("memprofile"); memprofile != "" {
 				runtime.GC()
@@ -75,7 +76,7 @@ Useful for container health checks (Docker, Kubernetes) and monitoring systems.
 Example:
   ./GoBlog healthcheck
   echo $?  # 0 = healthy, 1 = unhealthy`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			health := app.healthcheckExitCode()
 			app.shutdown.ShutdownAndWait()
@@ -95,7 +96,7 @@ to help you maintain link quality on your blog.
 
 Example:
   ./GoBlog check`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 			if err := app.initTemplateStrings(); err != nil {
 				app.logErrAndQuit("Failed to start check", "err", err)
@@ -252,7 +253,7 @@ Example:
 				}
 				fmt.Printf("Remove %s %s (%s)%s? (y/N): ", label, r.follower.follower, r.follower.username, detail)
 				var confirm string
-				fmt.Scanln(&confirm)
+				_, _ = fmt.Scanln(&confirm)
 				if confirm != "y" && confirm != "Y" {
 					continue
 				}
@@ -316,24 +317,13 @@ the new account instead. Before running this command:
 Example:
   ./GoBlog activitypub move-followers default https://mastodon.example.com/users/newaccount`,
 		Args: cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			app := initializeApp(cmd)
-			if !app.apEnabled() {
-				app.logErrAndQuit("ActivityPub not enabled")
-				return
-			}
-			if err := app.initActivityPubBase(); err != nil {
-				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
-				return
-			}
-			app.initAPSendQueue()
+		Run: apSendQueueCommand(func(app *goBlog, args []string) {
 			blog := args[0]
 			target := args[1]
 			if err := app.apMoveFollowers(blog, target); err != nil {
 				app.logErrAndQuit("Failed to move ActivityPub followers", "blog", blog, "target", target, "err", err)
 			}
-			app.shutdown.ShutdownAndWait()
-		},
+		}),
 	})
 
 	activityPubCmd.AddCommand(&cobra.Command{
@@ -395,24 +385,13 @@ new domain's actor will have alsoKnownAs including the old domain.
 Example:
   ./GoBlog activitypub domainmove http://old.example.com http://new.example.com`,
 		Args: cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			app := initializeApp(cmd)
-			if !app.apEnabled() {
-				app.logErrAndQuit("ActivityPub not enabled")
-				return
-			}
-			if err := app.initActivityPubBase(); err != nil {
-				app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
-				return
-			}
-			app.initAPSendQueue()
+		Run: apSendQueueCommand(func(app *goBlog, args []string) {
 			oldDomain := args[0]
 			newDomain := args[1]
 			if err := app.apDomainMove(oldDomain, newDomain); err != nil {
 				app.logErrAndQuit("Failed to send domain move activities", "oldDomain", oldDomain, "newDomain", newDomain, "err", err)
 			}
-			app.shutdown.ShutdownAndWait()
-		},
+		}),
 	})
 	rootCmd.AddCommand(activityPubCmd)
 
@@ -436,7 +415,7 @@ Options:
   --username  Login username (required)
   --password  Login password, stored as bcrypt hash (required)
   --totp      Enable TOTP two-factor authentication`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			app := initializeApp(cmd)
 
 			username, _ := cmd.Flags().GetString("username")
@@ -501,7 +480,7 @@ Options:
 
 func initializeApp(cmd *cobra.Command) *goBlog {
 	app := &goBlog{
-		httpClient: newHttpClient(),
+		httpClient: newHTTPClient(),
 	}
 	configfile, _ := cmd.Flags().GetString("config")
 	if err := app.loadConfigFile(configfile); err != nil {
@@ -536,6 +515,23 @@ func initializeComponents(app *goBlog) {
 	}
 
 	app.info("Initialized components")
+}
+
+func apSendQueueCommand(fn func(app *goBlog, args []string)) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		app := initializeApp(cmd)
+		if !app.apEnabled() {
+			app.logErrAndQuit("ActivityPub not enabled")
+			return
+		}
+		if err := app.initActivityPubBase(); err != nil {
+			app.logErrAndQuit("Failed to init ActivityPub base", "err", err)
+			return
+		}
+		app.initAPSendQueue()
+		fn(app, args)
+		app.shutdown.ShutdownAndWait()
+	}
 }
 
 func (a *goBlog) logErrAndQuit(msg string, args ...any) {

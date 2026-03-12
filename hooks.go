@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"html/template"
 	"os/exec"
 	"time"
@@ -153,7 +154,7 @@ func (a *goBlog) startHourlyHooks() {
 
 func (a *goBlog) executeHookCommand(hookType, shell, cmd string) {
 	a.info("Executing hook", "type", hookType, "cmd", cmd)
-	out, err := exec.Command(shell, "-c", cmd).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), shell, "-c", cmd).CombinedOutput()
 	if err != nil {
 		a.error("Failed to execute command", "err", err, "cmd", cmd)
 	}

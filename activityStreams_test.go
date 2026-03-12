@@ -340,11 +340,11 @@ func Test_activityPubId(t *testing.T) {
 		Parameters: map[string][]string{},
 	}
 
-	id := app.activityPubId(p)
+	id := app.activityPubID(p)
 	assert.Equal(t, ap.IRI("https://example.com/test"), id)
 
 	p.Parameters[activityPubVersionParam] = []string{"123456789"}
-	id = app.activityPubId(p)
+	id = app.activityPubID(p)
 	assert.Equal(t, ap.IRI("https://example.com/test?activitypubversion=123456789"), id)
 }
 

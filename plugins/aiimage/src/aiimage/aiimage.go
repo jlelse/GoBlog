@@ -1,3 +1,4 @@
+// Package aiimage provides an AI image generation plugin for GoBlog.
 package aiimage
 
 import (
@@ -22,6 +23,7 @@ type plugin struct {
 	apikey, model, endpoint string
 }
 
+// GetPlugin returns the aiimage plugin instance.
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
 	plugintypes.UIPostContent, plugintypes.UIPost,
@@ -58,14 +60,14 @@ func (p *plugin) SetConfig(config map[string]any) {
 func (p *plugin) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/x/aiimage" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil {
+			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
 				p.createCaptions(post)
 				http.Redirect(w, r, post.GetPath(), http.StatusFound)
 			} else {
 				next.ServeHTTP(w, r)
 			}
 		} else if r.Method == http.MethodPost && r.URL.Path == "/x/aiimage/delete" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil {
+			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
 				p.deleteCaptions(post)
 				http.Redirect(w, r, post.GetPath(), http.StatusFound)
 			} else {
@@ -87,7 +89,7 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	if renderContext.IsLoggedIn() {
 		buttonBuf := bufferpool.Get()
 		defer bufferpool.Put(buttonBuf)
-		buttonHw := htmlbuilder.NewHtmlBuilder(buttonBuf)
+		buttonHw := htmlbuilder.NewHTMLBuilder(buttonBuf)
 		buttonHw.WriteElementOpen("form", "method", "post", "action", "/x/aiimage")
 		buttonHw.WriteElementOpen("input", "type", "hidden", "name", "post", "value", post.GetPath())
 		buttonHw.WriteElementOpen("input", "type", "submit", "value", "(Re-)Generate AI image captions")
@@ -125,8 +127,8 @@ func (p *plugin) RenderPostContent(post plugintypes.Post, doc *goquery.Document)
 		if len(captionSubstrings) != 2 {
 			continue
 		}
-		imageUrl, imageCaption := captionSubstrings[0], captionSubstrings[1]
-		doc.Find(fmt.Sprintf(`img[src="%s"]`, imageUrl)).Each(func(_ int, element *goquery.Selection) {
+		imageURL, imageCaption := captionSubstrings[0], captionSubstrings[1]
+		doc.Find(fmt.Sprintf(`img[src="%s"]`, imageURL)).Each(func(_ int, element *goquery.Selection) {
 			finalCaption := title + " " + imageCaption
 			existingAlt, altExists := element.Attr("alt")
 			if !altExists {
@@ -152,11 +154,11 @@ type apiRequestMessage struct {
 type apiRequestMessageContent struct {
 	Type     string                            `json:"type"`
 	Text     string                            `json:"text,omitempty"`
-	ImageUrl *apiRequestMessageContentImageUrl `json:"image_url,omitempty"`
+	ImageURL *apiRequestMessageContentImageURL `json:"image_url,omitempty"`
 }
 
-type apiRequestMessageContentImageUrl struct {
-	Url    string `json:"url"`
+type apiRequestMessageContentImageURL struct {
+	URL    string `json:"url"`
 	Detail string `json:"detail,omitempty"`
 }
 
@@ -173,7 +175,7 @@ type apiResponse struct {
 
 func (p *plugin) createCaptions(post plugintypes.Post) {
 	if post.GetFirstParameterValue("noaiimage") == "true" {
-		log.Println("aiimage: Skip summarizing", post.GetPath())
+		log.Println("aiimage: Skip summarizing", post.GetPath()) //nolint:gosec
 		return
 	}
 
@@ -217,8 +219,8 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 					Role: "user",
 					Content: []*apiRequestMessageContent{{
 						Type: "image_url",
-						ImageUrl: &apiRequestMessageContentImageUrl{
-							Url:    image,
+						ImageURL: &apiRequestMessageContentImageURL{
+							URL:    image,
 							Detail: "low",
 						},
 					}},
@@ -251,7 +253,7 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 
 	err := p.app.SetPostParameter(post.GetPath(), postParam, captions)
 	if err != nil {
-		log.Println("aiimage plugin:", err.Error())
+		log.Println("aiimage plugin:", err.Error()) //nolint:gosec
 		return
 	}
 
@@ -269,7 +271,7 @@ Return the pure caption.`
 func (p *plugin) deleteCaptions(post plugintypes.Post) {
 	err := p.app.SetPostParameter(post.GetPath(), postParam, []string{})
 	if err != nil {
-		log.Println("aiimage plugin:", err.Error())
+		log.Println("aiimage plugin:", err.Error()) //nolint:gosec
 		return
 	}
 

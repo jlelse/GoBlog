@@ -26,9 +26,9 @@ func (a *goBlog) initMicroformatsCache() {
 }
 
 type microformatsResult struct {
-	Title, Content, Author, Url string
+	Title, Content, Author, URL string
 	source                      string
-	hasUrl                      bool
+	hasURL                      bool
 }
 
 func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, error) {
@@ -40,7 +40,7 @@ func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, e
 		ToWriter(pw)
 	if cache {
 		a.initMicroformatsCache()
-		rb.Transport(httpcachetransport.NewHttpCacheTransport(a.httpClient.Transport, a.mfCache, time.Minute, 5*bodylimit.MB))
+		rb.Transport(httpcachetransport.NewHTTPCacheTransport(a.httpClient.Transport, a.mfCache, time.Minute, 5*bodylimit.MB))
 	}
 	go func() {
 		_ = pw.CloseWithError(rb.Fetch(context.Background()))
@@ -51,7 +51,7 @@ func (a *goBlog) parseMicroformats(u string, cache bool) (*microformatsResult, e
 }
 
 func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, error) {
-	parsedUrl, err := url.Parse(u)
+	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +62,12 @@ func parseMicroformatsFromReader(u string, r io.Reader) (*microformatsResult, er
 	m := &microformatsResult{
 		source: u,
 	}
-	if mfd := microformats.Parse(io.TeeReader(r, buf), parsedUrl); mfd != nil {
+	if mfd := microformats.Parse(io.TeeReader(r, buf), parsedURL); mfd != nil {
 		m.fillFromData(mfd)
 	}
 	// Set URL if not parsed from microformats
-	if m.Url == "" {
-		m.Url = u
+	if m.URL == "" {
+		m.URL = u
 	}
 	// Parse title from HTML if needed
 	if m.Title == "" && m.Content == "" {
@@ -101,18 +101,18 @@ func (m *microformatsResult) fill(mf *microformats.Microformat) bool {
 			if url0, ok := url[0].(string); ok {
 				if strings.EqualFold(url0, m.source) {
 					// Is searched entry
-					m.hasUrl = true
-					m.Url = url0
+					m.hasURL = true
+					m.URL = url0
 					// Reset attributes to refill
 					m.Author = ""
 					m.Title = ""
 					m.Content = ""
-				} else if m.hasUrl {
+				} else if m.hasURL {
 					// Already found entry
 					return false
-				} else if m.Url == "" {
+				} else if m.URL == "" {
 					// Is the first entry
-					m.Url = url0
+					m.URL = url0
 				} else {
 					// Is not the first entry
 					return false
@@ -125,7 +125,7 @@ func (m *microformatsResult) fill(mf *microformats.Microformat) bool {
 		m.fillContent(mf)
 		// Author
 		m.fillAuthor(mf)
-		return m.hasUrl
+		return m.hasURL
 	}
 	return slices.ContainsFunc(mf.Children, m.fill)
 }

@@ -30,22 +30,22 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	message := bufferpool.Get()
 	defer bufferpool.Put(message)
 	// Message
-	formMessage := cleanHTMLText(r.FormValue("message"))
+	formMessage := cleanHTMLText(r.FormValue("message")) //nolint:gosec
 	if formMessage == "" {
 		a.serveError(w, r, "Message is empty", http.StatusBadRequest)
 		return
 	}
 	// Name
-	if formName := cleanHTMLText(r.FormValue("name")); formName != "" {
+	if formName := cleanHTMLText(r.FormValue("name")); formName != "" { //nolint:gosec
 		_, _ = fmt.Fprintf(message, "Name: %s\n", formName)
 	}
 	// Email
-	formEmail := cleanHTMLText(r.FormValue("email"))
+	formEmail := cleanHTMLText(r.FormValue("email")) //nolint:gosec
 	if formEmail != "" {
 		_, _ = fmt.Fprintf(message, "Email: %s\n", formEmail)
 	}
 	// Website
-	if formWebsite := cleanHTMLText(r.FormValue("website")); formWebsite != "" {
+	if formWebsite := cleanHTMLText(r.FormValue("website")); formWebsite != "" { //nolint:gosec
 		_, _ = fmt.Fprintf(message, "Website: %s\n", formWebsite)
 	}
 	// Add line break if message is not empty

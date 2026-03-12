@@ -106,7 +106,7 @@ func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error
 	}
 	writeDb.SetMaxOpenConns(1)
 	writeDb.SetMaxIdleConns(1)
-	if err := writeDb.Ping(); err != nil {
+	if err := writeDb.PingContext(context.Background()); err != nil {
 		return nil, err
 	}
 	// Check available SQLite features
@@ -129,7 +129,7 @@ func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error
 	if err != nil {
 		return nil, err
 	}
-	if err := readDb.Ping(); err != nil {
+	if err := readDb.PingContext(context.Background()); err != nil {
 		return nil, err
 	}
 	// Dump db
@@ -140,7 +140,7 @@ func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error
 			return nil, err
 		}
 		dumpDb.SetMaxIdleConns(0)
-		if err := dumpDb.Ping(); err != nil {
+		if err := dumpDb.PingContext(context.Background()); err != nil {
 			return nil, err
 		}
 	}
@@ -155,7 +155,7 @@ func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error
 }
 
 func checkSQLiteFeatures(db *sql.DB) error {
-	rows, err := db.Query("pragma compile_options")
+	rows, err := db.QueryContext(context.Background(), "pragma compile_options")
 	if err != nil {
 		return err
 	}
@@ -169,6 +169,9 @@ func checkSQLiteFeatures(db *sql.DB) error {
 		if option == "ENABLE_FTS5" {
 			return nil
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	return errors.New("sqlite not compiled with FTS5")
 }
@@ -196,7 +199,7 @@ func (db *database) QueryContext(ctx context.Context, query string, args ...any)
 	}
 	ctx = db.dbBefore(ctx, query, args...)
 	defer db.dbAfter(ctx, query, args...)
-	return db.readDb.QueryContext(ctx, query, args...)
+	return db.readDb.QueryContext(ctx, query, args...) //nolint:sqlclosecheck
 }
 
 func (db *database) QueryRow(query string, args ...any) (*sql.Row, error) {

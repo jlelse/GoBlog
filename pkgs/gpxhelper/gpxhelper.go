@@ -8,6 +8,7 @@ import (
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
+// MergeGpx merges multiple GPX tracks into a single GPX document.
 func MergeGpx(gpxFiles ...[]byte) ([]byte, error) {
 	if len(gpxFiles) == 0 {
 		return nil, fmt.Errorf("no GPX files provided")

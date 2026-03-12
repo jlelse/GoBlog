@@ -1,41 +1,49 @@
+version: "2"
 run:
-  timeout: 5m
-  issues-exit-code: 0
-  tests: false
   build-tags:
     - linux
     - libsqlite3
     - sqlite_fts5
+  issues-exit-code: 0
+  tests: false
 linters:
   enable:
-    # Default linters
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
-    # Other linters
     - asasalint
     - bidichk
     - bodyclose
     - containedctx
-    # - contextcheck
     - dupl
     - durationcheck
-    - gofmt
     - gosec
     - makezero
     - noctx
     - prealloc
-    - unparam
-    - sqlclosecheck
+    - revive
     - rowserrcheck
-linters-settings:
-  gosimple:
-    checks: ["all"]
-  staticcheck:
-    checks: ["all"]
-  dupl:
-    threshold: 125
+    - sqlclosecheck
+    - sqlclosecheck
+    - unparam
+    - unparam
+  settings:
+    dupl:
+      threshold: 125
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

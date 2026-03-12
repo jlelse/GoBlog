@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	webauthnCredSettingsKey   = "webauthncred"
-	webauthnIdSettingsKey     = "webauthnid"
+	webauthnCredSettingsKey   = "webauthncred" //nolint:gosec
+	webauthnIDSettingsKey     = "webauthnid"
 	settingsDeletePasskeyPath = "/deletepasskey"
 	settingsRenamePasskeyPath = "/renamepasskey"
 
@@ -62,28 +62,11 @@ func (a *goBlog) getWebAuthnForRequest(r *http.Request) *webauthn.WebAuthn {
 
 func (a *goBlog) beginWebAuthnRegistration(w http.ResponseWriter, r *http.Request) {
 	options, session, err := a.getWebAuthnForRequest(r).BeginRegistration(a.getWebAuthnUser())
-	if err != nil {
-		a.debug("failed to begin webauthn registration", "err", err)
-		a.serveError(w, r, "", http.StatusBadRequest)
-		return
-	}
-	a.initSessionStores()
-	ses, err := a.webauthnSessions.New(r, "wa")
-	if err != nil {
-		a.debug("failed to create new webauthn registration session", "err", err)
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
-	}
-	sessionJsonBytes, err := json.Marshal(session)
-	if err != nil {
-		a.debug("failed to marshal webauthn session to json", "err", err)
-		a.serveError(w, r, "", http.StatusInternalServerError)
-		return
-	}
-	ses.Values["session"] = string(sessionJsonBytes)
-	_ = ses.Save(r, w)
-	w.WriteHeader(http.StatusOK)
-	a.respondWithMinifiedJson(w, options)
+	a.completeWebAuthnBegin(
+		w, r, options, session, err,
+		"failed to begin webauthn registration",
+		"failed to create new webauthn registration session",
+	)
 }
 
 func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Request) {
@@ -94,13 +77,13 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	sessionJson, ok := ses.Values["session"]
-	if !ok || sessionJson == "" {
+	sessionJSON, ok := ses.Values["session"]
+	if !ok || sessionJSON == "" {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
 	var session webauthn.SessionData
-	if err := json.Unmarshal([]byte(sessionJson.(string)), &session); err != nil {
+	if err := json.Unmarshal([]byte(sessionJSON.(string)), &session); err != nil {
 		a.debug("failed to unmarshal webauthn session data", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
@@ -120,34 +103,50 @@ func (a *goBlog) finishWebAuthnRegistration(w http.ResponseWriter, r *http.Reque
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	a.webauthnSessions.Delete(r, w, ses)
+	_ = a.webauthnSessions.Delete(r, w, ses)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (a *goBlog) beginWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 	options, session, err := a.getWebAuthnForRequest(r).BeginLogin(a.getWebAuthnUser())
+	a.completeWebAuthnBegin(
+		w, r, options, session, err,
+		"failed to begin webauthn login",
+		"failed to create new webauthn login session",
+	)
+}
+
+func (a *goBlog) completeWebAuthnBegin(
+	w http.ResponseWriter,
+	r *http.Request,
+	options any,
+	session *webauthn.SessionData,
+	err error,
+	beginErrMsg string,
+	sessionErrMsg string,
+) {
 	if err != nil {
-		a.debug("failed to begin webauthn login", "err", err)
+		a.debug(beginErrMsg, "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
 	a.initSessionStores()
 	ses, err := a.webauthnSessions.New(r, "wa")
 	if err != nil {
-		a.debug("failed to create new webauthn login session", "err", err)
+		a.debug(sessionErrMsg, "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	sessionJsonBytes, err := json.Marshal(session)
+	sessionJSONBytes, err := json.Marshal(session)
 	if err != nil {
 		a.debug("failed to marshal webauthn session to json", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	ses.Values["session"] = string(sessionJsonBytes)
+	ses.Values["session"] = string(sessionJSONBytes)
 	_ = ses.Save(r, w)
 	w.WriteHeader(http.StatusOK)
-	a.respondWithMinifiedJson(w, options)
+	a.respondWithMinifiedJSON(w, options)
 }
 
 func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
@@ -158,13 +157,13 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
-	sessionJson, ok := ses.Values["session"]
-	if !ok || sessionJson == "" {
+	sessionJSON, ok := ses.Values["session"]
+	if !ok || sessionJSON == "" {
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
 	}
 	var session webauthn.SessionData
-	if err := json.Unmarshal([]byte(sessionJson.(string)), &session); err != nil {
+	if err := json.Unmarshal([]byte(sessionJSON.(string)), &session); err != nil {
 		a.debug("failed to unmarshal webauthn session data", "err", err)
 		a.serveError(w, r, "", http.StatusBadRequest)
 		return
@@ -184,7 +183,7 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 			a.debug("failed to update webauthn credentials", "err", err)
 		}
 	}
-	a.webauthnSessions.Delete(r, w, ses)
+	_ = a.webauthnSessions.Delete(r, w, ses)
 	// Also set login cookie
 	loginSes, err := a.loginSessions.Get(r, "l")
 	if err != nil {
@@ -198,7 +197,7 @@ func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) settingsDeletePasskey(w http.ResponseWriter, r *http.Request) {
-	passkeyID := r.FormValue("passkeyid")
+	passkeyID := r.FormValue("passkeyid") //nolint:gosec
 	if passkeyID == "" {
 		a.serveError(w, r, "Passkey ID is required", http.StatusBadRequest)
 		return
@@ -212,8 +211,8 @@ func (a *goBlog) settingsDeletePasskey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) settingsRenamePasskey(w http.ResponseWriter, r *http.Request) {
-	passkeyID := r.FormValue("passkeyid")
-	passkeyName := r.FormValue("passkeyname")
+	passkeyID := r.FormValue("passkeyid")     //nolint:gosec
+	passkeyName := r.FormValue("passkeyname") //nolint:gosec
 	if passkeyID == "" || passkeyName == "" {
 		a.serveError(w, r, "Missing passkey ID or name", http.StatusBadRequest)
 		return
@@ -235,10 +234,10 @@ func (a *goBlog) getWebAuthnUser() *webAuthnUser {
 }
 
 func (u *webAuthnUser) WebAuthnID() []byte {
-	id, _ := u.a.getSettingValue(webauthnIdSettingsKey)
+	id, _ := u.a.getSettingValue(webauthnIDSettingsKey)
 	if id == "" {
 		id = randomString(32)
-		if err := u.a.saveSettingValue(webauthnIdSettingsKey, id); err != nil {
+		if err := u.a.saveSettingValue(webauthnIDSettingsKey, id); err != nil {
 			u.a.error("failed to save webauthnid settings value", "err", err)
 		}
 	}

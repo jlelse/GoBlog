@@ -17,7 +17,7 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	a.respondWithMinifiedJson(w, result)
+	a.respondWithMinifiedJSON(w, result)
 }
 
 func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
@@ -44,5 +44,5 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
 		},
 		"metadata": map[string]any{},
 	}
-	a.respondWithMinifiedJson(w, result)
+	a.respondWithMinifiedJSON(w, result)
 }

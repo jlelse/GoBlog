@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -29,7 +30,7 @@ func (a *goBlog) migrateDb(db *sql.DB, logging bool) error {
 			return nil
 		}
 		mig.Func = func(t *sql.Tx) error {
-			_, txe := t.Exec(string(fd))
+			_, txe := t.ExecContext(context.Background(), string(fd))
 			return txe
 		}
 		sqlMigrations = append(sqlMigrations, mig)

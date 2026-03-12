@@ -32,9 +32,11 @@ import (
 func init() {
 	Symbols["go.goblog.app/app/pkgs/htmlbuilder/htmlbuilder"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"NewHtmlBuilder": reflect.ValueOf(htmlbuilder.NewHtmlBuilder),
+		"NewHTMLBuilder": reflect.ValueOf(htmlbuilder.NewHTMLBuilder),
+		"NewHtmlBuilder": reflect.ValueOf(&htmlbuilder.NewHtmlBuilder).Elem(),
 
 		// type definitions
+		"HTMLBuilder": reflect.ValueOf((*htmlbuilder.HTMLBuilder)(nil)),
 		"HtmlBuilder": reflect.ValueOf((*htmlbuilder.HtmlBuilder)(nil)),
 	}
 }

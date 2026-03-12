@@ -1,3 +1,4 @@
+// Package customcss provides a custom CSS plugin for GoBlog.
 package customcss
 
 import (
@@ -18,6 +19,7 @@ type plugin struct {
 	init      sync.Once
 }
 
+// GetPlugin returns the customcss plugin instance.
 func GetPlugin() (plugintypes.SetConfig, plugintypes.SetApp, plugintypes.UI2) {
 	p := &plugin{}
 	return p, p, p
@@ -59,7 +61,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
-	hb := htmlbuilder.NewHtmlBuilder(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
 
 	hb.WriteElementOpen("link", "rel", "stylesheet", "href", p.app.AssetPath("plugincustomcss.css"))
 

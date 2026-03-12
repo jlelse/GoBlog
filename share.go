@@ -78,21 +78,21 @@ func shareEmailURL(title, url, text string, _ int) string {
 	return "mailto:?subject=" + queryEscape(subject) + "&body=" + queryEscape(body)
 }
 
-func shareMastodonURL(title, url, text string, limit int) string {
+func shareMastodonURL(_, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
 	return "https://share.joinmastodon.org/?text=" + queryEscape(payload)
 }
 
-func shareBlueskyURL(title, url, text string, limit int) string {
+func shareBlueskyURL(_, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
 	return "https://bsky.app/intent/compose?text=" + queryEscape(payload)
 }
 
-func shareRedditURL(title, url, text string, _ int) string {
+func shareRedditURL(title, url, _ string, _ int) string {
 	return "https://www.reddit.com/submit?url=" + queryEscape(url) + "&title=" + queryEscape(cmp.Or(title, url))
 }
 
-func shareHackerNewsURL(title, url, text string, _ int) string {
+func shareHackerNewsURL(title, url, _ string, _ int) string {
 	return "https://news.ycombinator.com/submitlink?u=" + queryEscape(url) + "&t=" + queryEscape(cmp.Or(title, url))
 }
 
@@ -101,12 +101,12 @@ func shareLinkedInURL(title, url, text string, limit int) string {
 	return "https://www.linkedin.com/shareArticle?mini=true&url=" + queryEscape(url) + "&title=" + queryEscape(cmp.Or(title, url)) + "&summary=" + queryEscape(payload)
 }
 
-func shareMicroblogURL(title, url, text string, limit int) string {
+func shareMicroblogURL(_, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
 	return "https://micro.blog/post?text=" + queryEscape(payload)
 }
 
-func shareSMSURL(title, url, text string, _ int) string {
+func shareSMSURL(_, url, _ string, _ int) string {
 	return "sms:?body=" + queryEscape(url)
 }
 
