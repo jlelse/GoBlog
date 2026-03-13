@@ -65,7 +65,7 @@ func Test_robotsTXT(t *testing.T) {
 		req := httptest.NewRequest("GET", "/robots.txt", nil)
 		app.serveRobotsTXT(rec, req)
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nDisallow: /\n\nSitemap: https://example.com/sitemap.xml\n", rec.Body.String())
+		assert.Equal(t, "User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap.xml\n", rec.Body.String())
 	})
 
 }

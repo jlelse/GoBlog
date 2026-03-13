@@ -249,8 +249,8 @@ func (a *goBlog) buildRouter() http.Handler {
 		}
 	}
 
-	// Robots.txt
-	r.With(cacheLoggedIn, a.cacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
+	// Robots.txt (with cache for 1 hour)
+	r.With(middleware.WithValue(cacheExpirationKey, 3600), cacheLoggedIn, a.cacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
 
 	// Favicon
 	if !hasStaticPath("favicon.ico") {

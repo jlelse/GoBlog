@@ -1067,6 +1067,7 @@ Plugins can implement multiple interfaces:
 - **PostCreatedHook** - React to post creation
 - **PostUpdatedHook** - React to post updates
 - **PostDeletedHook** - React to post deletion
+- **BlockedBots** - Provide bot user-agent names to block in robots.txt
 
 See [plugintypes documentation](https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes) for details.
 

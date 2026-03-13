@@ -38,6 +38,7 @@ func init() {
 	Symbols["go.goblog.app/app/pkgs/plugintypes/plugintypes"] = map[string]reflect.Value{
 		// type definitions
 		"App":              reflect.ValueOf((*plugintypes.App)(nil)),
+		"BlockedBots":      reflect.ValueOf((*plugintypes.BlockedBots)(nil)),
 		"Blog":             reflect.ValueOf((*plugintypes.Blog)(nil)),
 		"BlogStats":        reflect.ValueOf((*plugintypes.BlogStats)(nil)),
 		"BlogStatsRow":     reflect.ValueOf((*plugintypes.BlogStatsRow)(nil)),
@@ -66,6 +67,7 @@ func init() {
 
 		// interface wrapper definitions
 		"_App":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_App)(nil)),
+		"_BlockedBots":     reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_BlockedBots)(nil)),
 		"_Blog":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Blog)(nil)),
 		"_Database":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Database)(nil)),
 		"_Exec":            reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_Exec)(nil)),
@@ -186,6 +188,16 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) SetPostParameter(path string, p
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) UploadMedia(file io.Reader, filename string, mimetype string) (string, error) {
 	return W.WUploadMedia(file, filename, mimetype)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_BlockedBots is an interface wrapper for BlockedBots type
+type _go_goblog_app_app_pkgs_plugintypes_BlockedBots struct {
+	IValue       interface{}
+	WBlockedBots func() []string
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_BlockedBots) BlockedBots() []string {
+	return W.WBlockedBots()
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_Blog is an interface wrapper for Blog type

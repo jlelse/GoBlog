@@ -92,3 +92,9 @@ type PostDeletedHook interface {
 	// Handle the post.
 	PostDeleted(post Post)
 }
+
+// BlockedBots plugins provide a list of bot user-agent names that should be blocked via robots.txt.
+type BlockedBots interface {
+	// Return a list of bot user-agent names to block.
+	BlockedBots() []string
+}
