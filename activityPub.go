@@ -313,11 +313,11 @@ func (a *goBlog) apHandleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	case ap.AnnounceType:
 		if announceTarget := activity.Object.GetLink().String(); announceTarget != "" && a.isLocalURL(announceTarget) {
-			a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceTarget))
+			go a.sendNotification(fmt.Sprintf("%s announced %s", activityActor, announceTarget))
 		}
 	case ap.LikeType:
 		if likeTarget := activity.Object.GetLink().String(); likeTarget != "" && a.isLocalURL(likeTarget) {
-			a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
+			go a.sendNotification(fmt.Sprintf("%s liked %s", activityActor, likeTarget))
 		}
 	}
 	// Return 200
