@@ -598,7 +598,7 @@ func (a *goBlog) apAccept(blogName string, blog *configBlog, follow *ap.Activity
 	if follower.URL != nil && follower.URL.GetLink() != "" {
 		followerLink = follower.URL.GetLink().String()
 	}
-	a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, followerLink, a.apIri(blog)))
+	go a.sendNotification(fmt.Sprintf("%s (%s) started following %s", username, followerLink, a.apIri(blog)))
 }
 
 func (a *goBlog) apSendProfileUpdates() {
