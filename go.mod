@@ -19,7 +19,7 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.24.0
-	github.com/go-acme/lego/v4 v4.33.0
+	github.com/go-acme/lego/v4 v4.34.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-webauthn/webauthn v0.16.2
 	github.com/google/uuid v1.6.0
@@ -61,10 +61,10 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.6
 	go.hacdias.com/indielib v0.5.0
 	goftp.io/server/v2 v2.0.2
-	golang.org/x/crypto v0.49.0
-	golang.org/x/net v0.52.0
+	golang.org/x/crypto v0.50.0
+	golang.org/x/net v0.53.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.35.0
+	golang.org/x/text v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.26.4
 	willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b
@@ -97,11 +97,11 @@ require (
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.21 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/mmcdole/goxpp v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -122,12 +122,12 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.9.7 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/image v0.38.0 // indirect
-	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/tools v0.43.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/tools v0.44.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	willnorris.com/go/webmention v0.0.0-20250531043116-33a44c5fb605 // indirect
 )
