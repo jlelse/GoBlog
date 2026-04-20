@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/pquerna/otp/totp"
 	"github.com/samber/lo"
@@ -106,8 +107,39 @@ func (a *goBlog) getBooleanSettingHandler(settingName string) http.HandlerFunc {
 		apply = func(cb *configBlog, b bool) { cb.addLikeTitle = b }
 	case addLikeContextSetting:
 		apply = func(cb *configBlog, b bool) { cb.addLikeContext = b }
+	case reactionsEnabledSetting:
+		apply = func(cb *configBlog, b bool) { cb.reactionsEnabled = b; a.purgeCache() }
 	}
 	return a.booleanBlogSettingHandler(settingName, apply)
+}
+
+const settingsUpdateReactionsEnabledPath = "/reactionsenabled"
+
+func (a *goBlog) settingsUpdateReactionsEnabled() http.HandlerFunc {
+	return a.getBooleanSettingHandler(reactionsEnabledSetting)
+}
+
+const settingsUpdateReactionsPath = "/reactions"
+
+func (a *goBlog) settingsUpdateReactions(w http.ResponseWriter, r *http.Request) {
+	blog, bc := a.getBlog(r)
+	// Read values
+	reactions := r.FormValue("reactions") //nolint:gosec
+	// Update database
+	err := a.saveSettingValue(settingNameWithBlog(blog, reactionsSetting), reactions)
+	if err != nil {
+		a.serveError(w, r, "Failed to update reactions in database", http.StatusInternalServerError)
+		return
+	}
+	// Update config
+	bc.allowedReactions = lo.Filter(lo.Map(strings.Split(reactions, ","), func(s string, _ int) string {
+		return strings.TrimSpace(s)
+	}), func(s string, _ int) bool {
+		return s != ""
+	})
+	a.purgeReactionsCache()
+	a.purgeCache()
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }
 
 const settingsDeleteSectionPath = "/deletesection"

@@ -1603,6 +1603,9 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			// Blog settings (title, description)
 			a.renderBlogSettings(hb, rd, srd)
 
+			// Reaction settings
+			a.renderReactionSettings(hb, rd, srd)
+
 			// User settings
 			a.renderUserSettings(hb, rd, srd)
 

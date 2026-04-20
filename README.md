@@ -312,7 +312,6 @@ For all available configuration options with detailed explanations, see [`exampl
 - `privateMode` - Restrict public access
 - `indexNow` - Search engine notifications
 - `tts` - Text-to-speech settings
-- `reactions` - Emoji reactions
 - `pathRedirects` - Regex-based redirects
 - `mapTiles` - Custom map tile source
 - `robotstxt` - Block specific bots
@@ -675,15 +674,7 @@ blogs:
 **Disable per post:** Add `comments: false` to front matter
 
 ### Reactions
-
-Enable emoji reactions on posts:
-
-```yaml
-reactions:
-  enabled: true
-```
-
-Hardcoded reactions: ❤️ 👍 👎 😂 😱
+Reactions can be enabled and configured per blog via the Settings UI. Once enabled, users can click on emoji reactions to react to your posts.
 
 **Disable per post:** Add `reactions: false` to front matter
 

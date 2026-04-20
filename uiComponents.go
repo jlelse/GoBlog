@@ -652,7 +652,7 @@ func (a *goBlog) renderPostReactions(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if !a.reactionsEnabledForPost(p) {
 		return
 	}
-	hb.WriteElementOpen("div", "id", "reactions", "class", "actions", "data-path", p.Path, "data-allowed", strings.Join(allowedReactions, ","))
+	hb.WriteElementOpen("div", "id", "reactions", "class", "actions", "data-path", p.Path, "data-allowed", strings.Join(a.getAllowedReactions(p.Blog), ","))
 	hb.WriteElementClose("div")
 	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/reactions.js"))
 	hb.WriteElementClose("script")
@@ -666,6 +666,28 @@ func (a *goBlog) renderPostVideo(hb *htmlbuilder.HTMLBuilder, p *post) {
 	hb.WriteElementClose("div")
 	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/video.js"))
 	hb.WriteElementClose("script")
+}
+
+func (a *goBlog) renderReactionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
+	hb.WriteElementOpen("h2")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reactions"))
+	hb.WriteElementClose("h2")
+
+	// Toggle
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsUpdateReactionsEnabledPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reactionsenableddesc"), "reactionsenabled", a.reactionsEnabled(srd.blog))
+
+	if a.reactionsEnabled(srd.blog) {
+		hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+		hb.WriteElementOpen("p")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reactionsdesc"))
+		hb.WriteElementClose("p")
+		hb.WriteElementOpen("input", "type", "text", "name", "reactions", "value", strings.Join(a.getAllowedReactions(srd.blog), ","))
+		hb.WriteElementOpen(
+			"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
+			"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateReactionsPath),
+		)
+		hb.WriteElementClose("form")
+	}
 }
 
 func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {

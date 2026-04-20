@@ -186,10 +186,6 @@ tts:
   enabled: true
   googleApiKey: "xxxxxxxx"
 
-# Reactions (see docs for more info)
-reactions:
-  enabled: true # Enable reactions (default is false)
-
 # Block bots using the robots.txt
 robotstxt:
   blockedBots: # List all bots that should be disallowed to crawl the site (default is empty)

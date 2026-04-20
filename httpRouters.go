@@ -138,7 +138,7 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.With(cacheLoggedIn, a.cacheMiddleware, noIndexHeader).HandleFunc("/hlsjs/*", a.serveFs(hlsjsFiles, "/-/"))
 
 	// Reactions
-	if a.reactionsEnabled() {
+	if a.anyReactionsEnabled() {
 		r.Get("/reactions", a.getReactions)
 		r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/reactions", a.postReaction)
 	}
@@ -477,6 +477,8 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddReplyContextPath, a.settingsAddReplyContext())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddLikeTitlePath, a.settingsAddLikeTitle())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddLikeContextPath, a.settingsAddLikeContext())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsEnabledPath, a.settingsUpdateReactionsEnabled())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsPath, a.settingsUpdateReactions)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateUserPath, a.settingsUpdateUser)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateBlogPath, a.settingsUpdateBlog)
 		r.With(bodylimit.BodyLimit(30*bodylimit.MB)).Post(settingsUpdateProfileImagePath, a.serveUpdateProfileImage)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/samber/lo"
 )
@@ -27,6 +28,8 @@ const (
 	apMovedToSetting             = "apmovedto" // ActivityPub movedTo target for account migration
 	blogTitleSetting             = "blogtitle"
 	blogDescriptionSetting       = "blogdescription"
+	reactionsEnabledSetting      = "reactionsenabled"
+	reactionsSetting             = "reactions"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {
@@ -63,6 +66,9 @@ func (a *goBlog) saveSettingValue(name, value string) error {
 		sql.Named("value", value),
 		sql.Named("value2", value),
 	)
+	if err == nil && (name == reactionsSetting || strings.HasSuffix(name, "---"+reactionsSetting)) {
+		a.purgeReactionsCache()
+	}
 	return err
 }
 
@@ -162,6 +168,23 @@ func (a *goBlog) saveSection(blog string, section *configSection) error {
 func (a *goBlog) deleteSection(blog string, name string) error {
 	_, err := a.db.Exec("delete from sections where blog = @blog and name = @name", sql.Named("blog", blog), sql.Named("name", name))
 	return err
+}
+
+// migrateBooleanSetting loads a setting from the database. If empty, it migrates the config value to the database.
+// If found in the database, it applies the database value to the target.
+func (a *goBlog) migrateBooleanSetting(name string, target *bool) error {
+	value, err := a.getSettingValue(name)
+	if err != nil {
+		return err
+	}
+	if value == "" {
+		if *target {
+			return a.saveBooleanSettingValue(name, *target)
+		}
+	} else {
+		*target = value == "1"
+	}
+	return nil
 }
 
 // migrateStringSetting loads a setting from the database. If empty, it migrates the config value to the database.

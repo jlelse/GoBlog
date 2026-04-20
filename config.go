@@ -111,6 +111,8 @@ type configBlog struct {
 	addReplyContext       bool
 	addLikeTitle          bool
 	addLikeContext        bool
+	reactionsEnabled      bool
+	allowedReactions      []string
 	// Original config values (for deprecation detection)
 	configTitle       string
 	configDescription string
@@ -577,6 +579,28 @@ func (a *goBlog) initConfig(logging bool) error {
 		// Blog description
 		if err = a.migrateStringSetting(settingNameWithBlog(blog, blogDescriptionSetting), &bc.Description); err != nil {
 			return err
+		}
+		// Blog reactions
+		if err = a.migrateBooleanSetting(settingNameWithBlog(blog, reactionsEnabledSetting), &bc.reactionsEnabled); err != nil {
+			return err
+		}
+		// Special migration: if blog-specific setting not in DB but global config enabled is set
+		if val, _ := a.getSettingValue(settingNameWithBlog(blog, reactionsEnabledSetting)); val == "" && a.cfg.Reactions != nil && a.cfg.Reactions.Enabled {
+			bc.reactionsEnabled = true
+			if err = a.saveBooleanSettingValue(settingNameWithBlog(blog, reactionsEnabledSetting), true); err != nil {
+				return err
+			}
+		}
+		reactionsVal, err := a.getSettingValue(settingNameWithBlog(blog, reactionsSetting))
+		if err != nil {
+			return err
+		}
+		if reactionsVal != "" {
+			bc.allowedReactions = lo.Filter(lo.Map(strings.Split(reactionsVal, ","), func(s string, _ int) string {
+				return strings.TrimSpace(s)
+			}), func(s string, _ int) bool {
+				return s != ""
+			})
 		}
 		// Load other settings from database
 		configs := []*bool{
