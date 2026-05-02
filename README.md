@@ -548,13 +548,14 @@ Send and receive webmentions automatically.
 - Automatic when you link to other sites in your posts
 - Disabled in private mode for external targets
 
-**Disable:**
+**Configuration (Settings UI):**
 
-```yaml
-webmention:
-  disableSending: true
-  disableReceiving: true
-```
+The following webmention controls are available in each blog's Settings page (they apply globally to the whole GoBlog instance):
+
+- **Disable sending webmentions** — stop sending webmentions for all posts
+- **Disable receiving webmentions** — disable the receiving endpoint, comments, and ActivityPub replies for all blogs
+- **Disable inter-GoBlog mentions** — prevent posts from sending webmentions to other posts on the same GoBlog instance
+- **Webmention block list** — block specific hosts from sending or receiving webmentions (incoming, outgoing, or both)
 
 ### ActivityPub (Fediverse)
 

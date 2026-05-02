@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -67,6 +68,12 @@ func (a *goBlog) handleWebmention(w http.ResponseWriter, r *http.Request) {
 	if m.Target == m.Source {
 		a.debug("Webmention target and source are the same", "target", m.Target)
 		a.serveError(w, r, "target and source are the same", http.StatusBadRequest)
+		return
+	}
+	// Check incoming blocklist
+	if sourceHost, err := parseWebmentionHost(m.Source); err == nil && a.isWebmentionBlockedIncoming(sourceHost) {
+		a.debug("Webmention source is blocked", "source", m.Source)
+		a.serveError(w, r, "source not allowed", http.StatusBadRequest)
 		return
 	}
 	if err = a.queueMention(m); err != nil {
@@ -339,4 +346,12 @@ func (db *database) countWebmentions(config *webmentionsRequestConfig) (count in
 	}
 	err = row.Scan(&count)
 	return
+}
+
+func parseWebmentionHost(urlStr string) (string, error) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return "", err
+	}
+	return strings.ToLower(u.Hostname()), nil
 }

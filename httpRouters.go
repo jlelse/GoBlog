@@ -374,7 +374,7 @@ func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 // Blog - Comments
 func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
-		if commentsConfig := conf.Comments; commentsConfig != nil && commentsConfig.Enabled {
+		if a.commentsEnabled(conf) {
 			commentsPath := conf.getRelativePath(commentPath)
 			r.Route(commentsPath, func(r chi.Router) {
 				r.Use(
@@ -479,6 +479,11 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddLikeContextPath, a.settingsAddLikeContext())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsEnabledPath, a.settingsUpdateReactionsEnabled())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsPath, a.settingsUpdateReactions)
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionDisableSendingPath, a.settingsWebmentionDisableSending())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionDisableReceivingPath, a.settingsWebmentionDisableReceiving())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionDisableInterGoblogPath, a.settingsWebmentionDisableInterGoblog())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionBlocklistAddPath, a.settingsWebmentionBlocklistAdd)
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionBlocklistRemovePath, a.settingsWebmentionBlocklistRemove)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateUserPath, a.settingsUpdateUser)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateBlogPath, a.settingsUpdateBlog)
 		r.With(bodylimit.BodyLimit(30*bodylimit.MB)).Post(settingsUpdateProfileImagePath, a.serveUpdateProfileImage)

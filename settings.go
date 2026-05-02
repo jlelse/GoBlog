@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -39,29 +40,37 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if password is set in database
 	hasDBPassword, _ := a.hasPassword()
 
+	// Read global webmention settings from memory
+	wm := a.cfg.Webmention
+	blocklist, _ := a.getWebmentionBlocklist()
+
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
-			blog:                  blog,
-			blogTitle:             bc.Title,
-			blogDescription:       bc.Description,
-			sections:              sections,
-			defaultSection:        bc.DefaultSection,
-			hideOldContentWarning: bc.hideOldContentWarning,
-			hideShareButton:       bc.hideShareButton,
-			hideTranslateButton:   bc.hideTranslateButton,
-			hideSpeakButton:       bc.hideSpeakButton,
-			addReplyTitle:         bc.addReplyTitle,
-			addReplyContext:       bc.addReplyContext,
-			addLikeTitle:          bc.addLikeTitle,
-			addLikeContext:        bc.addLikeContext,
-			userNick:              a.cfg.User.Nick,
-			userName:              a.cfg.User.Name,
-			passkeys:              passkeys,
-			appPasswords:          appPasswords,
-			hasTOTP:               hasTOTP,
-			hasDBPassword:         hasDBPassword,
-			newTotpSecret:         newTotpSecret,
-			altAddresses:          a.cfg.Server.AltAddresses,
+			blog:                        blog,
+			blogTitle:                   bc.Title,
+			blogDescription:             bc.Description,
+			sections:                    sections,
+			defaultSection:              bc.DefaultSection,
+			hideOldContentWarning:       bc.hideOldContentWarning,
+			hideShareButton:             bc.hideShareButton,
+			hideTranslateButton:         bc.hideTranslateButton,
+			hideSpeakButton:             bc.hideSpeakButton,
+			addReplyTitle:               bc.addReplyTitle,
+			addReplyContext:             bc.addReplyContext,
+			addLikeTitle:                bc.addLikeTitle,
+			addLikeContext:              bc.addLikeContext,
+			userNick:                    a.cfg.User.Nick,
+			userName:                    a.cfg.User.Name,
+			passkeys:                    passkeys,
+			appPasswords:                appPasswords,
+			hasTOTP:                     hasTOTP,
+			hasDBPassword:               hasDBPassword,
+			newTotpSecret:               newTotpSecret,
+			altAddresses:                a.cfg.Server.AltAddresses,
+			disableSendingWebmentions:   wm.DisableSending,
+			disableReceivingWebmentions: wm.DisableReceiving,
+			disableInterGoblogMentions:  wm.DisableInterGoblogMentions,
+			webmentionBlocklist:         blocklist,
 		},
 	})
 }
@@ -74,18 +83,27 @@ func (a *goBlog) verifyTOTPCode(secret, code string) bool {
 func (a *goBlog) booleanBlogSettingHandler(settingName string, apply func(*configBlog, bool)) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		blog, bc := a.getBlog(r)
-		// Read values
 		settingValue := r.FormValue(settingName) == "on" //nolint:gosec
-		// Update
-		err := a.saveBooleanSettingValue(settingNameWithBlog(blog, settingName), settingValue)
-		if err != nil {
-			a.serveError(w, r, "Failed to update setting in database", http.StatusInternalServerError)
+		if err := a.saveBooleanSettingValue(settingNameWithBlog(blog, settingName), settingValue); err != nil {
+			a.serveError(w, r, "Failed to update setting", http.StatusInternalServerError)
 			return
 		}
-		// Apply
 		apply(bc, settingValue)
 		http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 	})
+}
+
+func (a *goBlog) globalBooleanSettingHandler(settingName string, apply func(bool)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, bc := a.getBlog(r)
+		value := r.FormValue(settingName) == "on" //nolint:gosec
+		if err := a.saveBooleanSettingValue(settingName, value); err != nil {
+			a.serveError(w, r, "Failed to update setting", http.StatusInternalServerError)
+			return
+		}
+		apply(value)
+		http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+	}
 }
 
 func (a *goBlog) getBooleanSettingHandler(settingName string) http.HandlerFunc {
@@ -483,5 +501,58 @@ func (a *goBlog) settingsDeleteAppPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+const (
+	settingsWebmentionDisableSendingPath     = "/webmentiondisablesending"
+	settingsWebmentionDisableReceivingPath   = "/webmentiondisablereceiving"
+	settingsWebmentionDisableInterGoblogPath = "/webmentiondisableintergoblog"
+	settingsWebmentionBlocklistAddPath       = "/webmentionblocklistadd"
+	settingsWebmentionBlocklistRemovePath    = "/webmentionblocklistremove"
+)
+
+func (a *goBlog) settingsWebmentionDisableSending() http.HandlerFunc {
+	return a.globalBooleanSettingHandler(webmentionDisableSendingSetting, func(value bool) {
+		a.cfg.Webmention.DisableSending = value
+	})
+}
+
+func (a *goBlog) settingsWebmentionDisableReceiving() http.HandlerFunc {
+	return a.globalBooleanSettingHandler(webmentionDisableReceivingSetting, func(value bool) {
+		a.cfg.Webmention.DisableReceiving = value
+		a.reloadRouter()
+		a.purgeCache()
+	})
+}
+
+func (a *goBlog) settingsWebmentionDisableInterGoblog() http.HandlerFunc {
+	return a.globalBooleanSettingHandler(webmentionDisableInterGoblogSetting, func(value bool) {
+		a.cfg.Webmention.DisableInterGoblogMentions = value
+	})
+}
+
+func (a *goBlog) settingsWebmentionBlocklistAdd(w http.ResponseWriter, r *http.Request) {
+	host := r.FormValue("blocklisthost")                 //nolint:gosec
+	incoming := r.FormValue("blocklistincoming") == "on" //nolint:gosec
+	outgoing := r.FormValue("blocklistoutgoing") == "on" //nolint:gosec
+
+	if parsed, err := url.Parse(host); err == nil && parsed.Host != "" {
+		host = parsed.Hostname()
+	}
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host != "" {
+		_ = a.addWebmentionBlocklistEntry(host, incoming, outgoing)
+	}
+
+	_, bc := a.getBlog(r)
+	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
+}
+
+func (a *goBlog) settingsWebmentionBlocklistRemove(w http.ResponseWriter, r *http.Request) {
+	host := r.FormValue("blocklisthost") //nolint:gosec
+	_ = a.removeWebmentionBlocklistEntry(host)
+
+	_, bc := a.getBlog(r)
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

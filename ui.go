@@ -127,7 +127,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 			hb.WriteElementClose("a")
 		}
-		if rd.Blog.commentsEnabled() {
+		if a.commentsEnabled(rd.Blog) {
 			hb.WriteUnescaped(" &bull; ")
 			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
@@ -350,7 +350,7 @@ func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementClose("div")
 			}
 			// Interactions
-			if rd.Blog.commentsEnabled() {
+			if a.commentsEnabled(rd.Blog) {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -457,7 +457,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("script")
 			hb.WriteElementClose("main")
 			// Interactions
-			if rd.Blog.commentsEnabled() {
+			if a.commentsEnabled(rd.Blog) {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -611,7 +611,7 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementClose("script")
 			}
 			hb.WriteElementClose("main")
-			if rd.Blog.commentsEnabled() {
+			if a.commentsEnabled(rd.Blog) {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -701,7 +701,7 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementClose("div")
 			}
 			// Interactions
-			if rd.Blog.commentsEnabled() {
+			if a.commentsEnabled(rd.Blog) {
 				a.renderInteractions(hb, rd)
 			}
 		},
@@ -1530,27 +1530,31 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 }
 
 type settingsRenderData struct {
-	blog                  string
-	blogTitle             string
-	blogDescription       string
-	sections              []*configSection
-	defaultSection        string
-	hideOldContentWarning bool
-	hideShareButton       bool
-	hideTranslateButton   bool
-	hideSpeakButton       bool
-	addReplyTitle         bool
-	addReplyContext       bool
-	addLikeTitle          bool
-	addLikeContext        bool
-	userNick              string
-	userName              string
-	passkeys              []*passkey
-	appPasswords          []*appPassword
-	hasTOTP               bool
-	hasDBPassword         bool
-	newTotpSecret         string
-	altAddresses          []string
+	blog                        string
+	blogTitle                   string
+	blogDescription             string
+	sections                    []*configSection
+	defaultSection              string
+	hideOldContentWarning       bool
+	hideShareButton             bool
+	hideTranslateButton         bool
+	hideSpeakButton             bool
+	addReplyTitle               bool
+	addReplyContext             bool
+	addLikeTitle                bool
+	addLikeContext              bool
+	userNick                    string
+	userName                    string
+	passkeys                    []*passkey
+	appPasswords                []*appPassword
+	hasTOTP                     bool
+	hasDBPassword               bool
+	newTotpSecret               string
+	altAddresses                []string
+	disableSendingWebmentions   bool
+	disableReceivingWebmentions bool
+	disableInterGoblogMentions  bool
+	webmentionBlocklist         []*webmentionBlocklistEntry
 }
 
 type appPasswordCreatedRenderData struct {
@@ -1597,8 +1601,11 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				{rd.Blog.getRelativePath(settingsPath + settingsAddLikeContextPath), addLikeContextSetting, "addlikecontextdesc", srd.addLikeContext},
 			}
 			for _, bs := range booleanSettings {
-				a.renderBooleanSetting(hb, rd, bs.path, a.ts.GetTemplateStringVariant(rd.Blog.Lang, bs.descriptionKey), bs.name, bs.value)
+				a.renderBooleanSetting(hb, rd, bs.path, a.ts.GetTemplateStringVariant(rd.Blog.Lang, bs.descriptionKey), bs.name, bs.value, false)
 			}
+
+			// Webmention settings
+			a.renderWebmentionSettings(hb, rd, srd)
 
 			// Blog settings (title, description)
 			a.renderBlogSettings(hb, rd, srd)

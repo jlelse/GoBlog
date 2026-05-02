@@ -99,10 +99,10 @@ func (a *goBlog) feedHTML(w io.Writer, p *post) {
 	// Add post HTML
 	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
 	// Add link to interactions and comments
-	blogConfig := a.getBlogFromPost(p)
-	if cc := blogConfig.Comments; cc != nil && cc.Enabled {
+	if a.commentsEnabledForPost(p) {
 		hb.WriteElementOpen("p")
 		hb.WriteElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")
+		blogConfig := a.getBlogFromPost(p)
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("p")

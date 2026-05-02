@@ -106,10 +106,7 @@ activityPub:
   alsoKnownAs: # Alias identities, add your old Fediverse user if you want to migrate followers to GoBlog
     - https://example.com/users/example
 
-# Webmention
-webmention:
-  disableSending: true # Disable sending of webmentions (also happens when private mode enabled and external target)
-  disableReceiving: true # Disable receiving of webmentions, disables comments for all blogs, disables replies via ActivityPub
+# Webmention settings (sending, receiving, inter-GoBlog mentions, block list) are configured via the Settings UI.
 
 # MicroPub
 micropub:

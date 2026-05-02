@@ -674,7 +674,7 @@ func (a *goBlog) renderReactionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderD
 	hb.WriteElementClose("h2")
 
 	// Toggle
-	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsUpdateReactionsEnabledPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reactionsenableddesc"), "reactionsenabled", a.reactionsEnabled(srd.blog))
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsUpdateReactionsEnabledPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reactionsenableddesc"), "reactionsenabled", a.reactionsEnabled(srd.blog), false)
 
 	if a.reactionsEnabled(srd.blog) {
 		hb.WriteElementOpen("form", "class", "fw p", "method", "post")
@@ -688,6 +688,89 @@ func (a *goBlog) renderReactionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderD
 		)
 		hb.WriteElementClose("form")
 	}
+}
+
+func (a *goBlog) renderWebmentionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
+	hb.WriteElementOpen("h2")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
+	hb.WriteElementClose("h2")
+
+	// Disable sending (global)
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsWebmentionDisableSendingPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "disablesendingdesc"), webmentionDisableSendingSetting, srd.disableSendingWebmentions, true)
+
+	// Disable receiving (global)
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsWebmentionDisableReceivingPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "disablereceivingdesc"), webmentionDisableReceivingSetting, srd.disableReceivingWebmentions, true)
+
+	// Disable inter-GoBlog mentions (global)
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsWebmentionDisableInterGoblogPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "disableintergoblogmentionsdesc"), webmentionDisableInterGoblogSetting, srd.disableInterGoblogMentions, true)
+
+	// Block list (global)
+	hb.WriteElementOpen("details", "class", "settings-webmention-blocklist")
+	hb.WriteElementOpen("summary")
+	hb.WriteElementOpen("h3")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentionblocklist"))
+	hb.WriteElementClose("h3")
+	hb.WriteElementClose("summary")
+
+	// Existing entries table
+	if len(srd.webmentionBlocklist) > 0 {
+		hb.WriteElementOpen("table", "class", "settings-table")
+		hb.WriteElementOpen("tr")
+		hb.WriteElementOpen("th", "class", "expand")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklisthost"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "ct")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklistincoming"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th", "class", "ct")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklistoutgoing"))
+		hb.WriteElementClose("th")
+		hb.WriteElementOpen("th")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
+		hb.WriteElementClose("th")
+		hb.WriteElementClose("tr")
+		for _, entry := range srd.webmentionBlocklist {
+			hb.WriteElementOpen("tr")
+			// Host
+			hb.WriteElementOpen("td", "class", "expand")
+			hb.WriteEscaped(entry.Host)
+			hb.WriteElementClose("td")
+			// Incoming
+			hb.WriteElementOpen("td", "class", "fixed ct")
+			hb.WriteEscaped(lo.If(entry.Incoming, "✓").Else(""))
+			hb.WriteElementClose("td")
+			// Outgoing
+			hb.WriteElementOpen("td", "class", "fixed ct")
+			hb.WriteEscaped(lo.If(entry.Outgoing, "✓").Else(""))
+			hb.WriteElementClose("td")
+			// Delete action
+			hb.WriteElementOpen("td", "class", "fixed")
+			hb.WriteElementOpen("form", "method", "post")
+			hb.WriteElementOpen("input", "type", "hidden", "name", "blocklisthost", "value", entry.Host)
+			hb.WriteElementOpen("button", "type", "submit", "formaction", rd.Blog.getRelativePath(settingsPath+settingsWebmentionBlocklistRemovePath), "class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"))
+			hb.WriteElementClose("button")
+			hb.WriteElementClose("form")
+			hb.WriteElementClose("td")
+			hb.WriteElementClose("tr")
+		}
+		hb.WriteElementClose("table")
+	}
+
+	// Add new entry form
+	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+	hb.WriteElementOpen("input", "type", "text", "name", "blocklisthost", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklisthost"))
+	hb.WriteElementOpen("input", "type", "checkbox", "name", "blocklistincoming", "id", "blocklistincoming")
+	hb.WriteElementOpen("label", "for", "blocklistincoming")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklistincoming"))
+	hb.WriteElementClose("label")
+	hb.WriteElementOpen("input", "type", "checkbox", "name", "blocklistoutgoing", "id", "blocklistoutgoing")
+	hb.WriteElementOpen("label", "for", "blocklistoutgoing")
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklistoutgoing"))
+	hb.WriteElementClose("label")
+	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blocklistadd"), "formaction", rd.Blog.getRelativePath(settingsPath+settingsWebmentionBlocklistAddPath))
+	hb.WriteElementClose("form")
+	hb.WriteElementClose("details")
 }
 
 func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {
@@ -787,7 +870,10 @@ func (a *goBlog) renderPostSectionSettings(hb *htmlbuilder.HTMLBuilder, rd *rend
 	hb.WriteElementClose("form")
 }
 
-func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HTMLBuilder, rd *renderData, path, description, name string, value bool) {
+func (a *goBlog) renderBooleanSetting(hb *htmlbuilder.HTMLBuilder, rd *renderData, path, description, name string, value, isGlobal bool) {
+	if isGlobal {
+		description = "🌐 " + description
+	}
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", path)
 
 	hb.WriteElementOpen("input", "type", "checkbox", "class", "autosubmit", "name", name, "id", "cb-"+name, lo.If(value, "checked").Else(""), "")

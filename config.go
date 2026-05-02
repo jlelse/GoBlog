@@ -335,8 +335,9 @@ type configEasterEgg struct {
 }
 
 type configWebmention struct {
-	DisableSending   bool `mapstructure:"disableSending"`
-	DisableReceiving bool `mapstructure:"disableReceiving"`
+	DisableSending             bool `mapstructure:"disableSending"`
+	DisableReceiving           bool `mapstructure:"disableReceiving"`
+	DisableInterGoblogMentions bool `mapstructure:"disableInterGoblogMentions"`
 }
 
 type configMapTiles struct {
@@ -491,13 +492,14 @@ func (a *goBlog) initConfig(logging bool) error {
 	if ms := a.cfg.Micropub.MediaStorage; ms != nil && ms.MediaURL != "" {
 		ms.MediaURL = strings.TrimSuffix(ms.MediaURL, "/")
 	}
-	// Check if webmention receiving is disabled
-	if wm := a.cfg.Webmention; wm != nil && wm.DisableReceiving {
-		// Disable comments for all blogs
-		for _, b := range a.cfg.Blogs {
-			b.Comments = &configComments{Enabled: false}
-		}
+	// Load webmention settings from DB (migrating from config on first run)
+	if a.cfg.Webmention == nil {
+		a.cfg.Webmention = &configWebmention{}
 	}
+	wm := a.cfg.Webmention
+	_ = a.migrateBooleanSetting(webmentionDisableSendingSetting, &wm.DisableSending)
+	_ = a.migrateBooleanSetting(webmentionDisableReceivingSetting, &wm.DisableReceiving)
+	_ = a.migrateBooleanSetting(webmentionDisableInterGoblogSetting, &wm.DisableInterGoblogMentions)
 	// Check if path for profile image is set
 	if a.cfg.User.ProfileImageFile == "" {
 		return errors.New("no file for profile image configured")
@@ -667,6 +669,7 @@ func createDefaultConfig() *config {
 		ActivityPub: &configActivityPub{
 			TagsTaxonomies: []string{"tags"},
 		},
+		Webmention: &configWebmention{},
 	}
 }
 

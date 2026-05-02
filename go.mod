@@ -9,7 +9,7 @@ require (
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
 	github.com/PuerkitoBio/goquery v1.12.0
-	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/alecthomas/chroma/v2 v2.24.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.25.1
@@ -19,9 +19,9 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.24.0
-	github.com/go-acme/lego/v4 v4.34.0
+	github.com/go-acme/lego/v4 v4.35.2
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/go-webauthn/webauthn v0.16.5
+	github.com/go-webauthn/webauthn v0.17.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
@@ -30,12 +30,12 @@ require (
 	github.com/jlelse/feeds v1.4.0
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.18.5
+	github.com/klauspost/compress v1.18.6
 	github.com/kovidgoyal/imaging v1.8.21
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-mastodon v0.0.11
-	github.com/mattn/go-sqlite3 v1.14.42
+	github.com/mattn/go-sqlite3 v1.14.44
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
@@ -50,7 +50,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tdewolff/minify/v2 v2.24.12
+	github.com/tdewolff/minify/v2 v2.24.13
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tkrajina/gpxgo v1.4.0
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
@@ -79,7 +79,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.10.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -97,22 +97,22 @@ require (
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/mmcdole/goxpp v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rs/zerolog v1.35.0 // indirect
+	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.11 // indirect
+	github.com/tdewolff/parse/v2 v2.8.12 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

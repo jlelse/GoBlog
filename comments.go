@@ -217,12 +217,14 @@ func (db *database) commentIDByOriginal(original string) (bool, int, error) {
 	return true, id, nil
 }
 
-func (blog *configBlog) commentsEnabled() bool {
-	return blog.Comments != nil && blog.Comments.Enabled
+func (app *goBlog) commentsEnabled(blog *configBlog) bool {
+	cc := blog.Comments
+	wmDisabled := app.cfg.Webmention != nil && app.cfg.Webmention.DisableReceiving
+	return cc != nil && cc.Enabled && !wmDisabled
 }
 
 const commentsPostParam = "comments"
 
 func (a *goBlog) commentsEnabledForPost(post *post) bool {
-	return post != nil && a.getBlogFromPost(post).commentsEnabled() && post.firstParameter(commentsPostParam) != "false"
+	return post != nil && a.commentsEnabled(a.getBlogFromPost(post)) && post.firstParameter(commentsPostParam) != "false"
 }

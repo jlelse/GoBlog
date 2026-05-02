@@ -219,6 +219,9 @@ func Test_renderSettings(t *testing.T) {
 			addLikeContext:        true,
 			userNick:              "testnick",
 			userName:              "Test User",
+			webmentionBlocklist: []*webmentionBlocklistEntry{
+				{Host: "example.com", Incoming: true, Outgoing: false},
+			},
 		},
 	})
 
@@ -244,4 +247,9 @@ func Test_renderSettings(t *testing.T) {
 	assert.Equal(t, 1, doc.Find("input[name=\"addreplycontext\"][checked]").Length())
 	assert.Equal(t, 0, doc.Find("input[name=\"addliketitle\"][checked]").Length())
 	assert.Equal(t, 1, doc.Find("input[name=\"addlikecontext\"][checked]").Length())
+
+	// Webmention block list is rendered as collapsible details by default
+	assert.Equal(t, 1, doc.Find("details.settings-webmention-blocklist").Length())
+	assert.Equal(t, 0, doc.Find("details.settings-webmention-blocklist[open]").Length())
+	assert.Equal(t, 1, doc.Find("details.settings-webmention-blocklist table.settings-table").Length())
 }

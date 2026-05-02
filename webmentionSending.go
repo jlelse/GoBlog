@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
@@ -45,7 +44,10 @@ func (a *goBlog) sendWebmentions(p *post) error {
 			continue
 		}
 		// Internal mention
-		if strings.HasPrefix(link, a.cfg.Server.PublicAddress) {
+		if a.isLocalURL(link) {
+			if a.cfg.Webmention.DisableInterGoblogMentions {
+				continue
+			}
 			// Save mention directly
 			if err := a.createWebmention(a.fullPostURL(p), link); err != nil {
 				a.error("Failed to create webmention", "err", err)
@@ -55,6 +57,11 @@ func (a *goBlog) sendWebmentions(p *post) error {
 		// External mention
 		if a.isPrivate() {
 			// Private mode, don't send external mentions
+			continue
+		}
+		// Check outgoing blocklist
+		if targetHost, err := parseWebmentionHost(link); err == nil && a.isWebmentionBlockedOutgoing(targetHost) {
+			a.debug("Webmention target is blocked", "target", link)
 			continue
 		}
 		// Send webmention

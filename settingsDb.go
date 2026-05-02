@@ -14,22 +14,25 @@ func settingNameWithBlog(blog, name string) string {
 }
 
 const (
-	defaultSectionSetting        = "defaultsection"
-	hideOldContentWarningSetting = "hideoldcontentwarning"
-	hideShareButtonSetting       = "hidesharebutton"
-	hideTranslateButtonSetting   = "hidetranslatebutton"
-	hideSpeakButtonSetting       = "hidespeakbutton"
-	userNickSetting              = "usernick"
-	userNameSetting              = "username"
-	addReplyTitleSetting         = "addreplytitle"
-	addReplyContextSetting       = "addreplycontext"
-	addLikeTitleSetting          = "addliketitle"
-	addLikeContextSetting        = "addlikecontext"
-	apMovedToSetting             = "apmovedto" // ActivityPub movedTo target for account migration
-	blogTitleSetting             = "blogtitle"
-	blogDescriptionSetting       = "blogdescription"
-	reactionsEnabledSetting      = "reactionsenabled"
-	reactionsSetting             = "reactions"
+	defaultSectionSetting               = "defaultsection"
+	hideOldContentWarningSetting        = "hideoldcontentwarning"
+	hideShareButtonSetting              = "hidesharebutton"
+	hideTranslateButtonSetting          = "hidetranslatebutton"
+	hideSpeakButtonSetting              = "hidespeakbutton"
+	userNickSetting                     = "usernick"
+	userNameSetting                     = "username"
+	addReplyTitleSetting                = "addreplytitle"
+	addReplyContextSetting              = "addreplycontext"
+	addLikeTitleSetting                 = "addliketitle"
+	addLikeContextSetting               = "addlikecontext"
+	apMovedToSetting                    = "apmovedto" // ActivityPub movedTo target for account migration
+	blogTitleSetting                    = "blogtitle"
+	blogDescriptionSetting              = "blogdescription"
+	reactionsEnabledSetting             = "reactionsenabled"
+	reactionsSetting                    = "reactions"
+	webmentionDisableSendingSetting     = "webmentiondisablesending"
+	webmentionDisableReceivingSetting   = "webmentiondisablereceiving"
+	webmentionDisableInterGoblogSetting = "webmentiondisableintergoblog"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

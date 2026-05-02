@@ -1,23 +1,80 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/contenttype"
 )
+
+func Test_webmentionBlocklistIncoming(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+
+	_ = app.initConfig(false)
+
+	// Insert blocklist entry
+	_ = app.addWebmentionBlocklistEntry("blocked.example.com", true, false)
+
+	// Create request with blocked source
+	r := httptest.NewRequest(http.MethodPost, "/webmention", strings.NewReader(url.Values{
+		"source": {"https://blocked.example.com/post"},
+		"target": {"https://example.com/test"},
+	}.Encode()))
+	r.Header.Set("Content-Type", contenttype.WWWForm)
+	w := httptest.NewRecorder()
+
+	app.handleWebmention(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// Create request with non-blocked source
+	r2 := httptest.NewRequest(http.MethodPost, "/webmention", strings.NewReader(url.Values{
+		"source": {"https://allowed.example.com/post"},
+		"target": {"https://example.com/test"},
+	}.Encode()))
+	r2.Header.Set("Content-Type", contenttype.WWWForm)
+	w2 := httptest.NewRecorder()
+
+	app.handleWebmention(w2, r2)
+	assert.Equal(t, http.StatusAccepted, w2.Code)
+}
+
+func Test_webmentionReceivingDisabled(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+
+	_ = app.initConfig(false)
+
+	// Enable disable receiving
+	app.cfg.Webmention.DisableReceiving = true
+
+	// Create request
+	r := httptest.NewRequest(http.MethodPost, "/webmention", strings.NewReader(url.Values{
+		"source": {"https://example.net/post"},
+		"target": {"https://example.com/test"},
+	}.Encode()))
+	r.Header.Set("Content-Type", contenttype.WWWForm)
+	w := httptest.NewRecorder()
+
+	app.handleWebmention(w, r)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
 
 func Test_webmentions(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
-	app.cfg.Blogs = map[string]*configBlog{
-		"en": {
-			Lang: "en",
-		},
-	}
 
 	_ = app.initConfig(false)
 
