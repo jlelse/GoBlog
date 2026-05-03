@@ -54,8 +54,16 @@ func (a *goBlog) initTTS() {
 
 func (a *goBlog) ttsEnabled() bool {
 	tts := a.cfg.TTS
-	// Requires media storage as well
-	return tts != nil && tts.Enabled && tts.GoogleAPIKey != "" && a.mediaStorageEnabled()
+	if tts == nil || !tts.Enabled || !a.mediaStorageEnabled() {
+		return false
+	}
+	if tts.MistralAPIKey != "" && tts.MistralVoice != "" {
+		return true
+	}
+	if tts.GoogleAPIKey != "" {
+		return true
+	}
+	return false
 }
 
 func (a *goBlog) createPostTTSAudio(p *post) error {
@@ -90,10 +98,8 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 		partReaders = append(partReaders, pr)
 		partWriters = append(partWriters, pw)
 		g.Go(func() error {
-			// Build SSML
-			ssml := "<speak>" + html.EscapeString(part) + "<break time=\"500ms\"/></speak>"
 			// Create TTS audio
-			err := a.createTTSAudio(lang, ssml, pw)
+			err := a.createTTSAudio(lang, part, pw)
 			_ = pw.CloseWithError(err)
 			return err
 		})
@@ -174,23 +180,38 @@ func (a *goBlog) deletePostTTSAudio(p *post) bool {
 	return true
 }
 
-func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
-	// Check if Google Cloud TTS is enabled
-	gctts := a.cfg.TTS
-	if !gctts.Enabled || gctts.GoogleAPIKey == "" {
-		return errors.New("missing config for Google Cloud TTS")
+func (a *goBlog) createTTSAudio(lang, text string, w io.Writer) error {
+	tts := a.cfg.TTS
+	if tts == nil || !tts.Enabled {
+		return errors.New("tts not enabled")
 	}
 
 	// Check parameters
 	if lang == "" {
 		return errors.New("language not provided")
 	}
-	if ssml == "" {
+	if text == "" {
 		return errors.New("empty text")
 	}
 	if w == nil {
 		return errors.New("writer not provided")
 	}
+
+	// Mistral takes precedence if configured
+	if tts.MistralAPIKey != "" && tts.MistralVoice != "" {
+		return a.createMistralTTSAudio(text, w)
+	}
+	if tts.GoogleAPIKey != "" {
+		return a.createGoogleTTSAudio(lang, text, w)
+	}
+	return errors.New("missing config for TTS provider")
+}
+
+func (a *goBlog) createGoogleTTSAudio(lang, text string, w io.Writer) error {
+	gctts := a.cfg.TTS
+
+	// Build SSML
+	ssml := "<speak>" + html.EscapeString(text) + "<break time=\"500ms\"/></speak>"
 
 	// Create request body
 	body := map[string]any{
@@ -221,6 +242,53 @@ func (a *goBlog) createTTSAudio(lang, ssml string, w io.Writer) error {
 
 	// Decode response
 	if encoded, ok := response["audioContent"]; ok {
+		if encodedStr, ok := encoded.(string); ok {
+			_, err := io.Copy(w, base64.NewDecoder(base64.StdEncoding, strings.NewReader(encodedStr)))
+			return err
+		}
+	}
+	return errors.New("no audio content")
+}
+
+func (a *goBlog) createMistralTTSAudio(text string, w io.Writer) error {
+	mtts := a.cfg.TTS
+
+	// Create request body. Mistral requires both model and voice.
+	body := map[string]any{
+		"model":           cmp.Or(mtts.MistralModel, "voxtral-mini-tts-latest"),
+		"voice":           mtts.MistralVoice,
+		"input":           text,
+		"response_format": "mp3",
+	}
+
+	// Do request
+	var response map[string]any
+	var errBody string
+	err := requests.
+		URL("https://api.mistral.ai/v1/audio/speech").
+		Header("Authorization", "Bearer "+mtts.MistralAPIKey).
+		Client(a.httpClient).
+		Method(http.MethodPost).
+		BodyJSON(body).
+		AddValidator(func(res *http.Response) error {
+			if res.StatusCode < 200 || res.StatusCode >= 300 {
+				b, _ := io.ReadAll(res.Body)
+				errBody = string(b)
+				return fmt.Errorf("unexpected status: %d", res.StatusCode)
+			}
+			return nil
+		}).
+		ToJSON(&response).
+		Fetch(context.Background())
+	if err != nil {
+		if errBody != "" {
+			return fmt.Errorf("tts request failed: %w: %s", err, errBody)
+		}
+		return errors.New("tts request failed: " + err.Error())
+	}
+
+	// Decode response
+	if encoded, ok := response["audio_data"]; ok {
 		if encodedStr, ok := encoded.(string); ok {
 			_, err := io.Copy(w, base64.NewDecoder(base64.StdEncoding, strings.NewReader(encodedStr)))
 			return err

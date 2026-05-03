@@ -348,8 +348,11 @@ type configMapTiles struct {
 }
 
 type configTTS struct {
-	Enabled      bool   `mapstructure:"enabled"`
-	GoogleAPIKey string `mapstructure:"googleApiKey"`
+	Enabled       bool   `mapstructure:"enabled"`
+	GoogleAPIKey  string `mapstructure:"googleApiKey"`
+	MistralAPIKey string `mapstructure:"mistralApiKey"`
+	MistralModel  string `mapstructure:"mistralModel"`
+	MistralVoice  string `mapstructure:"mistralVoice"`
 }
 
 type configReactions struct {

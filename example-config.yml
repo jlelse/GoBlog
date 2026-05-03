@@ -176,12 +176,18 @@ mapTiles:
   minZoom: 0 # (Optional) Minimum zoom level
   maxZoom: 20 # (Optional) Maximum zoom level
 
-# Text-to-Speech (not just using the browser API, but Google Cloud's TTS-API)
+# Text-to-Speech (not just using the browser API, but a cloud TTS provider)
+# Supports Google Cloud TTS or Mistral (Voxtral) TTS. Configure exactly one provider.
 # If enabled, it will automatically generate a TTS audio file after publishing a public post that has a section as well
 # It's possible to regenerate the audio at any time. That will also try and delete previously generated TTS audio files
 tts:
   enabled: true
-  googleApiKey: "xxxxxxxx"
+  googleApiKey: "xxxxxxxx" # API key for Google Cloud TTS
+  # For Mistral TTS, both mistralApiKey and mistralVoice are required.
+  # Mistral takes precedence over Google when configured.
+  # mistralApiKey: "xxxxxxxx" # API key for Mistral TTS
+  # mistralVoice: "your-voice-id" # Voice (preset or custom) to use for Mistral TTS
+  # mistralModel: "voxtral-mini-tts-latest" # Mistral TTS model, defaults to voxtral-mini-tts-latest
 
 # Block bots using the robots.txt
 robotstxt:

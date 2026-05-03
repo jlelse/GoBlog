@@ -70,7 +70,7 @@ GoBlog is a blogging engine built for people who want:
 - 🎲 **Random post** redirect
 - 📅 **On this day** archive
 - 📧 **Contact form** (SMTP-based)
-- 🔊 **Text-to-Speech** (Google Cloud TTS)
+- 🔊 **Text-to-Speech** (Google Cloud TTS or Mistral Voxtral TTS)
 - 🔔 **Notifications** (Ntfy, Telegram, Matrix)
 - 🔗 **Short URLs** with custom domain
 - 🌐 **Tor Hidden Service**
@@ -749,7 +749,7 @@ See [`example-config.yml`](/example-config.yml) for configuration of:
 - **Random post** - Redirect to random post
 - **On this day** - Posts from this day in previous years
 - **Contact form** - SMTP-based contact form
-- **Text-to-Speech** - Google Cloud TTS audio generation
+- **Text-to-Speech** - Google Cloud TTS or Mistral Voxtral TTS audio generation
 - **Notifications** - Ntfy, Telegram, Matrix
 - **Short URLs** - Custom short domain
 - **Tor Hidden Service** - .onion address
