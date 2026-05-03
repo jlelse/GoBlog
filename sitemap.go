@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -9,7 +10,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/araddon/dateparse"
 	"github.com/snabb/sitemap"
 	"go.goblog.app/app/pkgs/contenttype"
 )
@@ -63,15 +63,21 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 	// Create sitemap
 	sm := sitemap.New()
 	// Add features to sitemap
-	_, bc := a.getBlog(r)
-	// Home
+	blog, bc := a.getBlog(r)
+	// Home: latest post in blog
+	blogLastMod := a.sitemapLastMod(&postsRequestConfig{blogs: []string{blog}})
 	sm.Add(&sitemap.URL{
-		Loc: a.getFullAddress(bc.getRelativePath("")),
+		Loc:     a.getFullAddress(bc.getRelativePath("")),
+		LastMod: blogLastMod,
 	})
 	// Photos
 	if pc := bc.Photos; pc != nil && pc.Enabled {
 		sm.Add(&sitemap.URL{
 			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(pc.Path, defaultPhotosPath))),
+			LastMod: a.sitemapLastMod(&postsRequestConfig{
+				blogs:     []string{blog},
+				parameter: a.cfg.Micropub.PhotoParam,
+			}),
 		})
 	}
 	// Search
@@ -83,7 +89,8 @@ func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request
 	// Stats
 	if bsc := bc.BlogStats; bsc != nil && bsc.Enabled {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))),
+			Loc:     a.getFullAddress(bc.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))),
+			LastMod: blogLastMod,
 		})
 	}
 	// Blogroll
@@ -116,30 +123,43 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 	// Sections
 	for _, section := range bc.Sections {
 		if section.Name != "" {
+			sectionLastMod := a.sitemapLastMod(&postsRequestConfig{
+				blogs:    []string{b},
+				sections: []string{section.Name},
+			})
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(bc.getRelativePath(section.Name)),
+				Loc:     a.getFullAddress(bc.getRelativePath(section.Name)),
+				LastMod: sectionLastMod,
 			})
 			datePaths, _ := a.sitemapDatePaths(b, []string{section.Name})
-			for _, p := range datePaths {
+			for _, dp := range datePaths {
 				sm.Add(&sitemap.URL{
-					Loc: a.getFullAddress(bc.getRelativePath(path.Join(section.Name, p))),
+					Loc:     a.getFullAddress(bc.getRelativePath(path.Join(section.Name, dp.path))),
+					LastMod: dp.lastModPtr(),
 				})
 			}
 		}
 	}
 	// Taxonomies
+	blogLastMod := a.sitemapLastMod(&postsRequestConfig{blogs: []string{b}})
 	for _, taxonomy := range bc.Taxonomies {
 		if taxonomy.Name != "" {
 			// Taxonomy
 			taxPath := bc.getRelativePath("/" + taxonomy.Name)
 			sm.Add(&sitemap.URL{
-				Loc: a.getFullAddress(taxPath),
+				Loc:     a.getFullAddress(taxPath),
+				LastMod: blogLastMod,
 			})
 			// Values
 			if taxValues, err := a.db.allTaxonomyValues(b, taxonomy.Name); err == nil {
 				for _, tv := range taxValues {
 					sm.Add(&sitemap.URL{
 						Loc: a.getFullAddress(taxPath + "/" + urlize(tv)),
+						LastMod: a.sitemapLastMod(&postsRequestConfig{
+							blogs:         []string{b},
+							taxonomy:      taxonomy,
+							taxonomyValue: tv,
+						}),
 					})
 				}
 			}
@@ -147,9 +167,10 @@ func (a *goBlog) serveSitemapBlogArchives(w http.ResponseWriter, r *http.Request
 	}
 	// Date based archives
 	datePaths, _ := a.sitemapDatePaths(b, nil)
-	for _, p := range datePaths {
+	for _, dp := range datePaths {
 		sm.Add(&sitemap.URL{
-			Loc: a.getFullAddress(bc.getRelativePath(p)),
+			Loc:     a.getFullAddress(bc.getRelativePath(dp.path)),
+			LastMod: dp.lastModPtr(),
 		})
 	}
 	// Write sitemap
@@ -171,7 +192,7 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	// Add posts to sitemap
 	for _, p := range posts {
 		item := &sitemap.URL{Loc: a.fullPostURL(p)}
-		lastMod := noError(dateparse.ParseLocal(cmp.Or(p.Updated, p.Published)))
+		lastMod := toLocalTime(cmp.Or(p.Updated, p.Published))
 		if !lastMod.IsZero() {
 			item.LastMod = &lastMod
 		}
@@ -194,39 +215,75 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any)
 	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
 }
 
+func (a *goBlog) sitemapLastMod(config *postsRequestConfig) *time.Time {
+	// Limit to published posts with public visibility, since those are the only ones that would be included in the sitemap
+	config.status = []postStatus{statusPublished}
+	config.visibility = []postVisibility{visibilityPublic}
+	// Get max of updated and published dates for all posts matching the config
+	query, args, err := buildPostsQuery(config, "coalesce(nullif(updated, ''), published) as lm")
+	if err != nil {
+		return nil
+	}
+	row, err := a.db.QueryRow("select max(lm) from ("+query+") where lm is not null and lm != ''", args...)
+	if err != nil {
+		return nil
+	}
+	var lmStr sql.NullString
+	if err := row.Scan(&lmStr); err != nil || !lmStr.Valid {
+		return nil
+	}
+	if lm := toLocalTime(lmStr.String); !lm.IsZero() {
+		return &lm
+	}
+	return nil
+}
+
+type sitemapDatePath struct {
+	path    string
+	lastMod time.Time
+}
+
+func (d sitemapDatePath) lastModPtr() *time.Time {
+	if d.lastMod.IsZero() {
+		return nil
+	}
+	return &d.lastMod
+}
+
 const sitemapDatePathsSQL = `
 with filteredposts as ( %s ),
 alldates as (
-    select distinct 
-        substr(published, 1, 4) as year,
-        substr(published, 6, 2) as month,
-        substr(published, 9, 2) as day
+    select
+        substr(p, 1, 4) as year,
+        substr(p, 6, 2) as month,
+        substr(p, 9, 2) as day,
+        lm
     from (
-            select tolocal(published) as published
-            from filteredposts
-			where coalesce(published, '') != ''
-        )
+        select tolocal(published) as p, coalesce(nullif(updated, ''), published) as lm
+        from filteredposts
+        where coalesce(published, '') != ''
+    )
 )
-select distinct '/' || year from alldates
-union
-select distinct '/' || year || '/' || month from alldates
-union
-select distinct '/' || year || '/' || month || '/' || day from alldates
-union
-select distinct '/x/' || month from alldates
-union
-select distinct '/x/' || month || '/' || day from alldates
-union
-select distinct '/x/x/' || day from alldates;
+select '/' || year, max(lm) from alldates group by year
+union all
+select '/' || year || '/' || month, max(lm) from alldates group by year, month
+union all
+select '/' || year || '/' || month || '/' || day, max(lm) from alldates group by year, month, day
+union all
+select '/x/' || month, max(lm) from alldates group by month
+union all
+select '/x/' || month || '/' || day, max(lm) from alldates group by month, day
+union all
+select '/x/x/' || day, max(lm) from alldates group by day;
 `
 
-func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []string, err error) {
+func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []sitemapDatePath, err error) {
 	query, args, err := buildPostsQuery(&postsRequestConfig{
 		blogs:      []string{blog},
 		sections:   sections,
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},
-	}, "published")
+	}, "published, updated")
 	if err != nil {
 		return
 	}
@@ -235,13 +292,12 @@ func (a *goBlog) sitemapDatePaths(blog string, sections []string) (paths []strin
 		return nil, err
 	}
 	defer rows.Close()
-	var path string
+	var p, lmStr string
 	for rows.Next() {
-		err = rows.Scan(&path)
-		if err != nil {
+		if err = rows.Scan(&p, &lmStr); err != nil {
 			return nil, err
 		}
-		paths = append(paths, path)
+		paths = append(paths, sitemapDatePath{path: p, lastMod: toLocalTime(lmStr)})
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
