@@ -10,6 +10,7 @@ import (
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+	"github.com/traefik/yaegi/stdlib/unrestricted"
 )
 
 // PluginHost manages the plugins.
@@ -84,6 +85,10 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 	})
 
 	if err := interpreter.Use(stdlib.Symbols); err != nil {
+		return nil, fmt.Errorf(errText, err)
+	}
+
+	if err := interpreter.Use(unrestricted.Symbols); err != nil {
 		return nil, fmt.Errorf(errText, err)
 	}
 

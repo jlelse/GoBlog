@@ -56,6 +56,7 @@ func init() {
 		"Section":          reflect.ValueOf((*plugintypes.Section)(nil)),
 		"SetApp":           reflect.ValueOf((*plugintypes.SetApp)(nil)),
 		"SetConfig":        reflect.ValueOf((*plugintypes.SetConfig)(nil)),
+		"TTS":              reflect.ValueOf((*plugintypes.TTS)(nil)),
 		"UI":               reflect.ValueOf((*plugintypes.UI)(nil)),
 		"UI2":              reflect.ValueOf((*plugintypes.UI2)(nil)),
 		"UIFooter":         reflect.ValueOf((*plugintypes.UIFooter)(nil)),
@@ -79,6 +80,7 @@ func init() {
 		"_RenderContext":   reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_RenderContext)(nil)),
 		"_SetApp":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetApp)(nil)),
 		"_SetConfig":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_SetConfig)(nil)),
+		"_TTS":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_TTS)(nil)),
 		"_UI":              reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
 		"_UI2":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
 		"_UIFooter":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
@@ -396,6 +398,16 @@ type _go_goblog_app_app_pkgs_plugintypes_SetConfig struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_SetConfig) SetConfig(config map[string]any) {
 	W.WSetConfig(config)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_TTS is an interface wrapper for TTS type
+type _go_goblog_app_app_pkgs_plugintypes_TTS struct {
+	IValue            interface{}
+	WSynthesizeSpeech func(lang string, text string, w io.Writer) error
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_TTS) SynthesizeSpeech(lang string, text string, w io.Writer) error {
+	return W.WSynthesizeSpeech(lang, text, w)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_UI is an interface wrapper for UI type

@@ -98,3 +98,11 @@ type BlockedBots interface {
 	// Return a list of bot user-agent names to block.
 	BlockedBots() []string
 }
+
+// TTS plugins synthesize speech for a given language and text.
+// Implementations must write a valid MP3 stream to w.
+// If a TTS plugin is loaded and tts.enabled is true, GoBlog will use it
+// instead of the built-in Google or Mistral providers.
+type TTS interface {
+	SynthesizeSpeech(lang, text string, w io.Writer) error
+}

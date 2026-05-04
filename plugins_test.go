@@ -235,6 +235,29 @@ content`)
 	assert.Contains(t, body, "https://example.com/post")
 }
 
+func TestEmbeddedPluginPiperLoads(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Plugins = []*configPlugin{
+		{
+			Path:   "embedded:piper",
+			Import: "piper",
+			Config: map[string]any{
+				"defaultvoice": "/nonexistent.onnx",
+			},
+		},
+	}
+
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initPlugins())
+
+	ttsPlugins := app.getPlugins(pluginTTSType)
+	require.Len(t, ttsPlugins, 1)
+	_, ok := ttsPlugins[0].(plugintypes.TTS)
+	assert.True(t, ok, "loaded piper plugin must implement TTS")
+}
+
 func TestEmbeddedPluginWebringsFooter(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),

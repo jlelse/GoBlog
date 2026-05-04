@@ -36,6 +36,7 @@ const (
 	pluginPostUpdatedHookType = "postupdatedhook"
 	pluginPostDeletedHookType = "postdeletedhook"
 	pluginBlockedBotsType     = "blockedbots"
+	pluginTTSType             = "tts"
 )
 
 func (a *goBlog) initPlugins() error {
@@ -59,6 +60,7 @@ func (a *goBlog) initPlugins() error {
 			pluginPostUpdatedHookType: reflect.TypeFor[plugintypes.PostUpdatedHook](),
 			pluginPostDeletedHookType: reflect.TypeFor[plugintypes.PostDeletedHook](),
 			pluginBlockedBotsType:     reflect.TypeFor[plugintypes.BlockedBots](),
+			pluginTTSType:             reflect.TypeFor[plugintypes.TTS](),
 		},
 		yaegiwrappers.Symbols,
 		subFS,

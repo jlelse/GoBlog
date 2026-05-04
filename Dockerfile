@@ -41,5 +41,9 @@ COPY --from=build /app/GoBlog /bin/
 
 FROM base AS tools
 
-RUN apk add --no-cache curl bash git
+RUN apk add --no-cache curl bash git ffmpeg python3 py3-pip gcompat
+RUN python3 -m venv /opt/piper
+RUN /opt/piper/bin/pip install --no-cache-dir --upgrade pip
+RUN /opt/piper/bin/pip install --no-cache-dir piper-tts
+RUN ln -sf /opt/piper/bin/piper /usr/local/bin/piper
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite

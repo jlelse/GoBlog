@@ -17,6 +17,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/mp3merge"
+	"go.goblog.app/app/pkgs/plugintypes"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,6 +58,9 @@ func (a *goBlog) ttsEnabled() bool {
 	if tts == nil || !tts.Enabled || !a.mediaStorageEnabled() {
 		return false
 	}
+	if len(a.getPlugins(pluginTTSType)) > 0 {
+		return true
+	}
 	if tts.MistralAPIKey != "" && tts.MistralVoice != "" {
 		return true
 	}
@@ -94,6 +98,9 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	partWriters := []*io.PipeWriter{}
 	var g errgroup.Group
 	for _, part := range parts {
+		if part == "" || strings.TrimSpace(part) == "" {
+			continue
+		}
 		pr, pw := io.Pipe()
 		partReaders = append(partReaders, pr)
 		partWriters = append(partWriters, pw)
@@ -197,6 +204,10 @@ func (a *goBlog) createTTSAudio(lang, text string, w io.Writer) error {
 		return errors.New("writer not provided")
 	}
 
+	// A loaded TTS plugin always takes precedence over built-in providers
+	if pp := a.getPlugins(pluginTTSType); len(pp) > 0 {
+		return pp[0].(plugintypes.TTS).SynthesizeSpeech(lang, text, w)
+	}
 	// Mistral takes precedence if configured
 	if tts.MistralAPIKey != "" && tts.MistralVoice != "" {
 		return a.createMistralTTSAudio(text, w)

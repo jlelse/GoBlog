@@ -177,7 +177,9 @@ mapTiles:
   maxZoom: 20 # (Optional) Maximum zoom level
 
 # Text-to-Speech (not just using the browser API, but a cloud TTS provider)
-# Supports Google Cloud TTS or Mistral (Voxtral) TTS. Configure exactly one provider.
+# Supports Google Cloud TTS, Mistral (Voxtral) TTS, or any TTS plugin (e.g. the bundled "piper" plugin).
+# If a TTS plugin is loaded and tts.enabled is true, it is selected automatically and takes precedence over the built-in providers.
+# Otherwise, configure exactly one provider below.
 # If enabled, it will automatically generate a TTS audio file after publishing a public post that has a section as well
 # It's possible to regenerate the audio at any time. That will also try and delete previously generated TTS audio files
 tts:

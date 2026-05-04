@@ -70,7 +70,7 @@ GoBlog is a blogging engine built for people who want:
 - 🎲 **Random post** redirect
 - 📅 **On this day** archive
 - 📧 **Contact form** (SMTP-based)
-- 🔊 **Text-to-Speech** (Google Cloud TTS or Mistral Voxtral TTS)
+- 🔊 **Text-to-Speech** (Google Cloud TTS, Mistral Voxtral TTS, or local via the Piper plugin)
 - 🔔 **Notifications** (Ntfy, Telegram, Matrix)
 - 🔗 **Short URLs** with custom domain
 - 🌐 **Tor Hidden Service**
@@ -173,7 +173,7 @@ EOF
 GoBlog provides two Docker images:
 
 - `ghcr.io/jlelse/goblog:latest` - Base image
-- `ghcr.io/jlelse/goblog:tools` - Includes `sqlite3`, `bash`, `curl` for hook commands
+- `ghcr.io/jlelse/goblog:tools` - Includes `sqlite3`, `bash`, `curl`, `ffmpeg`, `piper` for hook commands and local TTS
 
 **Basic setup:**
 
@@ -749,7 +749,7 @@ See [`example-config.yml`](/example-config.yml) for configuration of:
 - **Random post** - Redirect to random post
 - **On this day** - Posts from this day in previous years
 - **Contact form** - SMTP-based contact form
-- **Text-to-Speech** - Google Cloud TTS or Mistral Voxtral TTS audio generation
+- **Text-to-Speech** - Audio generation via Google Cloud TTS, Mistral Voxtral TTS, or local Piper (via plugin)
 - **Notifications** - Ntfy, Telegram, Matrix
 - **Short URLs** - Custom short domain
 - **Tor Hidden Service** - .onion address
@@ -991,6 +991,56 @@ plugins:
 **Usage:** Point your MCP client (e.g. VS Code, Claude Desktop) at `https://yourblog.example.com/mcp` with HTTP transport type and set the app password as the Bearer token for authentication.
 
 **Testing with MCP Inspector:** Install and run the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) with `npx @modelcontextprotocol/inspector`. Select "Streamable HTTP" as transport type, enter `https://yourblog.example.com/mcp` as the URL, add a header `Authorization: Bearer <app-password>`, and click "Connect". You can then browse the available tools and invoke them interactively.
+
+#### Piper TTS
+
+**Path:** `embedded:piper` | **Import:** `piper`
+
+Local text-to-speech via the [Piper](https://github.com/OHF-Voice/piper1-gpl) neural TTS engine. Replaces the built-in cloud TTS providers (Google, Mistral) when loaded — no API costs, runs entirely on the host. Requires the `piper` and `ffmpeg` binaries to be installed and one or more Piper voice files (`.onnx` plus matching `.onnx.json`) to be available on disk. Set `tts.enabled: true` for the plugin to be used.
+
+**Config:**
+```yaml
+plugins:
+  - path: embedded:piper
+    import: piper
+    config:
+      binary: piper                                    # Optional, default: "piper"
+      ffmpegbinary: ffmpeg                             # Optional, default: "ffmpeg"
+      defaultvoice: /var/data/piper/en_US-amy-medium.onnx  # Used when no language match
+      maxconcurrency: 2                                # Optional, default: 1 — max parallel synthesis calls
+      voices:
+        de: /var/data/piper/de_DE-thorsten-medium.onnx
+        en: /var/data/piper/en_US-amy-medium.onnx
+```
+
+The plugin parses the matching `<voice>.onnx.json` file to determine the voice's sample rate and pipes Piper's raw PCM output through ffmpeg to produce MP3. Synthesis calls are limited to `maxconcurrency` parallel invocations to control CPU and memory usage.
+
+**Manual install (Linux):**
+```bash
+# 1) Install runtime dependencies
+# Debian/Ubuntu:
+sudo apt-get update && sudo apt-get install -y ffmpeg python3 python3-venv
+# Alpine:
+sudo apk add --no-cache ffmpeg python3 py3-pip gcompat
+
+# 2) Install Piper in a virtual environment
+python3 -m venv /opt/piper
+/opt/piper/bin/pip install --upgrade pip
+/opt/piper/bin/pip install piper-tts
+
+# 3) Expose the piper command globally (optional)
+sudo ln -sf /opt/piper/bin/piper /usr/local/bin/piper
+```
+
+**Voice files:** Download models from the [Rhasspy Piper Voices repository on Hugging Face](https://huggingface.co/rhasspy/piper-voices). Each voice consists of a `.onnx` model file plus a matching `.onnx.json` config file — both must be present in the same directory. For example:
+
+```bash
+# Example: download the English "amy" medium voice
+curl -LO "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx"
+curl -LO "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json"
+```
+
+Then point `defaultvoice` / `voices` in the plugin config to the `.onnx` file paths.
 
 #### Demo Plugin
 
