@@ -2,85 +2,57 @@
     const shareBtn = document.getElementById('shareBtn');
     const shareModal = document.getElementById('shareModal');
     const shareDataElement = document.getElementById('shareData');
-    if (!shareBtn || !shareModal || !shareDataElement) {
-        return;
-    }
+    if (!shareBtn || !shareModal || !shareDataElement) return;
 
-    let shareData = null;
+    let shareData;
     try {
-        const raw = shareDataElement.textContent?.trim();
-        shareData = raw ? JSON.parse(raw) : null;
+        shareData = JSON.parse(shareDataElement.textContent);
     } catch (error) {
         console.error('Failed to read share data', error);
         return;
     }
 
-    if (!shareData) {
-        return;
-    }
+    const { title = '', url = '', text = '', services = [] } = shareData || {};
 
-    const shareTitle = shareData.title || '';
-    const shareUrl = shareData.url || '';
-    const shareText = shareData.text || '';
-    const shareServices = Array.isArray(shareData.services) ? shareData.services : [];
-    const supportsNativeShare = typeof navigator.share === 'function';
-
-    const overlay = document.getElementById('shareModalOverlay');
     const servicesContainer = document.getElementById('shareModalServices');
     const copyButton = document.getElementById('shareModalCopy');
     const nativeShareButton = document.getElementById('shareModalNative');
-    const closeTriggers = shareModal.querySelectorAll('.share-modal-close');
+    const closeButton = shareModal.querySelector('.share-modal-close');
 
-    shareServices.forEach((service) => {
-        if (!servicesContainer || !service) {
-            return;
-        }
+    services.forEach((service) => {
         const link = document.createElement('a');
         link.className = 'button';
-        link.setAttribute('href', service.url);
-        link.setAttribute('target', '_blank');
-        link.setAttribute('rel', 'noopener noreferrer');
+        link.href = service.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
         link.textContent = service.label || service.id;
         servicesContainer.appendChild(link);
     });
 
     shareBtn.addEventListener('click', () => {
-        shareModal.classList.remove('hide');
+        shareModal.showModal();
+        shareModal.focus();
+    });
+    closeButton.addEventListener('click', () => shareModal.close());
+    shareModal.addEventListener('click', (event) => {
+        if (event.target === shareModal) shareModal.close();
     });
 
-    const closeAll = () => {
-        if (!shareModal.classList.contains('hide')) {
-            shareModal.classList.add('hide');
-            shareBtn.focus();
-        }
-    };
-
-    overlay?.addEventListener('click', closeAll);
-    closeTriggers.forEach((trigger) => trigger.addEventListener('click', closeAll));
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeAll();
-        }
-    });
-
-    if (supportsNativeShare) {
+    if (typeof navigator.share === 'function') {
         nativeShareButton.classList.remove('hide');
         nativeShareButton.addEventListener('click', async () => {
             try {
-                await navigator.share({
-                    text: shareTitle,
-                    url: shareUrl,
-                });
-                closeAll();
+                await navigator.share({ text: title, url });
+                shareModal.close();
             } catch (error) {
                 console.error('Share API failed', error);
             }
         });
     }
 
-    copyButton?.addEventListener('click', async () => {
+    copyButton.addEventListener('click', async () => {
         try {
-            await navigator.clipboard.writeText(shareText);
+            await navigator.clipboard.writeText(text);
             copyButton.textContent = copyButton.dataset.shareCopyFeedback;
         } catch (error) {
             console.error('Failed to copy share text', error);

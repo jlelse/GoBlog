@@ -310,9 +310,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *conf
 	hb.WriteElementClose("button")
 
 	// Share modal
-	hb.WriteElementOpen("div", "id", "shareModal", "class", "hide")
-	hb.WriteElement("div", "id", "shareModalOverlay", "class", "share-modal-close")
-	hb.WriteElementOpen("div", "id", "shareModalPanel")
+	hb.WriteElementOpen("dialog", "id", "shareModal", "tabindex", "-1")
 	hb.WriteElementOpen("div", "id", "shareModalHeader")
 	hb.WriteElementOpen("strong")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "sharemodalheading"))
@@ -327,7 +325,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *conf
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "sharecopy"))
 	hb.WriteElementClose("button")
 	hb.WriteElement("div", "id", "shareModalServices")
-	hb.WriteElementsClose("div", "div")
+	hb.WriteElementClose("dialog")
 	hb.WriteElementOpen("script", "type", contenttype.JSON, "id", "shareData")
 	_ = json.NewEncoder(hb).Encode(newShareData(cmp.Or(p.RenderedTitle, a.fallbackTitle(p)), a.shortPostURL(p)))
 	hb.WriteElementClose("script")
