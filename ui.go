@@ -30,6 +30,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("html", "lang", rd.Blog.Lang)
 	hb.WriteElementOpen("meta", "charset", "utf-8")
 	hb.WriteElementOpen("meta", "name", "viewport", "content", "width=device-width,initial-scale=1")
+	// Meta description
+	if desc := cmp.Or(rd.Description, rd.Blog.Description); desc != "" {
+		hb.WriteElementOpen("meta", "name", "description", "content", desc)
+	}
 	// CSS
 	hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/styles.css"))
 	// Canonical URL
@@ -865,6 +869,9 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	p, ok := rd.Data.(*post)
 	if !ok {
 		return
+	}
+	if rd.Description == "" {
+		rd.Description = a.postSummary(p)
 	}
 	a.renderBase(
 		hb, rd,

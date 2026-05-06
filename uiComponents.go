@@ -461,9 +461,6 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if p == nil {
 		return
 	}
-	if summary := a.postSummary(p); summary != "" {
-		hb.WriteElementOpen("meta", "name", "description", "content", summary)
-	}
 	if published := toLocalTime(p.Published); !published.IsZero() {
 		hb.WriteElementOpen("meta", "itemprop", "datePublished", "content", published.Format(time.RFC3339))
 	}

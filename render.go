@@ -13,6 +13,7 @@ import (
 type renderData struct {
 	BlogString                 string
 	Canonical                  string
+	Description                string
 	TorAddress                 string
 	Blog                       *configBlog
 	User                       *configUser
