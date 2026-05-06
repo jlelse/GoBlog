@@ -34,8 +34,14 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	if desc := cmp.Or(rd.Description, rd.Blog.Description); desc != "" {
 		hb.WriteElementOpen("meta", "name", "description", "content", desc)
 	}
-	// CSS
-	hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/styles.css"))
+	// CSS (inlined to eliminate render-blocking request; covered by CSP style-src hash)
+	if af, ok := a.assetFiles[a.assetFileNames["css/styles.css"]]; ok && af != nil {
+		hb.WriteElementOpen("style")
+		hb.WriteUnescaped(string(af.body))
+		hb.WriteElementClose("style")
+	} else {
+		hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/styles.css"))
+	}
 	// Canonical URL
 	if rd.Canonical != "" {
 		hb.WriteElementOpen("link", "rel", "canonical", "href", rd.Canonical)

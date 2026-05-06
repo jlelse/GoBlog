@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime"
@@ -19,8 +20,9 @@ import (
 const assetsFolder = "templates/assets"
 
 type assetFile struct {
-	contentType string
-	body        []byte
+	contentType  string
+	body         []byte
+	sha256base64 string
 }
 
 func (a *goBlog) initTemplateAssets() error {
@@ -64,12 +66,14 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	if err != nil {
 		return err
 	}
-	// File name
-	compiledFileName := fmt.Sprintf("%x%s", hash.Sum(nil), ext)
+	// File name and base64 hash
+	sum := hash.Sum(nil)
+	compiledFileName := fmt.Sprintf("%x%s", sum, ext)
 	// Save file
 	a.assetFiles[compiledFileName] = &assetFile{
-		contentType: mime.TypeByExtension(ext),
-		body:        body,
+		contentType:  mime.TypeByExtension(ext),
+		body:         body,
+		sha256base64: base64.StdEncoding.EncodeToString(sum),
 	}
 	// Save mapping of original file name to compiled file name
 	a.assetFileNames[name] = compiledFileName

@@ -10,6 +10,7 @@ import (
 	"github.com/tiptophelmet/cspolicy/directives"
 	"github.com/tiptophelmet/cspolicy/directives/constraint"
 	"github.com/tiptophelmet/cspolicy/src"
+	"github.com/tiptophelmet/cspolicy/src/hashalg"
 )
 
 func noIndexHeader(next http.Handler) http.Handler {
@@ -63,9 +64,19 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	}
 	fac := &constraint.FrameAncestorsConstraint{}
 	fac.Sources(src.None())
+	// style-src must allow the inlined main stylesheet via its sha256 hash
+	styleSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
+	styleSrcList = append(styleSrcList, src.Self())
+	if af, ok := a.assetFiles[a.assetFileNames["css/styles.css"]]; ok && af != nil {
+		styleSrcList = append(styleSrcList, src.HashAlgBase64(hashalg.Sha256(), af.sha256base64))
+	}
+	for _, d := range allowedDomains {
+		styleSrcList = append(styleSrcList, src.Host(d))
+	}
 	csp := cspolicy.Build(
 		directives.DefaultSrc(defaultSrcList...),
 		directives.ImgSrc(imgSrcList...),
+		directives.StyleSrc(styleSrcList...),
 		directives.FrameAncestors(fac),
 	)
 	// Return handler
