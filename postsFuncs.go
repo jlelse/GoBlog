@@ -371,3 +371,7 @@ func (p *post) TTS() string {
 func (p *post) Deleted() bool {
 	return strings.HasSuffix(string(p.Status), string(statusDeletedSuffix))
 }
+
+func (p *post) hasFencedCodeBlock() bool {
+	return strings.Contains(p.Content, "```") || strings.Contains(p.Content, "~~~")
+}
