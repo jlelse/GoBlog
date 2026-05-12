@@ -186,7 +186,7 @@ type atprotoIndex struct {
 }
 
 func (a *goBlog) toAtprotoPost(atp *configAtproto, p *post) *atprotoPost {
-	postTitle := cmp.Or(p.RenderedTitle, a.fallbackTitle(p))
+	postTitle := a.titleOrFallback(p)
 	postDescription := a.postSummary(p)
 	bc := a.getBlogFromPost(p)
 	result := &atprotoPost{

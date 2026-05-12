@@ -43,10 +43,11 @@ func (p *plugin) RenderFooter(rc plugintypes.RenderContext, doc *goquery.Documen
 					next, nextOk := unwrapToString(webring["next"])
 					if titleOk && (linkOk || prevOk || nextOk) {
 						buf.Reset()
+						hb.WriteElementOpen("nav", "aria-label", title)
 						hb.WriteElementOpen("p")
 						if prevOk {
-							hb.WriteElementOpen("a", "href", prev)
-							hb.WriteEscaped("←")
+							hb.WriteElementOpen("a", "href", prev, "rel", "prev", "aria-label", "Previous in "+title)
+							hb.WriteUnescaped(`<span aria-hidden="true">←</span>`)
 							hb.WriteElementClose("a")
 							hb.WriteEscaped(" ")
 						}
@@ -59,11 +60,12 @@ func (p *plugin) RenderFooter(rc plugintypes.RenderContext, doc *goquery.Documen
 						}
 						if nextOk {
 							hb.WriteEscaped(" ")
-							hb.WriteElementOpen("a", "href", next)
-							hb.WriteEscaped("→")
+							hb.WriteElementOpen("a", "href", next, "rel", "next", "aria-label", "Next in "+title)
+							hb.WriteUnescaped(`<span aria-hidden="true">→</span>`)
 							hb.WriteElementClose("a")
 						}
 						hb.WriteElementClose("p")
+						hb.WriteElementClose("nav")
 						doc.Find("footer").AppendHtml(buf.String())
 					}
 				}

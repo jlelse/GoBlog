@@ -72,6 +72,11 @@ hr {
   @include color(background, primary);
 }
 
+.skip-link:not(:focus) {
+  position: absolute;
+  clip-path: inset(50%);
+}
+
 header {
   @extend .border-bottom;
   padding: 10px 0;

@@ -92,6 +92,12 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		_ = a.renderMarkdownToWriter(hb, ann.Text, false)
 		hb.WriteElementClose("div")
 	}
+	// Skip to content link (visually hidden until focused)
+	if a.ts != nil {
+		hb.WriteElementOpen("a", "class", "skip-link button", "href", "#main-content")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "skiptocontent"))
+		hb.WriteElementClose("a")
+	}
 	// Header
 	hb.WriteElementOpen("header")
 	// Blog title
@@ -110,10 +116,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	}
 	// Main menu
 	if mm, ok := rd.Blog.Menus["main"]; ok {
-		hb.WriteElementOpen("nav")
+		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mainmenu"))
 		for i, item := range mm.Items {
 			if i > 0 {
-				hb.WriteUnescaped(" &bull; ")
+				hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			}
 			hb.WriteElementOpen("a", "href", item.Link)
 			hb.WriteEscaped(a.renderMdTitle(item.Title))
@@ -123,37 +129,40 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	}
 	// Logged-in user menu
 	if rd.LoggedIn() {
-		hb.WriteElementOpen("nav")
+		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "usermenu"))
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/editor"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
 		hb.WriteElementClose("a")
-		hb.WriteUnescaped(" &bull; ")
+		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", "/notifications")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
 		hb.WriteElementClose("a")
 		if rd.WebmentionReceivingEnabled {
-			hb.WriteUnescaped(" &bull; ")
+			hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			hb.WriteElementOpen("a", "href", "/webmention")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 			hb.WriteElementClose("a")
 		}
 		if a.commentsEnabled(rd.Blog) {
-			hb.WriteUnescaped(" &bull; ")
+			hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
 			hb.WriteElementClose("a")
 		}
-		hb.WriteUnescaped(" &bull; ")
+		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/settings"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
 		hb.WriteElementClose("a")
-		hb.WriteUnescaped(" &bull; ")
+		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", "/logout")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "logout"))
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("nav")
 	}
 	hb.WriteElementClose("header")
+	// Skip-link target (focusable anchor before main content)
+	hb.WriteElementOpen("a", "id", "main-content", "tabindex", "-1")
+	hb.WriteElementClose("a")
 	// Main
 	if main != nil {
 		main(hb)
@@ -882,11 +891,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			if p.RenderedTitle != "" {
-				a.renderTitleTag(hb, rd.Blog, p.RenderedTitle)
-			} else {
-				a.renderTitleTag(hb, rd.Blog, a.fallbackTitle(p))
-			}
+			a.renderTitleTag(hb, rd.Blog, a.titleOrFallback(p))
 			if p.hasFencedCodeBlock() {
 				hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
 			}

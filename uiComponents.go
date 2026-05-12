@@ -36,8 +36,14 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, 
 		plugin.(plugintypes.UISummary).RenderSummaryForPost(rd.prc, p, doc)
 	}, selectorBodyInner)
 	defer finish()
+	// Determine accessible name for article (used by screen readers)
+	articleLabel := a.titleOrFallback(p)
 	// Start article
-	hb.WriteElementOpen("article", "class", "h-entry border-bottom")
+	if p.RenderedTitle == "" && articleLabel != "" {
+		hb.WriteElementOpen("article", "class", "h-entry border-bottom", "aria-label", articleLabel)
+	} else {
+		hb.WriteElementOpen("article", "class", "h-entry border-bottom")
+	}
 	if p.Priority > 0 {
 		// Is pinned post
 		hb.WriteElementOpen("p")
@@ -93,8 +99,13 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, 
 	if written > 0 {
 		hb.WriteUnescaped("&nbsp;")
 	}
-	hb.WriteElementOpen("a", "class", "u-url", "href", p.Path)
-	hb.WriteEscaped(a.ts.GetTemplateStringVariant(bc.Lang, "view"))
+	viewLabel := a.ts.GetTemplateStringVariant(bc.Lang, "view")
+	if articleLabel != "" {
+		hb.WriteElementOpen("a", "class", "u-url", "href", p.Path, "aria-label", viewLabel+": "+articleLabel)
+	} else {
+		hb.WriteElementOpen("a", "class", "u-url", "href", p.Path)
+	}
+	hb.WriteEscaped(viewLabel)
 	hb.WriteElementClose("a")
 	hb.WriteElementClose("p")
 	// Finish article
@@ -327,7 +338,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *conf
 	hb.WriteElement("div", "id", "shareModalServices")
 	hb.WriteElementClose("dialog")
 	hb.WriteElementOpen("script", "type", contenttype.JSON, "id", "shareData")
-	_ = json.NewEncoder(hb).Encode(newShareData(cmp.Or(p.RenderedTitle, a.fallbackTitle(p)), a.shortPostURL(p)))
+	_ = json.NewEncoder(hb).Encode(newShareData(a.titleOrFallback(p), a.shortPostURL(p)))
 	hb.WriteElementClose("script")
 	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"))
 }
@@ -510,7 +521,11 @@ func (a *goBlog) renderTitleTag(hb *htmlbuilder.HTMLBuilder, blog *configBlog, o
 }
 
 func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog, hasPrev, hasNext bool, prev, next string) {
+	if !hasPrev && !hasNext {
+		return
+	}
 	// Navigation
+	hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(blog.Lang, "pagination"))
 	if hasPrev {
 		hb.WriteElementOpen("p")
 		hb.WriteElementOpen("a", "href", prev, "rel", "prev")
@@ -525,6 +540,7 @@ func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog,
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("p")
 	}
+	hb.WriteElementClose("nav")
 }
 
 func (*goBlog) renderPostTitle(hb *htmlbuilder.HTMLBuilder, p *post) {
@@ -1158,10 +1174,10 @@ func (a *goBlog) renderFooter(origHb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	hb.WriteElementOpen("footer")
 	// Footer menu
 	if fm, ok := rd.Blog.Menus["footer"]; ok {
-		hb.WriteElementOpen("nav")
+		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "footermenu"))
 		for i, item := range fm.Items {
 			if i > 0 {
-				hb.WriteUnescaped(" &bull; ")
+				hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			}
 			hb.WriteElementOpen("a", "href", item.Link)
 			hb.WriteEscaped(a.renderMdTitle(item.Title))
