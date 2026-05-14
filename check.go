@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -120,44 +119,66 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 }
 
 func (a *goBlog) allLinksToCheck(posts ...*post) ([]*stringPair, error) {
-	// We'll run these in parallel but collect results and errors
+	pls, err := a.extractPostLinks(posts)
+	if err != nil {
+		return nil, err
+	}
+	var out []*stringPair
+	for _, pl := range pls {
+		postURL := a.fullPostURL(pl.post)
+		for _, link := range pl.links {
+			out = append(out, &stringPair{postURL, link})
+		}
+	}
+	return out, nil
+}
+
+type postLinks struct {
+	post  *post
+	links []string
+}
+
+func (a *goBlog) extractPostLinks(posts []*post) ([]*postLinks, error) {
 	type res struct {
-		links []*stringPair
-		err   error
+		pl  *postLinks
+		err error
 	}
 	ch := make(chan res, len(posts))
 	var wg sync.WaitGroup
-	for _, pst := range posts {
+	sem := make(chan struct{}, 10)
+	for _, p := range posts {
 		wg.Add(1)
-		go func(pst *post) {
+		sem <- struct{}{}
+		go func(p *post) {
 			defer wg.Done()
+			defer func() { <-sem }()
 			pr, pw := io.Pipe()
 			go func() {
-				a.postHTMLToWriter(pw, &postHTMLOptions{p: pst, absolute: true})
+				a.postHTMLToWriter(pw, &postHTMLOptions{p: p, absolute: true})
 				_ = pw.Close()
 			}()
-			links, err := allLinksFromHTML(pr, a.fullPostURL(pst))
+			links, err := allLinksFromHTML(pr, a.fullPostURL(p))
 			_ = pr.CloseWithError(err)
 			if err != nil {
-				ch <- res{nil, err}
+				ch <- res{err: err}
 				return
 			}
-			// Remove internal links
-			links = lo.Filter(links, func(i string, _ int) bool { return !strings.HasPrefix(i, a.cfg.Server.PublicAddress) })
-			// Map to string pair
-			ch <- res{lo.Map(links, func(s string, _ int) *stringPair { return &stringPair{a.fullPostURL(pst), s} }), nil}
-		}(pst)
+			links = lo.Filter(links, func(s string, _ int) bool {
+				return !a.isLocalURL(s)
+			})
+			ch <- res{pl: &postLinks{post: p, links: links}}
+		}(p)
 	}
 	wg.Wait()
 	close(ch)
-	var all [][]*stringPair
+	out := make([]*postLinks, 0, len(posts))
 	for r := range ch {
 		if r.err != nil {
 			return nil, r.err
 		}
-		all = append(all, r.links)
+		out = append(out, r.pl)
 	}
-	return lo.Flatten(all), nil
+	return out, nil
 }
 
 func successStatus(status int) bool {

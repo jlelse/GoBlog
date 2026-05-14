@@ -3,6 +3,8 @@ package main
 import (
 	"cmp"
 	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1176,6 +1178,110 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 	)
 }
 
+type editorLinksRenderData struct {
+	domains []*linkDomainStat
+}
+
+func (a *goBlog) renderEditorLinks(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+	elr, ok := rd.Data.(*editorLinksRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HTMLBuilder) {
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "externallinks"))
+		},
+		func(hb *htmlbuilder.HTMLBuilder) {
+			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "externallinks"))
+			hb.WriteElementClose("h1")
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "externallinksdesc"))
+			hb.WriteElementClose("p")
+			if len(elr.domains) == 0 {
+				hb.WriteElementOpen("p")
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "noexternallinks"))
+				hb.WriteElementClose("p")
+				hb.WriteElementClose("main")
+				return
+			}
+			hb.WriteElementOpen("table", "class", "settings-table")
+			hb.WriteElementOpen("tr")
+			hb.WriteElementOpen("th", "class", "expand")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "domain"))
+			hb.WriteElementClose("th")
+			hb.WriteElementOpen("th", "class", "fixed tar")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "posts"))
+			hb.WriteElementClose("th")
+			hb.WriteElementOpen("th", "class", "fixed tar")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "links"))
+			hb.WriteElementClose("th")
+			hb.WriteElementClose("tr")
+			for _, d := range elr.domains {
+				hb.WriteElementOpen("tr")
+				hb.WriteElementOpen("td", "class", "expand")
+				hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(editorPath+editorLinksPath)+"?domain="+url.QueryEscape(d.Domain))
+				hb.WriteEscaped(d.Domain)
+				hb.WriteElementClose("a")
+				hb.WriteElementClose("td")
+				hb.WriteElementOpen("td", "class", "fixed tar")
+				hb.WriteEscaped(strconv.Itoa(len(d.Posts)))
+				hb.WriteElementClose("td")
+				hb.WriteElementOpen("td", "class", "fixed tar")
+				hb.WriteEscaped(strconv.Itoa(d.LinkCount))
+				hb.WriteElementClose("td")
+				hb.WriteElementClose("tr")
+			}
+			hb.WriteElementClose("table")
+			hb.WriteElementClose("main")
+		},
+	)
+}
+
+type editorLinkDomainRenderData struct {
+	domain string
+	stat   *linkDomainStat
+}
+
+func (a *goBlog) renderEditorLinkDomain(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+	eld, ok := rd.Data.(*editorLinkDomainRenderData)
+	if !ok {
+		return
+	}
+	a.renderBase(
+		hb, rd,
+		func(hb *htmlbuilder.HTMLBuilder) {
+			a.renderTitleTag(hb, rd.Blog, eld.domain)
+		},
+		func(hb *htmlbuilder.HTMLBuilder) {
+			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(eld.domain)
+			hb.WriteElementClose("h1")
+			if eld.stat == nil || len(eld.stat.Posts) == 0 {
+				hb.WriteElementOpen("p")
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "noposts"))
+				hb.WriteElementClose("p")
+				hb.WriteElementClose("main")
+				return
+			}
+			hb.WriteElementOpen("ul")
+			for _, p := range eld.stat.Posts {
+				hb.WriteElementOpen("li")
+				hb.WriteElementOpen("a", "href", p.Path)
+				title := a.titleOrFallback(p)
+				hb.WriteEscaped(title)
+				hb.WriteElementClose("a")
+				hb.WriteElementClose("li")
+			}
+			hb.WriteElementClose("ul")
+			hb.WriteElementClose("main")
+		},
+	)
+}
+
 type notificationsRenderData struct {
 	notifications    []*notification
 	hasPrev, hasNext bool
@@ -1496,6 +1602,8 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			postsListLink("/editor/scheduled", "scheduledposts")
 			// Deleted
 			postsListLink("/editor/deleted", "deletedposts")
+			// External links
+			postsListLink(editorPath+editorLinksPath, "externallinks")
 
 			// Upload
 			hb.WriteElementOpen("h2")

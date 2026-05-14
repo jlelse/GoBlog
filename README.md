@@ -460,6 +460,7 @@ Access the editor at `/editor` (requires login).
 - Media upload
 - Post management (create, update, delete, undelete)
 - Visibility and status controls
+- External links overview
 
 **Creating a post:**
 
