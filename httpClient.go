@@ -42,7 +42,9 @@ type addUserAgentTransport struct {
 }
 
 func (t *addUserAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.Header.Set(userAgent, appUserAgent)
+	if r.Header.Get(userAgent) == "" {
+		r.Header.Set(userAgent, appUserAgent)
+	}
 	return t.parent.RoundTrip(r)
 }
 

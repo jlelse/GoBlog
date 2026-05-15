@@ -1206,7 +1206,7 @@ Flags:
 - `--ignore-403` — Skip reporting HTTP 403 responses. Sites behind Cloudflare and similar bot-protection services frequently respond with 403 to non-browser clients, producing noisy false positives. Use this flag to suppress them.
 - `--check-dnsbl` — After the link check, also query public DNS-based blocklists for each unique linked hostname and report any listings. This helps you spot links to domains that have been taken over (e.g. an expired domain repurposed as a casino/spam/malware site) and could hurt your reputation.
 
-  Lookups go through the system DNS resolver. Note that Spamhaus and SURBL prohibit queries through large public resolvers (such as Google `8.8.8.8` or Cloudflare `1.1.1.1`) — make sure your machine is configured to use your ISP's resolver or your own. Free use is also limited to low-volume, non-commercial users; check the [Spamhaus DNSBL usage terms](https://www.spamhaus.org/blocklists/dnsbl-fair-use-policy/) and SURBL [usage policy](https://www.surbl.org/usage-policy) before enabling this for very large blogs.
+  Lookups go through the system DNS resolver. Note that Spamhaus prohibits queries through large public resolvers (such as Google `8.8.8.8` or Cloudflare `1.1.1.1`) — make sure your machine is configured to use your ISP's resolver or your own. Free use is also limited to low-volume, non-commercial users; check the [Spamhaus DNSBL usage terms](https://www.spamhaus.org/blocklists/dnsbl-fair-use-policy/) before enabling this for very large blogs.
 
 Example:
 

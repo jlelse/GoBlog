@@ -98,13 +98,8 @@ func (a *goBlog) checkLinks(opts *checkOptions, posts ...*post) error {
 				UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0").
 				Accept("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8").
 				Header("Accept-Language", "en-US,en;q=0.5").
-				Header("Accept-Encoding", "gzip, deflate").
 				Header("DNT", "1").
 				Header("Upgrade-Insecure-Requests", "1").
-				Header("Sec-Fetch-Dest", "document").
-				Header("Sec-Fetch-Mode", "navigate").
-				Header("Sec-Fetch-Site", "none").
-				Header("Sec-Fetch-User", "?1").
 				Request(cancelContext)
 			if err != nil {
 				res.err = err
@@ -220,7 +215,6 @@ func successStatus(status int) bool {
 
 var dnsblZones = []string{
 	"dbl.spamhaus.org",
-	"multi.surbl.org",
 }
 
 func (a *goBlog) checkDomainsDNSBL(ctx context.Context, links []*stringPair, done *atomic.Bool) {
@@ -275,8 +269,17 @@ func (a *goBlog) checkDomainsDNSBL(ctx context.Context, links []*stringPair, don
 					continue
 				}
 				codes := make([]string, 0, len(ips))
+				skip := false
 				for _, ip := range ips {
-					codes = append(codes, ip.String())
+					ipStr := ip.String()
+					if ipStr == "127.255.255.254" {
+						skip = true
+						break
+					}
+					codes = append(codes, ipStr)
+				}
+				if skip {
+					continue
 				}
 				resultsCh <- &dnsblResult{domain: domain, zone: zone, codes: strings.Join(codes, ","), posts: posts}
 			}
