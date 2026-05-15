@@ -78,18 +78,40 @@ func Test_fakeHttpClient(t *testing.T) {
 }
 
 func Test_addUserAgent(t *testing.T) {
-	ua := "ABC"
+	t.Run("Default UA when not set", func(t *testing.T) {
+		is := assert.New(t)
+		ua := ""
 
-	client := &http.Client{
-		Transport: newAddUserAgentTransport(&handlerRoundTripper{
-			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ua = r.Header.Get(userAgent)
+		client := &http.Client{
+			Transport: newAddUserAgentTransport(&handlerRoundTripper{
+				handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ua = r.Header.Get(userAgent)
+				}),
 			}),
-		}),
-	}
+		}
 
-	err := requests.URL("http://example.com").UserAgent("WRONG").Client(client).Fetch(context.Background())
-	require.NoError(t, err)
+		err := requests.URL("http://example.com").Client(client).Fetch(context.Background())
+		require.NoError(t, err)
 
-	assert.Equal(t, appUserAgent, ua)
+		is.Equal(appUserAgent, ua)
+	})
+
+	t.Run("Preserves existing UA", func(t *testing.T) {
+		is := assert.New(t)
+		customUA := "CustomBot/1.0"
+		receivedUA := ""
+
+		client := &http.Client{
+			Transport: newAddUserAgentTransport(&handlerRoundTripper{
+				handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					receivedUA = r.Header.Get(userAgent)
+				}),
+			}),
+		}
+
+		err := requests.URL("http://example.com").UserAgent(customUA).Client(client).Fetch(context.Background())
+		require.NoError(t, err)
+
+		is.Equal(customUA, receivedUA)
+	})
 }
