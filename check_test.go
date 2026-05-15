@@ -53,7 +53,7 @@ func Test_checkLinks_detects_dead_links(t *testing.T) {
 	os.Stdout = w
 
 	// Run check
-	must.NoError(app.checkLinks(p1, p2))
+	must.NoError(app.checkLinks(nil, p1, p2))
 
 	// Restore stdout and read output
 	_ = w.Close()
@@ -120,7 +120,7 @@ func Test_checkLinks_highConcurrency(t *testing.T) {
 	p := &post{Path: "/big", Content: b.String(), Parameters: map[string][]string{}}
 
 	// Run checkLinks and ensure it completes
-	must.NoError(app.checkLinks(p))
+	must.NoError(app.checkLinks(nil, p))
 
 	// Validate counts
 	is.Equal(int32(N), atomic.LoadInt32(&total), "should have requested all links")
@@ -161,6 +161,43 @@ func Test_allLinksToCheck_filters_internal_links(t *testing.T) {
 	is.True(foundExt)
 }
 
+func Test_checkLinks_ignore403(t *testing.T) {
+	is := assert.New(t)
+	must := require.New(t)
+
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	must.NoError(app.initConfig(false))
+	_ = app.initTemplateStrings()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/forbidden") {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	pForbidden := &post{Path: "/pf", Content: "<a href=\"" + srv.URL + "/forbidden\">x</a>", Parameters: map[string][]string{}}
+	pBroken := &post{Path: "/pb", Content: "<a href=\"" + srv.URL + "/broken\">x</a>", Parameters: map[string][]string{}}
+
+	// With ignore403=true, 403s are not reported, but other failures still are.
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	must.NoError(app.checkLinks(&checkOptions{ignore403: true}, pForbidden, pBroken))
+
+	_ = w.Close()
+	outBuf := new(bytes.Buffer)
+	_, _ = io.Copy(outBuf, r)
+	os.Stdout = oldStdout
+	out := outBuf.String()
+
+	is.False(strings.Contains(out, "/forbidden"), "403 should be suppressed: %s", out)
+	is.True(strings.Contains(out, "/broken"), "500 should still be reported: %s", out)
+}
+
 func Test_checkLinks_edge_cases(t *testing.T) {
 	is := assert.New(t)
 	must := require.New(t)
@@ -192,7 +229,7 @@ func Test_checkLinks_edge_cases(t *testing.T) {
 		r, w, _ := os.Pipe()
 		os.Stdout = w
 
-		must.NoError(app.checkLinks(p))
+		must.NoError(app.checkLinks(nil, p))
 
 		_ = w.Close()
 		outBuf := new(bytes.Buffer)
@@ -213,7 +250,7 @@ func Test_checkLinks_edge_cases(t *testing.T) {
 		os.Stdout = w
 
 		// This should return an error (printed)
-		_ = app.checkLinks(p)
+		_ = app.checkLinks(nil, p)
 
 		_ = w.Close()
 		outBuf := new(bytes.Buffer)

@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,7 +19,17 @@ import (
 	"go.goblog.app/app/pkgs/httpcachetransport"
 )
 
-func (a *goBlog) checkAllExternalLinks() error {
+// checkOptions controls behavior of the link checker.
+type checkOptions struct {
+	// ignore403 suppresses reporting of HTTP 403 responses (often false positives
+	// caused by Cloudflare and similar bot protection).
+	ignore403 bool
+	// checkDNSBL enables querying public DNS-based blocklists for each unique
+	// linked domain (Spamhaus DBL and SURBL multi).
+	checkDNSBL bool
+}
+
+func (a *goBlog) checkAllExternalLinks(opts *checkOptions) error {
 	posts, err := a.getPosts(&postsRequestConfig{
 		status:             []postStatus{statusPublished},
 		visibility:         []postVisibility{visibilityPublic, visibilityUnlisted},
@@ -25,10 +38,13 @@ func (a *goBlog) checkAllExternalLinks() error {
 	if err != nil {
 		return err
 	}
-	return a.checkLinks(posts...)
+	return a.checkLinks(opts, posts...)
 }
 
-func (a *goBlog) checkLinks(posts ...*post) error {
+func (a *goBlog) checkLinks(opts *checkOptions, posts ...*post) error {
+	if opts == nil {
+		opts = &checkOptions{}
+	}
 	// Get all links
 	allLinks, err := a.allLinksToCheck(posts...)
 	if err != nil {
@@ -78,11 +94,17 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 				return
 			}
 			res := &checkresult{in: lp.First, link: lp.Second}
-			// Build request
 			req, err := requests.URL(lp.Second).
-				UserAgent("Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0").
-				Accept("text/html").
+				UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0").
+				Accept("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8").
 				Header("Accept-Language", "en-US,en;q=0.5").
+				Header("Accept-Encoding", "gzip, deflate").
+				Header("DNT", "1").
+				Header("Upgrade-Insecure-Requests", "1").
+				Header("Sec-Fetch-Dest", "document").
+				Header("Sec-Fetch-Mode", "navigate").
+				Header("Sec-Fetch-Site", "none").
+				Header("Sec-Fetch-User", "?1").
 				Request(cancelContext)
 			if err != nil {
 				res.err = err
@@ -111,10 +133,21 @@ func (a *goBlog) checkLinks(posts ...*post) error {
 		if r.err != nil {
 			fmt.Printf("%s in %s: %s\n", r.link, r.in, r.err.Error())
 		} else if !successStatus(r.status) {
+			if opts.ignore403 && r.status == http.StatusForbidden {
+				continue
+			}
 			fmt.Printf("%s in %s: %d (%s)\n", r.link, r.in, r.status, http.StatusText(r.status))
 		}
 	}
 	fmt.Println("Finished link check")
+
+	if opts.checkDNSBL {
+		if done.Load() {
+			return nil
+		}
+		a.checkDomainsDNSBL(cancelContext, allLinks, &done)
+	}
+
 	return nil
 }
 
@@ -183,4 +216,96 @@ func (a *goBlog) extractPostLinks(posts []*post) ([]*postLinks, error) {
 
 func successStatus(status int) bool {
 	return status >= 200 && status < 400
+}
+
+var dnsblZones = []string{
+	"dbl.spamhaus.org",
+	"multi.surbl.org",
+}
+
+func (a *goBlog) checkDomainsDNSBL(ctx context.Context, links []*stringPair, done *atomic.Bool) {
+	domainPosts := map[string][]string{}
+	for _, lp := range links {
+		d := dnsblHost(lp.Second)
+		if d == "" {
+			continue
+		}
+		posts := domainPosts[d]
+		if !lo.Contains(posts, lp.First) {
+			domainPosts[d] = append(posts, lp.First)
+		}
+	}
+	if len(domainPosts) == 0 {
+		return
+	}
+	fmt.Println("Checking", len(domainPosts), "domains against DNS blocklists:", strings.Join(dnsblZones, ", "))
+
+	resolver := &net.Resolver{}
+
+	type dnsblResult struct {
+		domain, zone, codes string
+		posts               []string
+	}
+	resultsCh := make(chan *dnsblResult, len(domainPosts)*len(dnsblZones))
+
+	maxGoroutines := 10
+	sem := make(chan struct{}, maxGoroutines)
+	var wg sync.WaitGroup
+
+	for domain, posts := range domainPosts {
+		if done.Load() {
+			break
+		}
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(domain string, posts []string) {
+			defer func() { <-sem; wg.Done() }()
+			if done.Load() {
+				return
+			}
+			for _, zone := range dnsblZones {
+				if done.Load() {
+					return
+				}
+				query := domain + "." + zone
+				lookupCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+				ips, err := resolver.LookupIP(lookupCtx, "ip4", query)
+				cancel()
+				if err != nil || len(ips) == 0 {
+					continue
+				}
+				codes := make([]string, 0, len(ips))
+				for _, ip := range ips {
+					codes = append(codes, ip.String())
+				}
+				resultsCh <- &dnsblResult{domain: domain, zone: zone, codes: strings.Join(codes, ","), posts: posts}
+			}
+		}(domain, posts)
+	}
+	wg.Wait()
+	close(resultsCh)
+	listed := 0
+	for r := range resultsCh {
+		listed++
+		fmt.Printf("DNSBL: %s listed on %s (%s) - linked from:\n", r.domain, r.zone, r.codes)
+		for _, p := range r.posts {
+			fmt.Printf("  - %s\n", p)
+		}
+	}
+	fmt.Printf("Finished DNSBL check (%d listings)\n", listed)
+}
+
+func dnsblHost(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return ""
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ""
+	}
+	return host
 }
