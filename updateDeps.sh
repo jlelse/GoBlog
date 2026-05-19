@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FLAGS="-tags=linux,libsqlite3,sqlite_fts5"
+FLAGS="-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl"
 EXTRA=""
 
 # Update all direct dependencies to latest version

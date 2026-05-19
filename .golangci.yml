@@ -4,6 +4,7 @@ run:
     - linux
     - libsqlite3
     - sqlite_fts5
+    - gomailnotpl
   issues-exit-code: 0
   tests: false
 linters:
@@ -27,6 +28,9 @@ linters:
   settings:
     dupl:
       threshold: 125
+    gosec:
+      excludes:
+        - G710
   exclusions:
     generated: lax
     presets:

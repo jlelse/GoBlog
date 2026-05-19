@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func (app *goBlog) startPprofServer() {
-	if pprofCfg := app.cfg.Pprof; pprofCfg != nil && pprofCfg.Enabled {
+func (a *goBlog) startPprofServer() {
+	if pprofCfg := a.cfg.Pprof; pprofCfg != nil && pprofCfg.Enabled {
 		go func() {
 			pprofHandler := http.NewServeMux()
 			pprofHandler.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
@@ -26,12 +26,12 @@ func (app *goBlog) startPprofServer() {
 			}
 			listener, err := new(net.ListenConfig).Listen(context.Background(), "tcp", pprofServer.Addr)
 			if err != nil {
-				app.fatal("Failed to start pprof server", "err", err)
+				a.fatal("Failed to start pprof server", "err", err)
 				return
 			}
-			app.info("Pprof server listening", "addr", listener.Addr().String())
+			a.info("Pprof server listening", "addr", listener.Addr().String())
 			if err := pprofServer.Serve(listener); err != nil {
-				app.fatal("Failed to start pprof server", "err", err)
+				a.fatal("Failed to start pprof server", "err", err)
 				return
 			}
 		}()

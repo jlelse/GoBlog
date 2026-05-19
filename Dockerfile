@@ -3,7 +3,7 @@ FROM golang:1.26-alpine3.23 AS buildbase
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite-dev
-ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5,skipIntegration"
+ENV GOFLAGS="-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl,skipIntegration"
 ADD *.go go.mod go.sum /app/
 ADD pkgs/ /app/pkgs/
 ADD testdata/ /app/testdata/

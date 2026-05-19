@@ -7,7 +7,7 @@
       "command": "go build -o GoBlog",
       "options": {
         "env": {
-          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5"
+          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl"
         }
       },
       "group": {
@@ -21,7 +21,7 @@
       "command": "go test",
       "options": {
         "env": {
-          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5"
+          "GOFLAGS": "-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl"
         }
       },
       "group": {

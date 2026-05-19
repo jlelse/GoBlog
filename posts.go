@@ -92,8 +92,10 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 		canonical = a.fullPostURL(p)
 	}
 	renderMethod := a.renderPost
+	isHome := false
 	if p.Path == a.getRelativePath(p.Blog, "") {
 		renderMethod = a.renderStaticHome
+		isHome = true
 	}
 	if p.Visibility != visibilityPublic {
 		w.Header().Set("X-Robots-Tag", "noindex")
@@ -102,6 +104,7 @@ func (a *goBlog) servePost(w http.ResponseWriter, r *http.Request) {
 	a.renderWithStatusCode(w, r, status, renderMethod, &renderData{
 		BlogString: p.Blog,
 		Canonical:  canonical,
+		IsHome:     isHome,
 		Data:       p,
 	})
 }
@@ -166,6 +169,7 @@ func (a *goBlog) serveHome(w http.ResponseWriter, r *http.Request) {
 	a.serveIndex(w, r.WithContext(context.WithValue(r.Context(), indexConfigKey, &indexConfig{
 		path:     a.getRelativePath(blog, ""),
 		sections: lo.Filter(lo.Values(bc.Sections), func(s *configSection, _ int) bool { return !s.HideOnStart }),
+		isHome:   true,
 	})))
 }
 
@@ -298,6 +302,7 @@ type indexConfig struct {
 	usesFile         string
 	withoutFeeds     bool
 	allBlogs         bool
+	isHome           bool
 }
 
 const defaultPhotosPath = "/photos"
@@ -413,6 +418,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	a.render(w, r, a.renderIndex, &renderData{
 		Canonical: a.getFullAddress(ic.path) + paramURLQuery,
+		IsHome:    ic.isHome,
 		Data: &indexRenderData{
 			title:           title,
 			description:     description,

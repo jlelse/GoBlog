@@ -217,9 +217,9 @@ func (db *database) commentIDByOriginal(original string) (bool, int, error) {
 	return true, id, nil
 }
 
-func (app *goBlog) commentsEnabled(blog *configBlog) bool {
+func (a *goBlog) commentsEnabled(blog *configBlog) bool {
 	cc := blog.Comments
-	wmDisabled := app.cfg.Webmention != nil && app.cfg.Webmention.DisableReceiving
+	wmDisabled := a.cfg.Webmention != nil && a.cfg.Webmention.DisableReceiving
 	return cc != nil && cc.Enabled && !wmDisabled
 }
 

@@ -73,8 +73,7 @@ hr {
 }
 
 .skip-link:not(:focus) {
-  position: absolute;
-  clip-path: inset(50%);
+  @extend .visually-hidden;
 }
 
 header {
@@ -85,10 +84,17 @@ header {
     margin-top: 0;
     margin-bottom: 0;
   }
+
+  .site-title {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1.2;
+  }
 }
 
 h1 a,
-h2 a {
+h2 a,
+.site-title a {
   text-decoration: none;
 }
 
@@ -229,6 +235,11 @@ details summary {
 
 .hide {
   display: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  clip-path: inset(50%);
 }
 
 .in {

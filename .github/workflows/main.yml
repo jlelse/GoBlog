@@ -29,7 +29,7 @@ jobs:
       
       - name: Run tests
         env:
-          GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5"
+          GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl"
         run: |
           go test -timeout 600s -cover ./...
 

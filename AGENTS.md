@@ -18,23 +18,23 @@ GoBlog is a single-user, multi-blog platform written in Go. Single binary, SQLit
 
 ```bash
 # With system SQLite (recommended, faster build)
-go build -tags=linux,libsqlite3,sqlite_fts5 -o GoBlog
+go build -tags=linux,libsqlite3,sqlite_fts5,gomailnotpl -o GoBlog
 
 # With embedded SQLite (no system dependency, slower build)
-go build -tags=linux,sqlite_fts5 -o GoBlog
+go build -tags=linux,sqlite_fts5,gomailnotpl -o GoBlog
 ```
 
 ### Test
 
 ```bash
 # All tests
-go test -tags=linux,libsqlite3,sqlite_fts5 -timeout 600s ./...
+go test -tags=linux,libsqlite3,sqlite_fts5,gomailnotpl -timeout 600s ./...
 
 # Single package/file
-go test -tags=linux,libsqlite3,sqlite_fts5 -run TestName ./...
+go test -tags=linux,libsqlite3,sqlite_fts5,gomailnotpl -run TestName ./...
 ```
 
-The `-tags=linux,libsqlite3,sqlite_fts5` flags are **required** for all build and test commands. Without them, compilation will fail.
+The `-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl` flags are **required** for all build and test commands. Without them, compilation will fail.
 
 ### Lint
 

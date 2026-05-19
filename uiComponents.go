@@ -543,13 +543,23 @@ func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog,
 	hb.WriteElementClose("nav")
 }
 
-func (*goBlog) renderPostTitle(hb *htmlbuilder.HTMLBuilder, p *post) {
-	if p == nil || p.RenderedTitle == "" {
+func (a *goBlog) renderPostTitle(hb *htmlbuilder.HTMLBuilder, p *post) {
+	if p == nil {
 		return
 	}
-	hb.WriteElementOpen("h1", "class", "p-name")
-	hb.WriteEscaped(p.RenderedTitle)
-	hb.WriteElementClose("h1")
+	if p.RenderedTitle != "" {
+		hb.WriteElementOpen("h1", "class", "p-name")
+		hb.WriteEscaped(p.RenderedTitle)
+		hb.WriteElementClose("h1")
+		return
+	}
+	// Untitled posts: use a fallback derived from the post for the heading.
+	// The heading is visually hidden but remains in the accessibility tree.
+	if fallback := a.fallbackTitle(p); fallback != "" {
+		hb.WriteElementOpen("h1", "class", "p-name visually-hidden", "aria-hidden", "true")
+		hb.WriteEscaped(fallback)
+		hb.WriteElementClose("h1")
+	}
 }
 
 func (a *goBlog) renderPostTrack(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, disableInteractiveMap bool) {

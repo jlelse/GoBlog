@@ -21,6 +21,7 @@ type renderData struct {
 	WebmentionReceivingEnabled bool
 	TorUsed                    bool
 	EasterEgg                  bool
+	IsHome                     bool
 	// For plugins
 	prc *pluginRenderContext
 	// Not directly accessible

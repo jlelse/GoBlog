@@ -148,7 +148,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, gpx string, statusCode int, rerr error) {
-	err := r.ParseMultipartForm(10 * bodylimit.MB)
+	err := r.ParseMultipartForm(10 * bodylimit.MB) //nolint:gosec
 	if err != nil {
 		return nil, "", http.StatusBadRequest, err
 	}

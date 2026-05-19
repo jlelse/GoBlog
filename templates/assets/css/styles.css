@@ -52,11 +52,6 @@ hr {
   background: var(--primary, #000);
 }
 
-.skip-link:not(:focus) {
-  position: absolute;
-  clip-path: inset(50%);
-}
-
 header {
   padding: 10px 0;
 }
@@ -64,9 +59,15 @@ header * {
   margin-top: 0;
   margin-bottom: 0;
 }
+header .site-title {
+  font-size: 2em;
+  font-weight: bold;
+  line-height: 1.2;
+}
 
 h1 a,
-h2 a {
+h2 a,
+.site-title a {
   text-decoration: none;
 }
 
@@ -179,6 +180,11 @@ details summary > *:first-child {
 
 .hide {
   display: none;
+}
+
+.visually-hidden, .skip-link:not(:focus) {
+  position: absolute;
+  clip-path: inset(50%);
 }
 
 .in {

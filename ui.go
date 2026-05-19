@@ -103,11 +103,12 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	// Header
 	hb.WriteElementOpen("header")
 	// Blog title
-	hb.WriteElementOpen("h1")
+	siteTitleTag := lo.If(rd.IsHome, "h1").Else("p")
+	hb.WriteElementOpen(siteTitleTag, "class", "site-title")
 	hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/"), "rel", "home", "title", renderedBlogTitle, "translate", "no")
 	hb.WriteEscaped(renderedBlogTitle)
 	hb.WriteElementClose("a")
-	hb.WriteElementClose("h1")
+	hb.WriteElementClose(siteTitleTag)
 	// Blog description
 	if rd.Blog.Description != "" {
 		hb.WriteElementOpen("p")
@@ -189,17 +190,16 @@ func (a *goBlog) renderError(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
+	title := cmp.Or(ed.Title, "Error")
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, ed.Title)
+			a.renderTitleTag(hb, rd.Blog, title)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
-			if ed.Title != "" {
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(ed.Title)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(title)
+			hb.WriteElementClose("h1")
 			if ed.Message != "" {
 				hb.WriteElementOpen("p", "class", "monospace")
 				hb.WriteEscaped(ed.Message)
@@ -272,7 +272,7 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 
 func (a *goBlog) renderSearch(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	sc := rd.Blog.Search
-	renderedSearchTitle := a.renderMdTitle(sc.Title)
+	renderedSearchTitle := cmp.Or(a.renderMdTitle(sc.Title), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "search"))
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -280,22 +280,15 @@ func (a *goBlog) renderSearch(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
-			titleOrDesc := false
 			// Title
-			if renderedSearchTitle != "" {
-				titleOrDesc = true
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(renderedSearchTitle)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(renderedSearchTitle)
+			hb.WriteElementClose("h1")
 			// Description
 			if sc.Description != "" {
-				titleOrDesc = true
 				_ = a.renderMarkdownToWriter(hb, sc.Description, false)
 			}
-			if titleOrDesc {
-				hb.WriteElementOpen("hr")
-			}
+			hb.WriteElementOpen("hr")
 			// Form
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
 			// Search
@@ -317,17 +310,18 @@ func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
+	title := fmt.Sprintf("%s %s", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "acommentby"), c.Name)
 	a.renderBase(
 		h, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			hb.WriteElementOpen("title")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "acommentby"))
-			hb.WriteUnescaped(" ")
-			hb.WriteEscaped(c.Name)
-			hb.WriteElementClose("title")
+			a.renderTitleTag(hb, rd.Blog, title)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")
+			// Title
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(title)
+			hb.WriteElementClose("h1")
 			// Target
 			hb.WriteElementOpen("p")
 			hb.WriteElementOpen("a", "class", "u-in-reply-to", "href", a.getFullAddress(c.Target))
@@ -336,8 +330,6 @@ func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("p")
 			// Author
 			hb.WriteElementOpen("p", "class", "p-author h-card")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "acommentby"))
-			hb.WriteUnescaped(" ")
 			if c.Website != "" {
 				hb.WriteElementOpen("a", "class", "p-name u-url", "target", "_blank", "rel", "nofollow noopener noreferrer ugc", "href", c.Website)
 				hb.WriteEscaped(c.Name)
@@ -347,7 +339,6 @@ func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteEscaped(c.Name)
 				hb.WriteElementClose("span")
 			}
-			hb.WriteEscaped(":")
 			hb.WriteElementClose("p")
 			// Content
 			hb.WriteElementOpen("p", "class", "e-content")
@@ -414,7 +405,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementOpen("main", "class", "h-feed")
 			titleOrDesc := false
 			// Title
-			if renderedIndexTitle != "" {
+			if renderedIndexTitle != "" && !rd.IsHome {
 				titleOrDesc = true
 				hb.WriteElementOpen("h1", "class", "p-name")
 				hb.WriteEscaped(renderedIndexTitle)
@@ -454,20 +445,18 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		return
 	}
 	bs := rd.Blog.BlogStats
-	renderedBSTitle := a.renderMdTitle(bs.Title)
+	renderedTitle := cmp.Or(a.renderMdTitle(bs.Title), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blogstats"))
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, renderedBSTitle)
+			a.renderTitleTag(hb, rd.Blog, renderedTitle)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
-			if renderedBSTitle != "" {
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(renderedBSTitle)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(renderedTitle)
+			hb.WriteElementClose("h1")
 			// Description
 			if bs.Description != "" {
 				_ = a.renderMarkdownToWriter(hb, bs.Description, false)
@@ -607,13 +596,17 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
+	title := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "geomap")
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, "")
+			a.renderTitleTag(hb, rd.Blog, title)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(title)
+			hb.WriteElementClose("h1")
 			if gmd.noLocations {
 				hb.WriteElementOpen("p")
 				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nolocations"))
@@ -652,7 +645,7 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
-	renderedTitle := a.renderMdTitle(bd.title)
+	renderedTitle := cmp.Or(a.renderMdTitle(bd.title), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "blogroll"))
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -661,11 +654,9 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
-			if renderedTitle != "" {
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(renderedTitle)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(renderedTitle)
+			hb.WriteElementClose("h1")
 			// Description
 			if bd.description != "" {
 				hb.WriteElementOpen("p")
@@ -740,7 +731,7 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
-	renderedTitle := a.renderMdTitle(cd.title)
+	renderedTitle := cmp.Or(a.renderMdTitle(cd.title), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contact"))
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -749,11 +740,9 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
-			if renderedTitle != "" {
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(renderedTitle)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(renderedTitle)
+			hb.WriteElementClose("h1")
 			// Description
 			if cd.description != "" {
 				_ = a.renderMarkdownToWriter(hb, cd.description, false)
@@ -783,11 +772,16 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 
 func (a *goBlog) renderContactSent(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	a.renderBase(
-		hb, rd, nil,
+		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			hb.WriteElementsOpen("main", "p")
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "messagesent"))
+		},
+		func(hb *htmlbuilder.HTMLBuilder) {
+			hb.WriteElementOpen("main")
+			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "messagesent"))
-			hb.WriteElementsClose("p", "main")
+			hb.WriteElementClose("h1")
+			hb.WriteElementClose("main")
 		},
 	)
 }
@@ -804,13 +798,18 @@ func (a *goBlog) renderCaptcha(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
+	title := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "captcha")
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, "")
+			a.renderTitleTag(hb, rd.Blog, title)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
+			// Title
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(title)
+			hb.WriteElementClose("h1")
 			// Captcha image
 			hb.WriteElementOpen("p")
 			hb.WriteElementOpen("img", "src", "/captcha/"+crd.captchaID+".png", "class", "captchaimg")
@@ -842,7 +841,7 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
-	renderedTitle := a.renderMdTitle(trd.taxonomy.Title)
+	renderedTitle := cmp.Or(a.renderMdTitle(trd.taxonomy.Title), trd.taxonomy.Name)
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -851,11 +850,9 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
 			// Title
-			if renderedTitle != "" {
-				hb.WriteElementOpen("h1")
-				hb.WriteEscaped(renderedTitle)
-				hb.WriteElementClose("h1")
-			}
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(renderedTitle)
+			hb.WriteElementClose("h1")
 			// Description
 			if trd.taxonomy.Description != "" {
 				_ = a.renderMarkdownToWriter(hb, trd.taxonomy.Description, false)
@@ -1834,12 +1831,18 @@ func (a *goBlog) renderCommentEditor(h *htmlbuilder.HTMLBuilder, rd *renderData)
 	if !ok {
 		return
 	}
+	title := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editcommenttitle")
 	a.renderBase(
 		h, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editcommenttitle"))
+			a.renderTitleTag(hb, rd.Blog, title)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
+			hb.WriteElementOpen("main")
+			// Title
+			hb.WriteElementOpen("h1")
+			hb.WriteEscaped(title)
+			hb.WriteElementClose("h1")
 			// Form
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "id", "value", c.ID)
@@ -1858,6 +1861,7 @@ func (a *goBlog) renderCommentEditor(h *htmlbuilder.HTMLBuilder, rd *renderData)
 			hb.WriteElementClose("textarea")
 			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"))
 			hb.WriteElementClose("form")
+			hb.WriteElementClose("main")
 		},
 	)
 }

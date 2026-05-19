@@ -132,10 +132,10 @@ git clone https://github.com/jlelse/GoBlog.git
 cd GoBlog
 
 # Build (with system libsqlite3)
-go build -tags=linux,libsqlite3,sqlite_fts5 -o GoBlog
+go build -tags=linux,libsqlite3,sqlite_fts5,gomailnotpl -o GoBlog
 
 # Or build with embedded SQLite (slower build, no system dependency)
-go build -tags=linux,sqlite_fts5 -o GoBlog
+go build -tags=linux,sqlite_fts5,gomailnotpl -o GoBlog
 
 # Create directories and config
 mkdir -p config data
