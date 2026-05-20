@@ -3,13 +3,26 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/websocket"
-	"github.com/posener/wstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func dialWS(t *testing.T, h http.Handler, query string) *websocket.Conn {
+	t.Helper()
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+	wsURL := "ws://" + strings.TrimPrefix(srv.URL, "http://") + "/editor/ws?" + query
+	c, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.Close(); _ = resp.Body.Close() })
+	require.NotNil(t, c)
+	return c
+}
 
 func Test_editorPreview(t *testing.T) {
 	app := &goBlog{
@@ -21,12 +34,8 @@ func Test_editorPreview(t *testing.T) {
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		app.serveEditorWebsocket(rw, r.WithContext(context.WithValue(r.Context(), blogKey, "default")))
 	})
-	d := wstest.NewDialer(h)
 
-	c, resp, err := d.Dial("ws://example.com/editor/ws?preview=1", nil)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	require.NotNil(t, c)
+	c := dialWS(t, h, "preview=1")
 
 	// Should receive the trigger to send content for preview
 
@@ -63,7 +72,7 @@ func Test_editorPreview(t *testing.T) {
 	require.Equal(t, websocket.TextMessage, mt)
 
 	msgStr = string(msg)
-	assert.Equal(t, "preview:yaml: unmarshal errors:\n  line 2: mapping key \"title\" already defined at line 1", msgStr)
+	assert.Equal(t, "preview:yaml: construct errors:\n  line 2: mapping key \"title\" already defined at line 1", msgStr)
 }
 
 func Test_editorSync(t *testing.T) {
@@ -76,21 +85,12 @@ func Test_editorSync(t *testing.T) {
 		app.serveEditorWebsocket(rw, r.WithContext(context.WithValue(r.Context(), blogKey, "default")))
 	})
 
-	d1 := wstest.NewDialer(h)
-	c1, resp1, err := d1.Dial("ws://example.com/editor/ws?sync=1", nil)
-	require.NoError(t, err)
-	defer resp1.Body.Close()
-	require.NotNil(t, c1)
-
-	d2 := wstest.NewDialer(h)
-	c2, resp2, err := d2.Dial("ws://example.com/editor/ws?sync=1", nil)
-	require.NoError(t, err)
-	defer resp2.Body.Close()
-	require.NotNil(t, c2)
+	c1 := dialWS(t, h, "sync=1")
+	c2 := dialWS(t, h, "sync=1")
 
 	// Send message on editor connection 1, should be received by connection 2
 
-	err = c1.WriteMessage(websocket.TextMessage, []byte("Test"))
+	err := c1.WriteMessage(websocket.TextMessage, []byte("Test"))
 	require.NoError(t, err)
 
 	mt, msg, err := c2.ReadMessage()
@@ -102,11 +102,7 @@ func Test_editorSync(t *testing.T) {
 
 	// Connection 3 should receive the initial state
 
-	d3 := wstest.NewDialer(h)
-	c3, resp3, err := d3.Dial("ws://example.com/editor/ws?sync=1", nil)
-	require.NoError(t, err)
-	defer resp3.Body.Close()
-	require.NotNil(t, c2)
+	c3 := dialWS(t, h, "sync=1")
 
 	mt, msg, err = c3.ReadMessage()
 	require.NoError(t, err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -15,12 +16,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/tlsalpn01"
-	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
+	"github.com/go-acme/lego/v5/certcrypto"
+	"github.com/go-acme/lego/v5/certificate"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/tlsalpn01"
+	"github.com/go-acme/lego/v5/lego"
+	"github.com/go-acme/lego/v5/registration"
 	singleflightx "github.com/samber/go-singleflightx"
 )
 
@@ -43,7 +45,7 @@ func (a *goBlog) getCertManager() *certManager {
 			}
 		}
 
-		acmeDir := lego.LEDirectoryProduction
+		acmeDir := lego.DirectoryURLLetsEncrypt
 		if a.cfg.Server.AcmeDir != "" {
 			acmeDir = a.cfg.Server.AcmeDir
 		}
@@ -90,12 +92,12 @@ type cachedCert struct {
 // acmeUser implements registration.User for lego.
 type acmeUser struct {
 	key          *ecdsa.PrivateKey
-	registration *registration.Resource
+	registration *acme.ExtendedAccount
 }
 
-func (u *acmeUser) GetEmail() string                        { return "" }
-func (u *acmeUser) GetRegistration() *registration.Resource { return u.registration }
-func (u *acmeUser) GetPrivateKey() crypto.PrivateKey        { return u.key }
+func (u *acmeUser) GetEmail() string                       { return "" }
+func (u *acmeUser) GetRegistration() *acme.ExtendedAccount { return u.registration }
+func (u *acmeUser) GetPrivateKey() crypto.Signer           { return u.key }
 
 func (cm *certManager) TLSConfig() *tls.Config {
 	return &tls.Config{
@@ -186,7 +188,6 @@ func (cm *certManager) newLegoClient() (*lego.Client, error) {
 
 	config := lego.NewConfig(user)
 	config.CADirURL = cm.acmeDir
-	config.Certificate.KeyType = certcrypto.EC256
 	if cm.httpClient != nil {
 		config.HTTPClient = cm.httpClient
 	}
@@ -200,19 +201,21 @@ func (cm *certManager) newLegoClient() (*lego.Client, error) {
 		return nil, err
 	}
 
+	ctx := context.Background()
+
 	// Resolve or register the account — no need to persist the registration
 	// separately; ResolveAccountByKey() (RFC 8555 §7.3.1) recovers it from
 	// the ACME server using only the saved private key.
-	reg, err := client.Registration.ResolveAccountByKey()
+	reg, err := client.Registration.ResolveAccountByKey(ctx)
 	if err != nil {
 		if cm.eabKid != "" && cm.eabHmac != "" {
-			reg, err = client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
+			reg, err = client.Registration.RegisterWithExternalAccountBinding(ctx, registration.RegisterEABOptions{
 				TermsOfServiceAgreed: true,
 				Kid:                  cm.eabKid,
 				HmacEncoded:          cm.eabHmac,
 			})
 		} else {
-			reg, err = client.Registration.Register(registration.RegisterOptions{
+			reg, err = client.Registration.Register(ctx, registration.RegisterOptions{
 				TermsOfServiceAgreed: true,
 			})
 		}
@@ -231,8 +234,9 @@ func (cm *certManager) obtainCert(host string) (*cachedCert, error) {
 		return nil, err
 	}
 
-	resource, err := client.Certificate.Obtain(certificate.ObtainRequest{
+	resource, err := client.Certificate.Obtain(context.Background(), certificate.ObtainRequest{
 		Domains: []string{host},
+		KeyType: certcrypto.EC256,
 		Bundle:  true,
 	})
 	if err != nil {
@@ -248,8 +252,8 @@ func (cm *certManager) renewCert(host string, current *cachedCert) (*cachedCert,
 		return nil, err
 	}
 
-	resource, err := client.Certificate.RenewWithOptions(certificate.Resource{
-		Domain:      host,
+	resource, err := client.Certificate.Renew(context.Background(), certificate.Resource{
+		Domains:     []string{host},
 		PrivateKey:  current.privateKeyPEM,
 		Certificate: current.certPEM,
 	}, &certificate.RenewOptions{
@@ -400,7 +404,7 @@ type tlsALPN01Provider struct {
 	certs sync.Map
 }
 
-func (p *tlsALPN01Provider) Present(domain, _, keyAuth string) error {
+func (p *tlsALPN01Provider) Present(_ context.Context, domain, _, keyAuth string) error {
 	cert, err := tlsalpn01.ChallengeCert(domain, keyAuth)
 	if err != nil {
 		return err
@@ -409,7 +413,7 @@ func (p *tlsALPN01Provider) Present(domain, _, keyAuth string) error {
 	return nil
 }
 
-func (p *tlsALPN01Provider) CleanUp(domain, _, _ string) error {
+func (p *tlsALPN01Provider) CleanUp(_ context.Context, domain, _, _ string) error {
 	p.certs.Delete(domain)
 	return nil
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cast"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.hacdias.com/indielib/micropub"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func (a *goBlog) getMicropubImplementation() *micropubImplementation {

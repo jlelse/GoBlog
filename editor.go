@@ -17,7 +17,7 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/gpxhelper"
 	"go.hacdias.com/indielib/micropub"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 const editorPath = "/editor"

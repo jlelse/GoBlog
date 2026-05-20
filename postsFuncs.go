@@ -12,7 +12,7 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func (a *goBlog) fullPostURL(p *post) string {

@@ -19,7 +19,7 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.24.0
-	github.com/go-acme/lego/v4 v4.35.2
+	github.com/go-acme/lego/v5 v5.0.4
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-webauthn/webauthn v0.17.3
 	github.com/google/uuid v1.6.0
@@ -40,7 +40,6 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/paulmach/go.geojson v1.5.0
-	github.com/posener/wstest v1.2.0
 	github.com/pquerna/otp v1.5.0
 	github.com/samber/go-singleflightx v0.3.2
 	github.com/samber/lo v1.53.0
@@ -60,12 +59,12 @@ require (
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/goldmark-emoji v1.0.6
 	go.hacdias.com/indielib v0.5.0
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	goftp.io/server/v2 v2.0.3
 	golang.org/x/crypto v0.51.0
 	golang.org/x/net v0.54.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.37.0
-	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.28.0
 	willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b
 )
@@ -127,6 +126,8 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+	software.sslmate.com/src/go-pkcs12 v0.7.1 // indirect
 	willnorris.com/go/webmention v0.0.0-20250531043116-33a44c5fb605 // indirect
 )
