@@ -64,6 +64,8 @@ jobs:
         target: base
         tags: ghcr.io/jlelse/goblog:latest,git.jlel.se/jlelse/goblog:latest
         provenance: false
+        cache-from: type=registry,ref=ghcr.io/jlelse/goblog:buildcache-master
+        cache-to: type=registry,ref=ghcr.io/jlelse/goblog:buildcache-master,mode=max
     - name: Build tools image
       uses: docker/build-push-action@v7
       with:
@@ -71,6 +73,8 @@ jobs:
         target: tools
         tags: ghcr.io/jlelse/goblog:tools,git.jlel.se/jlelse/goblog:tools
         provenance: false
+        cache-from: type=registry,ref=ghcr.io/jlelse/goblog:buildcache-master
+        cache-to: type=registry,ref=ghcr.io/jlelse/goblog:buildcache-master,mode=max
 
   cleanup:
     if: github.ref == 'refs/heads/master'
