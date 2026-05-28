@@ -42,9 +42,10 @@ func (p *post) addParameter(parameter, value string) {
 }
 
 type postHTMLOptions struct {
-	p           *post
-	absolute    bool
-	activityPub bool
+	p            *post
+	absolute     bool
+	activityPub  bool
+	simpleImages bool
 }
 
 func (a *goBlog) postHTML(o *postHTMLOptions) (res string) {
@@ -75,7 +76,7 @@ func (a *goBlog) postHTMLToWriter(w io.Writer, o *postHTMLOptions) {
 	a.renderPostLikeContext(hb, o.p)
 	// Render markdown
 	hb.WriteElementOpen("div", "class", "e-content")
-	_ = a.renderMarkdownToWriter(hb, o.p.Content, o.absolute)
+	_ = a.renderPostMarkdownToWriter(hb, o.p.Content, o.absolute, o.p.Path, o.simpleImages)
 	hb.WriteElementClose("div")
 	// Add bookmark links to the bottom
 	for _, l := range o.p.Parameters[a.cfg.Micropub.BookmarkParam] {
@@ -97,7 +98,7 @@ func (a *goBlog) feedHTML(w io.Writer, p *post) {
 		hb.WriteElementClose("audio")
 	}
 	// Add post HTML
-	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
+	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true, simpleImages: true})
 	// Add link to interactions and comments
 	if a.commentsEnabledForPost(p) {
 		hb.WriteElementOpen("p")
@@ -112,7 +113,7 @@ func (a *goBlog) feedHTML(w io.Writer, p *post) {
 func (a *goBlog) minFeedHTML(w io.Writer, p *post) {
 	hb := htmlbuilder.NewHTMLBuilder(w)
 	// Add post HTML
-	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
+	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true, simpleImages: true})
 }
 
 const summaryDivider = "<!--more-->"

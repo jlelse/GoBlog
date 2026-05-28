@@ -30,7 +30,7 @@ func TestHighlighting_Unknown(t *testing.T) {
 	source := "```unknownlang\nThis is some text.\n```\n"
 	err := md.Convert([]byte(source), &buf)
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "<pre class=\"c-chroma\"><code><span class=\"c-line\"><span class=\"c-cl\">This is some text.\n</span></span></code></pre>")
+	assert.Contains(t, buf.String(), "<pre class=\"c-chroma c-dark\"><code><span class=\"c-line\"><span class=\"c-cl\">This is some text.\n</span></span></code></pre>")
 }
 
 func TestHighlighting_NoLang(t *testing.T) {
@@ -42,5 +42,5 @@ func TestHighlighting_NoLang(t *testing.T) {
 	source := "```\nThis is a code block without a language.\n```\n"
 	err := md.Convert([]byte(source), &buf)
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "<pre class=\"c-chroma\"><code><span class=\"c-line\"><span class=\"c-cl\">This is a code block without a language.\n</span></span></code></pre>")
+	assert.Contains(t, buf.String(), "<pre class=\"c-chroma c-dark\"><code><span class=\"c-line\"><span class=\"c-cl\">This is a code block without a language.\n</span></span></code></pre>")
 }

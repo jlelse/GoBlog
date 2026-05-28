@@ -64,8 +64,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, 
 	if typ == photoSummary && len(photos) > 0 {
 		for _, photo := range photos {
 			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("img", "src", photo, "class", "u-photo")
-			hb.WriteElementClose("img")
+			a.writePictureElement(hb, photo, "", "", "u-photo", p.Path, false)
 			hb.WriteElementClose("p")
 		}
 	}
@@ -477,7 +476,7 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HTMLBuilder, p *post) {
 		hb.WriteElementOpen("meta", "itemprop", "dateModified", "content", updated.Format(time.RFC3339))
 	}
 	for _, img := range a.photoLinks(p) {
-		hb.WriteElementOpen("meta", "itemprop", "image", "content", img)
+		hb.WriteElementOpen("meta", "itemprop", "image", "content", a.mediaFallbackURL(img))
 	}
 	if a.apEnabled() {
 		if userHandle, ok := a.apUserHandle[p.Blog]; ok {

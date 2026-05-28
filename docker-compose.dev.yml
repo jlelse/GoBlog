@@ -1,0 +1,17 @@
+services:
+  imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:latest
+    container_name: goblog-imgproxy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - IMGPROXY_TIMEOUT=60
+      - IMGPROXY_DOWNLOAD_TIMEOUT=60
+      - IMGPROXY_READ_REQUEST_TIMEOUT=60
+      - IMGPROXY_WRITE_RESPONSE_TIMEOUT=60
+      - IMGPROXY_QUALITY=80
+      - IMGPROXY_JPEG_PROGRESSIVE=true
+      - IMGPROXY_PNG_INTERLACED=true
+      - IMGPROXY_FORMAT_QUALITY=avif=55,jpeg=80,png=80
+      - IMGPROXY_AVIF_SPEED=4

@@ -77,13 +77,13 @@ func (a *goBlog) toAPNote(p *post) *ap.Note {
 	}
 	// Content
 	note.MediaType = ap.MimeType(contenttype.HTML)
-	note.Content = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: a.postHTML(&postHTMLOptions{p: p, absolute: true, activityPub: true})}}
+	note.Content = ap.NaturalLanguageValues{{Lang: bc.Lang, Value: a.postHTML(&postHTMLOptions{p: p, absolute: true, activityPub: true, simpleImages: true})}}
 	// Attachments
 	if images := p.Parameters[a.cfg.Micropub.PhotoParam]; len(images) > 0 {
 		var attachments ap.ItemCollection
 		for _, image := range images {
 			apImage := ap.ObjectNew(ap.ImageType)
-			apImage.URL = ap.IRI(image)
+			apImage.URL = ap.IRI(a.mediaFallbackURL(image))
 			attachments.Append(apImage)
 		}
 		note.Attachment = attachments

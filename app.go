@@ -74,12 +74,12 @@ type goBlog struct {
 	logger   *slog.Logger
 	logLevel *slog.LevelVar
 	// Markdown
-	md, absoluteMd, titleMd goldmark.Markdown
+	md, titleMd goldmark.Markdown
 	// Media
-	compressorsInit  sync.Once
-	compressors      []mediaCompression
-	mediaStorageInit sync.Once
-	mediaStorage     mediaStorage
+	mediaStorageInit          sync.Once
+	mediaStorage              mediaStorage
+	mediaOptimizationVariants []variantType
+	mediaOptimizationSizes    string
 	// Microformats
 	mfInit  sync.Once
 	mfCache *c.Cache[string, []byte]

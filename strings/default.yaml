@@ -112,6 +112,7 @@ nopasswordset: "No password is set. You need a passkey to log in or set a passwo
 noposts: "There are no posts here."
 notifications: "Notifications"
 oldcontent: "⚠️ This entry is already over one year old. It may no longer be up to date. Opinions may have changed."
+optimize: "Optimize"
 pagination: "Pagination"
 passkeys: "Passkeys"
 password: "Password"

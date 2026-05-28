@@ -44,6 +44,8 @@ type App interface {
 	CheckAppPassword(password string) bool
 	// Get the full address of a path (including the domain)
 	GetFullAddress(path string) string
+	// Get the URL of the optimized variant of the media, when media optimization is enabled and an optimized variant is available. Otherwise, it returns the original URL.
+	GetOptimizedMediaURL(originalURL string) string
 	// Get sections for a blog
 	GetSections(blog string) ([]Section, error)
 	// Get all taxonomy values for a blog (e.g. tag names for a taxonomy)

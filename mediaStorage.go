@@ -37,8 +37,6 @@ func (a *goBlog) mediaStorageEnabled() bool {
 
 var errNoMediaStorageConfigured = errors.New("no media storage configured")
 
-type mediaStorageSaveFunc func(filename string, file io.Reader) (location string, err error)
-
 func (a *goBlog) saveMediaFile(filename string, f io.Reader) (string, error) {
 	a.initMediaStorage()
 	if a.mediaStorage == nil {
@@ -52,6 +50,13 @@ func (a *goBlog) saveMediaFile(filename string, f io.Reader) (string, error) {
 }
 
 func (a *goBlog) deleteMediaFile(filename string) error {
+	if a.mediaOptimizationEnabled() {
+		return a.deleteOptimizedMediaFile(filename)
+	}
+	return a.deleteMediaFileRaw(filename)
+}
+
+func (a *goBlog) deleteMediaFileRaw(filename string) error {
 	a.initMediaStorage()
 	if a.mediaStorage == nil {
 		return errNoMediaStorageConfigured

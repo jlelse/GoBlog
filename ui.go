@@ -91,7 +91,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	// Announcement
 	if ann := rd.Blog.Announcement; ann != nil && ann.Text != "" {
 		hb.WriteElementOpen("div", "id", "announcement", "data-nosnippet", "")
-		_ = a.renderMarkdownToWriter(hb, ann.Text, false)
+		_ = a.renderMarkdownToWriter(hb, ann.Text)
 		hb.WriteElementClose("div")
 	}
 	// Skip to content link (visually hidden until focused)
@@ -286,7 +286,7 @@ func (a *goBlog) renderSearch(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("h1")
 			// Description
 			if sc.Description != "" {
-				_ = a.renderMarkdownToWriter(hb, sc.Description, false)
+				_ = a.renderMarkdownToWriter(hb, sc.Description)
 			}
 			hb.WriteElementOpen("hr")
 			// Form
@@ -414,7 +414,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			// Description
 			if id.description != "" {
 				titleOrDesc = true
-				_ = a.renderMarkdownToWriter(hb, id.description, false)
+				_ = a.renderMarkdownToWriter(hb, id.description)
 			}
 			if titleOrDesc {
 				hb.WriteElementOpen("hr")
@@ -459,7 +459,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("h1")
 			// Description
 			if bs.Description != "" {
-				_ = a.renderMarkdownToWriter(hb, bs.Description, false)
+				_ = a.renderMarkdownToWriter(hb, bs.Description)
 			}
 			// Table
 			a.renderBlogStatsTable(hb, rd, bsd)
@@ -660,7 +660,7 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			// Description
 			if bd.description != "" {
 				hb.WriteElementOpen("p")
-				_ = a.renderMarkdownToWriter(hb, bd.description, false)
+				_ = a.renderMarkdownToWriter(hb, bd.description)
 				hb.WriteElementClose("p")
 			}
 			// Download button
@@ -745,7 +745,7 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("h1")
 			// Description
 			if cd.description != "" {
-				_ = a.renderMarkdownToWriter(hb, cd.description, false)
+				_ = a.renderMarkdownToWriter(hb, cd.description)
 			}
 			// Form
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
@@ -760,7 +760,7 @@ func (a *goBlog) renderContact(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("textarea")
 			// Send
 			if cd.privacy != "" {
-				_ = a.renderMarkdownToWriter(hb, cd.privacy, false)
+				_ = a.renderMarkdownToWriter(hb, cd.privacy)
 				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contactagreesend"))
 			} else {
 				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "contactsend"))
@@ -855,7 +855,7 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("h1")
 			// Description
 			if trd.taxonomy.Description != "" {
-				_ = a.renderMarkdownToWriter(hb, trd.taxonomy.Description, false)
+				_ = a.renderMarkdownToWriter(hb, trd.taxonomy.Description)
 			}
 			// List
 			for _, valGroup := range trd.valueGroups {
@@ -1115,7 +1115,9 @@ func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 }
 
 type editorFilesRenderData struct {
-	files []*mediaFile
+	files             []*mediaFile
+	optimizedVariants map[string]bool // set of hashes that are optimized variants
+	originals         map[string]bool // set of original hashes that have optimizations
 }
 
 func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -1141,8 +1143,17 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 				// Select
 				hb.WriteElementOpen("select", "name", "filename")
 				for _, f := range ef.files {
+					label := fmt.Sprintf("%s (%s), %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size))
+					if idx := strings.LastIndex(f.Name, "."); idx >= 0 {
+						hash := f.Name[:idx]
+						if ef.optimizedVariants[hash] {
+							label += " (variant)"
+						} else if ef.originals[hash] {
+							label += " (original)"
+						}
+					}
 					hb.WriteElementOpen("option", "value", f.Name)
-					hb.WriteEscaped(fmt.Sprintf("%s (%s), %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size)))
+					hb.WriteEscaped(label)
 					hb.WriteElementClose("option")
 				}
 				hb.WriteElementClose("select")
@@ -1162,6 +1173,13 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 					"formaction", rd.Blog.getRelativePath(editorPath+editorFileDeletePath),
 					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
 				)
+				// Optimize button (only when media optimization is enabled)
+				if a.mediaOptimizationEnabled() && a.mediaOptimizationImgproxyConfigured() {
+					hb.WriteElementOpen(
+						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "optimize"),
+						"formaction", rd.Blog.getRelativePath(editorPath+editorFileOptimizePath),
+					)
+				}
 				hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
 				hb.WriteElementClose("script")
 				hb.WriteElementClose("form")
@@ -1524,7 +1542,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementOpen("h2")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "create"))
 			hb.WriteElementClose("h2")
-			_ = a.renderMarkdownToWriter(hb, a.editorPostDesc(rd.Blog), false)
+			_ = a.renderMarkdownToWriter(hb, a.editorPostDesc(rd.Blog))
 			hb.WriteElementOpen("form", "method", "post", "enctype", "multipart/form-data", "class", "fw p")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "createpost")
 			hb.WriteElementOpen(

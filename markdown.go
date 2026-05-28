@@ -19,24 +19,7 @@ import (
 
 func (a *goBlog) initMarkdown() {
 	a.initMarkdownOnce.Do(func() {
-		defaultGoldmarkOptions := []goldmark.Option{
-			goldmark.WithRendererOptions(
-				html.WithUnsafe(),
-			),
-			goldmark.WithParserOptions(
-				parser.WithAutoHeadingID(),
-			),
-			goldmark.WithExtensions(
-				extension.Table,
-				extension.Strikethrough,
-				extension.Footnote,
-				extension.Typographer,
-				extension.Linkify,
-				marktag.Mark,
-				emoji.Emoji,
-				highlighting.Highlighting,
-			),
-		}
+		defaultGoldmarkOptions := a.defaultGoldmarkOptions()
 		publicAddress := ""
 		if srv := a.cfg.Server; srv != nil {
 			publicAddress = srv.PublicAddress
@@ -44,10 +27,7 @@ func (a *goBlog) initMarkdown() {
 		a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
 			absoluteLinks: false,
 			publicAddress: publicAddress,
-		}))...)
-		a.absoluteMd = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
-			absoluteLinks: true,
-			publicAddress: publicAddress,
+			app:           a,
 		}))...)
 		a.titleMd = goldmark.New(
 			goldmark.WithParser(
@@ -64,14 +44,30 @@ func (a *goBlog) initMarkdown() {
 	})
 }
 
-func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string, absoluteLinks bool) (err error) {
-	a.initMarkdown()
-	if absoluteLinks {
-		err = a.absoluteMd.Convert([]byte(source), w)
-	} else {
-		err = a.md.Convert([]byte(source), w)
+func (a *goBlog) defaultGoldmarkOptions() []goldmark.Option {
+	return []goldmark.Option{
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+			extension.Footnote,
+			extension.Typographer,
+			extension.Linkify,
+			marktag.Mark,
+			emoji.Emoji,
+			highlighting.Highlighting,
+		),
 	}
-	return err
+}
+
+func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string) (err error) {
+	a.initMarkdown()
+	return a.md.Convert([]byte(source), w)
 }
 
 func (a *goBlog) renderText(s string) (string, error) {
@@ -80,7 +76,7 @@ func (a *goBlog) renderText(s string) (string, error) {
 	}
 	pr, pw := io.Pipe()
 	go func() {
-		_ = pw.CloseWithError(a.renderMarkdownToWriter(pw, s, false))
+		_ = pw.CloseWithError(a.renderMarkdownToWriter(pw, s))
 	}()
 	text, err := htmlTextFromReader(pr)
 	_ = pr.CloseWithError(err)
@@ -112,12 +108,31 @@ func (a *goBlog) renderMdTitle(s string) string {
 	return text
 }
 
+func (a *goBlog) renderPostMarkdownToWriter(w io.Writer, source string, absoluteLinks bool, postPath string, simpleImages bool) (err error) {
+	a.initMarkdown()
+	publicAddress := ""
+	if srv := a.cfg.Server; srv != nil {
+		publicAddress = srv.PublicAddress
+	}
+	md := goldmark.New(append(a.defaultGoldmarkOptions(), goldmark.WithExtensions(&customExtension{
+		absoluteLinks: absoluteLinks,
+		publicAddress: publicAddress,
+		app:           a,
+		postPath:      postPath,
+		simpleImages:  simpleImages,
+	}))...)
+	return md.Convert([]byte(source), w)
+}
+
 // Extensions etc...
 
 // Links
 type customExtension struct {
 	publicAddress string
 	absoluteLinks bool
+	app           *goBlog
+	postPath      string
+	simpleImages  bool
 }
 
 func (l *customExtension) Extend(m goldmark.Markdown) {
@@ -125,6 +140,9 @@ func (l *customExtension) Extend(m goldmark.Markdown) {
 		util.Prioritized(&customRenderer{
 			absoluteLinks: l.absoluteLinks,
 			publicAddress: l.publicAddress,
+			app:           l.app,
+			postPath:      l.postPath,
+			simpleImages:  l.simpleImages,
 		}, 500),
 	))
 }
@@ -132,6 +150,9 @@ func (l *customExtension) Extend(m goldmark.Markdown) {
 type customRenderer struct {
 	publicAddress string
 	absoluteLinks bool
+	app           *goBlog
+	postPath      string
+	simpleImages  bool
 }
 
 func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
@@ -184,13 +205,7 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 		}
 	}
 	hb := htmlbuilder.NewHTMLBuilder(w)
-	hb.WriteElementOpen("a", "href", dest)
-	imgEls := []any{"src", dest, "alt", c.extractTextFromChildren(n, source), "loading", "lazy"}
-	if len(n.Title) > 0 {
-		imgEls = append(imgEls, "title", string(n.Title))
-	}
-	hb.WriteElementOpen("img", imgEls...)
-	hb.WriteElementClose("a")
+	c.app.writePictureElement(hb, dest, c.extractTextFromChildren(n, source), string(n.Title), "", c.postPath, c.simpleImages)
 	return ast.WalkSkipChildren, nil
 }
 

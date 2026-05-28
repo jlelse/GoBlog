@@ -111,19 +111,6 @@ func Test_allLinksFromHTML(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func Test_urlHasExt(t *testing.T) {
-	t.Run("Simple", func(t *testing.T) {
-		ext, res := urlHasExt("https://example.com/test.jpg", "png", "jpg", "webp")
-		assert.True(t, res)
-		assert.Equal(t, "jpg", ext)
-	})
-	t.Run("Strange case", func(t *testing.T) {
-		ext, res := urlHasExt("https://example.com/test.jpG", "PnG", "JPg", "WEBP")
-		assert.True(t, res)
-		assert.Equal(t, "jpg", ext)
-	})
-}
-
 func Test_htmlText(t *testing.T) {
 	htmlText := func(s string) string {
 		text, _ := htmlTextFromReader(strings.NewReader(s))

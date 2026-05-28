@@ -12,9 +12,8 @@ import (
 )
 
 func TestEditorHandleFileAttachments(t *testing.T) {
-	a := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
+	storagePath := t.TempDir()
+	a := newAppWithStorage(t, &localMediaStorage{path: storagePath})
 	_ = a.initConfig(false)
 
 	// Helper function to create a multipart form request

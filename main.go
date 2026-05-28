@@ -485,7 +485,7 @@ func initializeComponents(app *goBlog) {
 		}
 	}
 	for _, f := range []func(){
-		app.initWebmention, app.initTelegram, app.initAtproto,
+		app.initMediaOptimization, app.initWebmention, app.initTelegram, app.initAtproto,
 		app.initTTS, app.initSessions, app.startPostsScheduler, app.initPostsDeleter,
 		app.initIndexNow,
 	} {

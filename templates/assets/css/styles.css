@@ -71,6 +71,11 @@ h2 a,
   text-decoration: none;
 }
 
+img,
+audio {
+  height: auto;
+}
+
 button, .button,
 input,
 textarea,

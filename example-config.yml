@@ -121,8 +121,6 @@ micropub:
     ftpAddress: ftp.example.com:21 # Host and port for FTP connection
     ftpUser: ftpuser # Username of FTP user
     ftpPassword: ftppassword # Password of FTP user
-    # Image compression (optional, disabled when private mode enabled)
-    localCompressionEnabled: true # Use local compression
   # MicroPub parameters (defaults already set, set to overwrite)
   # You can set parameters via the UI of your MicroPub editor or via front matter in the content
   categoryParam: tags
@@ -188,6 +186,22 @@ tts:
   # mistralApiKey: "xxxxxxxx" # API key for Mistral TTS
   # mistralVoice: "your-voice-id" # Voice (preset or custom) to use for Mistral TTS
   # mistralModel: "voxtral-mini-tts-latest" # Mistral TTS model, defaults to voxtral-mini-tts-latest
+
+# Media optimization (optional, requires imgproxy)
+# Generates optimized image variants (AVIF, JPEG/PNG) for uploaded images.
+# When enabled, images are served via a <picture> element with format and width variants.
+# See README for Docker Compose setup with imgproxy.
+mediaOptimization:
+  enabled: true # Enable image optimization
+  imgproxyURL: http://localhost:8080 # URL to imgproxy service
+  # formats: # Output image formats (e.g., avif, jpeg, png). Quality, compression, and encoding options are set via imgproxy environment variables.
+  #   - avif
+  #   - jpeg
+  # widths: # Image widths to generate for each format
+  #   - 800
+  #   - 1400
+  #   - 2000
+  # contentMaxWidth: # Maximum content column width in CSS pixels (default: 700). Used for the sizes attribute on responsive images.
 
 # Block bots using the robots.txt
 robotstxt:

@@ -3,7 +3,6 @@ package aiimage
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -26,7 +25,7 @@ type plugin struct {
 // GetPlugin returns the aiimage plugin instance.
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
-	plugintypes.UIPostContent, plugintypes.UIPost,
+	plugintypes.UIImgAttributes, plugintypes.UIPost,
 	plugintypes.Middleware,
 ) {
 	p := &plugin{}
@@ -104,19 +103,27 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	}
 }
 
-func (p *plugin) RenderPostContent(post plugintypes.Post, doc *goquery.Document) {
-	captions := post.GetParameter(postParam)
-
-	if len(captions) == 0 {
-		return
+func (p *plugin) ImgAttributes(originalURL, postPath, alt, title string) (string, string) {
+	if postPath == "" || originalURL == "" {
+		return alt, title
 	}
 
-	title := "AI generated caption:"
+	post, err := p.app.GetPost(postPath)
+	if err != nil {
+		return alt, title
+	}
+
+	captions := post.GetParameter(postParam)
+	if len(captions) == 0 {
+		return alt, title
+	}
+
+	addedTitle := "AI generated caption:"
 	if blogConfig, ok := p.config[post.GetBlog()]; ok {
 		if blogConfigAsMap, ok := blogConfig.(map[string]any); ok {
 			if blogSpecificTitle, ok := blogConfigAsMap["title"]; ok {
 				if blogSpecificTitleAsString, ok := blogSpecificTitle.(string); ok {
-					title = blogSpecificTitleAsString
+					addedTitle = blogSpecificTitleAsString
 				}
 			}
 		}
@@ -128,22 +135,23 @@ func (p *plugin) RenderPostContent(post plugintypes.Post, doc *goquery.Document)
 			continue
 		}
 		imageURL, imageCaption := captionSubstrings[0], captionSubstrings[1]
-		doc.Find(fmt.Sprintf(`img[src="%s"]`, imageURL)).Each(func(_ int, element *goquery.Selection) {
-			finalCaption := title + " " + imageCaption
-			existingAlt, altExists := element.Attr("alt")
-			if !altExists {
-				element.SetAttr("alt", finalCaption)
+		if imageURL == originalURL {
+			finalCaption := addedTitle + " " + imageCaption
+			if alt != "" {
+				alt = alt + "\n\n" + finalCaption
 			} else {
-				element.SetAttr("alt", existingAlt+"\n\n"+finalCaption)
+				alt = finalCaption
 			}
-			exisitingTitle, titleExists := element.Attr("title")
-			if !titleExists {
-				element.SetAttr("title", finalCaption)
+			if title != "" {
+				title = title + "\n\n" + finalCaption
 			} else {
-				element.SetAttr("title", exisitingTitle+"\n\n"+finalCaption)
+				title = finalCaption
 			}
-		})
+			return alt, title
+		}
 	}
+
+	return alt, title
 }
 
 type apiRequestMessage struct {
@@ -205,6 +213,7 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 	captions := []string{}
 
 	for _, image := range images {
+		apiURL := p.app.GetFullAddress(p.app.GetOptimizedMediaURL(image))
 		requestBody := map[string]any{
 			"model": model,
 			"messages": []apiRequestMessage{
@@ -220,7 +229,7 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 					Content: []*apiRequestMessageContent{{
 						Type: "image_url",
 						ImageURL: &apiRequestMessageContentImageURL{
-							URL:    image,
+							URL:    apiURL,
 							Detail: "low",
 						},
 					}},
@@ -238,11 +247,11 @@ func (p *plugin) createCaptions(post plugintypes.Post) {
 
 		if err != nil {
 			log.Println("aiimage plugin:", err.Error())
-			return
+			continue
 		}
 
 		if len(response.Choices) < 1 {
-			return
+			continue
 		}
 
 		caption := response.Choices[0].Message.Content

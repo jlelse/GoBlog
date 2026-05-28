@@ -101,6 +101,7 @@ h2 a,
 img,
 audio {
   @extend .fw;
+  height: auto;
 }
 
 button,

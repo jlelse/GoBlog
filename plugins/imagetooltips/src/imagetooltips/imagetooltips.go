@@ -44,9 +44,9 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	defer bufferpool.Put(bufJs)
 	hbJs := htmlbuilder.NewHTMLBuilder(bufJs)
 
-	doc.Find(".e-content a > img").Each(func(_ int, element *goquery.Selection) {
-		element.Parent().ReplaceWithSelection(element)
-		element.AppendHtml("")
+	// Unwrap links wrapping images so the click-to-show-title isn't hijacked by the link
+	doc.Find(".e-content a:has(img)").Each(func(_ int, element *goquery.Selection) {
+		element.ReplaceWithSelection(element.Contents())
 	})
 
 	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("imagetooltips.js"), "defer", "")

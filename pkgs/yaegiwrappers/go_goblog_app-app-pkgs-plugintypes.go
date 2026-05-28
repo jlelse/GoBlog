@@ -59,6 +59,7 @@ func init() {
 		"UI":               reflect.ValueOf((*plugintypes.UI)(nil)),
 		"UI2":              reflect.ValueOf((*plugintypes.UI2)(nil)),
 		"UIFooter":         reflect.ValueOf((*plugintypes.UIFooter)(nil)),
+		"UIImgAttributes":  reflect.ValueOf((*plugintypes.UIImgAttributes)(nil)),
 		"UIPost":           reflect.ValueOf((*plugintypes.UIPost)(nil)),
 		"UIPostContent":    reflect.ValueOf((*plugintypes.UIPostContent)(nil)),
 		"UISummary":        reflect.ValueOf((*plugintypes.UISummary)(nil)),
@@ -82,6 +83,7 @@ func init() {
 		"_UI":              reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI)(nil)),
 		"_UI2":             reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UI2)(nil)),
 		"_UIFooter":        reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIFooter)(nil)),
+		"_UIImgAttributes": reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIImgAttributes)(nil)),
 		"_UIPost":          reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIPost)(nil)),
 		"_UIPostContent":   reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UIPostContent)(nil)),
 		"_UISummary":       reflect.ValueOf((*_go_goblog_app_app_pkgs_plugintypes_UISummary)(nil)),
@@ -105,6 +107,7 @@ type _go_goblog_app_app_pkgs_plugintypes_App struct {
 	WGetDatabase          func() plugintypes.Database
 	WGetFullAddress       func(path string) string
 	WGetHTTPClient        func() *http.Client
+	WGetOptimizedMediaURL func(originalURL string) string
 	WGetPost              func(path string) (plugintypes.Post, error)
 	WGetPosts             func(query *plugintypes.PostsQuery) ([]plugintypes.Post, error)
 	WGetSections          func(blog string) ([]plugintypes.Section, error)
@@ -158,6 +161,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) GetFullAddress(path string) str
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetHTTPClient() *http.Client {
 	return W.WGetHTTPClient()
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetOptimizedMediaURL(originalURL string) string {
+	return W.WGetOptimizedMediaURL(originalURL)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetPost(path string) (plugintypes.Post, error) {
 	return W.WGetPost(path)
@@ -426,6 +432,16 @@ type _go_goblog_app_app_pkgs_plugintypes_UIFooter struct {
 
 func (W _go_goblog_app_app_pkgs_plugintypes_UIFooter) RenderFooter(renderContext plugintypes.RenderContext, doc *goquery.Document) {
 	W.WRenderFooter(renderContext, doc)
+}
+
+// _go_goblog_app_app_pkgs_plugintypes_UIImgAttributes is an interface wrapper for UIImgAttributes type
+type _go_goblog_app_app_pkgs_plugintypes_UIImgAttributes struct {
+	IValue         interface{}
+	WImgAttributes func(originalURL string, postPath string, alt string, title string) (string, string)
+}
+
+func (W _go_goblog_app_app_pkgs_plugintypes_UIImgAttributes) ImgAttributes(originalURL string, postPath string, alt string, title string) (string, string) {
+	return W.WImgAttributes(originalURL, postPath, alt, title)
 }
 
 // _go_goblog_app_app_pkgs_plugintypes_UIPost is an interface wrapper for UIPost type

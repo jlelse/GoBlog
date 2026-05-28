@@ -36,6 +36,7 @@ const (
 	pluginPostUpdatedHookType = "postupdatedhook"
 	pluginPostDeletedHookType = "postdeletedhook"
 	pluginBlockedBotsType     = "blockedbots"
+	pluginUIImgAttributesType = "uiimgattributes"
 )
 
 func (a *goBlog) initPlugins() error {
@@ -59,6 +60,7 @@ func (a *goBlog) initPlugins() error {
 			pluginPostUpdatedHookType: reflect.TypeFor[plugintypes.PostUpdatedHook](),
 			pluginPostDeletedHookType: reflect.TypeFor[plugintypes.PostDeletedHook](),
 			pluginBlockedBotsType:     reflect.TypeFor[plugintypes.BlockedBots](),
+			pluginUIImgAttributesType: reflect.TypeFor[plugintypes.UIImgAttributes](),
 		},
 		yaegiwrappers.Symbols,
 		subFS,
@@ -254,6 +256,10 @@ func (a *goBlog) CheckAppPassword(password string) bool {
 
 func (a *goBlog) GetFullAddress(path string) string {
 	return a.getFullAddress(path)
+}
+
+func (a *goBlog) GetOptimizedMediaURL(originalURL string) string {
+	return a.mediaFallbackURL(originalURL)
 }
 
 func (a *goBlog) GetSections(blog string) ([]plugintypes.Section, error) {

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -219,21 +218,6 @@ func charCount(s string) (count int) {
 		}
 	}
 	return count
-}
-
-// Check if url has allowed file extension
-func urlHasExt(rawURL string, allowed ...string) (ext string, has bool) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", false
-	}
-	ext = strings.ToLower(path.Ext(u.Path))
-	if ext == "" {
-		return "", false
-	}
-	ext = ext[1:]
-	allowed = lo.Map(allowed, func(t string, _ int) string { return strings.ToLower(t) })
-	return ext, lo.Contains(allowed, strings.ToLower(ext))
 }
 
 func mBytesString(size int64) string {

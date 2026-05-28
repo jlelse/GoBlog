@@ -16,29 +16,30 @@ import (
 )
 
 type config struct {
-	Server        *configServer          `mapstructure:"server"`
-	Db            *configDb              `mapstructure:"database"`
-	Cache         *configCache           `mapstructure:"cache"`
-	DefaultBlog   string                 `mapstructure:"defaultblog"`
-	Blogs         map[string]*configBlog `mapstructure:"blogs"`
-	User          *configUser            `mapstructure:"user"`
-	Hooks         *configHooks           `mapstructure:"hooks"`
-	Plugins       []*configPlugin        `mapstructure:"plugins"`
-	Micropub      *configMicropub        `mapstructure:"micropub"`
-	PathRedirects []*configRegexRedirect `mapstructure:"pathRedirects"`
-	ActivityPub   *configActivityPub     `mapstructure:"activityPub"`
-	Webmention    *configWebmention      `mapstructure:"webmention"`
-	Notifications *configNotifications   `mapstructure:"notifications"`
-	PrivateMode   *configPrivateMode     `mapstructure:"privateMode"`
-	IndexNow      *configIndexNow        `mapstructure:"indexNow"`
-	EasterEgg     *configEasterEgg       `mapstructure:"easterEgg"`
-	MapTiles      *configMapTiles        `mapstructure:"mapTiles"`
-	TTS           *configTTS             `mapstructure:"tts"`
-	Reactions     *configReactions       `mapstructure:"reactions"`
-	Pprof         *configPprof           `mapstructure:"pprof"`
-	RobotsTxt     *configRobotsTxt       `mapstructure:"robotstxt"`
-	Debug         bool                   `mapstructure:"debug"`
-	initialized   bool
+	Server            *configServer            `mapstructure:"server"`
+	Db                *configDb                `mapstructure:"database"`
+	Cache             *configCache             `mapstructure:"cache"`
+	DefaultBlog       string                   `mapstructure:"defaultblog"`
+	Blogs             map[string]*configBlog   `mapstructure:"blogs"`
+	User              *configUser              `mapstructure:"user"`
+	Hooks             *configHooks             `mapstructure:"hooks"`
+	Plugins           []*configPlugin          `mapstructure:"plugins"`
+	Micropub          *configMicropub          `mapstructure:"micropub"`
+	PathRedirects     []*configRegexRedirect   `mapstructure:"pathRedirects"`
+	ActivityPub       *configActivityPub       `mapstructure:"activityPub"`
+	Webmention        *configWebmention        `mapstructure:"webmention"`
+	Notifications     *configNotifications     `mapstructure:"notifications"`
+	PrivateMode       *configPrivateMode       `mapstructure:"privateMode"`
+	MediaOptimization *configMediaOptimization `mapstructure:"mediaOptimization"`
+	IndexNow          *configIndexNow          `mapstructure:"indexNow"`
+	EasterEgg         *configEasterEgg         `mapstructure:"easterEgg"`
+	MapTiles          *configMapTiles          `mapstructure:"mapTiles"`
+	TTS               *configTTS               `mapstructure:"tts"`
+	Reactions         *configReactions         `mapstructure:"reactions"`
+	Pprof             *configPprof             `mapstructure:"pprof"`
+	RobotsTxt         *configRobotsTxt         `mapstructure:"robotstxt"`
+	Debug             bool                     `mapstructure:"debug"`
+	initialized       bool
 }
 
 type configServer struct {
@@ -272,8 +273,6 @@ type configMicropubMedia struct {
 	FTPAddress  string `mapstructure:"ftpAddress"`
 	FTPUser     string `mapstructure:"ftpUser"`
 	FTPPassword string `mapstructure:"ftpPassword"`
-	// Local
-	LocalCompressionEnabled bool `mapstructure:"localCompressionEnabled"`
 }
 
 type configRegexRedirect struct {
@@ -380,6 +379,14 @@ type configAtproto struct {
 	Handle         string   `mapstructure:"handle"`
 	Password       string   `mapstructure:"password"`
 	TagsTaxonomies []string `mapstructure:"tagsTaxonomies"`
+}
+
+type configMediaOptimization struct {
+	Enabled         bool     `mapstructure:"enabled"`
+	ImgproxyURL     string   `mapstructure:"imgproxyURL"`
+	Formats         []string `mapstructure:"formats"`
+	Widths          []int    `mapstructure:"widths"`
+	ContentMaxWidth int      `mapstructure:"contentMaxWidth"`
 }
 
 func (a *goBlog) loadConfigFile(file string) error {
@@ -673,6 +680,13 @@ func createDefaultConfig() *config {
 			TagsTaxonomies: []string{"tags"},
 		},
 		Webmention: &configWebmention{},
+		MediaOptimization: &configMediaOptimization{
+			Formats: []string{
+				"avif",
+				"jpeg",
+			},
+			Widths: []int{800, 1400, 2000},
+		},
 	}
 }
 

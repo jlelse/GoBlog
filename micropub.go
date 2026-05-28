@@ -290,17 +290,9 @@ func (s *micropubImplementation) UploadMedia(file multipart.File, header *multip
 	if err != nil {
 		return "", fmt.Errorf("%w: failed to save original file", micropub.ErrBadRequest)
 	}
-	// Try to compress file (only when not in private mode)
-	if !s.a.isPrivate() {
-		compressedLocation, compressionErr := s.a.compressMediaFile(location)
-		if compressionErr != nil {
-			return "", fmt.Errorf("%w: failed to compress file: %w", micropub.ErrBadRequest, compressionErr)
-		}
-		// Overwrite location
-		if compressedLocation != "" {
-			location = compressedLocation
-		}
-	}
+	// Optimize file (when optimization is enabled and configured)
+	originalHash := fmt.Sprintf("%x", hash.Sum(nil))
+	s.a.optimizeMediaFile(originalHash, fileExtension)
 	return location, nil
 }
 

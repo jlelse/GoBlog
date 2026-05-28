@@ -98,3 +98,12 @@ type BlockedBots interface {
 	// Return a list of bot user-agent names to block.
 	BlockedBots() []string
 }
+
+// UIImgAttributes plugins get called when rendering an <img> element.
+// The plugin can modify the alt and title attributes based on the original image URL and post path.
+type UIImgAttributes interface {
+	// ImgAttributes is called with the original image URL, current alt/title attributes,
+	// and the post path (empty if not available, e.g. during markdown rendering).
+	// Returns the potentially modified alt and title.
+	ImgAttributes(originalURL, postPath, alt, title string) (string, string)
+}

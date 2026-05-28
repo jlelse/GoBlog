@@ -761,21 +761,69 @@ See [`example-config.yml`](/example-config.yml) for configuration of:
 
 By default, media is stored locally in `data/media/` and served at `/m/`.
 
-**Local compression:**
-
-When enabled, uploaded images are automatically compressed to reduce file size and bandwidth:
-
-```yaml
-micropub:
-  mediaStorage:
-    localCompressionEnabled: true
-```
-
-This compresses images while maintaining reasonable quality. **Note**: Local compression is automatically disabled when private mode is enabled.
-
 **External storage:**
 
 You can use BunnyCDN or FTP for media storage instead of local storage. See [`example-config.yml`](/example-config.yml) for configuration details.
+
+### Image Optimization
+
+GoBlog can automatically generate optimized image variants (AVIF, JPEG/PNG) for uploaded images using [imgproxy](https://imgproxy.net), a standalone image processing service.
+
+**How it works:**
+
+1. On upload, GoBlog saves the original and sends it to imgproxy to generate variants (AVIF, JPEG/PNG at configured sizes)
+2. Variants are saved alongside the original in media storage
+3. When rendering a page, GoBlog emits a `<picture>` element — AVIF preferred, JPEG/PNG as fallback based on the original format — with `srcset` `w` descriptors for responsive image widths
+4. Non-image uploads (audio, video, etc.) are never sent to imgproxy
+
+**Benefits:**
+
+- Automatically serves next-gen format (AVIF) without manual conversion
+- `<picture>` markup is fully cacheable — same HTML for all browsers, no `Vary` header
+- Originals are preserved unchanged
+
+**Config:**
+
+```yaml
+mediaOptimization:
+  enabled: true
+  imgproxyURL: http://imgproxy:8080
+  # formats: # output image formats (e.g., avif, jpeg, png)
+  #   - avif
+  #   - jpeg
+  # widths: # image widths to generate for each format
+  #   - 800
+  #   - 1400
+  #   - 2000
+  # contentMaxWidth: # maximum content column width in CSS pixels (default: 700). Used for the sizes attribute on responsive images.
+```
+
+All combinations of `formats` × `widths` are generated. Quality, compression, and encoding options are set via imgproxy environment variables (see [imgproxy configuration](https://docs.imgproxy.net/configuration/options#compression)).
+
+**Docker Compose:**
+
+Add imgproxy alongside GoBlog:
+
+```yaml
+services:
+  goblog:
+    # ... existing config ...
+  imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:latest
+    restart: unless-stopped
+    environment:
+      - IMGPROXY_TIMEOUT=60
+      - IMGPROXY_DOWNLOAD_TIMEOUT=60
+      - IMGPROXY_READ_REQUEST_TIMEOUT=60
+      - IMGPROXY_WRITE_RESPONSE_TIMEOUT=60
+      - IMGPROXY_QUALITY=80
+      - IMGPROXY_JPEG_PROGRESSIVE=true
+      - IMGPROXY_PNG_INTERLACED=true
+      - IMGPROXY_FORMAT_QUALITY=avif=55,jpeg=80,png=80
+      - IMGPROXY_AVIF_SPEED=4
+```
+
+The `imgproxy` hostname is resolved via Docker's internal DNS, so `imgproxyURL: http://imgproxy:8080` works without additional networking config.
 
 ---
 
@@ -1053,6 +1101,7 @@ Plugins can implement multiple interfaces:
 - **Middleware** - HTTP middleware with priority
 - **UI** - Modify rendered HTML (stream-based)
 - **UI2** - Modify rendered HTML (DOM-based with goquery)
+- **UIImgAttributes** - Modify alt/title attributes on `<img>` elements
 - **UISummary** - Modify post summaries on index pages
 - **UIPost** - Modify post HTML on post pages
 - **UIPostContent** - Modify post content HTML (all outputs)
