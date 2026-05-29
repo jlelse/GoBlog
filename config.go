@@ -70,9 +70,10 @@ type configServer struct {
 }
 
 type configDb struct {
-	File     string `mapstructure:"file"`
-	DumpFile string `mapstructure:"dumpFile"`
-	Debug    bool   `mapstructure:"debug"`
+	File           string `mapstructure:"file"`
+	DumpFile       string `mapstructure:"dumpFile"`
+	MigrationCache string `mapstructure:"migrationCache"`
+	Debug          bool   `mapstructure:"debug"`
 }
 
 type configCache struct {
@@ -649,7 +650,8 @@ func createDefaultConfig() *config {
 			LogFile:       "data/access.log",
 		},
 		Db: &configDb{
-			File: "data/db.sqlite",
+			File:           "data/db.sqlite",
+			MigrationCache: "data/media-migrate.json",
 		},
 		Cache: &configCache{
 			Enable:     true,

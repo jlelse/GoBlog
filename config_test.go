@@ -17,6 +17,7 @@ func createDefaultTestConfig[V testConfigParam](t V) *config {
 	c := createDefaultConfig()
 	dir := t.TempDir()
 	c.Db.File = filepath.Join(dir, "blog.db")
+	c.Db.MigrationCache = filepath.Join(dir, "media-migrate.json")
 	c.User.ProfileImageFile = filepath.Join(dir, "profileImage")
 	return c
 }

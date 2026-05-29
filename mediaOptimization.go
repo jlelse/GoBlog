@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -116,17 +117,35 @@ func (a *goBlog) extractMediaHashFromURL(rawURL string) string {
 }
 
 func (a *goBlog) optimizeMediaFile(originalHash, ext string) {
-	if !a.mediaOptimizationEnabled() || !a.mediaOptimizationImgproxyConfigured() ||
-		len(a.mediaOptimizationVariants) == 0 || !isImageExtension(ext) {
+	if !a.mediaOptimizationEnabled() {
+		a.debug("Media optimization: not enabled")
+		return
+	}
+	if !a.mediaOptimizationImgproxyConfigured() {
+		a.debug("Media optimization: imgproxy not configured")
+		return
+	}
+	if len(a.mediaOptimizationVariants) == 0 {
+		a.debug("Media optimization: no variants configured")
+		return
+	}
+	if !isImageExtension(ext) {
+		a.debug("Media optimization: unsupported extension", "ext", ext)
+		return
+	}
+	if err := a.checkImgproxyReachable(); err != nil {
+		a.error("Media optimization: imgproxy not reachable", "err", err, "hash", originalHash)
 		return
 	}
 
 	sourceURL := a.mediaFileLocation(originalHash + ext)
 	if sourceURL == "" {
+		a.debug("Media optimization: empty source URL", "hash", originalHash, "ext", ext)
 		return
 	}
 	sourceURL = a.getFullAddress(sourceURL)
 	sourceFormat := strings.ToLower(strings.TrimPrefix(ext, "."))
+	a.debug("Media optimization: starting", "source", sourceURL, "format", sourceFormat)
 
 	// Delete existing variants for this original before regenerating
 	if existing, err := a.db.mediaOptimizedByOriginal(originalHash); err == nil {
@@ -220,6 +239,22 @@ func (a *goBlog) callImgproxy(sourceURL string, variant *variantType, w io.Write
 		return fmt.Errorf("imgproxy request failed: %w", err)
 	}
 
+	return nil
+}
+
+func (a *goBlog) checkImgproxyReachable() error {
+	if !a.mediaOptimizationImgproxyConfigured() {
+		return nil
+	}
+	imgproxyURL := strings.TrimRight(a.cfg.MediaOptimization.ImgproxyURL, "/")
+	healthURL := imgproxyURL + "/health"
+	err := requests.URL(healthURL).
+		Client(a.httpClient).
+		AddValidator(requests.CheckStatus(http.StatusOK)).
+		Fetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("imgproxy health check failed: %w", err)
+	}
 	return nil
 }
 

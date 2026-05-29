@@ -825,6 +825,44 @@ services:
 
 The `imgproxy` hostname is resolved via Docker's internal DNS, so `imgproxyURL: http://imgproxy:8080` works without additional networking config.
 
+### Media Migration
+
+If you have existing media files that are duplicated (e.g., original uploads alongside compressed copies from an older setup), the media migration tool can consolidate them. It detects perceptually identical images using perceptual hashing (dhash), groups them together, and replaces all references to compressed copies with the original — then deletes the redundant files.
+
+**How it works:**
+
+1. **Discovery** — Scans all media files, computes perceptual hashes (with EXIF-aware and raw variants), and groups files with similar aspect ratios and low hash distance
+2. **Original identification** — Picks the original based on EXIF presence, then image dimensions, then file size
+3. **Verification** — Displays groups and asks for confirmation (or use `--yes` to auto-confirm)
+4. **Optimization** — Optionally triggers imgproxy optimization on the originals
+5. **Replacement** — Updates all post content and parameters to reference the original file instead of compressed copies
+6. **Cleanup** — Deletes the redundant compressed files
+
+**CLI flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--yes` | Auto-confirm all groups (skip interactive prompts) |
+| `--dry-run` | Show what would be changed without making any changes |
+| `--discover-only` | Only discover and group files, don't process them |
+| `--threshold N` | Maximum perceptual hash distance to consider files similar (default: 6) |
+| `--limit N` | Process at most N groups |
+
+**Example:**
+
+```bash
+./GoBlog --config ./config/config.yml media-migrate --yes
+./GoBlog --config ./config/config.yml media-migrate --dry-run
+./GoBlog --config ./config/config.yml media-migrate --discover-only --threshold 10
+```
+
+**Notes:**
+- A state cache (`data/media-migrate.json`) stores computed hashes to avoid re-processing unchanged files
+- Only JPEG and PNG files are considered
+- Cross-extension duplicates (e.g., original JPG + compressed PNG) are handled correctly — the post reference is updated to the original's filename and extension
+- Files that already have optimized variants (via imgproxy) are skipped to avoid breaking the optimization pipeline
+- The tool is idempotent — safe to run multiple times
+
 ---
 
 ## Plugins
@@ -1270,6 +1308,16 @@ Example:
 ```
 
 Exports all posts as Markdown files with front matter to the specified directory.
+
+### Media Migration
+
+```bash
+./GoBlog --config ./config/config.yml media-migrate
+```
+
+Consolidates duplicate media files by detecting perceptually identical images and replacing references to compressed copies with the originals. See [Media Migration](#media-migration-1) for details.
+
+Flags: `--yes`, `--dry-run`, `--discover-only`, `--threshold N`, `--limit N`
 
 ### Refetch ActivityPub Followers
 

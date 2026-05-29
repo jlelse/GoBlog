@@ -96,6 +96,7 @@ type mediaStorage interface {
 	delete(filename string) (err error)
 	files() (files []*mediaFile, err error)
 	location(filename string) (location string)
+	open(filename string) (io.ReadCloser, error)
 }
 
 type localMediaStorage struct {
@@ -150,6 +151,10 @@ func (l *localMediaStorage) files() (files []*mediaFile, err error) {
 		}
 	}
 	return files, nil
+}
+
+func (l *localMediaStorage) open(filename string) (io.ReadCloser, error) {
+	return os.Open(filepath.Join(l.path, filename))
 }
 
 func (l *localMediaStorage) location(name string) string {
@@ -238,6 +243,19 @@ func (f *bunnyMediaStorage) files() (files []*mediaFile, err error) {
 	return files, nil
 }
 
+func (f *bunnyMediaStorage) open(filename string) (io.ReadCloser, error) {
+	pr, pw := io.Pipe()
+	go func() {
+		err := requests.URL(f.address+filename).
+			Client(f.httpClient).
+			Header("AccessKey", f.apiKey).
+			ToWriter(pw).
+			Fetch(context.Background())
+		pw.CloseWithError(err) //nolint:errcheck
+	}()
+	return pr, nil
+}
+
 func (f *bunnyMediaStorage) location(name string) string {
 	return fmt.Sprintf("%s/%s", f.mediaURL, name)
 }
@@ -310,6 +328,30 @@ func (f *ftpMediaStorage) files() (files []*mediaFile, err error) {
 		}
 	}
 	return files, nil
+}
+
+func (f *ftpMediaStorage) open(filename string) (io.ReadCloser, error) {
+	c, err := f.connection()
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.Retr(filename)
+	if err != nil {
+		c.Quit() //nolint:errcheck
+		return nil, err
+	}
+	return &ftpReadCloser{ReadCloser: r, conn: c}, nil
+}
+
+type ftpReadCloser struct {
+	io.ReadCloser
+	conn *ftp.ServerConn
+}
+
+func (f *ftpReadCloser) Close() error {
+	err1 := f.ReadCloser.Close()
+	err2 := f.conn.Quit()
+	return errors.Join(err1, err2)
 }
 
 func (f *ftpMediaStorage) location(name string) string {

@@ -757,3 +757,81 @@ func Test_writeImgElement(t *testing.T) {
 		assert.Contains(t, output, `class=""`)
 	})
 }
+
+func Test_checkImgproxyReachable(t *testing.T) {
+	t.Run("reachable", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, "OK")
+				return
+			}
+			http.NotFound(w, r)
+		}))
+		defer server.Close()
+
+		app := &goBlog{
+			cfg: &config{
+				MediaOptimization: &configMediaOptimization{
+					Enabled:     true,
+					ImgproxyURL: server.URL,
+				},
+			},
+			httpClient: server.Client(),
+		}
+
+		err := app.checkImgproxyReachable()
+		assert.NoError(t, err)
+	})
+
+	t.Run("unreachable", func(t *testing.T) {
+		app := &goBlog{
+			cfg: &config{
+				MediaOptimization: &configMediaOptimization{
+					Enabled:     true,
+					ImgproxyURL: "http://localhost:1",
+				},
+			},
+			httpClient: http.DefaultClient,
+		}
+
+		err := app.checkImgproxyReachable()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "imgproxy health check failed")
+	})
+
+	t.Run("unhealthy", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			http.NotFound(w, r)
+		}))
+		defer server.Close()
+
+		app := &goBlog{
+			cfg: &config{
+				MediaOptimization: &configMediaOptimization{
+					Enabled:     true,
+					ImgproxyURL: server.URL,
+				},
+			},
+			httpClient: server.Client(),
+		}
+
+		err := app.checkImgproxyReachable()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unexpected status")
+	})
+
+	t.Run("not configured", func(t *testing.T) {
+		app := &goBlog{
+			cfg:        &config{},
+			httpClient: http.DefaultClient,
+		}
+
+		err := app.checkImgproxyReachable()
+		assert.NoError(t, err)
+	})
+}

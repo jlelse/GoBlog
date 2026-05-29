@@ -449,6 +449,56 @@ Examples:
 	setupCmd.Flags().Bool("totp", false, "Enable TOTP two-factor authentication")
 	rootCmd.AddCommand(setupCmd)
 
+	mediaCmd := &cobra.Command{
+		Use:   "media",
+		Short: "Media management commands",
+		Long: `Media management commands for migrating and maintaining media files.
+
+These commands help you manage your media library, including migrating old compressed images to the new optimization system.`,
+	}
+
+	migrateCmd := &cobra.Command{
+		Use:   "migrate",
+		Short: "Migrate old compressed images to optimized storage",
+		Long: `Discover, verify, and migrate old compressed images to the new imgproxy-based optimization system.
+
+Uses perceptual hashing (dHash) to discover original/compressed pairs, optimizes originals with the new system, replaces URLs in post content and parameters, and deletes unused compressed files.
+
+Examples:
+  ./GoBlog media migrate --discover-only
+  ./GoBlog media migrate --threshold 4 --limit 10
+  ./GoBlog media migrate --yes
+  ./GoBlog media migrate --preview --limit 5`,
+		Run: func(cmd *cobra.Command, _ []string) {
+			app := initializeApp(cmd)
+			app.initMediaOptimization()
+			yes, _ := cmd.Flags().GetBool("yes")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			threshold, _ := cmd.Flags().GetInt("threshold")
+			discoverOnly, _ := cmd.Flags().GetBool("discover-only")
+			limit, _ := cmd.Flags().GetInt("limit")
+			preview, _ := cmd.Flags().GetBool("preview")
+
+			app.mediaMigrate(&migrationConfig{
+				yes:          yes,
+				dryRun:       dryRun,
+				threshold:    threshold,
+				discoverOnly: discoverOnly,
+				limit:        limit,
+				preview:      preview,
+			})
+			app.shutdown.ShutdownAndWait()
+		},
+	}
+	migrateCmd.Flags().Bool("yes", false, "skip confirmation, process all pairs")
+	migrateCmd.Flags().Bool("dry-run", false, "show what would be done, make no changes")
+	migrateCmd.Flags().Int("threshold", 10, "max Hamming distance for grouping")
+	migrateCmd.Flags().Bool("discover-only", false, "only show discovered pairs, make no changes")
+	migrateCmd.Flags().Int("limit", 0, "process at most N groups")
+	migrateCmd.Flags().Bool("preview", false, "show image previews using timg (requires timg in PATH)")
+	mediaCmd.AddCommand(migrateCmd)
+	rootCmd.AddCommand(mediaCmd)
+
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
