@@ -44,11 +44,6 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	defer bufferpool.Put(bufJs)
 	hbJs := htmlbuilder.NewHTMLBuilder(bufJs)
 
-	// Unwrap links wrapping images so the click-to-show-title isn't hijacked by the link
-	doc.Find(".e-content a:has(img)").Each(func(_ int, element *goquery.Selection) {
-		element.ReplaceWithSelection(element.Contents())
-	})
-
 	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("imagetooltips.js"), "defer", "")
 	hbJs.WriteElementClose("script")
 	doc.Find("main").AppendHtml(bufJs.String())
@@ -58,8 +53,13 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 
 const imagetooltipsJs = `
 (function () {
-    document.querySelectorAll('.e-content img[title]').forEach((image) => {
-        image.addEventListener('click', (e) => {
+    document.querySelectorAll('.h-entry img[title]').forEach((image) => {
+        const picture = image.closest('picture');
+        const link = image.closest('a');
+        if (link) {
+            link.replaceWith(picture || image);
+        }
+        (picture || image).addEventListener('click', (e) => {
             e.preventDefault();
             alert(image.getAttribute('title'));
         });
