@@ -41,5 +41,5 @@ COPY --from=build /app/GoBlog /bin/
 
 FROM base AS tools
 
-RUN apk add --no-cache curl bash git
+RUN apk add --no-cache curl bash git timg
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main sqlite
