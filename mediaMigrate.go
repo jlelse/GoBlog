@@ -103,7 +103,7 @@ func (a *goBlog) mediaMigrate(mc *migrationConfig) {
 		return
 	}
 
-	confirmed, quit := a.migrationVerify(groups, mc.yes, mc.preview)
+	confirmed, quit := a.migrationVerify(groups, mc.yes, mc.preview, mc.limit)
 	if quit {
 		return
 	}
@@ -115,10 +115,6 @@ func (a *goBlog) mediaMigrate(mc *migrationConfig) {
 	if mc.dryRun {
 		fmt.Println("Dry run complete (no changes made).")
 		return
-	}
-
-	if mc.limit > 0 && len(confirmed) > mc.limit {
-		confirmed = confirmed[:mc.limit]
 	}
 
 	fmt.Println("Phase 2: Optimizing originals...")
@@ -416,13 +412,19 @@ func (a *goBlog) migrationGroupFiles(files []*migrationFile, threshold int) []*m
 	return groups
 }
 
-func (a *goBlog) migrationVerify(groups []*migrationGroup, yesAll, preview bool) ([]*migrationGroup, bool) {
+func (a *goBlog) migrationVerify(groups []*migrationGroup, yesAll, preview bool, limit int) ([]*migrationGroup, bool) {
 	if yesAll {
+		if limit > 0 && len(groups) > limit {
+			return groups[:limit], false
+		}
 		return groups, false
 	}
 
 	var confirmed []*migrationGroup
 	for _, g := range groups {
+		if limit > 0 && len(confirmed) >= limit {
+			break
+		}
 		a.migrationPrintGroup(g, preview)
 		fmt.Printf("Process group %d? [Y]es / [n]o / [s]kip all / [q]uit: ", g.ID)
 
