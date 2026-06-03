@@ -79,69 +79,7 @@ Updates files in `leaflet/`, `hlsjs/`, and version references in `templates/asse
 
 ## Project Structure
 
-All Go source files live in the **root directory** (flat layout, no `cmd/` or `internal/`):
-
-```
-├── app.go                    # Main app struct and initialization
-├── main.go                   # Entry point
-├── config.go                 # Configuration types and loading
-├── database.go               # SQLite database setup
-├── databaseMigrations.go     # Schema migrations (uses embedded SQL files)
-├── http.go                   # HTTP server setup
-├── httpRouters.go            # All route definitions (chi router)
-├── httpMiddlewares.go        # HTTP middleware stack
-├── ui.go                     # Page rendering functions
-├── uiComponents.go           # Reusable UI components
-├── posts.go / postsDb.go     # Post types and database operations
-├── editor.go                 # Web editor
-├── activityPub.go            # ActivityPub protocol
-├── micropub.go               # Micropub protocol
-├── indieAuth.go              # IndieAuth protocol
-├── webmention.go             # Webmention send/receive
-├── comments.go               # Comment system
-├── feeds.go                  # RSS/Atom/JSON feeds
-├── search.go                 # Full-text search (FTS5)
-├── cache.go                  # HTTP response caching
-├── media.go                  # Media uploads and serving
-├── plugins.go                # Plugin system (Yaegi-based)
-├── *_test.go                 # Tests (same directory)
-│
-├── dbmigrations/             # Embedded SQL migration files (00001.sql - 00038.sql)
-├── pkgs/                     # Internal reusable packages
-│   ├── htmlbuilder/          #   HTML generation (used for all UI)
-│   ├── activitypub/          #   ActivityPub utilities
-│   ├── plugintypes/          #   Plugin interface definitions
-│   ├── plugins/              #   Plugin loading (Yaegi)
-│   ├── httpcompress/         #   HTTP compression middleware
-│   ├── bodylimit/            #   Request body size limiting
-│   ├── cache/                #   Caching abstractions
-│   ├── minify/               #   HTML/CSS/JS minification
-│   ├── maprouter/            #   URL routing utilities
-│   └── ...                   #   Other utilities
-│
-├── strings/                  # i18n translation files (YAML)
-│   ├── default.yaml          #   English (default)
-│   ├── de.yaml               #   German
-│   ├── es.yaml               #   Spanish
-│   └── pt-br.yaml            #   Portuguese (Brazil)
-│
-├── templates/assets/         # Frontend assets served to browser
-│   ├── css/styles.css        #   Compiled CSS (do not edit directly)
-│   └── js/*.js               #   JavaScript files
-│
-├── original-assets/          # Source assets
-│   ├── styles/styles.scss    #   SCSS source (edit this)
-│   └── build/buildStyles.sh  #   SCSS build script
-│
-├── plugins/                  # Example/bundled plugins
-├── leaflet/                  # Leaflet map library (vendored)
-├── hlsjs/                    # HLS.js video library (vendored)
-├── static/                   # Static files served at /s/
-├── logo/                     # Logo assets
-├── config/                   # Runtime configuration (YAML)
-├── data/                     # Runtime data directory (DB, media, logs)
-└── testdata/                 # Test fixtures
-```
+All Go source files live in the **root directory** (flat layout, no `cmd/` or `internal/`). Functionality that is independent of the main app logic is organized into packages under `pkgs/` (e.g., `pkgs/utils`, `pkgs/htmlbuilder`, `pkgs/plugintypes`).
 
 ## Architecture Patterns
 
@@ -200,7 +138,7 @@ Add keys to `strings/default.yaml` (English), then add translations to other loc
 
 - Standard Go formatting (`gofmt`)
 - Use `go fix ./...` to keep code modernized with latest Go features
-- No code comments unless the code is genuinely complex
+- No code comments unless the code is complex
 - Use existing utility functions from `utils.go` and `pkgs/utils/`
 - Use `pkgs/htmlbuilder` for all HTML generation
 - Use `carlmjohnson/requests` for outgoing HTTP requests (already a dependency)
