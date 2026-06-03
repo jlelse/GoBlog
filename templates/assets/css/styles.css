@@ -284,6 +284,28 @@ form.fw select {
   margin-bottom: 5px;
 }
 
+.editor-toolbar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+}
+.editor-toolbar button, .editor-toolbar .button {
+  font-weight: bold;
+  font-family: serif;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.editor-toolbar button:focus, .editor-toolbar .button:focus {
+  outline: none;
+}
+.editor-toolbar-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

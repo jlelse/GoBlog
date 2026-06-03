@@ -1530,6 +1530,24 @@ type editorRenderData struct {
 	presetParams      map[string][]string
 }
 
+func (a *goBlog) renderEditorToolbar(hb *htmlbuilder.HTMLBuilder, lang string) {
+	hb.WriteElementOpen("div", "class", "editor-toolbar")
+	for _, btn := range []struct {
+		action, label, title string
+	}{
+		{"bold", "<b>B</b>", a.ts.GetTemplateStringVariant(lang, "editorbold")},
+		{"italic", "<i>I</i>", a.ts.GetTemplateStringVariant(lang, "editoritalic")},
+		{"strikethrough", "<s>S</s>", a.ts.GetTemplateStringVariant(lang, "editorstrikethrough")},
+		{"link", "<b>L</b>", a.ts.GetTemplateStringVariant(lang, "editorlink")},
+	} {
+		hb.WriteElementOpen("button", "type", "button", "data-action", btn.action, "title", btn.title)
+		hb.WriteUnescaped(btn.label)
+		hb.WriteElementClose("button")
+	}
+	hb.WriteElement("div", "class", "editor-toolbar-spacer")
+	hb.WriteElementClose("div")
+}
+
 func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	edrd, ok := rd.Data.(*editorRenderData)
 	if !ok {
@@ -1559,7 +1577,9 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementOpen(
 				"input", "id", "templatebtn", "type", "button",
 				"value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editorusetemplate"),
+				"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editorusetemplateconfirm"),
 			)
+			a.renderEditorToolbar(hb, rd.Blog.Lang)
 			hb.WriteElementOpen(
 				"textarea",
 				"id", "editor-create",
@@ -1587,6 +1607,7 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementOpen("form", "method", "post", "class", "fw p", "action", "#update")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "editoraction", "value", "updatepost")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "url", "value", edrd.updatePostURL)
+				a.renderEditorToolbar(hb, rd.Blog.Lang)
 				hb.WriteElementOpen(
 					"textarea",
 					"id", "editor-update",
@@ -1677,6 +1698,8 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("main")
 
 			// Script
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+			hb.WriteElementClose("script")
 			hb.WriteElementOpen("script", "src", a.assetFileName("js/editor.js"), "defer", "")
 			hb.WriteElementClose("script")
 		},

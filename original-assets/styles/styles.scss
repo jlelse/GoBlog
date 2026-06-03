@@ -317,6 +317,30 @@ details summary {
   margin-bottom: 5px;
 }
 
+.editor-toolbar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+  @include color-border(border, 1px, solid, primary);
+
+  button {
+    font-weight: bold;
+    font-family: serif;
+    border: none;
+    background: none;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &-spacer {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .actions {
   @extend .p;
   display: flex;

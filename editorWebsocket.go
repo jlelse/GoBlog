@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	ws "github.com/coder/websocket"
 	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
@@ -86,6 +90,11 @@ func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
+		// Handle format messages
+		if strings.HasPrefix(string(messageBytes), "format:") {
+			a.handleEditorFormat(ctx, c, messageBytes)
+			continue
+		}
 		// Save editor state
 		// and send editor state to other connections
 		if enableSync {
@@ -144,6 +153,61 @@ func (a *goBlog) updateEditorStateInDatabase(ctx context.Context, blog string, s
 
 func (a *goBlog) getEditorStateFromDatabase(ctx context.Context, blog string) ([]byte, error) {
 	return a.db.retrievePersistentCacheContext(ctx, editorStateCacheKey+blog)
+}
+
+// FORMAT
+
+func (a *goBlog) handleEditorFormat(ctx context.Context, c *ws.Conn, msg []byte) {
+	// Parse: format:<action>:<start>:<end>:<content>
+	parts := strings.SplitN(string(msg), ":", 5)
+	if len(parts) < 5 {
+		return
+	}
+	action := parts[1]
+	start, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return
+	}
+	end, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return
+	}
+	content := parts[4]
+	if start > len(content) || end > len(content) || start > end {
+		return
+	}
+
+	selected := content[start:end]
+	var replacement string
+	var cursorOffset, cursorOffsetSelected int
+
+	switch action {
+	case "bold":
+		replacement = "**" + selected + "**"
+		cursorOffset, cursorOffsetSelected = 2, len(replacement)
+	case "italic":
+		replacement = "*" + selected + "*"
+		cursorOffset, cursorOffsetSelected = 1, len(replacement)
+	case "strikethrough":
+		replacement = "~~" + selected + "~~"
+		cursorOffset, cursorOffsetSelected = 2, len(replacement)
+	case "link":
+		replacement = "[" + selected + "]()"
+		cursorOffset, cursorOffsetSelected = 1, len(selected)+3
+	default:
+		return
+	}
+
+	// Send formatted content back
+	err = c.Write(ctx, ws.MessageText,
+		fmt.Appendf(
+			nil, "formatted:%s:%d",
+			content[:start]+replacement+content[end:],
+			start+lo.If(start == end, cursorOffset).Else(cursorOffsetSelected),
+		))
+	if err != nil {
+		return
+	}
 }
 
 // PREVIEW

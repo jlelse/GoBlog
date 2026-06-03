@@ -19,14 +19,32 @@
             showed = true
         }
 
-        element.form.addEventListener('submit', event => {
-            if (event.submitter === element && !showed) {
-                event.preventDefault()
-                setBusy()
-                setTimeout(setConfirm, 1000)
-                return false
-            }
-        })
+        const reset = () => {
+            showed = false
+        }
+
+        if (element.type === 'button' || element.type === 'reset') {
+            element.addEventListener('click', event => {
+                if (!showed) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setBusy()
+                    setTimeout(setConfirm, 1000)
+                } else {
+                    reset()
+                    element.dispatchEvent(new Event('confirmed', { bubbles: true }))
+                }
+            })
+        } else {
+            element.form.addEventListener('submit', event => {
+                if (event.submitter === element && !showed) {
+                    event.preventDefault()
+                    setBusy()
+                    setTimeout(setConfirm, 1000)
+                    return false
+                }
+            })
+        }
     }
 
     Array.from(document.querySelectorAll(selector)).forEach(setupConfirm)

@@ -37,6 +37,13 @@
                         previewContainer.classList.add('preview');
                         previewContainer.classList.remove('hide');
                         previewContainer.innerHTML = msg.slice(8);
+                    } else if (msg.startsWith("formatted:")) {
+                        const parts = msg.slice(10).split(":");
+                        const cursor = parseInt(parts.pop(), 10);
+                        element.value = parts.join(":");
+                        element.selectionStart = element.selectionEnd = cursor;
+                        element.focus();
+                        element.dispatchEvent(new Event("input"));
                     } else if (msg === "triggerpreview") {
                         if (ws && ws.readyState === WebSocket.OPEN) {
                             ws.send(element.value);
@@ -70,6 +77,18 @@
                 ws.send('');
             }
         });
+
+        const toolbar = element.previousElementSibling;
+        if (toolbar && toolbar.classList.contains('editor-toolbar')) {
+            toolbar.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn || !ws || ws.readyState !== WebSocket.OPEN) return;
+                const action = btn.dataset.action;
+                const start = element.selectionStart;
+                const end = element.selectionEnd;
+                ws.send(`format:${action}:${start}:${end}:${element.value}`);
+            });
+        }
     };
 
     const setupGeoButton = () => {
@@ -99,7 +118,7 @@
     };
 
     const setupTemplateButton = () => {
-        document.querySelector('#templatebtn').addEventListener('click', () => {
+        document.querySelector('#templatebtn').addEventListener('confirmed', () => {
             const area = document.querySelector('#editor-create');
             area.value = area.dataset.template;
         });
