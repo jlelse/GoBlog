@@ -174,6 +174,7 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 				dest = resolved[0]
 			}
 		}
+		dest = c.app.mediaFallbackURL(dest)
 		tagOpts := []any{"href", dest}
 		if isAbsoluteURL(string(n.Destination)) {
 			tagOpts = append(tagOpts, "target", "_blank", "rel", "noopener")

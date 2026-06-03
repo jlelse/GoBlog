@@ -46,6 +46,7 @@ type mediaVariantGroup struct {
 
 var (
 	hexHashRe           = regexp.MustCompile(`^[0-9a-fA-F]+$`)
+	mediaImgLinkRe      = regexp.MustCompile(`/[0-9a-fA-F]{1,64}\.(jpg|jpeg|png)`)
 	imageFormatPriority = map[string]int{"avif": 0, "jpeg": 2, "jpg": 2, "png": 3}
 )
 
@@ -353,6 +354,9 @@ func (g *mediaVariantGroup) variantWidth(v *mediaOptimizedRow) int {
 }
 
 func (a *goBlog) mediaFallbackURL(originalURL string) string {
+	if !mediaImgLinkRe.MatchString(originalURL) {
+		return originalURL
+	}
 	originalHash := a.extractMediaHashFromURL(originalURL)
 	if originalHash == "" || !a.mediaOptimizationEnabled() {
 		return originalURL
