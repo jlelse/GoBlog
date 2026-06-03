@@ -27,6 +27,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsqlite3-dev
       
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
       - name: Run tests
         env:
           GOFLAGS: "-tags=linux,libsqlite3,sqlite_fts5,gomailnotpl"
