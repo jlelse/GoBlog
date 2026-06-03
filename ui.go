@@ -1115,9 +1115,9 @@ func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 }
 
 type editorFilesRenderData struct {
-	files             []*mediaFile
-	optimizedVariants map[string]bool // set of hashes that are optimized variants
-	originals         map[string]bool // set of original hashes that have optimizations
+	files        []*mediaFile
+	originals    map[string]bool // set of original hashes that have optimizations
+	variantsView bool            // true when viewing variants for a specific original
 }
 
 func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -1145,11 +1145,8 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 				for _, f := range ef.files {
 					label := fmt.Sprintf("%s (%s), %s", f.Name, f.Time.Local().Format(isoDateFormat), mBytesString(f.Size))
 					if idx := strings.LastIndex(f.Name, "."); idx >= 0 {
-						hash := f.Name[:idx]
-						if ef.optimizedVariants[hash] {
-							label += " (variant)"
-						} else if ef.originals[hash] {
-							label += " (original)"
+						if ef.originals[f.Name[:idx]] {
+							label += " (optimized)"
 						}
 					}
 					hb.WriteElementOpen("option", "value", f.Name)
@@ -1162,22 +1159,36 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "view"),
 					"formaction", rd.Blog.getRelativePath(editorPath+editorFileViewPath),
 				)
-				// Uses button
-				hb.WriteElementOpen(
-					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses"),
-					"formaction", rd.Blog.getRelativePath(editorPath+editorFileUsesPath),
-				)
-				// Delete button
-				hb.WriteElementOpen(
-					"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
-					"formaction", rd.Blog.getRelativePath(editorPath+editorFileDeletePath),
-					"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
-				)
-				// Optimize button (only when media optimization is enabled)
-				if a.mediaOptimizationEnabled() && a.mediaOptimizationImgproxyConfigured() {
+				if ef.variantsView {
+					// Delete button
 					hb.WriteElementOpen(
-						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "optimize"),
-						"formaction", rd.Blog.getRelativePath(editorPath+editorFileOptimizePath),
+						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+						"formaction", rd.Blog.getRelativePath(editorPath+editorFileDeletePath),
+						"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
+					)
+				} else {
+					// Uses button
+					hb.WriteElementOpen(
+						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "fileuses"),
+						"formaction", rd.Blog.getRelativePath(editorPath+editorFileUsesPath),
+					)
+					// Delete button
+					hb.WriteElementOpen(
+						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "delete"),
+						"formaction", rd.Blog.getRelativePath(editorPath+editorFileDeletePath),
+						"class", "confirm", "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"),
+					)
+					// Optimize button (only when media optimization is enabled)
+					if a.mediaOptimizationEnabled() && a.mediaOptimizationImgproxyConfigured() {
+						hb.WriteElementOpen(
+							"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "optimize"),
+							"formaction", rd.Blog.getRelativePath(editorPath+editorFileOptimizePath),
+						)
+					}
+					// View variants button
+					hb.WriteElementOpen(
+						"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "viewvariants"),
+						"formaction", rd.Blog.getRelativePath(editorPath+editorFileVariantsPath),
 					)
 				}
 				hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")

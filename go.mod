@@ -9,7 +9,7 @@ require (
 	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
 	github.com/PuerkitoBio/goquery v1.12.0
-	github.com/alecthomas/chroma/v2 v2.26.0
+	github.com/alecthomas/chroma/v2 v2.26.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.25.1
@@ -19,7 +19,7 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.24.0
-	github.com/go-acme/lego/v5 v5.1.0
+	github.com/go-acme/lego/v5 v5.2.2
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-webauthn/webauthn v0.17.4
 	github.com/google/uuid v1.6.0
@@ -76,7 +76,7 @@ require (
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dlclark/regexp2/v2 v2.1.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
@@ -95,7 +95,7 @@ require (
 	github.com/kovidgoyal/go-parallel v1.1.1 // indirect
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/mmcdole/goxpp v1.1.1 // indirect
@@ -120,7 +120,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.9.9 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20260528193900-50dc527dd6c7 // indirect
+	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9 // indirect
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

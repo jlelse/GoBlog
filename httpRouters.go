@@ -363,6 +363,7 @@ func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 		r.Get(editorFileUsesPath+editorFileUsesPathPlaceholder+paginationPath, a.serveEditorFilesUsesResults)
 		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(editorFileDeletePath, a.serveEditorFilesDelete)
 		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(editorFileOptimizePath, a.serveEditorFilesOptimize)
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(editorFileVariantsPath, a.serveEditorFilesVariants)
 		r.Get(editorLinksPath, a.serveEditorLinks)
 		registerIndexRoutes(r, "/drafts", a.serveDrafts)
 		registerIndexRoutes(r, "/private", a.servePrivate)

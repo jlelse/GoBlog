@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/samber/lo"
 )
 
 const (
@@ -17,6 +19,7 @@ const (
 	editorFileUsesPathPlaceholder = "/{filename}"
 	editorFileDeletePath          = editorFilesPath + "/delete"
 	editorFileOptimizePath        = editorFilesPath + "/optimize"
+	editorFileVariantsPath        = editorFilesPath + "/variants"
 )
 
 func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
@@ -37,10 +40,36 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	variantsView := false
+	if variantFilter := r.URL.Query().Get("variants"); variantFilter != "" {
+		variantsView = true
+		if rows, err := a.db.mediaOptimizedByOriginal(variantFilter); err == nil {
+			variantHashes := map[string]bool{}
+			for _, row := range rows {
+				variantHashes[row.OptimizedHash] = true
+			}
+			files = lo.Filter(files, func(f *mediaFile, _ int) bool {
+				if idx := strings.LastIndex(f.Name, "."); idx >= 0 {
+					return variantHashes[f.Name[:idx]]
+				}
+				return false
+			})
+		}
+	} else {
+		files = lo.Filter(files, func(f *mediaFile, _ int) bool {
+			if idx := strings.LastIndex(f.Name, "."); idx >= 0 {
+				return !optimizedVariants[f.Name[:idx]]
+			}
+			return true
+		})
+	}
+
 	// Check if files at all
 	if len(files) == 0 {
 		a.render(w, r, a.renderEditorFiles, &renderData{
-			Data: &editorFilesRenderData{},
+			Data: &editorFilesRenderData{
+				variantsView: variantsView,
+			},
 		})
 		return
 	}
@@ -51,9 +80,9 @@ func (a *goBlog) serveEditorFiles(w http.ResponseWriter, r *http.Request) {
 	// Serve HTML
 	a.render(w, r, a.renderEditorFiles, &renderData{
 		Data: &editorFilesRenderData{
-			files:             files,
-			optimizedVariants: optimizedVariants,
-			originals:         originals,
+			files:        files,
+			originals:    originals,
+			variantsView: variantsView,
 		},
 	})
 }
@@ -120,4 +149,20 @@ func (a *goBlog) serveEditorFilesOptimize(w http.ResponseWriter, r *http.Request
 	a.purgeCache()
 	_, bc := a.getBlog(r)
 	http.Redirect(w, r, bc.getRelativePath(editorPath+editorFilesPath), http.StatusFound)
+}
+
+func (a *goBlog) serveEditorFilesVariants(w http.ResponseWriter, r *http.Request) {
+	filename := r.FormValue("filename") //nolint:gosec
+	if filename == "" {
+		a.serveError(w, r, "No file selected", http.StatusBadRequest)
+		return
+	}
+	idx := strings.LastIndex(filename, ".")
+	if idx < 0 {
+		a.serveError(w, r, "File has no extension", http.StatusBadRequest)
+		return
+	}
+	hash := filename[:idx]
+	_, bc := a.getBlog(r)
+	http.Redirect(w, r, bc.getRelativePath(editorPath+editorFilesPath)+"?variants="+url.QueryEscape(hash), http.StatusFound)
 }
