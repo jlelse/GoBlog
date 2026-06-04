@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	ws "github.com/coder/websocket"
 	"github.com/google/uuid"
@@ -157,6 +158,64 @@ func (a *goBlog) getEditorStateFromDatabase(ctx context.Context, blog string) ([
 
 // FORMAT
 
+// jsPosToByteOffset converts a JS UTF-16 code unit position to a byte offset in a UTF-8 Go string.
+func jsPosToByteOffset(s string, jsPos int) int {
+	if jsPos <= 0 {
+		return 0
+	}
+	units := 0
+	for bytePos, r := range s {
+		rUnits := 1
+		if r > 0xFFFF {
+			rUnits = 2
+		}
+		if units+rUnits > jsPos {
+			return bytePos
+		}
+		units += rUnits
+		if units == jsPos {
+			continue
+		}
+	}
+	return len(s)
+}
+
+// byteOffsetToJsPos converts a UTF-8 byte offset to a JS UTF-16 code unit position.
+func byteOffsetToJsPos(s string, byteOff int) int {
+	if byteOff <= 0 {
+		return 0
+	}
+	units := 0
+	for bytePos, r := range s {
+		if bytePos >= byteOff {
+			return units
+		}
+		if r > 0xFFFF {
+			units += 2
+		} else {
+			units++
+		}
+	}
+	return units
+}
+
+// jsLen returns the JS string length (UTF-16 code units) of a Go UTF-8 string.
+func jsLen(s string) int {
+	length := 0
+	for _, r := range s {
+		if r == utf8.RuneError {
+			length++
+			continue
+		}
+		if r > 0xFFFF {
+			length += 2
+		} else {
+			length++
+		}
+	}
+	return length
+}
+
 func (a *goBlog) handleEditorFormat(ctx context.Context, c *ws.Conn, msg []byte) {
 	// Parse: format:<action>:<start>:<end>:<content>
 	parts := strings.SplitN(string(msg), ":", 5)
@@ -164,16 +223,25 @@ func (a *goBlog) handleEditorFormat(ctx context.Context, c *ws.Conn, msg []byte)
 		return
 	}
 	action := parts[1]
-	start, err := strconv.Atoi(parts[2])
+	jsStart, err := strconv.Atoi(parts[2])
 	if err != nil {
 		return
 	}
-	end, err := strconv.Atoi(parts[3])
+	jsEnd, err := strconv.Atoi(parts[3])
 	if err != nil {
 		return
 	}
 	content := parts[4]
-	if start > len(content) || end > len(content) || start > end {
+
+	if l := jsLen(content); jsStart > l || jsEnd > l || jsStart > jsEnd {
+		return
+	}
+
+	// Convert JS UTF-16 code unit positions to UTF-8 byte offsets
+	start := jsPosToByteOffset(content, jsStart)
+	end := jsPosToByteOffset(content, jsEnd)
+
+	if start > len(content) || end > len(content) {
 		return
 	}
 
@@ -198,13 +266,12 @@ func (a *goBlog) handleEditorFormat(ctx context.Context, c *ws.Conn, msg []byte)
 		return
 	}
 
-	// Send formatted content back
+	newContent := content[:start] + replacement + content[end:]
+	byteCursor := start + lo.If(start == end, cursorOffset).Else(cursorOffsetSelected)
+
+	// Send formatted content back with JS cursor position
 	err = c.Write(ctx, ws.MessageText,
-		fmt.Appendf(
-			nil, "formatted:%s:%d",
-			content[:start]+replacement+content[end:],
-			start+lo.If(start == end, cursorOffset).Else(cursorOffsetSelected),
-		))
+		fmt.Appendf(nil, "formatted:%s:%d", newContent, byteOffsetToJsPos(newContent, byteCursor)))
 	if err != nil {
 		return
 	}

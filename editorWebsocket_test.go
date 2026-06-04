@@ -291,6 +291,48 @@ func Test_editorFormat(t *testing.T) {
 		assert.Equal(t, "formatted:Hello: **World**:16", string(msg))
 	})
 
+	t.Run("Bold with umlaut content (JS positions converted to byte offsets)", func(t *testing.T) {
+		c := dialWS(t, h, "preview=1")
+
+		mt, msg, err := c.ReadMessage()
+		require.NoError(t, err)
+		require.Equal(t, "triggerpreview", string(msg))
+
+		// "für Fall ist": JS sends positions 4..8 for "Fall" (ü is 1 UTF-16 code unit)
+		// Go converts to byte offsets 5..9 (ü is 2 UTF-8 bytes)
+		err = c.WriteMessage(websocket.TextMessage, []byte("format:bold:4:8:für Fall ist"))
+		require.NoError(t, err)
+
+		mt, resp, err := c.ReadMessage()
+		require.NoError(t, err)
+		require.Equal(t, websocket.TextMessage, mt)
+
+		respStr := string(resp)
+		t.Logf("Response: %s", respStr)
+		assert.Equal(t, "formatted:für **Fall** ist:12", respStr)
+	})
+
+	t.Run("Bold with emoji and umlaut content", func(t *testing.T) {
+		c := dialWS(t, h, "preview=1")
+
+		mt, msg, err := c.ReadMessage()
+		require.NoError(t, err)
+		require.Equal(t, "triggerpreview", string(msg))
+
+		// "für 😉 Fall ist": JS sends 7..11 for "Fall"
+		// (f=0 ü=1 r=2 ' '=3 😉=4,5 ' '=6 F=7 a=8 l=9 l=10)
+		err = c.WriteMessage(websocket.TextMessage, []byte("format:bold:7:11:für 😉 Fall ist"))
+		require.NoError(t, err)
+
+		mt, resp, err := c.ReadMessage()
+		require.NoError(t, err)
+		require.Equal(t, websocket.TextMessage, mt)
+
+		respStr := string(resp)
+		t.Logf("Response: %s", respStr)
+		assert.Equal(t, "formatted:für 😉 **Fall** ist:15", respStr)
+	})
+
 	t.Run("Format with sync does not broadcast", func(t *testing.T) {
 		c1 := dialWS(t, h, "sync=1")
 		c2 := dialWS(t, h, "sync=1")
