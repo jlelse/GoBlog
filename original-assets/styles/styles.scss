@@ -1,33 +1,4 @@
-$colors: (
-  background: #fff,
-  background-dark: #000,
-  primary: #000,
-  primary-dark: #fff
-);
-
-@use "sass:map";
-
-@mixin color($property, $varName) {
-  #{$property}: map.get($colors, $varName);
-  #{$property}: var(--#{$varName}, map.get($colors, $varName));
-}
-
-@mixin color-border($property, $val1, $val2, $varName) {
-  #{$property}: #{$val1} #{$val2} map.get($colors, $varName);
-  #{$property}: #{$val1} #{$val2} var(--#{$varName}, map.get($colors, $varName));
-}
-
-@mixin lightmode {
-  --background: #{map.get($colors, background)};
-  --primary: #{map.get($colors, primary)};
-  color: #000;
-}
-
-@mixin darkmode {
-  --background: #{map.get($colors, background-dark)};
-  --primary: #{map.get($colors, primary-dark)};
-  color: #fff;
-}
+@use "shared";
 
 .sans-serif {
   font-family: sans-serif;
@@ -39,17 +10,17 @@ $colors: (
 
 html {
   scrollbar-color: var(--primary) transparent;
-  @include lightmode;
+  @include shared.lightmode;
 
   @media (prefers-color-scheme: dark) {
-    @include darkmode;
+    @include shared.darkmode;
   }
 }
 
 body {
   @extend .sans-serif;
-  @include color(background, background);
-  @include color(color, primary);
+  @include shared.color(background, background);
+  @include shared.color(color, primary);
   line-height: 1.5;
   margin: 0 auto;
   max-width: 700px;
@@ -64,12 +35,12 @@ body {
 
 a,
 hr {
-  @include color(color, primary);
+  @include shared.color(color, primary);
 }
 
 *::selection {
-  @include color(color, background);
-  @include color(background, primary);
+  @include shared.color(color, background);
+  @include shared.color(background, primary);
 }
 
 .skip-link:not(:focus) {
@@ -108,10 +79,10 @@ button,
 input,
 textarea,
 select {
-  @include color-border(border, 1px, solid, primary);
+  @include shared.color-border(border, 1px, solid, primary);
   border-radius: 0;
-  @include color(background, background);
-  @include color(color, primary);
+  @include shared.color(background, background);
+  @include shared.color(color, primary);
   @extend .sans-serif;
   padding: 5px 10px;
   box-sizing: border-box;
@@ -121,7 +92,7 @@ select {
   outline: none;
 
   &:focus {
-    @include color-border(outline, 3px, solid, primary);
+    @include shared.color-border(outline, 3px, solid, primary);
   }
 }
 
@@ -160,14 +131,14 @@ form.fw {
 }
 
 blockquote {
-  @include color-border(border-left, 5px, solid, primary);
+  @include shared.color-border(border-left, 5px, solid, primary);
   padding-left: 20px;
   margin-left: 0;
 }
 
 pre {
   padding: 10px;
-  @include color-border(border, 1px, solid, primary);
+  @include shared.color-border(border, 1px, solid, primary);
   white-space: pre-wrap;
 }
 
@@ -198,7 +169,7 @@ table {
 tr,
 td,
 th {
-  @include color-border(border, 1px, solid, primary);
+  @include shared.color-border(border, 1px, solid, primary);
   padding: 5px;
 }
 
@@ -221,11 +192,11 @@ details summary {
 }
 
 .border-top {
-  @include color-border(border-top, 1px, solid, primary);
+  @include shared.color-border(border-top, 1px, solid, primary);
 }
 
 .border-bottom {
-  @include color-border(border-bottom, 1px, solid, primary);
+  @include shared.color-border(border-bottom, 1px, solid, primary);
 }
 
 .p {
@@ -245,28 +216,6 @@ details summary {
 
 .in {
   display: inline;
-}
-
-.settings-passkeys form,
-.settings-apppasswords form {
-  display: flex;
-  width: 100%;
-  gap: 5px;
-  align-items: center;
-
-  input {
-    margin-bottom: 0;
-  }
-
-  input[name="passkeyname"],
-  input[name="apppasswordname"] {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  button {
-    flex: 0 0 auto;
-  }
 }
 
 .fw {
@@ -302,42 +251,12 @@ details summary {
 }
 
 .invert {
-  @include color(color, background);
-  @include color(background, primary);
+  @include shared.color(color, background);
+  @include shared.color(background, primary);
 
   &::selection {
-    @include color(color, primary);
-    @include color(background, background);
-  }
-}
-
-.preview {
-  padding: 10px;
-  @include color-border(border, 1px, solid, primary);
-  margin-bottom: 5px;
-}
-
-.editor-toolbar {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 5px;
-  @include color-border(border, 1px, solid, primary);
-
-  button {
-    font-weight: bold;
-    font-family: serif;
-    border: none;
-    background: none;
-    cursor: pointer;
-
-    &:focus {
-      outline: none;
-    }
-  }
-
-  &-spacer {
-    flex: 1;
-    min-width: 0;
+    @include shared.color(color, primary);
+    @include shared.color(background, background);
   }
 }
 
@@ -356,9 +275,9 @@ details summary {
   box-sizing: border-box;
   padding: 1rem;
   max-width: min(90vw, 32rem);
-  @include color(background, background);
-  @include color(color, primary);
-  @include color-border(border, 1px, solid, primary);
+  @include shared.color(background, background);
+  @include shared.color(color, primary);
+  @include shared.color-border(border, 1px, solid, primary);
 
   &[open] {
     display: flex;
@@ -418,22 +337,9 @@ button.share-modal-close {
   box-shadow: none;
 }
 
-.settings-table {
-  width: 100%;
-
-  td.fixed {
-    width: auto;
-    white-space: nowrap;
-  }
-  td.expand {
-    max-width: none;
-    width: 100%;
-  }
-}
-
 @media print {
   html {
-    @include lightmode;
+    @include shared.lightmode;
   }
 
   body {

@@ -1,0 +1,63 @@
+.preview {
+  padding: 10px;
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+  margin-bottom: 5px;
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+  border: 1px solid #000;
+  border: 1px solid var(--primary, #000);
+}
+.editor-toolbar button {
+  font-weight: bold;
+  font-family: serif;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.editor-toolbar button:focus {
+  outline: none;
+}
+.editor-toolbar-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
+}
+.settings-passkeys form input,
+.settings-apppasswords form input {
+  margin-bottom: 0;
+}
+.settings-passkeys form input[name=passkeyname],
+.settings-passkeys form input[name=apppasswordname],
+.settings-apppasswords form input[name=passkeyname],
+.settings-apppasswords form input[name=apppasswordname] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.settings-passkeys form button,
+.settings-apppasswords form button {
+  flex: 0 0 auto;
+}
+
+.settings-table {
+  width: 100%;
+}
+.settings-table td.fixed {
+  width: auto;
+  white-space: nowrap;
+}
+.settings-table td.expand {
+  max-width: none;
+  width: 100%;
+}

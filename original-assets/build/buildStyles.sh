@@ -1,3 +1,5 @@
 #!/bin/env sh
 
-npx sass --no-source-map original-assets/styles/styles.scss templates/assets/css/styles.css
+for name in styles admin; do
+  npx sass --no-source-map "original-assets/styles/${name}.scss" "templates/assets/css/${name}.css"
+done

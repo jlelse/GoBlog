@@ -44,6 +44,16 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	} else {
 		hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/styles.css"))
 	}
+	// Admin CSS (only for logged-in users)
+	if rd.LoggedIn() {
+		if af, ok := a.assetFiles[a.assetFileNames["css/admin.css"]]; ok && af != nil {
+			hb.WriteElementOpen("style")
+			hb.WriteUnescaped(string(af.body))
+			hb.WriteElementClose("style")
+		} else {
+			hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/admin.css"))
+		}
+	}
 	// Canonical URL
 	if rd.Canonical != "" {
 		hb.WriteElementOpen("link", "rel", "canonical", "href", rd.Canonical)

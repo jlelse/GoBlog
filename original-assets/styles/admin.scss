@@ -1,0 +1,66 @@
+@use "shared";
+
+.preview {
+  padding: 10px;
+  @include shared.color-border(border, 1px, solid, primary);
+  margin-bottom: 5px;
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+  @include shared.color-border(border, 1px, solid, primary);
+
+  button {
+    font-weight: bold;
+    font-family: serif;
+    border: none;
+    background: none;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &-spacer {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.settings-passkeys form,
+.settings-apppasswords form {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  align-items: center;
+
+  input {
+    margin-bottom: 0;
+  }
+
+  input[name="passkeyname"],
+  input[name="apppasswordname"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  button {
+    flex: 0 0 auto;
+  }
+}
+
+.settings-table {
+  width: 100%;
+
+  td.fixed {
+    width: auto;
+    white-space: nowrap;
+  }
+  td.expand {
+    max-width: none;
+    width: 100%;
+  }
+}

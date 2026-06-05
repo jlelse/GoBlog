@@ -65,9 +65,12 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	fac := &constraint.FrameAncestorsConstraint{}
 	fac.Sources(src.None())
 	// style-src must allow the inlined main stylesheet via its sha256 hash
-	styleSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
+	styleSrcList := make([]src.SourceVal, 0, 3+len(allowedDomains))
 	styleSrcList = append(styleSrcList, src.Self())
 	if af, ok := a.assetFiles[a.assetFileNames["css/styles.css"]]; ok && af != nil {
+		styleSrcList = append(styleSrcList, src.HashAlgBase64(hashalg.Sha256(), af.sha256base64))
+	}
+	if af, ok := a.assetFiles[a.assetFileNames["css/admin.css"]]; ok && af != nil {
 		styleSrcList = append(styleSrcList, src.HashAlgBase64(hashalg.Sha256(), af.sha256base64))
 	}
 	for _, d := range allowedDomains {

@@ -60,7 +60,7 @@ Automatically applies code modernizations, removes deprecated patterns, and upda
 ./original-assets/build/buildStyles.sh
 ```
 
-Requires Node.js/npx. Source: `original-assets/styles/styles.scss` → Output: `templates/assets/css/styles.css`.
+Requires Node.js/npx. Sources: `original-assets/styles/styles.scss` (public, all users) and `original-assets/styles/admin.scss` (admin-only, logged-in users), with shared variables/mixins in `_shared.scss`. Outputs: `templates/assets/css/styles.css` and `templates/assets/css/admin.css`.
 
 ### Bundle Frontend Assets
 
@@ -117,7 +117,7 @@ Add route definition to `httpRouters.go`. The router uses `chi`.
 Edit `ui.go` (page-level rendering) or `uiComponents.go` (reusable components). All HTML is generated via `pkgs/htmlbuilder` — never use raw HTML strings or template files.
 
 ### Changing styles
-Edit `original-assets/styles/styles.scss`, then run `./original-assets/build/buildStyles.sh`. Never edit `templates/assets/css/styles.css` directly. Inline styles in HTML are forbidden (CSP enforced).
+Edit `original-assets/styles/styles.scss` (public styles) or `original-assets/styles/admin.scss` (admin-only styles), then run `./original-assets/build/buildStyles.sh`. Shared variables and mixins live in `_shared.scss`. Never edit `templates/assets/css/*.css` directly. Inline styles in HTML are forbidden (CSP enforced).
 
 ### Adding a database migration
 Create a new numbered SQL file in `dbmigrations/` (next number after `00038.sql`). Migrations are embedded via `//go:embed` and run automatically on startup.
