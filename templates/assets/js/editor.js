@@ -1,4 +1,15 @@
 (() => {
+    const PREFIX_SYNC = "sync:";
+    const PREFIX_PREVIEW = "preview:";
+    const PREFIX_FORMATTED = "formatted:";
+
+    const execUndoableReplace = (element, newContent, cursorPos) => {
+        element.focus();
+        element.select();
+        document.execCommand('insertText', false, newContent);
+        element.selectionStart = element.selectionEnd = cursorPos;
+    };
+
     const setupWS = (element) => {
         if (!element.dataset.ws) return;
         const wsParams = new URLSearchParams(element.dataset.ws.split('?')[1]);
@@ -31,19 +42,20 @@
 
                 ws.onmessage = (evt) => {
                     const msg = evt.data;
-                    if (sync && msg.startsWith("sync:")) {
-                        element.value = msg.slice(5);
-                    } else if (preview && msg.startsWith("preview:")) {
+                    if (sync && msg.startsWith(PREFIX_SYNC)) {
+                        const newContent = msg.slice(PREFIX_SYNC.length);
+                        if (element.value !== newContent) {
+                            execUndoableReplace(element, newContent, element.selectionStart);
+                        }
+                    } else if (preview && msg.startsWith(PREFIX_PREVIEW)) {
                         previewContainer.classList.add('preview');
                         previewContainer.classList.remove('hide');
-                        previewContainer.innerHTML = msg.slice(8);
-                    } else if (msg.startsWith("formatted:")) {
-                        const parts = msg.slice(10).split(":");
+                        previewContainer.innerHTML = msg.slice(PREFIX_PREVIEW.length);
+                    } else if (msg.startsWith(PREFIX_FORMATTED)) {
+                        const parts = msg.slice(PREFIX_FORMATTED.length).split(":");
                         const cursor = parseInt(parts.pop(), 10);
-                        element.value = parts.join(":");
-                        element.selectionStart = element.selectionEnd = cursor;
-                        element.focus();
-                        element.dispatchEvent(new Event("input"));
+                        const newContent = parts.join(":");
+                        execUndoableReplace(element, newContent, cursor);
                     } else if (msg === "triggerpreview") {
                         if (ws && ws.readyState === WebSocket.OPEN) {
                             ws.send(element.value);
@@ -82,11 +94,16 @@
         if (toolbar && toolbar.classList.contains('editor-toolbar')) {
             toolbar.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
-                if (!btn || !ws || ws.readyState !== WebSocket.OPEN) return;
+                if (!btn) return;
                 const action = btn.dataset.action;
-                const start = element.selectionStart;
-                const end = element.selectionEnd;
-                ws.send(`format:${action}:${start}:${end}:${element.value}`);
+                if (action === 'undo' || action === 'redo') {
+                    element.focus();
+                    document.execCommand(action);
+                } else if (ws && ws.readyState === WebSocket.OPEN) {
+                    const start = element.selectionStart;
+                    const end = element.selectionEnd;
+                    ws.send(`format:${action}:${start}:${end}:${element.value}`);
+                }
             });
         }
     };

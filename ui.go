@@ -1545,6 +1545,8 @@ func (a *goBlog) renderEditorToolbar(hb *htmlbuilder.HTMLBuilder, lang string) {
 	for _, btn := range []struct {
 		action, label, title string
 	}{
+		{"undo", "↩", a.ts.GetTemplateStringVariant(lang, "editorundo")},
+		{"redo", "↪", a.ts.GetTemplateStringVariant(lang, "editorredo")},
 		{"bold", "<b>B</b>", a.ts.GetTemplateStringVariant(lang, "editorbold")},
 		{"italic", "<i>I</i>", a.ts.GetTemplateStringVariant(lang, "editoritalic")},
 		{"strikethrough", "<s>S</s>", a.ts.GetTemplateStringVariant(lang, "editorstrikethrough")},

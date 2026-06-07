@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -99,10 +100,13 @@ func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
 		// Save editor state
 		// and send editor state to other connections
 		if enableSync {
-			bc.esm.Lock()
-			a.updateEditorStateInDatabase(ctx, blog, messageBytes)
-			bc.esm.Unlock()
-			a.sendNewEditorStateToAllConnections(ctx, bc, connectionID, messageBytes)
+			lastState, _ := a.getEditorStateFromDatabase(ctx, blog)
+			if !bytes.Equal(lastState, messageBytes) {
+				bc.esm.Lock()
+				a.updateEditorStateInDatabase(ctx, blog, messageBytes)
+				bc.esm.Unlock()
+				a.sendNewEditorStateToAllConnections(ctx, bc, connectionID, messageBytes)
+			}
 		}
 		// Create preview
 		if enablePreview {
