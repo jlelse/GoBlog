@@ -130,7 +130,7 @@ Add keys to `strings/default.yaml` (English), then add translations to other loc
 - Run `go test -tags=linux,libsqlite3,sqlite_fts5 -timeout 600s ./...` to verify
 
 ### Documentation and configuration
-- New features must be documented in `README.md`, or existing documentation must be updated to reflect changes
+- New features must be documented in `README.md` or `docs/`, or existing documentation must be updated to reflect changes
 - New configurable features must be added to `example-config.yml` with descriptive comments
 - Translation strings in `strings/*.yaml` must be kept sorted alphabetically by key
 

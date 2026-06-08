@@ -217,6 +217,7 @@ blogs:
     # title: My awesome blog # Blog title (DEPRECATED: Use settings UI instead, will be migrated to database)
     # description: My awesome blog description # Blog description (DEPRECATED: Use settings UI instead, will be migrated to database)
     pagination: 10 # Number of posts per page
+    # postAsHome: true # Use the post at the blog base path (e.g., / or /de) as the homepage, instead of the post index
     # Taxonomies
     taxonomies:
       - name: tags # Code of taxonomy (used via post parameters)
@@ -249,7 +250,8 @@ blogs:
       enabled: true # Enable
       title: Search # Title
       path: /search # (Optional) Set a custom path (relative to blog path)
-      placeholder: Search on this blog # Description
+      placeholder: Search on this blog # Placeholder
+      # description: Search blog posts # (Optional) Description shown above the search form
     # Page with blog statistics (posts per year)
     blogStats:
       enabled: true # Enable
