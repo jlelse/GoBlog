@@ -72,7 +72,7 @@ func Test_editorPreview(t *testing.T) {
 	require.Equal(t, websocket.TextMessage, mt)
 
 	msgStr = string(msg)
-	assert.Equal(t, "preview:yaml: construct errors:\n  line 2: mapping key \"title\" already defined at line 1", msgStr)
+	assert.Equal(t, "preview:yaml: construct errors: line 2: mapping key \"title\" already defined at line 1", msgStr)
 }
 
 func Test_editorFormat(t *testing.T) {
