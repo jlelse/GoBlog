@@ -82,8 +82,8 @@ func (a *goBlog) startServer() (err error) {
 				Addr:              ":" + strconv.Itoa(redirectPort),
 				Handler:           h,
 				ReadHeaderTimeout: 1 * time.Minute,
-				ReadTimeout:       5 * time.Minute,
-				WriteTimeout:      5 * time.Minute,
+				ReadTimeout:       10 * time.Minute,
+				WriteTimeout:      10 * time.Minute,
 			}
 			a.shutdown.Add(a.shutdownServer(httpServer, "http server"))
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -94,8 +94,8 @@ func (a *goBlog) startServer() (err error) {
 	s := &http.Server{
 		Handler:           finalHandler,
 		ReadHeaderTimeout: 1 * time.Minute,
-		ReadTimeout:       5 * time.Minute,
-		WriteTimeout:      5 * time.Minute,
+		ReadTimeout:       10 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
 	}
 	a.shutdown.Add(a.shutdownServer(s, "main server"))
 	s.Addr = ":" + strconv.Itoa(a.cfg.Server.Port)

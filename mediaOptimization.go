@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/carlmjohnson/requests"
 	"github.com/samber/lo"
@@ -232,8 +233,10 @@ func (a *goBlog) callImgproxy(sourceURL string, variant *variantType, w io.Write
 	imgproxyURL := strings.TrimRight(a.cfg.MediaOptimization.ImgproxyURL, "/")
 	u := fmt.Sprintf("%s/fit/w:%d/h:0/f:%s/plain/%s", imgproxyURL, variant.Width, variant.Format, sourceURL)
 
+	// Use longer timeout than the default of one minute
+	client := &http.Client{Transport: a.httpClient.Transport, Timeout: 5 * time.Minute}
 	err := requests.URL(u).
-		Client(a.httpClient).
+		Client(client).
 		ToWriter(w).
 		Fetch(context.Background())
 	if err != nil {

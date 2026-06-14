@@ -44,8 +44,8 @@ func (a *goBlog) startOnionService(h http.Handler) error {
 	s := &http.Server{
 		Handler:           h,
 		ReadHeaderTimeout: 1 * time.Minute,
-		ReadTimeout:       5 * time.Minute,
-		WriteTimeout:      5 * time.Minute,
+		ReadTimeout:       10 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
 		BaseContext: func(_ net.Listener) context.Context {
 			return context.WithValue(context.Background(), torUsedKey, true)
 		},

@@ -315,6 +315,7 @@ func Test_callImgproxy_invalidURL(t *testing.T) {
 	app := &goBlog{cfg: createDefaultTestConfig(t)}
 	app.cfg.MediaOptimization.Enabled = true
 	app.cfg.MediaOptimization.ImgproxyURL = "http://127.0.0.1:1"
+	app.httpClient = newHTTPClient()
 
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
@@ -448,6 +449,7 @@ func Test_mediaOptimizeUploadFlow_integration(t *testing.T) {
 	app := newAppWithStorage(t, &localMediaStorage{path: storagePath})
 	app.cfg.MediaOptimization.Enabled = true
 	app.cfg.MediaOptimization.ImgproxyURL = "http://localhost:1"
+	app.httpClient = newHTTPClient()
 	err := app.initConfig(false)
 	require.NoError(t, err)
 	app.initMediaOptimization()

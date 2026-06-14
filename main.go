@@ -506,7 +506,7 @@ Examples:
 		Long: `Optimize a media file using imgproxy, generating optimized variants.
 
 The file should be specified by its hash-based filename (e.g. abc123.jpg).
-This works the same as the "Optimize" button in the web UI's file manager.
+This works the same as the "Optimize" button in the media files editor subpage.
 
 Example:
   ./GoBlog media optimize abc123.jpg`,
