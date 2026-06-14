@@ -110,6 +110,14 @@ Consolidates duplicate media files by detecting perceptually identical images an
 
 **Flags:** `--yes`, `--dry-run`, `--discover-only`, `--threshold N`, `--limit N`, `--preview`
 
+## Media Optimization
+
+```bash
+./GoBlog --config ./config/config.yml media optimize abc123.jpg
+```
+
+Optimizes a media file using imgproxy, generating optimized variants. Works the same as the "Optimize" button in the media files editor subpage. Requires media optimization and imgproxy to be configured.
+
 ## Profiling
 
 ```bash

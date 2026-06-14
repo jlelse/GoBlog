@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 
 	"github.com/pquerna/otp/totp"
 	"github.com/spf13/cobra"
@@ -497,6 +499,34 @@ Examples:
 	migrateCmd.Flags().Int("limit", 0, "process at most N groups")
 	migrateCmd.Flags().Bool("preview", false, "show image previews using timg (requires timg in PATH)")
 	mediaCmd.AddCommand(migrateCmd)
+
+	optimizeCmd := &cobra.Command{
+		Use:   "optimize [file]",
+		Short: "Optimize a media file using imgproxy",
+		Long: `Optimize a media file using imgproxy, generating optimized variants.
+
+The file should be specified by its hash-based filename (e.g. abc123.jpg).
+This works the same as the "Optimize" button in the web UI's file manager.
+
+Example:
+  ./GoBlog media optimize abc123.jpg`,
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			app := initializeApp(cmd)
+			app.initMediaOptimization()
+
+			filename := args[0]
+			ext := filepath.Ext(filename)
+			hash := strings.TrimSuffix(filename, ext)
+
+			app.info("Optimizing", "file", filename)
+			app.optimizeMediaFile(hash, ext)
+			app.info("Done optimizing media file")
+			app.shutdown.ShutdownAndWait()
+		},
+	}
+	mediaCmd.AddCommand(optimizeCmd)
+
 	rootCmd.AddCommand(mediaCmd)
 
 	// Execute the root command
