@@ -527,6 +527,49 @@ Example:
 	}
 	mediaCmd.AddCommand(optimizeCmd)
 
+	checkFormatsCmd := &cobra.Command{
+		Use:   "checkFormats",
+		Short: "Check for missing image format and size variants",
+		Long: `Check if any images are missing optimized variants.
+
+Scans all media files and compares the existing optimized variants against the
+configured formats and widths. Reports each missing format_width combination
+(e.g. avif_800, jpeg_2000) per original image.
+
+Examples:
+  ./GoBlog media checkFormats
+  ./GoBlog media checkFormats --has-variants`,
+		Run: func(cmd *cobra.Command, _ []string) {
+			app := initializeApp(cmd)
+			app.initMediaOptimization()
+
+			hasVariants, _ := cmd.Flags().GetBool("has-variants")
+
+			results, err := app.checkMediaFormats(hasVariants)
+			if err != nil {
+				app.logErrAndQuit("Failed to check media formats", "err", err)
+				return
+			}
+
+			if len(results) == 0 {
+				if hasVariants {
+					app.info("All previously optimized images have all configured formats")
+				} else {
+					app.info("All images have all configured formats")
+				}
+			} else {
+				app.info("Images with missing variants:", "count", len(results))
+				for _, r := range results {
+					app.info("Missing variants", "file", r.Hash+r.Extension, "missing", strings.Join(r.MissingVariants, ", "))
+				}
+			}
+
+			app.shutdown.ShutdownAndWait()
+		},
+	}
+	checkFormatsCmd.Flags().Bool("has-variants", false, "only show images that have at least one variant")
+	mediaCmd.AddCommand(checkFormatsCmd)
+
 	rootCmd.AddCommand(mediaCmd)
 
 	// Execute the root command

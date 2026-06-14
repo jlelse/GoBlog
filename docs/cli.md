@@ -118,6 +118,17 @@ Consolidates duplicate media files by detecting perceptually identical images an
 
 Optimizes a media file using imgproxy, generating optimized variants. Works the same as the "Optimize" button in the media files editor subpage. Requires media optimization and imgproxy to be configured.
 
+## Media Format Check
+
+```bash
+./GoBlog --config ./config/config.yml media checkFormats
+./GoBlog --config ./config/config.yml media checkFormats --has-variants
+```
+
+Scans all media files and checks if each original image has all configured optimized variants. For each image, it compares the existing optimized variants in the database against the expected format and width combinations (e.g. `avif_800`, `jpeg_2000`) and reports any that are missing. Requires media optimization to be enabled and configured.
+
+**Flags:** `--has-variants` — only show images that already have at least one optimized variant (excludes images that were never optimized).
+
 ## Profiling
 
 ```bash
