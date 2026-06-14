@@ -307,23 +307,23 @@ func (a *goBlog) migrationHashFile(mf *mediaFile) (*migrationEntry, error) {
 		return nil, fmt.Errorf("seek: %w", err)
 	}
 
-	img, err := imaging.Decode(tmp, imaging.AutoOrientation(true))
-	if err != nil {
-		return nil, fmt.Errorf("decode: %w", err)
-	}
-	bounds := img.Bounds()
-	dhash := fmt.Sprintf("%x", phash.Hash(img))
-	img = nil
-
-	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
-		return nil, fmt.Errorf("seek: %w", err)
-	}
-
 	imgRaw, err := imaging.Decode(tmp, imaging.AutoOrientation(false))
 	if err != nil {
 		return nil, fmt.Errorf("decode raw: %w", err)
 	}
 	dhashRaw := fmt.Sprintf("%x", phash.Hash(imgRaw))
+	bounds := imgRaw.Bounds()
+
+	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("seek: %w", err)
+	}
+
+	dhash := dhashRaw
+	img, err := imaging.Decode(tmp, imaging.AutoOrientation(true))
+	if err == nil {
+		dhash = fmt.Sprintf("%x", phash.Hash(img))
+		bounds = img.Bounds()
+	}
 
 	return &migrationEntry{
 		DHash:    dhash,
