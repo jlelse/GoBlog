@@ -13,7 +13,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.25.1
-	github.com/coder/websocket v1.8.14
+	github.com/coder/websocket v1.8.15
 	github.com/dchest/captcha v1.1.0
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
