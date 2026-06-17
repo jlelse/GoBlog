@@ -103,7 +103,7 @@ func (s *micropubImplementation) getMediaHandler() http.Handler {
 }
 
 func (s *micropubImplementation) HasScope(r *http.Request, scope string) bool {
-	return strings.Contains(r.Context().Value(indieAuthScope).(string), scope)
+	return strings.Contains(r.Context().Value(oauthScope).(string), scope)
 }
 
 func (s *micropubImplementation) Source(urlStr string) (map[string]any, error) {

@@ -204,8 +204,8 @@ func (a *goBlog) buildRouter() http.Handler {
 	// Micropub
 	r.Route(micropubPath, a.micropubRouter)
 
-	// IndieAuth
-	r.Group(a.indieAuthRouter)
+	// Fediverse OAuth / IndieAuth
+	r.Group(a.oauthRouter)
 
 	// ActivityPub and stuff
 	r.Group(a.activityPubRouter)
@@ -391,9 +391,13 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r.WithContext(rc))
 				return
 			}
-			// Allow IndieAuth, login, settings requests
-			if strings.HasPrefix(r.URL.Path, indieAuthPath) ||
-				r.URL.Path == indieAuthMetadataPath ||
+			// Allow login, settings, Fediverse OAuth / IndieAuth requests
+			if r.URL.Path == oauthMetadataPath ||
+				r.URL.Path == oauthCreateAppPath ||
+				r.URL.Path == oauthAuthorizePath ||
+				r.URL.Path == oauthTokenPath ||
+				r.URL.Path == oauthRevokePath ||
+				r.URL.Path == oauthVerifyCredentialsPath ||
 				strings.HasPrefix(r.URL.Path, webAuthnBasePath) ||
 				r.URL.Path == loginPath ||
 				r.URL.Path == logoutPath ||

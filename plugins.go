@@ -231,7 +231,7 @@ func (a *goBlog) UploadMedia(file io.Reader, filename string, _ string) (string,
 	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	// Execute the request
-	addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
+	addAllOAuthScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
 	// Handle the recorder result
 	res := recorder.Result()
 	if recorder.Code < 200 || recorder.Code >= 400 {

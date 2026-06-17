@@ -19,7 +19,6 @@ import (
 	c "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
-	"go.hacdias.com/indielib/indieauth"
 )
 
 type goBlog struct {
@@ -64,10 +63,8 @@ type goBlog struct {
 	// IndexNow
 	inKey  []byte
 	inLoad sync.Once
-	// IndieAuth
-	ias *indieauth.Server
 	// Inits
-	initLogOnce, initMarkdownOnce, initSessionStoresOnce, initIndieAuthOnce, initCacheOnce sync.Once
+	initLogOnce, initMarkdownOnce, initSessionStoresOnce, initCacheOnce sync.Once
 	// Logs (HTTP)
 	logf *rotatelogs.RotateLogs
 	// Logs (Program)

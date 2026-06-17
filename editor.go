@@ -199,7 +199,7 @@ func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, 
 				return nil, "", http.StatusBadRequest, err
 			}
 			recorder := httptest.NewRecorder()
-			addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
+			addAllOAuthScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, req)
 			result := recorder.Result()
 			_ = result.Body.Close()
 			if result.StatusCode != http.StatusCreated {
@@ -232,9 +232,9 @@ func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, 
 func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool, redirectSuccess string) {
 	recorder := httptest.NewRecorder()
 	if media {
-		addAllScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, r)
+		addAllOAuthScopes(a.getMicropubImplementation().getMediaHandler()).ServeHTTP(recorder, r)
 	} else {
-		addAllScopes(a.getMicropubImplementation().getHandler()).ServeHTTP(recorder, r)
+		addAllOAuthScopes(a.getMicropubImplementation().getHandler()).ServeHTTP(recorder, r)
 	}
 	result := recorder.Result()
 	if location := result.Header.Get("Location"); location != "" {

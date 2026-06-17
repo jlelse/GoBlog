@@ -8,26 +8,31 @@ Use your blog as your identity on the web.
 
 **Endpoints:**
 - `/.well-known/oauth-authorization-server` - Server metadata
-- `/indieauth` - Authorization endpoint
-- `/indieauth/token` - Token endpoint (also supports GET for token introspection)
-- `/indieauth/revoke` - Token revocation endpoint
+- `/oauth/authorize` - Authorization endpoint
+- `/oauth/token` - Token endpoint (POST for exchange, GET for token introspection)
+- `/oauth/revoke` - Token revocation endpoint
+- `/api/v1/accounts/verify_credentials` - Fediverse/Mastodon-compatible credentials verification
 
-**Supported scopes:** `create`, `update`, `delete`, `undelete`, `media`
+**Supported scopes:** `create`, `update`, `delete`, `undelete`, `media` (IndieAuth/Micropub), `profile`, `read`, `write` (Fediverse)
 
 **PKCE:** The server supports Proof Key for Code Exchange (`code_challenge_methods_supported`).
 
 **How it works:**
 
-1. Your blog automatically advertises IndieAuth endpoints
+1. Your blog advertises OAuth endpoints via the standard metadata document at `/.well-known/oauth-authorization-server`
 2. Use your blog URL (`https://yourblog.com/`) to sign in to IndieAuth-enabled sites
-3. Approve the authorization request on your blog
-4. You're logged in!
+3. The same endpoints also work for Fediverse/Mastodon-compatible clients (Mastodon, GoToSocial, Bubbles.town, etc.) when ActivityPub is enabled
+4. Approve the authorization request on your blog
+5. You're logged in!
+
+For IndieAuth clients (URL-based `client_id`, no `client_secret`): uses PKCE for security, no app registration required.
+For Fediverse/Mastodon clients (UUID-based `client_id`): register an app via `POST /api/v1/apps` and use `client_secret` + PKCE.
 
 Authorization codes expire after 10 minutes. Access tokens can be verified via GET to the token endpoint (returns `active`, `me`, `client_id`, `scope`).
 
-**Custom IndieAuth Address:**
+**Custom OAuth Address:**
 
-If you're migrating domains and want to keep using your old domain for IndieAuth (to preserve existing app authorizations), you can configure an alternative IndieAuth address:
+If you're migrating domains and want to keep using your old domain for OAuth (to preserve existing app authorizations), you can configure an alternative OAuth address:
 
 ```yaml
 server:
@@ -37,7 +42,7 @@ server:
   indieAuthAddress: https://old.example.com  # Must be one of altAddresses
 ```
 
-This will advertise the IndieAuth endpoints on the old domain while serving all other content from the new domain.
+This will advertise the OAuth endpoints on the old domain while serving all other content from the new domain.
 
 ## Webmention
 

@@ -99,8 +99,8 @@ server:
   indieAuthAddress: https://old.example.com  # Must be one of altAddresses
 ```
 
-- **`altAddresses`**: Old domains during migration. ActivityPub gets `alsoKnownAs`/`movedTo` entries. WebFinger and WebAuthn work on alt addresses. All non-ActivityPub/IndieAuth requests redirect to the main domain.
-- **`indieAuthAddress`**: Override which domain IndieAuth endpoints are advertised on. Must be one of `altAddresses`. Falls back to `publicAddress` if unset.
+- **`altAddresses`**: Old domains during migration. ActivityPub gets `alsoKnownAs`/`movedTo` entries. WebFinger and WebAuthn work on alt addresses. All non-ActivityPub/OAuth requests redirect to the main domain.
+- **`indieAuthAddress`**: Override which domain the OAuth endpoints (IndieAuth and Fediverse/Mastodon-compatible) are advertised on. Must be one of `altAddresses`. Falls back to `publicAddress` if unset.
 
 ## HTTPS and ACME Certificates
 

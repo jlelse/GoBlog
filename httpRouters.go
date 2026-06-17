@@ -32,22 +32,9 @@ func (a *goBlog) loginRouter(r chi.Router) {
 
 // Micropub
 func (a *goBlog) micropubRouter(r chi.Router) {
-	r.Use(a.checkIndieAuth)
+	r.Use(a.checkOAuth)
 	r.Handle("/", a.getMicropubImplementation().getHandler())
 	r.Handle(micropubMediaSubPath, a.getMicropubImplementation().getMediaHandler())
-}
-
-// IndieAuth
-func (a *goBlog) indieAuthRouter(r chi.Router) {
-	r.Route(indieAuthPath, func(r chi.Router) {
-		r.Get("/", a.indieAuthRequest)
-		r.With(a.authMiddleware).Post("/accept", a.indieAuthAccept)
-		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/", a.indieAuthVerificationAuth)
-		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(indieAuthTokenSubpath, a.indieAuthVerificationToken)
-		r.Get(indieAuthTokenSubpath, a.indieAuthTokenVerification)
-		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(indieAuthTokenRevocationSubpath, a.indieAuthTokenRevokation)
-	})
-	r.With(cacheLoggedIn, a.cacheMiddleware).Get(indieAuthMetadataPath, a.indieAuthMetadata)
 }
 
 // ActivityPub
@@ -70,6 +57,20 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
 			r.Get("/nodeinfo", a.serveNodeInfo)
 		})
+	}
+}
+
+// IndieAuth (always available) + Fediverse OAuth (when ActivityPub is enabled)
+func (a *goBlog) oauthRouter(r chi.Router) {
+	r.With(cacheLoggedIn, a.cacheMiddleware).Get(oauthMetadataPath, a.oauthMetadata)
+	r.Get(oauthAuthorizePath, a.oauthShowAuthorize)
+	r.With(a.authMiddleware).Post(oauthAuthorizePath, a.oauthHandleAuthorize)
+	r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(oauthTokenPath, a.oauthToken)
+	r.Get(oauthTokenPath, a.oauthTokenVerification)
+	r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(oauthRevokePath, a.oauthRevoke)
+	if a.apEnabled() {
+		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(oauthCreateAppPath, a.oauthCreateApp)
+		r.With(a.checkOAuth).Get(oauthVerifyCredentialsPath, a.oauthVerifyCredentials)
 	}
 }
 

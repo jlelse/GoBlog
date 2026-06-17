@@ -158,6 +158,11 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		// Alternative domain webfinger
 		apIri = a.apIriForAddress(blog, altHostname)
 	}
+	// Issuer URL for OAuth
+	issuerURL := a.getInstanceRootURL()
+	if ok && altHostname != "" {
+		issuerURL = getFullAddressStatic(altHostname, "") + "/"
+	}
 	// Encode
 	pr, pw := io.Pipe()
 	go func() {
@@ -171,6 +176,10 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 				{
 					"rel":  "http://webfinger.net/rel/profile-page",
 					"type": "text/html", "href": apIri,
+				},
+				{
+					"rel":  "http://openid.net/specs/connect/1.0/issuer",
+					"href": issuerURL,
 				},
 			},
 		}))

@@ -97,7 +97,7 @@ func Test_micropubCreate(t *testing.T) {
 	sc := bc.Sections[bc.DefaultSection]
 	sc.PathTemplate = `{{printf "/%v" .Slug}}`
 
-	handler := addAllScopes(app.getMicropubImplementation().getHandler())
+	handler := addAllOAuthScopes(app.getMicropubImplementation().getHandler())
 
 	t.Run("JSON", func(t *testing.T) {
 		testCases := []struct {

@@ -15,7 +15,6 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
-	"go.hacdias.com/indielib/indieauth"
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HTMLBuilder, bc *configBlog, p *post) {
@@ -77,11 +76,15 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("link", "rel", "webmention", "href", a.getFullAddress("/webmention"))
 	// Micropub
 	hb.WriteElementOpen("link", "rel", "micropub", "href", a.getFullAddress("/micropub"))
-	// IndieAuth
+	// IndieAuth / Fediverse OAuth
 	indieAuthAddress := cmp.Or(a.cfg.Server.IndieAuthAddress, a.cfg.Server.PublicAddress)
-	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", getFullAddressStatic(indieAuthAddress, indieAuthPath))
-	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", getFullAddressStatic(indieAuthAddress, indieAuthPath+indieAuthTokenSubpath))
-	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", getFullAddressStatic(indieAuthAddress, indieAuthMetadataPath))
+	hb.WriteElementOpen("link", "rel", "authorization_endpoint", "href", getFullAddressStatic(indieAuthAddress, oauthAuthorizePath))
+	hb.WriteElementOpen("link", "rel", "token_endpoint", "href", getFullAddressStatic(indieAuthAddress, oauthTokenPath))
+	hb.WriteElementOpen("link", "rel", "token_endpoint_auth_methods_supported", "href", getFullAddressStatic(indieAuthAddress, oauthTokenPath))
+	hb.WriteElementOpen("link", "rel", "revocation_endpoint", "href", getFullAddressStatic(indieAuthAddress, oauthRevokePath))
+	hb.WriteElementOpen("link", "rel", "app_registration_endpoint", "href", getFullAddressStatic(indieAuthAddress, oauthCreateAppPath))
+	hb.WriteElementOpen("link", "rel", "issuer", "href", getFullAddressStatic(indieAuthAddress, ""))
+	hb.WriteElementOpen("link", "rel", "indieauth-metadata", "href", getFullAddressStatic(indieAuthAddress, oauthMetadataPath))
 	// Rel-Me
 	user := a.cfg.User
 	if user != nil {
@@ -1060,64 +1063,51 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderIndieAuth(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
-	indieAuthRequest, ok := rd.Data.(*indieauth.AuthenticationRequest)
+func (a *goBlog) renderOAuthAuthorize(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+	data, ok := rd.Data.(*oauthAuthorizeData)
 	if !ok {
 		return
 	}
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
-			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "indieauth"))
+			a.renderTitleTag(hb, rd.Blog, a.ts.GetTemplateStringVariant(rd.Blog.Lang, "authorization"))
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main")
-			// Title
 			hb.WriteElementOpen("h1")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "indieauth"))
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "authorization"))
 			hb.WriteElementClose("h1")
 			hb.WriteElementClose("main")
-			// Form
-			hb.WriteElementOpen("form", "method", "post", "action", indieAuthPath+"/accept", "class", "p")
-			// Scopes
-			if scopes := indieAuthRequest.Scopes; len(scopes) > 0 {
+			hb.WriteElementOpen("form", "method", "post", "action", oauthAuthorizePath, "class", "p")
+			if data.AppName != "" {
+				hb.WriteElementOpen("p")
+				hb.WriteElementOpen("strong")
+				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "appname"))
+				hb.WriteEscaped(":")
+				hb.WriteElementClose("strong")
+				hb.WriteUnescaped(" ")
+				hb.WriteEscaped(data.AppName)
+				hb.WriteElementClose("p")
+			}
+			if len(data.Scopes) > 0 {
 				hb.WriteElementOpen("h3")
 				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "scopes"))
 				hb.WriteElementClose("h3")
 				hb.WriteElementOpen("ul")
-				for _, scope := range scopes {
+				for _, scope := range data.Scopes {
 					hb.WriteElementOpen("li")
-					hb.WriteElementOpen("input", "type", "checkbox", "name", "scopes", "value", scope, "id", "scope-"+scope, "checked", "")
-					hb.WriteElementOpen("label", "for", "scope-"+scope)
 					hb.WriteEscaped(scope)
-					hb.WriteElementClose("label")
 					hb.WriteElementClose("li")
 				}
 				hb.WriteElementClose("ul")
 			}
-			// Client ID
-			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("strong")
-			hb.WriteEscaped("client_id:")
-			hb.WriteElementClose("strong")
-			hb.WriteUnescaped(" ")
-			hb.WriteEscaped(indieAuthRequest.ClientID)
-			hb.WriteElementClose("p")
-			// Redirect URI
-			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("strong")
-			hb.WriteEscaped("redirect_uri:")
-			hb.WriteElementClose("strong")
-			hb.WriteUnescaped(" ")
-			hb.WriteEscaped(indieAuthRequest.RedirectURI)
-			hb.WriteElementClose("p")
-			// Hidden form fields
-			hb.WriteElementOpen("input", "type", "hidden", "name", "client_id", "value", indieAuthRequest.ClientID)
-			hb.WriteElementOpen("input", "type", "hidden", "name", "redirect_uri", "value", indieAuthRequest.RedirectURI)
-			hb.WriteElementOpen("input", "type", "hidden", "name", "state", "value", indieAuthRequest.State)
-			hb.WriteElementOpen("input", "type", "hidden", "name", "code_challenge", "value", indieAuthRequest.CodeChallenge)
-			hb.WriteElementOpen("input", "type", "hidden", "name", "code_challenge_method", "value", indieAuthRequest.CodeChallengeMethod)
-			// Submit button
+			hb.WriteElementOpen("input", "type", "hidden", "name", "client_id", "value", data.ClientID)
+			hb.WriteElementOpen("input", "type", "hidden", "name", "redirect_uri", "value", data.RedirectURI)
+			hb.WriteElementOpen("input", "type", "hidden", "name", "scope", "value", data.Scope)
+			hb.WriteElementOpen("input", "type", "hidden", "name", "state", "value", data.State)
+			hb.WriteElementOpen("input", "type", "hidden", "name", "code_challenge", "value", data.CodeChallenge)
+			hb.WriteElementOpen("input", "type", "hidden", "name", "code_challenge_method", "value", data.CodeChallengeMethod)
 			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "authenticate"))
 			hb.WriteElementClose("form")
 		},
