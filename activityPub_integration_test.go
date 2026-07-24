@@ -731,8 +731,6 @@ func startDomainProxy(t *testing.T, netName string, hostname string, goblogPort 
 	})
 }
 
-
-
 func startApIntegrationServer(t *testing.T) *goBlog {
 	t.Helper()
 	port := getFreePort(t)
@@ -833,7 +831,7 @@ cache:
 		"--tmpfs", "/data",
 		"--tmpfs", "/gotosocial/storage",
 		"--tmpfs", "/gotosocial/.cache",
-		"docker.io/superseriousbusiness/gotosocial:latest",
+		"docker.io/superseriousbusiness/gotosocial:0.21.3",
 		"--config-path", "/config/config.yaml", "server", "start",
 	)
 	t.Cleanup(func() {
@@ -877,8 +875,6 @@ cache:
 
 	return gts, mc
 }
-
-
 
 func gtsRegisterApp(t *testing.T, baseURL string) (string, string) {
 	t.Helper()
