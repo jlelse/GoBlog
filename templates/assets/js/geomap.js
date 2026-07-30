@@ -113,10 +113,12 @@
     // JS
     const script = document.createElement('script')
     script.src = '/-/leaflet/leaflet.js?v=1.9.4'
+    script.integrity = 'sha256-3HH4pogLw8ob2fqNxfGvSMcC3FELCngkCgfF/u186TU='
     script.onload = function () {
         // Marker Cluster plugin
         const plugin = document.createElement('script')
         plugin.src = '/-/leaflet/markercluster.js?v=1.5.3'
+        plugin.integrity = 'sha256-se80zO4Ps22Fb/RxnHWQRqDhQpPbv51THZaXNUgRaLw='
         plugin.onload = loadMap
         document.head.appendChild(plugin)
     }

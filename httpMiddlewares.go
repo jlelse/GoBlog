@@ -76,20 +76,23 @@ func (a *goBlog) securityHeaders(next http.Handler) http.Handler {
 	fac.Sources(src.None())
 	// Provide function to build CSP header value that also includes hashes etc. for plugins
 	buildCSP := func() string {
-		styleSrcList := make([]src.SourceVal, 0, len(a.assetFileNames)+len(a.cfg.Server.CSPDomains))
+		styleSrcList := make([]src.SourceVal, 0, 1+len(a.assetFileNames)+len(a.cfg.Server.CSPDomains))
+		styleSrcList = append(styleSrcList, src.Self())
+		scriptSrcList := make([]src.SourceVal, 0, len(a.assetFileNames)+len(bundleHashes)+len(a.cfg.Server.CSPDomains))
 		for name, compiledName := range a.assetFileNames {
 			if strings.HasSuffix(name, ".css") {
 				if af, ok := a.assetFiles[compiledName]; ok && af != nil {
 					styleSrcList = append(styleSrcList, src.HashAlgBase64(hashalg.Sha256(), af.sha256base64))
 				}
-			}
-		}
-		scriptSrcList := make([]src.SourceVal, 0, len(a.assetFileNames)+len(a.cfg.Server.CSPDomains))
-		for name, compiledName := range a.assetFileNames {
-			if strings.HasSuffix(name, ".js") {
+			} else if strings.HasSuffix(name, ".js") {
 				if af, ok := a.assetFiles[compiledName]; ok && af != nil {
 					scriptSrcList = append(scriptSrcList, src.HashAlgBase64(hashalg.Sha256(), af.sha256base64))
 				}
+			}
+		}
+		for path, hash := range bundleHashes {
+			if strings.HasSuffix(path, ".js") {
+				scriptSrcList = append(scriptSrcList, src.HashAlgBase64(hashalg.Sha256(), hash))
 			}
 		}
 		for _, d := range a.cfg.Server.CSPDomains {
