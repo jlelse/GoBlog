@@ -30,6 +30,8 @@ type App interface {
 	CompileAsset(filename string, reader io.Reader) error
 	// Get the asset path with the filename used when compiling the assert
 	AssetPath(filename string) string
+	// Get the asset file hash for the given filename, which is used for the integrity attribute in script tags
+	AssetHash(filename string) string
 	// Set parameter values for a post path
 	SetPostParameter(path string, parameter string, values []string) error
 	// Create a new post with just the content (parameters are extracted from the content)

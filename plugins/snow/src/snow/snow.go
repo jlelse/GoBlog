@@ -52,7 +52,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	hbCSS.WriteElementOpen("link", "rel", "stylesheet", "href", p.app.AssetPath("snow.css"))
 	doc.Find("head").AppendHtml(bufCSS.String())
 
-	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("snow.js"), "defer", "")
+	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("snow.js"), "integrity", p.app.AssetHash("snow.js"), "defer", "")
 	hbJs.WriteElementClose("script")
 	doc.Find("main").AppendHtml(bufJs.String())
 }

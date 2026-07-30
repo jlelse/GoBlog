@@ -339,7 +339,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *conf
 	hb.WriteElementOpen("script", "type", contenttype.JSON, "id", "shareData")
 	_ = json.NewEncoder(hb).Encode(newShareData(a.titleOrFallback(p), a.shortPostURL(p)))
 	hb.WriteElementClose("script")
-	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"))
+	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"), "integrity", a.assetFileHash("js/share.js"))
 }
 
 func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
@@ -356,7 +356,7 @@ func (a *goBlog) renderTranslateButton(hb *htmlbuilder.HTMLBuilder, p *post, b *
 	)
 	hb.WriteEscaped("A ⇄ 文")
 	hb.WriteElementClose("a")
-	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/translate.js"))
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/translate.js"), "integrity", a.assetFileHash("js/translate.js"))
 	hb.WriteElementClose("script")
 }
 
@@ -625,7 +625,7 @@ func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HTMLBuilder, track *trackRes
 		"data-attribution", a.getMapAttribution(),
 	)
 	hb.WriteElementClose("div")
-	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"))
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"), "integrity", a.assetFileHash("js/geomap.js"))
 	hb.WriteElementClose("script")
 }
 
@@ -674,7 +674,7 @@ func (a *goBlog) renderPostReactions(hb *htmlbuilder.HTMLBuilder, p *post) {
 	}
 	hb.WriteElementOpen("div", "id", "reactions", "class", "actions", "data-path", p.Path, "data-allowed", strings.Join(a.getAllowedReactions(p.Blog), ","))
 	hb.WriteElementClose("div")
-	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/reactions.js"))
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/reactions.js"), "integrity", a.assetFileHash("js/reactions.js"))
 	hb.WriteElementClose("script")
 }
 
@@ -684,7 +684,7 @@ func (a *goBlog) renderPostVideo(hb *htmlbuilder.HTMLBuilder, p *post) {
 	}
 	hb.WriteElementOpen("div", "id", "video", "data-url", p.firstParameter(videoPlaylistParam))
 	hb.WriteElementClose("div")
-	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/video.js"))
+	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/video.js"), "integrity", a.assetFileHash("js/video.js"))
 	hb.WriteElementClose("script")
 }
 

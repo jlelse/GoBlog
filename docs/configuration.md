@@ -137,7 +137,8 @@ When `securityHeaders: true` (auto-enabled with HTTPS), GoBlog sets these HTTP h
 The CSP allows:
 - **`default-src`**: `'self'`, `blob:`, plus configured domains
 - **`img-src`**: `'self'`, `data:`, plus configured domains
-- **`style-src`**: `'self'`, SHA-256 hashes for inlined CSS, plus configured domains
+- **`style-src`**: SHA-256 hashes for CSS files, plus `cspDomains`
+- **`script-src`**: SHA-256 hashes for JS files, plus `cspDomains`
 - **`frame-ancestors`**: `'none'` (blocks all framing)
 
 Domains are automatically included from: `publicAddress`, `shortPublicAddress`, `mediaAddress`, `altAddresses`, and media storage URL. Add additional domains via `cspDomains`:

@@ -4,9 +4,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
+
+var safeImageExtensions = []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"}
 
 const (
 	mediaFilePath  = "data/media"
@@ -17,10 +21,12 @@ func (*goBlog) serveMediaFile(w http.ResponseWriter, r *http.Request) {
 	f := filepath.Join(mediaFilePath, chi.URLParam(r, "file"))
 	_, err := os.Stat(f) //nolint:gosec
 	if err != nil {
-		// Serve 404, but don't use normal serve404 method because of media domain
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Add(cacheControl, "public,max-age=31536000,immutable")
+	w.Header().Set(cacheControl, "public,max-age=31536000,immutable")
+	if !slices.Contains(safeImageExtensions, strings.ToLower(filepath.Ext(f))) {
+		w.Header().Set("Content-Disposition", "attachment")
+	}
 	http.ServeFile(w, r, f) //nolint:gosec
 }

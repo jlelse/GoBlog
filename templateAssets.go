@@ -85,6 +85,13 @@ func (a *goBlog) assetFileName(fileName string) string {
 	return "/" + a.assetFileNames[fileName]
 }
 
+func (a *goBlog) assetFileHash(fileName string) string {
+	if af, ok := a.assetFiles[a.assetFileNames[fileName]]; ok && af != nil {
+		return "sha256-" + af.sha256base64
+	}
+	return ""
+}
+
 func (a *goBlog) allAssetPaths() []string {
 	paths := make([]string, 0, len(a.assetFileNames))
 	for _, name := range a.assetFileNames {

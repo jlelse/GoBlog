@@ -187,7 +187,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	a.renderFooter(hb, rd)
 	// Easter egg
 	if rd.EasterEgg {
-		hb.WriteElementOpen("script", "src", a.assetFileName("js/easteregg.js"), "defer", "")
+		hb.WriteElementOpen("script", "src", a.assetFileName("js/easteregg.js"), "integrity", a.assetFileHash("js/easteregg.js"), "defer", "")
 		hb.WriteElementClose("script")
 	}
 	hb.WriteElementClose("html")
@@ -275,7 +275,7 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			a.renderAuthor(hb)
 			// Scripts
 			if hasPasskey {
-				hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "defer", "")
+				hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "integrity", a.assetFileHash("js/webauthn.js"), "defer", "")
 				hb.WriteElementClose("script")
 			}
 			hb.WriteElementClose("main")
@@ -476,7 +476,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			}
 			// Table
 			a.renderBlogStatsTable(hb, rd, bsd)
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/blogstats.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/blogstats.js"), "integrity", a.assetFileHash("js/blogstats.js"), "defer", "")
 			hb.WriteElementClose("script")
 			hb.WriteElementClose("main")
 			// Interactions
@@ -634,7 +634,7 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 					"data-attribution", gmd.attribution,
 				)
 				hb.WriteElementClose("div")
-				hb.WriteElementOpen("script", "src", a.assetFileName("js/geomap.js"))
+				hb.WriteElementOpen("script", "src", a.assetFileName("js/geomap.js"), "integrity", a.assetFileHash("js/geomap.js"))
 				hb.WriteElementClose("script")
 			}
 			hb.WriteElementClose("main")
@@ -939,7 +939,8 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			if !rd.Blog.hideSpeakButton {
 				hb.WriteElementOpen("button", "id", "speakBtn", "class", "hide", "data-speak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "speak"), "data-stopspeak", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "stopspeak"))
 				hb.WriteElementClose("button")
-				hb.WriteElementOpen("script", "defer", "", "src", lo.If(p.TTS() != "", a.assetFileName("js/tts.js")).Else(a.assetFileName("js/speak.js")))
+				scriptFile := lo.If(p.TTS() != "", "js/tts.js").Else("js/speak.js")
+				hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName(scriptFile), "integrity", a.assetFileHash(scriptFile))
 				hb.WriteElementClose("script")
 			}
 			// Close post actions
@@ -1011,7 +1012,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 					hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "gentts"))
 					hb.WriteElementClose("form")
 				}
-				hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/formconfirm.js"))
+				hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/formconfirm.js"), "integrity", a.assetFileHash("js/formconfirm.js"))
 				hb.WriteElementClose("script")
 				hb.WriteElementClose("div")
 			}
@@ -1191,7 +1192,7 @@ func (a *goBlog) renderEditorFiles(hb *htmlbuilder.HTMLBuilder, rd *renderData) 
 						"formaction", rd.Blog.getRelativePath(editorPath+editorFileVariantsPath),
 					)
 				}
-				hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+				hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "integrity", a.assetFileHash("js/formconfirm.js"), "defer", "")
 				hb.WriteElementClose("script")
 				hb.WriteElementClose("form")
 			} else {
@@ -1700,9 +1701,9 @@ func (a *goBlog) renderEditor(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementClose("main")
 
 			// Script
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "integrity", a.assetFileHash("js/formconfirm.js"), "defer", "")
 			hb.WriteElementClose("script")
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/editor.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/editor.js"), "integrity", a.assetFileHash("js/editor.js"), "defer", "")
 			hb.WriteElementClose("script")
 		},
 	)
@@ -1802,11 +1803,11 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			a.renderPostSectionSettings(hb, rd, srd)
 
 			// Scripts
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/settings.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/settings.js"), "integrity", a.assetFileHash("js/settings.js"), "defer", "")
 			hb.WriteElementClose("script")
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/formconfirm.js"), "integrity", a.assetFileHash("js/formconfirm.js"), "defer", "")
 			hb.WriteElementClose("script")
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "defer", "")
+			hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "integrity", a.assetFileHash("js/webauthn.js"), "defer", "")
 			hb.WriteElementClose("script")
 
 			hb.WriteElementClose("main")

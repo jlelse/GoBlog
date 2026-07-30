@@ -191,6 +191,10 @@ func (a *goBlog) AssetPath(filename string) string {
 	return a.assetFileName(filename)
 }
 
+func (a *goBlog) AssetHash(filename string) string {
+	return a.assetFileHash(filename)
+}
+
 func (a *goBlog) SetPostParameter(path string, parameter string, values []string) error {
 	return a.db.replacePostParam(path, parameter, values)
 }

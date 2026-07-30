@@ -44,7 +44,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	defer bufferpool.Put(bufJs)
 	hbJs := htmlbuilder.NewHTMLBuilder(bufJs)
 
-	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("imagetooltips.js"), "defer", "")
+	hbJs.WriteElementOpen("script", "src", p.app.AssetPath("imagetooltips.js"), "integrity", p.app.AssetHash("imagetooltips.js"), "defer", "")
 	hbJs.WriteElementClose("script")
 	doc.Find("main").AppendHtml(bufJs.String())
 }
