@@ -80,6 +80,19 @@ func writeTestPNG(t *testing.T, dir, name string, img image.Image) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, name), buf.Bytes(), 0644))
 }
 
+// padJPEGWithZeros appends n zero bytes to an existing JPEG file. The image
+// decoder tolerates trailing data, so this only inflates the file size used by
+// the migration's byte-size tiebreaker without affecting the decoded content.
+func padJPEGWithZeros(t *testing.T, dir, name string, n int) {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND, 0644)
+	require.NoError(t, err)
+	defer f.Close()
+	_, err = f.Write(make([]byte, n))
+	require.NoError(t, err)
+}
+
 // writeTestJPEGWithExifOrientation encodes img as JPEG, then injects an EXIF
 // APP1 marker with the given orientation tag. This is needed because Go's
 // standard jpeg encoder does not write EXIF data. The function splices the
@@ -262,7 +275,7 @@ func Test_mediaMigrate_fullMigration(t *testing.T) {
 		Updated:   now,
 		Status:    statusPublished,
 		Parameters: map[string][]string{
-			"title": {"Post with compressed PNG"},
+			"title":  {"Post with compressed PNG"},
 			"photos": {"/m/jkl012.png"},
 		},
 	}, &postCreationOptions{isNew: true}))
@@ -314,6 +327,10 @@ func Test_mediaMigrate_crossExtension(t *testing.T) {
 	img := createTestImage(4000, 3000, color.RGBA{R: 100, G: 150, B: 200, A: 255})
 	writeTestJPEG(t, storagePath, "abc123.jpg", img)
 	writeTestPNG(t, storagePath, "def456.png", img)
+	// Pad the JPEG with trailing data so it is deterministically the larger
+	// file. The byte-size tiebreaker in migrationIdentifyOriginal then picks it
+	// as the original. Trailing bytes are tolerated by the image decoder.
+	padJPEGWithZeros(t, storagePath, "abc123.jpg", 500_000)
 
 	require.NoError(t, app.db.savePost(&post{
 		Path:      "/test/cross-ext",
@@ -531,10 +548,10 @@ func Test_mediaMigrate_preservesTimestamp(t *testing.T) {
 }
 
 // Test_mediaMigrate_exifOrientation verifies that the hash function handles
-// 1. "hashes differ" — a normal image and an EXIF-rotated image produce
-//    different DHash vs DHashRaw values, proving EXIF is respected.
-// 2. "migrationMinDistance matches" — despite different hashes, the min-distance
-//    function selects the closer of the two hashes, allowing the pair to group.
+//  1. "hashes differ" — a normal image and an EXIF-rotated image produce
+//     different DHash vs DHashRaw values, proving EXIF is respected.
+//  2. "migrationMinDistance matches" — despite different hashes, the min-distance
+//     function selects the closer of the two hashes, allowing the pair to group.
 func Test_mediaMigrate_exifOrientation(t *testing.T) {
 	storagePath := t.TempDir()
 	storage := &localMediaStorage{path: storagePath}
