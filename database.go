@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"uuid"
 
-	"github.com/google/uuid"
 	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/samber/go-singleflightx"
 	"github.com/samber/lo"
@@ -71,7 +71,7 @@ func (a *goBlog) initDatabase(logging bool) error {
 func (a *goBlog) openDatabase(file string, logging, dump bool) (*database, error) {
 	file = lo.If(strings.Contains(file, "?"), file+"&").Else(file + "?")
 	// Register driver
-	dbDriverName := "goblog_db_" + uuid.NewString()
+	dbDriverName := "goblog_db_" + uuid.New().String()
 	sql.Register(dbDriverName, &sqlite.SQLiteDriver{
 		ConnectHook: func(c *sqlite.SQLiteConn) error {
 			funcs := map[string]any{

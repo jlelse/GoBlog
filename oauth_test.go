@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -307,7 +307,7 @@ func Test_oauthVerifyCredentialsGranularScope(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			token := uuid.NewString()
+			token := uuid.New().String()
 			_, err := app.db.Exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", time.Now().UTC().Unix(), token, appID, tc.scope)
 			require.NoError(t, err)
 
@@ -445,7 +445,7 @@ func Test_apHandleWebfingerOAuthIssuer(t *testing.T) {
 
 func tokenFromApp(t *testing.T, app *goBlog, appID string) string {
 	t.Helper()
-	token := uuid.NewString()
+	token := uuid.New().String()
 	_, err := app.db.Exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", time.Now().UTC().Unix(), token, appID, "profile")
 	require.NoError(t, err)
 	return token
@@ -703,7 +703,7 @@ func Test_oauthTokenPKCEEnforcement(t *testing.T) {
 	codeChallenge := base64.RawURLEncoding.EncodeToString(hash[:])
 
 	insertCode := func(challenge, method string) string {
-		code := uuid.NewString()
+		code := uuid.New().String()
 		_, err := app.db.Exec(
 			"insert into indieauthauth (time, code, client, redirect, scope, challenge, challengemethod) values (?, ?, ?, ?, ?, ?, ?)",
 			time.Now().UTC().Unix(), code, clientID, redirectURI, "create", challenge, method,
@@ -793,7 +793,7 @@ func Test_oauthTokenCodeReuse(t *testing.T) {
 	appID, err := app.db.oauthCreateApp("Test App", secret, "https://testapp.example/callback", "profile", "")
 	require.NoError(t, err)
 
-	code := uuid.NewString()
+	code := uuid.New().String()
 	_, err = app.db.Exec(
 		"insert into indieauthauth (time, code, client, redirect, scope, challenge, challengemethod) values (?, ?, ?, ?, ?, ?, ?)",
 		time.Now().UTC().Unix(), code, appID, "https://testapp.example/callback", "profile", "", "",
@@ -838,7 +838,7 @@ func Test_oauthTokenExpiredCode(t *testing.T) {
 	appID, err := app.db.oauthCreateApp("Test App", secret, "https://testapp.example/callback", "profile", "")
 	require.NoError(t, err)
 
-	code := uuid.NewString()
+	code := uuid.New().String()
 	_, err = app.db.Exec(
 		"insert into indieauthauth (time, code, client, redirect, scope, challenge, challengemethod) values (?, ?, ?, ?, ?, ?, ?)",
 		time.Now().UTC().Add(-11*time.Minute).Unix(), code, appID, "https://testapp.example/callback", "profile", "", "",

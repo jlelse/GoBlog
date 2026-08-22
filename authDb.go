@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"uuid"
 
 	"github.com/go-webauthn/webauthn/webauthn"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -280,7 +280,7 @@ func (a *goBlog) getAppPasswordHashes() ([]string, error) {
 
 // createAppPassword creates a new app password and returns the plaintext password (only shown once)
 func (a *goBlog) createAppPassword(name string) (id, password string, err error) {
-	id = uuid.NewString()
+	id = uuid.New().String()
 	password, err = generateAppPassword()
 	if err != nil {
 		return "", "", err
@@ -403,7 +403,7 @@ func (a *goBlog) migrateAuthFromConfig(logging bool) error {
 		}
 		_, err = a.db.Exec(
 			"insert into app_passwords (id, name, hash, created) values (@id, @name, @hash, @created)",
-			sql.Named("id", uuid.NewString()),
+			sql.Named("id", uuid.New().String()),
 			sql.Named("name", apw.Username),
 			sql.Named("hash", hash),
 			sql.Named("created", time.Now().Unix()),

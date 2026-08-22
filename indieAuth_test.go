@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +28,7 @@ func Test_checkOAuth(t *testing.T) {
 	})).ServeHTTP(rec, req)
 	assert.False(t, checked1)
 
-	token := uuid.NewString()
+	token := uuid.New().String()
 	_, err := app.db.Exec("insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)", time.Now().UTC().Unix(), token, "https://example.com/", "create update delete")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)

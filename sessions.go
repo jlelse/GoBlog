@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/araddon/dateparse"
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -153,7 +153,7 @@ func (s *dbSessionStore) insert(session *sessions.Session) (err error) {
 	if err := gob.NewEncoder(encoded).Encode(session.Values); err != nil {
 		return err
 	}
-	session.ID = session.Name() + "-" + uuid.NewString()
+	session.ID = session.Name() + "-" + uuid.New().String()
 	created, modified := utcNowString(), utcNowString()
 	expires := time.Now().UTC().Add(time.Second * time.Duration(session.Options.MaxAge)).Format(time.RFC3339)
 	_, err = s.db.Exec(

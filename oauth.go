@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"uuid"
 )
 
 const (
@@ -178,7 +178,7 @@ func (a *goBlog) oauthHandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	scope := r.FormValue("scope")
-	code := uuid.NewString()
+	code := uuid.New().String()
 	_, err := a.db.Exec(
 		"insert into indieauthauth (time, code, client, redirect, scope, challenge, challengemethod) values (?, ?, ?, ?, ?, ?, ?)",
 		time.Now().UTC().Unix(), code, clientID, redirectURI, scope, codeChallenge, codeChallengeMethod,
@@ -364,7 +364,7 @@ func (a *goBlog) oauthTokenAuthorizationCode(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	token := uuid.NewString()
+	token := uuid.New().String()
 	_, err = a.db.Exec(
 		"insert into indieauthtoken (time, token, client, scope) values (?, ?, ?, ?)",
 		time.Now().UTC().Unix(), token, app.ID, strings.Join(data.Scopes, " "),
@@ -626,7 +626,7 @@ type oauthAuthRequest struct {
 }
 
 func (db *database) oauthCreateApp(name, secret, redirectURIs, scopes, website string) (string, error) {
-	id := uuid.NewString()
+	id := uuid.New().String()
 	_, err := db.Exec(
 		"insert into fediverseapps (id, name, secret, redirect_uris, scopes, website, created) values (?, ?, ?, ?, ?, ?, ?)",
 		id, name, secret, redirectURIs, scopes, website, time.Now().UTC().Unix(),

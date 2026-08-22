@@ -19,10 +19,10 @@ import (
 	"net/http"
 	"slices"
 	"time"
+	"uuid"
 
 	"code.superseriousbusiness.org/httpsig"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/samber/lo"
 	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -647,7 +647,7 @@ func (a *goBlog) apSendTo(blogIri string, activity *ap.Activity, inboxes ...stri
 }
 
 func (a *goBlog) apNewID(blog *configBlog) ap.IRI {
-	return ap.IRI(a.apIri(blog) + "#" + uuid.NewString())
+	return ap.IRI(a.apIri(blog) + "#" + uuid.New().String())
 }
 
 func (a *goBlog) apIri(b *configBlog) string {

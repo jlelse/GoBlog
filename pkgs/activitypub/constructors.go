@@ -10,20 +10,16 @@ func ObjectNew(typ ActivityType) *Object {
 // PersonNew creates a new Person with the given ID
 func PersonNew(id IRI) *Actor {
 	return &Actor{
-		Object: Object{
-			Type: PersonType,
-			ID:   id,
-		},
+		Type: PersonType,
+		ID:   id,
 	}
 }
 
 // CollectionNew creates a new Collection with the given ID
 func CollectionNew(id IRI) *Collection {
 	return &Collection{
-		Object: Object{
-			Type: CollectionType,
-			ID:   id,
-		},
+		Type: CollectionType,
+		ID:   id,
 	}
 }
 

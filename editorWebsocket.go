@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+	"uuid"
 
 	ws "github.com/coder/websocket"
-	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -39,7 +39,7 @@ func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
 	// Store connection to be able to send updates
 	var connectionID string
 	if enableSync {
-		connectionID = uuid.NewString()
+		connectionID = uuid.New().String()
 		bc.esws.Store(connectionID, c)
 		defer bc.esws.Delete(connectionID)
 	}

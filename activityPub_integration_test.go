@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/carlmjohnson/requests"
-	"github.com/google/uuid"
 	"github.com/mattn/go-mastodon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
