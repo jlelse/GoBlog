@@ -966,6 +966,8 @@ func (a *goBlog) renderUserSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData,
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsDeleteProfileImagePath),
 	)
 	hb.WriteElementClose("form")
+
+	a.renderBooleanSetting(hb, rd, rd.Blog.getRelativePath(settingsPath+settingsShowProfileImageInHeaderPath), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "showprofileimageinheaderdesc"), showProfileImageInHeaderSetting, srd.showProfileImageInHeader, true)
 }
 
 func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HTMLBuilder, rd *renderData, srd *settingsRenderData) {

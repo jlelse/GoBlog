@@ -56,10 +56,36 @@ header {
     margin-bottom: 0;
   }
 
+  .header-image {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 1rem;
+
+    img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+    }
+  }
+
+  .header-text {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
   .site-title {
     font-size: 2em;
     font-weight: bold;
     line-height: 1.2;
+  }
+}
+
+@media (min-width: 500px) {
+  header {
+    .header-image img {
+      width: 64px;
+      height: 64px;
+    }
   }
 }
 

@@ -483,6 +483,7 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddReplyContextPath, a.settingsAddReplyContext())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddLikeTitlePath, a.settingsAddLikeTitle())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsAddLikeContextPath, a.settingsAddLikeContext())
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsShowProfileImageInHeaderPath, a.settingsShowProfileImageInHeader())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsEnabledPath, a.settingsUpdateReactionsEnabled())
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateReactionsPath, a.settingsUpdateReactions)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsWebmentionDisableSendingPath, a.settingsWebmentionDisableSending())

@@ -59,12 +59,32 @@ header * {
   margin-top: 0;
   margin-bottom: 0;
 }
+header .header-image {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 1rem;
+}
+header .header-image img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+}
+header .header-text {
+  display: inline-block;
+  vertical-align: middle;
+}
 header .site-title {
   font-size: 2em;
   font-weight: bold;
   line-height: 1.2;
 }
 
+@media (min-width: 500px) {
+  header .header-image img {
+    width: 64px;
+    height: 64px;
+  }
+}
 h1 a,
 h2 a,
 .site-title a {

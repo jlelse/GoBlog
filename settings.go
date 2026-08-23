@@ -61,6 +61,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			addLikeContext:              bc.addLikeContext,
 			userNick:                    a.cfg.User.Nick,
 			userName:                    a.cfg.User.Name,
+			showProfileImageInHeader:    a.cfg.User.showProfileImageInHeader,
 			passkeys:                    passkeys,
 			appPasswords:                appPasswords,
 			hasTOTP:                     hasTOTP,
@@ -302,6 +303,15 @@ const settingsAddLikeContextPath = "/likecontext"
 
 func (a *goBlog) settingsAddLikeContext() http.HandlerFunc {
 	return a.getBooleanSettingHandler(addLikeContextSetting)
+}
+
+const settingsShowProfileImageInHeaderPath = "/showprofileimageinheader"
+
+func (a *goBlog) settingsShowProfileImageInHeader() http.HandlerFunc {
+	return a.globalBooleanSettingHandler(showProfileImageInHeaderSetting, func(value bool) {
+		a.cfg.User.showProfileImageInHeader = value
+		a.purgeCache()
+	})
 }
 
 const settingsUpdateUserPath = "/user"

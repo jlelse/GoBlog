@@ -221,15 +221,16 @@ type configAnnouncement struct {
 }
 
 type configUser struct {
-	Nick             string               `mapstructure:"nick"`
-	Name             string               `mapstructure:"name"`
-	Password         string               `mapstructure:"password"`
-	TOTP             string               `mapstructure:"totp"`
-	AppPasswords     []*configAppPassword `mapstructure:"appPasswords"`
-	Email            string               `mapstructure:"email"`
-	Link             string               `mapstructure:"link"`
-	Identities       []string             `mapstructure:"identities"`
-	ProfileImageFile string               `mapstructure:"profileImageFile"`
+	Nick                     string               `mapstructure:"nick"`
+	Name                     string               `mapstructure:"name"`
+	Password                 string               `mapstructure:"password"`
+	TOTP                     string               `mapstructure:"totp"`
+	AppPasswords             []*configAppPassword `mapstructure:"appPasswords"`
+	Email                    string               `mapstructure:"email"`
+	Link                     string               `mapstructure:"link"`
+	Identities               []string             `mapstructure:"identities"`
+	ProfileImageFile         string               `mapstructure:"profileImageFile"`
+	showProfileImageInHeader bool
 }
 
 type configAppPassword struct {
@@ -540,6 +541,12 @@ func (a *goBlog) initConfig(logging bool) error {
 	if err = a.migrateStringSetting(userNameSetting, &a.cfg.User.Name); err != nil {
 		return err
 	}
+	// Show profile image in header
+	showProfileImageInHeader, err := a.getBooleanSettingValue(showProfileImageInHeaderSetting, false)
+	if err != nil {
+		return err
+	}
+	a.cfg.User.showProfileImageInHeader = showProfileImageInHeader
 	// Migrate auth from config to database
 	if err := a.migrateAuthFromConfig(logging); err != nil {
 		return err

@@ -33,6 +33,7 @@ const (
 	webmentionDisableSendingSetting     = "webmentiondisablesending"
 	webmentionDisableReceivingSetting   = "webmentiondisablereceiving"
 	webmentionDisableInterGoblogSetting = "webmentiondisableintergoblog"
+	showProfileImageInHeaderSetting     = "showprofileimageinheader"
 )
 
 func (a *goBlog) getSettingValue(name string) (string, error) {

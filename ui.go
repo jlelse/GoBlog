@@ -115,6 +115,29 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	}
 	// Header
 	hb.WriteElementOpen("header")
+	// Profile image in header
+	if a.cfg.User.showProfileImageInHeader {
+		imgSizes := []int{48, 64, 96, 128}
+		jpegSrcset := lo.Map(imgSizes, func(s int, _ int) string {
+			return fmt.Sprintf("%s %dw", a.profileImagePath(profileImageFormatJPEG, s), s)
+		})
+		sizes := "(min-width: 500px) 64px, 48px"
+		hb.WriteElementOpen("div", "class", "header-image")
+		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/"), "rel", "home")
+		hb.WriteElementOpen("picture")
+		if a.mediaOptimizationImgproxyConfigured() {
+			avifSrcset := lo.Map(imgSizes, func(s int, _ int) string {
+				return fmt.Sprintf("%s %dw", a.profileImagePath(profileImageFormatAVIF, s), s)
+			})
+			hb.WriteElementOpen("source", "type", contenttype.AVIF, "srcset", strings.Join(avifSrcset, ", "), "sizes", sizes)
+		}
+		hb.WriteElementOpen("img", "src", a.profileImagePath(profileImageFormatJPEG, 64), "srcset", strings.Join(jpegSrcset, ", "), "sizes", sizes, "alt", renderedBlogTitle, "width", "64", "height", "64", "loading", "eager")
+		hb.WriteElementClose("picture")
+		hb.WriteElementClose("a")
+		hb.WriteElementClose("div")
+	}
+	// Header text
+	hb.WriteElementOpen("div", "class", "header-text")
 	// Blog title
 	siteTitleTag := lo.If(rd.IsHome, "h1").Else("p")
 	hb.WriteElementOpen(siteTitleTag, "class", "site-title")
@@ -130,6 +153,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		hb.WriteElementClose("i")
 		hb.WriteElementClose("p")
 	}
+	hb.WriteElementClose("div")
 	// Main menu
 	if mm, ok := rd.Blog.Menus["main"]; ok {
 		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mainmenu"))
@@ -1725,6 +1749,7 @@ type settingsRenderData struct {
 	addLikeContext              bool
 	userNick                    string
 	userName                    string
+	showProfileImageInHeader    bool
 	passkeys                    []*passkey
 	appPasswords                []*appPassword
 	hasTOTP                     bool
