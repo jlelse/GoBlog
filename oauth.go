@@ -481,7 +481,7 @@ func (a *goBlog) oauthVerifyCredentials(w http.ResponseWriter, r *http.Request) 
 		"bot":          false,
 		"note":         "",
 		"url":          apIri,
-		"avatar":       a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 256, 0)),
+		"avatar":       a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 256)),
 	}
 
 	a.respondWithMinifiedJSON(w, resp)

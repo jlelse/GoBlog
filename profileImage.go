@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -15,9 +16,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	_ "embed"
 
+	"github.com/carlmjohnson/requests"
+	"github.com/go-chi/chi/v5"
 	"github.com/kovidgoyal/imaging"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -29,10 +33,13 @@ type profileImageFormat string
 const (
 	profileImageFormatPNG  profileImageFormat = "png"
 	profileImageFormatJPEG profileImageFormat = "jpg"
+	profileImageFormatAVIF profileImageFormat = "avif"
 
 	profileImagePath             = "/profile"
 	profileImagePathJPEG         = profileImagePath + "." + string(profileImageFormatJPEG)
 	profileImagePathPNG          = profileImagePath + "." + string(profileImageFormatPNG)
+	profileImagePathAVIF         = profileImagePath + "." + string(profileImageFormatAVIF)
+	profileImageOriginalPath     = "/profile-original"
 	profileImageSizeRegexPattern = `(?P<width>\d+)(x(?P<height>\d+))?`
 
 	profileImageNoImageHash = "x"
@@ -46,17 +53,19 @@ var defaultLogo []byte
 
 func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 	var mediaType string
-	var encode func(output io.Writer, img image.Image, quality int) error
+	var encode func(output io.Writer, img image.Image) error
 	switch format {
 	case profileImageFormatPNG:
-		mediaType = "image/png"
-		encode = func(output io.Writer, img image.Image, _ int) error {
+		mediaType = contenttype.PNG
+		encode = func(output io.Writer, img image.Image) error {
 			return imaging.Encode(output, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
 		}
+	case profileImageFormatAVIF:
+		mediaType = contenttype.AVIF
 	default:
-		mediaType = "image/jpeg"
-		encode = func(output io.Writer, img image.Image, quality int) error {
-			return imaging.Encode(output, img, imaging.JPEG, imaging.JPEGQuality(quality))
+		mediaType = contenttype.JPEG
+		encode = func(output io.Writer, img image.Image) error {
+			return imaging.Encode(output, img, imaging.JPEG, imaging.JPEGQuality(85))
 		}
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -81,57 +90,112 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		if height == 0 || height > 512 {
 			height = width
 		}
-		// Get requested quality
-		quality := 0
-		qualityFormValue := r.FormValue("q") //nolint:gosec
-		if qualityFormValue != "" {
-			quality, _ = strconv.Atoi(qualityFormValue)
-		}
-		if quality == 0 || quality > 100 {
-			quality = 75
-		}
-		// Read from database
-		var imageReader io.ReadCloser
-		if a.hasProfileImage() {
-			var err error
-			imageReader, err = os.Open(a.cfg.User.ProfileImageFile)
-			if err != nil {
-				a.serveError(w, r, "Failed to open image file", http.StatusInternalServerError)
-				return
+		// Use imgproxy if configured
+		if a.mediaOptimizationImgproxyConfigured() {
+			if err := a.serveProfileImageViaImgproxy(w, r, format, width, height); err != nil {
+				a.error("Failed to serve profile image via imgproxy", "err", err)
+				a.serveProfileImageFallback(w, r, format, mediaType, encode, width, height)
 			}
-		} else {
-			imageReader = io.NopCloser(bytes.NewReader(defaultLogo))
-		}
-		// Decode image
-		img, err := imaging.Decode(imageReader, imaging.AutoOrientation(true))
-		_ = imageReader.Close()
-		if err != nil {
-			a.serveError(w, r, "Failed to decode image", http.StatusInternalServerError)
 			return
 		}
-		// Resize image
-		resizedImage := imaging.Fit(img, width, height, imaging.Lanczos)
-		// Encode
-		pr, pw := io.Pipe()
-		go func() {
-			_ = pw.CloseWithError(encode(pw, resizedImage, quality))
-		}()
-		// Return
-		w.Header().Set(contentType, mediaType)
-		_, err = io.Copy(w, pr)
-		_ = pr.CloseWithError(err)
+		// Fallback to local processing
+		a.serveProfileImageFallback(w, r, format, mediaType, encode, width, height)
 	}
 }
 
-func (a *goBlog) profileImagePath(format profileImageFormat, size, quality int) string {
+func (a *goBlog) serveProfileImageViaImgproxy(w http.ResponseWriter, _ *http.Request, format profileImageFormat, width, height int) error {
+	imgproxyURL := strings.TrimRight(a.cfg.MediaOptimization.ImgproxyURL, "/")
+	sourceURL := a.getFullAddress(a.profileImageOriginalURL())
+	imgproxyFormat := string(format)
+	imgproxyURL = fmt.Sprintf("%s/fit/w:%d/h:%d/f:%s/plain/%s", imgproxyURL, width, height, imgproxyFormat, sourceURL)
+	client := &http.Client{Transport: a.httpClient.Transport, Timeout: 5 * time.Minute}
+	w.Header().Set(contentType, profileImageMediaType(format))
+	return requests.URL(imgproxyURL).
+		Client(client).
+		ToWriter(w).
+		Fetch(context.Background())
+}
+
+func (a *goBlog) serveProfileImageFallback(w http.ResponseWriter, r *http.Request, format profileImageFormat, mediaType string, encode func(output io.Writer, img image.Image) error, width, height int) {
+	if format == profileImageFormatAVIF {
+		a.serveError(w, r, "AVIF format not supported without imgproxy", http.StatusNotImplemented)
+		return
+	}
+	var imageReader io.ReadCloser
+	if a.hasProfileImage() {
+		var err error
+		imageReader, err = os.Open(a.cfg.User.ProfileImageFile)
+		if err != nil {
+			a.serveError(w, r, "Failed to open image file", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		imageReader = io.NopCloser(bytes.NewReader(defaultLogo))
+	}
+	img, err := imaging.Decode(imageReader, imaging.AutoOrientation(true))
+	_ = imageReader.Close()
+	if err != nil {
+		a.serveError(w, r, "Failed to decode image", http.StatusInternalServerError)
+		return
+	}
+	resizedImage := imaging.Fit(img, width, height, imaging.Lanczos)
+	pr, pw := io.Pipe()
+	go func() {
+		_ = pw.CloseWithError(encode(pw, resizedImage))
+	}()
+	w.Header().Set(contentType, mediaType)
+	_, err = io.Copy(w, pr)
+	_ = pr.CloseWithError(err)
+}
+
+func (a *goBlog) serveProfileImageOriginal(w http.ResponseWriter, r *http.Request) {
+	if chi.URLParam(r, "secret") != a.profileImageSecret {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	var imageReader io.ReadCloser
+	if a.hasProfileImage() {
+		var err error
+		imageReader, err = os.Open(a.cfg.User.ProfileImageFile)
+		if err != nil {
+			a.serveError(w, r, "Failed to open image file", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		imageReader = io.NopCloser(bytes.NewReader(defaultLogo))
+	}
+	defer imageReader.Close()
+	w.Header().Set(contentType, "application/octet-stream")
+	_, _ = io.Copy(w, imageReader)
+}
+
+func profileImageMediaType(format profileImageFormat) string {
+	switch format {
+	case profileImageFormatPNG:
+		return contenttype.PNG
+	case profileImageFormatAVIF:
+		return contenttype.AVIF
+	default:
+		return contenttype.JPEG
+	}
+}
+
+func (a *goBlog) initProfileImageSecret() {
+	if a.profileImageSecret == "" {
+		a.profileImageSecret = randomString(32)
+	}
+}
+
+func (a *goBlog) profileImageOriginalURL() string {
+	return fmt.Sprintf("%s/%s", profileImageOriginalPath, a.profileImageSecret)
+}
+
+func (a *goBlog) profileImagePath(format profileImageFormat, size int) string {
 	if !a.hasProfileImage() {
 		return fmt.Sprintf("%s.%s", profileImagePath, format)
 	}
 	query := url.Values{}
 	query.Set("v", a.profileImageHash())
-	if quality != 0 {
-		query.Set("q", fmt.Sprintf("%d", quality))
-	}
 	if size != 0 {
 		query.Set("s", fmt.Sprintf("%d", size))
 	}
@@ -192,7 +256,7 @@ func (a *goBlog) serveUpdateProfileImage(w http.ResponseWriter, r *http.Request)
 	// Clear http cache
 	a.purgeCache()
 	// Redirect
-	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0, 100), http.StatusFound)
+	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0), http.StatusFound)
 }
 
 func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request) {
@@ -202,5 +266,5 @@ func (a *goBlog) serveDeleteProfileImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	a.purgeCache()
-	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0, 100), http.StatusFound)
+	http.Redirect(w, r, a.profileImagePath(profileImageFormatJPEG, 0), http.StatusFound)
 }

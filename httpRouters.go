@@ -122,9 +122,11 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 
 // Profile image
 func (a *goBlog) profileImageRouter(r chi.Router) {
-	r.Use(keepSelectedQueryParams("s", "q"), cacheLoggedIn, a.cacheMiddleware, noIndexHeader)
+	r.Use(keepSelectedQueryParams("s"), cacheLoggedIn, a.cacheMiddleware, noIndexHeader)
 	r.Get(profileImagePathJPEG, a.serveProfileImage(profileImageFormatJPEG))
 	r.Get(profileImagePathPNG, a.serveProfileImage(profileImageFormatPNG))
+	r.Get(profileImagePathAVIF, a.serveProfileImage(profileImageFormatAVIF))
+	r.Get(profileImageOriginalPath+"/{secret}", a.serveProfileImageOriginal)
 }
 
 // Various other routes

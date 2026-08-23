@@ -178,7 +178,7 @@ func Test_renderAuthorWithProfileImage(t *testing.T) {
 	app.serveUpdateProfileImage(rr, req)
 
 	require.Equal(t, 302, rr.Code)
-	assert.Equal(t, []string{"/profile.jpg?q=100&v=e3da5a2d765ff693e7eb54cff717ae0f79ec79c06ed3e3adf6054a46c2824f32"}, rr.Header()["Location"])
+	assert.Equal(t, []string{"/profile.jpg?v=e3da5a2d765ff693e7eb54cff717ae0f79ec79c06ed3e3adf6054a46c2824f32"}, rr.Header()["Location"])
 
 	// Check rendering
 	buf := &bytes.Buffer{}

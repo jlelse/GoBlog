@@ -97,10 +97,10 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		hb.WriteElementOpen("link", "rel", "search", "type", "application/opensearchdescription+xml", "href", os, "title", renderedBlogTitle)
 	}
 	// Favicons
-	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 192, 0), "sizes", "192x192")
-	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 256, 0), "sizes", "256x256")
-	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 512, 0), "sizes", "512x512")
-	hb.WriteElementOpen("link", "rel", "apple-touch-icon", "href", a.profileImagePath(profileImageFormatPNG, 180, 0))
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 192), "sizes", "192x192")
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 256), "sizes", "256x256")
+	hb.WriteElementOpen("link", "rel", "icon", "type", contenttype.JPEG, "href", a.profileImagePath(profileImageFormatJPEG, 512), "sizes", "512x512")
+	hb.WriteElementOpen("link", "rel", "apple-touch-icon", "href", a.profileImagePath(profileImageFormatPNG, 180))
 	// Announcement
 	if ann := rd.Blog.Announcement; ann != nil && ann.Text != "" {
 		hb.WriteElementOpen("div", "id", "announcement", "data-nosnippet", "")

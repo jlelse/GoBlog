@@ -89,6 +89,7 @@ type goBlog struct {
 	// Profile image
 	profileImageHashString string
 	profileImageHashGroup  *sync.Once
+	profileImageSecret     string
 	// Reactions
 	reactionsInit  sync.Once
 	reactionsCache *c.Cache[string, string]

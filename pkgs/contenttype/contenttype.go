@@ -8,6 +8,7 @@ const CharsetUtf8Suffix = "; charset=utf-8"
 const (
 	AS            = "application/activity+json"
 	ATOM          = "application/atom+xml"
+	AVIF          = "image/avif"
 	CSS           = "text/css"
 	HTML          = "text/html"
 	JPEG          = "image/jpeg"

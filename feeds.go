@@ -38,7 +38,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Email: a.cfg.User.Email,
 		},
 		Image: &feeds.Image{
-			Url: a.profileImagePath(profileImageFormatJPEG, 0, 0),
+			Url: a.profileImagePath(profileImageFormatJPEG, 0),
 		},
 	}
 	fallbackTitle := r.URL.Query().Has("fallbacktitle")
