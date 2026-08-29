@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,6 +79,13 @@ func Test_markdown(t *testing.T) {
 		assert.Equal(t, "This is text", renderedText)
 		assert.NoError(t, err)
 
+		// Mark
+
+		rendered, err = app.renderMarkdown("This is ==marked== text.")
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), "<mark>marked</mark>")
+
 		// Title
 
 		assert.Equal(t, "3. **Test**", app.renderMdTitle("3. **Test**"))
@@ -149,6 +157,36 @@ func Test_markdown(t *testing.T) {
 			assert.Contains(t, output, "<code>")
 			assert.Contains(t, output, "<ul>")
 			assert.Contains(t, output, "<blockquote>")
+		})
+
+		t.Run("options are isolated per render", func(t *testing.T) {
+			var wg sync.WaitGroup
+			outputs := make([]string, 10)
+			errs := make(chan error, 10)
+			for i := range 10 {
+				wg.Add(1)
+				go func(i int) {
+					defer wg.Done()
+					var buf bytes.Buffer
+					if err := app.renderPostMarkdownToWriter(&buf, "[Relative](/relative)", i%2 == 0, "", false); err != nil {
+						errs <- err
+						return
+					}
+					outputs[i] = buf.String()
+				}(i)
+			}
+			wg.Wait()
+			close(errs)
+			for err := range errs {
+				t.Error(err)
+			}
+			for i, output := range outputs {
+				href := "/relative"
+				if i%2 == 0 {
+					href = "https://example.com/relative"
+				}
+				assert.Contains(t, output, `href="`+href+`"`)
+			}
 		})
 	})
 }

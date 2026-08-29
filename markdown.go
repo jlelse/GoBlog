@@ -3,83 +3,121 @@ package main
 import (
 	"io"
 
-	marktag "git.jlel.se/jlelse/goldmark-mark"
-	"github.com/yuin/goldmark"
-	emoji "github.com/yuin/goldmark-emoji"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/util"
+	emoji "github.com/yuin/goldmark-emoji/v2"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer"
+	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/util"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/highlighting"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/mark"
 )
+
+// Render options for rendering post markdown.
+type renderOptions struct {
+	absoluteLinks bool
+	postPath      string
+	simpleImages  bool
+}
+
+// Render state passed through the rendering context.
+type renderState struct {
+	app     *goBlog
+	options renderOptions
+}
+
+var renderStateKey = renderer.NewContextKey()
+
+func (a *goBlog) renderContext(options renderOptions) renderer.Context {
+	ctx := renderer.NewContext()
+	ctx.Set(renderStateKey, renderState{
+		app:     a,
+		options: options,
+	})
+	return ctx
+}
+
+func stateFromContext(rc renderer.Context) renderState {
+	if rc != nil {
+		if s, ok := rc.Get(renderStateKey).(renderState); ok {
+			return s
+		}
+	}
+	return renderState{}
+}
 
 func (a *goBlog) initMarkdown() {
 	a.initMarkdownOnce.Do(func() {
-		defaultGoldmarkOptions := a.defaultGoldmarkOptions()
-		publicAddress := ""
-		if srv := a.cfg.Server; srv != nil {
-			publicAddress = srv.PublicAddress
-		}
-		a.md = goldmark.New(append(defaultGoldmarkOptions, goldmark.WithExtensions(&customExtension{
-			absoluteLinks: false,
-			publicAddress: publicAddress,
-			app:           a,
-		}))...)
-		a.titleMd = goldmark.New(
-			goldmark.WithParser(
-				// Override, no need for special Markdown parsers
-				parser.NewParser(
-					parser.WithBlockParsers(util.Prioritized(parser.NewParagraphParser(), 1000)),
-				),
+		a.mdParser = parser.New(a.defaultMarkdownParserOptions()...)
+		a.mdRenderer = html.New(a.defaultMarkdownRendererOptions(
+			html.WithExtensions(customRenderer{}),
+		)...)
+		a.titleMdParser = parser.New(
+			parser.WithDefaultParsers(false),
+			parser.WithBlockParsers(
+				util.Prioritized(parser.NewParagraphParser(), 1000),
 			),
-			goldmark.WithExtensions(
-				extension.Typographer,
-				emoji.Emoji,
+			parser.WithExtensions(
+				extension.TypographerParser,
+				emoji.Parser,
+			),
+		)
+		a.titleMdRenderer = html.New(
+			html.WithExtensions(
+				emoji.HTMLRenderer,
 			),
 		)
 	})
 }
 
-func (a *goBlog) defaultGoldmarkOptions() []goldmark.Option {
-	return []goldmark.Option{
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithExtensions(
-			extension.Table,
-			extension.Strikethrough,
-			extension.Footnote,
-			extension.Typographer,
-			extension.Linkify,
-			marktag.Mark,
-			emoji.Emoji,
-			highlighting.Highlighting,
+func (a *goBlog) defaultMarkdownParserOptions() []parser.Option {
+	return []parser.Option{
+		parser.WithAutoHeadingID(),
+		parser.WithExtensions(
+			extension.TableParser,
+			extension.StrikethroughParser,
+			extension.FootnoteParser,
+			extension.TypographerParser,
+			extension.LinkifyParser,
+			mark.Parser,
+			emoji.Parser,
 		),
 	}
 }
 
+func (a *goBlog) defaultMarkdownRendererOptions(additional ...html.Option) []html.Option {
+	return append([]html.Option{
+		html.WithUnsafe(),
+		html.WithExtensions(
+			extension.TableHTMLRenderer,
+			extension.StrikethroughHTMLRenderer,
+			extension.FootnoteHTMLRenderer,
+			mark.HTMLRenderer,
+			emoji.HTMLRenderer,
+			highlighting.Highlighting,
+		),
+	}, additional...)
+}
+
 func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string) (err error) {
 	a.initMarkdown()
-	return a.md.Convert([]byte(source), w)
+	return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{})))
 }
 
 func (a *goBlog) renderText(s string) (string, error) {
 	if s == "" {
 		return "", nil
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(a.renderMarkdownToWriter(pw, s))
-	}()
-	text, err := htmlTextFromReader(pr)
-	_ = pr.CloseWithError(err)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := a.renderMarkdownToWriter(buf, s); err != nil {
+		return "", nil
+	}
+	text, err := htmlTextFromBytes(buf.Bytes())
 	if err != nil {
 		return "", nil
 	}
@@ -96,12 +134,12 @@ func (a *goBlog) renderMdTitle(s string) string {
 		return ""
 	}
 	a.initMarkdown()
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(a.titleMd.Convert([]byte(s), pw))
-	}()
-	text, err := htmlTextFromReader(pr)
-	_ = pr.CloseWithError(err)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := a.titleMdRenderer.RenderStringSource(buf, s, a.titleMdParser.ParseStringSource(s)); err != nil {
+		return ""
+	}
+	text, err := htmlTextFromBytes(buf.Bytes())
 	if err != nil {
 		return ""
 	}
@@ -110,63 +148,34 @@ func (a *goBlog) renderMdTitle(s string) string {
 
 func (a *goBlog) renderPostMarkdownToWriter(w io.Writer, source string, absoluteLinks bool, postPath string, simpleImages bool) (err error) {
 	a.initMarkdown()
-	publicAddress := ""
-	if srv := a.cfg.Server; srv != nil {
-		publicAddress = srv.PublicAddress
-	}
-	md := goldmark.New(append(a.defaultGoldmarkOptions(), goldmark.WithExtensions(&customExtension{
+	return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{
 		absoluteLinks: absoluteLinks,
-		publicAddress: publicAddress,
-		app:           a,
 		postPath:      postPath,
 		simpleImages:  simpleImages,
-	}))...)
-	return md.Convert([]byte(source), w)
+	})))
 }
 
 // Extensions etc...
 
 // Links
-type customExtension struct {
-	publicAddress string
-	absoluteLinks bool
-	app           *goBlog
-	postPath      string
-	simpleImages  bool
+type customRenderer struct{}
+
+func (customRenderer) RendererOptions(_ *html.Config) []html.Option {
+	return []html.Option{
+		html.WithNodeRenderer(ast.KindLink, html.NodeRendererFunc(renderLink)),
+		html.WithNodeRenderer(ast.KindImage, html.NodeRendererFunc(renderImage)),
+	}
 }
 
-func (l *customExtension) Extend(m goldmark.Markdown) {
-	m.Renderer().AddOptions(renderer.WithNodeRenderers(
-		util.Prioritized(&customRenderer{
-			absoluteLinks: l.absoluteLinks,
-			publicAddress: l.publicAddress,
-			app:           l.app,
-			postPath:      l.postPath,
-			simpleImages:  l.simpleImages,
-		}, 500),
-	))
-}
-
-type customRenderer struct {
-	publicAddress string
-	absoluteLinks bool
-	app           *goBlog
-	postPath      string
-	simpleImages  bool
-}
-
-func (c *customRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
-	r.Register(ast.KindLink, c.renderLink)
-	r.Register(ast.KindImage, c.renderImage)
-}
-
-func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func renderLink(w io.Writer, source []byte, node ast.Node, entering bool, rc renderer.Context) (ast.WalkStatus, error) {
+	state := stateFromContext(rc)
 	hb := htmlbuilder.NewHTMLBuilder(w)
 	if entering {
 		n := node.(*ast.Link)
-		dest := string(n.Destination)
-		if c.absoluteLinks && c.publicAddress != "" {
-			resolved, err := resolveURLReferences(c.publicAddress, dest)
+		originalDest := n.Destination.Value(source)
+		dest := originalDest
+		if publicAddress := state.app.getFullAddress(""); state.options.absoluteLinks && publicAddress != "" {
+			resolved, err := resolveURLReferences(publicAddress, dest)
 			if err != nil {
 				return ast.WalkStop, err
 			}
@@ -174,13 +183,13 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 				dest = resolved[0]
 			}
 		}
-		dest = c.app.mediaFallbackURL(dest)
+		dest = state.app.mediaFallbackURL(dest)
 		tagOpts := []any{"href", dest}
-		if isAbsoluteURL(string(n.Destination)) {
+		if isAbsoluteURL(originalDest) {
 			tagOpts = append(tagOpts, "target", "_blank", "rel", "noopener")
 		}
-		if n.Title != nil {
-			tagOpts = append(tagOpts, "title", string(n.Title))
+		if !n.Title.IsEmpty() {
+			tagOpts = append(tagOpts, "title", n.Title.Value(source))
 		}
 		hb.WriteElementOpen("a", tagOpts...)
 	} else {
@@ -189,15 +198,16 @@ func (c *customRenderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, e
 	return ast.WalkContinue, nil
 }
 
-func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func renderImage(w io.Writer, source []byte, node ast.Node, entering bool, rc renderer.Context) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
+	state := stateFromContext(rc)
 	n := node.(*ast.Image)
-	dest := string(n.Destination)
+	dest := n.Destination.Value(source)
 	// Make destination absolute if it's relative
-	if c.absoluteLinks && c.publicAddress != "" {
-		resolved, err := resolveURLReferences(c.publicAddress, dest)
+	if publicAddress := state.app.getFullAddress(""); state.options.absoluteLinks && publicAddress != "" {
+		resolved, err := resolveURLReferences(publicAddress, dest)
 		if err != nil {
 			return ast.WalkStop, err
 		}
@@ -206,23 +216,21 @@ func (c *customRenderer) renderImage(w util.BufWriter, source []byte, node ast.N
 		}
 	}
 	hb := htmlbuilder.NewHTMLBuilder(w)
-	c.app.writePictureElement(hb, dest, c.extractTextFromChildren(n, source), string(n.Title), "", c.postPath, c.simpleImages)
+	state.app.writePictureElement(hb, dest, extractTextFromChildren(n, source), n.Title.Value(source), "", state.options.postPath, state.options.simpleImages)
 	return ast.WalkSkipChildren, nil
 }
 
-func (c *customRenderer) extractTextFromChildren(node ast.Node, source []byte) string {
+func extractTextFromChildren(node ast.Node, source []byte) string {
 	if node == nil {
 		return ""
 	}
 	b := builderpool.Get()
 	defer builderpool.Put(b)
 	for ch := node.FirstChild(); ch != nil; ch = ch.NextSibling() {
-		if s, ok := ch.(*ast.String); ok {
-			b.Write(s.Value)
-		} else if t, ok := ch.(*ast.Text); ok {
-			b.Write(t.Segment.Value(source))
+		if t, ok := ch.(*ast.Text); ok {
+			b.WriteString(t.Value.Str(source))
 		} else {
-			b.WriteString(c.extractTextFromChildren(ch, source))
+			b.WriteString(extractTextFromChildren(ch, source))
 		}
 	}
 	return b.String()

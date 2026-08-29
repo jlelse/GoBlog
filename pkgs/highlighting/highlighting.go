@@ -4,12 +4,10 @@ package highlighting
 import (
 	"io"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/renderer/html"
-	"github.com/yuin/goldmark/util"
-	"go.goblog.app/app/pkgs/bufferpool"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/renderer"
+	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/util"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -17,62 +15,51 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 )
 
-type config struct {
-	html.Config
+type highlighting struct {
 	formatter *chromahtml.Formatter
 }
 
-func newConfig() *config {
-	return &config{
-		Config: html.NewConfig(),
-		formatter: chromahtml.New(
-			chromahtml.ClassPrefix("c-"),
-			chromahtml.WithClasses(true),
-		),
+// Highlighting is a goldmark html.Extension implementation.
+var Highlighting html.Extension = &highlighting{
+	formatter: chromahtml.New(
+		chromahtml.ClassPrefix("c-"),
+		chromahtml.WithClasses(true),
+	),
+}
+
+// Style is the chroma style used for syntax highlighting.
+var Style = styles.Get("monokai")
+
+// RendererOptions implements html.Extension.
+func (e *highlighting) RendererOptions(_ *html.Config) []html.Option {
+	return []html.Option{
+		html.WithNodeRendererDecorator(ast.KindCodeBlock, func(next html.NodeRenderer) html.NodeRenderer {
+			return html.NodeRendererFunc(func(w io.Writer, source []byte, node ast.Node, entering bool, rc renderer.Context) (ast.WalkStatus, error) {
+				n, ok := node.(*ast.CodeBlock)
+				if !ok || n.CodeBlockKind != ast.CodeBlockKindFenced {
+					return next.Render(w, source, node, entering, rc)
+				}
+				return renderFencedCodeBlock(w, source, n, entering, rc, e.formatter)
+			})
+		}),
 	}
 }
 
-// SetOption implements renderer.SetOptioner.
-func (c *config) SetOption(name renderer.OptionName, value any) {
-	c.Config.SetOption(name, value)
-}
-
-// htmlRenderer struct is a renderer.NodeRenderer implementation for the extension.
-type htmlRenderer struct {
-	*config
-}
-
-func newHTMLRenderer() renderer.NodeRenderer {
-	return &htmlRenderer{
-		config: newConfig(),
-	}
-}
-
-// RegisterFuncs implements NodeRenderer.RegisterFuncs.
-func (r *htmlRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(ast.KindFencedCodeBlock, r.renderFencedCodeBlock)
-}
-
-func (r *htmlRenderer) renderFencedCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func renderFencedCodeBlock(w io.Writer, source []byte, n *ast.CodeBlock, entering bool, rc renderer.Context, formatter *chromahtml.Formatter) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
 
-	n := node.(*ast.FencedCodeBlock)
-
-	// Read code block content.
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	for _, line := range n.Lines().Sliced(0, n.Lines().Len()) {
-		buf.Write(line.Value(source))
-	}
+	language, _ := n.Language(source)
 
 	// Try to highlight.
-	if highlight(w, buf.String(), string(n.Language(source)), r.formatter) != nil {
+	if highlight(w, n.Value.Str(source), language, formatter) != nil {
 		// Highlight failed, fallback to plain text.
-		_, _ = w.WriteString("<pre><code>")
-		r.Writer.RawWrite(w, buf.Bytes())
-		_, _ = w.WriteString("</code></pre>\n")
+		bw := w.(util.BufWriter)
+		_, _ = bw.WriteString("<pre><code>")
+		tw := html.ContextTextWriter(rc)
+		_, _ = n.Value.WriteTo(tw, source)
+		_, _ = bw.WriteString("</code></pre>\n")
 	}
 
 	return ast.WalkContinue, nil
@@ -89,19 +76,4 @@ func highlight(w io.Writer, source, language string, f *chromahtml.Formatter) er
 		return err
 	}
 	return f.Format(w, Style, it)
-}
-
-type highlighting struct{}
-
-// Highlighting is a goldmark.Extender implementation.
-var Highlighting = &highlighting{}
-
-// Style is the chroma style used for syntax highlighting.
-var Style = styles.Get("monokai")
-
-// Extend implements goldmark.Extender.
-func (*highlighting) Extend(m goldmark.Markdown) {
-	m.Renderer().AddOptions(renderer.WithNodeRenderers(
-		util.Prioritized(newHTMLRenderer(), 200),
-	))
 }

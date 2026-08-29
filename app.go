@@ -15,7 +15,8 @@ import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/samber/go-singleflightx"
-	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
 	c "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
@@ -71,7 +72,8 @@ type goBlog struct {
 	logger   *slog.Logger
 	logLevel *slog.LevelVar
 	// Markdown
-	md, titleMd goldmark.Markdown
+	mdParser, titleMdParser     parser.Parser
+	mdRenderer, titleMdRenderer html.Renderer
 	// Media
 	mediaStorageInit          sync.Once
 	mediaStorage              mediaStorage

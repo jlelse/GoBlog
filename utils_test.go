@@ -113,7 +113,7 @@ func Test_allLinksFromHTML(t *testing.T) {
 
 func Test_htmlText(t *testing.T) {
 	htmlText := func(s string) string {
-		text, _ := htmlTextFromReader(strings.NewReader(s))
+		text, _ := htmlTextFromBytes([]byte(s))
 		return text
 	}
 

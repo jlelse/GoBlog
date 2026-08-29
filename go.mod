@@ -6,7 +6,6 @@ require (
 	code.superseriousbusiness.org/httpsig v1.5.0
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
-	git.jlel.se/jlelse/goldmark-mark v0.0.0-20210522162520-9788c89266a4
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
 	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/alecthomas/chroma/v2 v2.27.0
@@ -55,8 +54,8 @@ require (
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.8.1
-	github.com/yuin/goldmark v1.8.5
-	github.com/yuin/goldmark-emoji v1.0.6
+	github.com/yuin/goldmark-emoji/v2 v2.0.2
+	github.com/yuin/goldmark/v2 v2.0.0
 	go.hacdias.com/indielib v0.5.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3

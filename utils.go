@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -23,6 +24,7 @@ import (
 	tdl "github.com/mergestat/timediff/locale"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"golang.org/x/net/html"
@@ -231,15 +233,15 @@ var textPolicy = bluemonday.StrictPolicy().
 	AllowElements("ol", "ul", "li").                   // Lists
 	AllowElements("blockquote")                        // Blockquotes
 
-func htmlTextFromReader(r io.Reader) (string, error) {
+func htmlTextFromBytes(b []byte) (string, error) {
 	// Filter HTML
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(textPolicy.SanitizeReaderToWriter(r, pw))
-	}()
+	sanitized := bufferpool.Get()
+	defer bufferpool.Put(sanitized)
+	if err := textPolicy.SanitizeReaderToWriter(bytes.NewReader(b), sanitized); err != nil {
+		return "", err
+	}
 	// Read into document
-	doc, err := goquery.NewDocumentFromReader(pr)
-	_ = pr.CloseWithError(err)
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(sanitized.Bytes()))
 	if err != nil {
 		return "", err
 	}
@@ -294,12 +296,14 @@ func gqSelectionTextToStringWriter(sel *goquery.Selection, text io.StringWriter)
 
 func cleanHTMLText(s string) string {
 	// Clean HTML with UGC policy and return text
-	pr, pw := io.Pipe()
-	go func() { _ = pw.CloseWithError(bluemonday.UGCPolicy().SanitizeReaderToWriter(strings.NewReader(s), pw)) }()
-	var err error
-	s, err = htmlTextFromReader(pr)
-	_ = pr.CloseWithError(err)
-	return s
+	sanitized := bufferpool.Get()
+	defer bufferpool.Put(sanitized)
+	_ = bluemonday.UGCPolicy().SanitizeReaderToWriter(strings.NewReader(s), sanitized)
+	text, err := htmlTextFromBytes(sanitized.Bytes())
+	if err != nil {
+		return ""
+	}
+	return text
 }
 
 func containsStrings(s string, subStrings ...string) bool {
