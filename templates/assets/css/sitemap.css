@@ -1,0 +1,44 @@
+sitemapindex,
+urlset {
+  display: block;
+  margin: 0 auto;
+  max-width: 700px;
+  padding: 10px;
+  font-family: sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #000;
+  background-color: #fff;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+sitemap,
+url {
+  display: block;
+  padding: 5px 0;
+  border-bottom: 1px solid #000;
+}
+
+loc {
+  display: block;
+  font-family: monospace;
+}
+
+lastmod {
+  display: block;
+  font-size: 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  sitemapindex,
+  urlset {
+    color: #fff;
+    background-color: #000;
+  }
+
+  sitemap,
+  url {
+    border-bottom-color: #fff;
+  }
+}

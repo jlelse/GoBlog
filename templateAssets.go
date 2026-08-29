@@ -57,7 +57,7 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 		read = a.min.Get().Reader(contenttype.JS, read)
 	case ".css":
 		read = a.min.Get().Reader(contenttype.CSS, read)
-	case ".xml", ".xsl":
+	case ".xml":
 		read = a.min.Get().Reader(contenttype.XML, read)
 	}
 	// Read file

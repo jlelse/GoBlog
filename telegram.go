@@ -115,7 +115,9 @@ func (tg *configTelegram) generateHTML(title, shortURL string) string {
 		_, _ = tgReplacer.WriteString(message, title)
 		message.WriteString("\n\n")
 	}
-	message.WriteString("<a href=\"" + shortURL + "\">")
+	message.WriteString("<a href=\"")
+	message.WriteString(shortURL)
+	message.WriteString("\">")
 	_, _ = tgReplacer.WriteString(message, shortURL)
 	message.WriteString("</a>")
 	return message.String()

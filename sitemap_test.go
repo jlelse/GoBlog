@@ -128,7 +128,7 @@ func Test_sitemapXMLValidity(t *testing.T) {
 			Client(client).Fetch(context.Background())
 		require.NoError(t, err, u)
 		assert.Contains(t, resString, "http://www.sitemaps.org/schemas/sitemap/0.9", "missing XML namespace in %s", u)
-		assert.Contains(t, resString, "xml-stylesheet", "missing XSL stylesheet reference in %s", u)
+		assert.Contains(t, resString, `<?xml-stylesheet type="text/css"`, "missing stylesheet reference in %s", u)
 	}
 }
 
