@@ -85,7 +85,8 @@ func generateCacheKey(r *http.Request) string {
 	defer bufferpool.Put(buf)
 	// Special cases
 	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
-		buf.WriteString(altAddress + "-")
+		buf.WriteString(altAddress)
+		buf.WriteString("-")
 	}
 	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
 		buf.WriteString("as-")

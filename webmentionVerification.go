@@ -17,8 +17,10 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
+var webmentionQueueInterval = 30 * time.Second
+
 func (a *goBlog) initWebmentionQueue() {
-	a.listenOnQueue("wm", 30*time.Second, func(qi *queueItem, dequeue func(), _ func(time.Duration)) {
+	a.listenOnQueue("wm", webmentionQueueInterval, func(qi *queueItem, dequeue func(), _ func(time.Duration)) {
 		var m mention
 		if err := gob.NewDecoder(bytes.NewReader(qi.content)).Decode(&m); err != nil {
 			a.error("webmention queue error", "err", err)
@@ -84,7 +86,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 			return err
 		}
 	} else {
-		sourceResp, err = a.httpClient.Do(sourceReq)
+		sourceResp, err = a.wmHTTPClient.Do(sourceReq)
 		if err != nil {
 			return err
 		}

@@ -73,7 +73,7 @@ func discoverOAuthMetadata(t *testing.T, handler http.Handler, origin string) *o
 	return &m
 }
 
-func runOAuthTest(t *testing.T, app *goBlog, origin string, metadata *oauthMetadata, clientID, redirectURI, scope, clientSecret string) {
+func runOAuthTest(t *testing.T, app *goBlog, _ string, metadata *oauthMetadata, clientID, redirectURI, scope, clientSecret string) {
 	t.Helper()
 
 	codeVerifier := "test-code-verifier-that-is-long-enough-for-sha256-validation-1234567890"

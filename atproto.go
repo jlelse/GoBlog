@@ -240,7 +240,8 @@ func (a *goBlog) toAtprotoPost(atp *configAtproto, p *post) *atprotoPost {
 				_, _ = builder.WriteString(" ")
 			}
 			start = builder.Len()
-			builder.WriteString("#" + tag)
+			builder.WriteString("#")
+			builder.WriteString(tag)
 			end = builder.Len()
 			facets = append(facets, &atprotoFacet{
 				Features: []atprotoFeature{{

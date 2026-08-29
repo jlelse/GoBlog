@@ -59,6 +59,8 @@ type goBlog struct {
 	hourlyHooks    []hourlyHookFunc
 	// HTTP Client
 	httpClient *http.Client
+	// HTTP Client (Webmention)
+	wmHTTPClient *http.Client
 	// HTTP Routers
 	d http.Handler
 	// IndexNow
