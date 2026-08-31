@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io"
+	"runtime/debug"
 
 	emoji "github.com/yuin/goldmark-emoji/v2"
 	"github.com/yuin/goldmark/v2/ast"
@@ -103,22 +105,42 @@ func (a *goBlog) defaultMarkdownRendererOptions(additional ...html.Option) []htm
 	}, additional...)
 }
 
-func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string) (err error) {
-	a.initMarkdown()
-	return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{})))
+func (a *goBlog) safeMarkdownRender(fn func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			a.error("Panic while rendering markdown", "panic", r, "stack", string(debug.Stack()))
+			err = fmt.Errorf("panic while rendering markdown: %v", r)
+		}
+	}()
+	return fn()
 }
 
-func (a *goBlog) renderText(s string) (string, error) {
+func (a *goBlog) renderMarkdownToWriter(w io.Writer, source string) (err error) {
+	err = a.safeMarkdownRender(func() error {
+		a.initMarkdown()
+		return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{})))
+	})
+	if err != nil {
+		a.error("Error while rendering markdown", "err", err)
+	}
+	return err
+}
+
+func (a *goBlog) renderText(s string) (text string, err error) {
 	if s == "" {
 		return "", nil
 	}
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := a.renderMarkdownToWriter(buf, s); err != nil {
-		return "", nil
-	}
-	text, err := htmlTextFromBytes(buf.Bytes())
+	err = a.safeMarkdownRender(func() error {
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		if err := a.renderMarkdownToWriter(buf, s); err != nil {
+			return err
+		}
+		text, err = htmlTextFromBytes(buf.Bytes())
+		return err
+	})
 	if err != nil {
+		a.error("Error while rendering markdown as text", "err", err)
 		return "", nil
 	}
 	return text, nil
@@ -133,26 +155,38 @@ func (a *goBlog) renderMdTitle(s string) string {
 	if s == "" {
 		return ""
 	}
-	a.initMarkdown()
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-	if err := a.titleMdRenderer.RenderStringSource(buf, s, a.titleMdParser.ParseStringSource(s)); err != nil {
-		return ""
-	}
-	text, err := htmlTextFromBytes(buf.Bytes())
+	var text string
+	err := a.safeMarkdownRender(func() error {
+		a.initMarkdown()
+		buf := bufferpool.Get()
+		defer bufferpool.Put(buf)
+		if err := a.titleMdRenderer.RenderStringSource(buf, s, a.titleMdParser.ParseStringSource(s)); err != nil {
+			return err
+		}
+		var err error
+		text, err = htmlTextFromBytes(buf.Bytes())
+		return err
+	})
 	if err != nil {
+		a.error("Error while rendering markdown title", "err", err)
 		return ""
 	}
 	return text
 }
 
 func (a *goBlog) renderPostMarkdownToWriter(w io.Writer, source string, absoluteLinks bool, postPath string, simpleImages bool) (err error) {
-	a.initMarkdown()
-	return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{
-		absoluteLinks: absoluteLinks,
-		postPath:      postPath,
-		simpleImages:  simpleImages,
-	})))
+	err = a.safeMarkdownRender(func() error {
+		a.initMarkdown()
+		return a.mdRenderer.RenderStringSource(w, source, a.mdParser.ParseStringSource(source), renderer.WithContext(a.renderContext(renderOptions{
+			absoluteLinks: absoluteLinks,
+			postPath:      postPath,
+			simpleImages:  simpleImages,
+		})))
+	})
+	if err != nil {
+		a.error("Error while rendering post markdown", "err", err)
+	}
+	return err
 }
 
 // Extensions etc...

@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -103,7 +104,13 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 	}
 }
 
-func (a *goBlog) serveProfileImageViaImgproxy(w http.ResponseWriter, _ *http.Request, format profileImageFormat, width, height int) error {
+func (a *goBlog) serveProfileImageViaImgproxy(w http.ResponseWriter, _ *http.Request, format profileImageFormat, width, height int) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			a.error("Panic while requesting profile image via imgproxy", "panic", r, "stack", string(debug.Stack()))
+			err = fmt.Errorf("panic while requesting profile image via imgproxy: %v", r)
+		}
+	}()
 	imgproxyURL := strings.TrimRight(a.cfg.MediaOptimization.ImgproxyURL, "/")
 	sourceURL := a.getFullAddress(a.profileImageOriginalURL())
 	imgproxyFormat := string(format)
