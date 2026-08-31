@@ -71,7 +71,7 @@ func (a *goBlog) mediaMigrate(mc *migrationConfig) {
 	}
 
 	if a.mediaOptimizationImgproxyConfigured() {
-		if err := a.checkImgproxyReachable(); err != nil {
+		if err := a.checkImgproxyReachable(context.Background()); err != nil {
 			fmt.Printf("Warning: imgproxy not reachable: %v\n", err)
 			fmt.Println("Continuing anyway — optimization will be skipped for unreachable imgproxy.")
 		}

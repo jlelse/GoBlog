@@ -49,6 +49,12 @@ server:
   httpsKey: /path/to/key.key # Path to TLS key (for manual HTTPS without ACME)
   httpsRedirect: true # Listen on port 80 and redirect to HTTPS on port 443, when HTTPS is configured and no custom port set, automatically enabled with publicHttps
   httpsRedirectPort: 80 # (Optional) Port for the HTTP-to-HTTPS redirect server, default is 80
+  # Internal health check server (optional). Serves /health on a separate listener
+  # that is NOT exposed publicly, so it can be bound to localhost only. Used by the
+  # "healthcheck" CLI command and container health checks. The /health endpoint also
+  # verifies that the database is reachable. Leave empty to disable (the healthcheck
+  # command will then only check the public /ping liveness endpoint).
+  # healthCheckAddress: 127.0.0.1:8081
   securityHeaders: true # Set security HTTP headers, automatically enabled with publicHttps or httpsCert and httpsKey
   cspDomains: # Specify additional domains to allow embedded content with enabled securityHeaders
   - media.example.com

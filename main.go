@@ -69,7 +69,7 @@ func main() {
 		Short: "Perform health check",
 		Long: `Perform a health check on the GoBlog server.
 
-This command checks if the server is running and healthy by making an HTTP request to the health endpoint. It returns exit code 0 if healthy, or 1 if unhealthy.
+This command checks if the server is running and healthy. If a healthCheckAddress is configured, it requests the internal /health endpoint, which also verifies that the database is reachable. Otherwise it falls back to checking the public /ping liveness endpoint. It returns exit code 0 if healthy, or 1 if unhealthy.
 
 Useful for container health checks (Docker, Kubernetes) and monitoring systems.
 

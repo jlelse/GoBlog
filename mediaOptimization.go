@@ -135,7 +135,7 @@ func (a *goBlog) optimizeMediaFile(originalHash, ext string) {
 		a.debug("Media optimization: unsupported extension", "ext", ext)
 		return
 	}
-	if err := a.checkImgproxyReachable(); err != nil {
+	if err := a.checkImgproxyReachable(context.Background()); err != nil {
 		a.error("Media optimization: imgproxy not reachable", "err", err, "hash", originalHash)
 		return
 	}
@@ -246,7 +246,7 @@ func (a *goBlog) callImgproxy(sourceURL string, variant *variantType, w io.Write
 	return nil
 }
 
-func (a *goBlog) checkImgproxyReachable() error {
+func (a *goBlog) checkImgproxyReachable(ctx context.Context) error {
 	if !a.mediaOptimizationImgproxyConfigured() {
 		return nil
 	}
@@ -255,7 +255,7 @@ func (a *goBlog) checkImgproxyReachable() error {
 	err := requests.URL(healthURL).
 		Client(a.httpClient).
 		AddValidator(requests.CheckStatus(http.StatusOK)).
-		Fetch(context.Background())
+		Fetch(ctx)
 	if err != nil {
 		return fmt.Errorf("imgproxy health check failed: %w", err)
 	}

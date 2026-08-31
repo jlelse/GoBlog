@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -782,7 +783,7 @@ func Test_checkImgproxyReachable(t *testing.T) {
 			httpClient: server.Client(),
 		}
 
-		err := app.checkImgproxyReachable()
+		err := app.checkImgproxyReachable(context.Background())
 		assert.NoError(t, err)
 	})
 
@@ -797,7 +798,7 @@ func Test_checkImgproxyReachable(t *testing.T) {
 			httpClient: http.DefaultClient,
 		}
 
-		err := app.checkImgproxyReachable()
+		err := app.checkImgproxyReachable(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "imgproxy health check failed")
 	})
@@ -822,7 +823,7 @@ func Test_checkImgproxyReachable(t *testing.T) {
 			httpClient: server.Client(),
 		}
 
-		err := app.checkImgproxyReachable()
+		err := app.checkImgproxyReachable(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unexpected status")
 	})
@@ -833,7 +834,7 @@ func Test_checkImgproxyReachable(t *testing.T) {
 			httpClient: http.DefaultClient,
 		}
 
-		err := app.checkImgproxyReachable()
+		err := app.checkImgproxyReachable(context.Background())
 		assert.NoError(t, err)
 	})
 }

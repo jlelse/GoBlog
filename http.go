@@ -40,7 +40,7 @@ func (a *goBlog) startServer() (err error) {
 	// Set basic middlewares
 	h := alice.New()
 	h = h.Append(bodylimit.BodyLimit(100 * bodylimit.MB))
-	h = h.Append(middleware.Heartbeat("/ping"))
+	h = h.Append(middleware.Heartbeat(pingPath))
 	if a.cfg.Server.Logging {
 		h = h.Append(a.logMiddleware)
 	}
@@ -88,6 +88,22 @@ func (a *goBlog) startServer() (err error) {
 			a.shutdown.Add(a.shutdownServer(httpServer, "http server"))
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				a.error("Failed to start HTTP server", "err", err)
+			}
+		}()
+	}
+	// Start internal health check server
+	if hca := a.cfg.Server.HealthCheckAddress; hca != "" {
+		go func() {
+			healthMux := http.NewServeMux()
+			healthMux.HandleFunc(healthPath, a.serveHealth)
+			healthServer := &http.Server{
+				Addr:              hca,
+				Handler:           healthMux,
+				ReadHeaderTimeout: 1 * time.Minute,
+			}
+			a.shutdown.Add(a.shutdownServer(healthServer, "health check server"))
+			if err := healthServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				a.error("Failed to start health check server", "err", err)
 			}
 		}()
 	}
