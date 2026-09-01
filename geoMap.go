@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/samber/lo"
+	"go.goblog.app/app/pkgs/gpx"
 )
 
 const defaultGeoMapPath = "/map"
@@ -82,8 +83,8 @@ func (a *goBlog) serveGeoMapTracks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type templateTrack struct {
-		Paths  [][]trackPoint
-		Points []trackPoint
+		Paths  [][]gpx.Point
+		Points []gpx.Point
 		Post   string
 	}
 
@@ -121,19 +122,15 @@ func (a *goBlog) serveGeoMapLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type templateLocation struct {
-		Point trackPoint
+		Point gpx.Point
 		Post  string
-	}
-
-	trunc := func(num float64) float64 {
-		return float64(int64(num*100000)) / 100000
 	}
 
 	var locations []templateLocation
 	for _, p := range allPostsWithLocations {
 		for _, g := range a.geoURIs(p) {
 			locations = append(locations, templateLocation{
-				Point: trackPoint{trunc(g.Latitude), trunc(g.Longitude)},
+				Point: gpx.Point{gpx.Trunc(g.Latitude), gpx.Trunc(g.Longitude)},
 				Post:  p.Path,
 			})
 		}

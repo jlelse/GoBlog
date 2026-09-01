@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"cmp"
 	"fmt"
 	"io"
@@ -15,7 +14,7 @@ import (
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/gpxhelper"
+	"go.goblog.app/app/pkgs/gpx"
 	"go.hacdias.com/indielib/micropub"
 	"go.yaml.in/yaml/v4"
 )
@@ -56,7 +55,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			// Handle files first
-			images, gpx, statusCode, err := a.editorHandleFileAttachments(r)
+			images, gpxString, statusCode, err := a.editorHandleFileAttachments(r)
 			if err != nil {
 				a.serveError(w, r, err.Error(), statusCode)
 				return
@@ -68,7 +67,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 				"content":                 {r.FormValue("content")}, //nolint:gosec
 				"blog":                    {blog},
 				a.cfg.Micropub.PhotoParam: images,
-				gpxParameter:              {gpx},
+				gpxParameter:              {gpxString},
 			}
 		}
 		req, _ := requests.URL("").BodyJSON(reqBody).Request(r.Context())
@@ -126,7 +125,9 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 			}
 			allFileContents = append(allFileContents, fileContent)
 		}
-		mergedGpx, err := gpxhelper.MergeGpx(allFileContents...)
+		mergedGpx := bufferpool.Get()
+		defer bufferpool.Put(mergedGpx)
+		err = gpx.MergeGpx(mergedGpx, allFileContents...)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -134,7 +135,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(contentType, contenttype.TextUTF8)
 		buf := bufferpool.Get()
 		defer bufferpool.Put(buf)
-		err = a.min.Get().Minify(contenttype.XML, buf, bytes.NewReader(mergedGpx))
+		err = a.min.Get().Minify(contenttype.XML, buf, mergedGpx)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -147,7 +148,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, gpx string, statusCode int, rerr error) {
+func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, gpxString string, statusCode int, rerr error) {
 	err := r.ParseMultipartForm(10 * bodylimit.MB) //nolint:gosec
 	if err != nil {
 		return nil, "", http.StatusBadRequest, err
@@ -213,20 +214,21 @@ func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, 
 		}
 		// Merge the GPX files
 		if len(gpxFiles) > 0 {
-			mergedGpx, err := gpxhelper.MergeGpx(gpxFiles...)
-			if err != nil {
+			mergedGpx := bufferpool.Get()
+			defer bufferpool.Put(mergedGpx)
+			if err := gpx.MergeGpx(mergedGpx, gpxFiles...); err != nil {
 				return nil, "", http.StatusBadRequest, err
 			}
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
-			err = a.min.Get().Minify(contenttype.XML, buf, bytes.NewReader(mergedGpx))
+			err = a.min.Get().Minify(contenttype.XML, buf, mergedGpx)
 			if err != nil {
 				return nil, "", http.StatusBadRequest, err
 			}
-			gpx = buf.String()
+			gpxString = buf.String()
 		}
 	}
-	return images, gpx, 0, nil
+	return images, gpxString, 0, nil
 }
 
 func (a *goBlog) editorMicropubPost(w http.ResponseWriter, r *http.Request, media bool, redirectSuccess string) {

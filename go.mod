@@ -7,6 +7,7 @@ require (
 	git.jlel.se/jlelse/go-geouri v0.0.0-20210525190615-a9c1d50f42d6
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
+	github.com/HBTGmbH/gosaxml v0.0.44
 	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -49,7 +50,6 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tdewolff/minify/v2 v2.24.17
 	github.com/tiptophelmet/cspolicy v0.1.1
-	github.com/tkrajina/gpxgo v1.5.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
 	github.com/traefik/yaegi v0.16.1
 	github.com/vcraescu/go-paginator/v2 v2.0.0
@@ -87,6 +87,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jonboulle/clockwork v0.3.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kovidgoyal/go-parallel v1.1.1 // indirect
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect

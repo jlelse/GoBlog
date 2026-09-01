@@ -1,5 +1,4 @@
-// Package gpxhelper provides GPX file processing utilities.
-package gpxhelper
+package gpx
 
 import "math"
 

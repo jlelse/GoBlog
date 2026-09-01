@@ -11,7 +11,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/gpxhelper"
+	"go.goblog.app/app/pkgs/gpx"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
 )
@@ -636,7 +636,7 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HTMLBuilder, track *trackRes
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, path := range track.Paths {
 		for _, point := range path {
-			x, y := gpxhelper.WebMercatorX(point.Lon()), gpxhelper.WebMercatorY(point.Lat())
+			x, y := gpx.WebMercatorX(point.Lon()), gpx.WebMercatorY(point.Lat())
 			minX = math.Min(minX, x)
 			maxX = math.Max(maxX, x)
 			minY = math.Min(minY, y)
@@ -659,8 +659,8 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HTMLBuilder, track *trackRes
 	for _, path := range track.Paths {
 		_, _ = hb.WriteString(`<polyline points="`)
 		for _, pt := range path {
-			x := xOffset + (gpxhelper.WebMercatorX(pt.Lon())-minX)*scale
-			y := height - (yOffset + (gpxhelper.WebMercatorY(pt.Lat())-minY)*scale)
+			x := xOffset + (gpx.WebMercatorX(pt.Lon())-minX)*scale
+			y := height - (yOffset + (gpx.WebMercatorY(pt.Lat())-minY)*scale)
 			fmt.Fprintf(hb, "%.2f,%.2f ", x, y)
 		}
 		_, _ = hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)

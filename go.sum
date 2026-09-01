@@ -8,6 +8,8 @@ git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30 h1:+U313KydO
 git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30/go.mod h1:C4E+E1LpDuayNCX7fJKUx5ERKpBw//2NSna9aeiS5yE=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b h1:zrGLEeWzv7bzGRUKsS42akQpszXwEU+8nXV2Z2iDSJM=
 git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b/go.mod h1:UNLE8cup2GTHbsE89xezRwq3GhKspPI9NyckPbgJEmw=
+github.com/HBTGmbH/gosaxml v0.0.44 h1:qT+s09OfiEUAYSi9dXMWITAAGmKJp50MILlEpSANDTM=
+github.com/HBTGmbH/gosaxml v0.0.44/go.mod h1:R34NCoZsIt7rv2aYafbFl5ua5v/JyXTNZWwFcXTs37U=
 github.com/PuerkitoBio/goquery v1.13.0 h1:mqHbjD7Jmnul4DTR24LKTjo1uUmHUh072kteGV+xpFM=
 github.com/PuerkitoBio/goquery v1.13.0/go.mod h1:Hip5mdBL8K2wEGKJdr27sRaNwIdDajmCwB/ExUPwW+g=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
@@ -128,6 +130,8 @@ github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9 h1:+9REu9CK9D1AQ
 github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9/go.mod h1:OvY5ZBrAC9kOvM2PZs9Lw0BH+5K7tjrT6T7SFhn27OA=
 github.com/klauspost/compress v1.19.2 h1:hMRETovs/pu/dVWN7zIT1PGG8t509MwT6bO7XSi26R8=
 github.com/klauspost/compress v1.19.2/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ=
+github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=
+github.com/klauspost/cpuid/v2 v2.3.0/go.mod h1:hqwkgyIinND0mEev00jJYCxPNVRVXFQeu1XKlok6oO0=
 github.com/kovidgoyal/go-parallel v1.1.1 h1:1OzpNjtrUkBPq3UaqrnvOoB2F9RttSt811uiUXyI7ok=
 github.com/kovidgoyal/go-parallel v1.1.1/go.mod h1:BJNIbe6+hxyFWv7n6oEDPj3PA5qSw5OCtf0hcVxWJiw=
 github.com/kovidgoyal/go-shm v1.0.0 h1:HJEel9D1F9YhULvClEHJLawoRSj/1u/EDV7MJbBPgQo=
@@ -242,8 +246,6 @@ github.com/tinylib/msgp v1.6.4 h1:mOwYbyYDLPj35mkA2BjjYejgJk9BuHxDdvRnb6v2ZcQ=
 github.com/tinylib/msgp v1.6.4/go.mod h1:RSp0LW9oSxFut3KzESt5Voq4GVWyS+PSulT77roAqEA=
 github.com/tiptophelmet/cspolicy v0.1.1 h1:TiC1vWOuRcxPlY7GFIdRUpLvfTR3i5PJph66S3qsNpg=
 github.com/tiptophelmet/cspolicy v0.1.1/go.mod h1:rUdvHsbJflLSqh5gSWwDuMAxXGlysQpaN5V4vYzmcUM=
-github.com/tkrajina/gpxgo v1.5.1 h1:6AweWdjjTYCDzWRy1CiDnyerbiRqgbKQ40uB6UFlhmA=
-github.com/tkrajina/gpxgo v1.5.1/go.mod h1:uQPAwMkQ3PvhTmgMJUKqtlw871Dvt+HAmwTqFJk/114=
 github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e h1:tD38/4xg4nuQCASJ/JxcvCHNb46w0cdAaJfkzQOO1bA=
 github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e/go.mod h1:krvJ5AY/MjdPkTeRgMYbIDhbbbVvnPQPzsIsDJO8xrY=
 github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/tkrajina/gpxgo/gpx"
+	"go.goblog.app/app/pkgs/gpx"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -24,8 +24,8 @@ func (p *post) showTrackRoute() bool {
 }
 
 type trackResult struct {
-	Paths      [][]trackPoint
-	Points     []trackPoint
+	Paths      [][]gpx.Point
+	Points     []gpx.Point
 	Kilometers string
 	Hours      string
 	Uphill     string
@@ -48,7 +48,7 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	}
 
 	// Parse GPX
-	parseResult, err := trackParseGPX(gpxString)
+	parseResult, err := gpx.Parse(gpxString)
 	if err != nil {
 		// Failed to parse, but just log error
 		a.error("failed to parse GPX", "err", err)
@@ -59,123 +59,26 @@ func (a *goBlog) getTrack(p *post) (result *trackResult, err error) {
 	lp := message.NewPrinter(l)
 
 	result = &trackResult{
-		Name: parseResult.gpxData.Name,
+		Name: parseResult.Name,
 	}
 
 	// Add Paths
-	result.Paths = parseResult.paths
+	result.Paths = parseResult.Paths
 	// Add Points
-	result.Points = parseResult.points
+	result.Points = parseResult.Points
 	// Calculate statistics
-	if parseResult.md != nil {
-		result.Kilometers = lp.Sprintf("%.2f", (parseResult.md.MovingDistance+parseResult.md.StoppedDistance)/1000)
+	if parseResult.MovingData != nil {
+		result.Kilometers = lp.Sprintf("%.2f", (parseResult.MovingData.MovingDistance+parseResult.MovingData.StoppedDistance)/1000)
 		result.Hours = lp.Sprintf(
 			"%.0f:%02.0f:%02.0f",
-			math.Floor(parseResult.md.MovingTime/3600),               // Hours
-			math.Floor(math.Mod(parseResult.md.MovingTime, 3600)/60), // Minutes
-			math.Floor(math.Mod(parseResult.md.MovingTime, 60)),      // Seconds
+			math.Floor(parseResult.MovingData.MovingTime/3600),               // Hours
+			math.Floor(math.Mod(parseResult.MovingData.MovingTime, 3600)/60), // Minutes
+			math.Floor(math.Mod(parseResult.MovingData.MovingTime, 60)),      // Seconds
 		)
 	}
-	if parseResult.ud != nil {
-		result.Uphill = lp.Sprintf("%.0f", parseResult.ud.Uphill)
-		result.Downhill = lp.Sprintf("%.0f", parseResult.ud.Downhill)
-	}
-
-	return result, nil
-}
-
-type trackPoint [2]float64 // Lat, Lon
-
-func (p *trackPoint) Lat() float64 {
-	return p[0]
-}
-
-func (p *trackPoint) Lon() float64 {
-	return p[1]
-}
-
-type trackParseResult struct {
-	paths   [][]trackPoint
-	points  []trackPoint
-	gpxData *gpx.GPX
-	md      *gpx.MovingData
-	ud      *gpx.UphillDownhill
-}
-
-func trackParseGPX(gpxString string) (result *trackParseResult, err error) {
-	trunc := func(num float64) float64 {
-		return float64(int64(num*100000)) / 100000
-	}
-
-	result = &trackParseResult{}
-
-	type trackPath struct {
-		gpxMovingData     *gpx.MovingData
-		gpxUphillDownhill *gpx.UphillDownhill
-		points            []trackPoint
-	}
-
-	result.gpxData, err = gpx.ParseString(gpxString)
-	if err != nil {
-		return nil, err
-	}
-
-	paths := make([]trackPath, 0)
-	for _, track := range result.gpxData.Tracks {
-		for _, segment := range track.Segments {
-			md := segment.MovingData()
-			ud := segment.UphillDownhill()
-			path := trackPath{
-				gpxMovingData:     &md,
-				gpxUphillDownhill: &ud,
-			}
-			for _, point := range segment.Points {
-				path.points = append(path.points, trackPoint{
-					trunc(point.Latitude), trunc(point.Longitude),
-				})
-			}
-			paths = append(paths, path)
-		}
-	}
-	for _, route := range result.gpxData.Routes {
-		path := trackPath{}
-		for _, point := range route.Points {
-			path.points = append(path.points, trackPoint{
-				trunc(point.Latitude), trunc(point.Longitude),
-			})
-		}
-		paths = append(paths, path)
-	}
-	result.paths = make([][]trackPoint, len(paths))
-	for i, path := range paths {
-		// Add points
-		result.paths[i] = path.points
-		// Combine moving data
-		if path.gpxMovingData != nil {
-			if result.md == nil {
-				result.md = &gpx.MovingData{}
-			}
-			result.md.MaxSpeed = math.Max(result.md.MaxSpeed, path.gpxMovingData.MaxSpeed)
-			result.md.MovingDistance = result.md.MovingDistance + path.gpxMovingData.MovingDistance
-			result.md.MovingTime = result.md.MovingTime + path.gpxMovingData.MovingTime
-			result.md.StoppedDistance = result.md.StoppedDistance + path.gpxMovingData.StoppedDistance
-			result.md.StoppedTime = result.md.StoppedTime + path.gpxMovingData.StoppedTime
-		}
-		// Combine uphill/downhill
-		if path.gpxUphillDownhill != nil {
-			if result.ud == nil {
-				result.ud = &gpx.UphillDownhill{}
-			}
-			result.ud.Uphill = result.ud.Uphill + path.gpxUphillDownhill.Uphill
-			result.ud.Downhill = result.ud.Downhill + path.gpxUphillDownhill.Downhill
-		}
-	}
-
-	result.points = []trackPoint{}
-	for _, point := range result.gpxData.Waypoints {
-		result.points = append(result.points, trackPoint{
-			trunc(point.Latitude), trunc(point.Longitude),
-		})
+	if parseResult.UphillDownhill != nil {
+		result.Uphill = lp.Sprintf("%.0f", parseResult.UphillDownhill.Uphill)
+		result.Downhill = lp.Sprintf("%.0f", parseResult.UphillDownhill.Downhill)
 	}
 
 	return result, nil
