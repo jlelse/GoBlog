@@ -10,6 +10,7 @@ import (
 	"github.com/jlelse/feeds"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 type feedType string
@@ -88,5 +89,5 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	}()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
-	_ = pipeReader.CloseWithError(a.min.Get().Minify(feedMediaType, w, pipeReader))
+	_ = pipeReader.CloseWithError(minify.Get().Minify(feedMediaType, w, pipeReader))
 }

@@ -27,6 +27,7 @@ import (
 	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 // ActivityPub path constants
@@ -180,7 +181,7 @@ func (a *goBlog) apHandleWebfinger(w http.ResponseWriter, r *http.Request) {
 		}))
 	}()
 	w.Header().Set(contentType, "application/jrd+json"+contenttype.CharsetUtf8Suffix)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	_ = pr.CloseWithError(minify.Get().Minify(contenttype.JSON, w, pr))
 }
 
 const activityPubMentionsParameter = "activitypubmentions"

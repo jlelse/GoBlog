@@ -12,6 +12,7 @@ import (
 
 	"github.com/snabb/sitemap"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 const (
@@ -212,7 +213,7 @@ func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any)
 		_ = pw.CloseWithError(xml.NewEncoder(pw).Encode(sm))
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
+	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
 }
 
 func (a *goBlog) sitemapLastMod(config *postsRequestConfig) *time.Time {

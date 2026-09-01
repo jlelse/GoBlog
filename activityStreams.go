@@ -13,6 +13,7 @@ import (
 	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/activitypub/jsonld"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 const asRequestKey contextKey = "asRequest"
@@ -229,7 +230,7 @@ func (a *goBlog) serveAPItem(w http.ResponseWriter, r *http.Request, status int,
 	// Send response
 	w.Header().Set(contentType, contenttype.ASUTF8)
 	w.WriteHeader(status)
-	_ = a.min.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
+	_ = minify.Get().Minify(contenttype.AS, w, bytes.NewReader(binary))
 }
 
 func apUsername(actor *ap.Actor) string {

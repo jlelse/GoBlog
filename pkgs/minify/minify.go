@@ -13,36 +13,28 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 )
 
-// Minifier provides HTML, CSS, and JS minification.
-type Minifier struct {
-	i sync.Once
-	m *minify.M
-}
+var getMinifier = sync.OnceValue(func() *minify.M {
+	m := minify.New()
+	// HTML
+	m.AddFunc(contenttype.HTML, (&mHtml.Minifier{
+		KeepDocumentTags: true,
+	}).Minify)
+	// CSS
+	m.AddFunc(contenttype.CSS, mCss.Minify)
+	// JS
+	m.AddFunc(contenttype.JS, mJs.Minify)
+	// XML
+	m.AddFunc(contenttype.XML, mXml.Minify)
+	m.AddFunc(contenttype.RSS, mXml.Minify)
+	m.AddFunc(contenttype.ATOM, mXml.Minify)
+	// JSON
+	m.AddFunc(contenttype.JSON, mJson.Minify)
+	m.AddFunc(contenttype.JSONFeed, mJson.Minify)
+	m.AddFunc(contenttype.AS, mJson.Minify)
+	return m
+})
 
-func (m *Minifier) init() {
-	m.i.Do(func() {
-		m.m = minify.New()
-		// HTML
-		m.m.AddFunc(contenttype.HTML, (&mHtml.Minifier{
-			KeepDocumentTags: true,
-		}).Minify)
-		// CSS
-		m.m.AddFunc(contenttype.CSS, mCss.Minify)
-		// JS
-		m.m.AddFunc(contenttype.JS, mJs.Minify)
-		// XML
-		m.m.AddFunc(contenttype.XML, mXml.Minify)
-		m.m.AddFunc(contenttype.RSS, mXml.Minify)
-		m.m.AddFunc(contenttype.ATOM, mXml.Minify)
-		// JSON
-		m.m.AddFunc(contenttype.JSON, mJson.Minify)
-		m.m.AddFunc(contenttype.JSONFeed, mJson.Minify)
-		m.m.AddFunc(contenttype.AS, mJson.Minify)
-	})
-}
-
-// Get returns the minifier instance, initializing it if needed.
-func (m *Minifier) Get() *minify.M {
-	m.init()
-	return m.m
+// Get returns the minifier instance.
+func Get() *minify.M {
+	return getMinifier()
 }

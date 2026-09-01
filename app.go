@@ -18,7 +18,6 @@ import (
 	"github.com/yuin/goldmark/v2/parser"
 	"github.com/yuin/goldmark/v2/renderer/html"
 	c "go.goblog.app/app/pkgs/cache"
-	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugins"
 )
 
@@ -86,8 +85,6 @@ type goBlog struct {
 	mfCache *c.Cache[string, []byte]
 	// Micropub
 	mpImpl *micropubImplementation
-	// Minify
-	min minify.Minifier
 	// Plugins
 	pluginHost *plugins.PluginHost
 	// Profile image

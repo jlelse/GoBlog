@@ -15,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 const (
@@ -74,7 +75,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		}))
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.XML, w, pr))
+	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
 }
 
 func (a *goBlog) refreshBlogroll(w http.ResponseWriter, r *http.Request) {

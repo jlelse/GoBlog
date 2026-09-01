@@ -15,6 +15,7 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/highlighting"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 const assetsFolder = "templates/assets"
@@ -54,11 +55,11 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	ext := path.Ext(name)
 	switch ext {
 	case ".js":
-		read = a.min.Get().Reader(contenttype.JS, read)
+		read = minify.Get().Reader(contenttype.JS, read)
 	case ".css":
-		read = a.min.Get().Reader(contenttype.CSS, read)
+		read = minify.Get().Reader(contenttype.CSS, read)
 	case ".xml":
-		read = a.min.Get().Reader(contenttype.XML, read)
+		read = minify.Get().Reader(contenttype.XML, read)
 	}
 	// Read file
 	hash := sha256.New()

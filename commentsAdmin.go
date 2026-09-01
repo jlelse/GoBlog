@@ -13,16 +13,21 @@ import (
 
 type commentsPaginationAdapter struct {
 	config  *commentsRequestConfig
-	nums    int64
-	getNums sync.Once
+	getNums func() (int64, error)
 	db      *database
 }
 
-func (p *commentsPaginationAdapter) Nums() (int64, error) {
-	p.getNums.Do(func() {
-		p.nums = int64(noError(p.db.countComments(p.config)))
+func newCommentsPaginationAdapter(config *commentsRequestConfig, db *database) *commentsPaginationAdapter {
+	p := &commentsPaginationAdapter{config: config, db: db}
+	p.getNums = sync.OnceValues(func() (int64, error) {
+		nums, err := p.db.countComments(p.config)
+		return int64(nums), err
 	})
-	return p.nums, nil
+	return p
+}
+
+func (p *commentsPaginationAdapter) Nums() (int64, error) {
+	return p.getNums()
 }
 
 func (p *commentsPaginationAdapter) Slice(offset, length int, data any) error {
@@ -38,7 +43,7 @@ func (p *commentsPaginationAdapter) Slice(offset, length int, data any) error {
 func (a *goBlog) commentsAdmin(w http.ResponseWriter, r *http.Request) {
 	commentsPath := r.Context().Value(pathKey).(string)
 	// Adapter
-	p := paginator.New(&commentsPaginationAdapter{config: &commentsRequestConfig{}, db: a.db}, 5)
+	p := paginator.New(newCommentsPaginationAdapter(&commentsRequestConfig{}, a.db), 5)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var comments []*comment
 	err := p.Results(&comments)

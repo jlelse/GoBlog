@@ -7,6 +7,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/minify"
 	"go.goblog.app/app/pkgs/plugintypes"
 )
 
@@ -66,7 +67,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		_ = pluginPipeWriter.Close()
 	}()
 	// Return minified HTML
-	_ = pluginPipeReader.CloseWithError(a.min.Get().Minify(contenttype.HTML, w, pluginPipeReader))
+	_ = pluginPipeReader.CloseWithError(minify.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }
 
 func (a *goBlog) chainUIPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {

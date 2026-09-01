@@ -9,6 +9,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -138,16 +139,22 @@ func (a *goBlog) redirectToOnThisDay(w http.ResponseWriter, r *http.Request) {
 }
 
 type postPaginationAdapter struct {
-	config *postsRequestConfig
-	nums   int64
-	a      *goBlog
+	config  *postsRequestConfig
+	getNums func() (int64, error)
+	a       *goBlog
+}
+
+func newPostPaginationAdapter(config *postsRequestConfig, a *goBlog) *postPaginationAdapter {
+	p := &postPaginationAdapter{config: config, a: a}
+	p.getNums = sync.OnceValues(func() (int64, error) {
+		nums, err := p.a.db.countPosts(p.config)
+		return int64(nums), err
+	})
+	return p
 }
 
 func (p *postPaginationAdapter) Nums() (int64, error) {
-	if p.nums == 0 {
-		p.nums = int64(noError(p.a.db.countPosts(p.config)))
-	}
-	return p.nums, nil
+	return p.getNums()
 }
 
 func (p *postPaginationAdapter) Slice(offset, length int, data any) error {
@@ -341,7 +348,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		paramURLQuery += "?" + paramURLValues.Encode()
 	}
 	// Create paginator
-	p := paginator.New(&postPaginationAdapter{config: &postsRequestConfig{
+	p := paginator.New(newPostPaginationAdapter(&postsRequestConfig{
 		blogs:          lo.If(!ic.allBlogs, []string{blog}).Else([]string{}),
 		sections:       sections,
 		taxonomy:       ic.tax,
@@ -357,7 +364,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		status:         status,
 		visibility:     visibility,
 		priorityOrder:  true,
-	}, a: a}, bc.Pagination)
+	}, a), bc.Pagination)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var posts []*post
 	err := p.Results(&posts)

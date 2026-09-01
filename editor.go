@@ -15,6 +15,7 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/gpx"
+	"go.goblog.app/app/pkgs/minify"
 	"go.hacdias.com/indielib/micropub"
 	"go.yaml.in/yaml/v4"
 )
@@ -135,7 +136,7 @@ func (a *goBlog) serveEditorPost(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(contentType, contenttype.TextUTF8)
 		buf := bufferpool.Get()
 		defer bufferpool.Put(buf)
-		err = a.min.Get().Minify(contenttype.XML, buf, mergedGpx)
+		err = minify.Get().Minify(contenttype.XML, buf, mergedGpx)
 		if err != nil {
 			a.serveError(w, r, err.Error(), http.StatusBadRequest)
 			return
@@ -221,7 +222,7 @@ func (a *goBlog) editorHandleFileAttachments(r *http.Request) (images []string, 
 			}
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
-			err = a.min.Get().Minify(contenttype.XML, buf, mergedGpx)
+			err = minify.Get().Minify(contenttype.XML, buf, mergedGpx)
 			if err != nil {
 				return nil, "", http.StatusBadRequest, err
 			}

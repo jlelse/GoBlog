@@ -127,16 +127,22 @@ func (db *database) countNotifications(config *notificationsRequestConfig) (coun
 }
 
 type notificationsPaginationAdapter struct {
-	config *notificationsRequestConfig
-	nums   int64
-	db     *database
+	config  *notificationsRequestConfig
+	getNums func() (int64, error)
+	db      *database
+}
+
+func newNotificationsPaginationAdapter(config *notificationsRequestConfig, db *database) *notificationsPaginationAdapter {
+	p := &notificationsPaginationAdapter{config: config, db: db}
+	p.getNums = sync.OnceValues(func() (int64, error) {
+		nums, err := p.db.countNotifications(p.config)
+		return int64(nums), err
+	})
+	return p
 }
 
 func (p *notificationsPaginationAdapter) Nums() (int64, error) {
-	if p.nums == 0 {
-		p.nums = int64(noError(p.db.countNotifications(p.config)))
-	}
-	return p.nums, nil
+	return p.getNums()
 }
 
 func (p *notificationsPaginationAdapter) Slice(offset, length int, data any) error {
@@ -151,7 +157,7 @@ func (p *notificationsPaginationAdapter) Slice(offset, length int, data any) err
 
 func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	// Adapter
-	p := paginator.New(&notificationsPaginationAdapter{config: &notificationsRequestConfig{}, db: a.db}, 10)
+	p := paginator.New(newNotificationsPaginationAdapter(&notificationsRequestConfig{}, a.db), 10)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var notifications []*notification
 	err := p.Results(&notifications)

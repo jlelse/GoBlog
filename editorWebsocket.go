@@ -18,6 +18,7 @@ import (
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"go.goblog.app/app/pkgs/minify"
 )
 
 func (a *goBlog) serveEditorWebsocket(w http.ResponseWriter, r *http.Request) {
@@ -314,7 +315,7 @@ func (a *goBlog) sendEditorPreview(ctx context.Context, c *ws.Conn, blog string,
 		a.renderEditorPreview(htmlbuilder.NewHTMLBuilder(pw), a.getBlogFromPost(p), p)
 		_ = pw.Close()
 	}()
-	_ = a.min.Get().Minify(contenttype.HTMLUTF8, w, pr)
+	_ = minify.Get().Minify(contenttype.HTMLUTF8, w, pr)
 	_ = pr.Close()
 	return w.Close()
 }

@@ -14,18 +14,23 @@ import (
 
 type webmentionPaginationAdapter struct {
 	config  *webmentionsRequestConfig
-	nums    int64
-	getNums sync.Once
+	getNums func() (int64, error)
 	a       *goBlog
 }
 
 var _ paginator.Adapter = (*webmentionPaginationAdapter)(nil)
 
-func (p *webmentionPaginationAdapter) Nums() (int64, error) {
-	p.getNums.Do(func() {
-		p.nums = int64(noError(p.a.db.countWebmentions(p.config)))
+func newWebmentionPaginationAdapter(config *webmentionsRequestConfig, a *goBlog) *webmentionPaginationAdapter {
+	p := &webmentionPaginationAdapter{config: config, a: a}
+	p.getNums = sync.OnceValues(func() (int64, error) {
+		nums, err := p.a.db.countWebmentions(p.config)
+		return int64(nums), err
 	})
-	return p.nums, nil
+	return p
+}
+
+func (p *webmentionPaginationAdapter) Nums() (int64, error) {
+	return p.getNums()
 }
 
 func (p *webmentionPaginationAdapter) Slice(offset, length int, data any) error {
@@ -47,10 +52,10 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		status = webmentionStatusApproved
 	}
 	sourcelike := r.URL.Query().Get("source")
-	p := paginator.New(&webmentionPaginationAdapter{config: &webmentionsRequestConfig{
+	p := paginator.New(newWebmentionPaginationAdapter(&webmentionsRequestConfig{
 		status:     status,
 		sourcelike: sourcelike,
-	}, a: a}, 5)
+	}, a), 5)
 	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var mentions []*mention
 	err := p.Results(&mentions)

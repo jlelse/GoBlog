@@ -27,6 +27,7 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/builderpool"
 	"go.goblog.app/app/pkgs/contenttype"
+	"go.goblog.app/app/pkgs/minify"
 	"golang.org/x/net/html"
 	"golang.org/x/text/language"
 )
@@ -396,7 +397,7 @@ func (a *goBlog) respondWithMinifiedJSON(w http.ResponseWriter, v any) {
 		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(v))
 	}()
 	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(a.min.Get().Minify(contenttype.JSON, w, pr))
+	_ = pr.CloseWithError(minify.Get().Minify(contenttype.JSON, w, pr))
 }
 
 // generateSecurePassword creates a secure random password of the given length

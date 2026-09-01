@@ -7,6 +7,5 @@ import (
 )
 
 func Test_minify(t *testing.T) {
-	var min Minifier
-	assert.NotNil(t, min.Get())
+	assert.NotNil(t, Get())
 }
