@@ -702,7 +702,7 @@ func (a *goBlog) renderBlogroll(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			}
 			// Download button
 			hb.WriteElementOpen("p")
-			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(bd.download), "class", "button", "download", "")
+			hb.WriteElementOpen("a", "href", bd.download, "class", "button", "download", "")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "download"))
 			hb.WriteElementClose("a")
 			hb.WriteElementClose("p")
