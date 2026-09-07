@@ -57,7 +57,7 @@ func (a *goBlog) serveBlogroll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
-	blog, _ := a.getBlog(r)
+	blog, bc := a.getBlog(r)
 	outlines, err, _ := a.blogrollCacheGroup.Do(blog, func() ([]*opml.Outline, error) {
 		return a.getBlogrollOutlines(blog)
 	})
@@ -66,12 +66,25 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
+	// Title
+	title := ""
+	if c := bc.Blogroll; c.Title != "" {
+		title = a.renderMdTitle(c.Title) + " - "
+	}
+	title += a.renderMdTitle(bc.Title)
+	// Owner name
+	ownerName := ""
+	if user := a.cfg.User; user != nil && user.Name != "" {
+		ownerName = user.Name
+	}
 	pr, pw := io.Pipe()
 	go func() {
 		_ = pw.CloseWithError(opml.Render(pw, &opml.OPML{
 			Version:     "2.0",
 			DateCreated: time.Now().UTC(),
 			Outlines:    outlines,
+			Title:       title,
+			OwnerName:   ownerName,
 		}))
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
