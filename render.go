@@ -31,7 +31,7 @@ type renderData struct {
 }
 
 func (d *renderData) LoggedIn() bool {
-	return d.app.isLoggedIn(d.req)
+	return d.app != nil && d.app.isLoggedIn(d.req)
 }
 
 func (a *goBlog) render(w http.ResponseWriter, r *http.Request, f func(*htmlbuilder.HTMLBuilder, *renderData), data *renderData) {

@@ -435,8 +435,18 @@ func (a *goBlog) renderInteractions(hb *htmlbuilder.HTMLBuilder, rd *renderData)
 	// Show form to create a new comment
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(commentPath))
 	hb.WriteElementOpen("input", "type", "hidden", "name", "target", "value", rd.Canonical)
-	hb.WriteElementOpen("input", "type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nameopt"))
-	hb.WriteElementOpen("input", "type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "websiteopt"))
+	nameArgs := []any{"type", "text", "name", "name", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nameopt")}
+	websiteArgs := []any{"type", "url", "name", "website", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "websiteopt")}
+	if rd.LoggedIn() && a.cfg.User != nil {
+		if a.cfg.User.Name != "" {
+			nameArgs = append(nameArgs, "value", a.cfg.User.Name)
+		}
+		if link := cmp.Or(a.cfg.User.Link, a.getFullAddress("/")); link != "" {
+			websiteArgs = append(websiteArgs, "value", link)
+		}
+	}
+	hb.WriteElementOpen("input", nameArgs...)
+	hb.WriteElementOpen("input", websiteArgs...)
 	hb.WriteElementOpen("textarea", "name", "comment", "required", "", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comment"))
 	hb.WriteElementClose("textarea")
 	hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "docomment"))

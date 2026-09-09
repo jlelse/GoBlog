@@ -135,6 +135,52 @@ func Test_renderInteractions(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
+func Test_renderInteractionsCommentFormLoggedIn(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	app.cfg.User.Name = "John Doe"
+	app.cfg.User.Link = "https://example.com/johndoe"
+
+	_ = app.initConfig(false)
+	_ = app.initTemplateStrings()
+	app.cfg.Blogs["default"].Comments = &configComments{Enabled: true}
+
+	render := func(loggedIn bool) string {
+		req := httptest.NewRequest("GET", "/test", nil)
+		setLoggedIn(req, loggedIn)
+		rr := httptest.NewRecorder()
+		app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+			app.renderInteractions(hb, rd)
+		}, &renderData{
+			Blog:      app.cfg.Blogs["default"],
+			Canonical: "https://example.com/test",
+		})
+		return rr.Body.String()
+	}
+
+	// Logged in: name and website prefilled with user link
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(render(true)))
+	require.NoError(t, err)
+	assert.Equal(t, "John Doe", doc.Find("form[action=\"/comment\"] input[name=\"name\"]").AttrOr("value", ""))
+	assert.Equal(t, "https://example.com/johndoe", doc.Find("form[action=\"/comment\"] input[name=\"website\"]").AttrOr("value", ""))
+
+	// Logged in without user link: website falls back to main URL
+	app.cfg.User.Link = ""
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(render(true)))
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com", doc.Find("form[action=\"/comment\"] input[name=\"website\"]").AttrOr("value", ""))
+
+	// Not logged in: no prefill
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(render(false)))
+	require.NoError(t, err)
+	_, nameValue := doc.Find("form[action=\"/comment\"] input[name=\"name\"]").Attr("value")
+	_, websiteValue := doc.Find("form[action=\"/comment\"] input[name=\"website\"]").Attr("value")
+	assert.False(t, nameValue)
+	assert.False(t, websiteValue)
+}
+
 func Test_renderAuthorWithoutProfileImage(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
