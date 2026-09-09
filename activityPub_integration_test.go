@@ -239,17 +239,39 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 			return false
 		}, time.Minute, time.Second)
 
-		// Delete the post on GoBlog and verify it is removed from GoToSocial
-		require.NoError(t, gb.deletePost(p.Path))
+		// Delete a post on GoBlog and verify the deletion is reflected on GoToSocial.
+		// A fresh unedited post is used, since deleting an edited remote status is
+		// currently broken upstream (GoToSocial fails to stub its tombstone).
+		pDelete := &post{Content: "Hello from GoBlog, delete test!"}
+		require.NoError(t, gb.createPost(pDelete))
+		pDeleteURL := gb.fullPostURL(pDelete)
+
 		require.Eventually(t, func() bool {
 			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
 			if err != nil {
 				return false
 			}
 			for _, status := range statuses {
-				if status.URL == postURL {
-					return false
+				if status.URL == pDeleteURL && strings.Contains(status.Content, "Hello from GoBlog, delete test!") {
+					return true
 				}
+			}
+			return false
+		}, time.Minute, time.Second)
+
+		require.NoError(t, gb.deletePost(pDelete.Path))
+		// Since v0.22, GoToSocial keeps a tombstone placeholder instead of removing the status.
+		require.Eventually(t, func() bool {
+			statuses, err := mc.GetAccountStatuses(t.Context(), lookup.ID, nil)
+			if err != nil {
+				return false
+			}
+			for _, status := range statuses {
+				if status.URL != pDeleteURL {
+					continue
+				}
+				return status.Content != "" && strings.Contains(status.Content, "deleted status") &&
+					!strings.Contains(status.Content, "Hello from GoBlog, delete test!")
 			}
 			return true
 		}, time.Minute, time.Second)
@@ -831,7 +853,7 @@ cache:
 		"--tmpfs", "/data",
 		"--tmpfs", "/gotosocial/storage",
 		"--tmpfs", "/gotosocial/.cache",
-		"docker.io/superseriousbusiness/gotosocial:0.21.3",
+		"docker.io/superseriousbusiness/gotosocial:0.22.1",
 		"--config-path", "/config/config.yaml", "server", "start",
 	)
 	t.Cleanup(func() {
