@@ -9,7 +9,7 @@ require (
 	git.jlel.se/jlelse/template-strings v0.0.0-20220211095702-c012e3b5045b
 	github.com/HBTGmbH/gosaxml v0.0.44
 	github.com/PuerkitoBio/goquery v1.13.0
-	github.com/alecthomas/chroma/v2 v2.27.0
+	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.26.1
@@ -55,6 +55,7 @@ require (
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yuin/goldmark-emoji/v2 v2.0.2
+	github.com/yuin/goldmark-highlighting/v3 v3.1.0
 	github.com/yuin/goldmark/v2 v2.0.1
 	go.hacdias.com/indielib v0.5.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6

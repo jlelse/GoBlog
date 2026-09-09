@@ -92,6 +92,26 @@ func Test_markdown(t *testing.T) {
 		assert.Equal(t, "Test\u2019s", app.renderMdTitle("Test's"))
 		assert.Equal(t, "😂", app.renderMdTitle(":joy:"))
 		assert.Equal(t, "<b></b>", app.renderMdTitle("<b></b>"))
+
+		// Syntax highlighting
+
+		rendered, err = app.renderMarkdown("```go\npackage main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n```\n")
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), `<span class="c-kn">package</span>`)
+		assert.Contains(t, string(rendered), `<span class="c-s">&#34;Hello, World!&#34;</span>`)
+
+		// Code blocks without a known language are rendered as plain code
+
+		rendered, err = app.renderMarkdown("```unknownlang\nThis is some text.\n```\n")
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), "<pre><code class=\"language-unknownlang\">This is some text.\n</code></pre>")
+
+		rendered, err = app.renderMarkdown("```\nThis is a code block without a language.\n```\n")
+		require.NoError(t, err)
+
+		assert.Contains(t, string(rendered), "<pre><code>This is a code block without a language.\n</code></pre>")
 	})
 
 	t.Run("renderPostMarkdownToWriter", func(t *testing.T) {

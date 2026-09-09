@@ -5,7 +5,9 @@ import (
 	"io"
 	"runtime/debug"
 
+	chromahtml "github.com/alecthomas/chroma/v3/formatters/html"
 	emoji "github.com/yuin/goldmark-emoji/v2"
+	"github.com/yuin/goldmark-highlighting/v3"
 	"github.com/yuin/goldmark/v2/ast"
 	"github.com/yuin/goldmark/v2/extension"
 	"github.com/yuin/goldmark/v2/parser"
@@ -14,7 +16,6 @@ import (
 	"github.com/yuin/goldmark/v2/util"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/builderpool"
-	"go.goblog.app/app/pkgs/highlighting"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/mark"
 )
@@ -91,6 +92,9 @@ func (a *goBlog) defaultMarkdownParserOptions() []parser.Option {
 	}
 }
 
+// chromaStyleName is the chroma style used for syntax highlighting.
+const chromaStyleName = "monokai"
+
 func (a *goBlog) defaultMarkdownRendererOptions(additional ...html.Option) []html.Option {
 	return append([]html.Option{
 		html.WithUnsafe(),
@@ -100,7 +104,13 @@ func (a *goBlog) defaultMarkdownRendererOptions(additional ...html.Option) []htm
 			extension.FootnoteHTMLRenderer,
 			mark.HTMLRenderer,
 			emoji.HTMLRenderer,
-			highlighting.Highlighting,
+			highlighting.NewHTMLRenderer(
+				highlighting.WithStyle(chromaStyleName),
+				highlighting.WithFormatterOptions(
+					chromahtml.WithClasses(true),
+					chromahtml.ClassPrefix("c-"),
+				),
+			),
 		),
 	}, additional...)
 }

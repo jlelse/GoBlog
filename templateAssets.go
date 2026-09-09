@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
+	chromahtml "github.com/alecthomas/chroma/v3/formatters/html"
+	"github.com/alecthomas/chroma/v3/styles"
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/highlighting"
 	"go.goblog.app/app/pkgs/minify"
 )
 
@@ -135,7 +135,7 @@ func (a *goBlog) initChromaCSS() error {
 		return nil
 	}
 	// Initialize the style
-	chromaStyle, err := highlighting.Style.Builder().Build()
+	chromaStyle, err := styles.Get(chromaStyleName).Builder().Build()
 	if err != nil {
 		return err
 	}
