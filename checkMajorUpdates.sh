@@ -2,7 +2,7 @@
 # Check direct go.mod dependencies for newer major versions
 # (e.g., /v3 -> /v4, or unversioned -> /v2).
 #
-# Dependabot proposes these automatically, but this script is useful for
+# Renovate proposes these automatically, but this script is useful for
 # quick manual audits.
 
 set -euo pipefail

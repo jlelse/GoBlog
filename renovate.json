@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Create PRs for major version upgrades",
+      "matchUpdateTypes": ["major"],
+      "enabled": true
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Leaflet version in bundle-assets.sh",
+      "managerFilePatterns": ["/^bundle-assets\\.sh$/"],
+      "matchStrings": ["LEAFLET_VERSION=\"(?<currentValue>[0-9.]+)\""],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "leaflet"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Leaflet.markercluster version in bundle-assets.sh",
+      "managerFilePatterns": ["/^bundle-assets\\.sh$/"],
+      "matchStrings": ["MARKERCLUSTER_VERSION=\"(?<currentValue>[0-9.]+)\""],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "leaflet.markercluster"
+    },
+    {
+      "customType": "regex",
+      "description": "Update hls.js version in bundle-assets.sh",
+      "managerFilePatterns": ["/^bundle-assets\\.sh$/"],
+      "matchStrings": ["HLSJS_VERSION=\"(?<currentValue>[0-9.]+)\""],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "hls.js"
+    },
+    {
+      "customType": "regex",
+      "description": "Update GoToSocial Docker image version in ActivityPub integration tests",
+      "managerFilePatterns": ["/^activityPub_integration_test\\.go$/"],
+      "matchStrings": ["docker\\.io/superseriousbusiness/gotosocial:(?<currentValue>[0-9.]+)"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "superseriousbusiness/gotosocial"
+    }
+  ]
+}
