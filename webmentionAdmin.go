@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -110,6 +111,18 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 			next:     nextPath + query,
 		},
 	})
+}
+
+func (a *goBlog) webmentionTargetBlog(target string) string {
+	parsedTarget, err := url.Parse(target)
+	if err != nil {
+		return ""
+	}
+	post, err := a.getPost(parsedTarget.Path)
+	if err != nil {
+		return ""
+	}
+	return cmp.Or(post.Blog, a.cfg.DefaultBlog)
 }
 
 func (a *goBlog) webmentionAdminAction(w http.ResponseWriter, r *http.Request) {

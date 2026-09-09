@@ -70,6 +70,55 @@ func Test_webmentionReceivingDisabled(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func Test_webmentionTargetBlog(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang:           "en",
+			DefaultSection: "posts",
+			Sections:       createDefaultSections(),
+		},
+		"de": {
+			Lang:           "de",
+			Path:           "/de",
+			DefaultSection: "posts",
+			Sections:       createDefaultSections(),
+		},
+	}
+	app.cfg.DefaultBlog = "en"
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+
+	err = app.createPost(&post{
+		Path:    "/testpost",
+		Content: "Test",
+	})
+	require.NoError(t, err)
+
+	err = app.createPost(&post{
+		Blog:    "de",
+		Path:    "/de/testpost",
+		Content: "Test",
+	})
+	require.NoError(t, err)
+
+	// Resolves the blog of the target post
+	assert.Equal(t, "de", app.webmentionTargetBlog("https://example.com/de/testpost"))
+	assert.Equal(t, "en", app.webmentionTargetBlog("https://example.com/testpost"))
+
+	// Unknown target
+	assert.Empty(t, app.webmentionTargetBlog("https://example.com/unknown"))
+
+	// Invalid URL
+	assert.Empty(t, app.webmentionTargetBlog("://invalid"))
+
+	// Short links and aliases are not resolved
+	assert.Empty(t, app.webmentionTargetBlog("https://example.com/s/1"))
+}
+
 func Test_webmentions(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),

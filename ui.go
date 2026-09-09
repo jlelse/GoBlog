@@ -1528,10 +1528,23 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderDa
 					hb.WriteElementOpen("br")
 				}
 				hb.WriteElementClose("p")
+				// Reply to mention (hidden form, submitted via the button in the actions row)
+				replyFormID := fmt.Sprintf("reply-%d", m.ID)
+				replyEditorPath := rd.Blog.getRelativePath(editorPath)
+				if replyBlog := a.webmentionTargetBlog(m.Target); replyBlog != "" {
+					replyEditorPath = a.getRelativePath(replyBlog, editorPath)
+				}
+				hb.WriteElementOpen("form", "id", replyFormID, "class", "hide", "method", "get", "action", replyEditorPath)
+				hb.WriteElementOpen("input", "type", "hidden", "name", "p:"+a.cfg.Micropub.ReplyParam, "value", m.Source)
+				hb.WriteElementOpen("input", "type", "hidden", "name", "p:visibility", "value", string(visibilityUnlisted))
+				hb.WriteElementOpen("input", "type", "hidden", "name", "p:status", "value", string(statusPublished))
+				hb.WriteElementClose("form")
 				// Actions
 				hb.WriteElementOpen("form", "method", "post", "class", "actions")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "mentionid", "value", m.ID)
 				hb.WriteElementOpen("input", "type", "hidden", "name", "redir", "value", fmt.Sprintf("%s#mention-%d", wrd.current, m.ID))
+				// Reply to mention
+				hb.WriteElementOpen("input", "type", "submit", "form", replyFormID, "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reply"))
 				if m.Status == webmentionStatusVerified {
 					// Approve verified mention
 					hb.WriteElementOpen("input", "type", "submit", "formaction", "/webmention/approve", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "approve"))
