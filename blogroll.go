@@ -80,11 +80,11 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	pr, pw := io.Pipe()
 	go func() {
 		_ = pw.CloseWithError(opml.Render(pw, &opml.OPML{
-			Version:     "2.0",
-			DateCreated: time.Now().UTC(),
-			Outlines:    outlines,
-			Title:       title,
-			OwnerName:   ownerName,
+			Version:      "2.0",
+			DateModified: time.Now().UTC(),
+			Outlines:     outlines,
+			Title:        title,
+			OwnerName:    ownerName,
 		}))
 	}()
 	w.Header().Set(contentType, contenttype.XMLUTF8)
