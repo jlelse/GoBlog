@@ -3,11 +3,12 @@
   "extends": ["config:recommended"],
   "packageRules": [
     {
-      "description": "Create PRs for major version upgrades",
-      "matchUpdateTypes": ["major"],
-      "enabled": true
+      "description": "Group all Go module updates",
+      "matchManagers": ["gomod"],
+      "groupName": "Go dependencies"
     }
   ],
+  "postUpdateOptions": ["gomodTidy"],
   "customManagers": [
     {
       "customType": "regex",
