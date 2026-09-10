@@ -10,6 +10,7 @@ require (
 	github.com/HBTGmbH/gosaxml v0.0.44
 	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
+	github.com/andybalholm/cascadia v1.3.5
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.26.1
@@ -21,7 +22,7 @@ require (
 	github.com/emersion/go-smtp v0.25.0
 	github.com/go-acme/lego/v5 v5.4.1
 	github.com/go-chi/chi/v5 v5.3.2
-	github.com/go-webauthn/webauthn v0.18.0
+	github.com/go-webauthn/webauthn v0.18.1
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
@@ -56,7 +57,7 @@ require (
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yuin/goldmark-emoji/v2 v2.0.2
 	github.com/yuin/goldmark-highlighting/v3 v3.1.0
-	github.com/yuin/goldmark/v2 v2.0.1
+	github.com/yuin/goldmark/v2 v2.0.2
 	go.hacdias.com/indielib v0.5.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3
@@ -70,7 +71,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/andybalholm/cascadia v1.3.5 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/go-webauthn/x v0.3.0 // indirect
+	github.com/go-webauthn/x v0.3.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
