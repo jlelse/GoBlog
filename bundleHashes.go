@@ -5,5 +5,5 @@ package main
 var bundleHashes = map[string]string{
 	"leaflet/leaflet.js":       "3HH4pogLw8ob2fqNxfGvSMcC3FELCngkCgfF/u186TU=",
 	"leaflet/markercluster.js": "se80zO4Ps22Fb/RxnHWQRqDhQpPbv51THZaXNUgRaLw=",
-	"hlsjs/hls.js":             "WFJL6071ADbK6R3m+8ujK7v2QFiKX/aD2JDm4KgZTIo=",
+	"hlsjs/hls.js":             "PlsGNeSGqlVCvGhkF780pCCEnDoCa/5+uniPyicqJjE=",
 }
