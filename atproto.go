@@ -31,6 +31,8 @@ const (
 	atprotoURIPattern = `^at://([^/]+)/([^/]+)/([^/]+)$`
 )
 
+var atprotoURIRegex = regexp.MustCompile(atprotoURIPattern)
+
 func (a *goBlog) atprotoPost(p *post) {
 	if atproto := a.getBlogFromPost(p).Atproto; atproto.enabled() && p.isPublicPublishedSectionPost() {
 		session, err := a.createAtprotoSession(atproto)
@@ -131,7 +133,7 @@ func (a *goBlog) publishPost(atproto *configAtproto, session *atprotoSessionResp
 }
 
 func (a *goBlog) deleteAtprotoRecord(atproto *configAtproto, session *atprotoSessionResponse, uri string) error {
-	re := regexp.MustCompile(atprotoURIPattern)
+	re := atprotoURIRegex
 	matches := re.FindStringSubmatch(uri)
 	if matches == nil || len(matches) != 4 {
 		return fmt.Errorf("invalid URI format")

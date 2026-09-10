@@ -78,6 +78,8 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	}
 	// Save mapping of original file name to compiled file name
 	a.assetFileNames[name] = compiledFileName
+	// Signal that the assets changed
+	a.assetVersion.Add(1)
 	return err
 }
 

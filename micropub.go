@@ -24,6 +24,8 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+var crlfRegex = regexp.MustCompile("\r\n")
+
 func (a *goBlog) getMicropubImplementation() *micropubImplementation {
 	if a.mpImpl == nil {
 		a.mpImpl = &micropubImplementation{a: a}
@@ -324,7 +326,7 @@ func (a *goBlog) processContentAndParameters(p *post) error {
 	}
 
 	// Normalize line endings in content
-	p.Content = regexp.MustCompile("\r\n").ReplaceAllString(p.Content, "\n")
+	p.Content = crlfRegex.ReplaceAllString(p.Content, "\n")
 
 	// Check for frontmatter
 	err := extractFrontmatter(p)

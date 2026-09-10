@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	"code.superseriousbusiness.org/httpsig"
 	shutdowner "git.jlel.se/jlelse/go-shutdowner"
@@ -34,6 +35,9 @@ type goBlog struct {
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile
+	// assetVersion is incremented whenever assets change, so caches that depend on
+	// them (like the CSP header) can invalidate.
+	assetVersion atomic.Uint64
 	// ACME certificate manager
 	certMgr     *certManager
 	certMgrInit sync.Once

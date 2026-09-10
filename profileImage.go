@@ -49,6 +49,8 @@ const (
 	settingsDeleteProfileImagePath = "/deleteprofileimage"
 )
 
+var profileImageSizeRegex = regexp.MustCompile(profileImageSizeRegexPattern)
+
 //go:embed logo/GoBlog.png
 var defaultLogo []byte
 
@@ -73,7 +75,7 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		// Get requested size
 		width, height := 0, 0
 		sizeFormValue := r.FormValue("s") //nolint:gosec
-		re := regexp.MustCompile(profileImageSizeRegexPattern)
+		re := profileImageSizeRegex
 		if re.MatchString(sizeFormValue) {
 			matches := re.FindStringSubmatch(sizeFormValue)
 			widthIndex := re.SubexpIndex("width")

@@ -234,6 +234,9 @@ var textPolicy = bluemonday.StrictPolicy().
 	AllowElements("ol", "ul", "li").                   // Lists
 	AllowElements("blockquote")                        // Blockquotes
 
+// UGC policy for cleaning user generated HTML
+var ugcPolicy = bluemonday.UGCPolicy()
+
 func htmlTextFromBytes(b []byte) (string, error) {
 	// Filter HTML
 	sanitized := bufferpool.Get()
@@ -299,7 +302,7 @@ func cleanHTMLText(s string) string {
 	// Clean HTML with UGC policy and return text
 	sanitized := bufferpool.Get()
 	defer bufferpool.Put(sanitized)
-	_ = bluemonday.UGCPolicy().SanitizeReaderToWriter(strings.NewReader(s), sanitized)
+	_ = ugcPolicy.SanitizeReaderToWriter(strings.NewReader(s), sanitized)
 	text, err := htmlTextFromBytes(sanitized.Bytes())
 	if err != nil {
 		return ""
