@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -11,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +19,7 @@ import (
 	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/andybalholm/cascadia"
 	"github.com/araddon/dateparse"
 	"github.com/c2h5oh/datasize"
 	tdl "github.com/mergestat/timediff/locale"
@@ -228,51 +229,37 @@ func mBytesString(size int64) string {
 }
 
 // Build policy to only allow a subset of HTML tags
-var textPolicy = bluemonday.StrictPolicy().
-	AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
-	AllowElements("p").                                // Paragraphs
-	AllowElements("ol", "ul", "li").                   // Lists
-	AllowElements("blockquote")                        // Blockquotes
+var (
+	// Policy for cleaning HTML to text
+	textPolicy = bluemonday.StrictPolicy().
+			AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
+			AllowElements("p").                                // Paragraphs
+			AllowElements("ol", "ul", "li").                   // Lists
+			AllowElements("blockquote")                        // Blockquotes
 
-// UGC policy for cleaning user generated HTML
-var ugcPolicy = bluemonday.UGCPolicy()
+	// Cascadia CSS selectors for cleaning HTML to text
+	bodySelector         = cascadia.MustCompile("body")
+	newParagraphSelector = cascadia.MustCompile("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote")
+	listItemSelector     = cascadia.MustCompile("ol > li")
+)
 
-func htmlTextFromBytes(b []byte) (string, error) {
+func htmlText(r io.Reader) (string, error) {
 	// Filter HTML
 	sanitized := bufferpool.Get()
 	defer bufferpool.Put(sanitized)
-	if err := textPolicy.SanitizeReaderToWriter(bytes.NewReader(b), sanitized); err != nil {
+	if err := textPolicy.SanitizeReaderToWriter(r, sanitized); err != nil {
 		return "", err
 	}
 	// Read into document
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(sanitized.Bytes()))
+	doc, err := goquery.NewDocumentFromReader(sanitized)
 	if err != nil {
 		return "", err
 	}
 	// Parse text
 	text := builderpool.Get()
 	defer builderpool.Put(text)
-	if bodyChild := doc.Find("body").Children(); bodyChild.Length() > 0 {
-		// Input was real HTML, so build the text from the body
-		// Declare recursive function to print childs
-		var printChildren func(children *goquery.Selection)
-		printChildren = func(children *goquery.Selection) {
-			children.Each(func(i int, sel *goquery.Selection) {
-				if i > 0 && // Not first child
-					sel.Is("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote") { // All elements that start a new paragraph
-					_, _ = text.WriteString("\n\n")
-				}
-				if sel.Is("ol > li") { // List item in ordered list
-					_, _ = fmt.Fprintf(text, "%d. ", i+1) // Add list item number
-				}
-				if sel.Children().Length() > 0 { // Has children
-					printChildren(sel.Children()) // Recursive call to print children
-				} else {
-					gqSelectionTextToStringWriter(sel, text) // Print text
-				}
-			})
-		}
-		printChildren(bodyChild)
+	if bodyChild := doc.FindMatcher(bodySelector).Children(); bodyChild.Length() > 0 {
+		gqSelectionToText(bodyChild, text)
 	} else {
 		// Input was probably just text, so just use the text
 		_, _ = text.WriteString(doc.Text())
@@ -281,33 +268,39 @@ func htmlTextFromBytes(b []byte) (string, error) {
 	return strings.TrimSpace(text.String()), nil
 }
 
-func gqSelectionTextToStringWriter(sel *goquery.Selection, text io.StringWriter) {
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.TextNode {
-			_, _ = text.WriteString(n.Data)
+func gqSelectionToText(children *goquery.Selection, text *strings.Builder) {
+	for i, sel := range children.EachIter() {
+		// Not first child and starts a new paragraph
+		if i > 0 && slices.ContainsFunc(sel.Nodes, newParagraphSelector.Match) {
+			_, _ = text.WriteString("\n\n")
 		}
-		if n.FirstChild != nil {
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				f(c)
+		// List item in ordered list
+		if slices.ContainsFunc(sel.Nodes, listItemSelector.Match) {
+			_, _ = fmt.Fprintf(text, "%d. ", i+1) // Add list item number
+		}
+		if children := sel.Children(); children.Length() > 0 {
+			gqSelectionToText(children, text)
+		} else {
+			for _, n := range sel.Nodes {
+				htmlNodeToText(n, text)
 			}
 		}
 	}
-	for _, n := range sel.Nodes {
-		f(n)
+}
+
+func htmlNodeToText(n *html.Node, text io.StringWriter) {
+	if n.Type == html.TextNode {
+		_, _ = text.WriteString(n.Data)
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		htmlNodeToText(c, text)
 	}
 }
 
 func cleanHTMLText(s string) string {
-	// Clean HTML with UGC policy and return text
-	sanitized := bufferpool.Get()
-	defer bufferpool.Put(sanitized)
-	_ = ugcPolicy.SanitizeReaderToWriter(strings.NewReader(s), sanitized)
-	text, err := htmlTextFromBytes(sanitized.Bytes())
-	if err != nil {
-		return ""
-	}
-	return text
+	// htmlText policy is already strict enough
+	r, _ := htmlText(strings.NewReader(s))
+	return r
 }
 
 func containsStrings(s string, subStrings ...string) bool {

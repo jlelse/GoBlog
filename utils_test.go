@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/builderpool"
 )
 
 func Test_urlize(t *testing.T) {
@@ -113,7 +114,7 @@ func Test_allLinksFromHTML(t *testing.T) {
 
 func Test_htmlText(t *testing.T) {
 	htmlText := func(s string) string {
-		text, _ := htmlTextFromBytes([]byte(s))
+		text, _ := htmlText(strings.NewReader(s))
 		return text
 	}
 
@@ -143,6 +144,17 @@ func Test_htmlText(t *testing.T) {
 	assert.Equal(t, "Test", htmlText(`<p>Test</p><pre><code>Code content</code></pre>`))
 	// Inline code (should not be ignored)
 	assert.Equal(t, "Test Code content", htmlText(`<p>Test <code>Code content</code></p>`))
+}
+
+func Benchmark_htmlText(b *testing.B) {
+	sb := builderpool.Get()
+	defer builderpool.Put(sb)
+	for range 100 {
+		sb.WriteString(`<p>Test</p><pre><code>Code content</code></pre>`)
+	}
+	for b.Loop() {
+		htmlText(strings.NewReader(sb.String()))
+	}
 }
 
 func Test_containsStrings(t *testing.T) {

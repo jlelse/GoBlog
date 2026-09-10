@@ -7,7 +7,7 @@ import (
 
 	chromahtml "github.com/alecthomas/chroma/v3/formatters/html"
 	emoji "github.com/yuin/goldmark-emoji/v2"
-	"github.com/yuin/goldmark-highlighting/v3"
+	highlighting "github.com/yuin/goldmark-highlighting/v3"
 	"github.com/yuin/goldmark/v2/ast"
 	"github.com/yuin/goldmark/v2/extension"
 	"github.com/yuin/goldmark/v2/parser"
@@ -146,7 +146,7 @@ func (a *goBlog) renderText(s string) (text string, err error) {
 		if err := a.renderMarkdownToWriter(buf, s); err != nil {
 			return err
 		}
-		text, err = htmlTextFromBytes(buf.Bytes())
+		text, err = htmlText(buf)
 		return err
 	})
 	if err != nil {
@@ -174,7 +174,7 @@ func (a *goBlog) renderMdTitle(s string) string {
 			return err
 		}
 		var err error
-		text, err = htmlTextFromBytes(buf.Bytes())
+		text, err = htmlText(buf)
 		return err
 	})
 	if err != nil {

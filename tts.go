@@ -79,7 +79,7 @@ func (a *goBlog) createPostTTSAudio(p *post) error {
 	// Add body split into paragraphs because of 5000 character limit
 	htmlBuf := bufferpool.Get()
 	a.postHTMLToWriter(htmlBuf, &postHTMLOptions{p: p})
-	postHTMLText, err := htmlTextFromBytes(htmlBuf.Bytes())
+	postHTMLText, err := htmlText(htmlBuf)
 	bufferpool.Put(htmlBuf)
 	if err != nil {
 		return err
