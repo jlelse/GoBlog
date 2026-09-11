@@ -41,7 +41,7 @@ require (
 	github.com/mmcdole/gofeed v1.4.2
 	github.com/paulmach/go.geojson v1.5.0
 	github.com/pquerna/otp v1.5.0
-	github.com/samber/go-singleflightx v0.3.2
+	github.com/samber/go-singleflightx v1.0.0
 	github.com/samber/lo v1.53.0
 	github.com/schollz/sqlite3dump v1.3.1
 	github.com/snabb/sitemap v1.0.5
