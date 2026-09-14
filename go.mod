@@ -57,7 +57,7 @@ require (
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yuin/goldmark-emoji/v2 v2.0.2
 	github.com/yuin/goldmark-highlighting/v3 v3.1.0
-	github.com/yuin/goldmark/v2 v2.0.2
+	github.com/yuin/goldmark/v2 v2.1.1
 	go.hacdias.com/indielib v0.5.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3
