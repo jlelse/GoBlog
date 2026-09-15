@@ -26,8 +26,8 @@
 
     // JS
     let script = document.createElement('script')
-    script.src = '/-/hlsjs/hls.js?v=1.7.2'
-    script.integrity = 'sha256-PlsGNeSGqlVCvGhkF780pCCEnDoCa/5+uniPyicqJjE='
+    script.src = '/-/hlsjs/hls.js?v=1.7.3'
+    script.integrity = 'sha256-3kn1owhPc8nj5OKZnW54n46lr/ASDSlWMey5vxSAs+o='
     script.onload = loadVideo
     document.head.appendChild(script)
 })()
