@@ -268,7 +268,7 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 			hb.WriteElementClose("h1")
 			// Form
-			hb.WriteElementOpen("form", "class", "fw p", "method", "post")
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "id", "loginform")
 			// Hidden fields
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginaction", "value", "login")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginmethod", "value", data.loginMethod)
@@ -295,11 +295,22 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				)
 				hb.WriteElementClose("form")
 			}
+			// OIDC login
+			hasOIDCLink := a.hasOIDCLink()
+			if hasOIDCLink {
+				hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", oidcLoginPath, "id", "oidcloginform")
+				hb.WriteElementOpen("input", "id", "loginoidcbutton", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "loginoidc"))
+				hb.WriteElementClose("form")
+			}
 			// Author (required for some IndieWeb apps)
 			a.renderAuthor(hb)
 			// Scripts
 			if hasPasskey {
 				hb.WriteElementOpen("script", "src", a.assetFileName("js/webauthn.js"), "integrity", a.assetFileHash("js/webauthn.js"), "defer", "")
+				hb.WriteElementClose("script")
+			}
+			if hasOIDCLink {
+				hb.WriteElementOpen("script", "src", a.assetFileName("js/oidc.js"), "integrity", a.assetFileHash("js/oidc.js"), "defer", "")
 				hb.WriteElementClose("script")
 			}
 			hb.WriteElementClose("main")
@@ -1773,6 +1784,10 @@ type settingsRenderData struct {
 	disableReceivingWebmentions bool
 	disableInterGoblogMentions  bool
 	webmentionBlocklist         []*webmentionBlocklistEntry
+	oidcEnabled                 bool
+	oidcLinked                  bool
+	oidcSubject                 string
+	oidcIssuer                  string
 }
 
 type appPasswordCreatedRenderData struct {

@@ -44,6 +44,10 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	wm := a.cfg.Webmention
 	blocklist, _ := a.getWebmentionBlocklist()
 
+	// OIDC state
+	oidcSubject, _ := a.getOIDCSubject()
+	oidcIssuer, _ := a.getSettingValue(oidcIssuerSettingsKey)
+
 	a.render(w, r, a.renderSettings, &renderData{
 		Data: &settingsRenderData{
 			blog:                        blog,
@@ -72,6 +76,10 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			disableReceivingWebmentions: wm.DisableReceiving,
 			disableInterGoblogMentions:  wm.DisableInterGoblogMentions,
 			webmentionBlocklist:         blocklist,
+			oidcEnabled:                 a.oidcEnabled(),
+			oidcLinked:                  oidcSubject != "",
+			oidcSubject:                 oidcSubject,
+			oidcIssuer:                  oidcIssuer,
 		},
 	})
 }

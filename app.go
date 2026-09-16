@@ -102,7 +102,9 @@ type goBlog struct {
 	// Regex Redirects
 	regexRedirects []*regexRedirect
 	// Sessions
-	loginSessions, captchaSessions, webauthnSessions *dbSessionStore
+	loginSessions, captchaSessions, webauthnSessions, oidcSessions *dbSessionStore
+	// OIDC
+	oidcClient *oidcClient
 	// Shutdown
 	shutdown shutdowner.Shutdowner
 	// Template strings

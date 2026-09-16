@@ -1103,6 +1103,37 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HTMLBuilder, rd *renderD
 		hb.WriteElementsClose("table")
 	}
 
+	// OIDC section
+	if srd.oidcEnabled {
+		hb.WriteElementOpen("h3")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "oidc"))
+		hb.WriteElementClose("h3")
+
+		if srd.oidcLinked {
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "oidclinked"))
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("p", "class", "monospace")
+			hb.WriteEscaped(srd.oidcSubject)
+			hb.WriteElementClose("p")
+			if srd.oidcIssuer != "" {
+				hb.WriteElementOpen("p", "class", "monospace")
+				hb.WriteEscaped(srd.oidcIssuer)
+				hb.WriteElementClose("p")
+			}
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", rd.Blog.getRelativePath(settingsPath+settingsDeleteOIDCPath))
+			hb.WriteElementOpen("input", "type", "submit", "class", "confirm", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "unlinkoidc"), "data-confirmmessage", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmdelete"))
+			hb.WriteElementClose("form")
+		} else {
+			hb.WriteElementOpen("p")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "oidcdesc"))
+			hb.WriteElementClose("p")
+			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "action", oidcLoginPath)
+			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "linkoidc"))
+			hb.WriteElementClose("form")
+		}
+	}
+
 	// App passwords section
 	hb.WriteElementOpen("h3")
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "apppasswords"))

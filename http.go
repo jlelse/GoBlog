@@ -415,6 +415,8 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 				r.URL.Path == oauthRevokePath ||
 				r.URL.Path == oauthVerifyCredentialsPath ||
 				strings.HasPrefix(r.URL.Path, webAuthnBasePath) ||
+				r.URL.Path == oidcLoginPath ||
+				r.URL.Path == oidcCallbackPath ||
 				r.URL.Path == loginPath ||
 				r.URL.Path == logoutPath ||
 				strings.HasPrefix(r.URL.Path, settingsPath) {

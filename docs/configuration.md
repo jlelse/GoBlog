@@ -23,6 +23,7 @@ For every available option with detailed explanations, see [`example-config.yml`
 | `database` | SQLite file path, dump, debug |
 | `cache` | Enable/disable caching and TTL (enabled by default, 6-hour TTL) |
 | `user` | Credentials, profile, 2FA, app passwords, identity |
+| `oidc` | OpenID Connect (e.g. Pocket ID) login |
 | `blogs` | Multiple blog configuration |
 | `hooks` | Shell commands on events |
 | `plugins` | Runtime plugin system (Yaegi) |
@@ -56,12 +57,13 @@ Some settings are configured via YAML, others via the Settings UI (`/settings`):
 - Map tiles
 - Path redirects
 - Tor, IndexNow, private mode
+- OIDC login configuration (issuer, client ID/secret)
 
 **Settings UI** (no restart needed):
 - Blog title and description
 - Sections (create, edit, delete, path templates)
 - User profile (name, username, profile image)
-- Password, TOTP, passkeys, app passwords
+- Password, TOTP, passkeys, app passwords, OIDC account linking
 - Reactions (enable/disable, configure emojis)
 - Webmention settings (sending, receiving, block list)
 - UI toggles (hide buttons, auto-fetch reply context)
@@ -172,6 +174,24 @@ GoBlog stores all data in the `data` directory:
 - `data/media-migrate.json` - Media migration perceptual hash cache
 
 Always backup the `data` directory regularly.
+
+## OpenID Connect (OIDC) Login
+GoBlog can be used as an OIDC client, so you can log in with an external identity provider such as [Pocket ID](https://pocket-id.org/). The account link is stored in the database and configured via the Settings UI.
+
+```yaml
+oidc:
+  enabled: true
+  issuer: https://id.example.com
+  clientId: goblog
+  clientSecret: "" # Leave empty for public clients using PKCE
+```
+
+- **`enabled`**: Enable OIDC support.
+- **`issuer`**: OIDC issuer URL. The provider configuration is discovered via `<issuer>/.well-known/openid-configuration`.
+- **`clientId`** / **`clientSecret`**: Client credentials from your provider. PKCE is always used, so the secret is optional for public clients.
+- Register `https://your-blog.example.com/oidc/callback` as the redirect URI at your provider.
+
+After enabling OIDC, log in as usual and open the Settings UI to link your account. Once linked, the login page offers a button to log in with the provider; the linked subject is verified on every login. Unlinking is only allowed while a password or passkey remains, to prevent lockout.
 
 ## Important Notes
 

@@ -28,6 +28,10 @@ func (a *goBlog) loginRouter(r chi.Router) {
 	})
 	r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(webAuthnBasePath+"login/begin", a.beginWebAuthnLogin)
 	r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(webAuthnBasePath+"login/finish", a.finishWebAuthnLogin)
+	// OIDC
+	r.With(bodylimit.BodyLimit(bodylimit.MB)).Get(oidcLoginPath, a.serveOIDCLogin)
+	r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(oidcLoginPath, a.serveOIDCLogin)
+	r.Get(oidcCallbackPath, a.serveOIDCCallback)
 }
 
 // Micropub
@@ -503,5 +507,6 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsDeleteTOTPPath, a.settingsDeleteTOTP)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsCreateAppPasswordPath, a.settingsCreateAppPassword)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsDeleteAppPasswordPath, a.settingsDeleteAppPassword)
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsDeleteOIDCPath, a.settingsDeleteOIDC)
 	}
 }

@@ -101,7 +101,18 @@
             });
 
             if (verificationResponse.ok) {
-                window.location.reload();
+                // Restore the original request by submitting the login form as a restore request
+                const loginForm = document.getElementById('loginform');
+                if (loginForm) {
+                    const actionInput = loginForm.querySelector('[name=loginaction]');
+                    if (actionInput) actionInput.value = 'restore';
+                    loginForm.querySelectorAll('input[required]').forEach(function (input) {
+                        input.disabled = true;
+                    });
+                    loginForm.submit();
+                } else {
+                    window.location.reload();
+                }
             } else {
                 const msg = await verificationResponse.text();
                 throw new Error('Login failed: ' + msg);

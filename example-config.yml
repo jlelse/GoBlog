@@ -86,6 +86,14 @@ user:
   identities: # Other identities to add to the HTML header with rel=me links
     - https://micro.blog/exampleuser
 
+# OIDC (e.g. Pocket ID) login. Link your account in the Settings UI after enabling it.
+oidc:
+  enabled: false # Enable OIDC login
+  issuer: https://id.example.com # OIDC issuer URL (discovery via /.well-known/openid-configuration)
+  clientId: goblog # OIDC client ID
+  clientSecret: "" # OIDC client secret (leave empty for public clients using PKCE)
+  # Register this redirect URI at the provider: https://your-blog.example.com/oidc/callback
+
 # Hooks
 hooks:
   shell: /bin/bash # Shell to use to execute commands (default is /bin/bash)

@@ -600,7 +600,7 @@ func initializeComponents(app *goBlog) {
 
 	for _, f := range []func() error{
 		app.initTemplateAssets, app.initTemplateStrings, app.initRegexRedirects,
-		app.initHTTPLog, app.initActivityPub, app.initWebAuthn,
+		app.initHTTPLog, app.initActivityPub, app.initWebAuthn, app.initOIDC,
 	} {
 		if err := f(); err != nil {
 			app.logErrAndQuit("Failed to initialize", "err", err)

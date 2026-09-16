@@ -134,20 +134,45 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 	if !strings.Contains(r.Header.Get(contentType), contenttype.WWWForm) {
 		return false
 	}
-	if r.FormValue("loginaction") != "login" { //nolint:gosec
-		return false
+	switch r.PostFormValue("loginaction") { //nolint:gosec
+	case "login":
+		return a.checkCredentialsLogin(w, r)
+	case "restore":
+		return a.restoreOriginalRequest(w, r)
 	}
+	return false
+}
+
+// Checks credentials and starts a login session
+func (a *goBlog) checkCredentialsLogin(w http.ResponseWriter, r *http.Request) bool {
 	// Check credential
 	if !a.checkCredentials(r.FormValue("username"), r.FormValue("password"), r.FormValue("token")) { //nolint:gosec
 		a.serveError(w, r, "Incorrect credentials", http.StatusUnauthorized)
 		return true
 	}
-	// Prepare original request
-	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginbody")))                  //nolint:gosec
-	origReq, _ := http.NewRequestWithContext(r.Context(), r.FormValue("loginmethod"), r.URL.RequestURI(), bodyDecoder) //nolint:gosec
-	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.FormValue("loginheaders")))             //nolint:gosec
-	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
 	// Cookie
+	if a.startLoginSession(w, r) {
+		return true
+	}
+	// Serve original request
+	a.prepareAndServeOriginalRequest(w, r, r.URL.RequestURI())
+	return true
+}
+
+// Restores the original request after the OIDC flow finished in a popup.
+// Requires an existing login session that was created by the popup.
+func (a *goBlog) restoreOriginalRequest(w http.ResponseWriter, r *http.Request) bool {
+	if !a.checkLoginCookie(r) {
+		a.serveError(w, r, "", http.StatusUnauthorized)
+		return true
+	}
+	// Serve original request
+	a.prepareAndServeOriginalRequest(w, r, r.URL.RequestURI())
+	return true
+}
+
+// startLoginSession saves a fresh login session cookie. Returns true if there was an error.
+func (a *goBlog) startLoginSession(w http.ResponseWriter, r *http.Request) bool {
 	a.initSessionStores()
 	ses, err := a.loginSessions.Get(r, "l")
 	if err != nil {
@@ -162,10 +187,7 @@ func (a *goBlog) checkLogin(w http.ResponseWriter, r *http.Request) bool {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return true
 	}
-	// Serve original request
-	setLoggedIn(origReq, true)
-	a.d.ServeHTTP(w, origReq)
-	return true
+	return false
 }
 
 func (a *goBlog) isLoggedIn(r *http.Request) bool {
@@ -206,6 +228,17 @@ func (a *goBlog) serveLogout(w http.ResponseWriter, r *http.Request) {
 		_ = a.loginSessions.Delete(r, w, ses)
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (a *goBlog) prepareAndServeOriginalRequest(w http.ResponseWriter, r *http.Request, originalURL string) {
+	// Prepare original request
+	bodyDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.PostFormValue("loginbody")))           //nolint:gosec
+	origReq, _ := http.NewRequestWithContext(r.Context(), r.PostFormValue("loginmethod"), originalURL, bodyDecoder) //nolint:gosec
+	headerDecoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.PostFormValue("loginheaders")))      //nolint:gosec
+	_ = json.NewDecoder(headerDecoder).Decode(&origReq.Header)
+	// Serve original request
+	setLoggedIn(origReq, true)
+	a.d.ServeHTTP(w, origReq)
 }
 
 func (a *goBlog) getDefaultPostStates(r *http.Request) (status []postStatus, visibility []postVisibility) {

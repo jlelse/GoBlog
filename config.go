@@ -22,6 +22,7 @@ type config struct {
 	DefaultBlog       string                   `mapstructure:"defaultblog"`
 	Blogs             map[string]*configBlog   `mapstructure:"blogs"`
 	User              *configUser              `mapstructure:"user"`
+	OIDC              *configOIDC              `mapstructure:"oidc"`
 	Hooks             *configHooks             `mapstructure:"hooks"`
 	Plugins           []*configPlugin          `mapstructure:"plugins"`
 	Micropub          *configMicropub          `mapstructure:"micropub"`
@@ -237,6 +238,13 @@ type configUser struct {
 type configAppPassword struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+type configOIDC struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	Issuer       string `mapstructure:"issuer"`
+	ClientID     string `mapstructure:"clientId"`
+	ClientSecret string `mapstructure:"clientSecret"`
 }
 
 type configHooks struct {
@@ -461,6 +469,12 @@ func (a *goBlog) initConfig(logging bool) error {
 		// Validate that IndieAuthAddress is one of the AltAddresses
 		if !slices.Contains(a.cfg.Server.AltAddresses, ia) {
 			return errors.New("indieAuthAddress must be one of the altAddresses")
+		}
+	}
+	// Check OIDC config
+	if oidc := a.cfg.OIDC; oidc != nil && oidc.Enabled {
+		if oidc.Issuer == "" || oidc.ClientID == "" {
+			return errors.New("oidc issuer and clientId are required when oidc is enabled")
 		}
 	}
 	// Check port or set default

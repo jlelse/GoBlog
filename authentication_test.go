@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -141,6 +142,78 @@ func Test_authMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 		assert.Contains(t, resString, "ABC Test")
 		assert.Contains(t, resString, "Logged in")
+	})
+
+	t.Run("Restore original request", func(t *testing.T) {
+		// Capture request details for the restored request
+		var restoredHeaders http.Header
+		var restoredBody string
+		passthrough := app.d
+		app.d = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			restoredHeaders = req.Header.Clone()
+			body, _ := io.ReadAll(req.Body)
+			restoredBody = string(body)
+			passthrough.ServeHTTP(rw, req)
+		})
+		defer func() { app.d = passthrough }()
+
+		restoreForm := url.Values{}
+		restoreForm.Add("loginaction", "restore")
+		restoreForm.Add("loginmethod", "POST")
+		restoreForm.Add("loginheaders", base64.StdEncoding.EncodeToString([]byte(`{"X-Test":["test"]}`)))
+		restoreForm.Add("loginbody", base64.StdEncoding.EncodeToString([]byte(`a=1`)))
+
+		// Restore without a login session is not allowed
+		req := httptest.NewRequest(http.MethodPost, "/abc", strings.NewReader(restoreForm.Encode()))
+		req.Header.Add("Content-Type", contenttype.WWWForm)
+
+		rec := httptest.NewRecorder()
+
+		h.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		_ = res.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+
+		// Log in to get a session cookie
+		loginData := url.Values{}
+		loginData.Add("loginaction", "login")
+		loginData.Add("loginmethod", "GET")
+		loginData.Add("username", "test")
+		loginData.Add("password", "pass")
+
+		req = httptest.NewRequest(http.MethodPost, "/abc", strings.NewReader(loginData.Encode()))
+		req.Header.Add("Content-Type", contenttype.WWWForm)
+
+		rec = httptest.NewRecorder()
+
+		h.ServeHTTP(rec, req)
+
+		res = rec.Result()
+		require.Len(t, res.Cookies(), 1)
+		cookie := res.Cookies()[0]
+		_ = res.Body.Close()
+
+		// Restore the original request with the login session
+		req = httptest.NewRequest(http.MethodPost, "/abc", strings.NewReader(restoreForm.Encode()))
+		req.Header.Add("Content-Type", contenttype.WWWForm)
+		req.AddCookie(cookie)
+
+		rec = httptest.NewRecorder()
+
+		h.ServeHTTP(rec, req)
+
+		res = rec.Result()
+		resBody, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Contains(t, string(resBody), "ABC Test")
+		assert.Contains(t, string(resBody), "Logged in")
+		// The original request details were restored
+		assert.Equal(t, []string{"test"}, restoredHeaders.Values("X-Test"))
+		assert.Equal(t, "a=1", restoredBody)
 	})
 
 	t.Run("Login with wrong credentials", func(t *testing.T) {

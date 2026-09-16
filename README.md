@@ -111,6 +111,7 @@ All data lives in the `data` directory:
 - Full-text search (SQLite FTS5)
 - RSS, Atom, and JSON feeds
 - XML sitemap and robots.txt
+- Login with username/password and 2FA (TOTP), WebAuthn (passkeys), or OIDC (OpenID Connect)
 
 ### IndieWeb & Fediverse
 
