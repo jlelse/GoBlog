@@ -267,23 +267,23 @@ func (a *goBlog) renderLogin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			hb.WriteElementOpen("h1")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 			hb.WriteElementClose("h1")
-			// Form
+			// Form (also used to restore the original request after OIDC and webauthn login)
 			hb.WriteElementOpen("form", "class", "fw p", "method", "post", "id", "loginform")
 			// Hidden fields
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginaction", "value", "login")
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginmethod", "value", data.loginMethod)
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginheaders", "value", data.loginHeaders)
 			hb.WriteElementOpen("input", "type", "hidden", "name", "loginbody", "value", data.loginBody)
-			// Username
-			hb.WriteElementOpen("input", "type", "text", "name", "username", "autocomplete", "username", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "username"), "required", "")
-			// Password
-			hb.WriteElementOpen("input", "type", "password", "name", "password", "autocomplete", "current-password", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "password"), "required", "")
-			// TOTP
-			if data.totp {
-				hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "token", "autocomplete", "one-time-code", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totp"), "required", "")
+			// Username, password and TOTP (only if a password is set)
+			hasPassword, _ := a.hasPassword()
+			if hasPassword {
+				hb.WriteElementOpen("input", "type", "text", "name", "username", "autocomplete", "username", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "username"), "required", "")
+				hb.WriteElementOpen("input", "type", "password", "name", "password", "autocomplete", "current-password", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "password"), "required", "")
+				if data.totp {
+					hb.WriteElementOpen("input", "type", "text", "inputmode", "numeric", "pattern", "[0-9]*", "name", "token", "autocomplete", "one-time-code", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "totp"), "required", "")
+				}
+				hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 			}
-			// Submit
-			hb.WriteElementOpen("input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "login"))
 			hb.WriteElementClose("form")
 			// WebAuthn login
 			hasPasskey := a.hasWebAuthnCredential()

@@ -241,6 +241,45 @@ func Test_authMiddleware(t *testing.T) {
 	})
 }
 
+func Test_authMiddlewareNoPassword(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	_ = app.initTemplateStrings()
+
+	// Simulate that the password was deleted
+	require.NoError(t, app.setPasswordHash(""))
+
+	app.d = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		_, _ = rw.Write([]byte("ABC Test"))
+		if app.isLoggedIn(r) {
+			_, _ = rw.Write([]byte("Logged in"))
+		}
+	})
+
+	h := alice.New(app.checkIsLogin, app.authMiddleware).Then(app.d)
+
+	req := httptest.NewRequest(http.MethodPost, "/abc", nil)
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	resBody, _ := io.ReadAll(res.Body)
+	_ = res.Body.Close()
+	resString := string(resBody)
+
+	// Login form without password login
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Contains(t, res.Header.Get("Content-Type"), contenttype.HTML)
+	assert.Contains(t, resString, "name=loginmethod value=POST")
+	assert.NotContains(t, resString, "name=username")
+	assert.NotContains(t, resString, "name=password")
+}
+
 func Test_setLoggedIn(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/abc", nil)
 	setLoggedIn(req, true)
