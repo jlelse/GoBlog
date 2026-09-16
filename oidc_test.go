@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -341,6 +342,30 @@ func Test_oidcLinkRequiresAuthAtCallback(t *testing.T) {
 	app.serveOIDCCallback(linkCbRec, oidcCallbackRequest(t, code, state, linkCookie))
 	assert.Equal(t, http.StatusUnauthorized, linkCbRec.Code)
 	assert.False(t, app.hasOIDCLink())
+}
+
+func Test_oidcAltAddressRedirectURI(t *testing.T) {
+	provider := newFakeOIDCProvider(t, "goblog", "user-123")
+	app := newOIDCTestApp(t, provider)
+	app.cfg.Server.AltAddresses = []string{"https://alt.example.org"}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initWebAuthn())
+	require.NoError(t, app.initOIDC())
+
+	// Login request on the alternative address picks the client with the
+	// alternative callback URL
+	req := httptest.NewRequest(http.MethodGet, oidcLoginPath, nil)
+	req = req.WithContext(context.WithValue(req.Context(), altAddressKey, "https://alt.example.org"))
+	rec := httptest.NewRecorder()
+	app.serveOIDCLogin(rec, req)
+	require.Equal(t, http.StatusFound, rec.Code)
+	assert.Contains(t, rec.Header().Get("Location"), "redirect_uri=https%3A%2F%2Falt.example.org%2Foidc%2Fcallback")
+
+	// Login request on the main address keeps the public callback URL
+	rec = httptest.NewRecorder()
+	app.serveOIDCLogin(rec, httptest.NewRequest(http.MethodGet, oidcLoginPath, nil))
+	require.Equal(t, http.StatusFound, rec.Code)
+	assert.Contains(t, rec.Header().Get("Location"), "redirect_uri=https%3A%2F%2Fblog.example.com%2Foidc%2Fcallback")
 }
 
 func Test_oidcCallbackErrors(t *testing.T) {

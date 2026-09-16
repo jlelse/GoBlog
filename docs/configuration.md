@@ -190,6 +190,7 @@ oidc:
 - **`issuer`**: OIDC issuer URL. The provider configuration is discovered via `<issuer>/.well-known/openid-configuration`.
 - **`clientId`** / **`clientSecret`**: Client credentials from your provider. PKCE is always used, so the secret is optional for public clients.
 - Register `https://your-blog.example.com/oidc/callback` as the redirect URI at your provider.
+- If you use `altAddresses`, also register `https://your-alt-address.example.com/oidc/callback`; login works on alt addresses too, with the callback returning to the address it was started from.
 
 After enabling OIDC, log in as usual and open the Settings UI to link your account. Once linked, the login page offers a button to log in with the provider; the linked subject is verified on every login. Unlinking is only allowed while a password or passkey remains, to prevent lockout.
 

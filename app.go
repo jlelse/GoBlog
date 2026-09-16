@@ -104,7 +104,7 @@ type goBlog struct {
 	// Sessions
 	loginSessions, captchaSessions, webauthnSessions, oidcSessions *dbSessionStore
 	// OIDC
-	oidcClient *oidcClient
+	oidcClients map[string]*oidcClient
 	// Shutdown
 	shutdown shutdowner.Shutdowner
 	// Template strings

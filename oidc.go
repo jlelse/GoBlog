@@ -69,12 +69,15 @@ func (a *goBlog) unlinkOIDC() error {
 	return a.deleteSettingValue(oidcIssuerSettingsKey)
 }
 
-// initOIDC pre-warms the provider discovery at startup.
+// initOIDC creates one OIDC client per configured address (main public
+// address and alt addresses), each with a redirect URI for that address,
+// so login works from any of them. Cookie and callback then stay on the
+// same host, like the WebAuthn per-address approach.
 func (a *goBlog) initOIDC() error {
 	if !a.oidcEnabled() {
 		return nil
 	}
-	// Initialize the provider and client
+	// Initialize the provider discovery once
 	cfg := a.cfg.OIDC
 	dctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -82,17 +85,31 @@ func (a *goBlog) initOIDC() error {
 	if err != nil {
 		return err
 	}
-	a.oidcClient = &oidcClient{
-		verifier: provider.Verifier(&oidc.Config{ClientID: cfg.ClientID}),
-		config: oauth2.Config{
-			ClientID:     cfg.ClientID,
-			ClientSecret: cfg.ClientSecret,
-			Endpoint:     provider.Endpoint(),
-			RedirectURL:  a.getFullAddress(oidcCallbackPath),
-			Scopes:       []string{oidc.ScopeOpenID},
-		},
+	addresses := append([]string{a.cfg.Server.PublicAddress}, a.cfg.Server.AltAddresses...)
+	a.oidcClients = map[string]*oidcClient{}
+	for _, address := range addresses {
+		a.oidcClients[address] = &oidcClient{
+			verifier: provider.Verifier(&oidc.Config{ClientID: cfg.ClientID}),
+			config: oauth2.Config{
+				ClientID:     cfg.ClientID,
+				ClientSecret: cfg.ClientSecret,
+				Endpoint:     provider.Endpoint(),
+				RedirectURL:  getFullAddressStatic(address, oidcCallbackPath),
+				Scopes:       []string{oidc.ScopeOpenID},
+			},
+		}
 	}
 	return nil
+}
+
+// getOIDCClientForRequest returns the OIDC client matching the requesting address.
+func (a *goBlog) getOIDCClientForRequest(r *http.Request) *oidcClient {
+	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
+		if client, ok := a.oidcClients[altAddress]; ok && client != nil {
+			return client
+		}
+	}
+	return a.oidcClients[a.cfg.Server.PublicAddress]
 }
 
 // Handlers
@@ -134,7 +151,7 @@ func (a *goBlog) serveOIDCLogin(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	authURL := a.oidcClient.config.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier))
+	authURL := a.getOIDCClientForRequest(r).config.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier))
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -165,7 +182,8 @@ func (a *goBlog) serveOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	oauth2Token, err := a.oidcClient.config.Exchange(ctx, r.URL.Query().Get("code"), oauth2.VerifierOption(verifier))
+	oidcClient := a.getOIDCClientForRequest(r)
+	oauth2Token, err := oidcClient.config.Exchange(ctx, r.URL.Query().Get("code"), oauth2.VerifierOption(verifier))
 	if err != nil {
 		a.debug("failed to exchange oidc code", "err", err)
 		a.serveError(w, r, "Failed to exchange OIDC code", http.StatusBadRequest)
@@ -176,7 +194,7 @@ func (a *goBlog) serveOIDCCallback(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Missing OIDC ID token", http.StatusBadRequest)
 		return
 	}
-	idToken, err := a.oidcClient.verifier.Verify(ctx, rawIDToken)
+	idToken, err := oidcClient.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		a.debug("failed to verify oidc id token", "err", err)
 		a.serveError(w, r, "Failed to verify OIDC ID token", http.StatusBadRequest)
