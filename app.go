@@ -35,6 +35,7 @@ type goBlog struct {
 	// Assets
 	assetFileNames map[string]string
 	assetFiles     map[string]*assetFile
+	assetPathSet   map[string]bool
 	// assetVersion is incremented whenever assets change, so caches that depend on
 	// them (like the CSP header) can invalidate.
 	assetVersion atomic.Uint64

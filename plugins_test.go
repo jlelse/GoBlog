@@ -161,6 +161,7 @@ func TestEmbeddedPluginImageTooltipsAndCustomCSS(t *testing.T) {
 	}
 
 	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateAssets())
 	require.NoError(t, app.initPlugins())
 	app.assetFileNames = map[string]string{}
 	app.assetFiles = map[string]*assetFile{}

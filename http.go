@@ -419,7 +419,8 @@ func (a *goBlog) checkAltAddress(next http.Handler) http.Handler {
 				r.URL.Path == oidcCallbackPath ||
 				r.URL.Path == loginPath ||
 				r.URL.Path == logoutPath ||
-				strings.HasPrefix(r.URL.Path, settingsPath) {
+				strings.HasPrefix(r.URL.Path, settingsPath) ||
+				a.isAssetPath(r.URL.Path) {
 				// Set altAddress in context for handlers
 				rc := context.WithValue(r.Context(), altAddressKey, altAddress)
 				next.ServeHTTP(w, r.WithContext(rc))

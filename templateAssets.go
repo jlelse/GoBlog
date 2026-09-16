@@ -29,6 +29,7 @@ type assetFile struct {
 func (a *goBlog) initTemplateAssets() error {
 	a.assetFileNames = map[string]string{}
 	a.assetFiles = map[string]*assetFile{}
+	a.assetPathSet = map[string]bool{}
 	if err := filepath.Walk(assetsFolder, func(path string, info os.FileInfo, _ error) error {
 		if info.Mode().IsRegular() {
 			// Open file
@@ -78,6 +79,8 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	}
 	// Save mapping of original file name to compiled file name
 	a.assetFileNames[name] = compiledFileName
+	// Track compiled asset paths for allowlist checks
+	a.assetPathSet["/"+compiledFileName] = true
 	// Signal that the assets changed
 	a.assetVersion.Add(1)
 	return err
@@ -128,6 +131,11 @@ func (*goBlog) serveAssetFile(w http.ResponseWriter, af *assetFile) {
 	w.Header().Set(cacheControl, "public,max-age=31536000,immutable")
 	w.Header().Set(contentType, af.contentType+contenttype.CharsetUtf8Suffix)
 	_, _ = w.Write(af.body)
+}
+
+// isAssetPath reports whether the given request path is a compiled asset file path.
+func (a *goBlog) isAssetPath(p string) bool {
+	return a.assetPathSet[p]
 }
 
 func (a *goBlog) initChromaCSS() error {
