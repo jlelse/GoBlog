@@ -33,7 +33,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("meta", "name", "viewport", "content", "width=device-width,initial-scale=1")
 	// Meta description
 	if desc := cmp.Or(rd.Description, rd.Blog.LongDescription, rd.Blog.Description); desc != "" {
-		hb.WriteElementOpen("meta", "name", "description", "content", desc)
+		hb.WriteElementOpen("meta", "name", "description", "content", a.renderTextSafe(desc))
 	}
 	// CSS (inlined to eliminate render-blocking request; covered by CSP style-src hash)
 	if af, ok := a.assetFiles[a.assetFileNames["css/styles.css"]]; ok && af != nil {
