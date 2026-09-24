@@ -84,28 +84,29 @@ type configCache struct {
 }
 
 type configBlog struct {
-	Path           string                    `mapstructure:"path"`
-	Lang           string                    `mapstructure:"lang"`
-	Title          string                    `mapstructure:"title"`
-	Description    string                    `mapstructure:"description"`
-	Pagination     int                       `mapstructure:"pagination"`
-	DefaultSection string                    `mapstructure:"defaultsection"`
-	Sections       map[string]*configSection `mapstructure:"sections"` // Moved to web ui, but keep it loading the db state to this struct and the initial migration from config to db.
-	Taxonomies     []*configTaxonomy         `mapstructure:"taxonomies"`
-	Menus          map[string]*configMenu    `mapstructure:"menus"`
-	Photos         *configPhotos             `mapstructure:"photos"`
-	Search         *configSearch             `mapstructure:"search"`
-	BlogStats      *configBlogStats          `mapstructure:"blogStats"`
-	Blogroll       *configBlogroll           `mapstructure:"blogroll"`
-	Telegram       *configTelegram           `mapstructure:"telegram"`
-	PostAsHome     bool                      `mapstructure:"postAsHome"`
-	RandomPost     *configRandomPost         `mapstructure:"randomPost"`
-	OnThisDay      *configOnThisDay          `mapstructure:"onThisDay"`
-	Comments       *configComments           `mapstructure:"comments"`
-	Map            *configGeoMap             `mapstructure:"map"`
-	Contact        *configContact            `mapstructure:"contact"`
-	Announcement   *configAnnouncement       `mapstructure:"announcement"`
-	Atproto        *configAtproto            `mapstructure:"atproto"`
+	Path            string                    `mapstructure:"path"`
+	Lang            string                    `mapstructure:"lang"`
+	Title           string                    `mapstructure:"title"`
+	Description     string                    `mapstructure:"description"`
+	LongDescription string                    `mapstructure:"-"` // Set via the blog settings UI, stored in the database
+	Pagination      int                       `mapstructure:"pagination"`
+	DefaultSection  string                    `mapstructure:"defaultsection"`
+	Sections        map[string]*configSection `mapstructure:"sections"` // Moved to web ui, but keep it loading the db state to this struct and the initial migration from config to db.
+	Taxonomies      []*configTaxonomy         `mapstructure:"taxonomies"`
+	Menus           map[string]*configMenu    `mapstructure:"menus"`
+	Photos          *configPhotos             `mapstructure:"photos"`
+	Search          *configSearch             `mapstructure:"search"`
+	BlogStats       *configBlogStats          `mapstructure:"blogStats"`
+	Blogroll        *configBlogroll           `mapstructure:"blogroll"`
+	Telegram        *configTelegram           `mapstructure:"telegram"`
+	PostAsHome      bool                      `mapstructure:"postAsHome"`
+	RandomPost      *configRandomPost         `mapstructure:"randomPost"`
+	OnThisDay       *configOnThisDay          `mapstructure:"onThisDay"`
+	Comments        *configComments           `mapstructure:"comments"`
+	Map             *configGeoMap             `mapstructure:"map"`
+	Contact         *configContact            `mapstructure:"contact"`
+	Announcement    *configAnnouncement       `mapstructure:"announcement"`
+	Atproto         *configAtproto            `mapstructure:"atproto"`
 	// Configs read from database
 	hideOldContentWarning bool
 	hideShareButton       bool
@@ -199,6 +200,7 @@ type configComments struct {
 type configGeoMap struct {
 	Enabled  bool   `mapstructure:"enabled"`
 	Path     string `mapstructure:"path"`
+	Title    string `mapstructure:"title"`
 	AllBlogs bool   `mapstructure:"allBlogs"`
 }
 
@@ -613,6 +615,10 @@ func (a *goBlog) initConfig(logging bool) error {
 		}
 		// Blog description
 		if err = a.migrateStringSetting(settingNameWithBlog(blog, blogDescriptionSetting), &bc.Description); err != nil {
+			return err
+		}
+		// Blog long description
+		if err = a.migrateStringSetting(settingNameWithBlog(blog, blogLongDescriptionSetting), &bc.LongDescription); err != nil {
 			return err
 		}
 		// Blog reactions

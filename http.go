@@ -258,6 +258,9 @@ func (a *goBlog) buildRouter() http.Handler {
 	// Sitemap
 	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
+	// llms.txt
+	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(llmsTxtPath, a.serveLlmsTxt)
+
 	// IndexNow
 	if a.indexNowEnabled() {
 		if inkey := a.indexNowKey(); len(inkey) > 0 {

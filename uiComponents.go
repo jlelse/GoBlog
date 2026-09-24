@@ -937,6 +937,11 @@ func (a *goBlog) renderBlogSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData,
 	hb.WriteElementOpen("form", "class", "fw p", "method", "post")
 	hb.WriteElementOpen("input", "type", "text", "name", "blogtitle", "required", "", "value", srd.blogTitle, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsblogtitle"))
 	hb.WriteElementOpen("input", "type", "text", "name", "blogdescription", "value", srd.blogDescription, "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsblogdescription"))
+	hb.WriteElementOpen("textarea", "name", "bloglongdescription", "placeholder", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settingsbloglongdescription"))
+	if srd.blogLongDescription != "" {
+		hb.WriteEscaped(srd.blogLongDescription)
+	}
+	hb.WriteElementClose("textarea")
 	hb.WriteElementOpen(
 		"input", "type", "submit", "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "update"),
 		"formaction", rd.Blog.getRelativePath(settingsPath+settingsUpdateBlogPath),

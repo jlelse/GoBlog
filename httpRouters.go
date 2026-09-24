@@ -296,13 +296,18 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if pc := conf.Photos; pc != nil && pc.Enabled {
 			photoPath := conf.getRelativePath(cmp.Or(pc.Path, defaultPhotosPath))
+			var photoDefaultTitle string
+			if a.ts != nil {
+				// a.ts is nil in some tests that build the router without initializing the template strings
+				photoDefaultTitle = a.ts.GetTemplateStringVariant(conf.Lang, "photos")
+			}
 			r.Use(
 				a.privateModeHandler,
 				a.cacheMiddleware,
 				middleware.WithValue(indexConfigKey, &indexConfig{
 					path:            photoPath,
 					parameter:       a.cfg.Micropub.PhotoParam,
-					title:           pc.Title,
+					title:           cmp.Or(pc.Title, photoDefaultTitle),
 					description:     pc.Description,
 					summaryTemplate: photoSummary,
 				}),

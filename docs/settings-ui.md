@@ -8,6 +8,14 @@ Access `/settings` (requires login) to configure blog and user preferences witho
 
 Set the blog title and subtitle (description) that appear in the header, feeds, and metadata.
 
+### Long Description
+
+An additional, more extensive blog description. When set, it is used as the `<meta name="description">` on blog index and other pages without a more specific description, and it appears in the generated `llms.txt`.
+
+### llms.txt
+
+GoBlog automatically serves an [`llms.txt`](https://llmstxt.org) file at `/llms.txt` describing each configured blog. It uses the blog title, language, and (long) description and includes links to the blog, its sitemap, enabled features (photos, search, statistics, blogroll, geo map, contact, ...), sections, taxonomies with their values, and the configured menus. Blogs without a subpath are listed first, followed by subpath blogs.
+
 ### Sections
 
 Manage post sections (e.g., "posts", "notes", "photos"). Each section can have:

@@ -28,6 +28,7 @@ const (
 	apMovedToSetting                    = "apmovedto" // ActivityPub movedTo target for account migration
 	blogTitleSetting                    = "blogtitle"
 	blogDescriptionSetting              = "blogdescription"
+	blogLongDescriptionSetting          = "bloglongdescription"
 	reactionsEnabledSetting             = "reactionsenabled"
 	reactionsSetting                    = "reactions"
 	webmentionDisableSendingSetting     = "webmentiondisablesending"
@@ -226,6 +227,18 @@ func (a *goBlog) getBlogDescription(blog string) (string, error) {
 // setBlogDescription saves the description for a blog to the database
 func (a *goBlog) setBlogDescription(blog, description string) error {
 	return a.saveSettingValue(settingNameWithBlog(blog, blogDescriptionSetting), description)
+}
+
+// getBlogLongDescription returns the long description for a blog from the database
+//
+//nolint:unused
+func (a *goBlog) getBlogLongDescription(blog string) (string, error) {
+	return a.getSettingValue(settingNameWithBlog(blog, blogLongDescriptionSetting))
+}
+
+// setBlogLongDescription saves the long description for a blog to the database
+func (a *goBlog) setBlogLongDescription(blog, description string) error {
+	return a.saveSettingValue(settingNameWithBlog(blog, blogLongDescriptionSetting), description)
 }
 
 // hasDeprecatedBlogTitleDescriptionConfig checks if deprecated blog title/description config options are still present

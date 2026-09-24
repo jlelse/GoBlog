@@ -32,7 +32,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("meta", "charset", "utf-8")
 	hb.WriteElementOpen("meta", "name", "viewport", "content", "width=device-width,initial-scale=1")
 	// Meta description
-	if desc := cmp.Or(rd.Description, rd.Blog.Description); desc != "" {
+	if desc := cmp.Or(rd.Description, rd.Blog.LongDescription, rd.Blog.Description); desc != "" {
 		hb.WriteElementOpen("meta", "name", "description", "content", desc)
 	}
 	// CSS (inlined to eliminate render-blocking request; covered by CSP style-src hash)
@@ -644,7 +644,7 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	if !ok {
 		return
 	}
-	title := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "geomap")
+	title := cmp.Or(a.renderMdTitle(rd.Blog.Map.Title), a.ts.GetTemplateStringVariant(rd.Blog.Lang, "geomap"))
 	a.renderBase(
 		hb, rd,
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -1761,6 +1761,7 @@ type settingsRenderData struct {
 	blog                        string
 	blogTitle                   string
 	blogDescription             string
+	blogLongDescription         string
 	sections                    []*configSection
 	defaultSection              string
 	hideOldContentWarning       bool

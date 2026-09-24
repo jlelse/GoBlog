@@ -53,6 +53,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			blog:                        blog,
 			blogTitle:                   bc.Title,
 			blogDescription:             bc.Description,
+			blogLongDescription:         bc.LongDescription,
 			sections:                    sections,
 			defaultSection:              bc.DefaultSection,
 			hideOldContentWarning:       bc.hideOldContentWarning,
@@ -357,8 +358,9 @@ const settingsUpdateBlogPath = "/blog"
 func (a *goBlog) settingsUpdateBlog(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 	// Read values
-	blogTitle := r.FormValue(blogTitleSetting)             //nolint:gosec
-	blogDescription := r.FormValue(blogDescriptionSetting) //nolint:gosec
+	blogTitle := r.FormValue(blogTitleSetting)                     //nolint:gosec
+	blogDescription := r.FormValue(blogDescriptionSetting)         //nolint:gosec
+	blogLongDescription := r.FormValue(blogLongDescriptionSetting) //nolint:gosec
 	// Title is required
 	if blogTitle == "" {
 		a.serveError(w, r, "Blog title must not be empty", http.StatusBadRequest)
@@ -376,8 +378,15 @@ func (a *goBlog) settingsUpdateBlog(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Failed to update blog description in database", http.StatusInternalServerError)
 		return
 	}
+	// Update long description
+	err = a.setBlogLongDescription(blog, blogLongDescription)
+	if err != nil {
+		a.serveError(w, r, "Failed to update long blog description in database", http.StatusInternalServerError)
+		return
+	}
 	bc.Title = blogTitle
 	bc.Description = blogDescription
+	bc.LongDescription = blogLongDescription
 	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

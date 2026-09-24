@@ -312,6 +312,7 @@ blogs:
     map:
       enabled: true # Enable the map feature (shows a map with all post locations)
       path: /map # (Optional) Set a custom path (relative to blog path), default is /map
+      title: Map # Title
       allBlogs: true # Show all locations, paths and tracks from all blogs, default is false
     # Contact form
     contact:
