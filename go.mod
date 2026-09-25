@@ -32,7 +32,7 @@ require (
 	github.com/jlelse/feeds v1.4.0
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.20.0
+	github.com/klauspost/compress v1.20.1
 	github.com/kovidgoyal/imaging v1.8.23
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
@@ -40,7 +40,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/mmcdole/gofeed v1.4.2
+	github.com/mmcdole/gofeed v1.5.0
 	github.com/paulmach/go.geojson v1.5.0
 	github.com/pquerna/otp v1.5.0
 	github.com/samber/go-singleflightx v1.0.0
