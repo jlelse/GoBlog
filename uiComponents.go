@@ -219,7 +219,7 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configB
 					hb.WriteEscaped(", ")
 				}
 				hb.WriteElementOpen("a", "translate", "no", "href", translation.Path)
-				hb.WriteEscaped(translation.RenderedTitle)
+				hb.WriteEscaped(a.titleOrFallback(translation))
 				hb.WriteElementClose("a")
 			}
 			hb.WriteElementClose("div")
@@ -479,18 +479,113 @@ func (a *goBlog) renderPostHeadMeta(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if p == nil {
 		return
 	}
-	if published := toLocalTime(p.Published); !published.IsZero() {
-		hb.WriteElementOpen("meta", "itemprop", "datePublished", "content", published.Format(time.RFC3339))
-	}
-	if updated := toLocalTime(p.Updated); !updated.IsZero() {
-		hb.WriteElementOpen("meta", "itemprop", "dateModified", "content", updated.Format(time.RFC3339))
-	}
-	for _, img := range a.photoLinks(p) {
-		hb.WriteElementOpen("meta", "itemprop", "image", "content", a.mediaFallbackURL(img))
-	}
 	if a.apEnabled() {
 		if userHandle, ok := a.apUserHandle[p.Blog]; ok {
 			hb.WriteElementOpen("meta", "name", "fediverse:creator", "property", "fediverse:creator", "content", userHandle)
+		}
+	}
+}
+
+func (a *goBlog) renderPostOpenGraphMeta(hb *htmlbuilder.HTMLBuilder, rd *renderData, p *post, article bool) {
+	if p == nil {
+		return
+	}
+	if article {
+		hb.WriteElementOpen("meta", "property", "og:title", "content", a.titleOrFallback(p))
+		if rd.Description != "" {
+			hb.WriteElementOpen("meta", "property", "og:description", "content", rd.Description)
+		}
+	}
+	if images := a.photoLinks(p); len(images) != 0 {
+		hb.WriteElementOpen("meta", "property", "og:image", "content", a.absoluteMediaURL(a.mediaFallbackURL(images[0])))
+	}
+	if article {
+		if published := toLocalTime(p.Published); !published.IsZero() {
+			hb.WriteElementOpen("meta", "property", "article:published_time", "content", published.Format(time.RFC3339))
+		}
+		if updated := toLocalTime(p.Updated); !updated.IsZero() {
+			hb.WriteElementOpen("meta", "property", "article:modified_time", "content", updated.Format(time.RFC3339))
+		}
+	}
+}
+
+func (a *goBlog) renderPostJSONLD(hb *htmlbuilder.HTMLBuilder, rd *renderData, p *post) {
+	if p == nil {
+		return
+	}
+	ld := postJSONLD{
+		Context:    "https://schema.org",
+		InLanguage: rd.Blog.Lang,
+	}
+	if rd.IsHome {
+		ld.Type = "WebSite"
+		ld.Name = a.renderMdTitle(rd.Blog.Title)
+		ld.URL = a.getFullAddress(rd.Blog.getRelativePath(""))
+	} else {
+		ld.Type = "BlogPosting"
+		ld.Headline = a.titleOrFallback(p)
+		ld.Description = rd.Description
+		if published := toLocalTime(p.Published); !published.IsZero() {
+			ld.DatePublished = published.Format(time.RFC3339)
+		}
+		if updated := toLocalTime(p.Updated); !updated.IsZero() {
+			ld.DateModified = updated.Format(time.RFC3339)
+		}
+		if rd.Canonical != "" {
+			ld.MainEntityOfPage = rd.Canonical
+		}
+		if a.cfg.User != nil && a.cfg.User.Name != "" {
+			ld.Author = &personJSONLD{
+				Type: "Person",
+				Name: a.cfg.User.Name,
+				URL:  a.getFullAddress(a.getBlogFromPost(p).getRelativePath("")),
+			}
+		}
+	}
+	if images := a.photoLinks(p); len(images) != 0 {
+		ld.Image = a.absoluteMediaURL(a.mediaFallbackURL(images[0]))
+	}
+	hb.WriteElementOpen("script", "type", contenttype.LDJSON)
+	data, err := json.Marshal(&ld)
+	if err == nil {
+		hb.WriteUnescaped(string(data))
+	}
+	hb.WriteElementClose("script")
+}
+
+type postJSONLD struct {
+	Context          string        `json:"@context"`
+	Type             string        `json:"@type"`
+	Name             string        `json:"name,omitempty"`
+	URL              string        `json:"url,omitempty"`
+	Headline         string        `json:"headline,omitempty"`
+	Description      string        `json:"description,omitempty"`
+	DatePublished    string        `json:"datePublished,omitempty"`
+	DateModified     string        `json:"dateModified,omitempty"`
+	MainEntityOfPage string        `json:"mainEntityOfPage,omitempty"`
+	Author           *personJSONLD `json:"author,omitempty"`
+	InLanguage       string        `json:"inLanguage,omitempty"`
+	Image            string        `json:"image,omitempty"`
+}
+
+type personJSONLD struct {
+	Type string `json:"@type"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func (a *goBlog) renderPostHreflang(hb *htmlbuilder.HTMLBuilder, p *post) {
+	if p == nil {
+		return
+	}
+	translations := a.postTranslations(p)
+	if len(translations) == 0 {
+		return
+	}
+	for _, t := range append([]*post{p}, translations...) {
+		hb.WriteElementOpen("link", "rel", "alternate", "hreflang", a.getBlogFromPost(t).Lang, "href", a.fullPostURL(t))
+		if t.Blog == a.cfg.DefaultBlog {
+			hb.WriteElementOpen("link", "rel", "alternate", "hreflang", "x-default", "href", a.fullPostURL(t))
 		}
 	}
 }

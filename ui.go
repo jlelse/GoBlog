@@ -57,13 +57,23 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	if rd.Canonical != "" {
 		hb.WriteElementOpen("link", "rel", "canonical", "href", rd.Canonical)
 	}
+	// OpenGraph basics
+	renderedBlogTitle := a.renderMdTitle(rd.Blog.Title)
+	if rd.Canonical != "" {
+		hb.WriteElementOpen("meta", "property", "og:url", "content", rd.Canonical)
+	}
+	hb.WriteElementOpen("meta", "property", "og:site_name", "content", renderedBlogTitle)
+	ogType := "website"
+	if _, isPost := rd.Data.(*post); isPost && !rd.IsHome {
+		ogType = "article"
+	}
+	hb.WriteElementOpen("meta", "property", "og:type", "content", ogType)
 	// Title
 	if title != nil {
 		title(hb)
 	} else {
 		a.renderTitleTag(hb, rd.Blog, "")
 	}
-	renderedBlogTitle := a.renderMdTitle(rd.Blog.Title)
 	// Feeds
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", fmt.Sprintf("RSS (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".rss"))
 	hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", fmt.Sprintf("ATOM (%s)", renderedBlogTitle), "href", a.getFullAddress(rd.Blog.Path+".atom"))
@@ -443,7 +453,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			if renderedIndexTitle != "" {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
-			if !id.withoutFeeds {
+			if !id.withoutFeeds && a.getFullAddress(id.first+".rss")+id.paramURLQuery != a.getFullAddress(rd.Blog.Path+".rss") {
 				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramURLQuery)
 				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramURLQuery)
 				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramURLQuery)
@@ -943,6 +953,9 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementOpen("link", "rel", "stylesheet", "href", a.assetFileName("css/chroma.css"))
 			}
 			a.renderPostHeadMeta(hb, p)
+			a.renderPostOpenGraphMeta(hb, rd, p, true)
+			a.renderPostJSONLD(hb, rd, p)
+			a.renderPostHreflang(hb, p)
 			if su := a.shortPostURL(p); su != "" {
 				hb.WriteElementOpen("link", "rel", "shortlink", "href", su)
 			}
@@ -1069,6 +1082,9 @@ func (a *goBlog) renderStaticHome(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		func(hb *htmlbuilder.HTMLBuilder) {
 			a.renderTitleTag(hb, rd.Blog, "")
 			a.renderPostHeadMeta(hb, p)
+			a.renderPostOpenGraphMeta(hb, rd, p, false)
+			a.renderPostJSONLD(hb, rd, p)
+			a.renderPostHreflang(hb, p)
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-entry")

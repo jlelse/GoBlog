@@ -238,6 +238,7 @@ func (a *goBlog) serveDate(w http.ResponseWriter, r *http.Request) {
 		a.serve404(w, r)
 		return
 	}
+	w.Header().Set("X-Robots-Tag", "noindex")
 	var ic *indexConfig
 	if cv := r.Context().Value(indexConfigKey); cv != nil {
 		origIc := *(cv.(*indexConfig))

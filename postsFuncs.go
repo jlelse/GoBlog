@@ -156,6 +156,8 @@ func (a *goBlog) postTranslations(p *post) []*post {
 	posts, err := a.getPosts(&postsRequestConfig{
 		parameter:      "translationkey",
 		parameterValue: translationkey,
+		status:         []postStatus{statusPublished},
+		visibility:     []postVisibility{visibilityPublic},
 	})
 	if err != nil || len(posts) == 0 {
 		return nil
@@ -288,6 +290,10 @@ func (a *goBlog) likeContext(p *post) string {
 
 func (a *goBlog) photoLinks(p *post) []string {
 	return p.Parameters[a.cfg.Micropub.PhotoParam]
+}
+
+func (a *goBlog) photoDescriptions(p *post) []string {
+	return p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
 }
 
 func (p *post) contentWithParams() string {

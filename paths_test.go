@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_getFullAddress(t *testing.T) {
@@ -112,4 +113,12 @@ func Test_getRelativeBlogPath(t *testing.T) {
 	if got := app.getRelativePath("", "/test"); !reflect.DeepEqual(got, "") {
 		t.Errorf("Wrong relative blog path, got: %v", got)
 	}
+}
+
+func Test_absoluteMediaURL(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+
+	assert.Equal(t, "http://localhost:8080/m/abc123.jpg", app.absoluteMediaURL("/m/abc123.jpg"))
+	assert.Equal(t, "https://example.com/m/abc123.jpg", app.absoluteMediaURL("https://example.com/m/abc123.jpg"))
 }

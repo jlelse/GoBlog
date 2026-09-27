@@ -326,6 +326,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 				r.Group(func(r chi.Router) {
 					r.Use(
 						a.privateModeHandler,
+						noIndexHeader,
 						a.cacheMiddleware,
 						middleware.WithValue(pathKey, searchPath),
 					)

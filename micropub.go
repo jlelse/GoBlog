@@ -357,7 +357,7 @@ func (a *goBlog) processContentAndParameters(p *post) error {
 	extractParam("priority", func(priority string) { p.Priority = cast.ToInt(priority) })
 
 	// Add images not in content
-	images, imageAlts := p.Parameters[a.cfg.Micropub.PhotoParam], p.Parameters[a.cfg.Micropub.PhotoDescriptionParam]
+	images, imageAlts := a.photoLinks(p), a.photoDescriptions(p)
 	useAlts := len(images) == len(imageAlts)
 	for i, image := range images {
 		if !strings.Contains(p.Content, image) {

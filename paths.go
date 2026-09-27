@@ -54,3 +54,10 @@ func getFullAddressStatic(publicAddress, path string) string {
 func (a *goBlog) getInstanceRootURL() string {
 	return a.getFullAddress("") + "/"
 }
+
+func (a *goBlog) absoluteMediaURL(u string) string {
+	if !isAbsoluteURL(u) {
+		return a.getFullAddress(u)
+	}
+	return u
+}

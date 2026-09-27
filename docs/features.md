@@ -270,6 +270,8 @@ Date archives are auto-generated at these paths:
 | `/x/{month}/{day}/` | `/x/06/08/` | Posts on June 8 across years |
 | `/x/x/{day}/` | `/x/x/08/` | Posts on the 8th across months and years |
 
+Date archives are sent with an `X-Robots-Tag: noindex` header and are not listed in the sitemap (see [Search Engine Optimization](#search-engine-optimization-seo)).
+
 ## Notifications
 
 Send notifications via Ntfy, Telegram, or Matrix. Configure globally in YAML. Notifications are sent for new posts, updates, and other events.
@@ -291,6 +293,17 @@ Add `?fallbacktitle` to feed URLs to generate computed titles for untitled posts
 ## Short URLs
 
 Custom short domain for compact post URLs. Every post also gets an auto-generated short URL at `/s/{hex-id}` which 301-redirects to the full post path.
+
+## Search Engine Optimization (SEO)
+
+GoBlog ships with sensible SEO defaults, no configuration needed:
+
+- **OpenGraph metadata**: Every page sends `og:url`, `og:site_name`, and `og:type` (`website` for indexes and the homepage, `article` for posts). Posts additionally send `og:title`, `og:description` (post summary), an absolute `og:image` (first `images` parameter), and `article:published_time` / `article:modified_time`. If ActivityPub is enabled, the `fediverse:creator` meta tag is sent as well.
+- **JSON-LD structured data**: Posts include a `BlogPosting` object (headline, description, dates, author, language, image); a static homepage includes a `WebSite` object.
+- **Hreflang links**: Posts that share a `translationkey` parameter link to each other with `rel="alternate" hreflang="..."`, plus an `x-default` link pointing to the version on the default blog. Only published translations with public visibility are listed.
+- **Date archives**: Always sent with an `X-Robots-Tag: noindex` header and not listed in the sitemap, as they largely duplicate section and tag indexes.
+- **Search**: Search and search result pages are sent with an `X-Robots-Tag: noindex` header and are not listed in the sitemap.
+- **Non-public posts**: Unlisted and private posts are sent with an `X-Robots-Tag: noindex` header.
 
 ## Posts with HLS Video
 

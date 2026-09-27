@@ -76,11 +76,6 @@ func Test_sitemap(t *testing.T) {
 		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
 
-	assert.Contains(t, resString, "http://localhost:8080/2020/10/15</loc>")
-	assert.Contains(t, resString, "http://localhost:8080/2020/10</loc>")
-	assert.Contains(t, resString, "http://localhost:8080/2020</loc>")
-	assert.Contains(t, resString, "http://localhost:8080/x/10/15</loc>")
-	assert.Contains(t, resString, "http://localhost:8080/x/x/15</loc>")
 	assert.Contains(t, resString, "http://localhost:8080/tags/test</loc>")
 
 	err = requests.
@@ -159,7 +154,7 @@ func Test_sitemapFeatures(t *testing.T) {
 
 	assert.Contains(t, resString, "http://localhost:8080</loc>")
 	assert.Contains(t, resString, "http://localhost:8080/photos</loc>")
-	assert.Contains(t, resString, "http://localhost:8080/search</loc>")
+	assert.NotContains(t, resString, "http://localhost:8080/search</loc>")
 	assert.Contains(t, resString, "http://localhost:8080/statistics</loc>")
 	assert.Contains(t, resString, "http://localhost:8080/map</loc>")
 	assert.Contains(t, resString, "http://localhost:8080/contact</loc>")
@@ -215,14 +210,9 @@ func Test_sitemapArchivesLastMod(t *testing.T) {
 	// carry the latest timestamp from the post.
 	expectedTime := toLocalTime("2023-05-20T12:00:00Z")
 	for _, loc := range []string{
-		"http://localhost:8080/posts",       // Section
-		"http://localhost:8080/tags",        // Taxonomy index
-		"http://localhost:8080/tags/test",   // Taxonomy value
-		"http://localhost:8080/2020/10/15",  // Date archive
-		"http://localhost:8080/2020/10",     // Date archive
-		"http://localhost:8080/2020",        // Date archive
-		"http://localhost:8080/x/10/15",     // Date archive
-		"http://localhost:8080/x/x/15",      // Date archive
+		"http://localhost:8080/posts",     // Section
+		"http://localhost:8080/tags",      // Taxonomy index
+		"http://localhost:8080/tags/test", // Taxonomy value
 	} {
 		lm, ok := urlsByLoc[loc]
 		require.True(t, ok, "missing url entry: %s", loc)
