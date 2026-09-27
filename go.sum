@@ -259,8 +259,8 @@ github.com/yuin/goldmark-emoji/v2 v2.0.2 h1:nXRBlIolZynLYEQIgUbgXbe5iSfXG8GUcN9i
 github.com/yuin/goldmark-emoji/v2 v2.0.2/go.mod h1:SlkoUZI4h3WGqiRCyQYDNwZ+WbHFfJNbFNQs+jd0tOg=
 github.com/yuin/goldmark-highlighting/v3 v3.1.0 h1:RZiuWoxLTtGURRHbDlBVBx0MwLBZiO69y0kx1xWXhW4=
 github.com/yuin/goldmark-highlighting/v3 v3.1.0/go.mod h1:/46uezJvQdoDBRi+tDflDRTp6z7YmvMuiJ27jGSUBBY=
-github.com/yuin/goldmark/v2 v2.1.5 h1:ij6SZY7VRLXVPRDHEK71Beo3gHaN1gAPdOL+CKgsCdc=
-github.com/yuin/goldmark/v2 v2.1.5/go.mod h1:G6M4/qOFtfn01/o14BU1UR2Lo5N3S9Qo7xCuz/sHjGQ=
+github.com/yuin/goldmark/v2 v2.1.6 h1:igy0q9JcqovoFXFx/XjtU8sHVhcUHavPj2sA3EoKJUE=
+github.com/yuin/goldmark/v2 v2.1.6/go.mod h1:G6M4/qOFtfn01/o14BU1UR2Lo5N3S9Qo7xCuz/sHjGQ=
 go.hacdias.com/indielib v0.5.0 h1:F8vEyBSBlXFJ4jhZMlj8oPcRG0KpU4YhkUehcb6pbUk=
 go.hacdias.com/indielib v0.5.0/go.mod h1:yZaEBvVd1SJx/W0+JxxjddtErHNUF1NND3oKJoPGsEo=
 go.mau.fi/util v0.10.1 h1:1oSqb4TwzLA0cUDY0aomyBPFKkZ3J5fqCmrXV3VH3GQ=
