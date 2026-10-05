@@ -76,7 +76,7 @@ The `user` section in YAML configures identity and authentication:
 user:
   nick: admin                # Initial login username (editable via Settings UI after first run)
   name: Your Name            # Initial display name (editable via Settings UI after first run)
-  email: contact@example.com # Used in feeds (RSS/Atom/JSON)
+  email: contact@example.com # Used in feeds (RSS/Atom/JSON) (editable via Settings UI after first run)
   link: https://example.net  # Optional homepage link (defaults to blog root)
   identities:                # rel=me links for identity verification
     - https://micro.blog/yourusername
