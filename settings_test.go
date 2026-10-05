@@ -144,7 +144,7 @@ func Test_settingsUpdateUser(t *testing.T) {
 
 	// Should redirect
 	require.Equal(t, 302, rr.Code)
-	require.Equal(t, "/settings", rr.Header.Get("Location"))
+	require.Equal(t, "/settings", rr.Header().Get("Location"))
 
 	// Should have updated the config
 	require.Equal(t, "New Nick", app.cfg.User.Nick)
