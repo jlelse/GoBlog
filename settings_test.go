@@ -130,3 +130,46 @@ func Test_settingsUpdateBlog_EmptyDescription(t *testing.T) {
 	require.Equal(t, "New Title", bc.Title)
 	require.Equal(t, "", bc.Description)
 }
+
+func Test_settingsUpdateUser(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+	// Simulate request to update user settings
+	req := httptest.NewRequest("POST", "/settings/user", strings.NewReader("usernick=New+Nick&username=New+Name&useremail=new%40example.com"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+	app.settingsUpdateUser(rr, req)
+
+	// Should redirect
+	require.Equal(t, 302, rr.Code)
+	require.Equal(t, "/settings", rr.Header().Get("Location"))
+
+	// Should have updated the config
+	require.Equal(t, "New Nick", app.cfg.User.Nick)
+	require.Equal(t, "New Name", app.cfg.User.Name)
+	require.Equal(t, "new@example.com", app.cfg.User.Email)
+
+	// Verify database values
+	dbEmail, err := app.getSettingValue(userEmailSetting)
+	require.NoError(t, err)
+	require.Equal(t, "new@example.com", dbEmail)
+
+	// Simulate request to clear the email (should be allowed)
+	req = httptest.NewRequest("POST", "/settings/user", strings.NewReader("usernick=New+Nick&username=New+Name&useremail="))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr = httptest.NewRecorder()
+	app.settingsUpdateUser(rr, req)
+
+	require.Equal(t, 302, rr.Code)
+	require.Equal(t, "", app.cfg.User.Email)
+
+	// Simulate request with empty nick (should fail)
+	req = httptest.NewRequest("POST", "/settings/user", strings.NewReader("usernick=&username=New+Name&useremail="))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr = httptest.NewRecorder()
+	app.settingsUpdateUser(rr, req)
+
+	require.Equal(t, 500, rr.Code)
+}

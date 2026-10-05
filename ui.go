@@ -1790,6 +1790,7 @@ type settingsRenderData struct {
 	addLikeContext              bool
 	userNick                    string
 	userName                    string
+	userEmail                   string
 	showProfileImageInHeader    bool
 	passkeys                    []*passkey
 	appPasswords                []*appPassword
