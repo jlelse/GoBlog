@@ -13,7 +13,7 @@ require (
 	github.com/andybalholm/cascadia v1.3.5
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
-	github.com/carlmjohnson/requests v0.26.1
+	github.com/carlmjohnson/requests v0.26.2
 	github.com/coder/websocket v1.8.15
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/dchest/captcha v1.1.0
@@ -51,7 +51,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tdewolff/minify/v2 v2.24.17
+	github.com/tdewolff/minify/v2 v2.24.19
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
 	github.com/traefik/yaegi v0.16.1
@@ -64,7 +64,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3
 	golang.org/x/crypto v0.57.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/text v0.42.0
@@ -77,10 +77,10 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/dlclark/regexp2/v2 v2.8.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.8.4 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/go-webauthn/x v0.3.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
@@ -94,7 +94,7 @@ require (
 	github.com/kovidgoyal/go-parallel v1.1.1 // indirect
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.15 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
@@ -108,15 +108,15 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.16 // indirect
-	github.com/tidwall/gjson v1.19.0 // indirect
+	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/pretty v1.2.2 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	github.com/tinylib/msgp v1.6.4 // indirect
+	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.10.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
+	golang.org/x/exp v0.0.0-20261007192929-f45ad48fbe92 // indirect
 	golang.org/x/image v0.46.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.3 // indirect
