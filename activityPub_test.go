@@ -374,8 +374,9 @@ func Test_webfinger(t *testing.T) {
 
 func Test_apMoveFollowers(t *testing.T) {
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: newHTTPClient(),
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     newHTTPClient(),
+		ssrfHTTPClient: newHTTPClient(),
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 	app.cfg.Blogs = map[string]*configBlog{

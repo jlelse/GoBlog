@@ -55,18 +55,48 @@ func Test_webmentionHTTPClientBlocksPrivateIP(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	client := newWebmentionHTTPClient()
+	client := newSSRFProtectedHTTPClient()
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL, nil)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	require.Error(t, err)
 }
 
+func Test_ssrfProtectedClientBlocksAttackerControlledSinks(t *testing.T) {
+	// Internal "victim" service on loopback that must never be reached
+	var hits atomic.Int32
+	victim := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer victim.Close()
+
+	app := &goBlog{
+		cfg:            createDefaultTestConfig(t),
+		ssrfHTTPClient: newSSRFProtectedHTTPClient(),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+	require.NoError(t, app.initConfig(false))
+
+	// Advisory 1: remote_follow webfinger lookup of an attacker-supplied loopback instance
+	_, err := app.apFetchWebfinger(context.Background(), "attacker", "127.0.0.1")
+	require.Error(t, err)
+
+	// Advisory 3: outgoing webmention POST to an attacker-advertised loopback endpoint
+	err = app.sendWebmention(victim.URL+"/webmention", "https://example.com/post", victim.URL+"/post")
+	require.Error(t, err)
+
+	// Advisory 3: webmention endpoint discovery on an attacker-controlled loopback page
+	require.Empty(t, app.discoverEndpoint(victim.URL+"/post"))
+
+	require.Zero(t, hits.Load(), "the SSRF-guarded client must not reach loopback services")
+}
+
 func Test_verifyMentionBlocksPrivateSource(t *testing.T) {
 	app := &goBlog{
-		httpClient:   newFakeHttpClient().Client,
-		wmHTTPClient: newWebmentionHTTPClient(),
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     newFakeHttpClient().Client,
+		ssrfHTTPClient: newSSRFProtectedHTTPClient(),
+		cfg:            createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			// No-op
 		}),
@@ -127,7 +157,7 @@ func Test_webmentionSSRFProtection(t *testing.T) {
 	base.DialContext = newSSRFGuardDialContext(func(ctx context.Context, network, _ string) (net.Conn, error) {
 		return newNetDialer().DialContext(ctx, network, externalSource.Listener.Addr().String())
 	})
-	app.wmHTTPClient = &http.Client{
+	app.ssrfHTTPClient = &http.Client{
 		Timeout:   time.Minute,
 		Transport: newAddUserAgentTransport(gzhttp.Transport(base)),
 	}

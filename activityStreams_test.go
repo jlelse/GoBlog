@@ -677,6 +677,8 @@ func Test_apSendSigned(t *testing.T) {
 	app.httpClient = &http.Client{
 		Timeout: 30 * time.Second,
 	}
+	// The test server listens on loopback, so use an unguarded client here
+	app.ssrfHTTPClient = app.httpClient
 
 	// Initialize key and signer for signing
 	err = app.loadActivityPubPrivateKey()

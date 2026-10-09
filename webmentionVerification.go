@@ -86,7 +86,7 @@ func (a *goBlog) verifyMention(m *mention) error {
 			return err
 		}
 	} else {
-		sourceResp, err = a.wmHTTPClient.Do(sourceReq)
+		sourceResp, err = a.ssrfHTTPClient.Do(sourceReq)
 		if err != nil {
 			return err
 		}

@@ -48,10 +48,11 @@ func newNetDialer() *net.Dialer {
 	}
 }
 
-// newWebmentionHTTPClient returns a client for verifying webmention sources that
-// refuses to connect to private or otherwise reserved IP addresses to prevent
-// SSRF via user-supplied source URLs.
-func newWebmentionHTTPClient() *http.Client {
+// newSSRFProtectedHTTPClient returns a client for fetching remote resources
+// whose URLs can be influenced by users or remote servers (webmention sources,
+// ActivityPub actors/inboxes, discovered webmention endpoints). It refuses to
+// connect to private or otherwise reserved IP addresses to prevent SSRF.
+func newSSRFProtectedHTTPClient() *http.Client {
 	base := newHTTPTransportBase()
 	base.DialContext = newSSRFGuardDialContext(newNetDialer().DialContext)
 	return &http.Client{

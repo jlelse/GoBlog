@@ -80,7 +80,7 @@ func (a *goBlog) sendWebmentions(p *post) error {
 
 func (a *goBlog) sendWebmention(endpoint, source, target string) error {
 	// TODO: Pass all tests from https://webmention.rocks/
-	return requests.URL(endpoint).Client(a.httpClient).Method(http.MethodPost).
+	return requests.URL(endpoint).Client(a.ssrfHTTPClient).Method(http.MethodPost).
 		BodyForm(url.Values{
 			"source": []string{source},
 			"target": []string{target},
@@ -97,7 +97,7 @@ func (a *goBlog) sendWebmention(endpoint, source, target string) error {
 func (a *goBlog) discoverEndpoint(urlStr string) string {
 	doRequest := func(method, urlStr string) string {
 		endpoint := ""
-		if err := requests.URL(urlStr).Client(a.httpClient).Method(method).
+		if err := requests.URL(urlStr).Client(a.ssrfHTTPClient).Method(method).
 			AddValidator(func(r *http.Response) error {
 				if r.StatusCode < 200 || 300 <= r.StatusCode {
 					return fmt.Errorf("HTTP %d", r.StatusCode)

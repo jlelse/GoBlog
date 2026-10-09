@@ -930,7 +930,7 @@ func (a *goBlog) apLoadRemoteIRI(blog string, id ap.IRI) (ap.Item, error) {
 	if err = a.signRequest(req, a.apIri(bc)); err != nil {
 		return nil, err
 	}
-	if resp, err = a.httpClient.Do(req); err != nil { //nolint:gosec
+	if resp, err = a.ssrfHTTPClient.Do(req); err != nil { //nolint:gosec
 		return nil, err
 	}
 	if resp == nil {

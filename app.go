@@ -63,8 +63,8 @@ type goBlog struct {
 	hourlyHooks    []hourlyHookFunc
 	// HTTP Client
 	httpClient *http.Client
-	// HTTP Client (Webmention)
-	wmHTTPClient *http.Client
+	// HTTP Client with SSRF protection, for requests to user- or remote-controlled URLs
+	ssrfHTTPClient *http.Client
 	// HTTP Routers
 	d http.Handler
 	// IndexNow

@@ -18,8 +18,9 @@ func Test_sendWebmentions_OutgoingBlocklist(t *testing.T) {
 	}))
 
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 
@@ -62,8 +63,9 @@ func Test_sendWebmentions_SendingDisabled(t *testing.T) {
 	}))
 
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 
@@ -117,8 +119,9 @@ func Test_sendWebmentions_ExternalMentionSent(t *testing.T) {
 	}))
 
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
 	}
 	app.cfg.Server.PublicAddress = "https://example.com"
 
@@ -154,8 +157,9 @@ func Test_sendWebmentions_InterGoblogEnabled(t *testing.T) {
 	mockClient.setFakeResponse(http.StatusOK, "<html><body>Test</body></html>")
 
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Simple mock router that returns OK for test paths
 			w.WriteHeader(http.StatusOK)

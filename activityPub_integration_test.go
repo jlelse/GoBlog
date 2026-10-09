@@ -757,8 +757,9 @@ func startApIntegrationServer(t *testing.T) *goBlog {
 	t.Helper()
 	port := getFreePort(t)
 	app := &goBlog{
-		cfg:        createDefaultTestConfig(t),
-		httpClient: newHTTPClient(),
+		cfg:            createDefaultTestConfig(t),
+		httpClient:     newHTTPClient(),
+		ssrfHTTPClient: newHTTPClient(),
 	}
 	// Externally expose GoBlog as goblog.example (proxied to the test port)
 	app.cfg.Server.PublicAddress = "http://goblog.example"

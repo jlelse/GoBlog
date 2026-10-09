@@ -581,7 +581,8 @@ Examples:
 
 func initializeApp(cmd *cobra.Command) *goBlog {
 	app := &goBlog{
-		httpClient: newHTTPClient(),
+		httpClient:     newHTTPClient(),
+		ssrfHTTPClient: newSSRFProtectedHTTPClient(),
 	}
 	configfile, _ := cmd.Flags().GetString("config")
 	if err := app.loadConfigFile(configfile); err != nil {

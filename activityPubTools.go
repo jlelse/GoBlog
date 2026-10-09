@@ -28,7 +28,7 @@ func (a *goBlog) apFetchWebfinger(ctx context.Context, user, instance string) (*
 	go func() {
 		err := requests.
 			URL(fmt.Sprintf("https://%s/.well-known/webfinger?resource=acct:%s@%s", instance, user, instance)).
-			Client(a.httpClient).
+			Client(a.ssrfHTTPClient).
 			ToWriter(pw).
 			Fetch(ctx)
 		_ = pw.CloseWithError(err)

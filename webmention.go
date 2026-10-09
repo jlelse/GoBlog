@@ -49,7 +49,7 @@ func (a *goBlog) initWebmention() {
 	a.pDeleteHooks = append(a.pDeleteHooks, hookFunc)
 	a.pUndeleteHooks = append(a.pUndeleteHooks, hookFunc)
 	// Use an SSRF-guarded client to verify webmention sources
-	a.wmHTTPClient = newWebmentionHTTPClient()
+	a.ssrfHTTPClient = newSSRFProtectedHTTPClient()
 	// Start verifier
 	a.initWebmentionQueue()
 }

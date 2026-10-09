@@ -19,9 +19,9 @@ func Test_verifyMention(t *testing.T) {
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/") {
 				http.Redirect(w, r, r.URL.Path[:len(r.URL.Path)-1], http.StatusFound)
@@ -62,9 +62,9 @@ func Test_verifyMentionBridgy(t *testing.T) {
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
@@ -99,9 +99,9 @@ func Test_verifyMastodonLikeBridgy(t *testing.T) {
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
@@ -136,9 +136,9 @@ func Test_verifyMentionColin(t *testing.T) {
 	mockClient.setFakeResponse(http.StatusOK, testHtml)
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// do nothing
 		}),
@@ -168,9 +168,9 @@ func Test_verifyMentionShortURL(t *testing.T) {
 	mockClient := newFakeHttpClient()
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 	app.cfg.Server.ShortPublicAddress = "https://short.example"
@@ -209,9 +209,9 @@ func Test_verifyMentionAltAddress(t *testing.T) {
 	mockClient := newFakeHttpClient()
 
 	app := &goBlog{
-		httpClient:   mockClient.Client,
-		wmHTTPClient: mockClient.Client,
-		cfg:          createDefaultTestConfig(t),
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
 	}
 	app.cfg.Server.PublicAddress = "https://example.org"
 	app.cfg.Server.AltAddresses = []string{"https://alt.example"}
