@@ -82,7 +82,7 @@ user:
   # For first-time setup, you can use the CLI:
   #   ./GoBlog setup --username johndoe --password "your-secure-password" --totp
   link: https://example.net # Optional user link to use instead of homepage
-  email: contact@example.com # Email (only used in feeds)
+  email: contact@example.com # Email (only used in feeds, can be changed in the Settings UI)
   identities: # Other identities to add to the HTML header with rel=me links
     - https://micro.blog/exampleuser
 

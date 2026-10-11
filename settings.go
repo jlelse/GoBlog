@@ -66,6 +66,7 @@ func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 			addLikeContext:              bc.addLikeContext,
 			userNick:                    a.cfg.User.Nick,
 			userName:                    a.cfg.User.Name,
+			userEmail:                   a.cfg.User.Email,
 			showProfileImageInHeader:    a.cfg.User.showProfileImageInHeader,
 			passkeys:                    passkeys,
 			appPasswords:                appPasswords,
@@ -330,6 +331,7 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Read values
 	userNick := r.FormValue(userNickSetting) //nolint:gosec
 	userName := r.FormValue(userNameSetting) //nolint:gosec
+	userEmail := r.FormValue(userEmailSetting) //nolint:gosec
 	if userNick == "" || userName == "" {
 		a.serveError(w, r, "Values must not be empty", http.StatusInternalServerError)
 		return
@@ -345,8 +347,14 @@ func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "Failed to update user name in database", http.StatusInternalServerError)
 		return
 	}
+	err = a.saveSettingValue(userEmailSetting, userEmail)
+	if err != nil {
+		a.serveError(w, r, "Failed to update user email in database", http.StatusInternalServerError)
+		return
+	}
 	a.cfg.User.Nick = userNick
 	a.cfg.User.Name = userName
+	a.cfg.User.Email = userEmail
 	a.purgeCache()
 	http.Redirect(w, r, bc.getRelativePath(settingsPath), http.StatusFound)
 }

@@ -558,6 +558,10 @@ func (a *goBlog) initConfig(logging bool) error {
 	if err = a.migrateStringSetting(userNameSetting, &a.cfg.User.Name); err != nil {
 		return err
 	}
+	// User email
+	if err = a.migrateStringSetting(userEmailSetting, &a.cfg.User.Email); err != nil {
+		return err
+	}
 	// Show profile image in header
 	showProfileImageInHeader, err := a.getBooleanSettingValue(showProfileImageInHeaderSetting, false)
 	if err != nil {

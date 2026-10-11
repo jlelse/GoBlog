@@ -37,6 +37,7 @@ Enable emoji reactions on posts. Configure which emoji are available (comma-sepa
 
 - **Full name**: Displayed on posts and in feeds
 - **Username**: Used for login
+- **Email address**: Used in feeds (RSS/Atom/JSON)
 - **Profile image**: Upload or delete. Automatically used for favicons, Fediverse actor image, and feed icons.
 
 ### Password

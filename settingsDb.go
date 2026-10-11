@@ -21,6 +21,7 @@ const (
 	hideSpeakButtonSetting              = "hidespeakbutton"
 	userNickSetting                     = "usernick"
 	userNameSetting                     = "username"
+	userEmailSetting                    = "useremail"
 	addReplyTitleSetting                = "addreplytitle"
 	addReplyContextSetting              = "addreplycontext"
 	addLikeTitleSetting                 = "addliketitle"

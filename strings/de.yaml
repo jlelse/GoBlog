@@ -151,6 +151,7 @@ settingsbloglongdescription: "Blog-Beschreibung (ausführlich, für Meta-Beschre
 settingsblogtitle: "Blog-Titel"
 settingsusername: "Vollständiger Benutzername"
 settingsusernick: "Benutzer-Nickname (Login-Benutzername)"
+settingsuseremail: "E-Mail-Adresse (nur in Feeds verwendet)"
 setuptotp: "TOTP aktivieren"
 share: "Online teilen"
 sharecopy: "Teilen-Text kopieren"
