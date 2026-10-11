@@ -73,7 +73,14 @@ func (c *cacheRecorder) Write(buf []byte) (int, error) {
 
 // WriteString implements io.StringWriter.
 func (c *cacheRecorder) WriteString(str string) (int, error) {
-	return c.Write([]byte(str))
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.done {
+		return 0, fmt.Errorf("write after finish")
+	}
+	c.item.body = append(c.item.body, str...)
+	return len(str), nil
 }
 
 // WriteHeader implements http.ResponseWriter.

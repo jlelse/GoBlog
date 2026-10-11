@@ -4,7 +4,18 @@ package htmlbuilder
 import (
 	"fmt"
 	"io"
-	textTemplate "text/template"
+	"strings"
+)
+
+// htmlEscaper escapes the same characters as text/template.HTMLEscape,
+// but writes directly to the target writer without allocating.
+var htmlEscaper = strings.NewReplacer(
+	"\x00", "\uFFFD",
+	`"`, "&#34;",
+	"'", "&#39;",
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
 )
 
 // HTMLBuilder builds HTML content.
@@ -39,7 +50,7 @@ func (h *HTMLBuilder) WriteUnescaped(s string) {
 
 // WriteEscaped writes an HTML-escaped string.
 func (h *HTMLBuilder) WriteEscaped(s string) {
-	textTemplate.HTMLEscape(h, []byte(s))
+	_, _ = htmlEscaper.WriteString(h, s)
 }
 
 // WriteAttribute writes an HTML attribute key-value pair.
