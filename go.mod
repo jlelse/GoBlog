@@ -22,7 +22,7 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.25.0
 	github.com/go-acme/lego/v5 v5.5.2
-	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-jose/go-jose/v4 v4.1.5
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/gorilla/handlers v1.5.2
@@ -32,7 +32,7 @@ require (
 	github.com/jlelse/feeds v1.4.0
 	github.com/justinas/alice v1.2.0
 	github.com/kaorimatz/go-opml v0.0.0-20210201121027-bc8e2852d7f9
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/kovidgoyal/imaging v1.8.23
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
