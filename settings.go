@@ -329,8 +329,8 @@ const settingsUpdateUserPath = "/user"
 func (a *goBlog) settingsUpdateUser(w http.ResponseWriter, r *http.Request) {
 	_, bc := a.getBlog(r)
 	// Read values
-	userNick := r.FormValue(userNickSetting) //nolint:gosec
-	userName := r.FormValue(userNameSetting) //nolint:gosec
+	userNick := r.FormValue(userNickSetting)   //nolint:gosec
+	userName := r.FormValue(userNameSetting)   //nolint:gosec
 	userEmail := r.FormValue(userEmailSetting) //nolint:gosec
 	if userNick == "" || userName == "" {
 		a.serveError(w, r, "Values must not be empty", http.StatusInternalServerError)
