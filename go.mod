@@ -60,7 +60,7 @@ require (
 	github.com/yuin/goldmark-emoji/v2 v2.0.2
 	github.com/yuin/goldmark-highlighting/v3 v3.1.0
 	github.com/yuin/goldmark/v2 v2.1.6
-	go.hacdias.com/indielib v0.5.0
+	go.hacdias.com/indielib v0.6.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3
 	golang.org/x/crypto v0.58.0
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.43.0
-	maunium.net/go/mautrix v0.31.0
+	maunium.net/go/mautrix v0.32.0
 	willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b
 )
 
@@ -114,7 +114,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mau.fi/util v0.10.1 // indirect
+	go.mau.fi/util v0.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/image v0.47.0 // indirect
