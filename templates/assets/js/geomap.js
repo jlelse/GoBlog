@@ -4,6 +4,15 @@
         return `hsl(${Math.floor(Math.random() * 30) * 12}, 100%, 50%)`
     }
 
+    function parseMapJson(json) {
+        try {
+            return JSON.parse(json)
+        } catch (error) {
+            console.error('Failed to parse map data', error);
+            return undefined
+        }
+    }
+
     function getMapJson(data, callback) {
         if (!data) {
             return
@@ -13,7 +22,7 @@
             req.open('GET', url)
             req.onload = function () {
                 if (req.status == 200) {
-                    const parsed = JSON.parse(req.responseText)
+                    const parsed = parseMapJson(req.responseText)
                     if (parsed && parsed.length > 0) {
                         callback(parsed)
                     }
@@ -22,7 +31,10 @@
             req.send()
             return
         } else {
-            callback(JSON.parse(data))
+            const parsed = parseMapJson(data)
+            if (parsed && parsed.length > 0) {
+                callback(parsed)
+            }
             return
         }
     }
