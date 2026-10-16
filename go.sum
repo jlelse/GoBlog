@@ -261,10 +261,10 @@ github.com/yuin/goldmark-highlighting/v3 v3.1.0 h1:RZiuWoxLTtGURRHbDlBVBx0MwLBZi
 github.com/yuin/goldmark-highlighting/v3 v3.1.0/go.mod h1:/46uezJvQdoDBRi+tDflDRTp6z7YmvMuiJ27jGSUBBY=
 github.com/yuin/goldmark/v2 v2.1.6 h1:igy0q9JcqovoFXFx/XjtU8sHVhcUHavPj2sA3EoKJUE=
 github.com/yuin/goldmark/v2 v2.1.6/go.mod h1:G6M4/qOFtfn01/o14BU1UR2Lo5N3S9Qo7xCuz/sHjGQ=
-go.hacdias.com/indielib v0.5.0 h1:F8vEyBSBlXFJ4jhZMlj8oPcRG0KpU4YhkUehcb6pbUk=
-go.hacdias.com/indielib v0.5.0/go.mod h1:yZaEBvVd1SJx/W0+JxxjddtErHNUF1NND3oKJoPGsEo=
-go.mau.fi/util v0.10.1 h1:1oSqb4TwzLA0cUDY0aomyBPFKkZ3J5fqCmrXV3VH3GQ=
-go.mau.fi/util v0.10.1/go.mod h1:40TDo7/ekSeOjgr8KAmX31Yf4zrOF94j83WQB+u5ZPc=
+go.hacdias.com/indielib v0.6.0 h1:syH9S7xse/iQj/P5A2Ctmlhf2aqyixWdUAv51cGZ/Ro=
+go.hacdias.com/indielib v0.6.0/go.mod h1:8yjWQwIjZJXgwne4DKzN+mcCD23izUzUjU1vmAwl3dw=
+go.mau.fi/util v0.11.0 h1:JNEpkVRxfTdJUC0DIGKiRlLKzl4G/qLX/eVzoP7QuwY=
+go.mau.fi/util v0.11.0/go.mod h1:04AEFVsc4zNdIkDC1gkdqbg/nZFolHY50pyXh2DSy7s=
 go.uber.org/mock v0.6.0 h1:hyF9dfmbgIX5EfOdasqLsWD6xqpNZlXblLB/Dbnwv3Y=
 go.uber.org/mock v0.6.0/go.mod h1:KiVJ4BqZJaMj4svdfmHM0AUx4NJYO8ZNpPnZn1Z+BBU=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
@@ -304,8 +304,8 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C
 gorm.io/driver/sqlite v1.1.3/go.mod h1:AKDgRWk8lcSQSw+9kxCJnX/yySj8G3rdwYlU57cB45c=
 gorm.io/gorm v1.20.1/go.mod h1:0HFTzE/SqkGTzK6TlDPPQbAYCluiVvhzoA1+aVyzenw=
 gorm.io/gorm v1.20.6/go.mod h1:0HFTzE/SqkGTzK6TlDPPQbAYCluiVvhzoA1+aVyzenw=
-maunium.net/go/mautrix v0.31.0 h1:x6XNBSa0kOaBgcleI+ZBLkGvBdHIE0qdeY6TZ4wWUeI=
-maunium.net/go/mautrix v0.31.0/go.mod h1:vfPYtoGAjlTnIF+W8tl+rjX3yB4PEfqYR2sDXvQo4Co=
+maunium.net/go/mautrix v0.32.0 h1:xuAZzzyWce0pFkBhV/MCLFiJdVs2rFkY3Eep7hNng4I=
+maunium.net/go/mautrix v0.32.0/go.mod h1:tZSwPzw+/0pa0dxGufkh0uJqM84BNxB6e2I0+S0UyjU=
 software.sslmate.com/src/go-pkcs12 v0.7.4 h1:OvJ7g/OB9RuVAOzahlFLns6HeIcP+SJotsDqmLfhd8w=
 software.sslmate.com/src/go-pkcs12 v0.7.4/go.mod h1:Qiz0EyvDRJjjxGyUQa2cCNZn/wMyzrRJ/qcDXOQazLI=
 willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b h1:n8RVQUhmZGjwbu0/dI7kacH0crPz8HFO3RXwdxaLcto=
