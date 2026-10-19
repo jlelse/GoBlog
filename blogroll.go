@@ -14,8 +14,6 @@ import (
 	"github.com/kaorimatz/go-opml"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
-	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/minify"
 )
 
 const (
@@ -77,18 +75,25 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 	if user := a.cfg.User; user != nil && user.Name != "" {
 		ownerName = user.Name
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(opml.Render(pw, &opml.OPML{
+	// Script for the human-readable view
+	_, blogrollPath := bc.getBlogrollPath()
+	scriptElement := a.newXMLViewScript("js/xml-view.js")
+	scriptElement.DataWebsite = a.getFullAddress(blogrollPath)
+	script, err := scriptElement.marshal()
+	if err != nil {
+		a.error("Blogroll: Failed to encode script", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
+	}
+	a.writeXMLWithViewScript(w, script, func(w io.Writer) error {
+		return opml.Render(w, &opml.OPML{
 			Version:      "2.0",
 			DateModified: time.Now().UTC(),
 			Outlines:     outlines,
 			Title:        title,
 			OwnerName:    ownerName,
-		}))
-	}()
-	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
+		})
+	})
 }
 
 func (a *goBlog) refreshBlogroll(w http.ResponseWriter, r *http.Request) {

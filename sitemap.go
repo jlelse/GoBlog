@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/snabb/sitemap"
-	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/minify"
 )
 
 const (
@@ -180,17 +178,16 @@ func (a *goBlog) serveSitemapBlogPosts(w http.ResponseWriter, r *http.Request) {
 	a.writeSitemapXML(w, r, sm)
 }
 
-func (a *goBlog) writeSitemapXML(w http.ResponseWriter, _ *http.Request, sm any) {
-	pr, pw := io.Pipe()
-	go func() {
-		_, _ = io.WriteString(pw, xml.Header)
-		_, _ = io.WriteString(pw, `<?xml-stylesheet type="text/css" href="`)
-		_, _ = io.WriteString(pw, a.assetFileName("css/sitemap.css"))
-		_, _ = io.WriteString(pw, `" ?>`)
-		_ = pw.CloseWithError(xml.NewEncoder(pw).Encode(sm))
-	}()
-	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
+func (a *goBlog) writeSitemapXML(w http.ResponseWriter, r *http.Request, sm any) {
+	script, err := a.newXMLViewScript("js/xml-view.js").marshal()
+	if err != nil {
+		a.error("Sitemap: Failed to encode script", "err", err)
+		a.serveError(w, r, "", http.StatusInternalServerError)
+		return
+	}
+	a.writeXMLWithViewScript(w, script, func(w io.Writer) error {
+		return xml.NewEncoder(w).Encode(sm)
+	})
 }
 
 func (a *goBlog) sitemapLastMod(config *postsRequestConfig) *time.Time {

@@ -123,8 +123,57 @@ func Test_sitemapXMLValidity(t *testing.T) {
 			Client(client).Fetch(context.Background())
 		require.NoError(t, err, u)
 		assert.Contains(t, resString, "http://www.sitemaps.org/schemas/sitemap/0.9", "missing XML namespace in %s", u)
-		assert.Contains(t, resString, `<?xml-stylesheet type="text/css"`, "missing stylesheet reference in %s", u)
+		assert.Contains(t, resString, `<script xmlns="http://www.w3.org/1999/xhtml"`, "missing sitemap script in %s", u)
 	}
+}
+
+func Test_sitemapScript(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+	require.NoError(t, app.initTemplateAssets())
+	app.d = app.buildRouter()
+
+	err := app.createPost(&post{
+		Path:      "/testpost",
+		Section:   "posts",
+		Status:    "published",
+		Published: "2020-10-15T10:00:00Z",
+		Content:   "Test Content",
+	})
+	require.NoError(t, err)
+
+	client := newHandlerClient(app.d)
+
+	var resString string
+	err = requests.
+		URL("http://localhost:8080/sitemap-blog-posts.xml").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
+	require.NoError(t, err)
+
+	var doc struct {
+		XMLName xml.Name
+		Script  struct {
+			Src              string `xml:"src,attr"`
+			Defer            string `xml:"defer,attr"`
+			Integrity        string `xml:"integrity,attr"`
+			DataCSS          string `xml:"data-css,attr"`
+			DataCSSIntegrity string `xml:"data-css-integrity,attr"`
+		} `xml:"script"`
+		URLs []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+	}
+	require.NoError(t, xml.Unmarshal([]byte(resString), &doc))
+	assert.Equal(t, "urlset", doc.XMLName.Local)
+	assert.NotEmpty(t, doc.Script.Src)
+	assert.NotEmpty(t, doc.Script.Integrity)
+	assert.NotEmpty(t, doc.Script.DataCSS)
+	assert.NotEmpty(t, doc.Script.DataCSSIntegrity, "missing CSS integrity hash")
+	assert.NotEmpty(t, doc.URLs)
 }
 
 func Test_sitemapFeatures(t *testing.T) {

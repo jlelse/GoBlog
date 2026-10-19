@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,6 +77,8 @@ func Test_blogroll(t *testing.T) {
 
 	// Test getting the OPML
 
+	require.NoError(t, app.initTemplateAssets())
+
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/br.opml", nil)
 	req = req.WithContext(context.WithValue(req.Context(), blogKey, "en"))
@@ -83,4 +87,25 @@ func Test_blogroll(t *testing.T) {
 
 	assert.Equal(t, 200, rec.Code)
 
+	var doc struct {
+		XMLName xml.Name
+		Script  struct {
+			Src         string `xml:"src,attr"`
+			DataCSS     string `xml:"data-css,attr"`
+			DataWebsite string `xml:"data-website,attr"`
+		} `xml:"script"`
+		Body struct {
+			Outlines []struct {
+				Text string `xml:"text,attr"`
+			} `xml:"outline"`
+		} `xml:"body"`
+	}
+	require.NoError(t, xml.Unmarshal(rec.Body.Bytes(), &doc))
+	assert.Equal(t, "opml", doc.XMLName.Local)
+	assert.NotEmpty(t, doc.Script.Src)
+	assert.NotEmpty(t, doc.Script.DataCSS)
+	assert.Equal(t, "http://localhost:8080/br", doc.Script.DataWebsite)
+	assert.Len(t, doc.Body.Outlines, 2)
+	body := rec.Body.String()
+	assert.Less(t, strings.Index(body, "<script"), strings.Index(body, "<head"), "script should be the first child of the OPML root")
 }
