@@ -47,15 +47,6 @@ func Test_sitemap(t *testing.T) {
 		Client(client).Fetch(context.Background())
 	require.NoError(t, err)
 
-	assert.Contains(t, resString, "http://localhost:8080/sitemap-blog.xml")
-
-	err = requests.
-		URL("http://localhost:8080/sitemap-blog.xml").
-		CheckStatus(http.StatusOK).
-		ToString(&resString).
-		Client(client).Fetch(context.Background())
-	require.NoError(t, err)
-
 	assert.Contains(t, resString, "http://localhost:8080/sitemap-blog-posts.xml")
 	assert.Contains(t, resString, "http://localhost:8080/sitemap-blog-features.xml")
 	assert.Contains(t, resString, "http://localhost:8080/sitemap-blog-archives.xml")
@@ -88,6 +79,72 @@ func Test_sitemap(t *testing.T) {
 	assert.Contains(t, resString, "http://localhost:8080</loc>")
 }
 
+func Test_sitemapSingleLevelIndex(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+	app.d = app.buildRouter()
+
+	client := newHandlerClient(app.d)
+
+	var resString string
+	err := requests.
+		URL("http://localhost:8080/sitemap.xml").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(client).Fetch(context.Background())
+	require.NoError(t, err)
+
+	var index struct {
+		XMLName  xml.Name
+		Sitemaps []struct {
+			Loc string `xml:"loc"`
+		} `xml:"sitemap"`
+	}
+	require.NoError(t, xml.Unmarshal([]byte(resString), &index))
+	assert.Equal(t, "sitemapindex", index.XMLName.Local)
+	require.NotEmpty(t, index.Sitemaps)
+	assert.Len(t, index.Sitemaps, 3)
+
+	for _, s := range index.Sitemaps {
+		require.NotEqual(t, "http://localhost:8080/sitemap-blog.xml", s.Loc)
+		var leaf struct {
+			XMLName xml.Name
+			URLs    []struct {
+				Loc string `xml:"loc"`
+			} `xml:"url"`
+		}
+		var leafString string
+		err := requests.
+			URL(s.Loc).
+			CheckStatus(http.StatusOK).
+			ToString(&leafString).
+			Client(client).Fetch(context.Background())
+		require.NoError(t, err, s.Loc)
+		require.NoError(t, xml.Unmarshal([]byte(leafString), &leaf), s.Loc)
+		assert.Equal(t, "urlset", leaf.XMLName.Local, "%s should be a sitemap, not a sitemap index", s.Loc)
+	}
+}
+
+func Test_sitemapBlogRedirect(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	_ = app.initConfig(false)
+	app.d = app.buildRouter()
+
+	client := newHandlerClient(app.d)
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+	res, err := client.Get("http://localhost:8080/sitemap-blog.xml")
+	require.NoError(t, err)
+	defer func() { _ = res.Body.Close() }()
+
+	assert.Equal(t, http.StatusMovedPermanently, res.StatusCode)
+	assert.Equal(t, "http://localhost:8080/sitemap.xml", res.Header.Get("Location"))
+}
+
 func Test_sitemapXMLValidity(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
@@ -108,7 +165,6 @@ func Test_sitemapXMLValidity(t *testing.T) {
 
 	sitemapPaths := []string{
 		"http://localhost:8080/sitemap.xml",
-		"http://localhost:8080/sitemap-blog.xml",
 		"http://localhost:8080/sitemap-blog-features.xml",
 		"http://localhost:8080/sitemap-blog-archives.xml",
 		"http://localhost:8080/sitemap-blog-posts.xml",

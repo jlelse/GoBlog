@@ -470,7 +470,7 @@ func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogSitemapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware)
-		r.Get(conf.getRelativePath(sitemapBlogPath), a.serveSitemapBlog)
+		r.Get(conf.getRelativePath(sitemapBlogPath), a.redirectSitemapBlog)
 		r.Get(conf.getRelativePath(sitemapBlogFeaturesPath), a.serveSitemapBlogFeatures)
 		r.Get(conf.getRelativePath(sitemapBlogArchivesPath), a.serveSitemapBlogArchives)
 		r.Get(conf.getRelativePath(sitemapBlogPostsPath), a.serveSitemapBlogPosts)

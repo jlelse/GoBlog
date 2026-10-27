@@ -60,7 +60,7 @@ func (a *goBlog) generateLlmsTxt(w http.ResponseWriter) {
 		// Start page and sitemap
 		fmt.Fprintf(w, "## %s\n\n", a.ts.GetTemplateStringVariant(bc.Lang, "llmsblog"))
 		fmt.Fprintf(w, "- [%s](%s)%s\n", a.renderMdTitle(bc.Title), a.getFullAddress(bc.getRelativePath("")), a.listDesc(cmp.Or(bc.Description, bc.LongDescription)))
-		fmt.Fprintf(w, "- [%s](%s)\n\n", a.ts.GetTemplateStringVariant(bc.Lang, "llmssitemap"), a.getFullAddress(bc.getRelativePath(sitemapBlogPath)))
+		fmt.Fprintf(w, "- [%s](%s)\n\n", a.ts.GetTemplateStringVariant(bc.Lang, "llmssitemap"), a.getFullAddress(sitemapPath))
 		// Enabled features
 		fmt.Fprintf(w, "## %s\n\n", a.ts.GetTemplateStringVariant(bc.Lang, "llmsfeatures"))
 		fmt.Fprint(w, a.llmsFeatures(bc))

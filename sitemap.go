@@ -19,41 +19,27 @@ const (
 	sitemapBlogPostsPath    = "/sitemap-blog-posts.xml"
 )
 
+var sitemapBlogLeafPaths = []string{sitemapBlogFeaturesPath, sitemapBlogArchivesPath, sitemapBlogPostsPath}
+
 func (a *goBlog) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	// Create sitemap
 	sm := sitemap.NewSitemapIndex()
-	// Add blog sitemap indices
+	// Add blog sitemaps
 	now := time.Now().UTC()
 	for _, bc := range a.cfg.Blogs {
-		sm.Add(&sitemap.URL{
-			Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogPath)),
-			LastMod: &now,
-		})
+		for _, path := range sitemapBlogLeafPaths {
+			sm.Add(&sitemap.URL{
+				Loc:     a.getFullAddress(bc.getRelativePath(path)),
+				LastMod: &now,
+			})
+		}
 	}
 	// Write sitemap
 	a.writeSitemapXML(w, r, sm)
 }
 
-func (a *goBlog) serveSitemapBlog(w http.ResponseWriter, r *http.Request) {
-	// Create sitemap
-	sm := sitemap.NewSitemapIndex()
-	// Add blog sitemaps
-	_, bc := a.getBlog(r)
-	now := time.Now().UTC()
-	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogFeaturesPath)),
-		LastMod: &now,
-	})
-	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogArchivesPath)),
-		LastMod: &now,
-	})
-	sm.Add(&sitemap.URL{
-		Loc:     a.getFullAddress(bc.getRelativePath(sitemapBlogPostsPath)),
-		LastMod: &now,
-	})
-	// Write sitemap
-	a.writeSitemapXML(w, r, sm)
+func (a *goBlog) redirectSitemapBlog(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, a.getFullAddress(sitemapPath), http.StatusMovedPermanently)
 }
 
 func (a *goBlog) serveSitemapBlogFeatures(w http.ResponseWriter, r *http.Request) {
