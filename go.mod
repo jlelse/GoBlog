@@ -51,7 +51,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tdewolff/minify/v2 v2.24.22
+	github.com/tdewolff/minify/v2 v2.24.24
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
 	github.com/traefik/yaegi v0.16.1
@@ -59,7 +59,7 @@ require (
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yuin/goldmark-emoji/v2 v2.0.2
 	github.com/yuin/goldmark-highlighting/v3 v3.1.0
-	github.com/yuin/goldmark/v2 v2.1.8
+	github.com/yuin/goldmark/v2 v2.1.9
 	go.hacdias.com/indielib v0.6.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	goftp.io/server/v2 v2.0.3
@@ -77,7 +77,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/dlclark/regexp2/v2 v2.9.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.11.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jonboulle/clockwork v0.3.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.4.1 // indirect
 	github.com/kovidgoyal/go-parallel v1.1.1 // indirect
 	github.com/kovidgoyal/go-shm v1.0.0 // indirect
 	github.com/lestrrat-go/strftime v1.2.0 // indirect
@@ -99,7 +99,7 @@ require (
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
-	github.com/philhofer/fwd v1.2.0 // indirect
+	github.com/philhofer/fwd v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.19 // indirect
+	github.com/tdewolff/parse/v2 v2.8.20 // indirect
 	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
