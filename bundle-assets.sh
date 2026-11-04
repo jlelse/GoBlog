@@ -7,7 +7,7 @@ set -euo pipefail
 
 LEAFLET_VERSION="1.9.4"
 MARKERCLUSTER_VERSION="1.5.3"
-HLSJS_VERSION="1.7.3"
+HLSJS_VERSION="1.7.4"
 
 # Directories to place downloaded files
 LEAFLET_DIR="leaflet"
