@@ -247,8 +247,8 @@ github.com/tiptophelmet/cspolicy v0.1.1 h1:TiC1vWOuRcxPlY7GFIdRUpLvfTR3i5PJph66S
 github.com/tiptophelmet/cspolicy v0.1.1/go.mod h1:rUdvHsbJflLSqh5gSWwDuMAxXGlysQpaN5V4vYzmcUM=
 github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e h1:tD38/4xg4nuQCASJ/JxcvCHNb46w0cdAaJfkzQOO1bA=
 github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e/go.mod h1:krvJ5AY/MjdPkTeRgMYbIDhbbbVvnPQPzsIsDJO8xrY=
-github.com/traefik/yaegi v0.16.2 h1:MVMobqo5IdqtzQXlkM0QgVd3ABCkjP6dmD+5l9IU2B8=
-github.com/traefik/yaegi v0.16.2/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
+github.com/traefik/yaegi v0.16.1 h1:f1De3DVJqIDKmnasUF6MwmWv1dSEEat0wcpXhD2On3E=
+github.com/traefik/yaegi v0.16.1/go.mod h1:4eVhbPb3LnD2VigQjhYbEJ69vDRFdT2HQNrXx8eEwUY=
 github.com/vcraescu/go-paginator/v2 v2.0.0 h1:m9If0wF7pSjYfocrJZcyWNiWn7OfIeLFVQLbiDvHf3k=
 github.com/vcraescu/go-paginator/v2 v2.0.0/go.mod h1:qsrC8+/YgRL0LfurxeY3gCAtsN7oOthkIbmBdqpMX9U=
 github.com/wneessen/go-mail v0.8.1 h1:tVcncj02/QySVFw3zr/kXOzZcuFQqBNT6K+Rbgm/pcM=
