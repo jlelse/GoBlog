@@ -20,10 +20,10 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
-	github.com/emersion/go-smtp v0.25.0
+	github.com/emersion/go-smtp v0.25.1
 	github.com/go-acme/lego/v5 v5.6.0
 	github.com/go-chi/chi/v5 v5.5.0
-	github.com/go-jose/go-jose/v4 v4.1.8
+	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
@@ -37,7 +37,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lopezator/migrator v0.3.1
 	github.com/mattn/go-mastodon v0.0.13
-	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/mattn/go-sqlite3 v1.14.53
 	github.com/mergestat/timediff v0.0.4
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/mmcdole/gofeed v1.5.0
@@ -54,14 +54,14 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.25
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
-	github.com/traefik/yaegi v0.16.1
+	github.com/traefik/yaegi v0.16.3
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yuin/goldmark-emoji/v2 v2.0.3
 	github.com/yuin/goldmark-highlighting/v3 v3.1.1
 	github.com/yuin/goldmark/v2 v2.1.15
 	go.hacdias.com/indielib v0.6.1
-	go.yaml.in/yaml/v4 v4.0.0-rc.9
+	go.yaml.in/yaml/v4 v4.0.0
 	goftp.io/server/v2 v2.0.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
