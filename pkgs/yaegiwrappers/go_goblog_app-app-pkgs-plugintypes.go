@@ -92,36 +92,51 @@ func init() {
 
 // _go_goblog_app_app_pkgs_plugintypes_App is an interface wrapper for App type
 type _go_goblog_app_app_pkgs_plugintypes_App struct {
-	IValue                interface{}
-	WAssetPath            func(filename string) string
-	WCheckAppPassword     func(password string) bool
-	WCompileAsset         func(filename string, reader io.Reader) error
-	WCountComments        func(query *plugintypes.CommentsQuery) (int, error)
-	WCountPosts           func(query *plugintypes.PostsQuery) (int, error)
-	WCountWebmentions     func(query *plugintypes.WebmentionsQuery) (int, error)
-	WCreatePost           func(content string) (plugintypes.Post, error)
-	WGetBlog              func(name string) (plugintypes.Blog, bool)
-	WGetBlogNames         func() []string
-	WGetBlogStats         func(blog string) (*plugintypes.BlogStats, error)
-	WGetComments          func(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error)
-	WGetDatabase          func() plugintypes.Database
-	WGetFullAddress       func(path string) string
-	WGetHTTPClient        func() *http.Client
-	WGetOptimizedMediaURL func(originalURL string) string
-	WGetPost              func(path string) (plugintypes.Post, error)
-	WGetPosts             func(query *plugintypes.PostsQuery) ([]plugintypes.Post, error)
-	WGetSections          func(blog string) ([]plugintypes.Section, error)
-	WGetTaxonomyValues    func(blog string, taxonomy string) ([]string, error)
-	WGetWebmentions       func(query *plugintypes.WebmentionsQuery) ([]plugintypes.Webmention, error)
-	WIsLoggedIn           func(req *http.Request) bool
-	WPurgeCache           func()
-	WRenderMarkdownAsText func(markdown string) (text string, err error)
-	WSetPostParameter     func(path string, parameter string, values []string) error
-	WUploadMedia          func(file io.Reader, filename string, mimetype string) (string, error)
+	IValue                 interface{}
+	WAssetHash             func(filename string) string
+	WAssetPath             func(filename string) string
+	WCORSHandler           func(next http.Handler) http.Handler
+	WCacheMiddleware       func(next http.Handler) http.Handler
+	WCheckAppPassword      func(password string) bool
+	WCompileAsset          func(filename string, reader io.Reader) error
+	WCountComments         func(query *plugintypes.CommentsQuery) (int, error)
+	WCountPosts            func(query *plugintypes.PostsQuery) (int, error)
+	WCountWebmentions      func(query *plugintypes.WebmentionsQuery) (int, error)
+	WCreatePost            func(content string) (plugintypes.Post, error)
+	WGetBlog               func(name string) (plugintypes.Blog, bool)
+	WGetBlogFeedPath       func(blog string, feed string) (string, error)
+	WGetBlogNames          func() []string
+	WGetBlogStats          func(blog string) (*plugintypes.BlogStats, error)
+	WGetBlogrollExportPath func(blog string) (path string, enabled bool, err error)
+	WGetComments           func(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error)
+	WGetDatabase           func() plugintypes.Database
+	WGetFullAddress        func(path string) string
+	WGetHTTPClient         func() *http.Client
+	WGetOptimizedMediaURL  func(originalURL string) string
+	WGetPost               func(path string) (plugintypes.Post, error)
+	WGetPosts              func(query *plugintypes.PostsQuery) ([]plugintypes.Post, error)
+	WGetSections           func(blog string) ([]plugintypes.Section, error)
+	WGetTaxonomyValues     func(blog string, taxonomy string) ([]string, error)
+	WGetWebmentions        func(query *plugintypes.WebmentionsQuery) ([]plugintypes.Webmention, error)
+	WIsLoggedIn            func(req *http.Request) bool
+	WPurgeCache            func()
+	WRenderMarkdownAsText  func(markdown string) (text string, err error)
+	WRewriteMarkdownURLs   func(markdown string) (string, error)
+	WSetPostParameter      func(path string, parameter string, values []string) error
+	WUploadMedia           func(file io.Reader, filename string, mimetype string) (string, error)
 }
 
+func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetHash(filename string) string {
+	return W.WAssetHash(filename)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) AssetPath(filename string) string {
 	return W.WAssetPath(filename)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CORSHandler(next http.Handler) http.Handler {
+	return W.WCORSHandler(next)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) CacheMiddleware(next http.Handler) http.Handler {
+	return W.WCacheMiddleware(next)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) CheckAppPassword(password string) bool {
 	return W.WCheckAppPassword(password)
@@ -144,11 +159,17 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) CreatePost(content string) (plu
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlog(name string) (plugintypes.Blog, bool) {
 	return W.WGetBlog(name)
 }
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogFeedPath(blog string, feed string) (string, error) {
+	return W.WGetBlogFeedPath(blog, feed)
+}
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogNames() []string {
 	return W.WGetBlogNames()
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogStats(blog string) (*plugintypes.BlogStats, error) {
 	return W.WGetBlogStats(blog)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) GetBlogrollExportPath(blog string) (path string, enabled bool, err error) {
+	return W.WGetBlogrollExportPath(blog)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) GetComments(query *plugintypes.CommentsQuery) ([]plugintypes.Comment, error) {
 	return W.WGetComments(query)
@@ -188,6 +209,9 @@ func (W _go_goblog_app_app_pkgs_plugintypes_App) PurgeCache() {
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) RenderMarkdownAsText(markdown string) (text string, err error) {
 	return W.WRenderMarkdownAsText(markdown)
+}
+func (W _go_goblog_app_app_pkgs_plugintypes_App) RewriteMarkdownURLs(markdown string) (string, error) {
+	return W.WRewriteMarkdownURLs(markdown)
 }
 func (W _go_goblog_app_app_pkgs_plugintypes_App) SetPostParameter(path string, parameter string, values []string) error {
 	return W.WSetPostParameter(path, parameter, values)

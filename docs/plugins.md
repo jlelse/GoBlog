@@ -56,6 +56,44 @@ plugins:
 
 **Usage:** Add `syndication: https://twitter.com/user/status/123` to your post's front matter.
 
+### SocialSpec
+
+**Path:** `embedded:socialspec` | **Import:** `socialspec`
+
+Implements the [SocialSpec](https://socialspec.org/) APIs, making your profile and followed feeds discoverable by feed readers and social apps:
+
+- `/.well-known/following.opml` ([FollowSpec](https://followspec.org/)): redirects to the selected blog's blogroll OPML export
+- `/.well-known/about.md` ([AboutSpec](https://aboutspec.org/)): a Markdown profile with an optional summary
+- `/.well-known/contact.vcf` ([ContactSpec](https://contactspec.org/)): contact information as a vCard 4.0
+- `/feed.xml` and `/feed.json`: permanent redirects to the configured blog's RSS and JSON feeds, as recommended by SocialSpec
+
+All endpoints allow cross-origin requests and are served through GoBlog's CORS and cache middleware, so they support `ETag`/`If-None-Match` and are cleared when GoBlog's cache is purged. Endpoints are only served when their data is available.
+
+The following list uses GoBlog's [blogroll](features.md#blogroll) feature, so enable `blogroll` for the selected blog and configure its `opml` source. The blogroll OPML export allows cross-origin requests.
+
+```yaml
+plugins:
+  - path: embedded:socialspec
+    import: socialspec
+    config:
+      blog: default                      # Optional, blog whose blogroll is used, defaults to the default blog
+      title: Jane Doe                    # Optional, used for defaults below
+      summary: Eager explorer            # Optional, added as front matter to about.md
+      aboutpage: /about                  # Optional, page whose Markdown is served as about.md
+      contact:                           # Optional, contact.vcf is served when this is set
+        name: Jane Doe                   # Optional, defaults to "title"
+        email: jane@example.com          # Optional, string or list
+        url: https://example.com         # Optional, string or list
+        phone: "+1 555 0100"             # Optional, string or list
+        org: Example Inc.                # Optional
+        title: Writer                    # Optional
+        note: The best way to reach me   # Optional
+```
+
+`email`, `url`, and `phone` accept either a single value or a list. The first email is marked as preferred.
+
+Set `aboutpage` to reuse the Markdown of an existing page instead of maintaining a second copy. Relative inline links and images are made absolute, and media URLs are replaced with their optimized variants when media optimization is enabled. If `summary` is not configured, the page's `summary` parameter is used.
+
 ### Webrings
 
 **Path:** `embedded:webrings` | **Import:** `webrings`

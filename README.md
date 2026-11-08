@@ -167,7 +167,7 @@ Blog title, description, sections, and many other settings are configured via th
 
 GoBlog has a runtime plugin system (based on Yaegi). See [`docs/plugins.md`](docs/plugins.md) for full details.
 
-**Built-in plugins:** Custom CSS, Syndication Links, Webrings, AI Summary, AI Image Captions, Snow Animation, AI Bot Block, Image Tooltips, Telegram Bot, MCP Server.
+**Built-in plugins:** Custom CSS, Syndication Links, SocialSpec, Webrings, AI Summary, AI Image Captions, Snow Animation, AI Bot Block, Image Tooltips, Telegram Bot, MCP Server.
 
 ---
 

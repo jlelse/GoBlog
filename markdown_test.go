@@ -211,6 +211,33 @@ func Test_markdown(t *testing.T) {
 	})
 }
 
+func TestRewriteMarkdownURLs(t *testing.T) {
+	app := newAppWithStorage(t, &localMediaStorage{
+		path:     t.TempDir(),
+		mediaURL: "https://example.com/m",
+	})
+	app.cfg.MediaOptimization.Enabled = true
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.db.mediaOptimizedInsert(&mediaOptimizedRow{
+		OriginalHash: "abc123", VariantType: "jpeg_800", OptimizedHash: "h2", Width: 800, Height: 600,
+	}))
+
+	markdown := `![Inline image](/m/abc123.jpg)
+
+[Inline link](relative/path)
+
+![Reference image][img]
+
+[img]: /m/abc123.jpg
+`
+
+	result, err := app.RewriteMarkdownURLs(markdown)
+	require.NoError(t, err)
+	assert.Contains(t, result, "![Inline image](https://example.com/m/h2.jpeg)")
+	assert.Contains(t, result, "[Inline link](http://localhost:8080/relative/path)")
+	assert.Contains(t, result, "[img]: https://example.com/m/h2.jpeg")
+}
+
 func Benchmark_markdown(b *testing.B) {
 	markdownExample, err := os.ReadFile("testdata/markdownexample.md")
 	if err != nil {

@@ -48,7 +48,7 @@ func cacheLoggedIn(next http.Handler) http.Handler {
 	})
 }
 
-func (a *goBlog) cacheMiddleware(next http.Handler) http.Handler {
+func (a *goBlog) CacheMiddleware(next http.Handler) http.Handler {
 	a.initCache()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a.cache == nil || a.cache.c == nil || !isCacheable(r) || a.shouldSkipLoggedIn(r) {

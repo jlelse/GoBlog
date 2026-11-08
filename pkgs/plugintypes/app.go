@@ -62,6 +62,19 @@ type App interface {
 	CountWebmentions(query *WebmentionsQuery) (int, error)
 	// Get blog statistics
 	GetBlogStats(blog string) (*BlogStats, error)
+	// Get the path of a blog's blogroll OPML export, using the default blog when name is empty.
+	// The enabled result is false when the blogroll is not enabled for the blog.
+	GetBlogrollExportPath(blog string) (path string, enabled bool, err error)
+	// Rewrite relative link and image destinations in Markdown to absolute URLs and
+	// replace media URLs with optimized variants where available.
+	RewriteMarkdownURLs(markdown string) (string, error)
+	// Wrap an HTTP handler with GoBlog's cache middleware.
+	CacheMiddleware(next http.Handler) http.Handler
+	// Wrap an HTTP handler with GoBlog's public CORS middleware.
+	CORSHandler(next http.Handler) http.Handler
+	// Get the canonical feed path for a blog and feed type ("rss", "json", ...).
+	// An empty blog name uses the default blog.
+	GetBlogFeedPath(blog string, feed string) (string, error)
 }
 
 // PostsQuery defines the parameters for querying posts.

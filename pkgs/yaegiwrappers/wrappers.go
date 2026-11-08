@@ -20,3 +20,4 @@ var (
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/PuerkitoBio/goquery
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/carlmjohnson/requests
 //go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers github.com/araddon/dateparse
+//go:generate yaegi extract -license ../../LICENSE -name yaegiwrappers -exclude AliasDataContext,AliasDataPlugin,ErrorFormatPlugin,LimitPlugin,LoaderLimitsPlugin,MergeKeyPlugin,ParserPlugin,TabIndentPlugin,Unmarshaler go.yaml.in/yaml/v4

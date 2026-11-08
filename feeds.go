@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -24,6 +25,22 @@ const (
 	minAtomFeed feedType = "min.atom"
 	minJSONFeed feedType = "min.json"
 )
+
+func (a *goBlog) GetBlogFeedPath(blog, feed string) (string, error) {
+	if blog == "" {
+		blog = a.cfg.DefaultBlog
+	}
+	bc, ok := a.cfg.Blogs[blog]
+	if !ok {
+		return "", fmt.Errorf("blog %q does not exist", blog)
+	}
+	switch feedType(feed) {
+	case rssFeed, atomFeed, jsonFeed, minRssFeed, minAtomFeed, minJSONFeed:
+	default:
+		return "", fmt.Errorf("unsupported feed type %q", feed)
+	}
+	return bc.getRelativePath("") + "." + feed, nil
+}
 
 func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r *http.Request, posts []*post, title, description, path, query string) {
 	now := time.Now()
@@ -87,7 +104,6 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 	go func() {
 		_ = pipeWriter.CloseWithError(feedWriteFunc(pipeWriter))
 	}()
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
 	_ = pipeReader.CloseWithError(minify.Get().Minify(feedMediaType, w, pipeReader))
 }

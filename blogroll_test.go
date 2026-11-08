@@ -109,3 +109,46 @@ func Test_blogroll(t *testing.T) {
 	body := rec.Body.String()
 	assert.Less(t, strings.Index(body, "<script"), strings.Index(body, "<head"), "script should be the first child of the OPML root")
 }
+
+func Test_blogrollExportCORS(t *testing.T) {
+	fc := newFakeHttpClient()
+	app := &goBlog{
+		httpClient: fc.Client,
+		cfg:        createDefaultTestConfig(t),
+	}
+	app.cfg.DefaultBlog = "en"
+	app.cfg.Blogs = map[string]*configBlog{
+		"en": {
+			Lang: "en",
+			Blogroll: &configBlogroll{
+				Enabled: true,
+				Opml:    "https://example.com/opml",
+			},
+		},
+	}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateAssets())
+	fc.setFakeResponse(http.StatusOK, `<opml version="2.0"><body><outline text="Test" xmlUrl="https://example.com/feed.xml"/></body></opml>`)
+	app.d = app.buildRouter()
+
+	t.Run("Export", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/blogroll.opml", nil)
+		req.Header.Set("Origin", "https://client.example")
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+		assert.Contains(t, rr.Body.String(), "https://example.com/feed.xml")
+	})
+
+	t.Run("Preflight", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodOptions, "/blogroll.opml", nil)
+		req.Header.Set("Origin", "https://client.example")
+		req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+		assert.Equal(t, http.MethodGet, rr.Header().Get("Access-Control-Allow-Methods"))
+	})
+}

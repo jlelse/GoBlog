@@ -223,6 +223,20 @@ robotstxt:
   blockedBots: # List all bots that should be disallowed to crawl the site (default is empty)
     - GPTBot
 
+# Plugins (see docs/plugins.md for all built-in plugins)
+# plugins:
+#   - path: embedded:socialspec
+#     import: socialspec
+#     config:
+#       title: Jane Doe # Optional, used for defaults below
+#       summary: Eager explorer # Optional, added as front matter to about.md
+#       aboutpage: /about # Optional, page whose Markdown is served as about.md
+#       blog: en # Optional, blog whose blogroll is used for /.well-known/following.opml
+#       contact: # Optional, contact data for /.well-known/contact.vcf
+#         name: Jane Doe
+#         email: jane@example.com
+#         url: https://example.com
+
 # Blogs
 defaultBlog: en # Default blog (needed because you can define multiple blogs)
 blogs:

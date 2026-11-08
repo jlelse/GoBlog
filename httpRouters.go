@@ -11,9 +11,13 @@ import (
 
 // registerIndexRoutes registers the standard triplet of routes for index pages:
 // base path, feed path, and pagination path.
-func registerIndexRoutes(r chi.Router, path string, handler http.HandlerFunc) {
+func (a *goBlog) registerIndexRoutes(r chi.Router, path string, handler http.HandlerFunc) {
 	r.Get(path, handler)
-	r.Get(path+feedPath, handler)
+	// Feeds allow cross-origin requests and need OPTIONS routes for preflight requests.
+	r.With(a.CORSHandler).Get(path+feedPath, handler)
+	r.With(a.CORSHandler).Options(path+feedPath, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 	r.Get(path+paginationPath, handler)
 }
 
@@ -51,11 +55,11 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 		r.Route(activityPubBasePath, func(r chi.Router) {
 			r.With(bodylimit.BodyLimit(10*bodylimit.MB)).Post("/inbox/{blog}", a.apHandleInbox)
 			r.With(a.checkActivityStreamsRequest).Get("/followers/{blog}", a.apShowFollowers)
-			r.With(a.cacheMiddleware).Get("/remote_follow/{blog}", a.apRemoteFollow)
+			r.With(a.CacheMiddleware).Get("/remote_follow/{blog}", a.apRemoteFollow)
 			r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post("/remote_follow/{blog}", a.apRemoteFollow)
 		})
 		r.Group(func(r chi.Router) {
-			r.Use(cacheLoggedIn, a.cacheMiddleware)
+			r.Use(cacheLoggedIn, a.CacheMiddleware)
 			r.Get("/.well-known/webfinger", a.apHandleWebfinger)
 			r.Get("/.well-known/host-meta", handleWellKnownHostMeta)
 			r.Get("/.well-known/nodeinfo", a.serveNodeInfoDiscover)
@@ -66,7 +70,7 @@ func (a *goBlog) activityPubRouter(r chi.Router) {
 
 // IndieAuth (always available) + Fediverse OAuth (when ActivityPub is enabled)
 func (a *goBlog) oauthRouter(r chi.Router) {
-	r.With(cacheLoggedIn, a.cacheMiddleware).Get(oauthMetadataPath, a.oauthMetadata)
+	r.With(cacheLoggedIn, a.CacheMiddleware).Get(oauthMetadataPath, a.oauthMetadata)
 	r.Get(oauthAuthorizePath, a.oauthShowAuthorize)
 	r.With(a.authMiddleware).Post(oauthAuthorizePath, a.oauthHandleAuthorize)
 	r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(oauthTokenPath, a.oauthToken)
@@ -126,7 +130,7 @@ func (a *goBlog) mediaFilesRouter(r chi.Router) {
 
 // Profile image
 func (a *goBlog) profileImageRouter(r chi.Router) {
-	r.Use(keepSelectedQueryParams("s"), cacheLoggedIn, a.cacheMiddleware, noIndexHeader)
+	r.Use(keepSelectedQueryParams("s"), cacheLoggedIn, a.CacheMiddleware, noIndexHeader)
 	r.Get(profileImagePathJPEG, a.serveProfileImage(profileImageFormatJPEG))
 	r.Get(profileImagePathPNG, a.serveProfileImage(profileImageFormatPNG))
 	r.Get(profileImagePathAVIF, a.serveProfileImage(profileImageFormatAVIF))
@@ -139,10 +143,10 @@ func (a *goBlog) otherRoutesRouter(r chi.Router) {
 
 	// Leaflet
 	r.With(noIndexHeader).Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles())
-	r.With(cacheLoggedIn, a.cacheMiddleware, noIndexHeader).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
+	r.With(cacheLoggedIn, a.CacheMiddleware, noIndexHeader).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
 
 	// Hlsjs
-	r.With(cacheLoggedIn, a.cacheMiddleware, noIndexHeader).HandleFunc("/hlsjs/*", a.serveFs(hlsjsFiles, "/-/"))
+	r.With(cacheLoggedIn, a.CacheMiddleware, noIndexHeader).HandleFunc("/hlsjs/*", a.serveFs(hlsjsFiles, "/-/"))
 
 	// Reactions
 	if a.anyReactionsEnabled() {
@@ -217,9 +221,12 @@ func (a *goBlog) blogHomeRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if !conf.PostAsHome {
 			r.Use(a.privateModeHandler)
-			r.With(a.checkActivityStreamsRequest, a.cacheMiddleware).Get(conf.getRelativePath(""), a.serveHome)
-			r.With(a.cacheMiddleware).Get(conf.getRelativePath("")+feedPath, a.serveHome)
-			r.With(a.cacheMiddleware).Get(conf.getRelativePath(paginationPath), a.serveHome)
+			r.With(a.checkActivityStreamsRequest, a.CacheMiddleware).Get(conf.getRelativePath(""), a.serveHome)
+			r.With(a.CacheMiddleware, a.CORSHandler).Get(conf.getRelativePath("")+feedPath, a.serveHome)
+			r.With(a.CORSHandler).Options(conf.getRelativePath("")+feedPath, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			})
+			r.With(a.CacheMiddleware).Get(conf.getRelativePath(paginationPath), a.serveHome)
 		}
 	}
 }
@@ -229,7 +236,7 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
-			a.cacheMiddleware,
+			a.CacheMiddleware,
 		)
 		for _, section := range conf.Sections {
 			r.Group(func(r chi.Router) {
@@ -238,7 +245,7 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 					path:    secPath,
 					section: section,
 				}))
-				registerIndexRoutes(r, secPath, a.serveIndex)
+				a.registerIndexRoutes(r, secPath, a.serveIndex)
 				r.Group(a.dateRoutes(conf, section.Name))
 			})
 		}
@@ -250,7 +257,7 @@ func (a *goBlog) blogTaxonomiesRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
-			a.cacheMiddleware,
+			a.CacheMiddleware,
 		)
 		for _, taxonomy := range conf.Taxonomies {
 			if taxonomy.Name != "" {
@@ -259,7 +266,7 @@ func (a *goBlog) blogTaxonomiesRouter(conf *configBlog) func(r chi.Router) {
 					taxBasePath := conf.getRelativePath(taxonomy.Name)
 					r.Get(taxBasePath, a.serveTaxonomy)
 					taxValPath := taxBasePath + "/{taxValue}"
-					registerIndexRoutes(r, taxValPath, a.serveTaxonomyValue)
+					a.registerIndexRoutes(r, taxValPath, a.serveTaxonomyValue)
 				})
 			}
 		}
@@ -271,7 +278,7 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
-			a.cacheMiddleware,
+			a.CacheMiddleware,
 		)
 
 		r.Group(a.dateRoutes(conf, ""))
@@ -281,13 +288,13 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) dateRoutes(conf *configBlog, pathPrefix string) func(r chi.Router) {
 	return func(r chi.Router) {
 		yearPath := conf.getRelativePath(pathPrefix + `/{year:(x|\d{4})}`)
-		registerIndexRoutes(r, yearPath, a.serveDate)
+		a.registerIndexRoutes(r, yearPath, a.serveDate)
 
 		monthPath := yearPath + `/{month:(x|\d{2})}`
-		registerIndexRoutes(r, monthPath, a.serveDate)
+		a.registerIndexRoutes(r, monthPath, a.serveDate)
 
 		dayPath := monthPath + `/{day:(\d{2})}`
-		registerIndexRoutes(r, dayPath, a.serveDate)
+		a.registerIndexRoutes(r, dayPath, a.serveDate)
 	}
 }
 
@@ -303,7 +310,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 			}
 			r.Use(
 				a.privateModeHandler,
-				a.cacheMiddleware,
+				a.CacheMiddleware,
 				middleware.WithValue(indexConfigKey, &indexConfig{
 					path:            photoPath,
 					parameter:       a.cfg.Micropub.PhotoParam,
@@ -312,7 +319,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 					summaryTemplate: photoSummary,
 				}),
 			)
-			registerIndexRoutes(r, photoPath, a.serveIndex)
+			a.registerIndexRoutes(r, photoPath, a.serveIndex)
 		}
 	}
 }
@@ -327,17 +334,17 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 					r.Use(
 						a.privateModeHandler,
 						noIndexHeader,
-						a.cacheMiddleware,
+						a.CacheMiddleware,
 						middleware.WithValue(pathKey, searchPath),
 					)
 					r.Get("/", a.serveSearch)
 					r.With(bodylimit.BodyLimit(10*bodylimit.KB)).Post("/", a.serveSearch)
 					searchResultPath := "/" + searchPlaceholder
-					registerIndexRoutes(r, searchResultPath, a.serveSearchResult)
+					a.registerIndexRoutes(r, searchResultPath, a.serveSearchResult)
 				})
 				r.With(
 					// No private mode, to allow using OpenSearch in browser
-					a.cacheMiddleware,
+					a.CacheMiddleware,
 					middleware.WithValue(pathKey, searchPath),
 				).Get("/opensearch.xml", a.serveOpenSearch)
 			})
@@ -378,11 +385,11 @@ func (a *goBlog) blogEditorRouter(_ *configBlog) func(r chi.Router) {
 		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(editorFileOptimizePath, a.serveEditorFilesOptimize)
 		r.With(bodylimit.BodyLimit(100*bodylimit.KB)).Post(editorFileVariantsPath, a.serveEditorFilesVariants)
 		r.Get(editorLinksPath, a.serveEditorLinks)
-		registerIndexRoutes(r, "/drafts", a.serveDrafts)
-		registerIndexRoutes(r, "/private", a.servePrivate)
-		registerIndexRoutes(r, "/unlisted", a.serveUnlisted)
-		registerIndexRoutes(r, "/scheduled", a.serveScheduled)
-		registerIndexRoutes(r, "/deleted", a.serveDeleted)
+		a.registerIndexRoutes(r, "/drafts", a.serveDrafts)
+		a.registerIndexRoutes(r, "/private", a.servePrivate)
+		a.registerIndexRoutes(r, "/unlisted", a.serveUnlisted)
+		a.registerIndexRoutes(r, "/scheduled", a.serveScheduled)
+		a.registerIndexRoutes(r, "/deleted", a.serveDeleted)
 		r.HandleFunc("/ws", a.serveEditorWebsocket)
 	}
 }
@@ -397,7 +404,7 @@ func (a *goBlog) blogCommentsRouter(conf *configBlog) func(r chi.Router) {
 					a.privateModeHandler,
 					middleware.WithValue(pathKey, commentsPath),
 				)
-				r.With(a.cacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
+				r.With(a.CacheMiddleware, noIndexHeader).Get("/{id:[0-9]+}", a.serveComment)
 				r.With(a.captchaMiddleware, bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.createCommentFromRequest)
 				r.Group(func(r chi.Router) {
 					// Admin
@@ -419,7 +426,7 @@ func (a *goBlog) blogStatsRouter(conf *configBlog) func(r chi.Router) {
 		if bsc := conf.BlogStats; bsc != nil && bsc.Enabled {
 			statsPath := conf.getRelativePath(cmp.Or(bsc.Path, defaultBlogStatsPath))
 			r.Use(a.privateModeHandler)
-			r.With(a.cacheMiddleware).Get(statsPath, a.serveBlogStats)
+			r.With(a.CacheMiddleware).Get(statsPath, a.serveBlogStats)
 		}
 	}
 }
@@ -432,8 +439,11 @@ func (a *goBlog) blogBlogrollRouter(conf *configBlog) func(r chi.Router) {
 				a.privateModeHandler,
 				middleware.WithValue(cacheExpirationKey, a.defaultCacheExpiration()),
 			)
-			r.With(a.cacheMiddleware).Get(brPath, a.serveBlogroll)
-			r.With(a.cacheMiddleware).Get(brPath+blogrollDownloadFile, a.serveBlogrollExport)
+			r.With(a.CacheMiddleware).Get(brPath, a.serveBlogroll)
+			r.With(a.CacheMiddleware, a.CORSHandler).Get(brPath+blogrollDownloadFile, a.serveBlogrollExport)
+			r.With(a.CORSHandler).Options(brPath+blogrollDownloadFile, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			})
 			r.With(a.authMiddleware).Post(brPath+blogrollRefreshSubpath, a.refreshBlogroll)
 		}
 	}
@@ -443,7 +453,7 @@ func (a *goBlog) blogBlogrollRouter(conf *configBlog) func(r chi.Router) {
 func (a *goBlog) blogGeoMapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if mc := conf.Map; mc != nil && mc.Enabled {
-			r.Use(a.privateModeHandler, a.cacheMiddleware)
+			r.Use(a.privateModeHandler, a.CacheMiddleware)
 			mapPath := conf.getRelativePath(cmp.Or(mc.Path, defaultGeoMapPath))
 			r.Get(mapPath, a.serveGeoMap)
 			r.Get(mapPath+geoMapTracksSubpath, a.serveGeoMapTracks)
@@ -458,7 +468,7 @@ func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 		if cc := conf.Contact; cc != nil && cc.Enabled {
 			contactPath := conf.getRelativePath(cmp.Or(cc.Path, defaultContactPath))
 			r.Route(contactPath, func(r chi.Router) {
-				r.Use(a.privateModeHandler, a.cacheMiddleware)
+				r.Use(a.privateModeHandler, a.CacheMiddleware)
 				r.Get("/", a.serveContactForm)
 				r.With(a.captchaMiddleware, bodylimit.BodyLimit(bodylimit.MB)).Post("/", a.sendContactSubmission)
 			})
@@ -469,7 +479,7 @@ func (a *goBlog) blogContactRouter(conf *configBlog) func(r chi.Router) {
 // Blog - Sitemap
 func (a *goBlog) blogSitemapRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
-		r.Use(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware)
+		r.Use(a.privateModeHandler, cacheLoggedIn, a.CacheMiddleware)
 		r.Get(conf.getRelativePath(sitemapBlogPath), a.redirectSitemapBlog)
 		r.Get(conf.getRelativePath(sitemapBlogFeaturesPath), a.serveSitemapBlogFeatures)
 		r.Get(conf.getRelativePath(sitemapBlogArchivesPath), a.serveSitemapBlogArchives)

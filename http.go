@@ -256,24 +256,24 @@ func (a *goBlog) buildRouter() http.Handler {
 	}
 
 	// Sitemap
-	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(sitemapPath, a.serveSitemap)
+	r.With(a.privateModeHandler, cacheLoggedIn, a.CacheMiddleware).Get(sitemapPath, a.serveSitemap)
 
 	// llms.txt
-	r.With(a.privateModeHandler, cacheLoggedIn, a.cacheMiddleware).Get(llmsTxtPath, a.serveLlmsTxt)
+	r.With(a.privateModeHandler, cacheLoggedIn, a.CacheMiddleware).Get(llmsTxtPath, a.serveLlmsTxt)
 
 	// IndexNow
 	if a.indexNowEnabled() {
 		if inkey := a.indexNowKey(); len(inkey) > 0 {
-			r.With(cacheLoggedIn, a.cacheMiddleware).Get("/"+string(inkey)+".txt", a.serveIndexNow)
+			r.With(cacheLoggedIn, a.CacheMiddleware).Get("/"+string(inkey)+".txt", a.serveIndexNow)
 		}
 	}
 
 	// Robots.txt (with cache for 1 hour)
-	r.With(middleware.WithValue(cacheExpirationKey, 3600), cacheLoggedIn, a.cacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
+	r.With(middleware.WithValue(cacheExpirationKey, 3600), cacheLoggedIn, a.CacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
 
 	// Favicon
 	if !hasStaticPath("favicon.ico") {
-		r.With(a.cacheMiddleware).Get("/favicon.ico", a.serve404)
+		r.With(a.CacheMiddleware).Get("/favicon.ico", a.serve404)
 	}
 
 	r.NotFound(a.servePostsAliasesRedirects())
@@ -337,7 +337,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 					// Check visibility
 					switch postVisibility(value2) {
 					case visibilityPublic, visibilityUnlisted:
-						alicePrivate.Append(a.checkActivityStreamsRequest, a.cacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
+						alicePrivate.Append(a.checkActivityStreamsRequest, a.CacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					default: // private, etc.
 						alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					}
@@ -347,7 +347,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 						a.servePost(w, r)
 						return
 					}
-					alicePrivate.Append(a.cacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
+					alicePrivate.Append(a.CacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
 					return
 				default: // draft, scheduled, etc.
 					alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
@@ -355,18 +355,18 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				}
 			case "alias":
 				// Is alias, redirect
-				alicePrivate.Append(cacheLoggedIn, a.cacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+				alicePrivate.Append(cacheLoggedIn, a.CacheMiddleware).ThenFunc(func(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, value1, status)
 				}).ServeHTTP(w, r)
 				return
 			case "deleted":
 				// Is deleted, serve 410
-				alicePrivate.Append(a.cacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
+				alicePrivate.Append(a.CacheMiddleware).ThenFunc(a.serve410).ServeHTTP(w, r)
 				return
 			}
 		}
 		// No post, check template assets (dynamically registered), regex redirects or serve 404 error
-		alice.New(a.cacheMiddleware, a.checkTemplateAssets, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
+		alice.New(a.CacheMiddleware, a.checkTemplateAssets, a.checkRegexRedirects).ThenFunc(a.serve404).ServeHTTP(w, r)
 	}
 }
 

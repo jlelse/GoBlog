@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/carlmjohnson/requests"
@@ -52,4 +53,42 @@ func Test_feeds(t *testing.T) {
 			assert.Equal(t, "Test Content", feed.Items[0].Description)
 		}
 	}
+}
+
+func Test_feedCORS(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	app.d = app.buildRouter()
+
+	t.Run("Feed CORS", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/posts.rss", nil)
+		req.Header.Set("Origin", "https://example.com")
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	})
+
+	t.Run("Feed preflight", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodOptions, "/posts.rss", nil)
+		req.Header.Set("Origin", "https://example.com")
+		req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+		assert.Equal(t, http.MethodGet, rr.Header().Get("Access-Control-Allow-Methods"))
+	})
+
+	t.Run("Non-feed path has no CORS", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/not-a-feed.json", nil)
+		req.Header.Set("Origin", "https://example.com")
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.Empty(t, rr.Header().Get("Access-Control-Allow-Origin"))
+	})
 }

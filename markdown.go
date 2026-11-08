@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"sort"
+	"strings"
 
 	chromahtml "github.com/alecthomas/chroma/v3/formatters/html"
 	emoji "github.com/yuin/goldmark-emoji/v2"
@@ -13,6 +15,7 @@ import (
 	"github.com/yuin/goldmark/v2/parser"
 	"github.com/yuin/goldmark/v2/renderer"
 	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/text"
 	"github.com/yuin/goldmark/v2/util"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/builderpool"
@@ -197,6 +200,85 @@ func (a *goBlog) renderPostMarkdownToWriter(w io.Writer, source string, absolute
 		a.error("Error while rendering post markdown", "err", err)
 	}
 	return err
+}
+
+// RewriteMarkdownURLs makes relative link and image destinations absolute and
+// replaces media URLs with optimized variants where available.
+func (a *goBlog) RewriteMarkdownURLs(markdown string) (result string, err error) {
+	if markdown == "" {
+		return "", nil
+	}
+	err = a.safeMarkdownRender(func() error {
+		a.initMarkdown()
+		source := []byte(markdown)
+		doc := a.mdParser.ParseStringSource(markdown)
+		type replacement struct {
+			start, stop int
+			value       string
+		}
+		var replacements []replacement
+		if err := ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+			var destination text.SingleLineValue
+			switch n := node.(type) {
+			case *ast.Link:
+				destination = n.Destination
+			case *ast.Image:
+				destination = n.Destination
+			default:
+				return ast.WalkContinue, nil
+			}
+			if destination.IsEmpty() || destination.IsOwned() {
+				return ast.WalkContinue, nil
+			}
+			original := destination.Str(source)
+			rewritten := a.rewriteMarkdownURL(original)
+			if rewritten == original {
+				return ast.WalkContinue, nil
+			}
+			index := destination.Index()
+			replacements = append(replacements, replacement{start: index.Start, stop: index.Stop, value: rewritten})
+			return ast.WalkContinue, nil
+		}); err != nil {
+			return err
+		}
+		sort.Slice(replacements, func(i, j int) bool {
+			return replacements[i].start < replacements[j].start
+		})
+		var b strings.Builder
+		last := 0
+		for _, r := range replacements {
+			if r.start < last || r.stop > len(markdown) {
+				continue
+			}
+			b.WriteString(markdown[last:r.start])
+			b.WriteString(r.value)
+			last = r.stop
+		}
+		b.WriteString(markdown[last:])
+		// Also catch media URLs in places the AST doesn't expose, such as link
+		// reference definitions or raw HTML.
+		result = mediaImgLinkRe.ReplaceAllStringFunc(b.String(), func(match string) string {
+			return a.mediaFallbackURL(match)
+		})
+		return nil
+	})
+	if err != nil {
+		a.error("Error while rewriting markdown URLs", "err", err)
+		return "", err
+	}
+	return result, nil
+}
+
+func (a *goBlog) rewriteMarkdownURL(destination string) string {
+	if publicAddress := a.getFullAddress(""); publicAddress != "" {
+		if resolved, err := resolveURLReferences(publicAddress, destination); err == nil && len(resolved) > 0 {
+			destination = resolved[0]
+		}
+	}
+	return a.mediaFallbackURL(destination)
 }
 
 // Extensions etc...

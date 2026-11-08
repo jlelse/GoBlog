@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -144,6 +145,21 @@ func (a *goBlog) getBlogrollOutlines(blog string) ([]*opml.Outline, error) {
 	// Cache
 	a.db.cacheOutlines(blog, outlines)
 	return outlines, nil
+}
+
+func (a *goBlog) GetBlogrollExportPath(blog string) (string, bool, error) {
+	if blog == "" {
+		blog = a.cfg.DefaultBlog
+	}
+	bc, ok := a.cfg.Blogs[blog]
+	if !ok {
+		return "", false, fmt.Errorf("blog %q does not exist", blog)
+	}
+	enabled, path := bc.getBlogrollPath()
+	if !enabled {
+		return "", false, nil
+	}
+	return path + blogrollDownloadFile, true, nil
 }
 
 func (db *database) cacheOutlines(blog string, outlines []*opml.Outline) {

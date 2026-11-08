@@ -286,7 +286,8 @@ This is separate from notification-based Telegram, which sends push notification
 
 ## Feeds
 
-RSS, Atom, and JSON feeds are always available at any index URL by appending the feed extension (e.g., `/posts.rss`, `/posts.atom`, `/posts.json`). Min variants (`/posts.min.rss`, `/posts.min.atom`, `/posts.min.json`) render the same content but omit TTS audio and the comments/interactions link for cleaner output. All feeds send `Access-Control-Allow-Origin: *`.
+RSS, Atom, and JSON feeds are always available at any index URL by appending the feed extension (e.g., `/posts.rss`, `/posts.atom`, `/posts.json`). Min variants (`/posts.min.rss`, `/posts.min.atom`, `/posts.min.json`) render the same content but omit TTS audio and the comments/interactions link for cleaner output. Feeds allow cross-origin requests, including preflight requests.
+
 
 Add `?fallbacktitle` to feed URLs to generate computed titles for untitled posts.
 

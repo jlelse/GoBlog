@@ -23,6 +23,7 @@ require (
 	github.com/emersion/go-smtp v0.25.0
 	github.com/go-acme/lego/v5 v5.6.0
 	github.com/go-chi/chi/v5 v5.5.0
+	github.com/go-chi/cors v1.2.2
 	github.com/go-jose/go-jose/v4 v4.1.8
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/gorilla/handlers v1.5.2
