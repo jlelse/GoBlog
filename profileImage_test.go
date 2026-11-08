@@ -402,3 +402,19 @@ func Test_profileImageSizeParsing(t *testing.T) {
 		})
 	}
 }
+
+func Test_profileImageIconRoutes(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	app.d = app.buildRouter()
+
+	for _, path := range []string{appleTouchIconPath, faviconPath} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "image/png", rr.Header().Get("Content-Type"))
+		assert.Equal(t, "image/png", http.DetectContentType(rr.Body.Bytes()))
+	}
+}

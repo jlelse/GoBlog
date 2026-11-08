@@ -135,6 +135,12 @@ func (a *goBlog) profileImageRouter(r chi.Router) {
 	r.Get(profileImagePathPNG, a.serveProfileImage(profileImageFormatPNG))
 	r.Get(profileImagePathAVIF, a.serveProfileImage(profileImageFormatAVIF))
 	r.Get(profileImageOriginalPath+"/{secret}", a.serveProfileImageOriginal)
+	if !hasStaticPath(appleTouchIconPath) {
+		r.Get(appleTouchIconPath, a.serveProfileImageSize(profileImageFormatPNG, 180))
+	}
+	if !hasStaticPath(faviconPath) {
+		r.Get(faviconPath, a.serveProfileImageSize(profileImageFormatPNG, 64))
+	}
 }
 
 // Various other routes

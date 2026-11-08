@@ -41,6 +41,8 @@ const (
 	profileImagePathPNG          = profileImagePath + "." + string(profileImageFormatPNG)
 	profileImagePathAVIF         = profileImagePath + "." + string(profileImageFormatAVIF)
 	profileImageOriginalPath     = "/profile-original"
+	appleTouchIconPath           = "/apple-touch-icon.png"
+	faviconPath                  = "/favicon.ico"
 	profileImageSizeRegexPattern = `(?P<width>\d+)(x(?P<height>\d+))?`
 
 	profileImageNoImageHash = "x"
@@ -103,6 +105,18 @@ func (a *goBlog) serveProfileImage(format profileImageFormat) http.HandlerFunc {
 		}
 		// Fallback to local processing
 		a.serveProfileImageFallback(w, r, format, mediaType, encode, width, height)
+	}
+}
+
+func (a *goBlog) serveProfileImageSize(format profileImageFormat, size int) http.HandlerFunc {
+	handler := a.serveProfileImage(format)
+	return func(w http.ResponseWriter, r *http.Request) {
+		r = r.Clone(r.Context())
+		query := r.URL.Query()
+		query.Set("s", strconv.Itoa(size))
+		r.URL.RawQuery = query.Encode()
+		r.Form = nil
+		handler(w, r)
 	}
 }
 
