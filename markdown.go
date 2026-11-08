@@ -68,13 +68,13 @@ func (a *goBlog) initMarkdown() {
 				util.Prioritized(parser.NewParagraphParser(), 1000),
 			),
 			parser.WithExtensions(
-				extension.TypographerParser,
-				emoji.Parser,
+				extension.NewTypographerParser(),
+				emoji.NewParser(),
 			),
 		)
 		a.titleMdRenderer = html.New(
 			html.WithExtensions(
-				emoji.HTMLRenderer,
+				emoji.NewHTMLRenderer(),
 			),
 		)
 	})
@@ -84,13 +84,13 @@ func (a *goBlog) defaultMarkdownParserOptions() []parser.Option {
 	return []parser.Option{
 		parser.WithAutoHeadingID(),
 		parser.WithExtensions(
-			extension.TableParser,
-			extension.StrikethroughParser,
-			extension.FootnoteParser,
-			extension.TypographerParser,
-			extension.LinkifyParser,
-			mark.Parser,
-			emoji.Parser,
+			extension.NewTableParser(),
+			extension.NewStrikethroughParser(),
+			extension.NewFootnoteParser(),
+			extension.NewTypographerParser(),
+			extension.NewLinkifyParser(),
+			mark.NewParser(),
+			emoji.NewParser(),
 		),
 	}
 }
@@ -102,11 +102,11 @@ func (a *goBlog) defaultMarkdownRendererOptions(additional ...html.Option) []htm
 	return append([]html.Option{
 		html.WithUnsafe(),
 		html.WithExtensions(
-			extension.TableHTMLRenderer,
-			extension.StrikethroughHTMLRenderer,
-			extension.FootnoteHTMLRenderer,
-			mark.HTMLRenderer,
-			emoji.HTMLRenderer,
+			extension.NewTableHTMLRenderer(),
+			extension.NewStrikethroughHTMLRenderer(),
+			extension.NewFootnoteHTMLRenderer(),
+			mark.NewHTMLRenderer(),
+			emoji.NewHTMLRenderer(),
 			highlighting.NewHTMLRenderer(
 				highlighting.WithStyle(chromaStyleName),
 				highlighting.WithFormatterOptions(
