@@ -364,6 +364,18 @@ Hello from Jane.
 		assert.NotContains(t, rr.Body.String(), "Hello from Jane.")
 	})
 
+	t.Run("CacheWithoutOrigin", func(t *testing.T) {
+		app.purgeCache()
+		req := httptest.NewRequest(http.MethodGet, "/.well-known/about.md", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		rr = serve(http.MethodGet, "/.well-known/about.md", nil)
+		require.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	})
+
 	t.Run("ETag", func(t *testing.T) {
 		rr := serve(http.MethodGet, "/.well-known/about.md", nil)
 		etag := rr.Header().Get("ETag")

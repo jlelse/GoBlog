@@ -72,6 +72,22 @@ func Test_feedCORS(t *testing.T) {
 		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
 	})
 
+	t.Run("Feed CORS cached without Origin", func(t *testing.T) {
+		app.purgeCache()
+		// A request without an Origin header must not poison the cache for cross-origin clients.
+		req := httptest.NewRequest(http.MethodGet, "/posts.rss", nil)
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		req = httptest.NewRequest(http.MethodGet, "/posts.rss", nil)
+		req.Header.Set("Origin", "https://example.com")
+		rr = httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	})
+
 	t.Run("Feed preflight", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodOptions, "/posts.rss", nil)
 		req.Header.Set("Origin", "https://example.com")

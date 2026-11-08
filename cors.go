@@ -15,6 +15,13 @@ var publicCORS = cors.Handler(cors.Options{
 })
 
 // CORSHandler wraps an HTTP handler with GoBlog's public CORS policy.
+// The headers are set independently of the request's Origin header, so cached responses
+// are also valid for cross-origin requests.
 func (a *goBlog) CORSHandler(next http.Handler) http.Handler {
-	return publicCORS(next)
+	handler := publicCORS(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Expose-Headers", "ETag")
+		handler.ServeHTTP(w, r)
+	})
 }

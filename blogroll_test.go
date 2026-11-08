@@ -141,6 +141,23 @@ func Test_blogrollExportCORS(t *testing.T) {
 		assert.Contains(t, rr.Body.String(), "https://example.com/feed.xml")
 	})
 
+	t.Run("Export cached without Origin", func(t *testing.T) {
+		app.purgeCache()
+		// A request without an Origin header must not poison the cache for cross-origin clients.
+		req := httptest.NewRequest(http.MethodGet, "/blogroll.opml", nil)
+		rr := httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		req = httptest.NewRequest(http.MethodGet, "/blogroll.opml", nil)
+		req.Header.Set("Origin", "https://client.example")
+		rr = httptest.NewRecorder()
+		app.d.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+		assert.Contains(t, rr.Body.String(), "https://example.com/feed.xml")
+	})
+
 	t.Run("Preflight", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodOptions, "/blogroll.opml", nil)
 		req.Header.Set("Origin", "https://client.example")

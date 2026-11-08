@@ -56,7 +56,7 @@ func GetPlugin() (plugintypes.SetApp, plugintypes.SetConfig, plugintypes.Middlew
 
 func (p *plugin) SetApp(app plugintypes.App) {
 	p.app = app
-	p.cachedHandler = app.CacheMiddleware(app.CORSHandler(http.HandlerFunc(p.serve)))
+	p.cachedHandler = app.CORSHandler(app.CacheMiddleware(http.HandlerFunc(p.serve)))
 }
 
 func (p *plugin) SetConfig(config map[string]any) {
