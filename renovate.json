@@ -1,6 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-4 * * *"],
+  "rebaseWhen": "conflicted",
   "packageRules": [
     {
       "description": "Group all Go module updates",
