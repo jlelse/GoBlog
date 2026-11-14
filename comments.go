@@ -78,8 +78,8 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		return "", http.StatusBadRequest, errors.New("comment is empty")
 	}
 	name = cmp.Or(cleanHTMLText(name), "Anonymous")
-	website = cleanHTMLText(website)
-	original = cleanHTMLText(original)
+	website = httpOrHTTPSURLOrEmpty(cleanHTMLText(website))
+	original = httpOrHTTPSURLOrEmpty(cleanHTMLText(original))
 	if original != "" {
 		// Check if comment already exists
 		exists, id, err := a.db.commentIDByOriginal(original)
@@ -117,6 +117,21 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 	_ = a.createWebmention(a.getFullAddress(commentAddress), a.getFullAddress(target))
 	// Return comment path
 	return commentAddress, 0, nil
+}
+
+// httpOrHTTPSURLOrEmpty returns s only if it is an absolute http(s) URL,
+// otherwise an empty string. This prevents dangerous schemes such as
+// javascript: or data: from being stored and later rendered into href
+// attributes (stored XSS via the comment website or ActivityPub actor URL).
+func httpOrHTTPSURLOrEmpty(s string) string {
+	if s == "" {
+		return ""
+	}
+	u, err := url.Parse(s)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return ""
+	}
+	return s
 }
 
 func (a *goBlog) checkCommentTarget(target string) (string, int, error) {
