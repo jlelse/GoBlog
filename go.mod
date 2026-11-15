@@ -20,7 +20,7 @@ require (
 	github.com/dmulholl/mp3lib v1.0.0
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
-	github.com/emersion/go-smtp v0.25.1
+	github.com/emersion/go-smtp v0.26.0
 	github.com/go-acme/lego/v5 v5.6.0
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/cors v1.2.2
@@ -60,11 +60,11 @@ require (
 	github.com/wneessen/go-mail v0.8.2
 	github.com/yuin/goldmark-emoji/v2 v2.0.3
 	github.com/yuin/goldmark-highlighting/v3 v3.1.1
-	github.com/yuin/goldmark/v2 v2.1.15
+	github.com/yuin/goldmark/v2 v2.1.16
 	go.hacdias.com/indielib v0.6.1
 	go.yaml.in/yaml/v4 v4.0.0
 	goftp.io/server/v2 v2.0.3
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.59.0
 	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/sync v0.25.0
