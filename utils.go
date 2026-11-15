@@ -75,6 +75,24 @@ func isAbsoluteURL(s string) bool {
 	return true
 }
 
+// isHTTPURL reports whether s is an absolute http(s) URL with a host.
+// This prevents dangerous schemes such as javascript: or data: from being
+// stored and later rendered into href attributes.
+func isHTTPURL(s string) bool {
+	u, err := url.Parse(strings.TrimSpace(s))
+	return err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https")
+}
+
+// httpURLOrEmpty returns s without surrounding whitespace if it is an absolute
+// http(s) URL with a host, otherwise an empty string.
+func httpURLOrEmpty(s string) string {
+	s = strings.TrimSpace(s)
+	if !isHTTPURL(s) {
+		return ""
+	}
+	return s
+}
+
 func allLinksFromHTML(r io.Reader, baseURL string) ([]string, error) {
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {

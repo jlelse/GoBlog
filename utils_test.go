@@ -45,6 +45,26 @@ func Test_isAbsoluteURL(t *testing.T) {
 	assert.False(t, isAbsoluteURL("/test"))
 }
 
+func Test_isHTTPURL(t *testing.T) {
+	assert.True(t, isHTTPURL("http://example.com"))
+	assert.True(t, isHTTPURL("https://example.com/path?query=1#fragment"))
+	assert.True(t, isHTTPURL("  https://example.com  "))
+	assert.False(t, isHTTPURL(""))
+	assert.False(t, isHTTPURL("/test"))
+	assert.False(t, isHTTPURL("//example.com"))
+	assert.False(t, isHTTPURL("https:foo"))
+	assert.False(t, isHTTPURL("https:/foo"))
+	assert.False(t, isHTTPURL("javascript:alert(1)"))
+	assert.False(t, isHTTPURL("JavaScript:alert(1)"))
+	assert.False(t, isHTTPURL("data:text/html,<script>alert(1)</script>"))
+}
+
+func Test_httpURLOrEmpty(t *testing.T) {
+	assert.Equal(t, "https://example.com", httpURLOrEmpty(" https://example.com "))
+	assert.Empty(t, httpURLOrEmpty("javascript:alert(1)"))
+	assert.Empty(t, httpURLOrEmpty("https:foo"))
+}
+
 func Test_wordCount(t *testing.T) {
 	assert.Equal(t, 3, wordCount("abc def abc"))
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -243,4 +244,42 @@ func Test_commentsUpdateByOriginal(t *testing.T) {
 	assert.Equal(t, "Edited name", comment.Name)
 	assert.Equal(t, "", comment.Website)
 
+}
+
+func Test_commentsURLSanitization(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+
+	err := app.initConfig(false)
+	require.NoError(t, err)
+
+	bc := app.cfg.Blogs[app.cfg.DefaultBlog]
+
+	_, _, err = app.createComment(bc, "https://example.com/abc", "Test", "Name", "javascript:alert(1)", "javascript:alert(1)")
+	require.NoError(t, err)
+
+	comments, err := app.db.getComments(&commentsRequestConfig{})
+	require.NoError(t, err)
+	require.Len(t, comments, 1)
+	assert.Empty(t, comments[0].Website)
+	assert.Empty(t, comments[0].Original)
+
+	// Dangerous values stored by older versions are sanitized when reading.
+	_, err = app.db.Exec(
+		"insert into comments (target, comment, name, website, original) values (@target, @comment, @name, @website, @original)",
+		sql.Named("target", "/legacy"),
+		sql.Named("comment", "Legacy"),
+		sql.Named("name", "Name"),
+		sql.Named("website", "data:text/html,<script>alert(1)</script>"),
+		sql.Named("original", "javascript:alert(1)"),
+	)
+	require.NoError(t, err)
+
+	comments, err = app.db.getComments(&commentsRequestConfig{target: "/legacy"})
+	require.NoError(t, err)
+	require.Len(t, comments, 1)
+	assert.Empty(t, comments[0].Website)
+	assert.Empty(t, comments[0].Original)
 }

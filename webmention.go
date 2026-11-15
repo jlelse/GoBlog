@@ -99,7 +99,7 @@ func (a *goBlog) extractMention(r *http.Request) (*mention, error) {
 	}
 	source := r.Form.Get("source")
 	target := r.Form.Get("target")
-	if source == "" || target == "" || !isAbsoluteURL(source) || !isAbsoluteURL(target) {
+	if source == "" || target == "" || !isHTTPURL(source) || !isHTTPURL(target) {
 		a.debug("Invalid webmention request", "source", source, "target", target)
 		return nil, errors.New("invalid request")
 	}
@@ -291,8 +291,9 @@ func (a *goBlog) getWebmentions(config *webmentionsRequestConfig) ([]*mention, e
 		if err != nil {
 			return nil, err
 		}
+		m.URL = httpURLOrEmpty(m.URL)
 		if m.URL == "" {
-			m.URL = m.Source
+			m.URL = httpURLOrEmpty(m.Source)
 		}
 		if config.submentions {
 			m.Submentions, err = a.getWebmentions(&webmentionsRequestConfig{

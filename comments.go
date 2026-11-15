@@ -78,8 +78,8 @@ func (a *goBlog) createComment(bc *configBlog, target, comment, name, website, o
 		return "", http.StatusBadRequest, errors.New("comment is empty")
 	}
 	name = cmp.Or(cleanHTMLText(name), "Anonymous")
-	website = cleanHTMLText(website)
-	original = cleanHTMLText(original)
+	website = httpURLOrEmpty(cleanHTMLText(website))
+	original = httpURLOrEmpty(cleanHTMLText(original))
 	if original != "" {
 		// Check if comment already exists
 		exists, id, err := a.db.commentIDByOriginal(original)
@@ -171,6 +171,8 @@ func (db *database) getComments(config *commentsRequestConfig) ([]*comment, erro
 		if err != nil {
 			return nil, err
 		}
+		c.Website = httpURLOrEmpty(c.Website)
+		c.Original = httpURLOrEmpty(c.Original)
 		comments = append(comments, c)
 	}
 	if err = rows.Err(); err != nil {

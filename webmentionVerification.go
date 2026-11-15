@@ -179,6 +179,6 @@ func (a *goBlog) verifyReader(m *mention, body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	m.Title, m.Content, m.Author, m.URL = mf.Title, mf.Content, mf.Author, cmp.Or(mf.URL, m.Source)
+	m.Title, m.Content, m.Author, m.URL = mf.Title, mf.Content, mf.Author, cmp.Or(httpURLOrEmpty(mf.URL), httpURLOrEmpty(m.Source))
 	return nil
 }

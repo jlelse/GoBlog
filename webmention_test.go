@@ -181,3 +181,38 @@ func Test_webmentions(t *testing.T) {
 	assert.Len(t, mentions, 0)
 
 }
+
+func Test_webmentionURLSanitization(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Server.PublicAddress = "https://example.com"
+
+	_ = app.initConfig(false)
+
+	// A URL stored by an older version is sanitized on read and falls back to the source.
+	_ = app.db.insertWebmention(&mention{
+		Source:  "https://example.net/test",
+		Target:  "https://example.com/test",
+		URL:     "javascript:alert(1)",
+		Created: time.Now().Unix(),
+	}, webmentionStatusVerified)
+
+	mentions, err := app.getWebmentions(&webmentionsRequestConfig{
+		sourcelike: "example.net",
+	})
+	require.NoError(t, err)
+	require.Len(t, mentions, 1)
+	assert.Equal(t, "https://example.net/test", mentions[0].URL)
+
+	// Dangerous schemes are rejected when receiving webmentions.
+	r := httptest.NewRequest(http.MethodPost, "/webmention", strings.NewReader(url.Values{
+		"source": {"javascript:alert(1)"},
+		"target": {"https://example.com/test"},
+	}.Encode()))
+	r.Header.Set("Content-Type", contenttype.WWWForm)
+	w := httptest.NewRecorder()
+
+	app.handleWebmention(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}

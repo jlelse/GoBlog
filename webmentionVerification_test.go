@@ -248,3 +248,43 @@ func Test_verifyMentionAltAddress(t *testing.T) {
 	require.Equal(t, postUrl, m.Target)
 	require.Equal(t, "https://example.net/some-post", m.Source)
 }
+
+func Test_verifyMentionSanitizesURL(t *testing.T) {
+	mockClient := newFakeHttpClient()
+	mockClient.setFakeResponse(http.StatusOK, `<html><body>
+		<div class="h-entry">
+			<a class="u-url" href="javascript:alert(1)">Bad URL</a>
+			<div class="e-content">Test content</div>
+			<a href="https://example.org/test">Link</a>
+		</div>
+	</body></html>`)
+
+	app := &goBlog{
+		httpClient:     mockClient.Client,
+		ssrfHTTPClient: mockClient.Client,
+		cfg:            createDefaultTestConfig(t),
+		d: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
+	app.cfg.Server.PublicAddress = "https://example.org"
+
+	_ = app.initConfig(false)
+
+	m := &mention{
+		Source: "https://example.net/post",
+		Target: "https://example.org/test",
+	}
+
+	err := app.verifyMention(m)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://example.net/post", m.URL)
+
+	mentions, err := app.getWebmentions(&webmentionsRequestConfig{
+		sourcelike: "example.net",
+	})
+	require.NoError(t, err)
+	require.Len(t, mentions, 1)
+	require.Equal(t, "https://example.net/post", mentions[0].URL)
+}
