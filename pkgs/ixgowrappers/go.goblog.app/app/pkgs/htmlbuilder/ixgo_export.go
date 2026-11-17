@@ -21,10 +21,10 @@ func init() {
 		},
 		Interfaces: map[string]reflect.Type{},
 		NamedTypes: map[string]reflect.Type{
-			"HTMLBuilder": reflect.TypeOf((*q.HTMLBuilder)(nil)).Elem(),
+			"HTMLBuilder": reflect.TypeFor[q.HTMLBuilder](),
 		},
 		AliasTypes: map[string]reflect.Type{
-			"HtmlBuilder": reflect.TypeOf((*q.HtmlBuilder)(nil)).Elem(),
+			"HtmlBuilder": reflect.TypeFor[q.HtmlBuilder](),
 		},
 		Vars: map[string]reflect.Value{
 			"NewHtmlBuilder": reflect.ValueOf(&q.NewHtmlBuilder),

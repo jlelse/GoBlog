@@ -58,7 +58,7 @@ func (a *goBlog) postHTML(o *postHTMLOptions) (res string) {
 
 func (a *goBlog) postHTMLToWriter(w io.Writer, o *postHTMLOptions) {
 	// Build HTML
-	hb, finish := a.wrapForPlugins(w, a.getPlugins(pluginUIPostContentType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(w, pluginUIPostContentType, a.getPlugins(pluginUIPostContentType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIPostContent).RenderPostContent(o.p, doc)
 	}, selectorBodyInner)
 	defer finish()

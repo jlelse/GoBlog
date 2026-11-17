@@ -32,7 +32,7 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, 
 		typ = defaultSummary
 	}
 	// Plugin handling
-	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUISummaryType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(origHb, pluginUISummaryType, a.getPlugins(pluginUISummaryType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UISummary).RenderSummaryForPost(rd.prc, p, doc)
 	}, selectorBodyInner)
 	defer finish()
@@ -1319,7 +1319,7 @@ func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HTMLBuilder, rd *rende
 
 func (a *goBlog) renderFooter(origHb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	// Wrap plugins
-	hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUIFooterType), func(plugin any, doc *goquery.Document) {
+	hb, finish := a.wrapForPlugins(origHb, pluginUIFooterType, a.getPlugins(pluginUIFooterType), func(plugin any, doc *goquery.Document) {
 		plugin.(plugintypes.UIFooter).RenderFooter(rd.prc, doc)
 	}, selectorBodyInner)
 	defer finish()

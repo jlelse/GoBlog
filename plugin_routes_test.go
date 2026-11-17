@@ -188,7 +188,7 @@ func (plugin) Routes() []plugintypes.Route {
 		return rr
 	}
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		app.reloadRouter()
 		rr := serve("/plugin-test")
 		assert.Equal(t, http.StatusOK, rr.Code)

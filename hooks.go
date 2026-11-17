@@ -36,9 +36,9 @@ func (a *goBlog) postPostHooks(p *post) {
 	for _, f := range a.pPostHooks {
 		go f(p)
 	}
-	for _, plugin := range a.getPlugins(pluginPostCreatedHookType) {
-		go plugin.(plugintypes.PostCreatedHook).PostCreated(p)
-	}
+	callPluginAsync(a, pluginPostCreatedHookType, a.getPlugins(pluginPostCreatedHookType), func(plugin plugintypes.PostCreatedHook) {
+		plugin.PostCreated(p)
+	})
 }
 
 func (a *goBlog) postUpdateHooks(p *post) {
@@ -56,9 +56,9 @@ func (a *goBlog) postUpdateHooks(p *post) {
 	for _, f := range a.pUpdateHooks {
 		go f(p)
 	}
-	for _, plugin := range a.getPlugins(pluginPostUpdatedHookType) {
-		go plugin.(plugintypes.PostUpdatedHook).PostUpdated(p)
-	}
+	callPluginAsync(a, pluginPostUpdatedHookType, a.getPlugins(pluginPostUpdatedHookType), func(plugin plugintypes.PostUpdatedHook) {
+		plugin.PostUpdated(p)
+	})
 }
 
 func (a *goBlog) postDeleteHooks(p *post) {
@@ -75,9 +75,9 @@ func (a *goBlog) postDeleteHooks(p *post) {
 	for _, f := range a.pDeleteHooks {
 		go f(p)
 	}
-	for _, plugin := range a.getPlugins(pluginPostDeletedHookType) {
-		go plugin.(plugintypes.PostDeletedHook).PostDeleted(p)
-	}
+	callPluginAsync(a, pluginPostDeletedHookType, a.getPlugins(pluginPostDeletedHookType), func(plugin plugintypes.PostDeletedHook) {
+		plugin.PostDeleted(p)
+	})
 }
 
 func (a *goBlog) postUndeleteHooks(p *post) {

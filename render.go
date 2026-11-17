@@ -48,39 +48,66 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	// Render (with UI2 plugins)
 	renderPipeReader, renderPipeWriter := io.Pipe()
 	go func() {
-		hb, finish := a.wrapForPlugins(
+		finish := func() {}
+		defer func() {
+			if r := recover(); r != nil {
+				a.error("HTML rendering panicked", "err", r)
+			}
+			finish()
+			_ = renderPipeWriter.Close()
+		}()
+		hb, finishPlugins := a.wrapForPlugins(
 			renderPipeWriter,
+			pluginUI2Type,
 			a.getPlugins(pluginUI2Type),
 			func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UI2).RenderWithDocument(data.prc, doc)
 			},
 			"",
 		)
+		finish = finishPlugins
 		f(hb, data)
-		finish()
-		_ = renderPipeWriter.Close()
 	}()
 	// Run io based UI plugins
 	pluginPipeReader, pluginPipeWriter := io.Pipe()
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				a.error("HTML plugin rendering panicked", "err", r)
+				_, _ = io.Copy(io.Discard, renderPipeReader)
+			}
+			_ = pluginPipeWriter.Close()
+		}()
 		a.chainUIPlugins(a.getPlugins(pluginUIType), data.prc, renderPipeReader, pluginPipeWriter)
-		_ = pluginPipeWriter.Close()
 	}()
 	// Return minified HTML
 	_ = pluginPipeReader.CloseWithError(minify.Get().Minify(contenttype.HTML, w, pluginPipeReader))
 }
 
 func (a *goBlog) chainUIPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
+	a.chainUIPluginsFrom(plugins, 0, rc, rendered, modified)
+}
+
+func (a *goBlog) chainUIPluginsFrom(plugins []any, offset int, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
 	if len(plugins) == 0 {
 		_, _ = io.Copy(modified, rendered)
 		return
 	}
 	reader, writer := io.Pipe()
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				a.logPluginPanic(pluginUIType, offset, r)
+				// Pass the remaining input through so the rest of the page is not lost.
+				_, _ = io.Copy(writer, rendered)
+				// Drain the input even if writing failed, so upstream does not block.
+				_, _ = io.Copy(io.Discard, rendered)
+			}
+			_ = writer.Close()
+		}()
 		plugins[0].(plugintypes.UI).Render(rc, rendered, writer)
-		_ = writer.Close()
 	}()
-	a.chainUIPlugins(plugins[1:], rc, reader, modified)
+	a.chainUIPluginsFrom(plugins[1:], offset+1, rc, reader, modified)
 	_ = reader.Close()
 }
 

@@ -12,8 +12,9 @@ const (
 	selectorBodyInner = "body"
 )
 
-func (*goBlog) wrapForPlugins(
+func (a *goBlog) wrapForPlugins(
 	originalWriter io.Writer,
+	pluginType string,
 	plugins []any,
 	pluginRender func(plugin any, doc *goquery.Document),
 	selector string,
@@ -32,10 +33,20 @@ func (*goBlog) wrapForPlugins(
 		wg.Wait()
 	}
 	wg.Go(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				a.error("Plugin HTML rendering panicked", "type", pluginType, "err", r)
+			}
+			// Drain unread input so the renderer does not block on the pipe.
+			_, _ = io.Copy(io.Discard, pr)
+			_ = pr.Close()
+		}()
 		doc, err := goquery.NewDocumentFromReader(pr)
 		_ = pr.CloseWithError(err)
-		for _, plugin := range plugins {
-			pluginRender(plugin, doc)
+		for i, plugin := range plugins {
+			a.callPlugin(pluginType, i, func() {
+				pluginRender(plugin, doc)
+			})
 		}
 		finalSelection := doc.Selection
 		if selector != "" {

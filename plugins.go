@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -68,7 +70,7 @@ func (a *goBlog) initPlugins() error {
 		subFS,
 	)
 
-	for _, pc := range a.cfg.Plugins {
+	for i, pc := range a.cfg.Plugins {
 		plugins, err := a.pluginHost.LoadPlugin(&plugins.PluginConfig{
 			Path:       pc.Path,
 			ImportPath: pc.Import,
@@ -77,10 +79,14 @@ func (a *goBlog) initPlugins() error {
 			return err
 		}
 		if p, ok := plugins[pluginSetConfigType]; ok {
-			p.(plugintypes.SetConfig).SetConfig(pc.Config)
+			a.callPlugin(pluginSetConfigType, i, func() {
+				p.(plugintypes.SetConfig).SetConfig(pc.Config)
+			})
 		}
 		if p, ok := plugins[pluginSetAppType]; ok {
-			p.(plugintypes.SetApp).SetApp(a)
+			a.callPlugin(pluginSetAppType, i, func() {
+				p.(plugintypes.SetApp).SetApp(a)
+			})
 		}
 	}
 
@@ -90,19 +96,100 @@ func (a *goBlog) initPlugins() error {
 	}
 	a.pluginRoutes = pluginRoutes
 
-	for _, p := range a.getPlugins(pluginExecType) {
-		go p.(plugintypes.Exec).Exec()
-	}
+	callPluginAsync(a, pluginExecType, a.getPlugins(pluginExecType), func(plugin plugintypes.Exec) {
+		plugin.Exec()
+	})
 
 	return nil
 }
 
+func callPluginAsync[T any](a *goBlog, pluginType string, plugins []any, f func(T)) {
+	for i, p := range plugins {
+		plugin, ok := p.(T)
+		if !ok {
+			continue
+		}
+		go func(plugin T, index int) {
+			defer func() {
+				if r := recover(); r != nil {
+					a.logPluginPanic(pluginType, index, r)
+				}
+			}()
+			f(plugin)
+		}(plugin, i)
+	}
+}
+
+func (a *goBlog) callPlugin(pluginType string, index int, f func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			a.logPluginPanic(pluginType, index, r)
+		}
+	}()
+	f()
+}
+
+func callPluginValue[T any](a *goBlog, pluginType string, index int, f func() T) (value T, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			a.logPluginPanic(pluginType, index, r)
+			ok = false
+		}
+	}()
+	return f(), true
+}
+
+func (a *goBlog) logPluginPanic(pluginType string, index int, recovered any) {
+	a.error("Plugin panicked", "type", pluginType, "index", index, "err", recovered)
+}
+
+type pluginMiddleware struct {
+	index      int
+	prio       int
+	middleware plugintypes.Middleware
+}
+
+func (a *goBlog) getPluginMiddlewares() []pluginMiddleware {
+	plugins := a.getPlugins(pluginMiddlewareType)
+	middlewares := make([]pluginMiddleware, 0, len(plugins))
+	for i, p := range plugins {
+		middlewarePlugin, ok := p.(plugintypes.Middleware)
+		if !ok {
+			continue
+		}
+		prio, ok := callPluginValue(a, pluginMiddlewareType, i, middlewarePlugin.Prio)
+		if !ok {
+			continue
+		}
+		middlewares = append(middlewares, pluginMiddleware{index: i, prio: prio, middleware: middlewarePlugin})
+	}
+	sort.SliceStable(middlewares, func(i, j int) bool {
+		return middlewares[i].prio > middlewares[j].prio
+	})
+	return middlewares
+}
+
+func (a *goBlog) wrapPluginMiddlewares(next http.Handler) http.Handler {
+	middlewares := a.getPluginMiddlewares()
+	for _, middlewarePlugin := range slices.Backward(middlewares) {
+		handler, ok := callPluginValue(a, pluginMiddlewareType, middlewarePlugin.index, func() http.Handler {
+			return middlewarePlugin.middleware.Handler(next)
+		})
+		if !ok || handler == nil {
+			continue
+		}
+		next = handler
+	}
+	return next
+}
+
 func (a *goBlog) loadPluginRoutes() ([]plugintypes.Route, error) {
 	var routes []plugintypes.Route
-	for _, p := range a.getPlugins(pluginRoutesType) {
+	for i, p := range a.getPlugins(pluginRoutesType) {
 		pluginRouteList, err := callPluginRoutes(p.(plugintypes.Routes))
 		if err != nil {
-			return nil, err
+			a.logPluginPanic(pluginRoutesType, i, err)
+			continue
 		}
 		for _, route := range pluginRouteList {
 			route.Method = strings.ToUpper(route.Method)

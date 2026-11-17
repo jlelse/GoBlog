@@ -88,7 +88,7 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 		return nil, fmt.Errorf(errText, err)
 	}
 	if interp.MainPkg().Func("init") != nil {
-		if err = interp.RunInit(); err != nil {
+		if err = callPluginInit(interp); err != nil {
 			return nil, fmt.Errorf(errText, err)
 		}
 	}
@@ -117,6 +117,15 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 	}
 
 	return
+}
+
+func callPluginInit(interp *ixgo.Interp) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("plugin init panicked: %v", r)
+		}
+	}()
+	return interp.RunInit()
 }
 
 func callGetPlugin(fn any) (results []reflect.Value, err error) {

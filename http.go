@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/justinas/alice"
-	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/httpcompress"
 	"go.goblog.app/app/pkgs/maprouter"
@@ -48,19 +46,10 @@ func (a *goBlog) startServer() (err error) {
 	if a.cfg.Server.SecurityHeaders {
 		h = h.Append(a.securityHeaders)
 	}
-	// Add plugin middlewares
-	middlewarePlugins := lo.Map(a.getPlugins(pluginMiddlewareType), func(item any, _ int) plugintypes.Middleware { return item.(plugintypes.Middleware) })
-	sort.Slice(middlewarePlugins, func(i, j int) bool {
-		// Sort with descending prio
-		return middlewarePlugins[i].Prio() > middlewarePlugins[j].Prio()
-	})
-	for _, plugin := range middlewarePlugins {
-		h = h.Append(plugin.Handler)
-	}
 	// Finally...
-	finalHandler := h.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+	finalHandler := h.Then(a.wrapPluginMiddlewares(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		a.d.ServeHTTP(w, r)
-	})
+	})))
 	// Start Onion service
 	if a.cfg.Server.Tor {
 		go func() {
@@ -294,6 +283,7 @@ func (a *goBlog) registerPluginRoutes(r chi.Router, blog string) {
 			continue
 		}
 		path := pathPrefix + route.Path
+		handler := a.wrapPluginRouteHandler(route)
 		func() {
 			defer func() {
 				if rec := recover(); rec != nil {
@@ -301,12 +291,30 @@ func (a *goBlog) registerPluginRoutes(r chi.Router, blog string) {
 				}
 			}()
 			if route.Method == "" {
-				r.Handle(path, route.Handler)
+				r.Handle(path, handler)
 				return
 			}
-			r.Method(route.Method, path, route.Handler)
+			r.Method(route.Method, path, handler)
 		}()
 	}
+}
+
+func (a *goBlog) wrapPluginRouteHandler(route plugintypes.Route) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		defer func() {
+			if rec := recover(); rec != nil {
+				if rec == http.ErrAbortHandler {
+					panic(rec)
+				}
+				a.error("Plugin route panicked", "method", route.Method, "path", route.Path, "err", rec)
+				if ww.Status() == 0 {
+					a.ServeError(ww, r, "", http.StatusInternalServerError)
+				}
+			}
+		}()
+		route.Handler.ServeHTTP(ww, r)
+	})
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {

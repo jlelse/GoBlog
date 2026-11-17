@@ -26,12 +26,12 @@ func init() {
 			"strings":                         "strings",
 		},
 		Interfaces: map[string]reflect.Type{
-			"Matcher": reflect.TypeOf((*q.Matcher)(nil)).Elem(),
+			"Matcher": reflect.TypeFor[q.Matcher](),
 		},
 		NamedTypes: map[string]reflect.Type{
-			"Document":    reflect.TypeOf((*q.Document)(nil)).Elem(),
-			"Selection":   reflect.TypeOf((*q.Selection)(nil)).Elem(),
-			"TextOptions": reflect.TypeOf((*q.TextOptions)(nil)).Elem(),
+			"Document":    reflect.TypeFor[q.Document](),
+			"Selection":   reflect.TypeFor[q.Selection](),
+			"TextOptions": reflect.TypeFor[q.TextOptions](),
 		},
 		AliasTypes: map[string]reflect.Type{},
 		Vars:       map[string]reflect.Value{},

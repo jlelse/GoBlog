@@ -378,8 +378,15 @@ func (a *goBlog) mediaFallbackURL(originalURL string) string {
 }
 
 func (a *goBlog) writePictureElement(hb *htmlbuilder.HTMLBuilder, originalURL, alt, title, class, postPath string, simpleImages bool) {
-	for _, p := range a.getPlugins(pluginUIImgAttributesType) {
-		alt, title = p.(plugintypes.UIImgAttributes).ImgAttributes(originalURL, postPath, alt, title)
+	for i, p := range a.getPlugins(pluginUIImgAttributesType) {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					a.logPluginPanic(pluginUIImgAttributesType, i, r)
+				}
+			}()
+			alt, title = p.(plugintypes.UIImgAttributes).ImgAttributes(originalURL, postPath, alt, title)
+		}()
 	}
 	originalHash := a.extractMediaHashFromURL(originalURL)
 	if originalHash == "" || !a.mediaOptimizationEnabled() {

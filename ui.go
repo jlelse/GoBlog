@@ -962,7 +962,7 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		},
 		func(origHb *htmlbuilder.HTMLBuilder) {
 			// Wrap plugins
-			hb, finish := a.wrapForPlugins(origHb, a.getPlugins(pluginUIPostType), func(plugin any, doc *goquery.Document) {
+			hb, finish := a.wrapForPlugins(origHb, pluginUIPostType, a.getPlugins(pluginUIPostType), func(plugin any, doc *goquery.Document) {
 				plugin.(plugintypes.UIPost).RenderPost(rd.prc, p, doc)
 			}, selectorBodyInner)
 			defer finish()

@@ -79,6 +79,44 @@ func TestLoadPluginFailsOnMissingSource(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestLoadPluginFailsOnInitPanic(t *testing.T) {
+	source := fstest.MapFS{
+		"panic/src/panicplugin/panicplugin.go": {Data: []byte(`package panicplugin
+
+import "fmt"
+
+func init() { panic("init panic") }
+
+func GetPlugin() fmt.Stringer { return nil }
+`)},
+	}
+	host := NewPluginHost(map[string]reflect.Type{"stringer": reflect.TypeFor[fmt.Stringer]()}, source)
+	_, err := host.LoadPlugin(&PluginConfig{
+		Path:       "embedded:panic",
+		ImportPath: "panicplugin",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "init panic")
+}
+
+func TestLoadPluginFailsOnGetPluginPanic(t *testing.T) {
+	source := fstest.MapFS{
+		"panic/src/panicplugin/panicplugin.go": {Data: []byte(`package panicplugin
+
+import "fmt"
+
+func GetPlugin() fmt.Stringer { panic("get plugin panic") }
+`)},
+	}
+	host := NewPluginHost(map[string]reflect.Type{"stringer": reflect.TypeFor[fmt.Stringer]()}, source)
+	_, err := host.LoadPlugin(&PluginConfig{
+		Path:       "embedded:panic",
+		ImportPath: "panicplugin",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "GetPlugin panicked")
+}
+
 func TestPluginsShareSSAProgram(t *testing.T) {
 	source := fstest.MapFS{
 		"a/src/a/a.go": {Data: []byte(`package a

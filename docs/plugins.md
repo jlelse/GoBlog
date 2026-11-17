@@ -338,6 +338,12 @@ func (p *plugin) Routes() []plugintypes.Route {
 
 Leave `Method` empty to match all HTTP methods. Set `Blog` to a blog code to register a route only for that blog; the path is then relative to the blog's path. Leave `Blog` empty for a global route. Handlers can use `App.CacheMiddleware`, `App.CORSHandler`, and `App.IsLoggedIn` as needed, and `App.ServeError` renders GoBlog's error page (or a plain-text error for non-HTML clients). Routes are registered during router construction, so they are available after router reloads too. Invalid routes and duplicate plugin routes cause startup to fail.
 
+### Error Handling
+
+Calls into plugins are isolated. If a plugin panics during `SetConfig`, `SetApp`, `Exec`, a post hook, `BlockedBots`, `UIImgAttributes`, or HTML rendering, GoBlog logs the panic and continues without the plugin's contribution. A plugin middleware whose `Prio` or `Handler` panics is skipped. If an HTTP route handler panics before starting its response, GoBlog returns its 500 error page; if the response has already started, the panic is only logged. A panic while declaring routes is logged and that plugin's routes are skipped.
+
+Plugin loading errors and invalid route definitions still prevent startup, so configuration mistakes are visible immediately.
+
 ### Available Packages for Plugins
 
 **GoBlog packages:**

@@ -35,8 +35,13 @@ func (a *goBlog) getBlockedBots() []string {
 	if a.cfg.RobotsTxt != nil {
 		bots = append(bots, a.cfg.RobotsTxt.BlockedBots...)
 	}
-	for _, p := range a.getPlugins(pluginBlockedBotsType) {
-		bots = append(bots, p.(plugintypes.BlockedBots).BlockedBots()...)
+	for i, p := range a.getPlugins(pluginBlockedBotsType) {
+		botsList, ok := callPluginValue(a, pluginBlockedBotsType, i, func() []string {
+			return p.(plugintypes.BlockedBots).BlockedBots()
+		})
+		if ok {
+			bots = append(bots, botsList...)
+		}
 	}
 	if len(bots) == 0 {
 		return nil
