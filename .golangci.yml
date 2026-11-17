@@ -42,6 +42,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - pkgs/ixgowrappers/(github\.com|go\.goblog\.app|go\.yaml\.in)
 formatters:
   enable:
     - gofmt

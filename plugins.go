@@ -15,7 +15,6 @@ import (
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/plugins"
 	"go.goblog.app/app/pkgs/plugintypes"
-	"go.goblog.app/app/pkgs/yaegiwrappers"
 )
 
 //go:embed plugins/*
@@ -62,7 +61,6 @@ func (a *goBlog) initPlugins() error {
 			pluginBlockedBotsType:     reflect.TypeFor[plugintypes.BlockedBots](),
 			pluginUIImgAttributesType: reflect.TypeFor[plugintypes.UIImgAttributes](),
 		},
-		yaegiwrappers.Symbols,
 		subFS,
 	)
 

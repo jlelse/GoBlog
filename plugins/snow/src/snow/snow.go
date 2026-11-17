@@ -57,7 +57,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	doc.Find("main").AppendHtml(bufJs.String())
 }
 
-// Copy as strings, as embedding is not supported by Yaegi
+// Copy as strings, because plugin sources are loaded at runtime without a build step
 
 const snowCSS = `
 .snowflake {

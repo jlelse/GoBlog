@@ -1,6 +1,6 @@
 # Plugins
 
-GoBlog has a plugin system that allows extending functionality without modifying the source code. Plugins are written in Go and interpreted at runtime using [Yaegi](https://github.com/traefik/yaegi).
+GoBlog has a plugin system that allows extending functionality without modifying the source code. Plugins are written in Go and loaded at runtime using [iXGo](https://github.com/goplus/ixgo), an SSA-based Go interpreter. Adding a plugin only requires dropping its Go source files into place and enabling it in the config. There is no need to rebuild GoBlog and no Go toolchain is required at runtime, which keeps the container image small.
 
 ## Plugin Configuration
 
@@ -13,7 +13,7 @@ plugins:
     config:                    # Plugin-specific config
       key: value
 
-  - path: /path/to/plugin/src  # Use filesystem plugin
+  - path: /path/to/plugin  # Use filesystem plugin
     import: example.com/myplugin
     config:
       key: value
@@ -21,7 +21,7 @@ plugins:
 
 **Plugin paths:**
 - `embedded:pluginname` - Load from GoBlog's embedded plugins
-- `/path/to/src` - Load from filesystem (must be Go source code, not compiled)
+- `/path/to/plugin` - GOPATH-style source root; the package is loaded from `/path/to/plugin/src/<import>` (must be Go source code, not compiled)
   - When using Docker, mount the plugin directory to the container
 
 ## Built-in Plugins
@@ -328,3 +328,9 @@ See [plugintypes documentation](https://pkg.go.dev/go.goblog.app/app/pkgs/plugin
 - `github.com/araddon/dateparse` - Date parsing
 
 For more examples, see the [embedded plugins](/plugins/) in the repository.
+
+### How plugins are loaded
+
+Plugins are loaded from source at startup with [iXGo](https://github.com/goplus/ixgo). The interpreter compiles the plugin package to SSA once and then executes it in-process. All plugins share one SSA context and program, so packages imported by multiple plugins are compiled only once. There is no Cgo, dynamic linking, or Go toolchain involved, so plugins work in minimal container images and on all platforms supported by Go.
+
+The packages that plugins may import are exposed through generated symbol tables in [`pkgs/ixgowrappers`](/pkgs/ixgowrappers).

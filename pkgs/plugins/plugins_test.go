@@ -3,15 +3,16 @@ package plugins
 import (
 	"embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/traefik/yaegi/interp"
 	"go.goblog.app/app/pkgs/plugintypes"
-	"go.goblog.app/app/pkgs/yaegiwrappers"
+	"golang.org/x/tools/go/ssa"
 )
 
 //go:embed sample/*
@@ -22,7 +23,6 @@ func TestLoadPluginEmbeddedSuccess(t *testing.T) {
 		map[string]reflect.Type{
 			"stringer": reflect.TypeFor[fmt.Stringer](),
 		},
-		interp.Exports{},
 		sampleSourceFS,
 	)
 
@@ -37,13 +37,82 @@ func TestLoadPluginEmbeddedSuccess(t *testing.T) {
 	assert.Equal(t, "ok", plugins[0].(fmt.Stringer).String())
 }
 
+func TestLoadPluginFromFilesystem(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "src", "fsplugin")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "fsplugin.go"), []byte(`package fsplugin
+
+import "fmt"
+
+type plugin struct{}
+
+func GetPlugin() fmt.Stringer { return plugin{} }
+
+func (plugin) String() string { return "from-filesystem" }
+`), 0o600))
+
+	host := NewPluginHost(
+		map[string]reflect.Type{
+			"stringer": reflect.TypeFor[fmt.Stringer](),
+		},
+		fstest.MapFS{},
+	)
+
+	_, err := host.LoadPlugin(&PluginConfig{
+		Path:       root,
+		ImportPath: "fsplugin",
+	})
+	require.NoError(t, err)
+
+	plugins := host.GetPlugins("stringer")
+	require.Len(t, plugins, 1)
+	assert.Equal(t, "from-filesystem", plugins[0].(fmt.Stringer).String())
+}
+
 func TestLoadPluginFailsOnMissingSource(t *testing.T) {
-	host := NewPluginHost(map[string]reflect.Type{}, interp.Exports{}, fstest.MapFS{})
+	host := NewPluginHost(map[string]reflect.Type{}, fstest.MapFS{})
 	_, err := host.LoadPlugin(&PluginConfig{
 		Path:       "embedded:missing",
 		ImportPath: "missing",
 	})
 	assert.Error(t, err)
+}
+
+func TestPluginsShareSSAProgram(t *testing.T) {
+	source := fstest.MapFS{
+		"a/src/a/a.go": {Data: []byte(`package a
+
+import "fmt"
+
+type s string
+
+func (v s) String() string { return string(v) }
+
+func GetPlugin() fmt.Stringer { return s("a") }
+`)},
+		"b/src/b/b.go": {Data: []byte(`package b
+
+import "fmt"
+
+type s string
+
+func (v s) String() string { return string(v) }
+
+func GetPlugin() fmt.Stringer { return s("b") }
+`)},
+	}
+	host := NewPluginHost(map[string]reflect.Type{"stringer": reflect.TypeFor[fmt.Stringer]()}, source)
+	_, err := host.LoadPlugin(&PluginConfig{Path: "embedded:a", ImportPath: "a"})
+	require.NoError(t, err)
+	_, err = host.LoadPlugin(&PluginConfig{Path: "embedded:b", ImportPath: "b"})
+	require.NoError(t, err)
+
+	programs := map[*ssa.Program]struct{}{}
+	for _, p := range host.plugins["stringer"] {
+		programs[p.interp.MainPkg().Prog] = struct{}{}
+	}
+	assert.Len(t, programs, 1)
 }
 
 func TestLoadPluginRegistersHooks(t *testing.T) {
@@ -70,7 +139,6 @@ func (plugin) PostUpdated(_ plugintypes.Post) {}
 			"postcreated": reflect.TypeFor[plugintypes.PostCreatedHook](),
 			"postupdated": reflect.TypeFor[plugintypes.PostUpdatedHook](),
 		},
-		yaegiwrappers.Symbols,
 		source,
 	)
 

@@ -26,7 +26,7 @@ For every available option with detailed explanations, see [`example-config.yml`
 | `oidc` | OpenID Connect (e.g. Pocket ID) login |
 | `blogs` | Multiple blog configuration |
 | `hooks` | Shell commands on events |
-| `plugins` | Runtime plugin system (Yaegi) |
+| `plugins` | Runtime plugin system (iXGo) |
 | `micropub` | Micropub parameters and media storage |
 | `activityPub` | ActivityPub/Fediverse settings |
 | `webmention` | Webmention settings |

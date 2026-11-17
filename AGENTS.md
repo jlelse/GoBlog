@@ -98,7 +98,7 @@ Most features follow this pattern:
 - **Receiver pattern**: Nearly all methods use `(a *goBlog)` receiver on the main app struct
 - **HTML builder**: UI is built programmatically using `pkgs/htmlbuilder` — there are no HTML template files
 - **Database migrations**: SQL files in `dbmigrations/` are embedded and run automatically on startup. New migrations must be numbered sequentially (e.g., `00039.sql`)
-- **Plugins**: Loaded at runtime via Yaegi (Go interpreter). Plugin interfaces defined in `pkgs/plugintypes/`
+- **Plugins**: Loaded at runtime via iXGo (SSA-based Go interpreter). Plugin interfaces defined in `pkgs/plugintypes/`, host symbol tables in `pkgs/ixgowrappers/`
 - **i18n**: Translation strings in `strings/*.yaml`, accessed via template string functions
 
 ## Common Development Tasks

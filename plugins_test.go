@@ -20,6 +20,28 @@ var _ plugintypes.Database = &database{}
 var _ plugintypes.Post = &post{}
 var _ plugintypes.RenderContext = &pluginRenderContext{}
 
+func TestAllEmbeddedPluginsLoad(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	app.cfg.Plugins = []*configPlugin{
+		{Path: "embedded:aibotblock", Import: "aibotblock"},
+		{Path: "embedded:aiimage", Import: "aiimage"},
+		{Path: "embedded:aitldr", Import: "aitldr"},
+		{Path: "embedded:customcss", Import: "customcss"},
+		{Path: "embedded:demo", Import: "demo"},
+		{Path: "embedded:imagetooltips", Import: "imagetooltips"},
+		{Path: "embedded:mcp", Import: "mcp"},
+		{Path: "embedded:snow", Import: "snow"},
+		{Path: "embedded:socialspec", Import: "socialspec"},
+		{Path: "embedded:syndication", Import: "syndication"},
+		{Path: "embedded:telegrambot", Import: "telegrambot"},
+		{Path: "embedded:webrings", Import: "webrings"},
+	}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initPlugins())
+}
+
 func TestDemoPlugin(t *testing.T) {
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),

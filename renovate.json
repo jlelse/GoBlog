@@ -9,12 +9,6 @@
       "description": "Group all Go module updates",
       "matchManagers": ["gomod"],
       "groupName": "Go dependencies"
-    },
-    {
-      "description": "Keep the pinned yaegi fork until the upstream fix is released (see the replace directive in go.mod)",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["github.com/traefik/yaegi", "github.com/jlelse/yaegi"],
-      "enabled": false
     }
   ],
   "postUpdateOptions": ["gomodTidy"],

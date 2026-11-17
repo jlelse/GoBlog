@@ -26,6 +26,8 @@ require (
 	github.com/go-chi/cors v1.2.2
 	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/go-webauthn/webauthn v0.18.2
+	github.com/goplus/ixgo v1.2.7
+	github.com/goplus/reflectx v1.8.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
@@ -55,7 +57,6 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.25
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
-	github.com/traefik/yaegi v0.16.3
 	github.com/vcraescu/go-paginator/v2 v2.0.0
 	github.com/wneessen/go-mail v0.8.2
 	github.com/yuin/goldmark-emoji/v2 v2.0.3
@@ -114,18 +115,17 @@ require (
 	github.com/tidwall/pretty v1.3.0 // indirect
 	github.com/tidwall/sjson v1.2.9 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
+	github.com/visualfc/funcval v0.1.5 // indirect
+	github.com/visualfc/gid v0.3.6 // indirect
+	github.com/visualfc/goembed v0.3.4 // indirect
+	github.com/visualfc/xtype v0.3.3 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.mau.fi/util v0.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
 	golang.org/x/image v0.48.0 // indirect
+	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/tools v0.52.1-0.20261106145633-d407941a339a // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.4 // indirect
 )
-
-// Temporary fork of yaegi until the fix for blank parameters with blank
-// assignments is released. Without it, plugins like "demo" panic on
-// "reflect.Set: value of type plugintypes.RenderContext is not assignable to type error".
-// See https://github.com/traefik/yaegi/issues/1755 and https://github.com/traefik/yaegi/pull/1756.
-// Remove this replace once the fix is released upstream.
-replace github.com/traefik/yaegi => github.com/jlelse/yaegi v0.16.4-0.20261110220005-c7a7b849092a
