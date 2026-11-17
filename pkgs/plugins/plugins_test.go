@@ -70,6 +70,38 @@ func (plugin) String() string { return "from-filesystem" }
 	assert.Equal(t, "from-filesystem", plugins[0].(fmt.Stringer).String())
 }
 
+func TestGetPluginsNoAllocation(t *testing.T) {
+	host := NewPluginHost(
+		map[string]reflect.Type{
+			"stringer": reflect.TypeFor[fmt.Stringer](),
+		},
+		sampleSourceFS,
+	)
+	_, err := host.LoadPlugin(&PluginConfig{Path: "embedded:sample", ImportPath: "sample"})
+	require.NoError(t, err)
+
+	allocs := testing.AllocsPerRun(1000, func() {
+		_ = host.GetPlugins("stringer")
+	})
+	assert.Zero(t, allocs)
+}
+
+func BenchmarkGetPlugins(b *testing.B) {
+	host := NewPluginHost(
+		map[string]reflect.Type{
+			"stringer": reflect.TypeFor[fmt.Stringer](),
+		},
+		sampleSourceFS,
+	)
+	_, err := host.LoadPlugin(&PluginConfig{Path: "embedded:sample", ImportPath: "sample"})
+	require.NoError(b, err)
+
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = host.GetPlugins("stringer")
+	}
+}
+
 func TestLoadPluginFailsOnMissingSource(t *testing.T) {
 	host := NewPluginHost(map[string]reflect.Type{}, fstest.MapFS{})
 	_, err := host.LoadPlugin(&PluginConfig{

@@ -54,14 +54,17 @@ func (a *goBlog) sendContactSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 	// Add message text to message
 	_, _ = message.WriteString(formMessage)
+	// Copy the message before it is returned to the pool and before the
+	// asynchronous goroutines below read it.
+	messageText := message.String()
 	// Send submission
 	go func() {
-		if err := a.sendContactEmail(bc.Contact, message.String(), formEmail); err != nil {
+		if err := a.sendContactEmail(bc.Contact, messageText, formEmail); err != nil {
 			a.error("Failed to send contact email", "err", err)
 		}
 	}()
 	// Send notification
-	go a.sendNotification(message.String())
+	go a.sendNotification(messageText)
 	// Give feedback
 	a.render(w, r, a.renderContactSent, &renderData{})
 }

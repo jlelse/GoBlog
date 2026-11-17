@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 
 	"github.com/PuerkitoBio/goquery"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/minify"
@@ -45,19 +47,20 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 	w.Header().Set(contentType, contenttype.HTMLUTF8)
 	// Write status code
 	w.WriteHeader(statusCode)
-	// Render (with UI2 plugins)
-	renderPipeReader, renderPipeWriter := io.Pipe()
-	go func() {
-		finish := func() {}
+	// Render into a buffer so UI2 plugins and minification run synchronously
+	// without pipes or goroutines.
+	rendered := bufferpool.Get()
+	defer func() {
+		bufferpool.Put(rendered)
+	}()
+	func() {
 		defer func() {
 			if r := recover(); r != nil {
 				a.error("HTML rendering panicked", "err", r)
 			}
-			finish()
-			_ = renderPipeWriter.Close()
 		}()
-		hb, finishPlugins := a.wrapForPlugins(
-			renderPipeWriter,
+		hb, finish := a.wrapForPlugins(
+			rendered,
 			pluginUI2Type,
 			a.getPlugins(pluginUI2Type),
 			func(plugin any, doc *goquery.Document) {
@@ -65,50 +68,45 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 			},
 			"",
 		)
-		finish = finishPlugins
+		defer finish()
 		f(hb, data)
 	}()
 	// Run io based UI plugins
-	pluginPipeReader, pluginPipeWriter := io.Pipe()
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				a.error("HTML plugin rendering panicked", "err", r)
-				_, _ = io.Copy(io.Discard, renderPipeReader)
-			}
-			_ = pluginPipeWriter.Close()
-		}()
-		a.chainUIPlugins(a.getPlugins(pluginUIType), data.prc, renderPipeReader, pluginPipeWriter)
-	}()
-	// Return minified HTML
-	_ = pluginPipeReader.CloseWithError(minify.Get().Minify(contenttype.HTML, w, pluginPipeReader))
-}
-
-func (a *goBlog) chainUIPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
-	a.chainUIPluginsFrom(plugins, 0, rc, rendered, modified)
-}
-
-func (a *goBlog) chainUIPluginsFrom(plugins []any, offset int, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
-	if len(plugins) == 0 {
-		_, _ = io.Copy(modified, rendered)
-		return
+	if uiPlugins := a.getPlugins(pluginUIType); len(uiPlugins) > 0 {
+		pluginRendered := bufferpool.Get()
+		a.chainUIPlugins(uiPlugins, data.prc, bytes.NewReader(rendered.Bytes()), pluginRendered)
+		bufferpool.Put(rendered)
+		rendered = pluginRendered
 	}
-	reader, writer := io.Pipe()
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				a.logPluginPanic(pluginUIType, offset, r)
-				// Pass the remaining input through so the rest of the page is not lost.
-				_, _ = io.Copy(writer, rendered)
-				// Drain the input even if writing failed, so upstream does not block.
-				_, _ = io.Copy(io.Discard, rendered)
-			}
-			_ = writer.Close()
-		}()
-		plugins[0].(plugintypes.UI).Render(rc, rendered, writer)
+	// Return minified HTML
+	_ = minify.Get().Minify(contenttype.HTML, w, bytes.NewReader(rendered.Bytes()))
+}
+
+// chainUIPlugins runs the UI plugins sequentially over buffers. Each plugin
+// consumes the previous plugin's output, so no pipe or goroutine is needed per
+// plugin.
+func (a *goBlog) chainUIPlugins(plugins []any, rc *pluginRenderContext, rendered io.Reader, modified io.Writer) {
+	current := rendered
+	buffers := make([]*bytes.Buffer, 0, len(plugins))
+	defer func() {
+		bufferpool.Put(buffers...)
 	}()
-	a.chainUIPluginsFrom(plugins[1:], offset+1, rc, reader, modified)
-	_ = reader.Close()
+	for i, plugin := range plugins {
+		buf := bufferpool.Get()
+		buffers = append(buffers, buf)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					a.logPluginPanic(pluginUIType, i, r)
+					// Pass the remaining input through so the rest of the page is not lost.
+					_, _ = io.Copy(buf, current)
+				}
+			}()
+			plugin.(plugintypes.UI).Render(rc, current, buf)
+		}()
+		current = bytes.NewReader(buf.Bytes())
+	}
+	_, _ = io.Copy(modified, current)
 }
 
 func (a *goBlog) checkRenderData(r *http.Request, data *renderData) {

@@ -242,7 +242,7 @@ func validatePluginRoute(route plugintypes.Route, blogs map[string]*configBlog) 
 
 func (a *goBlog) getPlugins(typ string) []any {
 	if a.pluginHost == nil {
-		return []any{}
+		return nil
 	}
 	return a.pluginHost.GetPlugins(typ)
 }

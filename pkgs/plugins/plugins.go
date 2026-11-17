@@ -22,6 +22,7 @@ import (
 // PluginHost manages the plugins.
 type PluginHost struct {
 	plugins         map[string][]*plugin
+	pluginLists     map[string][]any // read-only, returned by GetPlugins without allocating
 	pluginTypes     map[string]reflect.Type
 	embeddedPlugins fs.FS
 	ctx             *ixgo.Context
@@ -50,6 +51,7 @@ const (
 func NewPluginHost(pluginTypes map[string]reflect.Type, embeddedPlugins fs.FS) *PluginHost {
 	return &PluginHost{
 		plugins:         map[string][]*plugin{},
+		pluginLists:     map[string][]any{},
 		pluginTypes:     pluginTypes,
 		embeddedPlugins: embeddedPlugins,
 		ctx:             ixgo.NewContext(ixgo.SupportMultipleInterp),
@@ -70,12 +72,10 @@ func (h *PluginHost) LoadPlugin(config *PluginConfig) (map[string]any, error) {
 	return plugins, nil
 }
 
-// GetPlugins returns a list of all plugins.
-func (h *PluginHost) GetPlugins(typ string) (list []any) {
-	for _, p := range h.plugins[typ] {
-		list = append(list, p.plugin)
-	}
-	return
+// GetPlugins returns all plugins of the given type. The returned slice must
+// not be modified.
+func (h *PluginHost) GetPlugins(typ string) []any {
+	return h.pluginLists[typ]
 }
 
 func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error) {
@@ -111,6 +111,7 @@ func (p *plugin) initPlugin(host *PluginHost) (plugins map[string]any, err error
 		for name, reflectType := range host.pluginTypes {
 			if result.Type().Implements(reflectType) {
 				host.plugins[name] = append(host.plugins[name], newPlugin)
+				host.pluginLists[name] = append(host.pluginLists[name], newPlugin.plugin)
 				plugins[name] = newPlugin.plugin
 			}
 		}
