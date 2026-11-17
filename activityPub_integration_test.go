@@ -45,7 +45,7 @@ func TestIntegrationActivityPubWithGoToSocial(t *testing.T) {
 
 	// Start GoBlog ActivityPub server and GoToSocial instance
 	gb := startApIntegrationServer(t)
-	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+	gts, mc := startGoToSocialInstance(t, gb.socketPath)
 
 	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHost)
 
@@ -472,7 +472,7 @@ func TestIntegrationActivityPubMoveFollowers(t *testing.T) {
 
 	// Start GoBlog ActivityPub server and GoToSocial instance
 	gb := startApIntegrationServer(t)
-	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port)
+	gts, mc := startGoToSocialInstance(t, gb.socketPath)
 
 	// Create a second GTS user account to be the move target
 	runDocker(t,
@@ -579,7 +579,7 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 	// Start GoBlog with old domain (goblog.example) and follow it
 	gb := startApIntegrationServer(t)
 	// Pre-register socat proxy for newgoblog.example too (GTS needs it after domain change)
-	gts, mc := startGoToSocialInstance(t, gb.cfg.Server.Port, "newgoblog.example")
+	gts, mc := startGoToSocialInstance(t, gb.socketPath, "newgoblog.example")
 
 	goBlogAcct := fmt.Sprintf("%s@%s", gb.cfg.DefaultBlog, gb.cfg.Server.publicHost)
 
@@ -733,9 +733,8 @@ func TestIntegrationActivityPubDomainMove(t *testing.T) {
 	assert.Len(t, followers, 1)
 }
 
-// startDomainProxy creates a lightweight TCP forwarder for the given hostname
-// that forwards port 80 inside Docker to GoBlog's port on the host.
-func startDomainProxy(t *testing.T, netName string, hostname string, goblogPort int) {
+// startDomainProxy forwards port 80 inside the Docker network to GoBlog's Unix socket.
+func startDomainProxy(t *testing.T, netName string, hostname string, socketPath string) {
 	t.Helper()
 	proxyName := fmt.Sprintf("goblog-proxy-%s", uuid.New().String())
 	runDocker(t,
@@ -743,17 +742,23 @@ func startDomainProxy(t *testing.T, netName string, hostname string, goblogPort 
 		"--name", proxyName,
 		"--network", netName,
 		"--network-alias", hostname,
-		"--add-host", "host.docker.internal:host-gateway",
+		"-v", fmt.Sprintf("%s:/goblog", filepath.Dir(socketPath)),
 		"docker.io/alpine/socat",
 		"TCP-LISTEN:80,fork,reuseaddr",
-		fmt.Sprintf("TCP:host.docker.internal:%d", goblogPort),
+		"UNIX-CONNECT:/goblog/"+filepath.Base(socketPath),
 	)
 	t.Cleanup(func() {
 		_ = exec.Command("docker", "rm", "-f", proxyName).Run()
 	})
 }
 
-func startApIntegrationServer(t *testing.T) *goBlog {
+// apIntegrationServer is a GoBlog test server with a Unix socket for the Docker domain proxy.
+type apIntegrationServer struct {
+	*goBlog
+	socketPath string
+}
+
+func startApIntegrationServer(t *testing.T) *apIntegrationServer {
 	t.Helper()
 	port := getFreePort(t)
 	app := &goBlog{
@@ -765,16 +770,16 @@ func startApIntegrationServer(t *testing.T) *goBlog {
 	app.cfg.Server.PublicAddress = "http://goblog.example"
 	app.cfg.Server.Port = port
 	app.cfg.ActivityPub.Enabled = true
-	// Initialize the app
 	require.NoError(t, app.initConfig(false))
 	require.NoError(t, app.initTemplateStrings())
 	require.NoError(t, app.initActivityPub())
 	// Enable comments for testing reply flows
 	app.cfg.Blogs[app.cfg.DefaultBlog].Comments = &configComments{Enabled: true}
 
+	handler := app.buildRouter()
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           app.buildRouter(),
+		Handler:           handler,
 		ReadHeaderTimeout: time.Minute,
 	}
 	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
@@ -783,11 +788,25 @@ func startApIntegrationServer(t *testing.T) *goBlog {
 	go func() {
 		_ = server.Serve(listener)
 	}()
+
+	// The Docker domain proxy reaches this socket instead of a host TCP port.
+	socketPath := filepath.Join(t.TempDir(), "goblog.sock")
+	unixListener, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	unixServer := &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: time.Minute,
+	}
+	app.shutdown.Add(app.shutdownServer(unixServer, "integration unix server"))
+	go func() {
+		_ = unixServer.Serve(unixListener)
+	}()
+
 	t.Cleanup(func() {
 		app.shutdown.ShutdownAndWait()
 	})
 
-	return app
+	return &apIntegrationServer{goBlog: app, socketPath: socketPath}
 }
 
 type goToSocialInstance struct {
@@ -797,7 +816,7 @@ type goToSocialInstance struct {
 	networkName   string
 }
 
-func startGoToSocialInstance(t *testing.T, goblogPort int, extraProxyHosts ...string) (*goToSocialInstance, *mastodon.Client) {
+func startGoToSocialInstance(t *testing.T, socketPath string, extraProxyHosts ...string) (*goToSocialInstance, *mastodon.Client) {
 	t.Helper()
 
 	// Create Docker network for container DNS resolution
@@ -807,13 +826,10 @@ func startGoToSocialInstance(t *testing.T, goblogPort int, extraProxyHosts ...st
 		_ = exec.Command("docker", "network", "rm", netName).Run()
 	})
 
-	// Start lightweight TCP forwarders.
-	// Each forwards port 80 inside Docker to GoBlog's port on the host.
 	for _, hostname := range append([]string{"goblog.example"}, extraProxyHosts...) {
-		startDomainProxy(t, netName, hostname, goblogPort)
+		startDomainProxy(t, netName, hostname, socketPath)
 	}
 
-	// Wait for proxy to be ready
 	require.Eventually(t, func() bool {
 		acct := "acct:default@goblog.example"
 		cmd := exec.Command("docker", "run", "--rm", "--network", netName, "docker.io/alpine/curl", "-sS", "-m", "2", "-G", "--data-urlencode", fmt.Sprintf("resource=%s", acct), "http://goblog.example/.well-known/webfinger")
@@ -821,7 +837,6 @@ func startGoToSocialInstance(t *testing.T, goblogPort int, extraProxyHosts ...st
 		return err == nil && strings.Contains(string(out), acct)
 	}, time.Minute, time.Second)
 
-	// Create config and data directories
 	containerName := fmt.Sprintf("goblog-gts-%s", uuid.New().String())
 	port := getFreePort(t)
 	gtsDir := t.TempDir()
@@ -844,7 +859,6 @@ cache:
 `, port, port)
 	require.NoError(t, os.WriteFile(gtsConfigPath, []byte(gtsConfig), 0o644))
 
-	// Start GoToSocial Docker container on the test network
 	runDocker(t,
 		"run", "-d", "--rm",
 		"--name", containerName,
@@ -867,10 +881,8 @@ cache:
 		networkName:   netName,
 	}
 
-	// Wait for GoToSocial to be ready
 	waitForHTTP(t, gts.baseURL+"/api/v1/instance", 2*time.Minute)
 
-	// Create admin account
 	runDocker(t,
 		"exec", gts.containerName,
 		"/gotosocial/gotosocial",

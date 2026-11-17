@@ -23,14 +23,11 @@ func TestIntegrationAcmeWithPebble(t *testing.T) {
 
 	requireDocker(t)
 
-	// Allocate the HTTPS port before starting Pebble so we can configure it as
-	// Pebble's tlsPort for TLS-ALPN-01 validation.
 	goblogPort := getFreePort(t)
 	tlsAddr := fmt.Sprintf("127.0.0.1:%d", goblogPort)
+	socketPath := filepath.Join(t.TempDir(), "goblog-tls.sock")
 
-	// Start Pebble configured to validate TLS-ALPN-01 challenges directly on the host
-	// (goblog.example resolves to host-gateway inside Pebble's container).
-	pebbleDirURL := startPebble(t, "goblog.example", goblogPort)
+	pebbleDirURL := startPebble(t, "goblog.example", goblogPort, socketPath)
 	app := &goBlog{
 		cfg: createDefaultTestConfig(t),
 		// Use an HTTP client that trusts Pebble's self-signed TLS
@@ -51,16 +48,23 @@ func TestIntegrationAcmeWithPebble(t *testing.T) {
 	app.cfg.Server.HTTPSRedirect = false
 	require.NoError(t, app.initTemplateStrings())
 
-	// Pre-initialize the cert manager with the Pebble-configured HTTP client
 	cm := app.getCertManager()
 	require.NotNil(t, cm)
 
-	// Use GoBlog's own startServer which sets up the full middleware stack and
-	// the HTTPS server. TLS-ALPN-01 challenges are served on the HTTPS port
-	// itself, so no separate challenge server is needed.
+	// Pebble reaches this TLS listener through a socat proxy and a Unix socket.
+	unixListener, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	unixServer := &http.Server{
+		Handler:           http.NotFoundHandler(),
+		ReadHeaderTimeout: time.Minute,
+	}
+	app.shutdown.Add(app.shutdownServer(unixServer, "acme unix server"))
+	go func() {
+		_ = unixServer.Serve(tls.NewListener(unixListener, cm.TLSConfig()))
+	}()
+
 	go func() { _ = app.startServer() }()
 
-	// Wait for the HTTPS server to be reachable before running subtests
 	require.Eventually(t, func() bool {
 		conn, err := net.DialTimeout("tcp", tlsAddr, time.Second)
 		if err != nil {
@@ -185,31 +189,41 @@ func TestIntegrationAcmeWithPebble(t *testing.T) {
 	})
 
 	t.Cleanup(func() {
-		cm.Close()
 		app.shutdown.ShutdownAndWait()
+		cm.Close()
 	})
 }
 
-// startPebble starts a Pebble ACME test server on the given Docker network.
-// hostname is mapped to host-gateway inside the Pebble container so Pebble can
-// reach GoBlog's HTTPS server directly on the host.
-// tlsChallengePort is GoBlog's HTTPS port; Pebble uses it for TLS-ALPN-01 validation.
-// It returns the ACME directory URL accessible from the host.
-func startPebble(t *testing.T, hostname string, tlsChallengePort int) (dirURL string) {
+// startPebble starts Pebble and a socat proxy that forwards TLS-ALPN-01
+// validation connections to GoBlog's Unix socket.
+func startPebble(t *testing.T, hostname string, tlsChallengePort int, socketPath string) (dirURL string) {
 	t.Helper()
 
-	// Create Docker network
 	netName := fmt.Sprintf("goblog-acme-net-%s", uuid.New().String())
 	runDocker(t, "network", "create", netName)
 	t.Cleanup(func() {
 		_ = exec.Command("docker", "network", "rm", netName).Run()
 	})
 
+	proxyName := fmt.Sprintf("goblog-acme-proxy-%s", uuid.New().String())
+	runDocker(t,
+		"run", "-d", "--rm",
+		"--name", proxyName,
+		"--network", netName,
+		"--network-alias", hostname,
+		"-v", fmt.Sprintf("%s:/goblog", filepath.Dir(socketPath)),
+		"docker.io/alpine/socat",
+		fmt.Sprintf("TCP-LISTEN:%d,fork,reuseaddr", tlsChallengePort),
+		"UNIX-CONNECT:/goblog/"+filepath.Base(socketPath),
+	)
+	t.Cleanup(func() {
+		_ = exec.Command("docker", "rm", "-f", proxyName).Run()
+	})
+
 	containerName := fmt.Sprintf("goblog-pebble-%s", uuid.New().String())
 	wfePort := getFreePort(t)
 	mgmtPort := getFreePort(t)
 
-	// Write a custom config so Pebble validates TLS-ALPN-01 on our dynamically-chosen port.
 	pebbleConfig := fmt.Sprintf(`{
   "pebble": {
     "listenAddress": "0.0.0.0:14000",
@@ -229,9 +243,6 @@ func startPebble(t *testing.T, hostname string, tlsChallengePort int) (dirURL st
 		"run", "-d", "--rm",
 		"--name", containerName,
 		"--network", netName,
-		"--network-alias", "pebble",
-		// Resolve the challenge hostname to the host so Pebble can reach GoBlog directly
-		"--add-host", fmt.Sprintf("%s:host-gateway", hostname),
 		"-p", fmt.Sprintf("127.0.0.1:%d:14000", wfePort),
 		"-p", fmt.Sprintf("127.0.0.1:%d:15000", mgmtPort),
 		"-e", "PEBBLE_VA_NOSLEEP=1",
@@ -244,7 +255,6 @@ func startPebble(t *testing.T, hostname string, tlsChallengePort int) (dirURL st
 		_ = exec.Command("docker", "rm", "-f", containerName).Run()
 	})
 
-	// Wait for Pebble to be ready
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{

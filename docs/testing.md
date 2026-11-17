@@ -79,11 +79,11 @@ Some test files spin up Docker containers to test against real software:
 - Moving followers to another account (`Move` activity)
 - Domain migration via `altDomain`
 
-The test creates a Docker network, uses `socat` containers for port forwarding, and performs OAuth2 against GoToSocial to obtain Mastodon API tokens. Federation events are verified using `require.Eventually` to wait for asynchronous delivery.
+The test creates a Docker network, uses `socat` containers to forward port 80 to a Unix socket served by GoBlog, and performs OAuth2 against GoToSocial to obtain Mastodon API tokens. Because the proxy talks to GoBlog over the shared Unix socket, no host port 80 is bound and containers do not need to reach host ports through a Docker bridge. Federation events are verified using `require.Eventually` to wait for asynchronous delivery.
 
 ### ACME / Pebble
 
-`acme_integration_test.go` (also gated behind `//go:build !skipIntegration`) tests TLS certificate management against [Pebble](https://github.com/letsencrypt/pebble), Let's Encrypt's ACME test server:
+`acme_integration_test.go` (also gated behind `//go:build !skipIntegration`) tests TLS certificate management against [Pebble](https://github.com/letsencrypt/pebble), Let's Encrypt's ACME test server. Pebble runs on a Docker network and a `socat` proxy forwards TLS-ALPN-01 validation connections to a Unix socket served by GoBlog, so no host networking or host TCP port is needed:
 
 - Certificate issuance via TLS-ALPN-01 challenge
 - Certificate renewal
@@ -95,7 +95,7 @@ The test creates a Docker network, uses `socat` containers for port forwarding, 
 
 `mediaStorage_test.go` spawns a real FTP server (`goftp.io/server/v2`) on a random port and tests the full upload/retrieve/delete cycle against FTP media storage.
 
-These integration tests need a Docker daemon. They are skipped in Dockerfile builds (`skipIntegration` is set in the Dockerfile's `GOFLAGS` to avoid Docker-in-Docker complexity), but run fine in CI and locally. Run them with:
+These integration tests need a Docker daemon. They are skipped in Dockerfile builds (`skipIntegration` is set in the Dockerfile's `GOFLAGS` to avoid Docker-in-Docker complexity), but run fine in CI and locally. The ActivityPub and ACME tests use bridge networking and Unix-socket proxies, so containers do not need to reach host TCP ports and host firewalls such as UFW do not need extra rules. Run them with:
 
 ```bash
 go test -tags=linux,libsqlite3,sqlite_fts5,gomailnotpl -run Integration -timeout 600s ./...
