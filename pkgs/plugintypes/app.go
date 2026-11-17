@@ -8,8 +8,16 @@ import (
 	"net/http"
 )
 
+// ErrorRenderer renders GoBlog's error page for a status code.
+type ErrorRenderer interface {
+	// ServeError renders GoBlog's error page, or a plain-text error if the
+	// request does not accept HTML.
+	ServeError(w http.ResponseWriter, r *http.Request, message string, status int)
+}
+
 // App is used to access GoBlog's app instance.
 type App interface {
+	ErrorRenderer
 	// Get access to GoBlog's database
 	GetDatabase() Database
 	// Get a post from the database or an error when there is no post for the given path

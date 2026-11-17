@@ -33,7 +33,7 @@ type plugin struct {
 func GetPlugin() (
 	plugintypes.SetApp,
 	plugintypes.SetConfig,
-	plugintypes.Middleware,
+	plugintypes.Routes,
 ) {
 	p := &plugin{}
 	return p, p, p
@@ -52,18 +52,10 @@ func (p *plugin) SetConfig(config map[string]any) {
 	}
 }
 
-func (p *plugin) Prio() int {
-	return 1000
-}
-
-func (p *plugin) Handler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == p.path {
-			p.handleMCP(w, r)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+func (p *plugin) Routes() []plugintypes.Route {
+	return []plugintypes.Route{
+		{Path: p.path, Handler: http.HandlerFunc(p.handleMCP)},
+	}
 }
 
 // JSON-RPC types
@@ -147,13 +139,13 @@ func (p *plugin) handleMCP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		p.handlePost(w, r)
 	case http.MethodGet:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		p.app.ServeError(w, r, "", http.StatusMethodNotAllowed)
 	case http.MethodDelete:
 		w.WriteHeader(http.StatusOK)
 	case http.MethodOptions:
 		w.WriteHeader(http.StatusOK)
 	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		p.app.ServeError(w, r, "", http.StatusMethodNotAllowed)
 	}
 }
 

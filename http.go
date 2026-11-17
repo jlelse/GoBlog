@@ -271,12 +271,42 @@ func (a *goBlog) buildRouter() http.Handler {
 	// Robots.txt (with cache for 1 hour)
 	r.With(middleware.WithValue(cacheExpirationKey, 3600), cacheLoggedIn, a.CacheMiddleware).Get(robotsTXTPath, a.serveRobotsTXT)
 
+	// Plugin routes
+	a.registerPluginRoutes(r, "")
+
 	r.NotFound(a.servePostsAliasesRedirects())
 
 	r.MethodNotAllowed(a.serveNotAllowed)
 
 	mapRouter.DefaultHandler = r
 	return alice.New(headAsGetHandler, fixHTTPHandler).Then(mapRouter)
+}
+
+func (a *goBlog) registerPluginRoutes(r chi.Router, blog string) {
+	pathPrefix := ""
+	if blog != "" {
+		if conf := a.cfg.Blogs[blog]; conf != nil {
+			pathPrefix = strings.TrimSuffix(conf.getRelativePath(""), "/")
+		}
+	}
+	for _, route := range a.pluginRoutes {
+		if route.Blog != blog {
+			continue
+		}
+		path := pathPrefix + route.Path
+		func() {
+			defer func() {
+				if rec := recover(); rec != nil {
+					a.error("Failed to register plugin route", "method", route.Method, "path", path, "err", rec)
+				}
+			}()
+			if route.Method == "" {
+				r.Handle(path, route.Handler)
+				return
+			}
+			r.Method(route.Method, path, route.Handler)
+		}()
+	}
 }
 
 func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {

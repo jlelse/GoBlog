@@ -306,12 +306,8 @@ Hello from Jane.
 ![Jane](/m/abc123.jpg)`)
 	require.NoError(t, err)
 	require.NoError(t, app.initPlugins())
-
-	middlewarePlugins := app.getPlugins(pluginMiddlewareType)
-	require.Len(t, middlewarePlugins, 1)
-	handler := middlewarePlugins[0].(plugintypes.Middleware).Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
+	app.reloadRouter()
+	handler := app.getAppRouter()
 
 	serve := func(method, path string, headers map[string]string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, nil)

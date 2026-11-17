@@ -49,7 +49,7 @@ type contactData struct {
 }
 
 // GetPlugin returns the socialspec plugin instance.
-func GetPlugin() (plugintypes.SetApp, plugintypes.SetConfig, plugintypes.Middleware) {
+func GetPlugin() (plugintypes.SetApp, plugintypes.SetConfig, plugintypes.Routes) {
 	p := &plugin{}
 	return p, p, p
 }
@@ -85,9 +85,6 @@ func (p *plugin) SetConfig(config map[string]any) {
 }
 
 func (p *plugin) buildAbout() (string, bool, error) {
-	if p.app == nil {
-		return "", false, nil
-	}
 	post, err := p.app.GetPost(p.aboutPage)
 	if err != nil {
 		return "", false, err
@@ -114,34 +111,21 @@ func markdownWithSummary(markdown, summary string) string {
 	return "---\n" + string(frontMatter) + "---\n\n" + strings.TrimLeft(markdown, "\n")
 }
 
-func (p *plugin) Prio() int {
-	return 1000
-}
-
-func (p *plugin) Handler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !p.handlesPath(r.URL.Path) {
-			next.ServeHTTP(w, r)
-			return
-		}
-		if p.cachedHandler == nil {
-			p.serve(w, r)
-			return
-		}
-		p.cachedHandler.ServeHTTP(w, r)
-	})
-}
-
-func (p *plugin) handlesPath(path string) bool {
-	if path == feedXMLAlias || path == feedJSONAlias || path == followingPath {
-		return true
-	}
+func (p *plugin) Routes() []plugintypes.Route {
+	handler := p.cachedHandler
+	paths := make([]string, 0, 3+len(p.endpoints))
+	paths = append(paths, feedXMLAlias, feedJSONAlias, followingPath)
 	for i := range p.endpoints {
-		if p.endpoints[i].path == path {
-			return true
-		}
+		paths = append(paths, p.endpoints[i].path)
 	}
-	return false
+	routes := make([]plugintypes.Route, 0, len(paths)*2)
+	for _, path := range paths {
+		routes = append(routes,
+			plugintypes.Route{Method: http.MethodGet, Path: path, Handler: handler},
+			plugintypes.Route{Method: http.MethodOptions, Path: path, Handler: handler},
+		)
+	}
+	return routes
 }
 
 func (p *plugin) serve(w http.ResponseWriter, r *http.Request) {
@@ -163,13 +147,13 @@ func (p *plugin) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if ep == nil {
 		w.Header().Set("Cache-Control", "no-store")
-		http.NotFound(w, r)
+		p.app.ServeError(w, r, "", http.StatusNotFound)
 		return
 	}
 
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		p.app.ServeError(w, r, "", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -180,12 +164,12 @@ func (p *plugin) serve(w http.ResponseWriter, r *http.Request) {
 		body, ok, err = ep.build()
 		if err != nil {
 			w.Header().Set("Cache-Control", "no-store")
-			http.Error(w, "failed to load SocialSpec data", http.StatusInternalServerError)
+			p.app.ServeError(w, r, "failed to load SocialSpec data", http.StatusInternalServerError)
 			return
 		}
 		if !ok {
 			w.Header().Set("Cache-Control", "no-store")
-			http.NotFound(w, r)
+			p.app.ServeError(w, r, "", http.StatusNotFound)
 			return
 		}
 	}
@@ -197,12 +181,7 @@ func (p *plugin) serve(w http.ResponseWriter, r *http.Request) {
 func (p *plugin) serveFeedAlias(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	if p.app == nil {
-		w.Header().Set("Cache-Control", "no-store")
-		http.Error(w, "failed to resolve feed", http.StatusInternalServerError)
+		p.app.ServeError(w, r, "", http.StatusMethodNotAllowed)
 		return
 	}
 	feed := "rss"
@@ -212,7 +191,7 @@ func (p *plugin) serveFeedAlias(w http.ResponseWriter, r *http.Request) {
 	target, err := p.app.GetBlogFeedPath(p.blog, feed)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-store")
-		http.Error(w, "failed to resolve feed", http.StatusInternalServerError)
+		p.app.ServeError(w, r, "failed to resolve feed", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, target, http.StatusMovedPermanently)
@@ -221,23 +200,18 @@ func (p *plugin) serveFeedAlias(w http.ResponseWriter, r *http.Request) {
 func (p *plugin) serveBlogrollRedirect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	if p.app == nil {
-		w.Header().Set("Cache-Control", "no-store")
-		http.Error(w, "failed to resolve blogroll", http.StatusInternalServerError)
+		p.app.ServeError(w, r, "", http.StatusMethodNotAllowed)
 		return
 	}
 	target, enabled, err := p.app.GetBlogrollExportPath(p.blog)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-store")
-		http.Error(w, "failed to resolve blogroll", http.StatusInternalServerError)
+		p.app.ServeError(w, r, "failed to resolve blogroll", http.StatusInternalServerError)
 		return
 	}
 	if !enabled {
 		w.Header().Set("Cache-Control", "no-store")
-		http.NotFound(w, r)
+		p.app.ServeError(w, r, "", http.StatusNotFound)
 		return
 	}
 	http.Redirect(w, r, target, http.StatusFound)

@@ -26,7 +26,7 @@ type plugin struct {
 func GetPlugin() (
 	plugintypes.SetConfig, plugintypes.SetApp,
 	plugintypes.UIImgAttributes, plugintypes.UIPost,
-	plugintypes.Middleware,
+	plugintypes.Routes,
 ) {
 	p := &plugin{}
 	return p, p, p, p, p
@@ -56,30 +56,39 @@ func (p *plugin) SetConfig(config map[string]any) {
 	}
 }
 
-func (p *plugin) Handler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.URL.Path == "/x/aiimage" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
-				p.createCaptions(post)
-				http.Redirect(w, r, post.GetPath(), http.StatusFound)
-			} else {
-				next.ServeHTTP(w, r)
-			}
-		} else if r.Method == http.MethodPost && r.URL.Path == "/x/aiimage/delete" && p.app.IsLoggedIn(r) {
-			if post, err := p.app.GetPost(r.FormValue("post")); err == nil { //nolint:gosec
-				p.deleteCaptions(post)
-				http.Redirect(w, r, post.GetPath(), http.StatusFound)
-			} else {
-				next.ServeHTTP(w, r)
-			}
-		} else {
-			next.ServeHTTP(w, r)
-		}
-	})
+func (p *plugin) Routes() []plugintypes.Route {
+	return []plugintypes.Route{
+		{Method: http.MethodPost, Path: "/x/aiimage", Handler: http.HandlerFunc(p.handleGenerate)},
+		{Method: http.MethodPost, Path: "/x/aiimage/delete", Handler: http.HandlerFunc(p.handleDelete)},
+	}
 }
 
-func (p *plugin) Prio() int {
-	return 1000
+func (p *plugin) handleGenerate(w http.ResponseWriter, r *http.Request) {
+	if !p.app.IsLoggedIn(r) {
+		p.app.ServeError(w, r, "", http.StatusNotFound)
+		return
+	}
+	post, err := p.app.GetPost(r.FormValue("post")) //nolint:gosec
+	if err != nil {
+		p.app.ServeError(w, r, "", http.StatusNotFound)
+		return
+	}
+	p.createCaptions(post)
+	http.Redirect(w, r, post.GetPath(), http.StatusFound)
+}
+
+func (p *plugin) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if !p.app.IsLoggedIn(r) {
+		p.app.ServeError(w, r, "", http.StatusNotFound)
+		return
+	}
+	post, err := p.app.GetPost(r.FormValue("post")) //nolint:gosec
+	if err != nil {
+		p.app.ServeError(w, r, "", http.StatusNotFound)
+		return
+	}
+	p.deleteCaptions(post)
+	http.Redirect(w, r, post.GetPath(), http.StatusFound)
 }
 
 const postParam = "aiimage"

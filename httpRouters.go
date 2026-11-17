@@ -219,6 +219,9 @@ func (a *goBlog) blogRouter(blog string, conf *configBlog) func(r chi.Router) {
 		// Settings
 		r.Route(conf.getRelativePath(settingsPath), a.blogSettingsRouter(conf))
 
+		// Plugin routes
+		a.registerPluginRoutes(r, blog)
+
 	}
 }
 

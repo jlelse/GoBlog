@@ -296,9 +296,10 @@ func (p *plugin) Exec() {
 
 Plugins can implement multiple interfaces:
 
-- **SetApp** - Receive app instance (database, HTTP client, etc.)
+- **SetApp** - Receive app instance (database, HTTP client, error pages, etc.)
 - **SetConfig** - Receive plugin configuration
 - **Exec** - Run background tasks (runs in goroutine)
+- **Routes** - Register HTTP routes
 - **Middleware** - HTTP middleware with priority
 - **UI** - Modify rendered HTML (stream-based)
 - **UI2** - Modify rendered HTML (DOM-based with goquery)
@@ -313,6 +314,29 @@ Plugins can implement multiple interfaces:
 - **BlockedBots** - Provide bot user-agent names to block in robots.txt
 
 See [plugintypes documentation](https://pkg.go.dev/go.goblog.app/app/pkgs/plugintypes) for details.
+
+### HTTP Routes
+
+Plugins that provide HTTP endpoints can implement `plugintypes.Routes` instead of intercepting every request in middleware:
+
+```go
+func GetPlugin() (plugintypes.SetApp, plugintypes.Routes) {
+    p := &plugin{}
+    return p, p
+}
+
+func (p *plugin) Routes() []plugintypes.Route {
+    return []plugintypes.Route{
+        {
+            Method:  http.MethodGet,
+            Path:    "/.well-known/example",
+            Handler: http.HandlerFunc(p.serveExample),
+        },
+    }
+}
+```
+
+Leave `Method` empty to match all HTTP methods. Set `Blog` to a blog code to register a route only for that blog; the path is then relative to the blog's path. Leave `Blog` empty for a global route. Handlers can use `App.CacheMiddleware`, `App.CORSHandler`, and `App.IsLoggedIn` as needed, and `App.ServeError` renders GoBlog's error page (or a plain-text error for non-HTML clients). Routes are registered during router construction, so they are available after router reloads too. Invalid routes and duplicate plugin routes cause startup to fail.
 
 ### Available Packages for Plugins
 

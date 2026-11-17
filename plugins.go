@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"time"
 
 	"go.goblog.app/app/pkgs/bufferpool"
@@ -23,6 +24,7 @@ var pluginsFS embed.FS
 const (
 	pluginSetAppType          = "setapp"
 	pluginSetConfigType       = "setconfig"
+	pluginRoutesType          = "routes"
 	pluginUIType              = "ui"
 	pluginUI2Type             = "ui2"
 	pluginExecType            = "exec"
@@ -43,10 +45,12 @@ func (a *goBlog) initPlugins() error {
 	if err != nil {
 		return err
 	}
+	a.pluginRoutes = nil
 	a.pluginHost = plugins.NewPluginHost(
 		map[string]reflect.Type{
 			pluginSetAppType:          reflect.TypeFor[plugintypes.SetApp](),
 			pluginSetConfigType:       reflect.TypeFor[plugintypes.SetConfig](),
+			pluginRoutesType:          reflect.TypeFor[plugintypes.Routes](),
 			pluginUIType:              reflect.TypeFor[plugintypes.UI](),
 			pluginUI2Type:             reflect.TypeFor[plugintypes.UI2](),
 			pluginExecType:            reflect.TypeFor[plugintypes.Exec](),
@@ -80,11 +84,73 @@ func (a *goBlog) initPlugins() error {
 		}
 	}
 
+	pluginRoutes, err := a.loadPluginRoutes()
+	if err != nil {
+		return err
+	}
+	a.pluginRoutes = pluginRoutes
+
 	for _, p := range a.getPlugins(pluginExecType) {
 		go p.(plugintypes.Exec).Exec()
 	}
 
 	return nil
+}
+
+func (a *goBlog) loadPluginRoutes() ([]plugintypes.Route, error) {
+	var routes []plugintypes.Route
+	for _, p := range a.getPlugins(pluginRoutesType) {
+		pluginRouteList, err := callPluginRoutes(p.(plugintypes.Routes))
+		if err != nil {
+			return nil, err
+		}
+		for _, route := range pluginRouteList {
+			route.Method = strings.ToUpper(route.Method)
+			if err := validatePluginRoute(route, a.cfg.Blogs); err != nil {
+				return nil, err
+			}
+			for _, existing := range routes {
+				if existing.Blog != route.Blog || existing.Path != route.Path {
+					continue
+				}
+				if existing.Method == "" || route.Method == "" || existing.Method == route.Method {
+					return nil, fmt.Errorf("duplicate plugin route %s %s", route.Method, route.Path)
+				}
+			}
+			routes = append(routes, route)
+		}
+	}
+	return routes, nil
+}
+
+func callPluginRoutes(routes plugintypes.Routes) (result []plugintypes.Route, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("plugin routes panicked: %v", r)
+		}
+	}()
+	return routes.Routes(), nil
+}
+
+func validatePluginRoute(route plugintypes.Route, blogs map[string]*configBlog) error {
+	if route.Handler == nil {
+		return fmt.Errorf("plugin route %q has no handler", route.Path)
+	}
+	if route.Path == "" || !strings.HasPrefix(route.Path, "/") {
+		return fmt.Errorf("invalid plugin route path %q", route.Path)
+	}
+	if route.Blog != "" {
+		if _, ok := blogs[route.Blog]; !ok {
+			return fmt.Errorf("plugin route %q uses unknown blog %q", route.Path, route.Blog)
+		}
+	}
+	switch route.Method {
+	case "", http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut,
+		http.MethodPatch, http.MethodDelete, http.MethodOptions:
+		return nil
+	default:
+		return fmt.Errorf("invalid plugin route method %q", route.Method)
+	}
 }
 
 func (a *goBlog) getPlugins(typ string) []any {
@@ -95,6 +161,10 @@ func (a *goBlog) getPlugins(typ string) []any {
 }
 
 // Implement all needed interfaces
+
+func (a *goBlog) ServeError(w http.ResponseWriter, r *http.Request, message string, status int) {
+	a.serveError(w, r, message, status)
+}
 
 func (a *goBlog) GetDatabase() plugintypes.Database {
 	return a.db

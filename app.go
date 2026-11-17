@@ -20,6 +20,7 @@ import (
 	"github.com/yuin/goldmark/v2/renderer/html"
 	c "go.goblog.app/app/pkgs/cache"
 	"go.goblog.app/app/pkgs/plugins"
+	"go.goblog.app/app/pkgs/plugintypes"
 )
 
 type goBlog struct {
@@ -91,7 +92,8 @@ type goBlog struct {
 	// Micropub
 	mpImpl *micropubImplementation
 	// Plugins
-	pluginHost *plugins.PluginHost
+	pluginHost   *plugins.PluginHost
+	pluginRoutes []plugintypes.Route
 	// Profile image
 	profileImageHashString string
 	profileImageHashGroup  *sync.Once
