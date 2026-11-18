@@ -147,9 +147,11 @@ func (a *goBlog) profileImageRouter(r chi.Router) {
 func (a *goBlog) otherRoutesRouter(r chi.Router) {
 	r.Use(a.privateModeHandler)
 
-	// Leaflet
+	// Map
 	r.With(noIndexHeader).Get("/tiles/{s}/{z}/{x}/{y}.png", a.proxyTiles())
+	r.With(noIndexHeader).Get("/maptiles/*", a.proxyVectorTiles())
 	r.With(cacheLoggedIn, a.CacheMiddleware, noIndexHeader).HandleFunc("/leaflet/*", a.serveFs(leafletFiles, "/-/"))
+	r.With(cacheLoggedIn, a.CacheMiddleware, noIndexHeader).HandleFunc("/maplibre/*", a.serveFs(mapLibreFiles, "/-/"))
 
 	// Hlsjs
 	r.With(cacheLoggedIn, a.CacheMiddleware, noIndexHeader).HandleFunc("/hlsjs/*", a.serveFs(hlsjsFiles, "/-/"))

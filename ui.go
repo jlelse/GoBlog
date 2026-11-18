@@ -644,9 +644,6 @@ type geoMapRenderData struct {
 	noLocations bool
 	locations   string
 	tracks      string
-	attribution string
-	minZoom     int
-	maxZoom     int
 }
 
 func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -670,17 +667,7 @@ func (a *goBlog) renderGeoMap(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "nolocations"))
 				hb.WriteElementClose("p")
 			} else {
-				hb.WriteElementOpen(
-					"div", "id", "map", "class", "p",
-					"data-locations", gmd.locations,
-					"data-tracks", gmd.tracks,
-					"data-minzoom", gmd.minZoom,
-					"data-maxzoom", gmd.maxZoom,
-					"data-attribution", gmd.attribution,
-				)
-				hb.WriteElementClose("div")
-				hb.WriteElementOpen("script", "src", a.assetFileName("js/geomap.js"), "integrity", a.assetFileHash("js/geomap.js"))
-				hb.WriteElementClose("script")
+				a.renderMap(hb, "data-locations", gmd.locations, "data-tracks", gmd.tracks)
 			}
 			hb.WriteElementClose("main")
 			if a.commentsEnabled(rd.Blog) {

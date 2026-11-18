@@ -85,8 +85,8 @@ func newCSPBuilder(a *goBlog) *cspBuilder {
 	allowedDomains := a.cspAllowedDomains()
 	defaultSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
 	defaultSrcList = append(defaultSrcList, src.Self(), src.Scheme("blob:"))
-	imgSrcList := make([]src.SourceVal, 0, 2+len(allowedDomains))
-	imgSrcList = append(imgSrcList, src.Self(), src.Scheme("data:"))
+	imgSrcList := make([]src.SourceVal, 0, 3+len(allowedDomains))
+	imgSrcList = append(imgSrcList, src.Self(), src.Scheme("data:"), src.Scheme("blob:"))
 	for _, domain := range allowedDomains {
 		defaultSrcList = append(defaultSrcList, src.Host(domain))
 		imgSrcList = append(imgSrcList, src.Host(domain))
@@ -177,7 +177,7 @@ func (b *cspBuilder) build() string {
 		directives.StyleSrc(styleSrcList...),
 		directives.ScriptSrc(scriptSrcList...),
 		directives.FrameAncestors(b.frameAncestors),
-	)
+		directives.WorkerSrc(src.Self()))
 }
 
 func (a *goBlog) addOnionLocation(next http.Handler) http.Handler {

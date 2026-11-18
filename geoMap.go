@@ -52,11 +52,8 @@ func (a *goBlog) serveGeoMap(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, a.renderGeoMap, &renderData{
 		Canonical: canonical,
 		Data: &geoMapRenderData{
-			locations:   "url:" + canonical + geoMapLocationsSubpath,
-			tracks:      "url:" + canonical + geoMapTracksSubpath,
-			attribution: a.getMapAttribution(),
-			minZoom:     a.getMinZoom(),
-			maxZoom:     a.getMaxZoom(),
+			locations: "url:" + canonical + geoMapLocationsSubpath,
+			tracks:    "url:" + canonical + geoMapTracksSubpath,
 		},
 	})
 }

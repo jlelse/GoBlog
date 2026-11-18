@@ -184,8 +184,9 @@ pathRedirects:
 
 # Map tiles
 mapTiles:
-  source: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" # (Optional) URL to use for map tiles
-  attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors" # (Optional) Attribution for map tiles
+  vector: false # (Optional) Use OpenFreeMap vector tiles through GoBlog instead of raster tiles
+  source: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" # (Optional) URL for raster map tiles
+  attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors" # (Optional) Attribution for raster map tiles
   minZoom: 0 # (Optional) Minimum zoom level
   maxZoom: 20 # (Optional) Maximum zoom level
 

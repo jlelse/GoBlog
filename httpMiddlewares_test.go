@@ -24,6 +24,20 @@ func Test_noIndexHeader(t *testing.T) {
 	assert.Equal(t, "noindex", res.Header.Get("X-Robots-Tag"))
 }
 
+func Test_vectorMapCSP(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	app.cfg.MapTiles = &configMapTiles{Vector: true}
+
+	csp := newCSPBuilder(app).build()
+	assert.Contains(t, csp, "worker-src 'self'")
+	assert.Contains(t, csp, "img-src 'self' data: blob:")
+	assert.Contains(t, csp, "'sha256-"+bundleHashes["maplibre/maplibre-gl.js"]+"'")
+	assert.NotContains(t, csp, "unsafe-inline")
+	assert.NotContains(t, csp, "unsafe-eval")
+	assert.NotContains(t, csp, "style-src-attr")
+}
+
 func Test_fixHTTPHandler(t *testing.T) {
 
 	var got *http.Request

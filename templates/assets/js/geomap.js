@@ -39,6 +39,39 @@
         }
     }
 
+    function openPost(post) {
+        if (post) window.open(post, '_blank', 'noopener')
+    }
+
+    function loadStylesheet(href) {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = href
+        document.head.appendChild(link)
+    }
+
+    function loadMapFeatures(mapEl, addPoint, addLine, onDataLoaded) {
+        getMapJson(mapEl.dataset.locations, locations => {
+            locations.forEach(location => addPoint(location.Point, location.Post))
+            onDataLoaded()
+        })
+        getMapJson(mapEl.dataset.tracks, tracks => {
+            tracks.forEach(track => {
+                (track.Paths || []).forEach(path => addLine(path, track.Post));
+                (track.Points || []).forEach(point => addPoint(point, track.Post))
+            })
+            onDataLoaded()
+        })
+        getMapJson(mapEl.dataset.paths, paths => {
+            paths.forEach(path => addLine(path))
+            onDataLoaded()
+        })
+        getMapJson(mapEl.dataset.points, points => {
+            points.forEach(point => addPoint(point))
+            onDataLoaded()
+        })
+    }
+
     function loadMap() {
         // Get the map element
         const mapEl = document.getElementById('map')
@@ -62,65 +95,103 @@
             map.fitBounds(cluster.getBounds(), { padding: [5, 5] })
         }
 
-        // Map page
-        getMapJson(mapEl.dataset.locations, locations => {
-            locations.forEach(location => {
-                cluster.addLayer(L.marker(location.Point).on('click', function () {
-                    window.open(location.Post, '_blank').focus()
-                }))
-            })
-            fitFeatures()
-        })
-        getMapJson(mapEl.dataset.tracks, tracks => {
-            tracks.forEach(track => {
-                track.Paths.forEach(path => {
-                    // Use random color on map page for paths to better differentiate
-                    cluster.addLayer(L.polyline(path, { color: randomColor() }).on('click', function () {
-                        window.open(track.Post, '_blank').focus()
-                    }))
-                })
-                track.Points.forEach(point => {
-                    cluster.addLayer(L.marker(point).on('click', function () {
-                        window.open(track.Post, '_blank').focus()
-                    }))
-                })
-            })
-            fitFeatures()
-        })
-        // Post map
-        getMapJson(mapEl.dataset.paths, paths => {
-            paths.forEach(path => {
-                cluster.addLayer(L.polyline(path, { color: randomColor() }))
-            })
-            fitFeatures()
-        })
-        getMapJson(mapEl.dataset.points, points => {
-            points.forEach(point => {
-                cluster.addLayer(L.marker(point))
-            })
-            fitFeatures()
-        })
+        const addPoint = (point, post) => {
+            const marker = L.marker(point)
+            if (post) marker.on('click', () => openPost(post))
+            cluster.addLayer(marker)
+        }
+        const addLine = (path, post) => {
+            const line = L.polyline(path, { color: randomColor() })
+            if (post) line.on('click', () => openPost(post))
+            cluster.addLayer(line)
+        }
+        loadMapFeatures(mapEl, addPoint, addLine, fitFeatures)
+    }
 
+    function loadVectorMap() {
+        const mapEl = document.getElementById('map')
+        maplibregl.setWorkerUrl('/-/maplibre/maplibre-gl-worker.js?v=5.6.2')
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: '/-/maptiles/styles/bright',
+            minZoom: Number(mapEl.dataset.minzoom),
+            maxZoom: Number(mapEl.dataset.maxzoom),
+            boxZoom: false,
+            attributionControl: false
+        })
+        const bounds = new maplibregl.LngLatBounds()
+        let hasBounds = false
+        const features = []
+        const updateFeatures = () => map.getSource('goblog-features').setData({
+            type: 'FeatureCollection', features: features
+        })
+        const addMarker = (point, post) => {
+            const lngLat = [point[1], point[0]]
+            features.push({ type: 'Feature', properties: { post: post || '' }, geometry: {
+                type: 'Point', coordinates: lngLat
+            } })
+            bounds.extend(lngLat)
+            hasBounds = true
+        }
+        const addLine = (path, post) => {
+            if (!path || path.length < 2) return
+            const coordinates = path.map(point => {
+                const lngLat = [point[1], point[0]]
+                bounds.extend(lngLat)
+                hasBounds = true
+                return lngLat
+            })
+            features.push({ type: 'Feature', properties: { color: randomColor(), post: post || '' }, geometry: {
+                type: 'LineString', coordinates: coordinates
+            } })
+        }
+        map.on('load', () => {
+            map.addSource('goblog-features', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+            map.addLayer({ id: 'goblog-tracks', type: 'line', source: 'goblog-features', filter: ['==', '$type', 'LineString'], layout: {
+                'line-cap': 'round', 'line-join': 'round'
+            }, paint: {
+                'line-color': ['get', 'color'], 'line-width': 3
+            } })
+            map.addLayer({ id: 'goblog-points', type: 'circle', source: 'goblog-features', filter: ['==', '$type', 'Point'], paint: {
+                'circle-color': '#1769aa', 'circle-radius': 6, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2
+            } })
+            const interactiveLayers = ['goblog-points', 'goblog-tracks']
+            map.on('click', interactiveLayers, event => {
+                openPost(event.features?.[0]?.properties?.post)
+            })
+            map.on('mouseenter', interactiveLayers, event => {
+                if (event.features?.some(f => f.properties?.post)) {
+                    mapEl.classList.add('goblog-map-hover')
+                }
+            })
+            map.on('mouseleave', interactiveLayers, () => {
+                mapEl.classList.remove('goblog-map-hover')
+            })
+            const onDataLoaded = () => {
+                updateFeatures()
+                if (hasBounds) map.fitBounds(bounds, { padding: 24, maxZoom: 15, duration: 0 })
+            }
+            loadMapFeatures(mapEl, addMarker, addLine, onDataLoaded)
+        })
+    }
+
+    if (document.getElementById('map')?.dataset.vector === 'true') {
+        loadStylesheet('/-/maplibre/maplibre-gl.css?v=5.6.2')
+        loadStylesheet('/-/maplibre/goblog.css')
+        const script = document.createElement('script')
+        script.src = '/-/maplibre/maplibre-gl.js?v=5.6.2'
+        script.integrity = 'sha256-9meVnU1AsmIFUyAYqE0g7KRvj8nB1rH+c2nWoW74QJc='
+        script.onload = loadVectorMap
+        document.head.appendChild(script)
+        return
     }
 
     // Add Leaflet to the page
 
     // CSS
-    const css = document.createElement('link')
-    css.rel = 'stylesheet'
-    css.href = '/-/leaflet/leaflet.css?v=1.9.4'
-    document.head.appendChild(css)
-
-    // Marker Cluster plugin
-    const pluginCss1 = document.createElement('link')
-    pluginCss1.rel = 'stylesheet'
-    pluginCss1.href = '/-/leaflet/markercluster.css?v=1.5.3'
-    document.head.appendChild(pluginCss1)
-
-    const pluginCss2 = document.createElement('link')
-    pluginCss2.rel = 'stylesheet'
-    pluginCss2.href = '/-/leaflet/markercluster.default.css?v=1.5.3'
-    document.head.appendChild(pluginCss2)
+    loadStylesheet('/-/leaflet/leaflet.css?v=1.9.4')
+    loadStylesheet('/-/leaflet/markercluster.css?v=1.5.3')
+    loadStylesheet('/-/leaflet/markercluster.default.css?v=1.5.3')
 
     // JS
     const script = document.createElement('script')

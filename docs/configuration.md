@@ -35,7 +35,7 @@ For every available option with detailed explanations, see [`example-config.yml`
 | `indexNow` | Search engine notifications |
 | `tts` | Text-to-speech settings |
 | `pathRedirects` | Regex-based redirects |
-| `mapTiles` | Custom map tile source |
+| `mapTiles` | Map tile source, attribution, zoom limits, and optional OpenFreeMap vector maps |
 | `robotstxt` | Block specific bots |
 | `pprof` | Developer profiling |
 | `debug` | Verbose logging |

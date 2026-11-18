@@ -100,3 +100,6 @@ func geoOSMLink(g *gogeouri.Geo) string {
 
 //go:embed leaflet/*
 var leafletFiles embed.FS
+
+//go:embed maplibre/*
+var mapLibreFiles embed.FS

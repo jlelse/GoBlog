@@ -6,4 +6,5 @@ var bundleHashes = map[string]string{
 	"leaflet/leaflet.js":       "3HH4pogLw8ob2fqNxfGvSMcC3FELCngkCgfF/u186TU=",
 	"leaflet/markercluster.js": "se80zO4Ps22Fb/RxnHWQRqDhQpPbv51THZaXNUgRaLw=",
 	"hlsjs/hls.js":             "pWpPAyixat86CgT87AloBRv5WzJ9D9RrP11PZ2N+UlQ=",
+	"maplibre/maplibre-gl.js":  "9meVnU1AsmIFUyAYqE0g7KRvj8nB1rH+c2nWoW74QJc=",
 }

@@ -299,3 +299,65 @@ func Test_renderSettings(t *testing.T) {
 	assert.Equal(t, 0, doc.Find("details.settings-webmention-blocklist[open]").Length())
 	assert.Equal(t, 1, doc.Find("details.settings-webmention-blocklist table.settings-table").Length())
 }
+
+func Test_renderGeoMapAndTrackMap(t *testing.T) {
+	app := &goBlog{
+		cfg: createDefaultTestConfig(t),
+	}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	require.NoError(t, app.initTemplateAssets())
+	app.cfg.Blogs["default"].Map = &configGeoMap{Enabled: true}
+
+	t.Run("RasterMap", func(t *testing.T) {
+		app.cfg.MapTiles = nil
+		req := httptest.NewRequest("GET", "/map", nil)
+		rr := httptest.NewRecorder()
+		app.render(rr, req, app.renderGeoMap, &renderData{
+			Blog: app.cfg.Blogs["default"],
+			Data: &geoMapRenderData{
+				locations: "url:/map/locations.json",
+				tracks:    "url:/map/tracks.json",
+			},
+		})
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(rr.Body.String()))
+		require.NoError(t, err)
+		mapEl := doc.Find(".map-container #map")
+		assert.Equal(t, 1, mapEl.Length())
+		assert.Equal(t, "false", mapEl.AttrOr("data-vector", ""))
+		assert.Equal(t, "url:/map/locations.json", mapEl.AttrOr("data-locations", ""))
+		assert.Equal(t, "url:/map/tracks.json", mapEl.AttrOr("data-tracks", ""))
+		assert.Equal(t, 0, doc.Find(".map-attribution").Length())
+	})
+
+	t.Run("VectorMapAndTrackMap", func(t *testing.T) {
+		app.cfg.MapTiles = &configMapTiles{Vector: true, MinZoom: 2, MaxZoom: 18}
+		req := httptest.NewRequest("GET", "/map", nil)
+		rr := httptest.NewRecorder()
+		app.render(rr, req, app.renderGeoMap, &renderData{
+			Blog: app.cfg.Blogs["default"],
+			Data: &geoMapRenderData{
+				locations: "url:/map/locations.json",
+				tracks:    "url:/map/tracks.json",
+			},
+		})
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(rr.Body.String()))
+		require.NoError(t, err)
+		mapEl := doc.Find(".map-container #map")
+		assert.Equal(t, 1, mapEl.Length())
+		assert.Equal(t, "true", mapEl.AttrOr("data-vector", ""))
+		assert.Equal(t, "2", mapEl.AttrOr("data-minzoom", ""))
+		assert.Equal(t, "18", mapEl.AttrOr("data-maxzoom", ""))
+		assert.Contains(t, doc.Find(".map-attribution").Text(), "OpenFreeMap")
+
+		buf := &bytes.Buffer{}
+		hb := htmlbuilder.NewHTMLBuilder(buf)
+		app.renderPostTrackMap(hb, &trackResult{})
+		trackDoc, err := goquery.NewDocumentFromReader(strings.NewReader(buf.String()))
+		require.NoError(t, err)
+		trackMapEl := trackDoc.Find(".map-container #map")
+		assert.Equal(t, 1, trackMapEl.Length())
+		assert.Equal(t, "true", trackMapEl.AttrOr("data-vector", ""))
+		assert.Contains(t, trackDoc.Find(".map-attribution").Text(), "OpenFreeMap")
+	})
+}

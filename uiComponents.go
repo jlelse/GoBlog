@@ -718,20 +718,35 @@ func (a *goBlog) renderPostTrackStatistics(hb *htmlbuilder.HTMLBuilder, track *t
 	hb.WriteElementClose("p")
 }
 
-func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HTMLBuilder, track *trackResult) {
-	pathsJSON, _ := json.Marshal(track.Paths)
-	pointsJSON, _ := json.Marshal(track.Points)
-	hb.WriteElementOpen(
-		"div", "id", "map", "class", "p",
-		"data-paths", string(pathsJSON),
-		"data-points", string(pointsJSON),
+func (a *goBlog) renderMap(hb *htmlbuilder.HTMLBuilder, dataAttrs ...any) {
+	attribution := a.getMapAttribution()
+	vector := a.vectorMapEnabled()
+	attrs := make([]any, 0, 12+len(dataAttrs))
+	attrs = append(attrs, "id", "map")
+	attrs = append(attrs, dataAttrs...)
+	attrs = append(attrs,
 		"data-minzoom", a.getMinZoom(),
 		"data-maxzoom", a.getMaxZoom(),
-		"data-attribution", a.getMapAttribution(),
+		"data-attribution", attribution,
+		"data-vector", vector,
 	)
+	hb.WriteElementOpen("div", "class", "map-container p")
+	hb.WriteElementOpen("div", attrs...)
+	hb.WriteElementClose("div")
+	if vector {
+		hb.WriteElementOpen("p", "class", "map-attribution")
+		hb.WriteUnescaped(attribution)
+		hb.WriteElementClose("p")
+	}
 	hb.WriteElementClose("div")
 	hb.WriteElementOpen("script", "defer", "", "src", a.assetFileName("js/geomap.js"), "integrity", a.assetFileHash("js/geomap.js"))
 	hb.WriteElementClose("script")
+}
+
+func (a *goBlog) renderPostTrackMap(hb *htmlbuilder.HTMLBuilder, track *trackResult) {
+	pathsJSON, _ := json.Marshal(track.Paths)
+	pointsJSON, _ := json.Marshal(track.Points)
+	a.renderMap(hb, "data-paths", string(pathsJSON), "data-points", string(pointsJSON))
 }
 
 func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HTMLBuilder, track *trackResult) {

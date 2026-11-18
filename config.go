@@ -353,6 +353,7 @@ type configWebmention struct {
 }
 
 type configMapTiles struct {
+	Vector      bool   `mapstructure:"vector"`
 	Source      string `mapstructure:"source"`
 	Attribution string `mapstructure:"attribution"`
 	MinZoom     int    `mapstructure:"minZoom"`

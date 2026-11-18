@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Downloads pinned versions of hls.js, Leaflet and MarkerCluster and updates
-# the version query params and integrity hashes in the JS files so the served
-# assets match. Also generates bundleHashes.go for the CSP header.
+# Downloads pinned versions of hls.js, Leaflet, MarkerCluster, and MapLibre and
+# updates version query params and integrity hashes so served assets match.
+# Also generates bundleHashes.go for the CSP header.
 
 LEAFLET_VERSION="1.9.4"
 MARKERCLUSTER_VERSION="1.5.3"
 HLSJS_VERSION="1.7.4"
+MAPLIBRE_VERSION="5.6.2"
 
 # Directories to place downloaded files
 LEAFLET_DIR="leaflet"
 HLSJS_DIR="hlsjs"
+MAPLIBRE_DIR="maplibre"
 TEMPLATES_JS_DIR="templates/assets/js"
 
-mkdir -p "$LEAFLET_DIR" "$HLSJS_DIR"
+mkdir -p "$LEAFLET_DIR" "$HLSJS_DIR" "$MAPLIBRE_DIR"
 
 _download() {
   local url="$1" dest="$2"
@@ -52,6 +54,15 @@ _download "https://unpkg.com/leaflet.markercluster@${MARKERCLUSTER_VERSION}/dist
 # Download hls.js
 _download "https://unpkg.com/hls.js@${HLSJS_VERSION}/dist/hls.min.js" "${HLSJS_DIR}/hls.js"
 
+# Download MapLibre GL JS's CSP-compatible bundle and worker for vector maps
+_download "https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl-csp.js" "${MAPLIBRE_DIR}/maplibre-gl.js"
+_download "https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl-csp-worker.js" "${MAPLIBRE_DIR}/maplibre-gl-worker.js"
+_download "https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.css" "${MAPLIBRE_DIR}/maplibre-gl.css"
+
+# Keep the canvas at the map's CSS dimensions. The upstream implementation
+# writes dynamic inline dimensions, which are incompatible with GoBlog's CSP.
+sed -i 's/,this\._canvas\.style\.width=`${t}px`,this\._canvas\.style\.height=`${e}px`//' "${MAPLIBRE_DIR}/maplibre-gl.js"
+
 # Remove sourceMappingURL comment lines from JS files in the downloaded files.
 
 
@@ -59,6 +70,7 @@ _download "https://unpkg.com/hls.js@${HLSJS_VERSION}/dist/hls.min.js" "${HLSJS_D
 LEAFLET_JS_HASH=$(_sha256b64 "${LEAFLET_DIR}/leaflet.js")
 MARKERCLUSTER_JS_HASH=$(_sha256b64 "${LEAFLET_DIR}/markercluster.js")
 HLSJS_HASH=$(_sha256b64 "${HLSJS_DIR}/hls.js")
+MAPLIBRE_JS_HASH=$(_sha256b64 "${MAPLIBRE_DIR}/maplibre-gl.js")
 
 echo "Generating bundleHashes.go"
 cat > bundleHashes.go << BUNDLEHASHESEOF
@@ -70,6 +82,7 @@ var bundleHashes = map[string]string{
 	"leaflet/leaflet.js":       "${LEAFLET_JS_HASH}",
 	"leaflet/markercluster.js": "${MARKERCLUSTER_JS_HASH}",
 	"hlsjs/hls.js":             "${HLSJS_HASH}",
+	"maplibre/maplibre-gl.js":  "${MAPLIBRE_JS_HASH}",
 }
 BUNDLEHASHESEOF
 
@@ -106,9 +119,12 @@ if [ -f "${TEMPLATES_JS_DIR}/geomap.js" ]; then
     -e "s|(/-/leaflet/markercluster\.default\.css\?v=)[^'\"[:space:]]+|\\1${MARKERCLUSTER_VERSION}|g" \
     -e "s|(/-/leaflet/markercluster\.js\?v=)[^'\"[:space:]]+|\\1${MARKERCLUSTER_VERSION}|g" \
     "${TEMPLATES_JS_DIR}/geomap.js"
+  echo "Updating ${TEMPLATES_JS_DIR}/geomap.js with MapLibre GL JS ${MAPLIBRE_VERSION}"
+  sed -E -i "s#(/-/maplibre/maplibre-gl(-worker)?\.(css|js)\?v=)[^'\"[:space:]]+#\\1${MAPLIBRE_VERSION}#g" "${TEMPLATES_JS_DIR}/geomap.js"
   _update_integrity_file "${TEMPLATES_JS_DIR}/geomap.js" \
     "/-/leaflet/leaflet\.js" "${LEAFLET_JS_HASH}" "    script." \
-    "/-/leaflet/markercluster\.js" "${MARKERCLUSTER_JS_HASH}" "        plugin."
+    "/-/leaflet/markercluster\.js" "${MARKERCLUSTER_JS_HASH}" "        plugin." \
+    "/-/maplibre/maplibre-gl\.js" "${MAPLIBRE_JS_HASH}" "        script."
 fi
 
 cat <<EOF
@@ -116,11 +132,13 @@ Finished downloading assets and updating templates:
   leaflet version: ${LEAFLET_VERSION}
   markercluster version: ${MARKERCLUSTER_VERSION}
   hls.js version: ${HLSJS_VERSION}
+  MapLibre version: ${MAPLIBRE_VERSION}
 Integrity hashes computed and written to bundleHashes.go
 Files placed in:
   ${HLSJS_DIR}/
+  ${MAPLIBRE_DIR}/ (CSP-compatible MapLibre bundle and worker)
   ${LEAFLET_DIR}/
 JS files updated:
   ${TEMPLATES_JS_DIR}/video.js (hls.js)
-  ${TEMPLATES_JS_DIR}/geomap.js (leaflet, markercluster)
+  ${TEMPLATES_JS_DIR}/geomap.js (leaflet, markercluster, MapLibre)
 EOF

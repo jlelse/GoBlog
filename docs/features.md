@@ -225,7 +225,7 @@ Interactive map showing posts with locations and GPX tracks. Enable per blog in 
 - **Add location to posts**: `location: geo:51.5074,-0.1278`
 - **Add GPX track**: Upload via the editor's file picker, or paste GPX content into the `gpx` front matter parameter. Use the GPX helper to merge multiple files.
 
-For privacy, map tiles are proxied through GoBlog. OpenStreetMap tiles are used by default; configure custom tile providers via `mapTiles` in YAML.
+For privacy, map resources are proxied through GoBlog. OpenStreetMap raster tiles are used by default; set `mapTiles.vector: true` to use OpenFreeMap vector maps. This uses OpenFreeMap's attribution. Custom raster tile providers can be configured via `mapTiles` in YAML.
 
 ## Blogroll
 
