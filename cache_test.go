@@ -53,6 +53,42 @@ func Benchmark_cacheKey(b *testing.B) {
 	})
 }
 
+func Benchmark_cacheKey_noQuery(b *testing.B) {
+	req := httptest.NewRequest(http.MethodGet, "/posts/hello-world", nil)
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			generateCacheKey(req)
+		}
+	})
+}
+
+func Test_isCacheable(t *testing.T) {
+	assert.True(t, isCacheable(httptest.NewRequest(http.MethodGet, "/post", nil)))
+	assert.True(t, isCacheable(httptest.NewRequest(http.MethodHead, "/post?foo=bar", nil)))
+	assert.False(t, isCacheable(httptest.NewRequest(http.MethodPost, "/post", nil)))
+	assert.False(t, isCacheable(httptest.NewRequest(http.MethodGet, "/post?cache=0", nil)))
+	assert.False(t, isCacheable(httptest.NewRequest(http.MethodGet, "/post?cache=false", nil)))
+	assert.False(t, isCacheable(httptest.NewRequest(http.MethodGet, "/post?%63ache=0", nil)))
+}
+
+func Test_isCacheable_queryPreCheck(t *testing.T) {
+	// isCacheable skips parsing the query string when it cannot contain the
+	// cache parameter. Ensure the fast path always agrees with parsing.
+	queries := []string{
+		"", "foo=bar", "cache", "cache=", "cache=0", "cache=false", "cache=1",
+		"%63ache=0", "c%61che=false", "ca%63he=0", "%63%61%63%68%65=0",
+		"cache=%30", "cache=%66alse", "x=1&cache=0", "cache=0&x=1",
+		"x=%63&cache=0", "cache=0;x=1", "cache=%zz", "CACHE=0",
+		"ncache=0", "cachex=0", "x=cache=0",
+	}
+	for _, q := range queries {
+		r := httptest.NewRequest(http.MethodGet, "/post?"+q, nil)
+		cacheParam := r.URL.Query().Get("cache")
+		want := cacheParam != "0" && cacheParam != "false"
+		assert.Equal(t, want, isCacheable(r), "query %q", q)
+	}
+}
+
 func Benchmark_cache_getCache(b *testing.B) {
 	c := &cache{}
 	c.c = cpkg.New[string, *cacheItem](time.Minute, 10*bodylimit.MB)

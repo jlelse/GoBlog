@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"sync"
@@ -43,7 +44,8 @@ func (c *cacheRecorder) finish() *cacheItem {
 	c.done = true
 	c.item.eTag = c.item.header.Get("ETag")
 	if c.item.eTag == "" {
-		c.item.eTag = fmt.Sprintf("%x", sha256.Sum256(c.item.body))
+		sum := sha256.Sum256(c.item.body)
+		c.item.eTag = hex.EncodeToString(sum[:])
 	}
 	return &c.item
 }

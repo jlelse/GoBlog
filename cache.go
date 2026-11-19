@@ -69,7 +69,12 @@ func isCacheable(r *http.Request) bool {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		return false
 	}
-	return r.URL.Query().Get("cache") != "0" && r.URL.Query().Get("cache") != "false"
+	// Skip parsing the query string if it cannot contain the cache parameter.
+	if !rawQueryMayContain(r, "cache") {
+		return true
+	}
+	cacheParam := r.URL.Query().Get("cache")
+	return cacheParam != "0" && cacheParam != "false"
 }
 
 func (a *goBlog) shouldSkipLoggedIn(r *http.Request) bool {
@@ -81,37 +86,47 @@ func (a *goBlog) shouldSkipLoggedIn(r *http.Request) bool {
 }
 
 func generateCacheKey(r *http.Request) string {
+	altAddress, _ := r.Context().Value(altAddressKey).(string)
+	asRequest, _ := r.Context().Value(asRequestKey).(bool)
+	torUsed, _ := r.Context().Value(torUsedKey).(bool)
+	escapedPath := r.URL.EscapedPath()
+	if altAddress == "" && !asRequest && !torUsed && r.URL.RawQuery == "" {
+		return escapedPath
+	}
+
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	// Special cases
-	if altAddress, ok := r.Context().Value(altAddressKey).(string); ok && altAddress != "" {
+	if altAddress != "" {
 		buf.WriteString(altAddress)
-		buf.WriteString("-")
+		buf.WriteByte('-')
 	}
-	if asRequest, ok := r.Context().Value(asRequestKey).(bool); ok && asRequest {
+	if asRequest {
 		buf.WriteString("as-")
 	}
-	if torUsed, ok := r.Context().Value(torUsedKey).(bool); ok && torUsed {
+	if torUsed {
 		buf.WriteString("tor-")
 	}
 	// Add cache URL
-	buf.WriteString(r.URL.EscapedPath())
-	if query := r.URL.Query(); len(query) > 0 {
-		buf.WriteByte('?')
-		keys := make([]string, 0, len(query))
-		for k := range query {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for i, k := range keys {
-			keyEscaped := url.QueryEscape(k)
-			for j, val := range query[k] {
-				if i > 0 || j > 0 {
-					buf.WriteByte('&')
+	buf.WriteString(escapedPath)
+	if r.URL.RawQuery != "" {
+		if query := r.URL.Query(); len(query) > 0 {
+			buf.WriteByte('?')
+			keys := make([]string, 0, len(query))
+			for k := range query {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for i, k := range keys {
+				keyEscaped := url.QueryEscape(k)
+				for j, val := range query[k] {
+					if i > 0 || j > 0 {
+						buf.WriteByte('&')
+					}
+					buf.WriteString(keyEscaped)
+					buf.WriteByte('=')
+					buf.WriteString(url.QueryEscape(val))
 				}
-				buf.WriteString(keyEscaped)
-				buf.WriteByte('=')
-				buf.WriteString(url.QueryEscape(val))
 			}
 		}
 	}
@@ -166,16 +181,19 @@ func (c *cache) getOrCreateCache(key string, next http.Handler, r *http.Request)
 	return item
 }
 
+var (
+	conditionalHeaders = [...]string{"If-Modified-Since", "If-Unmodified-Since", "If-None-Match", "If-Match", "If-Range", "Range"}
+	problematicHeaders = [...]string{"Accept-Ranges", "ETag", "Last-Modified"}
+)
+
 func removeConditionalHeaders(r *http.Request) {
-	headers := []string{"If-Modified-Since", "If-Unmodified-Since", "If-None-Match", "If-Match", "If-Range", "Range"}
-	for _, h := range headers {
+	for _, h := range conditionalHeaders {
 		r.Header.Del(h)
 	}
 }
 
 func removeProblematicHeaders(header http.Header) {
-	headers := []string{"Accept-Ranges", "ETag", "Last-Modified"}
-	for _, h := range headers {
+	for _, h := range problematicHeaders {
 		header.Del(h)
 	}
 }

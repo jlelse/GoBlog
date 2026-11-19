@@ -86,7 +86,7 @@ func (a *goBlog) serveBlogrollExport(w http.ResponseWriter, r *http.Request) {
 		a.serveError(w, r, "", http.StatusInternalServerError)
 		return
 	}
-	a.writeXMLWithViewScript(w, script, func(w io.Writer) error {
+	a.writeXMLWithViewScript(w, r, script, func(w io.Writer) error {
 		return opml.Render(w, &opml.OPML{
 			Version:      "2.0",
 			DateModified: time.Now().UTC(),

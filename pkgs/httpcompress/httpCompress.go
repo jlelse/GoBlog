@@ -27,6 +27,11 @@ var (
 			return w
 		},
 	}
+	compressWriterPool = sync.Pool{
+		New: func() any {
+			return &compressWriter{}
+		},
+	}
 	// Global list of compressible content types
 	compressibleTypes = []string{
 		contenttype.AS,
@@ -58,12 +63,15 @@ func CompressMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		cw := &compressWriter{
-			ResponseWriter: w,
-			supportsGzip:   supportsGzip,
-			supportsZstd:   supportsZstd,
-		}
-		defer cw.Close()
+		cw := compressWriterPool.Get().(*compressWriter)
+		cw.ResponseWriter = w
+		cw.supportsGzip = supportsGzip
+		cw.supportsZstd = supportsZstd
+		defer func() {
+			_ = cw.Close()
+			*cw = compressWriter{}
+			compressWriterPool.Put(cw)
+		}()
 		next.ServeHTTP(cw, r)
 	})
 }
@@ -112,19 +120,20 @@ func (cw *compressWriter) setupCompression() {
 	}
 
 	if shouldCompress {
+		header := cw.Header()
 		if cw.supportsZstd {
 			zw := zstdWriterPool.Get().(*zstd.Encoder)
 			zw.Reset(cw.ResponseWriter)
 			cw.writer = zw
-			cw.Header().Set("Content-Encoding", "zstd")
+			header.Set("Content-Encoding", "zstd")
 		} else if cw.supportsGzip {
 			gw := gzipWriterPool.Get().(*gzip.Writer)
 			gw.Reset(cw.ResponseWriter)
 			cw.writer = gw
-			cw.Header().Set("Content-Encoding", "gzip")
+			header.Set("Content-Encoding", "gzip")
 		}
-		cw.Header().Add("Vary", "Accept-Encoding")
-		cw.Header().Del("Content-Length")
+		header.Add("Vary", "Accept-Encoding")
+		header.Del("Content-Length")
 	} else {
 		cw.writer = cw.ResponseWriter
 	}
@@ -149,7 +158,11 @@ func (cw *compressWriter) Close() (err error) {
 // Flush implements the http.Flusher interface.
 func (cw *compressWriter) Flush() {
 	if !cw.headerWritten {
-		cw.WriteHeader(cw.statusCode)
+		statusCode := cw.statusCode
+		if statusCode == 0 {
+			statusCode = http.StatusOK
+		}
+		cw.WriteHeader(statusCode)
 	}
 	if f, ok := cw.ResponseWriter.(http.Flusher); ok {
 		if cw.writer != nil {

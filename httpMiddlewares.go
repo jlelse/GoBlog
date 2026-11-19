@@ -192,6 +192,10 @@ func (a *goBlog) addOnionLocation(next http.Handler) http.Handler {
 func keepSelectedQueryParams(paramsToKeep ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.RawQuery == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
 			query := r.URL.Query()
 			for param := range query {
 				if !slices.Contains(paramsToKeep, param) {

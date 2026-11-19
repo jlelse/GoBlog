@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/minify"
 )
 
 // xmlViewScript is embedded as the first child of an XML document so browsers
@@ -39,14 +38,11 @@ func (s xmlViewScript) marshal() ([]byte, error) {
 
 // writeXMLWithViewScript writes an XML document with the view script injected
 // as its first child.
-func (a *goBlog) writeXMLWithViewScript(w http.ResponseWriter, script []byte, write func(io.Writer) error) {
-	pr, pw := io.Pipe()
-	go func() {
-		_, _ = io.WriteString(pw, xml.Header)
-		_ = pw.CloseWithError(write(&xmlScriptInjector{w: pw, script: script}))
-	}()
-	w.Header().Set(contentType, contenttype.XMLUTF8)
-	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
+func (a *goBlog) writeXMLWithViewScript(w http.ResponseWriter, r *http.Request, script []byte, write func(io.Writer) error) {
+	a.respondWithMinified(w, r, contenttype.XML, contenttype.XMLUTF8, func(buf io.Writer) error {
+		_, _ = io.WriteString(buf, xml.Header)
+		return write(&xmlScriptInjector{w: buf, script: script})
+	})
 }
 
 // xmlScriptInjector inserts a script element right after the opening tag of an

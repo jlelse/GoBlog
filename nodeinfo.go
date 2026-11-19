@@ -17,10 +17,10 @@ func (a *goBlog) serveNodeInfoDiscover(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	a.respondWithMinifiedJSON(w, result)
+	a.respondWithMinifiedJSON(w, r, result)
 }
 
-func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
+func (a *goBlog) serveNodeInfo(w http.ResponseWriter, r *http.Request) {
 	localPosts, _ := a.db.countPosts(&postsRequestConfig{
 		status:     []postStatus{statusPublished},
 		visibility: []postVisibility{visibilityPublic},
@@ -44,5 +44,5 @@ func (a *goBlog) serveNodeInfo(w http.ResponseWriter, _ *http.Request) {
 		},
 		"metadata": map[string]any{},
 	}
-	a.respondWithMinifiedJSON(w, result)
+	a.respondWithMinifiedJSON(w, r, result)
 }

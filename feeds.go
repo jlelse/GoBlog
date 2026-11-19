@@ -11,7 +11,6 @@ import (
 	"github.com/jlelse/feeds"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/minify"
 )
 
 type feedType string
@@ -59,7 +58,7 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 			Url: a.profileImagePath(profileImageFormatJPEG, 0),
 		},
 	}
-	fallbackTitle := r.URL.Query().Has("fallbacktitle")
+	fallbackTitle := rawQueryMayContain(r, "fallbacktitle") && r.URL.Query().Has("fallbacktitle")
 	for _, p := range posts {
 		buf := bufferpool.Get()
 		switch f {
@@ -100,10 +99,5 @@ func (a *goBlog) generateFeed(blog string, f feedType, w http.ResponseWriter, r 
 		a.serve404(w, r)
 		return
 	}
-	pipeReader, pipeWriter := io.Pipe()
-	go func() {
-		_ = pipeWriter.CloseWithError(feedWriteFunc(pipeWriter))
-	}()
-	w.Header().Set(contentType, feedMediaType+contenttype.CharsetUtf8Suffix)
-	_ = pipeReader.CloseWithError(minify.Get().Minify(feedMediaType, w, pipeReader))
+	a.respondWithMinified(w, r, feedMediaType, feedMediaType+contenttype.CharsetUtf8Suffix, feedWriteFunc)
 }

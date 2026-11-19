@@ -8,7 +8,6 @@ import (
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/araddon/dateparse"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
@@ -123,12 +122,10 @@ func (a *goBlog) postSummary(p *post) (summary string) {
 	if summary != "" {
 		return
 	}
-	splitted := strings.Split(p.Content, summaryDivider)
-	hasDivider := len(splitted) > 1
-	markdown := splitted[0]
+	markdown, _, hasDivider := strings.Cut(p.Content, summaryDivider)
 	summary = a.renderTextSafe(markdown)
 	if !hasDivider {
-		summary = strings.Split(summary, "\n\n")[0]
+		summary, _, _ = strings.Cut(summary, "\n\n")
 	}
 	summary = strings.TrimSpace(strings.ReplaceAll(summary, "\n\n", " "))
 	return
@@ -213,10 +210,11 @@ func (a *goBlog) postMfProperties(p *post, contentWithParams bool) map[string][]
 	properties := map[string][]any{}
 	addIfNotEmpty := func(key string, value []string) {
 		if len(value) > 0 {
-			properties[key] = []any{}
-			for _, val := range value {
-				properties[key] = append(properties[key], val)
+			vals := make([]any, len(value))
+			for i, val := range value {
+				vals[i] = val
 			}
+			properties[key] = vals
 		}
 	}
 	addIfNotEmpty("name", p.Parameters["title"])
@@ -251,8 +249,12 @@ func (a *goBlog) showFull(p *post) bool {
 }
 
 func (a *goBlog) geoURIs(p *post) []*gogeouri.Geo {
-	res := []*gogeouri.Geo{}
-	for _, loc := range p.Parameters[a.cfg.Micropub.LocationParam] {
+	locs := p.Parameters[a.cfg.Micropub.LocationParam]
+	if len(locs) == 0 {
+		return nil
+	}
+	res := make([]*gogeouri.Geo, 0, len(locs))
+	for _, loc := range locs {
 		if loc == "" {
 			continue
 		}
@@ -321,10 +323,10 @@ func (p *post) setChannel(channel string) {
 	if channel == "" {
 		return
 	}
-	channelParts := strings.SplitN(channel, "/", 2)
-	p.Blog = channelParts[0]
-	if len(channelParts) > 1 {
-		p.Section = channelParts[1]
+	blog, section, ok := strings.Cut(channel, "/")
+	p.Blog = blog
+	if ok {
+		p.Section = section
 	}
 }
 
@@ -374,7 +376,7 @@ func (p *post) Old() bool {
 	if pub == "" {
 		return false
 	}
-	pubDate, err := dateparse.ParseLocal(pub)
+	pubDate, err := parseTime(pub)
 	if err != nil {
 		return false
 	}

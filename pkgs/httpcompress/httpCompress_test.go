@@ -96,6 +96,26 @@ func TestCompressMiddleware(t *testing.T) {
 	}
 }
 
+func TestCompressWriterFlushBeforeWrite(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.(http.Flusher).Flush()
+		_, _ = w.Write([]byte("data: hello\n\n"))
+	})
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rec := httptest.NewRecorder()
+
+	CompressMiddleware(handler).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+	if body := rec.Body.String(); body != "data: hello\n\n" {
+		t.Errorf("Unexpected body %q", body)
+	}
+}
+
 func decompressBody(body []byte, encoding string) ([]byte, error) {
 	switch encoding {
 	case "gzip":

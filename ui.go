@@ -127,21 +127,14 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	hb.WriteElementOpen("header")
 	// Profile image in header
 	if a.cfg.User.showProfileImageInHeader {
-		imgSizes := []int{48, 64, 96, 128}
-		jpegSrcset := lo.Map(imgSizes, func(s int, _ int) string {
-			return fmt.Sprintf("%s %dw", a.profileImagePath(profileImageFormatJPEG, s), s)
-		})
 		sizes := "(min-width: 500px) 64px, 48px"
 		hb.WriteElementOpen("div", "class", "header-image")
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/"), "rel", "home")
 		hb.WriteElementOpen("picture")
 		if a.mediaOptimizationImgproxyConfigured() {
-			avifSrcset := lo.Map(imgSizes, func(s int, _ int) string {
-				return fmt.Sprintf("%s %dw", a.profileImagePath(profileImageFormatAVIF, s), s)
-			})
-			hb.WriteElementOpen("source", "type", contenttype.AVIF, "srcset", strings.Join(avifSrcset, ", "), "sizes", sizes)
+			hb.WriteElementOpen("source", "type", contenttype.AVIF, "srcset", a.profileImageSrcset(profileImageFormatAVIF), "sizes", sizes)
 		}
-		hb.WriteElementOpen("img", "src", a.profileImagePath(profileImageFormatJPEG, 64), "srcset", strings.Join(jpegSrcset, ", "), "sizes", sizes, "alt", renderedBlogTitle, "width", "64", "height", "64", "loading", "eager")
+		hb.WriteElementOpen("img", "src", a.profileImagePath(profileImageFormatJPEG, 64), "srcset", a.profileImageSrcset(profileImageFormatJPEG), "sizes", sizes, "alt", renderedBlogTitle, "width", "64", "height", "64", "loading", "eager")
 		hb.WriteElementClose("picture")
 		hb.WriteElementClose("a")
 		hb.WriteElementClose("div")

@@ -79,7 +79,7 @@ func (a *goBlog) renderWithStatusCode(w http.ResponseWriter, r *http.Request, st
 		rendered = pluginRendered
 	}
 	// Return minified HTML
-	_ = minify.Get().Minify(contenttype.HTML, w, bytes.NewReader(rendered.Bytes()))
+	_ = minify.Get().Minify(contenttype.HTML, w, rendered)
 }
 
 // chainUIPlugins runs the UI plugins sequentially over buffers. Each plugin

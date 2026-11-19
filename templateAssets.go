@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
+	"encoding/hex"
 	"io"
 	"mime"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	chromahtml "github.com/alecthomas/chroma/v3/formatters/html"
 	"github.com/alecthomas/chroma/v3/styles"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/minify"
 )
@@ -54,28 +56,37 @@ func (a *goBlog) initTemplateAssets() error {
 
 func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	ext := path.Ext(name)
+	var minType string
 	switch ext {
 	case ".js":
-		read = minify.Get().Reader(contenttype.JS, read)
+		minType = contenttype.JS
 	case ".css":
-		read = minify.Get().Reader(contenttype.CSS, read)
+		minType = contenttype.CSS
 	case ".xml":
-		read = minify.Get().Reader(contenttype.XML, read)
+		minType = contenttype.XML
 	}
-	// Read file
-	hash := sha256.New()
-	body, err := io.ReadAll(io.TeeReader(read, hash))
-	if err != nil {
-		return err
+	var body []byte
+	var err error
+	if minType != "" {
+		var minBuf bytes.Buffer
+		if err = minify.Get().Minify(minType, &minBuf, read); err != nil {
+			return err
+		}
+		body = minBuf.Bytes()
+	} else {
+		body, err = io.ReadAll(read)
+		if err != nil {
+			return err
+		}
 	}
 	// File name and base64 hash
-	sum := hash.Sum(nil)
-	compiledFileName := fmt.Sprintf("%x%s", sum, ext)
+	sum := sha256.Sum256(body)
+	compiledFileName := hex.EncodeToString(sum[:]) + ext
 	// Save file
 	a.assetFiles[compiledFileName] = &assetFile{
 		contentType:  mime.TypeByExtension(ext),
 		body:         body,
-		sha256base64: base64.StdEncoding.EncodeToString(sum),
+		sha256base64: base64.StdEncoding.EncodeToString(sum[:]),
 	}
 	// Save mapping of original file name to compiled file name
 	a.assetFileNames[name] = compiledFileName
@@ -83,7 +94,7 @@ func (a *goBlog) compileAsset(name string, read io.Reader) error {
 	a.assetPathSet["/"+compiledFileName] = true
 	// Signal that the assets changed
 	a.assetVersion.Add(1)
-	return err
+	return nil
 }
 
 // Function for templates
@@ -150,11 +161,10 @@ func (a *goBlog) initChromaCSS() error {
 		return err
 	}
 	// Generate and minify CSS
-	pr, pw := io.Pipe()
-	go func() {
-		_ = pw.CloseWithError(chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(pw, chromaStyle))
-	}()
-	err = a.compileAsset(chromaPath, pr)
-	_ = pr.CloseWithError(err)
-	return err
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	if err := chromahtml.New(chromahtml.ClassPrefix("c-")).WriteCSS(buf, chromaStyle); err != nil {
+		return err
+	}
+	return a.compileAsset(chromaPath, buf)
 }

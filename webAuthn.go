@@ -146,7 +146,7 @@ func (a *goBlog) completeWebAuthnBegin(
 	ses.Values["session"] = string(sessionJSONBytes)
 	_ = ses.Save(r, w)
 	w.WriteHeader(http.StatusOK)
-	a.respondWithMinifiedJSON(w, options)
+	a.respondWithMinifiedJSON(w, r, options)
 }
 
 func (a *goBlog) finishWebAuthnLogin(w http.ResponseWriter, r *http.Request) {

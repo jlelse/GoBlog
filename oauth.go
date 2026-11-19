@@ -59,7 +59,7 @@ func (a *goBlog) oauthMetadata(w http.ResponseWriter, r *http.Request) {
 	if a.apEnabled() {
 		resp["app_registration_endpoint"] = baseURL + oauthCreateAppPath
 	}
-	a.respondWithMinifiedJSON(w, resp)
+	a.respondWithMinifiedJSON(w, r, resp)
 }
 
 func (a *goBlog) oauthCreateApp(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +95,7 @@ func (a *goBlog) oauthCreateApp(w http.ResponseWriter, r *http.Request) {
 		"client_secret_expires_at": 0,
 	}
 
-	a.respondWithMinifiedJSON(w, resp)
+	a.respondWithMinifiedJSON(w, r, resp)
 }
 
 func (a *goBlog) oauthShowAuthorize(w http.ResponseWriter, r *http.Request) {
@@ -382,7 +382,7 @@ func (a *goBlog) oauthTokenAuthorizationCode(w http.ResponseWriter, r *http.Requ
 		"created_at":   time.Now().UTC().Unix(),
 		"me":           meURL,
 	}
-	a.respondWithMinifiedJSON(w, resp)
+	a.respondWithMinifiedJSON(w, r, resp)
 }
 
 func (a *goBlog) oauthRevoke(w http.ResponseWriter, r *http.Request) {
@@ -448,7 +448,7 @@ func (a *goBlog) respondWithIntrospection(w http.ResponseWriter, r *http.Request
 			"scope":     strings.Join(data.Scopes, " "),
 		}
 	}
-	a.respondWithMinifiedJSON(w, res)
+	a.respondWithMinifiedJSON(w, r, res)
 }
 
 func (a *goBlog) oauthVerifyCredentials(w http.ResponseWriter, r *http.Request) {
@@ -484,12 +484,12 @@ func (a *goBlog) oauthVerifyCredentials(w http.ResponseWriter, r *http.Request) 
 		"avatar":       a.getFullAddress(a.profileImagePath(profileImageFormatJPEG, 256)),
 	}
 
-	a.respondWithMinifiedJSON(w, resp)
+	a.respondWithMinifiedJSON(w, r, resp)
 }
 
-func (a *goBlog) serveOAuthError(w http.ResponseWriter, _ *http.Request, erro, description string, status int) {
+func (a *goBlog) serveOAuthError(w http.ResponseWriter, r *http.Request, erro, description string, status int) {
 	w.WriteHeader(status)
-	a.respondWithMinifiedJSON(w, map[string]any{
+	a.respondWithMinifiedJSON(w, r, map[string]any{
 		"error":             erro,
 		"error_description": description,
 	})

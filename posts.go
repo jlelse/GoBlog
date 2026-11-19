@@ -334,23 +334,30 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		visibility = defaultVisibility
 	}
 	// Parameter filter
-	params, paramValues := []string{}, [][]string{}
-	paramURLValues := url.Values{}
-	for param, values := range r.URL.Query() {
-		if paramKey, ok := strings.CutPrefix(param, "p:"); ok {
-			for _, value := range values {
-				params, paramValues = append(params, paramKey), append(paramValues, []string{value})
-				paramURLValues.Add(param, value)
+	var params []string
+	var paramValues [][]string
+	paramURLQuery := ""
+	if rawQueryMayContain(r, "p:") {
+		paramURLValues := url.Values{}
+		for param, values := range r.URL.Query() {
+			if paramKey, ok := strings.CutPrefix(param, "p:"); ok {
+				for _, value := range values {
+					params, paramValues = append(params, paramKey), append(paramValues, []string{value})
+					paramURLValues.Add(param, value)
+				}
 			}
 		}
+		if len(paramURLValues) > 0 {
+			paramURLQuery = "?" + paramURLValues.Encode()
+		}
 	}
-	paramURLQuery := ""
-	if len(paramURLValues) > 0 {
-		paramURLQuery += "?" + paramURLValues.Encode()
+	var blogs []string
+	if !ic.allBlogs {
+		blogs = []string{blog}
 	}
 	// Create paginator
 	p := paginator.New(newPostPaginationAdapter(&postsRequestConfig{
-		blogs:          lo.If(!ic.allBlogs, []string{blog}).Else([]string{}),
+		blogs:          blogs,
 		sections:       sections,
 		taxonomy:       ic.tax,
 		taxonomyValue:  ic.taxValue,

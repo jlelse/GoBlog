@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"cmp"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -11,15 +13,14 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/andybalholm/cascadia"
 	"github.com/araddon/dateparse"
 	"github.com/c2h5oh/datasize"
 	tdl "github.com/mergestat/timediff/locale"
@@ -36,6 +37,17 @@ import (
 type contextKey string
 
 func urlize(str string) string {
+	needsMap := false
+	for i := range len(str) {
+		c := str[i]
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+			needsMap = true
+			break
+		}
+	}
+	if !needsMap {
+		return str
+	}
 	return strings.Map(func(c rune) rune {
 		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
 			// Is lower case ASCII or number, return unmodified
@@ -53,9 +65,29 @@ func urlize(str string) string {
 }
 
 func sortedStrings(s []string) []string {
-	sort.Slice(s, func(i, j int) bool {
-		return strings.ToLower(s[i]) < strings.ToLower(s[j])
+	if len(s) <= 1 {
+		return s
+	}
+	type sortItem struct {
+		orig  string
+		lower string
+	}
+	var stackBuf [16]sortItem
+	var items []sortItem
+	if len(s) <= len(stackBuf) {
+		items = stackBuf[:len(s)]
+	} else {
+		items = make([]sortItem, len(s))
+	}
+	for i, v := range s {
+		items[i] = sortItem{orig: v, lower: strings.ToLower(v)}
+	}
+	slices.SortFunc(items, func(a, b sortItem) int {
+		return cmp.Compare(a.lower, b.lower)
 	})
+	for i, item := range items {
+		s[i] = item.orig
+	}
 	return s
 }
 
@@ -135,31 +167,57 @@ func lowerUnescapedPath(p string) string {
 	return strings.ToLower(unescapedPath(p))
 }
 
+// rawQueryMayContain reports whether the raw query string of r could contain
+// the given string after percent-decoding. It is a cheap pre-check to avoid
+// parsing the query string when the string cannot be present.
+//
+// Percent-decoding only changes a query string if it contains '%', and '+'
+// only decodes to a space. For strings that contain no space (such as
+// parameter names), the raw query must therefore contain the string literally
+// unless it contains '%'.
+func rawQueryMayContain(r *http.Request, s string) bool {
+	rawQuery := r.URL.RawQuery
+	if rawQuery == "" {
+		return false
+	}
+	return strings.Contains(rawQuery, s) || strings.Contains(rawQuery, "%")
+}
+
 type stringGroup struct {
 	Identifier string
 	Strings    []string
 }
 
 func groupStrings(toGroup []string) []stringGroup {
-	// Group strings and map them to stringGroups
-	stringGroups := lo.MapToSlice(
-		// strings -> map
-		lo.GroupBy(toGroup, func(s string) string {
-			return strings.ToUpper(string([]rune(s)[0]))
-		}),
-		// map -> stringGroups
-		func(key string, strings []string) stringGroup {
-			return stringGroup{
-				Identifier: key,
-				Strings:    sortedStrings(strings),
-			}
-		},
-	)
-	// Sort stringGroups
-	sort.Slice(stringGroups, func(i, j int) bool {
-		return strings.ToLower(stringGroups[i].Identifier) < strings.ToLower(stringGroups[j].Identifier)
+	if len(toGroup) == 0 {
+		return []stringGroup{}
+	}
+	grouped := make(map[string][]string)
+	for _, s := range toGroup {
+		r, _ := utf8.DecodeRuneInString(s)
+		key := string(unicode.ToUpper(r))
+		grouped[key] = append(grouped[key], s)
+	}
+	stringGroups := make([]stringGroup, 0, len(grouped))
+	for key, strs := range grouped {
+		stringGroups = append(stringGroups, stringGroup{
+			Identifier: key,
+			Strings:    sortedStrings(strs),
+		})
+	}
+	slices.SortFunc(stringGroups, func(a, b stringGroup) int {
+		return cmp.Compare(strings.ToLower(a.Identifier), strings.ToLower(b.Identifier))
 	})
 	return stringGroups
+}
+
+// parseTime parses a timestamp, preferring RFC 3339 and falling back to
+// the more lenient dateparse.
+func parseTime(s string) (time.Time, error) {
+	if d, err := time.Parse(time.RFC3339, s); err == nil {
+		return d, nil
+	}
+	return dateparse.ParseLocal(s)
 }
 
 func toLocalSafe(s string) string {
@@ -171,12 +229,9 @@ func toLocal(s string) (string, error) {
 	if s == "" {
 		return "", nil
 	}
-	d, err := time.Parse(time.RFC3339, s)
+	d, err := parseTime(s)
 	if err != nil {
-		d, err = dateparse.ParseLocal(s)
-		if err != nil {
-			return "", err
-		}
+		return "", err
 	}
 	return d.Local().Format(time.RFC3339), nil
 }
@@ -190,12 +245,9 @@ func toUTC(s string) (string, error) {
 	if s == "" {
 		return "", nil
 	}
-	d, err := time.Parse(time.RFC3339, s)
+	d, err := parseTime(s)
 	if err != nil {
-		d, err = dateparse.ParseLocal(s)
-		if err != nil {
-			return "", err
-		}
+		return "", err
 	}
 	return d.UTC().Format(time.RFC3339), nil
 }
@@ -204,12 +256,9 @@ func toLocalTime(date string) time.Time {
 	if date == "" {
 		return time.Time{}
 	}
-	d, err := time.Parse(time.RFC3339, date)
+	d, err := parseTime(date)
 	if err != nil {
-		d, err = dateparse.ParseLocal(date)
-		if err != nil {
-			return time.Time{}
-		}
+		return time.Time{}
 	}
 	return d.Local()
 }
@@ -229,7 +278,11 @@ type stringPair struct {
 }
 
 func wordCount(s string) int {
-	return len(strings.Fields(s))
+	count := 0
+	for range strings.FieldsSeq(s) {
+		count++
+	}
+	return count
 }
 
 // Count all letters and numbers in string
@@ -246,20 +299,12 @@ func mBytesString(size int64) string {
 	return fmt.Sprintf("%.2f MB", datasize.ByteSize(size).MBytes()) //nolint:gosec
 }
 
-// Build policy to only allow a subset of HTML tags
-var (
-	// Policy for cleaning HTML to text
-	textPolicy = bluemonday.StrictPolicy().
-			AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
-			AllowElements("p").                                // Paragraphs
-			AllowElements("ol", "ul", "li").                   // Lists
-			AllowElements("blockquote")                        // Blockquotes
-
-	// Cascadia CSS selectors for cleaning HTML to text
-	bodySelector         = cascadia.MustCompile("body")
-	newParagraphSelector = cascadia.MustCompile("h1, h2, h3, h4, h5, h6, p, ol, ul, li, blockquote")
-	listItemSelector     = cascadia.MustCompile("ol > li")
-)
+// Policy for cleaning HTML to text
+var textPolicy = bluemonday.StrictPolicy().
+	AllowElements("h1", "h2", "h3", "h4", "h5", "h6"). // Headers
+	AllowElements("p").                                // Paragraphs
+	AllowElements("ol", "ul", "li").                   // Lists
+	AllowElements("blockquote")                        // Blockquotes
 
 func htmlText(r io.Reader) (string, error) {
 	// Filter HTML
@@ -268,41 +313,92 @@ func htmlText(r io.Reader) (string, error) {
 	if err := textPolicy.SanitizeReaderToWriter(r, sanitized); err != nil {
 		return "", err
 	}
+	raw := sanitized.Bytes()
+	if len(raw) == 0 {
+		return "", nil
+	}
+	// Fast path when no HTML tags remain
+	if !bytes.ContainsRune(raw, '<') {
+		return strings.TrimSpace(html.UnescapeString(string(raw))), nil
+	}
+	// Fast path for a single <p>...</p> (common for title rendering)
+	trimmed := bytes.TrimSpace(raw)
+	if bytes.HasPrefix(trimmed, []byte("<p>")) && bytes.HasSuffix(trimmed, []byte("</p>")) {
+		inner := trimmed[3 : len(trimmed)-4]
+		if !bytes.ContainsRune(inner, '<') {
+			return strings.TrimSpace(html.UnescapeString(string(inner))), nil
+		}
+	}
 	// Read into document
-	doc, err := goquery.NewDocumentFromReader(sanitized)
+	doc, err := html.Parse(bytes.NewReader(raw))
 	if err != nil {
 		return "", err
 	}
 	// Parse text
 	text := builderpool.Get()
 	defer builderpool.Put(text)
-	if bodyChild := doc.FindMatcher(bodySelector).Children(); bodyChild.Length() > 0 {
-		gqSelectionToText(bodyChild, text)
+	body := findBodyNode(doc)
+	if body != nil && hasElementChild(body) {
+		htmlElementChildrenToText(body, false, text)
 	} else {
 		// Input was probably just text, so just use the text
-		_, _ = text.WriteString(doc.Text())
+		htmlNodeToText(doc, text)
 	}
 	// Trim whitespace and return
 	return strings.TrimSpace(text.String()), nil
 }
 
-func gqSelectionToText(children *goquery.Selection, text *strings.Builder) {
-	for i, sel := range children.EachIter() {
+func findBodyNode(n *html.Node) *html.Node {
+	if n.Type == html.ElementNode && n.Data == "body" {
+		return n
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if b := findBodyNode(c); b != nil {
+			return b
+		}
+	}
+	return nil
+}
+
+func hasElementChild(n *html.Node) bool {
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode {
+			return true
+		}
+	}
+	return false
+}
+
+func isParagraphTag(tag string) bool {
+	switch tag {
+	case "h1", "h2", "h3", "h4", "h5", "h6", "p", "ol", "ul", "li", "blockquote":
+		return true
+	}
+	return false
+}
+
+func htmlElementChildrenToText(parent *html.Node, inOL bool, text *strings.Builder) {
+	i := 0
+	var numBuf [20]byte
+	for c := parent.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type != html.ElementNode {
+			continue
+		}
 		// Not first child and starts a new paragraph
-		if i > 0 && slices.ContainsFunc(sel.Nodes, newParagraphSelector.Match) {
+		if i > 0 && isParagraphTag(c.Data) {
 			_, _ = text.WriteString("\n\n")
 		}
 		// List item in ordered list
-		if slices.ContainsFunc(sel.Nodes, listItemSelector.Match) {
-			_, _ = fmt.Fprintf(text, "%d. ", i+1) // Add list item number
+		if inOL && c.Data == "li" {
+			_, _ = text.Write(strconv.AppendInt(numBuf[:0], int64(i+1), 10))
+			_, _ = text.WriteString(". ")
 		}
-		if children := sel.Children(); children.Length() > 0 {
-			gqSelectionToText(children, text)
+		if hasElementChild(c) {
+			htmlElementChildrenToText(c, c.Data == "ol", text)
 		} else {
-			for _, n := range sel.Nodes {
-				htmlNodeToText(n, text)
-			}
+			htmlNodeToText(c, text)
 		}
+		i++
 	}
 }
 
@@ -316,6 +412,12 @@ func htmlNodeToText(n *html.Node, text io.StringWriter) {
 }
 
 func cleanHTMLText(s string) string {
+	if s == "" {
+		return ""
+	}
+	if !strings.ContainsAny(s, "<&\r\x00") {
+		return strings.TrimSpace(s)
+	}
 	// htmlText policy is already strict enough
 	r, _ := htmlText(strings.NewReader(s))
 	return r
@@ -367,24 +469,33 @@ func doHandlerRequest(req *http.Request, handler http.Handler) (*http.Response, 
 	return newHandlerClient(handler).Do(req) //nolint:gosec
 }
 
-var timeDiffLocaleMap = map[string]tdl.Locale{}
-var timeDiffLocaleMutex sync.RWMutex
+var (
+	timeDiffSupportedLangs = [...]string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
+	timeDiffMatcher        = sync.OnceValue(func() language.Matcher {
+		tags := make([]language.Tag, len(timeDiffSupportedLangs))
+		for i, lang := range timeDiffSupportedLangs {
+			tags[i] = language.Make(lang)
+		}
+		return language.NewMatcher(tags)
+	})
+	timeDiffLocaleMap   = map[string]tdl.Locale{}
+	timeDiffLocaleMutex sync.RWMutex
+)
 
 func matchTimeDiffLocale(lang string) tdl.Locale {
 	timeDiffLocaleMutex.RLock()
+	locale, ok := timeDiffLocaleMap[lang]
+	timeDiffLocaleMutex.RUnlock()
+	if ok {
+		return locale
+	}
+	timeDiffLocaleMutex.Lock()
+	defer timeDiffLocaleMutex.Unlock()
 	if locale, ok := timeDiffLocaleMap[lang]; ok {
 		return locale
 	}
-	timeDiffLocaleMutex.RUnlock()
-	timeDiffLocaleMutex.Lock()
-	defer timeDiffLocaleMutex.Unlock()
-	supportedLangs := []string{"en", "de", "es", "hi", "pt", "ru", "zh-CN"}
-	supportedTags := lo.Map(supportedLangs, func(lang string, _ int) language.Tag {
-		return language.Make(lang)
-	})
-	matcher := language.NewMatcher(supportedTags)
-	_, idx, _ := matcher.Match(language.Make(lang))
-	locale := tdl.Locale(supportedLangs[idx])
+	_, idx, _ := timeDiffMatcher().Match(language.Make(lang))
+	locale = tdl.Locale(timeDiffSupportedLangs[idx])
 	timeDiffLocaleMap[lang] = locale
 	return locale
 }
@@ -405,13 +516,57 @@ func truncateStringWithEllipsis(s string, l int) string {
 	return s
 }
 
-func (a *goBlog) respondWithMinifiedJSON(w http.ResponseWriter, v any) {
+// writeTracker records whether anything was written to the wrapped
+// ResponseWriter, so that an error response can still be served if generation
+// fails before the first byte was sent to the client.
+type writeTracker struct {
+	http.ResponseWriter
+	wrote bool
+}
+
+func (t *writeTracker) Write(p []byte) (int, error) {
+	// Swallow empty writes, as even a zero-length write commits the response
+	if len(p) == 0 {
+		return 0, nil
+	}
+	t.wrote = true
+	return t.ResponseWriter.Write(p)
+}
+
+func (t *writeTracker) WriteHeader(statusCode int) {
+	t.wrote = true
+	t.ResponseWriter.WriteHeader(statusCode)
+}
+
+// respondWithMinified streams the output of write to w, minified according to
+// the given media type. Generation and minification are pipelined through an
+// io.Pipe. If an error occurs before anything was sent to the client, an error
+// response is served instead.
+func (a *goBlog) respondWithMinified(w http.ResponseWriter, r *http.Request, minifyType, responseContentType string, write func(io.Writer) error) {
 	pr, pw := io.Pipe()
 	go func() {
-		_ = pw.CloseWithError(json.NewEncoder(pw).Encode(v))
+		_ = pw.CloseWithError(write(pw))
 	}()
-	w.Header().Set(contentType, contenttype.JSONUTF8)
-	_ = pr.CloseWithError(minify.Get().Minify(contenttype.JSON, w, pr))
+	w.Header().Set(contentType, responseContentType)
+	tw := &writeTracker{ResponseWriter: w}
+	err := minify.Get().Minify(minifyType, tw, pr)
+	// Closing the reader unblocks the writer goroutine
+	_ = pr.CloseWithError(err)
+	if err == nil {
+		return
+	}
+	a.error("Failed to generate response body", "err", err)
+	// The status code can only be changed as long as nothing was sent
+	if !tw.wrote {
+		w.Header().Del(contentType)
+		a.serveError(w, r, "Failed to generate response body", http.StatusInternalServerError)
+	}
+}
+
+func (a *goBlog) respondWithMinifiedJSON(w http.ResponseWriter, r *http.Request, v any) {
+	a.respondWithMinified(w, r, contenttype.JSON, contenttype.JSONUTF8, func(buf io.Writer) error {
+		return json.NewEncoder(buf).Encode(v)
+	})
 }
 
 // generateSecurePassword creates a secure random password of the given length

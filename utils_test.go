@@ -1,12 +1,17 @@
 package main
 
 import (
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/builderpool"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func Test_urlize(t *testing.T) {
@@ -32,6 +37,40 @@ func Benchmark_urlize(b *testing.B) {
 
 func Test_sortedStrings(t *testing.T) {
 	assert.Equal(t, []string{"a", "b", "c"}, sortedStrings([]string{"a", "c", "b"}))
+	assert.Equal(t, []string{"b", "C", "d", "ä"}, sortedStrings([]string{"d", "C", "b", "ä"}))
+}
+
+func Test_rawQueryMayContain(t *testing.T) {
+	assert.False(t, rawQueryMayContain(httptest.NewRequest(http.MethodGet, "/post", nil), "p:"))
+	assert.True(t, rawQueryMayContain(httptest.NewRequest(http.MethodGet, "/post?p:x=1", nil), "p:"))
+	assert.True(t, rawQueryMayContain(httptest.NewRequest(http.MethodGet, "/post?%70:x=1", nil), "p:"))
+	assert.True(t, rawQueryMayContain(httptest.NewRequest(http.MethodGet, "/post?foo=%20", nil), "p:"))
+}
+
+func Test_respondWithMinified(t *testing.T) {
+	app := &goBlog{}
+	rec := httptest.NewRecorder()
+	app.respondWithMinified(rec, httptest.NewRequest(http.MethodGet, "/feed", nil), contenttype.JSON, contenttype.JSONUTF8, func(w io.Writer) error {
+		_, err := io.WriteString(w, `{ "a" : 1 }`)
+		return err
+	})
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, contenttype.JSONUTF8, rec.Header().Get(contentType))
+	assert.Equal(t, `{"a":1}`, rec.Body.String())
+}
+
+func Test_respondWithMinifiedWriteError(t *testing.T) {
+	app := &goBlog{}
+	rec := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/feed", nil)
+	r.Header.Set("Accept", "application/json")
+	app.respondWithMinified(rec, r, "application/json", "application/json; charset=utf-8", func(io.Writer) error {
+		return errors.New("write failed")
+	})
+	// Nothing was sent before the error, so an error response can be served
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Failed to generate response body")
+	assert.NotEqual(t, "application/json; charset=utf-8", rec.Header().Get(contentType))
 }
 
 func Test_generateRandomString(t *testing.T) {
@@ -164,6 +203,16 @@ func Test_htmlText(t *testing.T) {
 	assert.Equal(t, "Test", htmlText(`<p>Test</p><pre><code>Code content</code></pre>`))
 	// Inline code (should not be ignored)
 	assert.Equal(t, "Test Code content", htmlText(`<p>Test <code>Code content</code></p>`))
+	// Iframe (content should be skipped by bluemonday)
+	assert.Equal(t, "Hello", htmlText(`<p>Hello</p><iframe>ignored</iframe>`))
+	// Entities
+	assert.Equal(t, "A & B < C", htmlText(`<p>A &amp; B &lt; C</p>`))
+	// Unclosed paragraphs
+	assert.Equal(t, "First\n\nSecond", htmlText(`<p>First<p>Second`))
+	// Text before block element is ignored once block element exists
+	assert.Equal(t, "Block", htmlText(`Before<p>Block</p>After`))
+	// Pre/code only without allowed block tags
+	assert.Equal(t, "Code content", htmlText(`<pre><code>Code content</code></pre>`))
 }
 
 func Benchmark_htmlText(b *testing.B) {
@@ -190,6 +239,9 @@ func Test_matchTimeDiffLocale(t *testing.T) {
 	assert.Equal(t, "de", string(matchTimeDiffLocale("de-AT")))
 	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt-BR")))
 	assert.Equal(t, "pt", string(matchTimeDiffLocale("pt")))
+	// Repeated lookups must hit cache cleanly without locking issues
+	assert.Equal(t, "en", string(matchTimeDiffLocale("en-US")))
+	assert.Equal(t, "en", string(matchTimeDiffLocale("fr")))
 }
 
 func Test_unescapedPath(t *testing.T) {
@@ -223,4 +275,9 @@ func Test_groupStrings(t *testing.T) {
 	assert.Equal(t, "D", groups[2].Identifier)
 	assert.Equal(t, "H", groups[3].Identifier)
 	assert.Equal(t, "🚴", groups[4].Identifier)
+
+	// Identifiers use simple uppercase mapping
+	assert.Equal(t, "ß", groupStrings([]string{"ßeta"})[0].Identifier)
+	// Empty strings are handled without panicking
+	assert.Equal(t, "\uFFFD", groupStrings([]string{""})[0].Identifier)
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/contenttype"
-	"go.goblog.app/app/pkgs/minify"
 )
 
 type openSearchDescription struct {
@@ -64,13 +63,10 @@ func (a *goBlog) serveOpenSearch(w http.ResponseWriter, r *http.Request) {
 		InputEnc: "UTF-8", OutputEnc: "UTF-8",
 		SearchForm: sURL,
 	}
-	pr, pw := io.Pipe()
-	go func() {
-		_, _ = io.WriteString(pw, xml.Header)
-		_ = pw.CloseWithError(xml.NewEncoder(pw).Encode(openSearch))
-	}()
-	w.Header().Set(contentType, "application/opensearchdescription+xml"+contenttype.CharsetUtf8Suffix)
-	_ = pr.CloseWithError(minify.Get().Minify(contenttype.XML, w, pr))
+	a.respondWithMinified(w, r, contenttype.XML, "application/opensearchdescription+xml"+contenttype.CharsetUtf8Suffix, func(buf io.Writer) error {
+		_, _ = io.WriteString(buf, xml.Header)
+		return xml.NewEncoder(buf).Encode(openSearch)
+	})
 }
 
 func openSearchURL(b *configBlog) string {

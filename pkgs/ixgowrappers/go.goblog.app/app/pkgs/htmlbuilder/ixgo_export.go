@@ -15,9 +15,8 @@ func init() {
 		Name: "htmlbuilder",
 		Path: "go.goblog.app/app/pkgs/htmlbuilder",
 		Deps: map[string]string{
-			"fmt":     "fmt",
-			"io":      "io",
-			"strings": "strings",
+			"fmt": "fmt",
+			"io":  "io",
 		},
 		Interfaces: map[string]reflect.Type{},
 		NamedTypes: map[string]reflect.Type{

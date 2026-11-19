@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -521,10 +522,14 @@ func buildPostsQuery(c *postsRequestConfig, selection string) (query string, arg
 		}
 		queryBuilder.WriteString(")")
 	}
-	allParams := append(c.allParams, c.parameter)
-	allParamValues := append(c.allParamValues, []string{c.parameterValue})
-	if len(allParams) > 0 {
-		if len(allParamValues) > 0 && len(allParamValues) != len(allParams) {
+	if len(c.allParams) > 0 || len(c.allParamValues) > 0 || c.parameter != "" {
+		allParams := c.allParams
+		allParamValues := c.allParamValues
+		if c.parameter != "" {
+			allParams = append(slices.Clone(allParams), c.parameter)
+			allParamValues = append(slices.Clone(allParamValues), []string{c.parameterValue})
+		}
+		if len(allParamValues) != len(allParams) {
 			return "", nil, errors.New("number of parameters != number of parameter values")
 		}
 		for i, param := range allParams {
@@ -643,7 +648,7 @@ func (db *database) loadPostParameters(posts []*post, parameters ...string) (err
 		return nil
 	}
 	// Build query
-	sqlArgs := make([]any, 0)
+	sqlArgs := make([]any, 0, len(posts)+len(parameters))
 	queryBuilder := builderpool.Get()
 	defer builderpool.Put(queryBuilder)
 	queryBuilder.WriteString("select path, parameter, value from post_parameters where")
@@ -683,7 +688,7 @@ func (db *database) loadPostParameters(posts []*post, parameters ...string) (err
 	defer rows.Close()
 	// Result
 	var path, name, value string
-	params := map[string]map[string][]string{}
+	params := make(map[string]map[string][]string, len(posts))
 	for rows.Next() {
 		if err = rows.Scan(&path, &name, &value); err != nil {
 			return err
@@ -716,6 +721,9 @@ func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error)
 		return nil, err
 	}
 	defer rows.Close()
+	if config.limit > 0 {
+		posts = make([]*post, 0, min(config.limit, 1000))
+	}
 	// Prepare row scanning
 	var path, content, published, updated, blog, section, status, visibility string
 	var priority int

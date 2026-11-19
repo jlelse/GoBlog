@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"image"
 	"image/png"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"runtime/debug"
@@ -210,19 +210,36 @@ func (a *goBlog) initProfileImageSecret() {
 }
 
 func (a *goBlog) profileImageOriginalURL() string {
-	return fmt.Sprintf("%s/%s", profileImageOriginalPath, a.profileImageSecret)
+	return profileImageOriginalPath + "/" + a.profileImageSecret
 }
 
 func (a *goBlog) profileImagePath(format profileImageFormat, size int) string {
 	if !a.hasProfileImage() {
-		return fmt.Sprintf("%s.%s", profileImagePath, format)
+		return profileImagePath + "." + string(format)
 	}
-	query := url.Values{}
-	query.Set("v", a.profileImageHash())
+	hash := a.profileImageHash()
 	if size != 0 {
-		query.Set("s", fmt.Sprintf("%d", size))
+		return profileImagePath + "." + string(format) + "?s=" + strconv.Itoa(size) + "&v=" + hash
 	}
-	return fmt.Sprintf("%s.%s?%s", profileImagePath, format, query.Encode())
+	return profileImagePath + "." + string(format) + "?v=" + hash
+}
+
+var profileImageSrcsetSizes = [...]int{48, 64, 96, 128}
+
+// profileImageSrcset returns the srcset attribute value for the profile image
+// in the given format.
+func (a *goBlog) profileImageSrcset(format profileImageFormat) string {
+	var sb strings.Builder
+	for i, size := range profileImageSrcsetSizes {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(a.profileImagePath(format, size))
+		sb.WriteByte(' ')
+		sb.WriteString(strconv.Itoa(size))
+		sb.WriteByte('w')
+	}
+	return sb.String()
 }
 
 func (a *goBlog) hasProfileImage() bool {
@@ -246,7 +263,7 @@ func (a *goBlog) profileImageHash() string {
 		}
 		_, _ = io.Copy(hash, file)
 		_ = file.Close()
-		a.profileImageHashString = fmt.Sprintf("%x", hash.Sum(nil))
+		a.profileImageHashString = hex.EncodeToString(hash.Sum(nil))
 	})
 	return a.profileImageHashString
 }

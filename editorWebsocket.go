@@ -16,6 +16,7 @@ import (
 	ws "github.com/coder/websocket"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bodylimit"
+	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/minify"
@@ -310,12 +311,9 @@ func (a *goBlog) sendEditorPreview(ctx context.Context, c *ws.Conn, blog string,
 		p.RenderedTitle = a.renderMdTitle(t)
 	}
 	// Render post (using post's blog config)
-	pr, pw := io.Pipe()
-	go func() {
-		a.renderEditorPreview(htmlbuilder.NewHTMLBuilder(pw), a.getBlogFromPost(p), p)
-		_ = pw.Close()
-	}()
-	_ = minify.Get().Minify(contenttype.HTMLUTF8, w, pr)
-	_ = pr.Close()
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	a.renderEditorPreview(htmlbuilder.NewHTMLBuilder(buf), a.getBlogFromPost(p), p)
+	_ = minify.Get().Minify(contenttype.HTMLUTF8, w, buf)
 	return w.Close()
 }

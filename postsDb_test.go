@@ -782,3 +782,40 @@ func Test_postsDb_anyParams(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 }
+
+func Test_buildPostsQueryParameterMismatch(t *testing.T) {
+	// allParams without matching allParamValues must return an error
+	_, _, err := buildPostsQuery(&postsRequestConfig{
+		allParams: []string{"a"},
+	}, "path")
+	assert.Error(t, err)
+
+	// Fewer values than parameters must return an error
+	_, _, err = buildPostsQuery(&postsRequestConfig{
+		allParams:      []string{"a", "b"},
+		allParamValues: [][]string{{"1"}},
+	}, "path")
+	assert.Error(t, err)
+
+	// Matching parameters and values are valid
+	_, _, err = buildPostsQuery(&postsRequestConfig{
+		allParams:      []string{"a"},
+		allParamValues: [][]string{{"1"}},
+	}, "path")
+	assert.NoError(t, err)
+
+	// Values without parameters must return an error
+	_, _, err = buildPostsQuery(&postsRequestConfig{
+		allParamValues: [][]string{{"1"}},
+	}, "path")
+	assert.Error(t, err)
+
+	// Additional single parameter and value are valid
+	_, _, err = buildPostsQuery(&postsRequestConfig{
+		allParams:      []string{"a"},
+		allParamValues: [][]string{{"1"}},
+		parameter:      "b",
+		parameterValue: "2",
+	}, "path")
+	assert.NoError(t, err)
+}

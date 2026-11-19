@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -136,7 +137,7 @@ func (a *goBlog) renderPostTax(hb *htmlbuilder.HTMLBuilder, p *post, b *configBl
 					"a",
 					"class", "p-category",
 					"rel", "tag",
-					"href", b.getRelativePath(fmt.Sprintf("/%s/%s", tax.Name, urlize(taxValue))),
+					"href", b.getRelativePath("/"+tax.Name+"/"+urlize(taxValue)),
 				)
 				hb.WriteEscaped(a.renderMdTitle(taxValue))
 				hb.WriteElementClose("a")
@@ -199,9 +200,9 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configB
 			hb.WriteElementOpen("span", "class", "p-name")
 			hb.WriteEscaped(a.geoTitle(geoURI, b.Lang))
 			hb.WriteElementClose("span")
-			hb.WriteElementOpen("data", "class", "p-longitude", "value", fmt.Sprintf("%f", geoURI.Longitude))
+			hb.WriteElementOpen("data", "class", "p-longitude", "value", strconv.FormatFloat(geoURI.Longitude, 'f', 6, 64))
 			hb.WriteElementClose("data")
-			hb.WriteElementOpen("data", "class", "p-latitude", "value", fmt.Sprintf("%f", geoURI.Latitude))
+			hb.WriteElementOpen("data", "class", "p-latitude", "value", strconv.FormatFloat(geoURI.Latitude, 'f', 6, 64))
 			hb.WriteElementClose("data")
 			hb.WriteElementClose("a")
 		}
@@ -582,11 +583,15 @@ func (a *goBlog) renderPostHreflang(hb *htmlbuilder.HTMLBuilder, p *post) {
 	if len(translations) == 0 {
 		return
 	}
-	for _, t := range append([]*post{p}, translations...) {
+	writeHreflang := func(t *post) {
 		hb.WriteElementOpen("link", "rel", "alternate", "hreflang", a.getBlogFromPost(t).Lang, "href", a.fullPostURL(t))
 		if t.Blog == a.cfg.DefaultBlog {
 			hb.WriteElementOpen("link", "rel", "alternate", "hreflang", "x-default", "href", a.fullPostURL(t))
 		}
+	}
+	writeHreflang(p)
+	for _, t := range translations {
+		writeHreflang(t)
 	}
 }
 
@@ -776,12 +781,17 @@ func (a *goBlog) renderPostTrackSVG(hb *htmlbuilder.HTMLBuilder, track *trackRes
 	}
 	// Generate SVG
 	hb.WriteElementOpen("svg", "width", "100%", "viewbox", fmt.Sprintf("0 0 %.0f %.0f", width, height))
+	var ptBuf [64]byte
 	for _, path := range track.Paths {
 		_, _ = hb.WriteString(`<polyline points="`)
 		for _, pt := range path {
 			x := xOffset + (gpx.WebMercatorX(pt.Lon())-minX)*scale
 			y := height - (yOffset + (gpx.WebMercatorY(pt.Lat())-minY)*scale)
-			fmt.Fprintf(hb, "%.2f,%.2f ", x, y)
+			b := strconv.AppendFloat(ptBuf[:0], x, 'f', 2, 64)
+			b = append(b, ',')
+			b = strconv.AppendFloat(b, y, 'f', 2, 64)
+			b = append(b, ' ')
+			_, _ = hb.Write(b)
 		}
 		_, _ = hb.WriteString(`" fill="none" stroke="currentColor" stroke-width="3" />`)
 	}
