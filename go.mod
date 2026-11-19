@@ -8,9 +8,8 @@ require (
 	git.jlel.se/jlelse/go-shutdowner v0.0.0-20210707065515-773db8099c30
 	git.jlel.se/jlelse/template-strings v0.0.0-20260916065505-405814d9142a
 	github.com/HBTGmbH/gosaxml v0.0.44
-	github.com/PuerkitoBio/goquery v1.13.0
+	github.com/PuerkitoBio/goquery v1.14.0
 	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
-	github.com/andybalholm/cascadia v1.3.5
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/carlmjohnson/requests v0.26.3
@@ -54,7 +53,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tdewolff/minify/v2 v2.24.25
+	github.com/tdewolff/minify/v2 v2.25.0
 	github.com/tiptophelmet/cspolicy v0.1.1
 	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e
 	github.com/vcraescu/go-paginator/v2 v2.0.0
@@ -66,25 +65,27 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0
 	goftp.io/server/v2 v2.0.3
 	golang.org/x/crypto v0.59.0
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/sync v0.25.0
 	golang.org/x/text v0.44.0
-	maunium.net/go/mautrix v0.32.0
+	golang.org/x/tools v0.53.0
+	maunium.net/go/mautrix v0.33.0
 	willnorris.com/go/microformats v1.2.1-0.20260218044424-22f0c2eff25b
 )
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.5 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/dlclark/regexp2/v2 v2.13.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.13.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.10.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/go-webauthn/x v0.3.1 // indirect
+	github.com/go-webauthn/x v0.4.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -109,23 +110,22 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/pflag v1.1.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.20 // indirect
-	github.com/tidwall/gjson v1.20.2 // indirect
+	github.com/tdewolff/parse/v2 v2.25.0 // indirect
+	github.com/tidwall/gjson v1.20.4 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.3.0 // indirect
-	github.com/tidwall/sjson v1.2.9 // indirect
+	github.com/tidwall/sjson v1.2.10 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/visualfc/funcval v0.1.5 // indirect
 	github.com/visualfc/gid v0.3.6 // indirect
 	github.com/visualfc/goembed v0.3.4 // indirect
 	github.com/visualfc/xtype v0.3.3 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mau.fi/util v0.11.0 // indirect
+	go.mau.fi/util v0.11.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
+	golang.org/x/exp v0.0.0-20261118215729-2791e4028fd4 // indirect
 	golang.org/x/image v0.48.0 // indirect
-	golang.org/x/mod v0.42.0 // indirect
+	golang.org/x/mod v0.43.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
-	golang.org/x/tools v0.52.1-0.20261106145633-d407941a339a // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.4 // indirect
 )
