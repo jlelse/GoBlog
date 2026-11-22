@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +12,34 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
+
+func Test_renderShareButton(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initTemplateStrings())
+	app.cfg.Server.PublicAddress = "https://blog.example"
+	app.cfg.Server.ShortPublicAddress = "https://short.example"
+	p := &post{Path: "/posts/c++", RenderedTitle: "C++\n& Go: " + strings.Repeat("界", 81)}
+	var html strings.Builder
+	app.renderShareButton(htmlbuilder.NewHTMLBuilder(&html), p, &configBlog{Lang: "en"})
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html.String()))
+	require.NoError(t, err)
+	var data shareData
+	require.NoError(t, json.Unmarshal([]byte(doc.Find("#shareData").Text()), &data))
+	require.Equal(t, "https://blog.example/posts/c++", data.URL)
+	for _, svc := range data.Services {
+		if svc.ID == "hackernews" {
+			link, err := url.Parse(svc.URL)
+			require.NoError(t, err)
+			require.Equal(t, data.URL, link.Query().Get("u"))
+			title := link.Query().Get("t")
+			require.LessOrEqual(t, len([]rune(title)), 80)
+			require.True(t, strings.HasPrefix(title, "C++ & Go: 界"))
+			require.True(t, strings.HasSuffix(title, "…"))
+			return
+		}
+	}
+	t.Fatal("missing Hacker News share link")
+}
 
 func Test_renderMenus(t *testing.T) {
 	cfg := createDefaultTestConfig(t)

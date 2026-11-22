@@ -23,8 +23,10 @@
         const link = document.createElement('a');
         link.className = 'button';
         link.href = service.url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
+        if (link.protocol === 'https:') {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        }
         link.textContent = service.label || service.id;
         servicesContainer.appendChild(link);
     });

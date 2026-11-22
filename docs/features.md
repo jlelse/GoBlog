@@ -155,7 +155,7 @@ Accessible from the editor page (requires login):
 
 Each post page includes interactive buttons (individually hideable via Settings UI):
 
-- **Share**: Modal with multiple share targets (currently Email, Mastodon, Bluesky, LinkedIn, Micro.blog, Reddit, Hacker News, SMS), copy-to-clipboard, and native Web Share API. Text auto-truncated per platform.
+- **Share**: Shares the post’s full permalink via Email, Mastodon, Bluesky, LinkedIn, Micro.blog, Reddit, Hacker News, SMS, the clipboard, or the native share sheet. Share text is shortened to fit each platform.
 - **Read Aloud**: Browser speech synthesis (Web Speech API) or pre-generated cloud TTS audio (using Google Cloud or Mistral).
 - **Translate**: Links to Google Translate for the post.
 

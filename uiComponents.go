@@ -389,7 +389,7 @@ func (a *goBlog) renderShareButton(hb *htmlbuilder.HTMLBuilder, p *post, b *conf
 	hb.WriteElement("div", "id", "shareModalServices")
 	hb.WriteElementClose("dialog")
 	hb.WriteElementOpen("script", "type", contenttype.JSON, "id", "shareData")
-	_ = json.NewEncoder(hb).Encode(newShareData(a.titleOrFallback(p), a.shortPostURL(p)))
+	_ = json.NewEncoder(hb).Encode(newShareData(a.titleOrFallback(p), a.fullPostURL(p)))
 	hb.WriteElementClose("script")
 	hb.WriteElement("script", "defer", "", "src", a.assetFileName("js/share.js"), "integrity", a.assetFileHash("js/share.js"))
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildShareText(t *testing.T) {
@@ -42,35 +45,64 @@ func TestBuildShareText(t *testing.T) {
 }
 
 func TestBuildShareServices(t *testing.T) {
-	title := "Test Title"
-	url := "https://example.com"
-	text := buildShareText(title, url)
-
-	services := buildShareServices(title, url, text)
-	if len(services) != len(shareServiceDefinitions) {
-		t.Fatalf("unexpected services count: got %d, want %d", len(services), len(shareServiceDefinitions))
+	const (
+		title      = "C++\r\n& café #1"
+		singleLine = "C++ & café #1"
+		permalink  = "https://example.com/posts/c%2B%2B?q=a+b&lang=de#résumé"
+		text       = title + "\n\n" + permalink
+	)
+	want := map[string]struct {
+		base   string
+		params url.Values
+	}{
+		"email":      {"mailto:", url.Values{"subject": {singleLine}, "body": {title + "\r\n\r\n" + permalink}}},
+		"mastodon":   {"https://share.joinmastodon.org/", url.Values{"text": {text}}},
+		"bluesky":    {"https://bsky.app/intent/compose", url.Values{"text": {text}}},
+		"linkedin":   {"https://www.linkedin.com/sharing/share-offsite/", url.Values{"url": {permalink}}},
+		"microblog":  {"https://micro.blog/post", url.Values{"bookmarklet": {"true"}, "text": {text}}},
+		"reddit":     {"https://www.reddit.com/submit", url.Values{"type": {"link"}, "url": {permalink}, "title": {singleLine}}},
+		"hackernews": {"https://news.ycombinator.com/submitlink", url.Values{"u": {permalink}, "t": {singleLine}}},
+		"sms":        {"sms:", url.Values{"body": {permalink}}},
 	}
-
-	expect := map[string]string{
-		"email":      "mailto:?subject=Test+Title&body=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"mastodon":   "https://share.joinmastodon.org/?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"bluesky":    "https://bsky.app/intent/compose?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"linkedin":   "https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fexample.com&title=Test+Title&summary=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"microblog":  "https://micro.blog/post?text=Test+Title%0A%0Ahttps%3A%2F%2Fexample.com",
-		"reddit":     "https://www.reddit.com/submit?url=https%3A%2F%2Fexample.com&title=Test+Title",
-		"hackernews": "https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fexample.com&t=Test+Title",
-		"sms":        "sms:?body=https%3A%2F%2Fexample.com",
+	for _, svc := range newShareData(title, permalink).Services {
+		t.Run(svc.ID, func(t *testing.T) {
+			expect, ok := want[svc.ID]
+			require.True(t, ok, "unknown or duplicate service")
+			delete(want, svc.ID)
+			link, err := url.Parse(svc.URL)
+			require.NoError(t, err)
+			params := link.RawQuery
+			if svc.ID == "mastodon" {
+				require.Empty(t, params)
+				params = link.EscapedFragment()
+			} else {
+				require.Empty(t, link.Fragment)
+			}
+			require.NotContains(t, params, "+")
+			values, err := url.ParseQuery(params)
+			require.NoError(t, err)
+			require.Equal(t, expect.params, values)
+			link.RawQuery, link.Fragment, link.RawFragment = "", "", ""
+			require.Equal(t, expect.base, link.String())
+		})
 	}
+	require.Empty(t, want, "missing services")
+}
 
-	for _, svc := range services {
-		want, ok := expect[svc.ID]
-		if !ok {
-			t.Fatalf("unexpected service id %q", svc.ID)
+func TestRedditShareTitleLimit(t *testing.T) {
+	const permalink = "https://example.com/post"
+	for _, svc := range newShareData(strings.Repeat("界", 301), permalink).Services {
+		if svc.ID == "reddit" {
+			link, err := url.Parse(svc.URL)
+			require.NoError(t, err)
+			title := link.Query().Get("title")
+			require.LessOrEqual(t, len([]rune(title)), 300)
+			require.True(t, strings.HasSuffix(title, "…"))
+			require.Equal(t, permalink, link.Query().Get("url"))
+			return
 		}
-		if svc.URL != want {
-			t.Fatalf("service %q url = %q, want %q", svc.ID, svc.URL, want)
-		}
 	}
+	t.Fatal("missing Reddit share link")
 }
 
 func TestLimitSharePayload(t *testing.T) {

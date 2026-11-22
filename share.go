@@ -32,10 +32,10 @@ var shareServiceDefinitions = []shareServiceDefinition{
 	{id: "email", label: "Email", builder: shareEmailURL},
 	{id: "mastodon", label: "Mastodon", limit: 500, builder: shareMastodonURL},
 	{id: "bluesky", label: "Bluesky", limit: 300, builder: shareBlueskyURL},
-	{id: "linkedin", label: "LinkedIn", limit: 700, builder: shareLinkedInURL},
+	{id: "linkedin", label: "LinkedIn", builder: shareLinkedInURL},
 	{id: "microblog", label: "Micro.blog", limit: 300, builder: shareMicroblogURL},
-	{id: "reddit", label: "Reddit", builder: shareRedditURL},
-	{id: "hackernews", label: "Hacker News", builder: shareHackerNewsURL},
+	{id: "reddit", label: "Reddit", limit: 300, builder: shareRedditURL},
+	{id: "hackernews", label: "Hacker News", limit: 80, builder: shareHackerNewsURL},
 	{id: "sms", label: "SMS", builder: shareSMSURL},
 }
 
@@ -72,15 +72,17 @@ func buildShareServices(title, url, text string) []shareService {
 	return services
 }
 
+var mailtoLineBreaks = strings.NewReplacer("\r\n", "\r\n", "\n", "\r\n", "\r", "\r\n")
+
 func shareEmailURL(title, url, text string, _ int) string {
-	subject := cmp.Or(title, url)
-	body := cmp.Or(text, url)
+	subject := cmp.Or(strings.Join(strings.Fields(title), " "), url)
+	body := mailtoLineBreaks.Replace(cmp.Or(text, url))
 	return "mailto:?subject=" + queryEscape(subject) + "&body=" + queryEscape(body)
 }
 
 func shareMastodonURL(_, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
-	return "https://share.joinmastodon.org/?text=" + queryEscape(payload)
+	return "https://share.joinmastodon.org/#text=" + queryEscape(payload)
 }
 
 func shareBlueskyURL(_, url, text string, limit int) string {
@@ -88,22 +90,23 @@ func shareBlueskyURL(_, url, text string, limit int) string {
 	return "https://bsky.app/intent/compose?text=" + queryEscape(payload)
 }
 
-func shareRedditURL(title, url, _ string, _ int) string {
-	return "https://www.reddit.com/submit?url=" + queryEscape(url) + "&title=" + queryEscape(cmp.Or(title, url))
+func shareRedditURL(title, url, _ string, limit int) string {
+	title = cmp.Or(strings.Join(strings.Fields(title), " "), url)
+	return "https://www.reddit.com/submit?type=link&url=" + queryEscape(url) + "&title=" + queryEscape(truncateStringWithEllipsis(title, limit))
 }
 
-func shareHackerNewsURL(title, url, _ string, _ int) string {
-	return "https://news.ycombinator.com/submitlink?u=" + queryEscape(url) + "&t=" + queryEscape(cmp.Or(title, url))
+func shareHackerNewsURL(title, url, _ string, limit int) string {
+	title = strings.Join(strings.Fields(title), " ")
+	return "https://news.ycombinator.com/submitlink?u=" + queryEscape(url) + "&t=" + queryEscape(truncateStringWithEllipsis(title, limit))
 }
 
-func shareLinkedInURL(title, url, text string, limit int) string {
-	payload := limitSharePayload(text, url, limit)
-	return "https://www.linkedin.com/shareArticle?mini=true&url=" + queryEscape(url) + "&title=" + queryEscape(cmp.Or(title, url)) + "&summary=" + queryEscape(payload)
+func shareLinkedInURL(_, url, _ string, _ int) string {
+	return "https://www.linkedin.com/sharing/share-offsite/?url=" + queryEscape(url)
 }
 
 func shareMicroblogURL(_, url, text string, limit int) string {
 	payload := limitSharePayload(text, url, limit)
-	return "https://micro.blog/post?text=" + queryEscape(payload)
+	return "https://micro.blog/post?bookmarklet=true&text=" + queryEscape(payload)
 }
 
 func shareSMSURL(_, url, _ string, _ int) string {
@@ -144,5 +147,5 @@ func limitRunes(value string, limit int) string {
 }
 
 func queryEscape(value string) string {
-	return url.QueryEscape(value)
+	return strings.ReplaceAll(url.QueryEscape(value), "+", "%20")
 }
