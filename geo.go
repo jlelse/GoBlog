@@ -9,7 +9,7 @@ import (
 	"time"
 
 	gogeouri "git.jlel.se/jlelse/go-geouri"
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	geojson "github.com/paulmach/go.geojson"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -66,7 +66,7 @@ func (a *goBlog) nominatimReverse(lat, lon float64, lang string) (*geojson.Featu
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
 			// Create request
-			rb := requests.URL("https://nominatim.openstreetmap.org/reverse").Client(a.httpClient).ToBytesBuffer(buf)
+			rb := requests.URL("https://nominatim.openstreetmap.org/reverse").Client(a.httpClient).ToWriter(buf)
 			// Set parameters
 			rb.Param("format", "geojson")
 			rb.Param("lat", fmt.Sprintf("%v", lat))

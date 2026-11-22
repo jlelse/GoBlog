@@ -354,7 +354,7 @@ Plugin loading errors and invalid route definitions still prevent startup, so co
 
 **Third-party packages (available without vendoring):**
 - `github.com/PuerkitoBio/goquery` - HTML manipulation (jQuery-like)
-- `github.com/carlmjohnson/requests` - HTTP requests
+- `github.com/gophertools/requests/v2` - HTTP requests
 - `github.com/araddon/dateparse` - Date parsing
 
 For more examples, see the [embedded plugins](/plugins/) in the repository.

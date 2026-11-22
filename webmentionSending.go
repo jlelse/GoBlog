@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/samber/lo"
 	"github.com/tomnomnom/linkheader"
 )

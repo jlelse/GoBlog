@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	ap "go.goblog.app/app/pkgs/activitypub"
 	"go.goblog.app/app/pkgs/bodylimit"
 )

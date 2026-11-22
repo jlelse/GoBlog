@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/jlaffaye/ftp"
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/utils"

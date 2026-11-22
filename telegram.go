@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"go.goblog.app/app/pkgs/builderpool"
 )
 

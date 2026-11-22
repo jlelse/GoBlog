@@ -21,8 +21,8 @@ import (
 
 	_ "embed"
 
-	"github.com/carlmjohnson/requests"
 	"github.com/go-chi/chi/v5"
+	"github.com/gophertools/requests/v2"
 	"github.com/kovidgoyal/imaging"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/contenttype"

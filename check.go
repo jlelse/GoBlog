@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bodylimit"
 	cpkg "go.goblog.app/app/pkgs/cache"

@@ -18,7 +18,7 @@ import (
 	"uuid"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/mattn/go-mastodon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1007,7 +1007,7 @@ func gtsAuthorizeToken(t *testing.T, baseURL, clientID, clientSecret, email, pas
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	err = requests.URL(oobURL).Client(client).
-		ToBytesBuffer(buf).
+		ToWriter(buf).
 		Fetch(t.Context())
 	code = extractCode(buf)
 	require.NotEmpty(t, code)

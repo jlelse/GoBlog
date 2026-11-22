@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"

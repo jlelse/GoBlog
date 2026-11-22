@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/kovidgoyal/imaging"
 	"github.com/samber/lo"
 	"go.goblog.app/app/pkgs/phash"

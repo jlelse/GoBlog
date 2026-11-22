@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 	"github.com/samber/lo"
 )
 

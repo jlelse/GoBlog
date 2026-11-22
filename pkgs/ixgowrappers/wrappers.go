@@ -10,7 +10,7 @@ import (
 	// Register the packages that plugins may import.
 	_ "go.goblog.app/app/pkgs/ixgowrappers/github.com/PuerkitoBio/goquery"
 	_ "go.goblog.app/app/pkgs/ixgowrappers/github.com/araddon/dateparse"
-	_ "go.goblog.app/app/pkgs/ixgowrappers/github.com/carlmjohnson/requests"
+	_ "go.goblog.app/app/pkgs/ixgowrappers/github.com/gophertools/requests/v2"
 	_ "go.goblog.app/app/pkgs/ixgowrappers/go.goblog.app/app/pkgs/bufferpool"
 	_ "go.goblog.app/app/pkgs/ixgowrappers/go.goblog.app/app/pkgs/builderpool"
 	_ "go.goblog.app/app/pkgs/ixgowrappers/go.goblog.app/app/pkgs/htmlbuilder"
@@ -18,4 +18,4 @@ import (
 	_ "go.goblog.app/app/pkgs/ixgowrappers/go.yaml.in/yaml/v4"
 )
 
-//go:generate go run github.com/goplus/ixgo/cmd/qexp -outdir . -filename ixgo_export -tags linux,libsqlite3,sqlite_fts5,gomailnotpl go.goblog.app/app/pkgs/plugintypes go.goblog.app/app/pkgs/htmlbuilder go.goblog.app/app/pkgs/bufferpool go.goblog.app/app/pkgs/builderpool github.com/PuerkitoBio/goquery github.com/carlmjohnson/requests github.com/araddon/dateparse go.yaml.in/yaml/v4
+//go:generate go run github.com/goplus/ixgo/cmd/qexp -outdir . -filename ixgo_export -tags linux,libsqlite3,sqlite_fts5,gomailnotpl go.goblog.app/app/pkgs/plugintypes go.goblog.app/app/pkgs/htmlbuilder go.goblog.app/app/pkgs/bufferpool go.goblog.app/app/pkgs/builderpool github.com/PuerkitoBio/goquery github.com/gophertools/requests/v2 github.com/araddon/dateparse go.yaml.in/yaml/v4

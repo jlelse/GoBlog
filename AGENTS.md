@@ -141,6 +141,6 @@ Add keys to `strings/default.yaml` (English), then add translations to other loc
 - No code comments unless the code is complex
 - Use existing utility functions from `utils.go` and `pkgs/utils/`
 - Use `pkgs/htmlbuilder` for all HTML generation
-- Use `carlmjohnson/requests` for outgoing HTTP requests (already a dependency)
+- Use `gophertools/requests/v2` for outgoing HTTP requests (already a dependency)
 - Error handling: return errors up the call chain; use `a.serveError(w, r, ...)` for HTTP error responses
 - Context: pass `context.Context` through where available

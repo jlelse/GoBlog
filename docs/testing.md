@@ -50,7 +50,7 @@ req := httptest.NewRequest("GET", "/path", nil)
 app.d.ServeHTTP(rec, req)
 ```
 
-The helper `newHandlerClient(handler)` in `utils.go` wraps the router into an `*http.Client`, so tests can use the project's fluent HTTP library (`carlmjohnson/requests`) for request construction.
+The helper `newHandlerClient(handler)` in `utils.go` wraps the router into an `*http.Client`, so tests can use the project's fluent HTTP library (`gophertools/requests/v2`) for request construction.
 
 When a test needs to simulate an external service (e.g., a remote server for link checking or webmention fetching), it spins up an `httptest.Server`.
 
@@ -61,7 +61,7 @@ The `testdata/` directory contains HTML pages and GPX track files used as fixtur
 ### Libraries
 
 - [`testify`](https://github.com/stretchr/testify): assertions (`assert` and `require`)
-- [`carlmjohnson/requests`](https://github.com/carlmjohnson/requests): fluent HTTP test requests
+- [`gophertools/requests/v2`](https://github.com/gophertools/requests): fluent HTTP test requests
 
 ## Integration Tests
 

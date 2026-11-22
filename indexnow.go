@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/carlmjohnson/requests"
+	"github.com/gophertools/requests/v2"
 )
 
 // Implement support for the IndexNow protocol
