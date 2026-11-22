@@ -3,14 +3,12 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/vcraescu/go-paginator/v2"
 	"go.goblog.app/app/pkgs/bufferpool"
 )
@@ -158,43 +156,17 @@ func (p *notificationsPaginationAdapter) Slice(offset, length int, data any) err
 func (a *goBlog) notificationsAdmin(w http.ResponseWriter, r *http.Request) {
 	// Adapter
 	p := paginator.New(newNotificationsPaginationAdapter(&notificationsRequestConfig{}, a.db), 10)
-	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var notifications []*notification
-	err := p.Results(&notifications)
+	nav, err := readPage(r, p, notificationsPath, &notifications)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Navigation
-	var hasPrev, hasNext bool
-	var prevPage, nextPage int
-	var prevPath, nextPath string
-	hasPrev, _ = p.HasPrev()
-	if hasPrev {
-		prevPage, _ = p.PrevPage()
-	} else {
-		prevPage, _ = p.Page()
-	}
-	if prevPage < 2 {
-		prevPath = notificationsPath
-	} else {
-		prevPath = fmt.Sprintf("%s/page/%d", notificationsPath, prevPage)
-	}
-	hasNext, _ = p.HasNext()
-	if hasNext {
-		nextPage, _ = p.NextPage()
-	} else {
-		nextPage, _ = p.Page()
-	}
-	nextPath = fmt.Sprintf("%s/page/%d", notificationsPath, nextPage)
 	// Render
 	a.render(w, r, a.renderNotificationsAdmin, &renderData{
 		Data: &notificationsRenderData{
 			notifications: notifications,
-			hasPrev:       hasPrev,
-			hasNext:       hasNext,
-			prev:          prevPath,
-			next:          nextPath,
+			pagination:    nav,
 		},
 	})
 }

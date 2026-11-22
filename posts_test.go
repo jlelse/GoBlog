@@ -2,13 +2,51 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gophertools/requests/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestIndexPagination(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	app.cfg.Blogs[app.cfg.DefaultBlog].Pagination = 1
+	client := newHandlerClient(app.buildRouter())
+	for i, tag := range []string{"notes", "notes", "notes", "other"} {
+		require.NoError(t, app.createPost(&post{
+			Path: fmt.Sprintf("/post-%d", i), Section: "posts", Status: statusPublished,
+			Published: "2020-10-15T10:00:00Z", Content: "A note",
+			Parameters: map[string][]string{"tags": {tag}},
+		}))
+	}
+	const query = "?p%3Atags=notes"
+	for _, tc := range []struct{ path, count, prev, next string }{
+		{"/" + query, "Page 1 of 3", "", "/page/2" + query},
+		{"/page/2" + query, "Page 2 of 3", "/" + query, "/page/3" + query},
+		{"/page/99" + query, "Page 3 of 3", "/page/2" + query, ""},
+		{"/?p%3Atags=other", "", "", ""},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			res, err := client.Get("http://localhost:8080" + tc.path)
+			require.NoError(t, err)
+			defer res.Body.Close()
+			require.Equal(t, http.StatusOK, res.StatusCode)
+			doc, err := goquery.NewDocumentFromReader(res.Body)
+			require.NoError(t, err)
+			nav := doc.Find("nav.pagination")
+			require.Equal(t, tc.count != "", nav.Length() == 1)
+			require.Equal(t, tc.count, nav.Find("[aria-current=page]").Text())
+			require.Equal(t, tc.prev, nav.Find("[rel=prev]").AttrOr("href", ""))
+			require.Equal(t, tc.next, nav.Find("[rel=next]").AttrOr("href", ""))
+		})
+	}
+}
 
 func Test_serveDate(t *testing.T) {
 	var err error

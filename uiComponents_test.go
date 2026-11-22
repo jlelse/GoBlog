@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"go.goblog.app/app/pkgs/htmlbuilder"
 )
 
-func Test_renderMainMenu(t *testing.T) {
+func Test_renderMenus(t *testing.T) {
 	cfg := createDefaultTestConfig(t)
 	app := &goBlog{cfg: cfg}
 	require.NoError(t, app.initConfig(false))
@@ -20,15 +21,37 @@ func Test_renderMainMenu(t *testing.T) {
 		{Title: "Subscribe", Link: "/feeds"},
 		{Title: "Mehr auf Deutsch 🇩🇪", Link: "/de"},
 	}}}
+	blog.Menus["footer"] = &configMenu{Items: []*configMenuItem{{Title: "Privacy policy", Link: "/privacy"}}}
 
-	var html strings.Builder
-	app.renderBase(htmlbuilder.NewHTMLBuilder(&html), &renderData{Blog: blog, IsHome: true}, nil, nil)
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html.String()))
-	require.NoError(t, err)
-	menu := doc.Find("header nav")
-	require.Equal(t, 2, menu.Children().Length())
-	require.Equal(t, "Subscribe", menu.Find("a[href='/feeds']").Text())
-	require.Equal(t, "Mehr auf Deutsch 🇩🇪", menu.Find("a[href='/de']").Text())
+	render := func(loggedIn bool) *goquery.Selection {
+		req := httptest.NewRequest("GET", "/", nil)
+		setLoggedIn(req, loggedIn)
+		var html strings.Builder
+		app.renderBase(htmlbuilder.NewHTMLBuilder(&html), &renderData{Blog: blog, IsHome: true, app: app, req: req}, nil, nil)
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(html.String()))
+		require.NoError(t, err)
+		return doc.Selection
+	}
+
+	page := render(false)
+	footer := page.Find("footer nav.menu-bar")
+	require.Equal(t, "Footer menu", footer.AttrOr("aria-label", ""))
+	require.Equal(t, "Privacy policy", footer.Find("a[href='/privacy']").Text())
+	bar := page.Find("header .menu-bar")
+	require.Equal(t, 1, bar.Length())
+	require.Equal(t, 2, bar.Find("a").Length())
+	require.Equal(t, "Subscribe", bar.Find("a[href='/feeds']").Text())
+	require.Equal(t, "Mehr auf Deutsch 🇩🇪", bar.Find("a[href='/de']").Text())
+
+	bar = render(true).Find("header .menu-bar")
+	require.Equal(t, 1, bar.Length())
+	require.Equal(t, "Main menu", bar.Find("nav").First().AttrOr("aria-label", ""))
+	require.Equal(t, "User menu", bar.Find("nav").Last().AttrOr("aria-label", ""))
+	require.Equal(t, "/logout", bar.Find("a").Last().AttrOr("href", ""))
+
+	blog.Menus = nil
+	require.Empty(t, render(false).Find(".menu-bar").Nodes)
+	require.Equal(t, "User menu", render(true).Find("header nav:only-child").AttrOr("aria-label", ""))
 }
 
 func Test_renderSummaryMeta(t *testing.T) {

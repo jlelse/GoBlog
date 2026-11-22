@@ -2,7 +2,6 @@ package main
 
 import (
 	"cmp"
-	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -57,39 +56,13 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		status:     status,
 		sourcelike: sourcelike,
 	}, a), 5)
-	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var mentions []*mention
-	err := p.Results(&mentions)
+	nav, err := readPage(r, p, webmentionPath, &mentions)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// Navigation
-	var hasPrev, hasNext bool
-	var prevPage, currentPage, nextPage int
-	var prevPath, currentPath, nextPath string
-	hasPrev, _ = p.HasPrev()
-	if hasPrev {
-		prevPage, _ = p.PrevPage()
-	} else {
-		prevPage, _ = p.Page()
-	}
-	if prevPage < 2 {
-		prevPath = webmentionPath
-	} else {
-		prevPath = fmt.Sprintf("%s/page/%d", webmentionPath, prevPage)
-	}
-	currentPage, _ = p.Page()
-	currentPath = fmt.Sprintf("%s/page/%d", webmentionPath, currentPage)
-	hasNext, _ = p.HasNext()
-	if hasNext {
-		nextPage, _ = p.NextPage()
-	} else {
-		nextPage, _ = p.Page()
-	}
-	nextPath = fmt.Sprintf("%s/page/%d", webmentionPath, nextPage)
 	// Query
-	query := ""
 	params := url.Values{}
 	if status != "" {
 		params.Add("status", string(status))
@@ -98,17 +71,13 @@ func (a *goBlog) webmentionAdmin(w http.ResponseWriter, r *http.Request) {
 		params.Add("source", sourcelike)
 	}
 	if len(params) > 0 {
-		query = "?" + params.Encode()
+		nav.query = "?" + params.Encode()
 	}
 	// Render
 	a.render(w, r, a.renderWebmentionAdmin, &renderData{
 		Data: &webmentionRenderData{
-			mentions: mentions,
-			hasPrev:  hasPrev,
-			hasNext:  hasNext,
-			prev:     prevPath + query,
-			current:  currentPath + query,
-			next:     nextPath + query,
+			mentions:   mentions,
+			pagination: nav,
 		},
 	})
 }

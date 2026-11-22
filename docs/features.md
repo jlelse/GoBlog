@@ -274,6 +274,10 @@ Date archives are auto-generated at these paths:
 
 Date archives are sent with an `X-Robots-Tag: noindex` header and are not listed in the sitemap (see [Search Engine Optimization](#search-engine-optimization-seo)).
 
+## Pagination
+
+Multi-page post lists show the current page and total between the Previous and Next links. The count reflects any active filters. The same navigation is available in the comments, notifications, and webmentions admin views.
+
 ## Notifications
 
 Send notifications via Ntfy, Telegram, or Matrix. Configure globally in YAML. Notifications are sent for new posts, updates, and other events.

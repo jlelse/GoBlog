@@ -53,29 +53,19 @@ hr {
 }
 
 header {
-  padding: 10px 0;
-}
-header > nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.45rem;
-  margin-top: 0.5rem;
-}
-header > nav > a + a::before {
-  content: "";
-  display: inline-block;
-  margin-inline-end: 0.45rem;
-  border: 0.15em solid currentColor;
-  border-radius: 50%;
-  vertical-align: 0.2em;
+  padding-top: 10px;
 }
 header * {
   margin-top: 0;
   margin-bottom: 0;
 }
-header .header-image {
+header .header-image,
+header .header-text {
   display: inline-block;
   vertical-align: middle;
+  margin-bottom: 10px;
+}
+header .header-image {
   margin-right: 1rem;
 }
 header .header-image img {
@@ -83,14 +73,73 @@ header .header-image img {
   height: 48px;
   object-fit: cover;
 }
-header .header-text {
-  display: inline-block;
-  vertical-align: middle;
-}
 header .site-title {
   font-size: 2em;
   font-weight: bold;
   line-height: 1.2;
+}
+
+.menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+header .menu-bar {
+  border-top: 1px solid;
+}
+footer .menu-bar {
+  border-bottom: 1px solid;
+}
+.menu-bar nav {
+  display: flex;
+  flex: none;
+  max-width: none;
+  gap: inherit;
+}
+.menu-bar nav + nav {
+  border-inline-start: 1px solid;
+  padding-inline-start: 1rem;
+}
+.menu-bar a {
+  flex: none;
+  max-width: none;
+  white-space: nowrap;
+  padding-block: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.menu-bar a:hover, .menu-bar a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.menu-bar a:focus-visible {
+  scroll-snap-align: center;
+  outline-offset: -2px;
+}
+
+.pagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+.pagination a {
+  padding-block: 0.5rem;
+  text-underline-offset: 0.18em;
+}
+.pagination [rel=prev] {
+  justify-self: start;
+}
+.pagination [rel=next] {
+  justify-self: end;
+}
+.pagination [aria-current] {
+  grid-column: 2;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (min-width: 500px) {
@@ -190,7 +239,10 @@ th {
 }
 
 footer {
-  padding: 10px 0;
+  padding-bottom: 10px;
+}
+footer > p:first-of-type {
+  padding-top: 10px;
 }
 footer * {
   margin-top: 0;

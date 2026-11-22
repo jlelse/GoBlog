@@ -373,9 +373,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		visibility:     visibility,
 		priorityOrder:  true,
 	}, a), bc.Pagination)
-	p.SetPage(stringToInt(chi.URLParam(r, "page")))
 	var posts []*post
-	err := p.Results(&posts)
+	nav, err := readPage(r, p, ic.path, &posts)
 	if err != nil {
 		a.error("Failed to get index posts", "err", err)
 		a.serveError(w, r, "", http.StatusInternalServerError)
@@ -405,28 +404,7 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 		a.generateFeed(blog, ft, w, r, posts, title, description, ic.path, paramURLQuery)
 		return
 	}
-	// Navigation
-	var hasPrev, hasNext bool
-	var prevPage, nextPage int
-	var prevPath, nextPath string
-	hasPrev, _ = p.HasPrev()
-	if hasPrev {
-		prevPage, _ = p.PrevPage()
-	} else {
-		prevPage, _ = p.Page()
-	}
-	if prevPage < 2 {
-		prevPath = ic.path
-	} else {
-		prevPath = fmt.Sprintf("%s/page/%d", strings.TrimSuffix(ic.path, "/"), prevPage)
-	}
-	hasNext, _ = p.HasNext()
-	if hasNext {
-		nextPage, _ = p.NextPage()
-	} else {
-		nextPage, _ = p.Page()
-	}
-	nextPath = fmt.Sprintf("%s/page/%d", strings.TrimSuffix(ic.path, "/"), nextPage)
+	nav.query = paramURLQuery
 	summaryTemplate := ic.summaryTemplate
 	if summaryTemplate == "" {
 		summaryTemplate = defaultSummary
@@ -438,13 +416,8 @@ func (a *goBlog) serveIndex(w http.ResponseWriter, r *http.Request) {
 			title:           title,
 			description:     description,
 			posts:           posts,
-			hasPrev:         hasPrev,
-			hasNext:         hasNext,
-			first:           ic.path,
-			prev:            prevPath,
-			next:            nextPath,
+			pagination:      nav,
 			summaryTemplate: summaryTemplate,
-			paramURLQuery:   paramURLQuery,
 			withoutFeeds:    ic.withoutFeeds,
 		},
 	})

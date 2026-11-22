@@ -157,43 +157,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		hb.WriteElementClose("p")
 	}
 	hb.WriteElementClose("div")
-	// Main menu
-	if mm, ok := rd.Blog.Menus["main"]; ok {
-		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mainmenu"))
-		for _, item := range mm.Items {
-			hb.WriteElementOpen("a", "href", item.Link)
-			hb.WriteEscaped(a.renderMdTitle(item.Title))
-			hb.WriteElementClose("a")
-		}
-		hb.WriteElementClose("nav")
-	}
-	// Logged-in user menu
-	if rd.LoggedIn() {
-		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "usermenu"))
-		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/editor"))
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
-		hb.WriteElementClose("a")
-		hb.WriteElementOpen("a", "href", "/notifications")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
-		hb.WriteElementClose("a")
-		if rd.WebmentionReceivingEnabled {
-			hb.WriteElementOpen("a", "href", "/webmention")
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
-			hb.WriteElementClose("a")
-		}
-		if a.commentsEnabled(rd.Blog) {
-			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
-			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
-			hb.WriteElementClose("a")
-		}
-		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/settings"))
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
-		hb.WriteElementClose("a")
-		hb.WriteElementOpen("a", "href", "/logout")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "logout"))
-		hb.WriteElementClose("a")
-		hb.WriteElementClose("nav")
-	}
+	a.renderHeaderMenu(hb, rd)
 	hb.WriteElementClose("header")
 	// Skip-link target (focusable anchor before main content)
 	hb.WriteElementOpen("a", "id", "main-content", "tabindex", "-1")
@@ -210,6 +174,40 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		hb.WriteElementClose("script")
 	}
 	hb.WriteElementClose("html")
+}
+
+func (a *goBlog) renderHeaderMenu(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+	mm := rd.Blog.Menus["main"]
+	hasMainMenu := mm != nil && len(mm.Items) > 0
+	loggedIn := rd.LoggedIn()
+	if !hasMainMenu && !loggedIn {
+		return
+	}
+	hb.WriteElementOpen("div", "class", "menu-bar")
+	if hasMainMenu {
+		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mainmenu"))
+		a.renderMenuLinks(hb, mm)
+		hb.WriteElementClose("nav")
+	}
+	// Logged-in user menu
+	if loggedIn {
+		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "usermenu"))
+		link := func(href, key string) {
+			renderMenuLink(hb, href, a.ts.GetTemplateStringVariant(rd.Blog.Lang, key))
+		}
+		link(rd.Blog.getRelativePath("/editor"), "editor")
+		link("/notifications", "notifications")
+		if rd.WebmentionReceivingEnabled {
+			link("/webmention", "webmentions")
+		}
+		if a.commentsEnabled(rd.Blog) {
+			link(rd.Blog.getRelativePath(commentPath), "comments")
+		}
+		link(rd.Blog.getRelativePath("/settings"), "settings")
+		link("/logout", "logout")
+		hb.WriteElementClose("nav")
+	}
+	hb.WriteElementClose("div")
 }
 
 type errorRenderData struct {
@@ -413,11 +411,9 @@ func (a *goBlog) renderComment(h *htmlbuilder.HTMLBuilder, rd *renderData) {
 }
 
 type indexRenderData struct {
+	pagination
 	title, description string
 	posts              []*post
-	hasPrev, hasNext   bool
-	first, prev, next  string
-	paramURLQuery      string
 	summaryTemplate    summaryTyp
 	withoutFeeds       bool
 }
@@ -438,10 +434,10 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			if renderedIndexTitle != "" {
 				feedTitle = " (" + renderedIndexTitle + ")"
 			}
-			if !id.withoutFeeds && a.getFullAddress(id.first+".rss")+id.paramURLQuery != a.getFullAddress(rd.Blog.Path+".rss") {
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.paramURLQuery)
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.paramURLQuery)
-				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.paramURLQuery)
+			if !id.withoutFeeds && a.getFullAddress(id.first+".rss")+id.query != a.getFullAddress(rd.Blog.Path+".rss") {
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/rss+xml", "title", "RSS"+feedTitle, "href", a.getFullAddress(id.first+".rss")+id.query)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/atom+xml", "title", "ATOM"+feedTitle, "href", a.getFullAddress(id.first+".atom")+id.query)
+				hb.WriteElementOpen("link", "rel", "alternate", "type", "application/feed+json", "title", "JSON Feed"+feedTitle, "href", a.getFullAddress(id.first+".json")+id.query)
 			}
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
@@ -474,7 +470,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementClose("p")
 			}
 			// Navigation
-			a.renderPagination(hb, rd.Blog, id.hasPrev, id.hasNext, id.prev+id.paramURLQuery, id.next+id.paramURLQuery)
+			a.renderPagination(hb, rd.Blog, id.pagination)
 			// Author
 			a.renderAuthor(hb)
 			hb.WriteElementClose("main")
@@ -1333,9 +1329,8 @@ func (a *goBlog) renderEditorLinkDomain(hb *htmlbuilder.HTMLBuilder, rd *renderD
 }
 
 type notificationsRenderData struct {
-	notifications    []*notification
-	hasPrev, hasNext bool
-	prev, next       string
+	pagination
+	notifications []*notification
 }
 
 func (a *goBlog) renderNotificationsAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -1380,16 +1375,15 @@ func (a *goBlog) renderNotificationsAdmin(hb *htmlbuilder.HTMLBuilder, rd *rende
 				hb.WriteElementClose("div")
 			}
 			// Pagination
-			a.renderPagination(hb, rd.Blog, nrd.hasPrev, nrd.hasNext, nrd.prev, nrd.next)
+			a.renderPagination(hb, rd.Blog, nrd.pagination)
 			hb.WriteElementClose("main")
 		},
 	)
 }
 
 type commentsRenderData struct {
-	comments         []*comment
-	hasPrev, hasNext bool
-	prev, next       string
+	pagination
+	comments []*comment
 }
 
 func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -1449,16 +1443,15 @@ func (a *goBlog) renderCommentsAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData
 				hb.WriteElementClose("div")
 			}
 			// Pagination
-			a.renderPagination(hb, rd.Blog, crd.hasPrev, crd.hasNext, crd.prev, crd.next)
+			a.renderPagination(hb, rd.Blog, crd.pagination)
 			hb.WriteElementClose("main")
 		},
 	)
 }
 
 type webmentionRenderData struct {
-	mentions            []*mention
-	hasPrev, hasNext    bool
-	prev, current, next string
+	pagination
+	mentions []*mention
 }
 
 func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -1541,7 +1534,7 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderDa
 				// Actions
 				hb.WriteElementOpen("form", "method", "post", "class", "actions")
 				hb.WriteElementOpen("input", "type", "hidden", "name", "mentionid", "value", m.ID)
-				hb.WriteElementOpen("input", "type", "hidden", "name", "redir", "value", fmt.Sprintf("%s#mention-%d", wrd.current, m.ID))
+				hb.WriteElementOpen("input", "type", "hidden", "name", "redir", "value", fmt.Sprintf("%s#mention-%d", wrd.url(wrd.page), m.ID))
 				// Reply to mention
 				hb.WriteElementOpen("input", "type", "submit", "form", replyFormID, "value", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "reply"))
 				if m.Status == webmentionStatusVerified {
@@ -1555,7 +1548,7 @@ func (a *goBlog) renderWebmentionAdmin(hb *htmlbuilder.HTMLBuilder, rd *renderDa
 				hb.WriteElementClose("form")
 			}
 			// Pagination
-			a.renderPagination(hb, rd.Blog, wrd.hasPrev, wrd.hasNext, wrd.prev, wrd.next)
+			a.renderPagination(hb, rd.Blog, wrd.pagination)
 			hb.WriteElementClose("main")
 		},
 	)

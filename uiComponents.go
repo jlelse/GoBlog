@@ -680,25 +680,23 @@ func (a *goBlog) renderTitleTag(hb *htmlbuilder.HTMLBuilder, blog *configBlog, o
 	hb.WriteElementClose("title")
 }
 
-func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog, hasPrev, hasNext bool, prev, next string) {
-	if !hasPrev && !hasNext {
+func (a *goBlog) renderPagination(hb *htmlbuilder.HTMLBuilder, blog *configBlog, p pagination) {
+	if p.total < 2 {
 		return
 	}
-	// Navigation
-	hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(blog.Lang, "pagination"))
-	if hasPrev {
-		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", prev, "rel", "prev")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "prev"))
+	hb.WriteElementOpen("nav", "class", "pagination", "aria-label", a.ts.GetTemplateStringVariant(blog.Lang, "pagination"))
+	if p.page > 1 {
+		hb.WriteElementOpen("a", "href", p.url(p.page-1), "rel", "prev")
+		hb.WriteEscaped("← " + a.ts.GetTemplateStringVariant(blog.Lang, "prev"))
 		hb.WriteElementClose("a")
-		hb.WriteElementClose("p")
 	}
-	if hasNext {
-		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", next, "rel", "next")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "next"))
+	hb.WriteElementOpen("span", "aria-current", "page")
+	hb.WriteEscaped(fmt.Sprintf(a.ts.GetTemplateStringVariant(blog.Lang, "pageof"), p.page, p.total))
+	hb.WriteElementClose("span")
+	if p.page < p.total {
+		hb.WriteElementOpen("a", "href", p.url(p.page+1), "rel", "next")
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blog.Lang, "next") + " →")
 		hb.WriteElementClose("a")
-		hb.WriteElementClose("p")
 	}
 	hb.WriteElementClose("nav")
 }
@@ -1393,6 +1391,18 @@ func (a *goBlog) renderAppPasswordCreated(hb *htmlbuilder.HTMLBuilder, rd *rende
 	)
 }
 
+func renderMenuLink(hb *htmlbuilder.HTMLBuilder, href, title string) {
+	hb.WriteElementOpen("a", "href", href)
+	hb.WriteEscaped(title)
+	hb.WriteElementClose("a")
+}
+
+func (a *goBlog) renderMenuLinks(hb *htmlbuilder.HTMLBuilder, menu *configMenu) {
+	for _, item := range menu.Items {
+		renderMenuLink(hb, item.Link, a.renderMdTitle(item.Title))
+	}
+}
+
 func (a *goBlog) renderFooter(origHb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	// Wrap plugins
 	hb, finish := a.wrapForPlugins(origHb, pluginUIFooterType, a.getPlugins(pluginUIFooterType), func(plugin any, doc *goquery.Document) {
@@ -1402,16 +1412,9 @@ func (a *goBlog) renderFooter(origHb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	// Render footer
 	hb.WriteElementOpen("footer")
 	// Footer menu
-	if fm, ok := rd.Blog.Menus["footer"]; ok {
-		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "footermenu"))
-		for i, item := range fm.Items {
-			if i > 0 {
-				hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
-			}
-			hb.WriteElementOpen("a", "href", item.Link)
-			hb.WriteEscaped(a.renderMdTitle(item.Title))
-			hb.WriteElementClose("a")
-		}
+	if fm := rd.Blog.Menus["footer"]; fm != nil && len(fm.Items) > 0 {
+		hb.WriteElementOpen("nav", "class", "menu-bar", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "footermenu"))
+		a.renderMenuLinks(hb, fm)
 		hb.WriteElementClose("nav")
 	}
 	// Copyright
