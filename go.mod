@@ -12,7 +12,7 @@ require (
 	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
-	github.com/carlmjohnson/requests v0.26.3
+	github.com/carlmjohnson/requests/v2 v2.26.0
 	github.com/coder/websocket v1.8.15
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/dchest/captcha v1.1.0
