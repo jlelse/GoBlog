@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -148,17 +149,62 @@ func (a *goBlog) renderPostTax(hb *htmlbuilder.HTMLBuilder, p *post, b *configBl
 	}
 }
 
+func (a *goBlog) renderSummaryMetaRow(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, published time.Time) {
+	section := b.Sections[p.Section]
+	var tags []string
+	if slices.ContainsFunc(b.Taxonomies, func(tax *configTaxonomy) bool { return tax.Name == "tags" }) {
+		tags = p.Parameters["tags"]
+		tags = tags[:min(3, len(tags))]
+	}
+	if published.IsZero() && section == nil && len(tags) == 0 {
+		return
+	}
+	hb.WriteElementOpen("div")
+	needsSeparator := false
+	separate := func() {
+		if needsSeparator {
+			hb.WriteUnescaped(" · ")
+		}
+		needsSeparator = true
+	}
+	if !published.IsZero() {
+		separate()
+		hb.WriteElementOpen("time", "class", "dt-published", "datetime", published.Format(time.RFC3339))
+		hb.WriteEscaped(published.Format(isoDateFormat))
+		hb.WriteElementClose("time")
+	}
+	if section != nil {
+		separate()
+		hb.WriteElementOpen("a", "href", b.getRelativePath(section.Name))
+		hb.WriteEscaped(a.renderMdTitle(section.Title))
+		hb.WriteElementClose("a")
+	}
+	for _, tag := range tags {
+		separate()
+		hb.WriteElementOpen("a", "class", "p-category", "rel", "tag", "href", b.getRelativePath("/tags/"+urlize(tag)))
+		hb.WriteEscaped(a.renderMdTitle(tag))
+		hb.WriteElementClose("a")
+	}
+	hb.WriteElementClose("div")
+}
+
 // post meta information.
 // typ can be "summary", "post" or "preview".
 func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, typ string) {
 	if b == nil || p == nil || typ != "summary" && typ != "post" && typ != "preview" {
 		return
 	}
-	if typ == "summary" || typ == "post" {
+	switch typ {
+	case "summary":
+		hb.WriteElementOpen("div", "class", "p summary-meta")
+	case "post":
 		hb.WriteElementOpen("div", "class", "p")
 	}
 	// Published time
-	if published := toLocalTime(p.Published); !published.IsZero() {
+	published := toLocalTime(p.Published)
+	if typ == "summary" {
+		a.renderSummaryMetaRow(hb, p, b, published)
+	} else if !published.IsZero() {
 		hb.WriteElementOpen("div")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "publishedon"))
 		hb.WriteUnescaped(" ")
@@ -180,13 +226,18 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configB
 	}
 	// Updated time
 	if updated := toLocalTime(p.Updated); !updated.IsZero() {
-		hb.WriteElementOpen("div")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "updatedon"))
-		hb.WriteUnescaped(" ")
-		hb.WriteElementOpen("time", "class", "dt-updated", "datetime", updated.Format(time.RFC3339))
-		hb.WriteEscaped(updated.Format(isoDateFormat))
-		hb.WriteElementClose("time")
-		hb.WriteElementClose("div")
+		if typ == "summary" {
+			hb.WriteElementOpen("time", "class", "dt-updated", "datetime", updated.Format(time.RFC3339), "hidden", "")
+			hb.WriteElementClose("time")
+		} else {
+			hb.WriteElementOpen("div")
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "updatedon"))
+			hb.WriteUnescaped(" ")
+			hb.WriteElementOpen("time", "class", "dt-updated", "datetime", updated.Format(time.RFC3339))
+			hb.WriteEscaped(updated.Format(isoDateFormat))
+			hb.WriteElementClose("time")
+			hb.WriteElementClose("div")
+		}
 	}
 	// Geo
 	if geoURIs := a.geoURIs(p); len(geoURIs) != 0 {

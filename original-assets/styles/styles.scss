@@ -51,6 +51,22 @@ header {
   @extend .border-bottom;
   padding: 10px 0;
 
+  > nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem .45rem;
+    margin-top: .5rem;
+
+    > a + a::before {
+      content: "";
+      display: inline-block;
+      margin-inline-end: .45rem;
+      border: .15em solid currentColor;
+      border-radius: 50%;
+      vertical-align: .2em;
+    }
+  }
+
   * {
     margin-top: 0;
     margin-bottom: 0;
@@ -223,6 +239,26 @@ details summary {
 
 .border-bottom {
   @include shared.color-border(border-bottom, 1px, solid, primary);
+}
+
+article.h-entry.border-bottom {
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
+
+  > h2 {
+    margin-bottom: .35em;
+  }
+
+  > h2 + .summary-meta {
+    margin-top: 0;
+  }
+}
+
+.summary-meta {
+  font-size: .875rem;
+
+  [rel="tag"]::before {
+    content: "#";
+  }
 }
 
 .p {

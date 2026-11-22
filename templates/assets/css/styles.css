@@ -55,6 +55,20 @@ hr {
 header {
   padding: 10px 0;
 }
+header > nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.45rem;
+  margin-top: 0.5rem;
+}
+header > nav > a + a::before {
+  content: "";
+  display: inline-block;
+  margin-inline-end: 0.45rem;
+  border: 0.15em solid currentColor;
+  border-radius: 50%;
+  vertical-align: 0.2em;
+}
 header * {
   margin-top: 0;
   margin-bottom: 0;
@@ -195,6 +209,23 @@ details summary > *:first-child {
 .border-bottom, header {
   border-bottom: 1px solid #000;
   border-bottom: 1px solid var(--primary, #000);
+}
+
+article.h-entry.border-bottom {
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
+}
+article.h-entry.border-bottom > h2 {
+  margin-bottom: 0.35em;
+}
+article.h-entry.border-bottom > h2 + .summary-meta {
+  margin-top: 0;
+}
+
+.summary-meta {
+  font-size: 0.875rem;
+}
+.summary-meta [rel=tag]::before {
+  content: "#";
 }
 
 .p, .actions, table {

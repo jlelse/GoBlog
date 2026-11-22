@@ -160,10 +160,7 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 	// Main menu
 	if mm, ok := rd.Blog.Menus["main"]; ok {
 		hb.WriteElementOpen("nav", "aria-label", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "mainmenu"))
-		for i, item := range mm.Items {
-			if i > 0 {
-				hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
-			}
+		for _, item := range mm.Items {
 			hb.WriteElementOpen("a", "href", item.Link)
 			hb.WriteEscaped(a.renderMdTitle(item.Title))
 			hb.WriteElementClose("a")
@@ -176,27 +173,22 @@ func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, 
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/editor"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "editor"))
 		hb.WriteElementClose("a")
-		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", "/notifications")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "notifications"))
 		hb.WriteElementClose("a")
 		if rd.WebmentionReceivingEnabled {
-			hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			hb.WriteElementOpen("a", "href", "/webmention")
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "webmentions"))
 			hb.WriteElementClose("a")
 		}
 		if a.commentsEnabled(rd.Blog) {
-			hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 			hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(commentPath))
 			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "comments"))
 			hb.WriteElementClose("a")
 		}
-		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/settings"))
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "settings"))
 		hb.WriteElementClose("a")
-		hb.WriteUnescaped(`<span aria-hidden="true"> &bull; </span>`)
 		hb.WriteElementOpen("a", "href", "/logout")
 		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "logout"))
 		hb.WriteElementClose("a")
