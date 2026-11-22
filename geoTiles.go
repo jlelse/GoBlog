@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/fs"
+	"mime"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"go.goblog.app/app/pkgs/bufferpool"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func copyHeaders(dst, src http.Header, headers ...string) {
@@ -79,7 +82,9 @@ func (a *goBlog) vectorMapEnabled() bool {
 }
 
 func (a *goBlog) proxyVectorTiles() http.HandlerFunc {
+	const tileHost = "tiles.openfreemap.org"
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		resource := strings.TrimPrefix(r.URL.Path, "/-/maptiles/")
 		if resource == "." || !fs.ValidPath(resource) {
 			http.NotFound(w, r)
@@ -87,7 +92,7 @@ func (a *goBlog) proxyVectorTiles() http.HandlerFunc {
 		}
 		targetURL := (&url.URL{
 			Scheme: "https",
-			Host:   "tiles.openfreemap.org",
+			Host:   tileHost,
 			Path:   "/" + resource,
 		}).String()
 		request, err := http.NewRequestWithContext(r.Context(), http.MethodGet, targetURL, nil)
@@ -95,28 +100,64 @@ func (a *goBlog) proxyVectorTiles() http.HandlerFunc {
 			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}
-		response, err := a.httpClient.Do(request) //nolint:gosec
+		client := *a.httpClient
+		checkRedirect := client.CheckRedirect
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			u := req.URL
+			if u.Scheme != "https" || !strings.EqualFold(u.Hostname(), tileHost) ||
+				(u.Port() != "" && u.Port() != "443") || u.User != nil {
+				return errors.New("unexpected vector tile redirect destination")
+			}
+			if len(via) >= 10 {
+				return errors.New("too many vector tile redirects")
+			}
+			if checkRedirect != nil {
+				return checkRedirect(req, via)
+			}
+			return nil
+		}
+		response, err := client.Do(request) //nolint:gosec
 		if err != nil {
-			a.serveError(w, r, "", http.StatusBadGateway)
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 			return
 		}
 		defer response.Body.Close()
-		copyHeaders(w.Header(), response.Header, cacheControl, "Expires", "Last-Modified", contentType)
-		if strings.Contains(strings.ToLower(response.Header.Get(contentType)), "json") {
+		if status := response.StatusCode; status < 200 || status >= 300 {
+			if status < 400 || status > 599 {
+				status = http.StatusBadGateway
+			}
+			http.Error(w, http.StatusText(status), status)
+			return
+		}
+		mediaType, _, err := mime.ParseMediaType(response.Header.Get(contentType))
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
+		switch mediaType {
+		case contenttype.JSON, contenttype.PNG, "application/x-protobuf", "application/vnd.mapbox-vector-tile":
+		default:
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
+		if mediaType == contenttype.JSON {
 			buf := bufferpool.Get()
 			defer bufferpool.Put(buf)
 			if _, err := io.Copy(buf, response.Body); err != nil {
-				a.serveError(w, r, "", http.StatusBadGateway)
+				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 				return
 			}
-			body := bytes.ReplaceAll(buf.Bytes(), []byte("https://tiles.openfreemap.org/"), []byte("/-/maptiles/"))
-			body = bytes.ReplaceAll(body, []byte("http://tiles.openfreemap.org/"), []byte("/-/maptiles/"))
+			body := bytes.ReplaceAll(buf.Bytes(), []byte("https://"+tileHost+"/"), []byte("/-/maptiles/"))
+			body = bytes.ReplaceAll(body, []byte("http://"+tileHost+"/"), []byte("/-/maptiles/"))
+			copyHeaders(w.Header(), response.Header, cacheControl, "Expires", "Last-Modified")
+			w.Header().Set(contentType, contenttype.JSONUTF8)
 			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 			w.WriteHeader(response.StatusCode)
 			_, _ = w.Write(body)
 			return
 		}
-		copyHeaders(w.Header(), response.Header, "Content-Length", "Etag")
+		copyHeaders(w.Header(), response.Header, cacheControl, "Expires", "Last-Modified", "Content-Length", "Etag")
+		w.Header().Set(contentType, mediaType)
 		w.WriteHeader(response.StatusCode)
 		_, _ = io.Copy(w, response.Body)
 	}

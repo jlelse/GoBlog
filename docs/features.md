@@ -227,6 +227,8 @@ Interactive map showing posts with locations and GPX tracks. Enable per blog in 
 
 For privacy, map resources are proxied through GoBlog. OpenStreetMap raster tiles are used by default; set `mapTiles.vector: true` to use OpenFreeMap vector maps. This uses OpenFreeMap's attribution. Custom raster tile providers can be configured via `mapTiles` in YAML.
 
+The OpenFreeMap proxy accepts only JSON, PNG, and protobuf responses and follows redirects only within the OpenFreeMap HTTPS origin.
+
 ## Blogroll
 
 Display blogs you follow via an OPML file. Enable per blog in YAML (see [`example-config.yml`](/example-config.yml)). The OPML file can be hosted externally (e.g., from an RSS reader export). Buttons on the blogroll page allow downloading the OPML and refreshing the cache.

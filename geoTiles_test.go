@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -83,6 +84,8 @@ func Test_proxyVectorTiles(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "https://tiles.openfreemap.org/planet", hc.req.URL.String())
 		assert.Empty(t, hc.req.Header.Get("Accept"))
+		assert.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
+		assert.Equal(t, "nosniff", resp.Header.Get("X-Content-Type-Options"))
 		assert.NotContains(t, string(body), "tiles.openfreemap.org")
 		assert.Contains(t, string(body), "/-/maptiles/planet/{z}/{x}/{y}.pbf")
 		assert.Contains(t, string(body), "/-/maptiles/sprites/ofm")
@@ -120,6 +123,80 @@ func Test_proxyVectorTiles(t *testing.T) {
 		assert.Equal(t, "11", resp.Header.Get("Content-Length"))
 	})
 
+	t.Run("Rejects unexpected upstream content types", func(t *testing.T) {
+		for _, mediaType := range []string{"text/html", "image/svg+xml", "text/html; note=json", "application/json; charset", ""} {
+			t.Run(mediaType, func(t *testing.T) {
+				hc := newFakeHttpClient()
+				hc.setHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.Header().Set("Content-Type", mediaType)
+					w.Header().Set("Cache-Control", "public, max-age=3600")
+					_, _ = io.WriteString(w, "upstream body")
+				}))
+				app := &goBlog{httpClient: hc.Client}
+				rec := httptest.NewRecorder()
+				app.proxyVectorTiles().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/-/maptiles/planet", nil))
+				assert.Equal(t, http.StatusBadGateway, rec.Code)
+				assert.Equal(t, "text/plain; charset=utf-8", rec.Header().Get("Content-Type"))
+				assert.Equal(t, "nosniff", rec.Header().Get("X-Content-Type-Options"))
+				assert.Empty(t, rec.Header().Get("Cache-Control"))
+				assert.NotContains(t, rec.Body.String(), "upstream body")
+			})
+		}
+	})
+
+	t.Run("Does not relay upstream error bodies", func(t *testing.T) {
+		hc := newFakeHttpClient()
+		hc.setHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(w, "upstream error body")
+		}))
+		app := &goBlog{httpClient: hc.Client}
+		rec := httptest.NewRecorder()
+		app.proxyVectorTiles().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/-/maptiles/missing", nil))
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.Equal(t, "Not Found\n", rec.Body.String())
+	})
+
+	t.Run("Keeps redirects on the OpenFreeMap HTTPS origin", func(t *testing.T) {
+		for _, tc := range []struct {
+			name, location string
+			wantStatus     int
+		}{
+			{"same origin", "/tile", http.StatusOK},
+			{"different host", "https://example.org/tile", http.StatusBadGateway},
+			{"different port", "https://tiles.openfreemap.org:8443/tile", http.StatusBadGateway},
+			{"HTTP downgrade", "http://tiles.openfreemap.org/tile", http.StatusBadGateway},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				var requests []string
+				client := newHandlerClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					requests = append(requests, r.URL.String())
+					if r.URL.Path == "/start" {
+						w.Header().Set("Location", tc.location)
+						w.WriteHeader(http.StatusFound)
+						return
+					}
+					w.Header().Set("Content-Type", "application/vnd.mapbox-vector-tile")
+					_, _ = io.WriteString(w, "tile")
+				}))
+				app := &goBlog{httpClient: client}
+				rec := httptest.NewRecorder()
+				app.proxyVectorTiles().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/-/maptiles/start", nil))
+				assert.Equal(t, tc.wantStatus, rec.Code)
+				assert.Equal(t, "nosniff", rec.Header().Get("X-Content-Type-Options"))
+				if tc.wantStatus == http.StatusOK {
+					assert.Equal(t, []string{"https://tiles.openfreemap.org/start", "https://tiles.openfreemap.org/tile"}, requests)
+					assert.Equal(t, "application/vnd.mapbox-vector-tile", rec.Header().Get("Content-Type"))
+					assert.Equal(t, "tile", rec.Body.String())
+				} else {
+					assert.Equal(t, []string{"https://tiles.openfreemap.org/start"}, requests)
+				}
+				assert.Nil(t, client.CheckRedirect)
+			})
+		}
+	})
+
 	t.Run("Rejects invalid and traversal paths", func(t *testing.T) {
 		app := &goBlog{cfg: &config{}}
 		hc := newFakeHttpClient()
@@ -151,6 +228,7 @@ func Test_proxyVectorTiles(t *testing.T) {
 		app := &goBlog{cfg: &config{}}
 		hc := newFakeHttpClient()
 		hc.setHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "image/png")
 			w.WriteHeader(http.StatusOK)
 		}))
 		app.httpClient = hc.Client
@@ -162,6 +240,8 @@ func Test_proxyVectorTiles(t *testing.T) {
 		require.NoError(t, err)
 		_ = resp.Body.Close()
 
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "image/png", resp.Header.Get("Content-Type"))
 		require.NotNil(t, hc.req)
 		assert.Equal(t, "tiles.openfreemap.org", hc.req.URL.Host)
 		assert.Empty(t, hc.req.URL.RawQuery)
