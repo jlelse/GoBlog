@@ -84,7 +84,7 @@ func Test_renderMenus(t *testing.T) {
 	require.Equal(t, "User menu", render(true).Find("header nav:only-child").AttrOr("aria-label", ""))
 }
 
-func Test_renderSummaryMeta(t *testing.T) {
+func Test_renderPostMeta(t *testing.T) {
 	app := &goBlog{cfg: createDefaultTestConfig(t)}
 	require.NoError(t, app.initTemplateStrings())
 	blog := &configBlog{
@@ -101,7 +101,7 @@ func Test_renderSummaryMeta(t *testing.T) {
 		Visibility: visibilityPublic,
 		Parameters: map[string][]string{
 			"tags":   {"Zebra", "Bike rides", "Autumn", "Fourth"},
-			"series": {"Not a tag"},
+			"series": {"cycling"},
 		},
 	}
 	render := func(typ string) *goquery.Document {
@@ -113,7 +113,7 @@ func Test_renderSummaryMeta(t *testing.T) {
 	}
 
 	doc := render("summary")
-	meta := doc.Find(".summary-meta")
+	meta := doc.Find(".post-meta")
 	published := meta.Find("time.dt-published")
 	require.Equal(t, toLocalTime(p.Published).Format(isoDateFormat), published.Text())
 	require.Equal(t, toLocalTime(p.Published).Format(time.RFC3339), published.AttrOr("datetime", ""))
@@ -121,16 +121,16 @@ func Test_renderSummaryMeta(t *testing.T) {
 	require.Equal(t, toLocalTime(p.Updated).Format(time.RFC3339), updated.AttrOr("datetime", ""))
 	require.Equal(t, "Posts", meta.Find("a[href='/de/posts']").Text())
 	tags := meta.Find("a.p-category[rel=tag]")
-	require.Equal(t, []string{"Zebra", "Bike rides", "Autumn"}, goquery.Map(tags, func(i int, s *goquery.Selection) string {
+	require.Equal(t, []string{"Autumn", "Bike rides", "cycling", "Fourth", "Zebra"}, goquery.Map(tags, func(i int, s *goquery.Selection) string {
 		return s.Text()
 	}))
 	require.Equal(t, "/de/tags/"+urlize("Bike rides"), tags.Eq(1).AttrOr("href", ""))
+	require.Equal(t, "/de/series/cycling", tags.Eq(2).AttrOr("href", ""))
 	require.NotContains(t, meta.Text(), "Published")
 	require.NotContains(t, meta.Text(), "Updated")
-	require.NotContains(t, meta.Text(), "Not a tag")
 
 	doc = render("post")
-	require.Empty(t, doc.Find(".summary-meta").Nodes)
+	require.Equal(t, meta.Find(".post-meta-row").Text(), doc.Find(".post-meta-row").Text())
 	require.Equal(t, toLocalTime(p.Updated).Format(isoDateFormat), doc.Find("time.dt-updated:not([hidden])").Text())
 
 	blog.Taxonomies = nil

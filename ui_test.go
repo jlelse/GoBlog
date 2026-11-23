@@ -4,41 +4,47 @@ import (
 	"bytes"
 	"mime/multipart"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.goblog.app/app/pkgs/bufferpool"
 	"go.goblog.app/app/pkgs/htmlbuilder"
+	"willnorris.com/go/microformats"
 )
 
-func Test_renderPostTax(t *testing.T) {
-	app := &goBlog{
-		cfg: createDefaultTestConfig(t),
-	}
-
-	_ = app.initConfig(false)
-
-	p := &post{
-		Parameters: map[string][]string{
-			"tags": {"Foo", "Bar"},
-		},
-	}
-
-	buf := bufferpool.Get()
-	defer bufferpool.Put(buf)
-
-	hb := htmlbuilder.NewHTMLBuilder(buf)
-
-	app.renderPostTax(hb, p, app.cfg.Blogs["default"])
-
-	_, err := goquery.NewDocumentFromReader(strings.NewReader(buf.String()))
+func TestIndexFeed(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	require.NoError(t, app.initTemplateStrings())
+	blog := app.cfg.Blogs["default"]
+	blog.Title = "Field notes"
+	blog.Taxonomies = []*configTaxonomy{{Name: "series"}, {Name: "tags"}}
+	p := &post{Blog: "default", Path: "/walk", Content: "Along the canal.",
+		Parameters: map[string][]string{"tags": {"Walking", "Autumn"}, "series": {"Notebooks"}}}
+	base, err := url.Parse("https://example.org/")
 	require.NoError(t, err)
-
-	assert.Equal(t, "<p><strong>Tags</strong>: <a class=\"p-category\" rel=\"tag\" href=\"/tags/bar\">Bar</a>, <a class=\"p-category\" rel=\"tag\" href=\"/tags/foo\">Foo</a></p>", buf.String())
+	rr := httptest.NewRecorder()
+	app.render(rr, httptest.NewRequest("GET", "/", nil), app.renderIndex, &renderData{
+		Blog: blog, IsHome: true, Canonical: base.String(), Data: &indexRenderData{posts: []*post{p}},
+	})
+	for _, feed := range microformats.Parse(rr.Body, base).Items {
+		if slices.Contains(feed.Type, "h-feed") {
+			require.Equal(t, []any{"Field notes"}, feed.Properties["name"])
+			require.Equal(t, []any{base.String()}, feed.Properties["url"])
+			require.Len(t, feed.Children, 1)
+			entry := feed.Children[0]
+			require.Contains(t, entry.Type, "h-entry")
+			require.Contains(t, entry.Properties["url"], "https://example.org/walk")
+			require.Equal(t, []any{"Autumn", "Notebooks", "Walking"}, entry.Properties["category"])
+			return
+		}
+	}
+	t.Fatal("index does not contain an h-feed")
 }
 
 func Test_renderOldContentWarning(t *testing.T) {

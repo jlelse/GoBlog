@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,10 +13,19 @@ import (
 
 const taxonomyContextKey = "taxonomy"
 
+func taxonomyWeight(count, least, most int) int {
+	if least == most {
+		return 0
+	}
+	// A square-root scale keeps mid-frequency tags distinct even with a very popular outlier.
+	low, high := math.Sqrt(float64(least)), math.Sqrt(float64(most))
+	return int(math.Round(6 * (math.Sqrt(float64(count)) - low) / (high - low)))
+}
+
 func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 	blog, _ := a.getBlog(r)
 	tax := r.Context().Value(taxonomyContextKey).(*configTaxonomy)
-	allValues, err := a.db.allTaxonomyValues(blog, tax.Name)
+	values, err := a.db.taxonomyCounts(blog, tax.Name)
 	if err != nil {
 		a.serveError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -23,8 +33,8 @@ func (a *goBlog) serveTaxonomy(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, a.renderTaxonomy, &renderData{
 		Canonical: a.getFullAddress(r.URL.Path),
 		Data: &taxonomyRenderData{
-			taxonomy:    tax,
-			valueGroups: groupStrings(allValues),
+			taxonomy: tax,
+			values:   values,
 		},
 	})
 }

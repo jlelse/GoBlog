@@ -22,7 +22,6 @@ func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HTMLBuilder, bc *configBlog
 	a.renderPostMeta(hb, p, bc, "preview")
 	a.postHTMLToWriter(hb, &postHTMLOptions{p: p, absolute: true})
 	a.renderPostTrack(hb, p, bc, true)
-	a.renderPostTax(hb, p, bc)
 }
 
 func (a *goBlog) renderBase(hb *htmlbuilder.HTMLBuilder, rd *renderData, title, main func(hb *htmlbuilder.HTMLBuilder)) {
@@ -442,6 +441,7 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 		},
 		func(hb *htmlbuilder.HTMLBuilder) {
 			hb.WriteElementOpen("main", "class", "h-feed")
+			hb.WriteElement("data", "class", "u-url", "value", rd.Canonical)
 			titleOrDesc := false
 			// Title
 			if renderedIndexTitle != "" && !rd.IsHome {
@@ -449,6 +449,8 @@ func (a *goBlog) renderIndex(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 				hb.WriteElementOpen("h1", "class", "p-name")
 				hb.WriteEscaped(renderedIndexTitle)
 				hb.WriteElementClose("h1")
+			} else {
+				hb.WriteElement("data", "class", "p-name", "value", a.renderMdTitle(rd.Blog.Title))
 			}
 			// Description
 			if id.description != "" {
@@ -858,8 +860,8 @@ func (a *goBlog) renderCaptcha(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 }
 
 type taxonomyRenderData struct {
-	taxonomy    *configTaxonomy
-	valueGroups []stringGroup
+	taxonomy *configTaxonomy
+	values   []taxonomyCount
 }
 
 func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
@@ -883,24 +885,23 @@ func (a *goBlog) renderTaxonomy(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			if trd.taxonomy.Description != "" {
 				_ = a.renderMarkdownToWriter(hb, trd.taxonomy.Description)
 			}
-			// List
-			for _, valGroup := range trd.valueGroups {
-				// Title
-				hb.WriteElementOpen("h2")
-				hb.WriteEscaped(valGroup.Identifier)
-				hb.WriteElementClose("h2")
-				// List
-				hb.WriteElementOpen("p")
-				for i, val := range valGroup.Strings {
-					if i > 0 {
-						hb.WriteUnescaped(" &bull; ")
-					}
-					hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(fmt.Sprintf("/%s/%s", trd.taxonomy.Name, urlize(val))))
-					hb.WriteEscaped(val)
+			if len(trd.values) > 0 {
+				least, most := trd.values[len(trd.values)-1].count, trd.values[0].count
+				hb.WriteElementOpen("ol", "class", "taxonomy-list")
+				for _, tag := range trd.values {
+					hb.WriteElementOpen("li", "data-weight", strconv.Itoa(taxonomyWeight(tag.count, least, most)))
+					hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath("/"+trd.taxonomy.Name+"/"+urlize(tag.value)))
+					hb.WriteEscaped(tag.value)
+					hb.WriteUnescaped(" ")
+					hb.WriteElementOpen("small")
+					hb.WriteEscaped(strconv.Itoa(tag.count))
+					hb.WriteElementClose("small")
 					hb.WriteElementClose("a")
+					hb.WriteElementClose("li")
 				}
-				hb.WriteElementClose("p")
+				hb.WriteElementClose("ol")
 			}
+			hb.WriteElementClose("main")
 		},
 	)
 }
@@ -978,8 +979,6 @@ func (a *goBlog) renderPost(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			a.renderPostVideo(hb, p)
 			// GPS Track
 			a.renderPostTrack(hb, p, rd.Blog, false)
-			// Taxonomies
-			a.renderPostTax(hb, p, rd.Blog)
 			hb.WriteElementClose("article")
 			// Author
 			a.renderAuthor(hb)

@@ -296,21 +296,54 @@ details summary {
 
 article.h-entry.border-bottom {
   border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
+}
 
-  > h2 {
-    margin-bottom: .35em;
-  }
+article > .p-name {
+  margin-bottom: .35em;
 
-  > h2 + .summary-meta {
+  + .post-meta {
     margin-top: 0;
   }
 }
 
-.summary-meta {
+.post-meta {
   font-size: .875rem;
+}
+
+.post-meta-row {
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  padding-block: .2em;
 
   [rel="tag"]::before {
     content: "#";
+  }
+}
+
+.taxonomy-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem 1rem;
+  list-style: none;
+  padding: 0;
+
+  a {
+    display: inline-block;
+    text-underline-offset: .18em;
+  }
+
+  @for $weight from 1 through 6 {
+    [data-weight="#{$weight}"] { font-size: 1rem + .18rem * $weight; }
+  }
+
+  [data-weight="5"], [data-weight="6"] { font-weight: bold; }
+
+  small {
+    font-size: .8125rem;
+    font-weight: normal;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -453,6 +486,13 @@ button.share-modal-close {
 }
 
 @media print {
+  .post-meta-row {
+    overflow: visible;
+    white-space: normal;
+
+    a { display: inline-block; }
+  }
+
   html {
     @include shared.lightmode;
   }
@@ -463,7 +503,7 @@ button.share-modal-close {
   }
 
   body>*:not(header):not(main),
-  header>*:not(h1):not(p),
+  header .menu-bar,
   .actions,
   #interactions {
     display: none;

@@ -9,6 +9,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_taxonomyCounts(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	save := func(path, blog string, status postStatus, visibility postVisibility, tags ...string) {
+		t.Helper()
+		require.NoError(t, app.db.savePost(&post{
+			Path: path, Blog: blog, Status: status, Visibility: visibility,
+			Parameters: map[string][]string{"tags": tags, "series": {"Other"}},
+		}, &postCreationOptions{isNew: true}))
+	}
+	save("/a", "default", statusPublished, visibilityPublic, "Bike", "Bike", "apples", "")
+	save("/b", "default", statusPublished, visibilityPublic, "bike", "Zebra")
+	save("/c", "default", statusDraft, visibilityPublic, "Draft")
+	save("/d", "default", statusPublished, visibilityUnlisted, "Unlisted")
+	save("/e", "other", statusPublished, visibilityPublic, "Other blog")
+
+	counts, err := app.db.taxonomyCounts("default", "tags")
+	require.NoError(t, err)
+	require.Equal(t, []taxonomyCount{{"Bike", 2}, {"apples", 1}, {"Zebra", 1}}, counts)
+}
+
 func Test_postsDb(t *testing.T) {
 	is := assert.New(t)
 	must := require.New(t)

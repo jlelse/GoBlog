@@ -101,6 +101,10 @@ Sections can have custom path templates configured in the Settings UI. Available
 
 Set `postAsHome: true` in a blog's YAML config to use a specific post as the homepage instead of the post index. The post at the blog's base path (e.g., `/` for the default blog) is rendered as a simplified static page (no post parameters, taxonomies, or sharing buttons). Useful for a static "about" page as the landing page. See [`example-config.yml`](/example-config.yml).
 
+### Post Taxonomies
+
+Index pages are microformats2 feeds (`h-feed`). Each post and its index entry show all configured taxonomy values alphabetically as `p-category` links. Long rows scroll horizontally. A taxonomy overview such as `/tags` lists values by the number of public, published posts that use them. More frequently used tags appear first and in larger type, with the exact count beside each tag.
+
 ### Index Page Query Filters
 
 Filter any index page by post parameters using the `?p:` query prefix:

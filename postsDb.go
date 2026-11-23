@@ -814,11 +814,40 @@ func (a *goBlog) getRandomPostPath(blog string) (path string, err error) {
 	return path, nil
 }
 
-func (db *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
-	rows, err := db.Query(
-		"select distinct value from post_parameters where parameter = @tax and length(coalesce(value, '')) > 0 and path in (select path from posts where blog = @blog and status = @status and visibility = @visibility) order by value",
+func (db *database) queryPublicTaxonomy(blog, taxonomy, query string) (*sql.Rows, error) {
+	return db.Query(`with taxonomy_posts as (
+		select path, value from post_parameters where parameter = @tax and value != ''
+		and path in (select path from posts where blog = @blog and status = @status and visibility = @visibility)
+	) `+query,
 		sql.Named("tax", taxonomy), sql.Named("blog", blog), sql.Named("status", statusPublished), sql.Named("visibility", visibilityPublic),
 	)
+}
+
+type taxonomyCount struct {
+	value string
+	count int
+}
+
+func (db *database) taxonomyCounts(blog, taxonomy string) ([]taxonomyCount, error) {
+	rows, err := db.queryPublicTaxonomy(blog, taxonomy, `select min(value), count(distinct path) as uses
+		from taxonomy_posts group by lowerx(value) order by uses desc, lowerx(value)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var values []taxonomyCount
+	for rows.Next() {
+		var tag taxonomyCount
+		if err := rows.Scan(&tag.value, &tag.count); err != nil {
+			return nil, err
+		}
+		values = append(values, tag)
+	}
+	return values, rows.Err()
+}
+
+func (db *database) allTaxonomyValues(blog string, taxonomy string) ([]string, error) {
+	rows, err := db.queryPublicTaxonomy(blog, taxonomy, "select distinct value from taxonomy_posts order by value")
 	if err != nil {
 		return nil, err
 	}

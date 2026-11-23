@@ -266,18 +266,65 @@ details summary > *:first-child {
 article.h-entry.border-bottom {
   border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
 }
-article.h-entry.border-bottom > h2 {
+
+article > .p-name {
   margin-bottom: 0.35em;
 }
-article.h-entry.border-bottom > h2 + .summary-meta {
+article > .p-name + .post-meta {
   margin-top: 0;
 }
 
-.summary-meta {
+.post-meta {
   font-size: 0.875rem;
 }
-.summary-meta [rel=tag]::before {
+
+.post-meta-row {
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  padding-block: 0.2em;
+}
+.post-meta-row [rel=tag]::before {
   content: "#";
+}
+
+.taxonomy-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  list-style: none;
+  padding: 0;
+}
+.taxonomy-list a {
+  display: inline-block;
+  text-underline-offset: 0.18em;
+}
+.taxonomy-list [data-weight="1"] {
+  font-size: 1.18rem;
+}
+.taxonomy-list [data-weight="2"] {
+  font-size: 1.36rem;
+}
+.taxonomy-list [data-weight="3"] {
+  font-size: 1.54rem;
+}
+.taxonomy-list [data-weight="4"] {
+  font-size: 1.72rem;
+}
+.taxonomy-list [data-weight="5"] {
+  font-size: 1.9rem;
+}
+.taxonomy-list [data-weight="6"] {
+  font-size: 2.08rem;
+}
+.taxonomy-list [data-weight="5"], .taxonomy-list [data-weight="6"] {
+  font-weight: bold;
+}
+.taxonomy-list small {
+  font-size: 0.8125rem;
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
 }
 
 .p, .actions, table {
@@ -425,6 +472,13 @@ button.share-modal-close, .share-modal-close.button {
 }
 
 @media print {
+  .post-meta-row {
+    overflow: visible;
+    white-space: normal;
+  }
+  .post-meta-row a {
+    display: inline-block;
+  }
   html {
     --background: #fff;
     --primary: #000;
@@ -435,7 +489,7 @@ button.share-modal-close, .share-modal-close.button {
     max-width: inherit;
   }
   body > *:not(header):not(main),
-  header > *:not(h1):not(p),
+  header .menu-bar,
   .actions,
   #interactions {
     display: none;

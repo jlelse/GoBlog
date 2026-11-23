@@ -113,53 +113,25 @@ func (a *goBlog) renderSummary(origHb *htmlbuilder.HTMLBuilder, rd *renderData, 
 	hb.WriteElementClose("article")
 }
 
-// list of post taxonomy values (tags, series, etc.)
-func (a *goBlog) renderPostTax(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
-	if b == nil || p == nil {
-		return
-	}
-	// Iterate over all taxonomies
+func (a *goBlog) renderPostMetaRow(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog) {
+	type category struct{ name, href string }
+	var categories []category
 	for _, tax := range b.Taxonomies {
-		// Get all sorted taxonomy values for this post
-		if taxValues := sortedStrings(p.Parameters[tax.Name]); len(taxValues) > 0 {
-			// Start new paragraph
-			hb.WriteElementOpen("p")
-			// Add taxonomy name
-			hb.WriteElementOpen("strong")
-			hb.WriteEscaped(a.renderMdTitle(tax.Title))
-			hb.WriteElementClose("strong")
-			hb.WriteUnescaped(": ")
-			// Add taxonomy values
-			for i, taxValue := range taxValues {
-				if i > 0 {
-					hb.WriteUnescaped(", ")
-				}
-				hb.WriteElementOpen(
-					"a",
-					"class", "p-category",
-					"rel", "tag",
-					"href", b.getRelativePath("/"+tax.Name+"/"+urlize(taxValue)),
-				)
-				hb.WriteEscaped(a.renderMdTitle(taxValue))
-				hb.WriteElementClose("a")
+		for _, value := range p.Parameters[tax.Name] {
+			if value != "" {
+				categories = append(categories, category{a.renderMdTitle(value), b.getRelativePath("/" + tax.Name + "/" + urlize(value))})
 			}
-			// End paragraph
-			hb.WriteElementClose("p")
 		}
 	}
-}
-
-func (a *goBlog) renderSummaryMetaRow(hb *htmlbuilder.HTMLBuilder, p *post, b *configBlog, published time.Time) {
+	slices.SortStableFunc(categories, func(a, b category) int {
+		return strings.Compare(strings.ToLower(a.name), strings.ToLower(b.name))
+	})
+	published := toLocalTime(p.Published)
 	section := b.Sections[p.Section]
-	var tags []string
-	if slices.ContainsFunc(b.Taxonomies, func(tax *configTaxonomy) bool { return tax.Name == "tags" }) {
-		tags = p.Parameters["tags"]
-		tags = tags[:min(3, len(tags))]
-	}
-	if published.IsZero() && section == nil && len(tags) == 0 {
+	if published.IsZero() && section == nil && len(categories) == 0 {
 		return
 	}
-	hb.WriteElementOpen("div")
+	hb.WriteElementOpen("div", "class", "post-meta-row")
 	needsSeparator := false
 	separate := func() {
 		if needsSeparator {
@@ -179,10 +151,10 @@ func (a *goBlog) renderSummaryMetaRow(hb *htmlbuilder.HTMLBuilder, p *post, b *c
 		hb.WriteEscaped(a.renderMdTitle(section.Title))
 		hb.WriteElementClose("a")
 	}
-	for _, tag := range tags {
+	for _, tag := range categories {
 		separate()
-		hb.WriteElementOpen("a", "class", "p-category", "rel", "tag", "href", b.getRelativePath("/tags/"+urlize(tag)))
-		hb.WriteEscaped(a.renderMdTitle(tag))
+		hb.WriteElementOpen("a", "class", "p-category", "rel", "tag", "href", tag.href)
+		hb.WriteEscaped(tag.name)
 		hb.WriteElementClose("a")
 	}
 	hb.WriteElementClose("div")
@@ -194,36 +166,8 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configB
 	if b == nil || p == nil || typ != "summary" && typ != "post" && typ != "preview" {
 		return
 	}
-	switch typ {
-	case "summary":
-		hb.WriteElementOpen("div", "class", "p summary-meta")
-	case "post":
-		hb.WriteElementOpen("div", "class", "p")
-	}
-	// Published time
-	published := toLocalTime(p.Published)
-	if typ == "summary" {
-		a.renderSummaryMetaRow(hb, p, b, published)
-	} else if !published.IsZero() {
-		hb.WriteElementOpen("div")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "publishedon"))
-		hb.WriteUnescaped(" ")
-		hb.WriteElementOpen("time", "class", "dt-published", "datetime", published.Format(time.RFC3339))
-		hb.WriteEscaped(published.Format(isoDateFormat))
-		hb.WriteElementClose("time")
-		// Section
-		if p.Section != "" {
-			if section := b.Sections[p.Section]; section != nil {
-				hb.WriteUnescaped(" ")
-				hb.WriteEscaped(a.ts.GetTemplateStringVariant(b.Lang, "in"))
-				hb.WriteUnescaped(" ")
-				hb.WriteElementOpen("a", "href", b.getRelativePath(section.Name))
-				hb.WriteEscaped(a.renderMdTitle(section.Title))
-				hb.WriteElementClose("a")
-			}
-		}
-		hb.WriteElementClose("div")
-	}
+	hb.WriteElementOpen("div", "class", "p post-meta")
+	a.renderPostMetaRow(hb, p, b)
 	// Updated time
 	if updated := toLocalTime(p.Updated); !updated.IsZero() {
 		if typ == "summary" {
@@ -303,9 +247,7 @@ func (a *goBlog) renderPostMeta(hb *htmlbuilder.HTMLBuilder, p *post, b *configB
 			hb.WriteElementClose("div")
 		}
 	}
-	if typ == "summary" || typ == "post" {
-		hb.WriteElementClose("div")
-	}
+	hb.WriteElementClose("div")
 }
 
 // Reply ("u-in-reply-to")

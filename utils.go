@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/araddon/dateparse"
@@ -181,34 +180,6 @@ func rawQueryMayContain(r *http.Request, s string) bool {
 		return false
 	}
 	return strings.Contains(rawQuery, s) || strings.Contains(rawQuery, "%")
-}
-
-type stringGroup struct {
-	Identifier string
-	Strings    []string
-}
-
-func groupStrings(toGroup []string) []stringGroup {
-	if len(toGroup) == 0 {
-		return []stringGroup{}
-	}
-	grouped := make(map[string][]string)
-	for _, s := range toGroup {
-		r, _ := utf8.DecodeRuneInString(s)
-		key := string(unicode.ToUpper(r))
-		grouped[key] = append(grouped[key], s)
-	}
-	stringGroups := make([]stringGroup, 0, len(grouped))
-	for key, strs := range grouped {
-		stringGroups = append(stringGroups, stringGroup{
-			Identifier: key,
-			Strings:    sortedStrings(strs),
-		})
-	}
-	slices.SortFunc(stringGroups, func(a, b stringGroup) int {
-		return cmp.Compare(strings.ToLower(a.Identifier), strings.ToLower(b.Identifier))
-	})
-	return stringGroups
 }
 
 // parseTime parses a timestamp, preferring RFC 3339 and falling back to
