@@ -68,6 +68,12 @@ Create API tokens for third-party applications (Micropub clients, MCP servers, e
 curl -u "anyuser:YOUR_APP_PASSWORD" https://yourblog.com/micropub
 ```
 
+### Connected Apps
+
+Open **Settings → Security → Connected apps** (`/settings/connected-apps`) to see which websites and apps have an IndieAuth access token for your account. Each client appears once, most recently authorized first. **Scopes** lists the permissions granted across that app’s current tokens. **No explicit scopes** means none of those tokens names a scope.
+
+Choose **Revoke access** next to an app to invalidate all its current tokens and remove it from the list. Other apps keep their access.
+
 ## General Settings
 
 These are per-blog boolean toggles:

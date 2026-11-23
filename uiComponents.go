@@ -1102,6 +1102,11 @@ func (a *goBlog) renderSecuritySettings(hb *htmlbuilder.HTMLBuilder, rd *renderD
 	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "security"))
 	hb.WriteElementClose("h2")
 
+	hb.WriteElementOpen("p")
+	hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath+settingsConnectedAppsPath))
+	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "connectedapps"))
+	hb.WriteElementsClose("a", "p")
+
 	// Warning if deprecated config is still present
 	if a.hasDeprecatedConfig() {
 		hb.WriteElementsOpen("p", "b")

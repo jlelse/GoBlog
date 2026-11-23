@@ -1,12 +1,85 @@
 package main
 
 import (
+	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSettingsConnectedApps(t *testing.T) {
+	a := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, a.initConfig(false))
+	require.NoError(t, a.initTemplateStrings())
+	bc := a.cfg.Blogs[a.cfg.DefaultBlog]
+	bc.Path = "/blog"
+	router := chi.NewRouter()
+	router.Route(bc.getRelativePath(settingsPath), a.blogSettingsRouter(bc))
+	page := func(loggedIn bool) *goquery.Document {
+		r := httptest.NewRequest(http.MethodGet, "/blog/settings/connected-apps", nil)
+		setLoggedIn(r, loggedIn)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.NotContains(t, w.Body.String(), "secret-")
+		doc, err := goquery.NewDocumentFromReader(w.Body)
+		require.NoError(t, err)
+		return doc
+	}
+	require.Contains(t, page(true).Find("main").Text(), "No websites or apps")
+
+	id, err := a.db.oauthCreateApp("Reader <One>", "secret-client", "", "read", "")
+	require.NoError(t, err)
+	const site = "https://example.org/client"
+	_, err = a.db.Exec(`insert into indieauthtoken (time, token, client, scope) values
+		(9, 'secret-first', ?, 'update create'), (99, 'secret-app', ?, ''), (100, 'secret-latest', ?, 'profile create')`, site, id, site)
+	require.NoError(t, err)
+	require.NotContains(t, page(false).Text(), site)
+	doc := page(true)
+	require.Equal(t, "/blog/settings", doc.Find("main a").AttrOr("href", ""))
+	clients := doc.Find("main li")
+	require.Equal(t, 2, clients.Length())
+	require.Contains(t, clients.Eq(0).Text(), site)
+	require.Contains(t, clients.Eq(0).Text(), "Scopes: create, profile, update")
+	require.Equal(t, "1970-01-01T00:01:40Z", clients.Eq(0).Find("time").AttrOr("datetime", ""))
+	require.Contains(t, clients.Eq(1).Text(), "Reader <One>")
+	require.Contains(t, clients.Eq(1).Text(), "No explicit scopes")
+
+	form := clients.First().Find("form")
+	action := form.AttrOr("action", "")
+	require.Equal(t, "/blog/settings/connected-apps/revoke", action)
+	button := form.Find("button")
+	require.Equal(t, site, button.AttrOr("value", ""))
+	values := url.Values{button.AttrOr("name", ""): {site}}
+	revoke := func(loggedIn bool, body url.Values) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(http.MethodPost, action, strings.NewReader(body.Encode()))
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		setLoggedIn(r, loggedIn)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		return w
+	}
+	revoke(false, values)
+	require.Equal(t, http.StatusBadRequest, revoke(true, nil).Code)
+	_, err = a.db.oauthVerifyToken("secret-latest")
+	require.NoError(t, err)
+
+	w := revoke(true, values)
+	require.Equal(t, http.StatusSeeOther, w.Code)
+	require.Equal(t, "/blog/settings/connected-apps", w.Header().Get("Location"))
+	for _, token := range []string{"secret-first", "secret-latest"} {
+		_, err := a.db.oauthVerifyToken(token)
+		require.ErrorIs(t, err, errInvalidToken)
+	}
+	_, err = a.db.oauthVerifyToken("secret-app")
+	require.NoError(t, err)
+	require.NotContains(t, page(true).Text(), site)
+}
 
 func Test_booleanSettingHandlers(t *testing.T) {
 	app := &goBlog{

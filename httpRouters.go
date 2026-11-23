@@ -503,6 +503,8 @@ func (a *goBlog) blogSettingsRouter(_ *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(a.authMiddleware)
 		r.Get("/", a.serveSettings)
+		r.Get(settingsConnectedAppsPath, a.serveConnectedApps)
+		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsRevokeAppPath, a.settingsRevokeApp)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsDeleteSectionPath, a.settingsDeleteSection)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateSectionPath, a.settingsUpdateSection)
 		r.With(bodylimit.BodyLimit(bodylimit.MB)).Post(settingsUpdateDefaultSectionPath, a.settingsUpdateDefaultSection)

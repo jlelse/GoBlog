@@ -1850,6 +1850,69 @@ func (a *goBlog) renderSettings(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	)
 }
 
+func (a *goBlog) renderConnectedApps(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
+	apps := rd.Data.([]connectedApp)
+	title := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "connectedapps")
+	a.renderBase(hb, rd, func(hb *htmlbuilder.HTMLBuilder) {
+		a.renderTitleTag(hb, rd.Blog, title)
+	}, func(hb *htmlbuilder.HTMLBuilder) {
+		hb.WriteElementsOpen("main", "h1")
+		hb.WriteEscaped(title)
+		hb.WriteElementClose("h1")
+		hb.WriteElementOpen("p")
+		if len(apps) == 0 {
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "noconnectedapps"))
+		} else {
+			hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "connectedappsdesc"))
+		}
+		hb.WriteElementClose("p")
+		if len(apps) > 0 {
+			lastAuthorized := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "lastauthorized")
+			scopes := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "scopes")
+			noScopes := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "noexplicitscopes")
+			revokeAccess := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "revokeaccess")
+			confirmRevoke := a.ts.GetTemplateStringVariant(rd.Blog.Lang, "confirmrevokeaccess")
+			revokePath := rd.Blog.getRelativePath(settingsPath + settingsRevokeAppPath)
+			hb.WriteElementOpen("ul", "class", "settings-connected-apps")
+			for _, app := range apps {
+				hb.WriteElementOpen("li", "class", "p")
+				hb.WriteElementOpen("div")
+				if app.name != "" {
+					hb.WriteElementOpen("strong")
+					hb.WriteEscaped(app.name)
+					hb.WriteElementClose("strong")
+					hb.WriteElementOpen("br")
+				}
+				hb.WriteEscaped(app.clientID)
+				hb.WriteElementOpen("br")
+				hb.WriteElementOpen("small")
+				hb.WriteEscaped(lastAuthorized + ": ")
+				issued := time.Unix(app.lastAuthorized, 0).UTC()
+				hb.WriteElementOpen("time", "datetime", issued.Format(time.RFC3339))
+				hb.WriteEscaped(issued.Format(time.DateOnly))
+				hb.WriteElementClose("time")
+				hb.WriteElementOpen("br")
+				if len(app.scopes) == 0 {
+					hb.WriteEscaped(noScopes)
+				} else {
+					hb.WriteEscaped(scopes + ": " + strings.Join(app.scopes, ", "))
+				}
+				hb.WriteElementsClose("small", "div")
+				hb.WriteElementOpen("form", "method", "post", "action", revokePath)
+				hb.WriteElementOpen("button", "type", "submit", "name", "client_id", "value", app.clientID, "class", "confirm", "data-confirmmessage", confirmRevoke)
+				hb.WriteEscaped(revokeAccess)
+				hb.WriteElementsClose("button", "form", "li")
+			}
+			hb.WriteElementClose("ul")
+			hb.WriteElement("script", "src", a.assetFileName("js/formconfirm.js"), "integrity", a.assetFileHash("js/formconfirm.js"), "defer", "")
+		}
+		hb.WriteElementOpen("p")
+		hb.WriteElementOpen("a", "href", rd.Blog.getRelativePath(settingsPath))
+		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "backtosettings"))
+		hb.WriteElementsClose("a", "p", "main")
+	})
+}
+
 type activityPubFollowersRenderData struct {
 	apUser    string
 	followers []*apFollower

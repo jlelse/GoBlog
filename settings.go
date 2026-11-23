@@ -12,6 +12,32 @@ import (
 
 const settingsPath = "/settings"
 
+const settingsConnectedAppsPath = "/connected-apps"
+const settingsRevokeAppPath = settingsConnectedAppsPath + "/revoke"
+
+func (a *goBlog) serveConnectedApps(w http.ResponseWriter, r *http.Request) {
+	apps, err := a.db.connectedApps(r.Context())
+	if err != nil {
+		a.serveError(w, r, "Failed to load connected apps", http.StatusInternalServerError)
+		return
+	}
+	a.render(w, r, a.renderConnectedApps, &renderData{Data: apps})
+}
+
+func (a *goBlog) settingsRevokeApp(w http.ResponseWriter, r *http.Request) {
+	clientID := r.PostFormValue("client_id")
+	if clientID == "" {
+		a.serveError(w, r, "Missing client ID", http.StatusBadRequest)
+		return
+	}
+	if err := a.db.oauthRevokeClientTokens(r.Context(), clientID); err != nil {
+		a.serveError(w, r, "Failed to revoke app access", http.StatusInternalServerError)
+		return
+	}
+	_, bc := a.getBlog(r)
+	http.Redirect(w, r, bc.getRelativePath(settingsPath+settingsConnectedAppsPath), http.StatusSeeOther)
+}
+
 func (a *goBlog) serveSettings(w http.ResponseWriter, r *http.Request) {
 	blog, bc := a.getBlog(r)
 

@@ -697,3 +697,40 @@ func (db *database) oauthRevokeToken(token string) {
 		_, _ = db.Exec("delete from indieauthtoken where token=?", token)
 	}
 }
+
+func (db *database) oauthRevokeClientTokens(ctx context.Context, clientID string) error {
+	_, err := db.ExecContext(ctx, "delete from indieauthtoken where client = ?", clientID)
+	return err
+}
+
+type connectedApp struct {
+	clientID       string
+	name           string
+	scopes         []string
+	lastAuthorized int64
+}
+
+func (db *database) connectedApps(ctx context.Context) ([]connectedApp, error) {
+	rows, err := db.QueryContext(ctx, `
+		select t.client, coalesce(a.name, ''), group_concat(t.scope, ' '), max(cast(t.time as integer)) as last_authorized
+		from indieauthtoken t left join fediverseapps a on a.id = t.client
+		group by t.client
+		order by last_authorized desc, t.client`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var apps []connectedApp
+	for rows.Next() {
+		var app connectedApp
+		var scopes string
+		if err := rows.Scan(&app.clientID, &app.name, &scopes, &app.lastAuthorized); err != nil {
+			return nil, err
+		}
+		app.scopes = strings.Fields(scopes)
+		slices.Sort(app.scopes)
+		app.scopes = slices.Compact(app.scopes)
+		apps = append(apps, app)
+	}
+	return apps, rows.Err()
+}

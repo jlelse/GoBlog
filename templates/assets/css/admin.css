@@ -50,6 +50,16 @@
   flex: 0 0 auto;
 }
 
+.settings-connected-apps {
+  padding-inline-start: 0;
+}
+.settings-connected-apps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
+  align-items: center;
+  gap: 1rem;
+}
+
 .settings-table {
   width: 100%;
 }
