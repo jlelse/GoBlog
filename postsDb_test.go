@@ -30,6 +30,46 @@ func Test_taxonomyCounts(t *testing.T) {
 	require.Equal(t, []taxonomyCount{{"Bike", 2}, {"apples", 1}, {"Zebra", 1}}, counts)
 }
 
+func TestPostSearch(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	for path, content := range map[string]string{
+		"/name":  "Jan-Lukas writes about SQLite",
+		"/other": "Jan writes with Lukas",
+	} {
+		require.NoError(t, app.db.savePost(&post{
+			Path: path, Blog: "default", Status: statusPublished, Visibility: visibilityPublic, Content: content,
+		}, &postCreationOptions{isNew: true}))
+	}
+
+	for _, tc := range []struct {
+		search string
+		paths  []string
+	}{
+		{"Jan-Lukas", []string{"/name"}},
+		{"SQLite Jan-Lukas", []string{"/name"}},
+		{`Jan-Lukas"`, []string{"/name"}},
+		{"Jan-Missing", nil},
+		{"!!!", nil},
+		{"Jan Lukas", []string{"/name", "/other"}},
+		{`"Jan Lukas" OR wit*`, []string{"/name", "/other"}},
+	} {
+		t.Run(tc.search, func(t *testing.T) {
+			cfg := &postsRequestConfig{search: tc.search}
+			count, err := app.db.countPosts(cfg)
+			require.NoError(t, err)
+			require.Equal(t, len(tc.paths), count)
+			posts, err := app.getPosts(cfg)
+			require.NoError(t, err)
+			var paths []string
+			for _, p := range posts {
+				paths = append(paths, p.Path)
+			}
+			require.ElementsMatch(t, tc.paths, paths)
+		})
+	}
+}
+
 func Test_postsDb(t *testing.T) {
 	is := assert.New(t)
 	must := require.New(t)

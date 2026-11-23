@@ -710,7 +710,31 @@ func (db *database) loadPostParameters(posts []*post, parameters ...string) (err
 	return nil
 }
 
-func (a *goBlog) getPosts(config *postsRequestConfig) (posts []*post, err error) {
+func withSearchFallback[T any](config *postsRequestConfig, query func(*postsRequestConfig) (T, error)) (T, error) {
+	result, err := query(config)
+	if err == nil || config.search == "" {
+		return result, err
+	}
+	// FTS5 parses even bound parameters as expressions. Retry rejected syntax as literal terms.
+	msg := err.Error()
+	if !strings.HasPrefix(msg, "no such column: ") && !strings.HasPrefix(msg, "fts5: syntax error") &&
+		msg != "unterminated string" && !strings.HasPrefix(msg, "expected integer, got ") {
+		return result, err
+	}
+	terms := strings.Fields(strings.ReplaceAll(config.search, "\x00", " "))
+	for i, term := range terms {
+		terms[i] = strings.ReplaceAll(term, `"`, `""`)
+	}
+	literal := *config
+	literal.search = `"` + strings.Join(terms, `" "`) + `"`
+	return query(&literal)
+}
+
+func (a *goBlog) getPosts(config *postsRequestConfig) ([]*post, error) {
+	return withSearchFallback(config, a.queryPosts)
+}
+
+func (a *goBlog) queryPosts(config *postsRequestConfig) (posts []*post, err error) {
 	// Query posts
 	query, queryParams, err := buildPostsQuery(config, "path, coalesce(content, ''), coalesce(published, ''), coalesce(updated, ''), blog, coalesce(section, ''), status, visibility, priority")
 	if err != nil {
@@ -775,7 +799,11 @@ func (a *goBlog) getPost(path string) (*post, error) {
 	return posts[0], nil
 }
 
-func (db *database) countPosts(config *postsRequestConfig) (count int, err error) {
+func (db *database) countPosts(config *postsRequestConfig) (int, error) {
+	return withSearchFallback(config, db.queryPostCount)
+}
+
+func (db *database) queryPostCount(config *postsRequestConfig) (count int, err error) {
 	query, params, err := buildPostsQuery(config, "path")
 	if err != nil {
 		return
