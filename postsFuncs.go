@@ -80,9 +80,7 @@ func (a *goBlog) postHTMLToWriter(w io.Writer, o *postHTMLOptions) {
 	// Add bookmark links to the bottom
 	for _, l := range o.p.Parameters[a.cfg.Micropub.BookmarkParam] {
 		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
-		hb.WriteEscaped(l)
-		hb.WriteElementClose("a")
+		hb.WriteTextElement("a", l, "class", "u-bookmark-of", "href", l, "target", "_blank", "rel", "noopener noreferrer")
 		hb.WriteElementClose("p")
 	}
 }
@@ -101,10 +99,8 @@ func (a *goBlog) feedHTML(w io.Writer, p *post) {
 	// Add link to interactions and comments
 	if a.commentsEnabledForPost(p) {
 		hb.WriteElementOpen("p")
-		hb.WriteElementOpen("a", "href", a.getFullAddress(p.Path)+"#interactions")
 		blogConfig := a.getBlogFromPost(p)
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"))
-		hb.WriteElementClose("a")
+		hb.WriteTextElement("a", a.ts.GetTemplateStringVariant(blogConfig.Lang, "interactions"), "href", a.getFullAddress(p.Path)+"#interactions")
 		hb.WriteElementClose("p")
 	}
 }

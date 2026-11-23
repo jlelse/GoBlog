@@ -129,6 +129,13 @@ func (h *HTMLBuilder) WriteElement(tag string, attrs ...any) {
 	h.WriteElementClose(tag)
 }
 
+// WriteTextElement writes a complete element with escaped text content.
+func (h *HTMLBuilder) WriteTextElement(tag, text string, attrs ...any) {
+	h.WriteElementOpen(tag, attrs...)
+	h.WriteEscaped(text)
+	h.WriteElementClose(tag)
+}
+
 // Deprecated: HtmlBuilder is an alias for HTMLBuilder for backward compatibility.
 //
 //revive:disable:var-naming

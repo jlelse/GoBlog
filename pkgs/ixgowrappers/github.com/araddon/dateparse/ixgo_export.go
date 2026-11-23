@@ -24,7 +24,7 @@ func init() {
 		},
 		Interfaces: map[string]reflect.Type{},
 		NamedTypes: map[string]reflect.Type{
-			"ParserOption": reflect.TypeFor[q.ParserOption](),
+			"ParserOption": reflect.TypeOf((*q.ParserOption)(nil)).Elem(),
 		},
 		AliasTypes: map[string]reflect.Type{},
 		Vars: map[string]reflect.Value{

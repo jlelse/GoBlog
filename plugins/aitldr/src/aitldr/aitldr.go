@@ -142,13 +142,10 @@ func (p *plugin) RenderPost(renderContext plugintypes.RenderContext, post plugin
 	defer bufferpool.Put(buf)
 	hw := htmlbuilder.NewHTMLBuilder(buf)
 	hw.WriteElementOpen("div", "class", "p aitldr")
-	hw.WriteElementOpen("b")
-	hw.WriteEscaped(title)
-	hw.WriteElementClose("b")
+	hw.WriteTextElement("b", title)
 	hw.WriteEscaped(" ")
-	hw.WriteElementOpen("i")
-	hw.WriteEscaped(tldr)
-	hw.WriteElementsClose("i", "div")
+	hw.WriteTextElement("i", tldr)
+	hw.WriteElementClose("div")
 
 	doc.Find(".h-entry > article > .e-content").BeforeHtml(buf.String())
 }

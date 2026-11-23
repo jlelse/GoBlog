@@ -260,13 +260,9 @@ func (a *goBlog) serveOIDCCallback(w http.ResponseWriter, r *http.Request) {
 // redirects home when the login didn't happen in a popup.
 func (a *goBlog) renderOIDCLoggedIn(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	hb.WriteElementOpen("main")
+	hb.WriteTextElement("p", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "oidcloginpopup"))
 	hb.WriteElementOpen("p")
-	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "oidcloginpopup"))
-	hb.WriteElementClose("p")
-	hb.WriteElementOpen("p")
-	hb.WriteElementOpen("a", "href", "/")
-	hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, "backhome"))
-	hb.WriteElementClose("a")
+	hb.WriteTextElement("a", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "backhome"), "href", "/")
 	hb.WriteElementClose("p")
 	hb.WriteElementOpen("script", "src", a.assetFileName("js/oidc.js"), "integrity", a.assetFileHash("js/oidc.js"))
 	hb.WriteElementClose("script")

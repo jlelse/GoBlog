@@ -50,9 +50,7 @@ func (*plugin) Render(_ plugintypes.RenderContext, rendered io.Reader, modified 
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	hb := htmlbuilder.NewHTMLBuilder(buf)
-	hb.WriteElementOpen("p")
-	hb.WriteEscaped("End of post content")
-	hb.WriteElementClose("p")
+	hb.WriteTextElement("p", "End of post content")
 	doc.Find("main.h-entry article div.e-content").AppendHtml(buf.String())
 	_ = goquery.Render(modified, doc.Selection)
 }
@@ -62,9 +60,7 @@ func (p *plugin) RenderWithDocument(_ plugintypes.RenderContext, doc *goquery.Do
 	buf := bufferpool.Get()
 	defer bufferpool.Put(buf)
 	hb := htmlbuilder.NewHTMLBuilder(buf)
-	hb.WriteElementOpen("p")
-	hb.WriteEscaped("Second end of post content")
-	hb.WriteElementClose("p")
+	hb.WriteTextElement("p", "Second end of post content")
 	doc.Find("main.h-entry article div.e-content").AppendHtml(buf.String())
 }
 

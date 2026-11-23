@@ -47,21 +47,19 @@ func (p *plugin) RenderFooter(rc plugintypes.RenderContext, doc *goquery.Documen
 						hb.WriteElementOpen("p")
 						if prevOk {
 							hb.WriteElementOpen("a", "href", prev, "rel", "prev", "aria-label", "Previous in "+title)
-							hb.WriteUnescaped(`<span aria-hidden="true">←</span>`)
+							hb.WriteTextElement("span", "←", "aria-hidden", "true")
 							hb.WriteElementClose("a")
 							hb.WriteEscaped(" ")
 						}
 						if linkOk {
-							hb.WriteElementOpen("a", "href", link)
-						}
-						hb.WriteEscaped(title)
-						if linkOk {
-							hb.WriteElementClose("a")
+							hb.WriteTextElement("a", title, "href", link)
+						} else {
+							hb.WriteEscaped(title)
 						}
 						if nextOk {
 							hb.WriteEscaped(" ")
 							hb.WriteElementOpen("a", "href", next, "rel", "next", "aria-label", "Next in "+title)
-							hb.WriteUnescaped(`<span aria-hidden="true">→</span>`)
+							hb.WriteTextElement("span", "→", "aria-hidden", "true")
 							hb.WriteElementClose("a")
 						}
 						hb.WriteElementClose("p")

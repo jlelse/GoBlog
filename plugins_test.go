@@ -88,9 +88,7 @@ func TestDemoPluginUIRendering(t *testing.T) {
 	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, _ *renderData) {
 		hb.WriteElementOpen("main", "class", "h-entry")
 		hb.WriteElementOpen("article")
-		hb.WriteElementOpen("div", "class", "e-content")
-		hb.WriteEscaped("Original content")
-		hb.WriteElementClose("div")
+		hb.WriteTextElement("div", "Original content", "class", "e-content")
 		hb.WriteElementClose("article")
 		hb.WriteElementClose("main")
 	}, &renderData{
@@ -244,9 +242,7 @@ content`)
 	app.render(rr, req, func(hb *htmlbuilder.HTMLBuilder, _ *renderData) {
 		hb.WriteElementOpen("main", "class", "h-entry")
 		hb.WriteElementOpen("article")
-		hb.WriteElementOpen("div", "class", "e-content")
-		hb.WriteEscaped(p.Content)
-		hb.WriteElementClose("div")
+		hb.WriteTextElement("div", p.Content, "class", "e-content")
 		hb.WriteElementClose("article")
 		hb.WriteElementClose("main")
 	}, &renderData{
