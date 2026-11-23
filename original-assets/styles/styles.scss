@@ -298,7 +298,7 @@ article.h-entry.border-bottom {
   border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
 }
 
-article > .p-name {
+article > .p-name:not(.visually-hidden) {
   margin-bottom: .35em;
 
   + .post-meta {

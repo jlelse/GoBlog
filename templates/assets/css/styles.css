@@ -267,10 +267,10 @@ article.h-entry.border-bottom {
   border-color: color-mix(in srgb, var(--primary) 25%, var(--background));
 }
 
-article > .p-name {
+article > .p-name:not(.visually-hidden):not(.skip-link:not(:focus)) {
   margin-bottom: 0.35em;
 }
-article > .p-name + .post-meta {
+article > .p-name:not(.visually-hidden):not(.skip-link:not(:focus)) + .post-meta {
   margin-top: 0;
 }
 
