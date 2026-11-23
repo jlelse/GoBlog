@@ -249,7 +249,7 @@ Configure globally in YAML. Supports Google Cloud TTS (API key) or Mistral TTS (
 
 ## Statistics
 
-Blog statistics at a configurable path. Displays total posts (with and without dates), yearly breakdowns, and monthly aggregates with word/character counts and words-per-post averages.
+The statistics page shows totals for all published, public posts on a blog. It highlights the busiest month and how many months have posts. Each year has a monthly bar chart on the same scale, so you can compare posting activity across years. Select a year or a month with posts to browse its date archive. Expand a year's writing statistics to see the post count, estimated words and characters, and average words per post for each month. Undated posts are included in the totals and summarized separately.
 
 ## Random Post
 

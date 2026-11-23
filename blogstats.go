@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"database/sql"
 	"net/http"
+	"strconv"
 )
 
 const defaultBlogStatsPath = "/statistics"
@@ -78,6 +79,21 @@ type blogStatsData struct {
 	NoDate blogStatsRow
 	Years  []blogStatsRow
 	Months map[string][]blogStatsRow
+}
+
+func (data *blogStatsData) monthlyActivity() (counts map[string]int, busiest string) {
+	counts = make(map[string]int)
+	for _, year := range data.Years {
+		for _, month := range data.Months[year.Name] {
+			period := year.Name + "-" + month.Name
+			count, _ := strconv.Atoi(month.Posts)
+			counts[period] = count
+			if count > counts[busiest] {
+				busiest = period
+			}
+		}
+	}
+	return counts, busiest
 }
 
 func (db *database) getBlogStats(blog string) (data *blogStatsData, err error) {

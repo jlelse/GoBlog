@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.goblog.app/app/pkgs/contenttype"
@@ -22,6 +22,7 @@ func Test_blogStats(t *testing.T) {
 	app.cfg.Blogs = map[string]*configBlog{
 		"en": {
 			Lang: "en",
+			Path: "/journal",
 			BlogStats: &configBlogStats{
 				Enabled: true,
 				Path:    "/stats",
@@ -122,7 +123,7 @@ func Test_blogStats(t *testing.T) {
 	// Test HTML
 
 	t.Run("Test stats page", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/abc", nil)
+		req := httptest.NewRequest(http.MethodGet, "/journal/stats", nil)
 		req = req.WithContext(context.WithValue(req.Context(), blogKey, "en"))
 
 		rec := httptest.NewRecorder()
@@ -130,13 +131,21 @@ func Test_blogStats(t *testing.T) {
 		app.serveBlogStats(rec, req)
 
 		res := rec.Result()
-		resBody, _ := io.ReadAll(res.Body)
-		_ = res.Body.Close()
-		resString := string(resBody)
+		defer res.Body.Close()
+		doc, err := goquery.NewDocumentFromReader(res.Body)
+		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Contains(t, resString, "class=statsyear data-year=2021")
 		assert.Contains(t, res.Header.Get(contentType), contenttype.HTML)
+		assert.Contains(t, doc.Find("main p").Text(), "Months with posts: 2")
+		assert.Equal(t, "2021-05", doc.Find(`main p a[href="/journal/2021/05"]`).Text())
+		year := doc.Find(".stats-year").First()
+		assert.Equal(t, "/journal/2021", year.Find("h3 a").AttrOr("href", ""))
+		assert.Equal(t, 12, year.Find("time").Length())
+		assert.Equal(t, "1", year.Find(`a[href="/journal/2021/05"] strong`).Text())
+		assert.Equal(t, "0", year.Find(`time[datetime="2021-06"]`).SiblingsFiltered("strong").Text())
+		assert.Empty(t, year.Find(`a[href="/journal/2021/06"]`).Nodes)
+		assert.Equal(t, []string{"1", "6", "27", "6"}, year.Find("details tbody tr").Last().Find("td").Map(func(_ int, s *goquery.Selection) string { return s.Text() }))
 	})
 
 }

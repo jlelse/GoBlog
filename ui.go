@@ -15,6 +15,8 @@ import (
 	"go.goblog.app/app/pkgs/contenttype"
 	"go.goblog.app/app/pkgs/htmlbuilder"
 	"go.goblog.app/app/pkgs/plugintypes"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 func (a *goBlog) renderEditorPreview(hb *htmlbuilder.HTMLBuilder, bc *configBlog, p *post) {
@@ -470,10 +472,7 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 			if bs.Description != "" {
 				_ = a.renderMarkdownToWriter(hb, bs.Description)
 			}
-			// Table
-			a.renderBlogStatsTable(hb, rd, bsd)
-			hb.WriteElementOpen("script", "src", a.assetFileName("js/blogstats.js"), "integrity", a.assetFileHash("js/blogstats.js"), "defer", "")
-			hb.WriteElementClose("script")
+			a.renderBlogStatsArchive(hb, rd.Blog, bsd)
 			hb.WriteElementClose("main")
 			// Interactions
 			if a.commentsEnabled(rd.Blog) {
@@ -483,70 +482,112 @@ func (a *goBlog) renderBlogStats(hb *htmlbuilder.HTMLBuilder, rd *renderData) {
 	)
 }
 
-func (a *goBlog) renderBlogStatsTable(hb *htmlbuilder.HTMLBuilder, rd *renderData, bsd *blogStatsData) {
-	hb.WriteElementOpen("table")
-	// Table header
-	hb.WriteElementOpen("thead")
-	// Year
-	hb.WriteTextElement("th", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "year"), "class", "tal")
-	// Posts
-	hb.WriteTextElement("th", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "posts"), "class", "tar")
-	// Chars, Words, Words/Post
-	for _, s := range []string{"chars", "words", "wordsperpost"} {
-		hb.WriteElementOpen("th", "class", "tar")
-		hb.WriteUnescaped("~")
-		hb.WriteEscaped(a.ts.GetTemplateStringVariant(rd.Blog.Lang, s))
-		hb.WriteElementClose("th")
-	}
-	hb.WriteElementClose("thead")
-	// Table body
-	hb.WriteElementOpen("tbody")
-	// Iterate over years
-	for _, y := range bsd.Years {
-		// Stats for year
-		hb.WriteElementOpen("tr", "class", "statsyear", "data-year", y.Name)
-		hb.WriteTextElement("td", y.Name, "class", "tal")
-		hb.WriteTextElement("td", y.Posts, "class", "tar")
-		hb.WriteTextElement("td", y.Chars, "class", "tar")
-		hb.WriteTextElement("td", y.Words, "class", "tar")
-		hb.WriteTextElement("td", y.WordsPerPost, "class", "tar")
-		hb.WriteElementClose("tr")
-		// Iterate over months
-		for _, m := range bsd.Months[y.Name] {
-			// Stats for month
-			hb.WriteElementOpen("tr", "class", "statsmonth hide", "data-year", y.Name)
-			hb.WriteElementOpen("td", "class", "tal")
-			hb.WriteEscaped(y.Name)
-			hb.WriteUnescaped("-")
-			hb.WriteEscaped(m.Name)
-			hb.WriteElementClose("td")
-			hb.WriteTextElement("td", m.Posts, "class", "tar")
-			hb.WriteTextElement("td", m.Chars, "class", "tar")
-			hb.WriteTextElement("td", m.Words, "class", "tar")
-			hb.WriteTextElement("td", m.WordsPerPost, "class", "tar")
-			hb.WriteElementClose("tr")
+func (row blogStatsRow) values() [4]string {
+	return [4]string{row.Posts, row.Words, row.Chars, row.WordsPerPost}
+}
+
+func (a *goBlog) renderBlogStatsArchive(hb *htmlbuilder.HTMLBuilder, blog *configBlog, stats *blogStatsData) {
+	tr := func(key string) string { return a.ts.GetTemplateStringVariant(blog.Lang, key) }
+	labels := []string{tr("posts"), tr("words"), tr("chars"), tr("wordsperpost")}
+	printer := message.NewPrinter(language.Make(blog.Lang))
+	summary := func(label string, row blogStatsRow) {
+		hb.WriteTextElement("h2", label)
+		hb.WriteElementOpen("dl", "class", "stats-summary")
+		for i, value := range row.values() {
+			if n, err := strconv.ParseInt(value, 10, 64); err == nil {
+				value = printer.Sprintf("%d", n)
+			}
+			if i > 0 {
+				value = "≈" + value
+			}
+			hb.WriteElementOpen("div")
+			hb.WriteTextElement("dt", labels[i])
+			hb.WriteTextElement("dd", value)
+			hb.WriteElementClose("div")
 		}
+		hb.WriteElementClose("dl")
 	}
-	// Posts without date
-	hb.WriteElementOpen("tr")
-	hb.WriteTextElement("td", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "withoutdate"), "class", "tal")
-	hb.WriteTextElement("td", bsd.NoDate.Posts, "class", "tar")
-	hb.WriteTextElement("td", bsd.NoDate.Chars, "class", "tar")
-	hb.WriteTextElement("td", bsd.NoDate.Words, "class", "tar")
-	hb.WriteTextElement("td", bsd.NoDate.WordsPerPost, "class", "tar")
-	hb.WriteElementClose("tr")
-	// Total
-	hb.WriteElementOpen("tr")
-	hb.WriteElementOpen("td", "class", "tal")
-	hb.WriteTextElement("strong", a.ts.GetTemplateStringVariant(rd.Blog.Lang, "total"))
-	hb.WriteElementClose("td")
-	hb.WriteTextElement("td", bsd.Total.Posts, "class", "tar")
-	hb.WriteTextElement("td", bsd.Total.Chars, "class", "tar")
-	hb.WriteTextElement("td", bsd.Total.Words, "class", "tar")
-	hb.WriteTextElement("td", bsd.Total.WordsPerPost, "class", "tar")
-	hb.WriteElementClose("tr")
-	hb.WriteElementClose("tbody")
-	hb.WriteElementClose("table")
+	summary(tr("total"), stats.Total)
+	if stats.Total.Posts == "0" {
+		hb.WriteTextElement("p", tr("noposts"))
+	}
+	counts, busiest := stats.monthlyActivity()
+	peak := counts[busiest]
+	if busiest != "" {
+		hb.WriteTextElement("h2", tr("statsactivity"))
+		hb.WriteElementOpen("p", "class", "stats-highlights")
+		hb.WriteTextElement("span", tr("statsactivemonths")+": "+strconv.Itoa(len(counts)))
+		hb.WriteElementOpen("span")
+		hb.WriteEscaped(tr("statspeak") + ": ")
+		hb.WriteTextElement("a", busiest, "href", blog.getRelativePath(strings.ReplaceAll(busiest, "-", "/")))
+		hb.WriteEscaped(" (" + strconv.Itoa(peak) + ")")
+		hb.WriteElementClose("span")
+		hb.WriteElementClose("p")
+	}
+	monthNames := strings.Fields(tr("statsmonths"))
+	for _, year := range stats.Years {
+		months := stats.Months[year.Name]
+		yearPath := blog.getRelativePath(year.Name)
+		hb.WriteElementOpen("section", "class", "stats-year")
+		hb.WriteElementOpen("h3")
+		hb.WriteTextElement("a", year.Name, "href", yearPath)
+		hb.WriteTextElement("small", labels[0]+": "+year.Posts)
+		hb.WriteElementClose("h3")
+		hb.WriteElementOpen("div", "class", "stats-months")
+		for i, name := range monthNames {
+			month := fmt.Sprintf("%02d", i+1)
+			period := year.Name + "-" + month
+			count := counts[period]
+			tag := "span"
+			if count > 0 {
+				tag = "a"
+				hb.WriteElementOpen(tag, "href", yearPath+"/"+month, "aria-label", name+" "+year.Name+" · "+labels[0]+": "+strconv.Itoa(count))
+			} else {
+				hb.WriteElementOpen(tag)
+			}
+			hb.WriteElementOpen("svg", "viewBox", "0 0 1 "+strconv.Itoa(peak), "preserveAspectRatio", "none", "aria-hidden", "true")
+			hb.WriteElement("rect", "width", 1, "y", peak-count, "height", count)
+			hb.WriteElementClose("svg")
+			hb.WriteTextElement("time", name, "datetime", period)
+			hb.WriteTextElement("strong", strconv.Itoa(count))
+			hb.WriteElementClose(tag)
+		}
+		hb.WriteElementClose("div")
+
+		hb.WriteElementOpen("details")
+		hb.WriteTextElement("summary", tr("statsdetails")+" · "+year.Name)
+		renderStatsTable(hb, tr("statsperiod"), labels, year, months)
+		hb.WriteElementsClose("details", "section")
+	}
+	if stats.NoDate.Posts != "0" {
+		summary(tr("withoutdate"), stats.NoDate)
+	}
+}
+
+func renderStatsTable(hb *htmlbuilder.HTMLBuilder, periodLabel string, labels []string, year blogStatsRow, months []blogStatsRow) {
+	hb.WriteElementsOpen("table", "thead", "tr")
+	hb.WriteTextElement("th", periodLabel, "scope", "col")
+	for i, label := range labels {
+		if i > 0 {
+			label = "≈" + label
+		}
+		hb.WriteTextElement("th", label, "scope", "col")
+	}
+	hb.WriteElementsClose("tr", "thead")
+	hb.WriteElementOpen("tbody")
+	renderRow := func(period string, row blogStatsRow) {
+		hb.WriteElementOpen("tr")
+		hb.WriteTextElement("th", period, "scope", "row")
+		for _, value := range row.values() {
+			hb.WriteTextElement("td", value)
+		}
+		hb.WriteElementClose("tr")
+	}
+	renderRow(year.Name, year)
+	for _, month := range months {
+		renderRow(year.Name+"-"+month.Name, month)
+	}
+	hb.WriteElementsClose("tbody", "table")
 }
 
 type geoMapRenderData struct {

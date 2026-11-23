@@ -321,6 +321,55 @@ article > .p-name:not(.visually-hidden) {
   }
 }
 
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+  gap: .75rem;
+
+  dt { font-size: .875rem; }
+  dd { margin: 0; font-size: 1.5rem; font-weight: bold; }
+}
+
+.stats-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
+}
+
+.stats-year {
+  padding-bottom: 1rem;
+  font-variant-numeric: tabular-nums;
+
+  h3 { display: flex; align-items: baseline; gap: 1rem; margin-block: .6rem; }
+  h3 small { font-size: .875rem; font-weight: normal; }
+  summary { cursor: pointer; }
+  td { text-align: end; }
+}
+
+.stats-months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: .25rem;
+  margin-bottom: .75rem;
+  text-align: center;
+  font-size: .875rem;
+
+  @media (max-width: 32rem) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 2.5rem;
+    fill: currentColor;
+  }
+
+  a { text-decoration: none; }
+  a time { text-decoration: underline; text-underline-offset: .18em; }
+  strong { display: block; }
+}
+
 .taxonomy-list {
   display: flex;
   flex-wrap: wrap;
