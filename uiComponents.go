@@ -569,10 +569,8 @@ func (a *goBlog) renderPostTitle(hb *htmlbuilder.HTMLBuilder, p *post) {
 		hb.WriteTextElement("h1", p.RenderedTitle, "class", "p-name")
 		return
 	}
-	// Untitled posts: use a fallback derived from the post for the heading.
-	// The heading is visually hidden but remains in the accessibility tree.
 	if fallback := a.fallbackTitle(p); fallback != "" {
-		hb.WriteTextElement("h1", fallback, "class", "p-name visually-hidden", "aria-hidden", "true")
+		hb.WriteTextElement("h1", fallback, "class", "visually-hidden", "aria-hidden", "true")
 	}
 }
 

@@ -231,3 +231,27 @@ func Test_servePost(t *testing.T) {
 	assert.NotContains(t, resString, "<h1 class=p-name>Test Post</h1>")
 
 }
+
+func Test_serveUntitledPost(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	_ = app.initConfig(false)
+	_ = app.initTemplateStrings()
+	app.d = app.buildRouter()
+
+	require.NoError(t, app.createPost(&post{
+		Path:      "/untitled",
+		Section:   "posts",
+		Status:    "published",
+		Published: "2020-10-15T10:00:00Z",
+		Content:   "This untitled post contains more than thirty characters.",
+	}))
+
+	var resString string
+	require.NoError(t, requests.
+		URL("http://localhost:8080/untitled").
+		CheckStatus(http.StatusOK).
+		ToString(&resString).
+		Client(newHandlerClient(app.d)).Fetch(context.Background()))
+
+	assert.Contains(t, resString, "<h1 class=visually-hidden aria-hidden=true>This untitled post contains…</h1>")
+}
