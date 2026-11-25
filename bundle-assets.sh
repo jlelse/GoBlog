@@ -6,7 +6,7 @@ set -euo pipefail
 # Also generates bundleHashes.go for the CSP header.
 
 LEAFLET_VERSION="1.9.4"
-MARKERCLUSTER_VERSION="1.5.3"
+MARKERCLUSTER_VERSION="2.0.0"
 HLSJS_VERSION="1.7.4"
 MAPLIBRE_VERSION="5.6.2"
 
