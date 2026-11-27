@@ -372,7 +372,7 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 					switch visibility {
 					case visibilityPublic, visibilityUnlisted:
 						if visibility == visibilityPublic && path != a.getRelativePath(postBlog, "") {
-							r = r.WithContext(context.WithValue(r.Context(), publicPostCacheKey, true))
+							r = r.WithContext(context.WithValue(r.Context(), publicCacheKey, true))
 						}
 						alicePrivate.Append(a.checkActivityStreamsRequest, a.CacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					default: // private, etc.

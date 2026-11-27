@@ -111,10 +111,33 @@ func Test_cache_purge_nil(t *testing.T) {
 	c.purge()
 }
 
+func Test_etagMatches(t *testing.T) {
+	const eTag = `"abc123"`
+	for _, tc := range []struct {
+		name        string
+		ifNoneMatch []string
+		want        bool
+	}{
+		{name: "none", ifNoneMatch: nil, want: false},
+		{name: "empty", ifNoneMatch: []string{""}, want: false},
+		{name: "single", ifNoneMatch: []string{eTag}, want: true},
+		{name: "weak", ifNoneMatch: []string{"W/" + eTag}, want: true},
+		{name: "different", ifNoneMatch: []string{`"xyz789"`}, want: false},
+		{name: "list", ifNoneMatch: []string{`"xyz789", "abc123"`}, want: true},
+		{name: "multiple headers", ifNoneMatch: []string{`"xyz789"`, eTag}, want: true},
+		{name: "star", ifNoneMatch: []string{"*"}, want: true},
+		{name: "whitespace", ifNoneMatch: []string{" " + eTag + " "}, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, etagMatches(tc.ifNoneMatch, eTag))
+		})
+	}
+}
+
 func TestCachedResponsePreservesCacheRestrictions(t *testing.T) {
 	app := &goBlog{}
 	req := httptest.NewRequest(http.MethodGet, "/public", nil)
-	req = req.WithContext(context.WithValue(req.Context(), publicPostCacheKey, true))
+	req = req.WithContext(context.WithValue(req.Context(), publicCacheKey, true))
 	for _, tc := range []struct {
 		name   string
 		header http.Header

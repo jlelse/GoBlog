@@ -290,7 +290,7 @@ func TestPublicPostCDNCache(t *testing.T) {
 
 	public := request(http.MethodGet, "/public?source=test", nil)
 	require.Equal(t, http.StatusOK, public.Code)
-	require.Equal(t, "public-html", public.Header().Get(cdnCacheableHeader))
+	require.Equal(t, cdnCacheableHTML, public.Header().Get(cdnCacheableHeader))
 	tag := public.Header().Get("ETag")
 	require.NotEmpty(t, tag)
 
@@ -326,4 +326,78 @@ func TestPublicPostCDNCache(t *testing.T) {
 	assert.Equal(t, http.StatusOK, activity.Code)
 	assert.Contains(t, activity.Header().Get(contentType), contenttype.AS)
 	assert.Empty(t, activity.Header().Values(cdnCacheableHeader))
+}
+
+func TestPublicIndexAndFeedCDNCache(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	require.NoError(t, app.initConfig(false))
+	app.cfg.Blogs[app.cfg.DefaultBlog].Search = &configSearch{Enabled: true}
+	require.NoError(t, app.initTemplateStrings())
+	handler := app.buildRouter()
+
+	require.NoError(t, app.createPost(&post{
+		Path: "/hello", Section: "posts", Status: statusPublished, Visibility: visibilityPublic,
+		Published: "2020-10-15T10:00:00Z", Content: "Test post",
+		Parameters: map[string][]string{"tags": {"go"}},
+	}))
+
+	request := func(path string, headers map[string]string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		for name, value := range headers {
+			req.Header.Set(name, value)
+		}
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		return res
+	}
+
+	for _, tc := range []struct {
+		name, path, marker string
+	}{
+		{name: "home", path: "/", marker: cdnCacheableHTML},
+		{name: "home feed", path: "/.rss", marker: cdnCacheableFeed},
+		{name: "section", path: "/posts", marker: cdnCacheableHTML},
+		{name: "section feed", path: "/posts.rss", marker: cdnCacheableFeed},
+		{name: "section atom feed", path: "/posts.atom", marker: cdnCacheableFeed},
+		{name: "section json feed", path: "/posts.json", marker: cdnCacheableFeed},
+		{name: "section min feed", path: "/posts.min.rss", marker: cdnCacheableFeed},
+		{name: "taxonomy", path: "/tags/go", marker: cdnCacheableHTML},
+		{name: "taxonomy feed", path: "/tags/go.rss", marker: cdnCacheableFeed},
+		{name: "date", path: "/2020/10/15", marker: cdnCacheableHTML},
+		{name: "date feed", path: "/2020/10/15.rss", marker: cdnCacheableFeed},
+		{name: "search", path: "/search/" + searchEncode("Test"), marker: cdnCacheableHTML},
+		{name: "search feed", path: "/search/" + searchEncode("Test") + ".rss", marker: cdnCacheableFeed},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res := request(tc.path, nil)
+			require.Equal(t, http.StatusOK, res.Code)
+			assert.Equal(t, tc.marker, res.Header().Get(cdnCacheableHeader))
+		})
+	}
+
+	feed := request("/posts.rss", nil)
+	require.Equal(t, http.StatusOK, feed.Code)
+	feedTag := feed.Header().Get("ETag")
+	require.NotEmpty(t, feedTag)
+	for _, ifNoneMatch := range []string{"W/" + feedTag, "*"} {
+		notModified := request("/posts.rss", map[string]string{"If-None-Match": ifNoneMatch})
+		assert.Equal(t, http.StatusNotModified, notModified.Code)
+		assert.Empty(t, notModified.Body.String())
+		assert.Equal(t, feedTag, notModified.Header().Get("ETag"))
+		assert.Equal(t, cdnCacheableFeed, notModified.Header().Get(cdnCacheableHeader))
+	}
+
+	for _, tc := range []struct {
+		name    string
+		path    string
+		headers map[string]string
+	}{
+		{name: "cache bypass", path: "/posts.rss?cache=0"},
+		{name: "cookie", path: "/posts.rss", headers: map[string]string{"Cookie": "c=probe"}},
+		{name: "authorization", path: "/posts.rss", headers: map[string]string{"Authorization": "Bearer probe"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Empty(t, request(tc.path, tc.headers).Header().Values(cdnCacheableHeader))
+		})
+	}
 }

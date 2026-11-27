@@ -19,9 +19,11 @@ import (
 const (
 	cacheLoggedInKey   contextKey = "cacheLoggedIn"
 	cacheExpirationKey contextKey = "cacheExpiration"
-	publicPostCacheKey contextKey = "publicPostCache"
+	publicCacheKey     contextKey = "publicCache"
 	cacheControl                  = "Cache-Control"
 	cdnCacheableHeader            = "X-GoBlog-Cacheable"
+	cdnCacheableHTML              = "public-html"
+	cdnCacheableFeed              = "public-feed"
 )
 
 type cache struct {
@@ -48,6 +50,13 @@ func (a *goBlog) purgeCache() {
 func cacheLoggedIn(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), cacheLoggedInKey, true)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func publicCache(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), publicCacheKey, true)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -145,16 +154,17 @@ func (a *goBlog) serveCachedResponse(w http.ResponseWriter, r *http.Request, ci 
 	header.Del(cdnCacheableHeader)
 	if canStoreResponse(header) {
 		header.Set(cacheControl, "public,no-cache")
-		publicPost, _ := r.Context().Value(publicPostCacheKey).(bool)
+		public, _ := r.Context().Value(publicCacheKey).(bool)
 		mediaType, _, _ := strings.Cut(header.Get(contentType), ";")
-		if publicPost && ci.code == http.StatusOK && mediaType == contenttype.HTML &&
+		if public && ci.code == http.StatusOK &&
 			len(r.Header.Values("Cookie")) == 0 && len(r.Header.Values("Authorization")) == 0 {
-			header.Set(cdnCacheableHeader, "public-html")
+			if cacheable := cdnCacheableType(mediaType); cacheable != "" {
+				header.Set(cdnCacheableHeader, cacheable)
+			}
 		}
 	}
 
-	if tag := r.Header.Get("If-None-Match"); ci.code == http.StatusOK && tag != "" &&
-		strings.TrimPrefix(tag, "W/") == strings.TrimPrefix(ci.eTag, "W/") {
+	if ci.code == http.StatusOK && etagMatches(r.Header.Values("If-None-Match"), ci.eTag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
@@ -205,6 +215,30 @@ func removeProblematicHeaders(header http.Header) {
 	for _, h := range problematicHeaders {
 		header.Del(h)
 	}
+}
+
+func cdnCacheableType(mediaType string) string {
+	switch mediaType {
+	case contenttype.HTML:
+		return cdnCacheableHTML
+	case contenttype.RSS, contenttype.ATOM, contenttype.JSONFeed:
+		return cdnCacheableFeed
+	default:
+		return ""
+	}
+}
+
+func etagMatches(ifNoneMatch []string, eTag string) bool {
+	eTag = strings.TrimPrefix(eTag, "W/")
+	for _, value := range ifNoneMatch {
+		for tag := range strings.SplitSeq(value, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag == "*" || strings.TrimPrefix(tag, "W/") == eTag {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func canStoreResponse(header http.Header) bool {

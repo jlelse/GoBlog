@@ -232,12 +232,12 @@ func (a *goBlog) blogHomeRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		if !conf.PostAsHome {
 			r.Use(a.privateModeHandler)
-			r.With(a.checkActivityStreamsRequest, a.CacheMiddleware).Get(conf.getRelativePath(""), a.serveHome)
-			r.With(a.CacheMiddleware, a.CORSHandler).Get(conf.getRelativePath("")+feedPath, a.serveHome)
+			r.With(a.checkActivityStreamsRequest, publicCache, a.CacheMiddleware).Get(conf.getRelativePath(""), a.serveHome)
+			r.With(publicCache, a.CacheMiddleware, a.CORSHandler).Get(conf.getRelativePath("")+feedPath, a.serveHome)
 			r.With(a.CORSHandler).Options(conf.getRelativePath("")+feedPath, func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusNoContent)
 			})
-			r.With(a.CacheMiddleware).Get(conf.getRelativePath(paginationPath), a.serveHome)
+			r.With(publicCache, a.CacheMiddleware).Get(conf.getRelativePath(paginationPath), a.serveHome)
 		}
 	}
 }
@@ -247,6 +247,7 @@ func (a *goBlog) blogSectionsRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
+			publicCache,
 			a.CacheMiddleware,
 		)
 		for _, section := range conf.Sections {
@@ -268,6 +269,7 @@ func (a *goBlog) blogTaxonomiesRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
+			publicCache,
 			a.CacheMiddleware,
 		)
 		for _, taxonomy := range conf.Taxonomies {
@@ -289,6 +291,7 @@ func (a *goBlog) blogDatesRouter(conf *configBlog) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(
 			a.privateModeHandler,
+			publicCache,
 			a.CacheMiddleware,
 		)
 
@@ -321,6 +324,7 @@ func (a *goBlog) blogPhotosRouter(conf *configBlog) func(r chi.Router) {
 			}
 			r.Use(
 				a.privateModeHandler,
+				publicCache,
 				a.CacheMiddleware,
 				middleware.WithValue(indexConfigKey, &indexConfig{
 					path:            photoPath,
@@ -345,6 +349,7 @@ func (a *goBlog) blogSearchRouter(conf *configBlog) func(r chi.Router) {
 					r.Use(
 						a.privateModeHandler,
 						noIndexHeader,
+						publicCache,
 						a.CacheMiddleware,
 						middleware.WithValue(pathKey, searchPath),
 					)

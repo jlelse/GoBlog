@@ -145,7 +145,7 @@ cache:
 
 Append `?cache=0` or `?cache=false` to any URL to skip the cache for that request.
 
-GoBlog sends `X-GoBlog-Cacheable: public-html` on successful HTML responses for published public posts served through the response cache. The marker is omitted when the request carries cookies or authorization, or when the response sets a cookie or has a restrictive cache policy. It is also omitted for unlisted posts, homepages, and ActivityPub representations. A CDN can use this header to opt matching responses into a short edge TTL while keeping its existing authentication and CAPTCHA bypasses.
+GoBlog sends `X-GoBlog-Cacheable: public-html` on successful HTML responses for published public posts and public index pages, and `X-GoBlog-Cacheable: public-feed` for RSS, Atom, and JSON feeds, when served through the response cache. The marker is omitted when the request carries cookies or authorization, or when the response sets a cookie or has a restrictive cache policy. It is also omitted for unlisted posts, the post used as a static homepage, and ActivityPub representations. A CDN can use this header to opt matching responses into a short edge TTL while keeping its existing authentication and CAPTCHA bypasses.
 
 ### Optimize Database
 
