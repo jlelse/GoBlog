@@ -294,6 +294,42 @@ func Test_writePictureElement_withVariants(t *testing.T) {
 	assert.Contains(t, output, `sizes="(max-width: 700px) 100vw, 700px"`)
 }
 
+func Test_writePictureElement_avifOnlyFallback(t *testing.T) {
+	app := newAppWithStorage(t, &localMediaStorage{
+		path:     t.TempDir(),
+		mediaURL: "https://example.com/m",
+	})
+	app.cfg.MediaOptimization.Enabled = true
+	app.cfg.MediaOptimization.Formats = []string{"avif", "jpeg"}
+	app.cfg.MediaOptimization.Widths = []int{800, 1400, 2000}
+	err := app.initConfig(false)
+	require.NoError(t, err)
+	app.initMediaOptimization()
+
+	// AVIF dimensions are not decoded when optimizing, so Width and Height are zero
+	for _, row := range []*mediaOptimizedRow{
+		{OriginalHash: "abc123", VariantType: "avif_800", OptimizedHash: "h1"},
+		{OriginalHash: "abc123", VariantType: "avif_2000", OptimizedHash: "h3"},
+		{OriginalHash: "abc123", VariantType: "avif_1400", OptimizedHash: "h2"},
+	} {
+		require.NoError(t, app.db.mediaOptimizedInsert(row))
+	}
+
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
+	hb := htmlbuilder.NewHTMLBuilder(buf)
+
+	app.writePictureElement(hb, "https://example.com/m/abc123.png", "Alt", "", "", "", false)
+
+	output := buf.String()
+	assert.Contains(t, output, `<a href="https://example.com/m/h3.avif"`)
+	assert.Contains(t, output, `<img src="https://example.com/m/h3.avif"`)
+	assert.Contains(t, output, `srcset="https://example.com/m/h3.avif 2000w, https://example.com/m/h2.avif 1400w, https://example.com/m/h1.avif 800w"`)
+	assert.NotContains(t, output, ` 0w`)
+	assert.NotContains(t, output, `width="0"`)
+	assert.NotContains(t, output, `height="0"`)
+}
+
 func Test_writePictureElement_customClass(t *testing.T) {
 	app := &goBlog{cfg: createDefaultTestConfig(t)}
 	app.cfg.MediaOptimization.Enabled = false
@@ -556,6 +592,19 @@ func Test_initMediaOptimization(t *testing.T) {
 		app.initMediaOptimization()
 		assert.Empty(t, app.mediaOptimizationVariants)
 	})
+
+	t.Run("default formats include png", func(t *testing.T) {
+		app := &goBlog{cfg: createDefaultTestConfig(t)}
+		app.cfg.MediaOptimization.Enabled = true
+		app.initMediaOptimization()
+		formats := map[string]bool{}
+		for _, v := range app.mediaOptimizationVariants {
+			formats[v.Format] = true
+		}
+		assert.True(t, formats["avif"])
+		assert.True(t, formats["jpeg"])
+		assert.True(t, formats["png"])
+	})
 }
 
 func Test_groupMediaVariants(t *testing.T) {
@@ -612,6 +661,19 @@ func Test_groupMediaVariants(t *testing.T) {
 		require.NotNil(t, g)
 		assert.Equal(t, "jpeg", g.fallbackFormat)
 		assert.Equal(t, "h3", g.fallbackRow.OptimizedHash)
+	})
+
+	t.Run("fallback picks maximum width from variant type when dimensions are unknown", func(t *testing.T) {
+		g := groupMediaVariants([]*mediaOptimizedRow{
+			{OriginalHash: "a", VariantType: "avif_800", OptimizedHash: "h1"},
+			{OriginalHash: "a", VariantType: "avif_2000", OptimizedHash: "h2"},
+			{OriginalHash: "a", VariantType: "avif_1400", OptimizedHash: "h3"},
+		})
+		require.NotNil(t, g)
+		assert.Equal(t, "avif", g.fallbackFormat)
+		assert.Equal(t, "h2", g.fallbackRow.OptimizedHash)
+		assert.Equal(t, 2000, g.variantWidth(g.fallbackRow))
+		assert.Equal(t, 1400, g.variantWidth(g.byFormat["avif"][2]))
 	})
 }
 

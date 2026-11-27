@@ -329,7 +329,7 @@ func groupMediaVariants(variants []*mediaOptimizedRow) *mediaVariantGroup {
 
 	fallbackFormat := sortedFormats[len(sortedFormats)-1]
 	fallbackRow := lo.MaxBy(byFormat[fallbackFormat], func(a, b *mediaOptimizedRow) bool {
-		return a.Width > b.Width
+		return mediaVariantWidth(a) > mediaVariantWidth(b)
 	})
 
 	return &mediaVariantGroup{
@@ -338,6 +338,18 @@ func groupMediaVariants(variants []*mediaOptimizedRow) *mediaVariantGroup {
 		fallbackFormat: fallbackFormat,
 		fallbackRow:    fallbackRow,
 	}
+}
+
+// mediaVariantWidth returns the actual pixel width if known, otherwise the
+// width requested from imgproxy (encoded in the variant type). AVIF variants
+// never have decoded dimensions because the standard library cannot decode
+// AVIF, so their nominal width is the only reliable value.
+func mediaVariantWidth(v *mediaOptimizedRow) int {
+	if v.Width > 0 {
+		return v.Width
+	}
+	_, w := parseVariantType(v.VariantType)
+	return w
 }
 
 func (g *mediaVariantGroup) variantWidth(v *mediaOptimizedRow) int {
@@ -349,11 +361,11 @@ func (g *mediaVariantGroup) variantWidth(v *mediaOptimizedRow) int {
 		return 0
 	}
 	for _, fb := range g.byFormat[g.fallbackFormat] {
-		if _, fw := parseVariantType(fb.VariantType); fw == cw {
+		if _, fw := parseVariantType(fb.VariantType); fw == cw && fb.Width > 0 {
 			return fb.Width
 		}
 	}
-	return 0
+	return cw
 }
 
 func (a *goBlog) mediaFallbackURL(originalURL string) string {
@@ -420,7 +432,7 @@ func (a *goBlog) writePictureElement(hb *htmlbuilder.HTMLBuilder, originalURL, a
 	for _, f := range g.sortedFormats {
 		group := g.byFormat[f]
 		sort.SliceStable(group, func(i, j int) bool {
-			return group[i].Width > group[j].Width
+			return g.variantWidth(group[i]) > g.variantWidth(group[j])
 		})
 
 		srcsetParts := lo.Map(group, func(v *mediaOptimizedRow, _ int) string {
@@ -430,8 +442,11 @@ func (a *goBlog) writePictureElement(hb *htmlbuilder.HTMLBuilder, originalURL, a
 	}
 
 	fallbackGroup := g.byFormat[g.fallbackFormat]
+	sort.SliceStable(fallbackGroup, func(i, j int) bool {
+		return g.variantWidth(fallbackGroup[i]) > g.variantWidth(fallbackGroup[j])
+	})
 	fbSrcsetParts := lo.Map(fallbackGroup, func(v *mediaOptimizedRow, _ int) string {
-		return fmt.Sprintf("%s %dw", a.mediaFileLocation(v.OptimizedHash+"."+g.fallbackFormat), v.Width)
+		return fmt.Sprintf("%s %dw", a.mediaFileLocation(v.OptimizedHash+"."+g.fallbackFormat), g.variantWidth(v))
 	})
 
 	a.writeImgElement(hb, fallbackURL, alt, title, class, g.fallbackRow.Width, g.fallbackRow.Height, strings.Join(fbSrcsetParts, ", "))

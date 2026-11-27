@@ -345,7 +345,7 @@ GoBlog can automatically generate optimized image variants (AVIF, JPEG/PNG) usin
 - `<picture>` markup is fully cacheable: same HTML for all browsers, no `Vary` header
 - Originals are preserved unchanged
 
-All combinations of `formats` x `widths` are generated. Quality and encoding options are set via imgproxy environment variables (see [imgproxy configuration](https://docs.imgproxy.net/configuration/options#compression)).
+Variants are generated for every configured format and width, except that PNG sources only produce PNG and AVIF variants and JPEG sources only produce JPEG and AVIF variants (JPEG cannot store transparency). The default formats are AVIF, JPEG and PNG. Quality and encoding options are set via imgproxy environment variables (see [imgproxy configuration](https://docs.imgproxy.net/configuration/options#compression)).
 
 ## Media Migration
 

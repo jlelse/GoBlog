@@ -210,9 +210,10 @@ tts:
 mediaOptimization:
   enabled: true # Enable image optimization
   imgproxyURL: http://localhost:8080 # URL to imgproxy service
-  # formats: # Output image formats (e.g., avif, jpeg, png). Quality, compression, and encoding options are set via imgproxy environment variables.
+  # formats: # Output image formats (default: avif, jpeg, png). PNG sources only produce PNG and AVIF variants, JPEG sources only JPEG and AVIF variants. Quality, compression, and encoding options are set via imgproxy environment variables.
   #   - avif
   #   - jpeg
+  #   - png
   # widths: # Image widths to generate for each format
   #   - 800
   #   - 1400

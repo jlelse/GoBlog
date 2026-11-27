@@ -719,6 +719,7 @@ func createDefaultConfig() *config {
 			Formats: []string{
 				"avif",
 				"jpeg",
+				"png",
 			},
 			Widths: []int{800, 1400, 2000},
 		},
