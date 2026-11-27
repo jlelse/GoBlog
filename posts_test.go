@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gophertools/requests/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 func TestIndexPagination(t *testing.T) {
@@ -254,4 +256,74 @@ func Test_serveUntitledPost(t *testing.T) {
 		Client(newHandlerClient(app.d)).Fetch(context.Background()))
 
 	assert.Contains(t, resString, "<h1 class=visually-hidden aria-hidden=true>This untitled post contains…</h1>")
+}
+
+func TestPublicPostCDNCache(t *testing.T) {
+	app := &goBlog{cfg: createDefaultTestConfig(t)}
+	app.cfg.ActivityPub.Enabled = true
+	require.NoError(t, app.initConfig(false))
+	app.cfg.Blogs[app.cfg.DefaultBlog].PostAsHome = true
+	require.NoError(t, app.initTemplateStrings())
+	handler := app.buildRouter()
+
+	for path, visibility := range map[string]postVisibility{
+		"/":         visibilityPublic,
+		"/public":   visibilityPublic,
+		"/unlisted": visibilityUnlisted,
+		"/private":  visibilityPrivate,
+	} {
+		require.NoError(t, app.createPost(&post{
+			Path: path, Section: "posts", Status: statusPublished, Visibility: visibility,
+			Published: "2020-10-15T10:00:00Z", Content: "Test post",
+		}))
+	}
+
+	request := func(method, path string, headers map[string]string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, nil)
+		for name, value := range headers {
+			req.Header.Set(name, value)
+		}
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		return res
+	}
+
+	public := request(http.MethodGet, "/public?source=test", nil)
+	require.Equal(t, http.StatusOK, public.Code)
+	require.Equal(t, "public-html", public.Header().Get(cdnCacheableHeader))
+	tag := public.Header().Get("ETag")
+	require.NotEmpty(t, tag)
+
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		res := request(method, "/public?source=test", map[string]string{"If-None-Match": "W/" + tag})
+		assert.Equal(t, http.StatusNotModified, res.Code)
+		assert.Empty(t, res.Body.String())
+		assert.Equal(t, tag, res.Header().Get("ETag"))
+	}
+	assert.Equal(t, http.StatusOK, request(http.MethodGet, "/public?source=test",
+		map[string]string{"If-None-Match": `W/"old"`}).Code)
+
+	for _, tc := range []struct {
+		name    string
+		path    string
+		headers map[string]string
+	}{
+		{name: "static homepage", path: "/"},
+		{name: "unlisted post", path: "/unlisted"},
+		{name: "private post", path: "/private"},
+		{name: "missing post", path: "/missing"},
+		{name: "cache bypass", path: "/public?cache=0"},
+		{name: "cookie", path: "/public?source=test", headers: map[string]string{"Cookie": "c=probe"}},
+		{name: "authorization", path: "/public?source=test", headers: map[string]string{"Authorization": "Bearer probe"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res := request(http.MethodGet, tc.path, tc.headers)
+			assert.Empty(t, res.Header().Values(cdnCacheableHeader))
+		})
+	}
+
+	activity := request(http.MethodGet, "/public?source=test", map[string]string{"Accept": contenttype.AS})
+	assert.Equal(t, http.StatusOK, activity.Code)
+	assert.Contains(t, activity.Header().Get(contentType), contenttype.AS)
+	assert.Empty(t, activity.Header().Values(cdnCacheableHeader))
 }

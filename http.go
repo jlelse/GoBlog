@@ -331,16 +331,16 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 		path := r.URL.Path
 		row, err := a.db.QueryRowContext(r.Context(), `
 		-- normal posts
-		select 'post', status, visibility, 200 from posts where path = @path
+		select 'post', status, visibility, 200, blog from posts where path = @path
 		union all
 		-- short paths
-		select 'alias', path, '', 301 from shortpath where printf('/s/%x', id) = @path
+		select 'alias', path, '', 301, '' from shortpath where printf('/s/%x', id) = @path
 		union all
 		-- post aliases
-		select 'alias', path, '', 302 from post_parameters where parameter = 'aliases' and value = @path
+		select 'alias', path, '', 302, '' from post_parameters where parameter = 'aliases' and value = @path
 		union all
 		-- deleted posts
-		select 'deleted', '', '', 410 from deleted where path = @path
+		select 'deleted', '', '', 410, '' from deleted where path = @path
 		-- just select the first result
 		limit 1
 		`, sql.Named("path", path))
@@ -349,9 +349,9 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 			a.serveError(w, r, "", http.StatusInternalServerError)
 			return
 		}
-		var pathType, value1, value2 string
+		var pathType, value1, value2, postBlog string
 		var status int
-		err = row.Scan(&pathType, &value1, &value2, &status)
+		err = row.Scan(&pathType, &value1, &value2, &status, &postBlog)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				// Error
@@ -368,8 +368,12 @@ func (a *goBlog) servePostsAliasesRedirects() http.HandlerFunc {
 				switch postStatus(value1) {
 				case statusPublished:
 					// Check visibility
-					switch postVisibility(value2) {
+					visibility := postVisibility(value2)
+					switch visibility {
 					case visibilityPublic, visibilityUnlisted:
+						if visibility == visibilityPublic && path != a.getRelativePath(postBlog, "") {
+							r = r.WithContext(context.WithValue(r.Context(), publicPostCacheKey, true))
+						}
 						alicePrivate.Append(a.checkActivityStreamsRequest, a.CacheMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)
 					default: // private, etc.
 						alice.New(a.authMiddleware).ThenFunc(a.servePost).ServeHTTP(w, r)

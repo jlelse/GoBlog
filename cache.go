@@ -6,18 +6,22 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/samber/go-singleflightx"
 	"go.goblog.app/app/pkgs/bodylimit"
 	"go.goblog.app/app/pkgs/bufferpool"
 	c "go.goblog.app/app/pkgs/cache"
+	"go.goblog.app/app/pkgs/contenttype"
 )
 
 const (
 	cacheLoggedInKey   contextKey = "cacheLoggedIn"
 	cacheExpirationKey contextKey = "cacheExpiration"
+	publicPostCacheKey contextKey = "publicPostCache"
 	cacheControl                  = "Cache-Control"
+	cdnCacheableHeader            = "X-GoBlog-Cacheable"
 )
 
 type cache struct {
@@ -135,23 +139,28 @@ func generateCacheKey(r *http.Request) string {
 }
 
 func (a *goBlog) serveCachedResponse(w http.ResponseWriter, r *http.Request, ci *cacheItem) {
-	a.setCacheHeaders(w, ci)
+	header := w.Header()
+	maps.Copy(header, ci.header)
+	header.Set("ETag", ci.eTag)
+	header.Del(cdnCacheableHeader)
+	if canStoreResponse(header) {
+		header.Set(cacheControl, "public,no-cache")
+		publicPost, _ := r.Context().Value(publicPostCacheKey).(bool)
+		mediaType, _, _ := strings.Cut(header.Get(contentType), ";")
+		if publicPost && ci.code == http.StatusOK && mediaType == contenttype.HTML &&
+			len(r.Header.Values("Cookie")) == 0 && len(r.Header.Values("Authorization")) == 0 {
+			header.Set(cdnCacheableHeader, "public-html")
+		}
+	}
 
-	if ifNoneMatchHeader := r.Header.Get("If-None-Match"); ifNoneMatchHeader != "" && ifNoneMatchHeader == ci.eTag {
+	if tag := r.Header.Get("If-None-Match"); ci.code == http.StatusOK && tag != "" &&
+		strings.TrimPrefix(tag, "W/") == strings.TrimPrefix(ci.eTag, "W/") {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 
 	w.WriteHeader(ci.code)
 	_, _ = w.Write(ci.body)
-}
-
-func (a *goBlog) setCacheHeaders(w http.ResponseWriter, cache *cacheItem) {
-	// Copy headers
-	maps.Copy(w.Header(), cache.header)
-	// Set cache headers
-	w.Header().Set("ETag", cache.eTag)
-	w.Header().Set(cacheControl, "public,no-cache")
 }
 
 func (c *cache) getOrCreateCache(key string, next http.Handler, r *http.Request) *cacheItem {
@@ -174,7 +183,7 @@ func (c *cache) getOrCreateCache(key string, next http.Handler, r *http.Request)
 	item.expiration, _ = cr.Context().Value(cacheExpirationKey).(int)
 	removeProblematicHeaders(item.header)
 
-	if shouldCacheItem(item.header.Get(cacheControl)) {
+	if canStoreResponse(item.header) {
 		c.saveCache(key, item)
 	}
 
@@ -198,8 +207,16 @@ func removeProblematicHeaders(header http.Header) {
 	}
 }
 
-func shouldCacheItem(cacheControlHeader string) bool {
-	return !containsStrings(cacheControlHeader, "no-store", "private", "no-cache")
+func canStoreResponse(header http.Header) bool {
+	if len(header.Values("Set-Cookie")) > 0 {
+		return false
+	}
+	for _, value := range header.Values(cacheControl) {
+		if containsStrings(strings.ToLower(value), "no-store", "private", "no-cache") {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *cache) saveCache(key string, item *cacheItem) {

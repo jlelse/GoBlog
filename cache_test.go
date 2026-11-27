@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -108,4 +109,28 @@ func Test_cache_purge_nil(t *testing.T) {
 
 	c = &cache{c: nil}
 	c.purge()
+}
+
+func TestCachedResponsePreservesCacheRestrictions(t *testing.T) {
+	app := &goBlog{}
+	req := httptest.NewRequest(http.MethodGet, "/public", nil)
+	req = req.WithContext(context.WithValue(req.Context(), publicPostCacheKey, true))
+	for _, tc := range []struct {
+		name   string
+		header http.Header
+	}{
+		{name: "private", header: http.Header{cacheControl: {"private, max-age=0"}}},
+		{name: "no-store", header: http.Header{cacheControl: {"max-age=0", "No-Store"}}},
+		{name: "cookie", header: http.Header{"Set-Cookie": {"session=probe"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.header.Set(contentType, "text/html")
+			assert.False(t, canStoreResponse(tc.header))
+			res := httptest.NewRecorder()
+			app.serveCachedResponse(res, req, &cacheItem{code: http.StatusOK, header: tc.header})
+			assert.Equal(t, tc.header.Values(cacheControl), res.Header().Values(cacheControl))
+			assert.Empty(t, res.Header().Get(cdnCacheableHeader))
+			assert.Equal(t, tc.header.Values("Set-Cookie"), res.Header().Values("Set-Cookie"))
+		})
+	}
 }
