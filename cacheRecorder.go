@@ -45,7 +45,7 @@ func (c *cacheRecorder) finish() *cacheItem {
 	c.item.eTag = c.item.header.Get("ETag")
 	if c.item.eTag == "" {
 		sum := sha256.Sum256(c.item.body)
-		c.item.eTag = hex.EncodeToString(sum[:])
+		c.item.eTag = `"` + hex.EncodeToString(sum[:]) + `"`
 	}
 	return &c.item
 }

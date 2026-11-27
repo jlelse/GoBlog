@@ -393,7 +393,7 @@ Hello from Jane.
 	t.Run("ETag", func(t *testing.T) {
 		rr := serve(http.MethodGet, "/.well-known/about.md", nil)
 		etag := rr.Header().Get("ETag")
-		require.NotEmpty(t, etag)
+		require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
 
 		rr = serve(http.MethodGet, "/.well-known/about.md", map[string]string{"If-None-Match": etag})
 		assert.Equal(t, http.StatusNotModified, rr.Code)
