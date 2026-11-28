@@ -9,7 +9,7 @@ require (
 	git.jlel.se/jlelse/template-strings v0.0.0-20260916065505-405814d9142a
 	github.com/HBTGmbH/gosaxml v0.0.44
 	github.com/PuerkitoBio/goquery v1.14.0
-	github.com/alecthomas/chroma/v3 v3.0.0-alpha.6
+	github.com/alecthomas/chroma/v3 v3.0.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/coder/websocket v1.8.15
@@ -19,13 +19,13 @@ require (
 	github.com/elnormous/contenttype v1.0.4
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.26.0
-	github.com/go-acme/lego/v5 v5.7.0
+	github.com/go-acme/lego/v5 v5.8.1
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/cors v1.2.2
 	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/gophertools/requests/v2 v2.26.0
-	github.com/goplus/ixgo v1.2.8
+	github.com/goplus/ixgo v1.2.9
 	github.com/goplus/reflectx v1.8.4
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/sessions v1.4.0
